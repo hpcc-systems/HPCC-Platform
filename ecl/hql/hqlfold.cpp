@@ -596,8 +596,13 @@ bool checkExternFoldable(IHqlExpression* expr, unsigned foldOptions, StringBuffe
     unsigned numParam = expr->numChildren();
     for(unsigned iparam = 0; iparam < numParam; iparam++)
     {
-        if (!expr->queryChild(iparam)->queryValue())            //NB: Already folded...
+        switch (expr->queryChild(iparam)->getOperator())
+        {
+        case no_constant: case no_null: case no_all:  // NOTE: no_all still needs work elsewhere before it will be supported fully
+            break;
+        default:
             return false;
+        }
     }
 
     IHqlExpression * formals = funcdef->queryChild(1);
@@ -725,7 +730,7 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplat
 
     // create a FuncCallStack to generate a stack used to pass parameters to 
     // the called function
-    FuncCallStack fstack;
+    FuncCallStack fstack(getBoolAttribute(body, passParameterMetaAtom, false), DEFAULTSTACKSIZE);
     
     if(body->hasAttribute(templateAtom))
         fstack.pushPtr(templateContext);
@@ -824,8 +829,7 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplat
             free(tgt);
             return NULL;
         }
-        IValue * paramValue = curParam->queryValue();
-        if (fstack.push(argType, paramValue) == -1)
+        if (fstack.push(argType, curParam) == -1)
         {
             free(tgt);
             return NULL;

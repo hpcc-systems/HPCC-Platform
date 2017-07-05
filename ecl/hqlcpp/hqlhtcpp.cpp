@@ -22,6 +22,7 @@
 #include "jmisc.hpp"
 #include "jstream.ipp"
 #include "jdebug.hpp"
+#include "rtldynfield.hpp"
 
 #include "build-config.h"
 #include "hql.hpp"
@@ -3620,11 +3621,6 @@ IHqlExpression * HqlCppTranslator::getRtlFieldKey(IHqlExpression * expr, IHqlExp
     return LINK(expr);
 }
 
-bool checkXpathIsNonScalar(const char *xpath)
-{
-    return (strpbrk(xpath, "/?*[]<>")!=NULL); //anything other than a single tag/attr name cannot name a scalar field
-}
-
 unsigned HqlCppTranslator::buildRtlField(StringBuffer & instanceName, IHqlExpression * field, IHqlExpression * rowRecord)
 {
     OwnedHqlExpr fieldKey = getRtlFieldKey(field, rowRecord);
@@ -3640,6 +3636,7 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer & instanceName, IHqlExpres
 
     StringBuffer name;
     unsigned typeFlags = 0;
+    unsigned fieldFlags = 0;
     if (field->getOperator() == no_ifblock)
     {
         typeFlags = buildRtlIfBlockField(name, field, rowRecord);
@@ -3674,7 +3671,7 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer & instanceName, IHqlExpres
             extractXmlName(xpathName, &xpathItem, NULL, field, "Row", false);
             //Following should be in the type processing, and the type should include the information
             if (field->hasAttribute(sizeAtom) || field->hasAttribute(countAtom))
-                typeFlags |= RFTMinvalidxml;
+                fieldFlags |= RFTMinvalidxml;
             break;
         default:
             extractXmlName(xpathName, NULL, NULL, field, NULL, false);
@@ -3684,9 +3681,9 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer & instanceName, IHqlExpres
         if (xpathName.length())
         {
             if (xpathName.charAt(0) == '@')
-                typeFlags |= RFTMhasxmlattr;
+                fieldFlags |= RFTMhasxmlattr;
             if (checkXpathIsNonScalar(xpathName))
-                typeFlags |= RFTMhasnonscalarxpath;
+                fieldFlags |= RFTMhasnonscalarxpath;
         }
 
         StringBuffer lowerName;
@@ -3729,9 +3726,12 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer & instanceName, IHqlExpres
 
         StringBuffer definition;
         StringBuffer typeName;
-        typeFlags = buildRtlType(typeName, fieldType, typeFlags); //benefit to adding other flags to generated code as well?
+        typeFlags |= buildRtlType(typeName, fieldType);
+        typeFlags |= fieldFlags;
 
         definition.append("const RtlFieldStrInfo ").append(name).append("(\"").append(lowerName).append("\",").append(xpathCppText).append(",&").append(typeName);
+        if (fieldFlags || defaultInitializer.length())
+            definition.append(',').appendf("0x%x", fieldFlags);
         if (defaultInitializer.length())
             definition.append(',').append(defaultInitializer);
         definition.append(");");
@@ -3756,12 +3756,12 @@ unsigned HqlCppTranslator::buildRtlIfBlockField(StringBuffer & instanceName, IHq
     BuildCtx declarectx(*code, declareAtom);
 
     //First generate a pseudo type entry for an ifblock.
-    unsigned fieldType = type_ifblock|RFTMcontainsifblock;
+    unsigned fieldType = type_ifblock|RFTMcontainsifblock|RFTMnoserialize;
     {
         unsigned length = 0;
         StringBuffer childTypeName;
         unsigned childType = buildRtlRecordFields(childTypeName, ifblock->queryChild(1), rowRecord);
-        fieldType |= (childType & (RFTMcontainsunknown|RFTMinvalidxml|RFTMhasxmlattr));
+        fieldType |= (childType & RFTMinherited);
 
         StringBuffer className;
         typeName.append("ty").append(++nextTypeId);
@@ -3822,7 +3822,7 @@ unsigned HqlCppTranslator::expandRtlRecordFields(StringBuffer & fieldListText, I
             childType = expandRtlRecordFields(fieldListText, cur, rowRecord);
             break;
         }
-        fieldType |= (childType & (RFTMcontainsunknown|RFTMinvalidxml|RFTMhasxmlattr));
+        fieldType |= (childType & RFTMinherited);
     }
     return fieldType;
 }
@@ -3847,15 +3847,12 @@ unsigned HqlCppTranslator::buildRtlRecordFields(StringBuffer & instanceName, IHq
     return fieldFlags;
 }
 
-unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo * type, unsigned typeFlags)
+unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo * type)
 {
     assertex(type);
-    type_t tc = type->getTypeCode();
-    if (tc == type_record)
+    if (type->getTypeCode() == type_record)
         type = queryUnqualifiedType(type);
-
-    VStringBuffer searchKey("t%d", typeFlags);
-    OwnedHqlExpr search = createVariable(searchKey, LINK(type));
+    OwnedHqlExpr search = createVariable("t", LINK(type));
     BuildCtx declarectx(*code, declareAtom);
     HqlExprAssociation * match = declarectx.queryMatchExpr(search);
     if (match)
@@ -3865,7 +3862,7 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
         return (unsigned)getIntValue(value->queryChild(1));
     }
 
-    StringBuffer name, className, arguments;
+    StringBuffer name, arguments;
     if (options.debugGeneratedCpp)
     {
         StringBuffer ecl;
@@ -3877,103 +3874,15 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
     else
         name.append("ty").append(++nextTypeId);
 
-    unsigned fieldType = typeFlags;
-    if (tc == type_alien)
-    {
-        ITypeInfo * physicalType = queryAlienType(type)->queryPhysicalType();
-        if (physicalType->getSize() != UNKNOWN_LENGTH)
-        {
-            //Don't use the generated class for xml generation since it will generate physical rather than logical
-            fieldType |= (RFTMalien|RFTMinvalidxml);
-            type = physicalType;
-            tc = type->getTypeCode();
-        }
-        else
-        {
-            fieldType |= RFTMunknownsize;
-            //can't work out the size of the field - to keep it as unknown for the moment.
-            //until the alien field type is supported
-        }
-    }
-    fieldType |= tc;
-    unsigned length = type->getSize();
-    if (length == UNKNOWN_LENGTH)
-    {
-        fieldType |= RFTMunknownsize;
-        length = 0;
-    }
-
+    FieldTypeInfoStruct info;
+    getFieldTypeInfo(info, type);
     unsigned childType = 0;
-    switch (tc)
+
+    switch (info.fieldType & RFTMkind)
     {
-    case type_boolean:
-        className.append("RtlBoolTypeInfo");
-        break;
-    case type_real:
-        className.append("RtlRealTypeInfo");
-        break;
-    case type_date:
-    case type_enumerated:
-    case type_int:
-        className.append("RtlIntTypeInfo");
-        if (!type->isSigned())
-            fieldType |= RFTMunsigned;
-        break;
-    case type_swapint:
-        className.append("RtlSwapIntTypeInfo");
-        if (!type->isSigned())
-            fieldType |= RFTMunsigned;
-        break;
-    case type_packedint:
-        className.append("RtlPackedIntTypeInfo");
-        if (!type->isSigned())
-            fieldType |= RFTMunsigned;
-        break;
-    case type_decimal:
-        className.append("RtlDecimalTypeInfo");
-        if (!type->isSigned())
-            fieldType |= RFTMunsigned;
-        length = type->getDigits() | (type->getPrecision() << 16);
-        break;
-    case type_char:
-        className.append("RtlCharTypeInfo");
-        break;
-    case type_data:
-        className.append("RtlDataTypeInfo");
-        break;
-    case type_qstring:
-        className.append("RtlQStringTypeInfo");
-        length = type->getStringLen();
-        break;
-    case type_varstring:
-        className.append("RtlVarStringTypeInfo");
-        if (type->queryCharset() && type->queryCharset()->queryName()==ebcdicAtom)
-            fieldType |= RFTMebcdic;
-        length = type->getStringLen();
-        break;
-    case type_string:
-        className.append("RtlStringTypeInfo");
-        if (type->queryCharset() && type->queryCharset()->queryName()==ebcdicAtom)
-            fieldType |= RFTMebcdic;
-        break;
-    case type_bitfield:
-        {
-        className.append("RtlBitfieldTypeInfo");
-        unsigned size = type->queryChildType()->getSize();
-        unsigned bitsize = type->getBitSize();
-        unsigned offset = (unsigned)getIntValue(queryAttributeChild(type, bitfieldOffsetAtom, 0),-1);
-        bool isLastBitfield = (queryAttribute(type, isLastBitfieldAtom) != NULL);
-        if (isLastBitfield)
-            fieldType |= RFTMislastbitfield;
-        if (!type->isSigned())
-            fieldType |= RFTMunsigned;
-        length = size | (bitsize << 8) | (offset << 16);
-        break;
-        }
     case type_record:
         {
             IHqlExpression * record = ::queryRecord(type);
-            className.append("RtlRecordTypeInfo");
             arguments.append(",");
             StringBuffer fieldsInstance;
             childType = buildRtlRecordFields(fieldsInstance, record, record);
@@ -3993,106 +3902,54 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
                 childType |= buildRtlRecordFields(arguments, record, record, true);
             }
 #endif
-
-//          fieldType |= (childType & RFTMcontainsifblock);
-            length = getMinRecordSize(record);
-            if (!isFixedRecordSize(record))
-                fieldType |= RFTMunknownsize;
             break;
         }
     case type_row:
         {
-            className.clear().append("RtlRowTypeInfo");
             arguments.append(",&");
-            childType = buildRtlType(arguments, ::queryRecordType(type), 0);
-//          fieldType |= (childType & RFTMcontainsifblock);
-            if (hasLinkCountedModifier(type))
-                fieldType |= RFTMlinkcounted;
+            childType = buildRtlType(arguments, ::queryRecordType(type));
             break;
         }
     case type_table:
     case type_groupedtable:
         {
-            className.clear().append("RtlDatasetTypeInfo");
             arguments.append(",&");
-            childType = buildRtlType(arguments, ::queryRecordType(type), 0);
-            if (hasLinkCountedModifier(type))
-            {
-                fieldType |= RFTMlinkcounted;
-                fieldType &= ~RFTMunknownsize;
-            }
+            childType = buildRtlType(arguments, ::queryRecordType(type));
             break;
         }
     case type_dictionary:
         {
-            className.clear().append("RtlDictionaryTypeInfo");
             arguments.append(",&");
-            childType = buildRtlType(arguments, ::queryRecordType(type), 0);
-            if (hasLinkCountedModifier(type))
-            {
-                fieldType |= RFTMlinkcounted;
-                fieldType &= ~RFTMunknownsize;
-            }
+            childType = buildRtlType(arguments, ::queryRecordType(type));
             StringBuffer lookupHelperName;
             buildDictionaryHashClass(::queryRecord(type), lookupHelperName);
             arguments.append(",&").append(lookupHelperName.str());
             break;
         }
     case type_set:
-        className.clear().append("RtlSetTypeInfo");
         arguments.append(",&");
-        childType = buildRtlType(arguments, type->queryChildType(), 0);
+        childType = buildRtlType(arguments, type->queryChildType());
         break;
     case type_unicode:
-        className.clear().append("RtlUnicodeTypeInfo");
-        arguments.append(", \"").append(type->queryLocale()).append("\"").toLowerCase();
-        length = type->getStringLen();
-        break;
     case type_varunicode:
-        className.clear().append("RtlVarUnicodeTypeInfo");
-        arguments.append(", \"").append(type->queryLocale()).append("\"").toLowerCase();
-        length = type->getStringLen();
-        break;
     case type_utf8:
-        className.clear().append("RtlUtf8TypeInfo");
-        arguments.append(", \"").append(type->queryLocale()).append("\"").toLowerCase();
-        length = type->getStringLen();
-        break;
-    case type_blob:
-    case type_pointer:
-    case type_class:
-    case type_array:
-    case type_void:
-    case type_alien:
-    case type_none:
-    case type_any:
-    case type_pattern:
-    case type_rule:
-    case type_token:
-    case type_feature:
-    case type_event:
-    case type_null:
-    case type_scope:
-    case type_transform:
-    default:
-        className.append("RtlUnimplementedTypeInfo");
-        fieldType |= (RFTMcontainsunknown|RFTMinvalidxml);
+        arguments.append(", \"").append(info.locale).append("\"").toLowerCase();
         break;
     }
-    fieldType |= (childType & (RFTMcontainsunknown|RFTMinvalidxml|RFTMhasxmlattr));
+    info.fieldType |= (childType & RFTMinherited);
 
     StringBuffer definition;
-    definition.append("const ").append(className).append(" ").append(name).append("(0x").appendf("%x", fieldType).append(",").append(length).append(arguments).append(");");
+    definition.append("const ").append(info.className).append(" ").append(name).append("(0x").appendf("%x", info.fieldType).append(",").append(info.length).append(arguments).append(");");
 
     BuildCtx typectx(declarectx);
     typectx.setNextPriority(TypeInfoPrio);
     typectx.addQuoted(definition);
 
     OwnedHqlExpr nameExpr = createVariable(name.str(), makeVoidType());
-    OwnedHqlExpr mapped = createAttribute(fieldAtom, LINK(nameExpr), getSizetConstant(fieldType));
+    OwnedHqlExpr mapped = createAttribute(fieldAtom, LINK(nameExpr), getSizetConstant(info.fieldType));
     declarectx.associateExpr(search, mapped);
     instanceName.append(name);
-    return fieldType;
+    return info.fieldType;
 }
 
 
@@ -4250,7 +4107,7 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
             assertex(!instance.isGrouped());
 
             StringBuffer typeName;
-            unsigned recordTypeFlags = buildRtlType(typeName, record->queryType(), 0);
+            unsigned recordTypeFlags = buildRtlType(typeName, record->queryType());
             s.clear().append("virtual const RtlTypeInfo * queryTypeInfo() const { return &").append(typeName).append("; }");
             metactx.addQuoted(s);
 

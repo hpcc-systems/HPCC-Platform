@@ -41,7 +41,7 @@ static const char * queryXPath(const RtlFieldInfo * field)
 
 static const char * queryScalarXPath(const RtlFieldInfo * field)
 {
-    if (field->type->hasNonScalarXpath())
+    if (field->hasNonScalarXpath())
         return field->name;
     return queryXPath(field);
 }
@@ -1887,17 +1887,25 @@ __int64 RtlUnimplementedTypeInfo::getInt(const void * ptr) const
 
 //-------------------------------------------------------------------------------------------------------------------
 
-RtlFieldStrInfo::RtlFieldStrInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type, const char *_initializer)
-: RtlFieldInfo(_name, _xpath, _type, _initializer)
+RtlFieldStrInfo::RtlFieldStrInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type, unsigned _flags, const char *_initializer)
+: RtlFieldInfo(_name, _xpath, _type, _flags, _initializer)
 {
 }
 
+RtlFieldStrInfo::RtlFieldStrInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type, unsigned _flags)
+: RtlFieldInfo(_name, _xpath, _type, _flags, NULL)
+{
+}
 
 RtlFieldStrInfo::RtlFieldStrInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type)
-: RtlFieldInfo(_name, _xpath, _type, NULL)
+: RtlFieldInfo(_name, _xpath, _type, 0, NULL)
 {
 }
 
+RtlFieldStrInfo::RtlFieldStrInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type, const char *_initializer)
+: RtlFieldInfo(_name, _xpath, _type, 0, _initializer)
+{
+}
 
 
 /* 

@@ -309,7 +309,7 @@ struct ECLRTL_API RtlDatasetTypeInfo : public RtlCompoundTypeInfo
 struct ECLRTL_API RtlDictionaryTypeInfo : public RtlCompoundTypeInfo
 {
     inline RtlDictionaryTypeInfo(unsigned _fieldType, unsigned _length, const RtlTypeInfo * _child, IHThorHashLookupInfo *_hashInfo)
-    : RtlCompoundTypeInfo(_fieldType, _length, _child), hashInfo(_hashInfo) {}
+    : RtlCompoundTypeInfo(_fieldType|RFTMnoserialize, _length, _child), hashInfo(_hashInfo) {}
     IHThorHashLookupInfo * hashInfo;
 
     virtual size32_t getMinSize() const;
@@ -322,7 +322,7 @@ struct ECLRTL_API RtlDictionaryTypeInfo : public RtlCompoundTypeInfo
 
 struct ECLRTL_API RtlIfBlockTypeInfo : public RtlTypeInfoBase
 {
-    inline RtlIfBlockTypeInfo(unsigned _fieldType, unsigned _length, const RtlFieldInfo * const * _fields) : RtlTypeInfoBase(_fieldType, _length), fields(_fields) {}
+    inline RtlIfBlockTypeInfo(unsigned _fieldType, unsigned _length, const RtlFieldInfo * const * _fields) : RtlTypeInfoBase(_fieldType|RFTMnoserialize, _length), fields(_fields) {}
     const RtlFieldInfo * const * fields;                // null terminated
 
     virtual bool getCondition(const byte * selfrow) const = 0;
@@ -384,7 +384,9 @@ public:
 struct ECLRTL_API RtlFieldStrInfo : public RtlFieldInfo
 {
     RtlFieldStrInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type);
-    RtlFieldStrInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type, const char * _initializer);
+    RtlFieldStrInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type, unsigned _flags);
+    RtlFieldStrInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type, unsigned _flags, const char * _initializer);
+    RtlFieldStrInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type, const char * _initializer);  // So old WU dlls can load (and then fail) rather than failing to load.
 };
 
 
