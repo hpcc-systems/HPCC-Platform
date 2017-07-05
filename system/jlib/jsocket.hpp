@@ -319,7 +319,7 @@ public:
     //
     virtual void  shutdown(unsigned mode=SHUTDOWN_READWRITE) = 0; // not needed for UDP
 
-    // Get name of accepted socket and returns port
+    // Get local name of accepted (or connected) socket and returns port
     virtual int name(char *name,size32_t namemax)=0;
 
     // Get peer name of socket and returns port - in UDP returns return addr
@@ -330,6 +330,9 @@ public:
 
     // Get peer ip of socket - in UDP returns return addr
     virtual IpAddress &getPeerAddress(IpAddress &addr)=0;
+
+    // Get local endpoint of socket
+    virtual SocketEndpoint &getEndpoint(SocketEndpoint &ep) const = 0;
 
     //
     // Close socket
