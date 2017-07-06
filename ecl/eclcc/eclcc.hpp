@@ -94,13 +94,14 @@ const char * const helpText[] = {
     "!   -legacywhen   Use legacy when/side-effects semantics (deprecated)",
     "    --logfile <file> Write log to specified file",
     "!   --logdetail=n Set the level of detail in the log file",
+    "!   --maxErrors=<n> Limit the number of errors, aborting on the nth (default = 5)",
     "!   --nologfile   Do not write any logfile",
 #ifdef _WIN32
     "!   -m            Enable leak checking",
 #endif
     "!   --nogpg       Do not run gpg to check signatures on signed code",
     "    --nosourcepath Compile as if the source came from stdin",
-    "!   --maxErrors=<n> Limit the number of errors, aborting on the nth (default = 5)",
+    "!   --nostdinc    Do not include the current directory in -I",
 #ifndef _WIN32
     "!   -pch          Generate precompiled header for eclinclude4.hpp",
 #endif

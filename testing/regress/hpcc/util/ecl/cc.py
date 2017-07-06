@@ -43,6 +43,7 @@ class ECLCC(Shell):
             return (repr(err), repr( err))
 
     def makeArchive(self, ecl):
+        self.defaults.append('--nostdinc')
         self.addIncludePath(ecl.dir_inc)
         dirname = ecl.dir_a
         filename = ecl.getArchive()

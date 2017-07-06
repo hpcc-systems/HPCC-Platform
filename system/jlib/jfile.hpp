@@ -623,4 +623,10 @@ extern jlib_decl void writeSentinelFile(IFile * file);
 extern jlib_decl void removeSentinelFile(IFile * file);
 extern jlib_decl StringBuffer & appendCurrentDirectory(StringBuffer & target, bool blankIfFails);
 
+#ifdef _WIN32
+const static bool filenamesAreCaseSensitive = false;
+#else
+const static bool filenamesAreCaseSensitive = true;
+#endif
+
 #endif
