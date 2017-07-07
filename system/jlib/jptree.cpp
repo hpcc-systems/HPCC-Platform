@@ -2942,7 +2942,7 @@ void LocalPTree::setName(const char *_name)
     if (_name==name.get())
         return;
     AttrStr *oname = name.getPtr();  // Don't free until after we copy - they could overlap
-    if (!name.set(_name))
+    if (!name.set(_name, true))
         name.setPtr(AttrStr::create(_name));
     if (oname)
         AttrStr::destroy(oname);
@@ -2981,10 +2981,10 @@ void LocalPTree::setAttribute(const char *key, const char *val)
     {
         attrs = (AttrValue *)realloc(attrs, (numAttrs+1)*sizeof(AttrValue));
         v = new(&attrs[numAttrs++]) AttrValue;  // Initialize new AttrValue
-        if (!v->key.set(key))
+        if (!v->key.set(key, true))
             v->key.setPtr(isnocase() ? AttrStr::createNC(key) : AttrStr::create(key));
     }
-    if (!v->value.set(val))
+    if (!v->value.set(val, isReadOnly()))
         v->value.setPtr(AttrStr::create(val));
     if (goer)
         AttrStr::destroy(goer);
@@ -3057,7 +3057,7 @@ void CAtomPTree::setName(const char *_name)
     {
         if (!validateXMLTag(_name))
             throw MakeIPTException(PTreeExcpt_InvalidTagName, ": %s", _name);
-        if (!name.set(_name))
+        if (!name.set(_name, true))
         {
 #ifdef TRACE_ALL_ATOM
             DBGLOG("TRACE_ALL_ATOM: %s", _name);
@@ -3156,7 +3156,7 @@ void CAtomPTree::setAttribute(const char *key, const char *val)
         if (streq(v->value.get(), val))
             return;
         AttrStr * goer = v->value.getPtr();
-        if (!v->value.set(val))
+        if (!v->value.set(val, isReadOnly()))
         {
             CriticalBlock block(hashcrit);
             if (goer)
@@ -3175,9 +3175,9 @@ void CAtomPTree::setAttribute(const char *key, const char *val)
         AttrValue *newattrs = newAttrArray(numAttrs+1);
         memcpy(newattrs, attrs, numAttrs*sizeof(AttrValue));
         v = &newattrs[numAttrs];
-        if (!v->key.set(key))
+        if (!v->key.set(key, true))
             v->key.setPtr(attrHT->addkey(key, isnocase()));
-        if (!v->value.set(val))
+        if (!v->value.set(val, isReadOnly()))
             v->value.setPtr(attrHT->addval(val));
         freeAttrArray(attrs, numAttrs);
         numAttrs++;

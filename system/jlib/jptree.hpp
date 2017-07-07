@@ -185,10 +185,12 @@ enum ipt_flags
     ipt_ordered = 0x04,   // Preserve element ordering
     ipt_fast    = 0x08,   // Prioritize speed over low memory usage
     ipt_lowmem  = 0x10,   // Prioritize low memory usage over speed
-    ipt_ext3    = 0x20,   // Unused
+    ipt_readonly= 0x20,   // Tree cannot be modified once created
     ipt_ext4    = 0x40,   // Used internally in Dali
     ipt_ext5    = 0x80    // Used internally in Dali
 };
+
+constexpr ipt_flags operator|(ipt_flags a, ipt_flags b) { return (ipt_flags) ((int) a | (int) b); }
 
 jlib_decl IPTreeMaker *createPTreeMaker(byte flags=ipt_none, IPropertyTree *root=NULL, IPTreeNodeCreator *nodeCreator=NULL);
 jlib_decl IPTreeMaker *createRootLessPTreeMaker(byte flags=ipt_none, IPropertyTree *root=NULL, IPTreeNodeCreator *nodeCreator=NULL);
