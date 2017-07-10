@@ -724,6 +724,7 @@ check_user(){
 
 check_group(){
     GROUP=$1
+    # NOTE: this fails if we do not have rights to chgrp ...
     touch /tmp/file.$$
     chgrp ${GROUP} /tmp/file.$$ > /dev/null 2>&1
     if [ $(stat -c %G /tmp/file.$$ 2>/dev/null || stat -f %Sg /tmp/file.$$ 2>/dev/null) = "${GROUP}" ];

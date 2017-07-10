@@ -65,7 +65,10 @@ start_slaves()
 {
     # insuring dafilesrv is running on the machine as it is a prerequisite
     dafilesrv_owner=$(stat -c "%U" ${INIT_PATH}/dafilesrv 2>/dev/null || stat -f %Su ${INIT_PATH}/dafilesrv 2>/dev/null)
-    [[ "${dafilesrv_owner}" != "${user}" ]] && cmd_prefix="sudo"
+    # use full path as with CentOS devtoolset another sudo is found in path
+    # which does not work properly with changes in sudoers.d hpcc file
+    [[ "${dafilesrv_owner}" != "${user}" ]] && cmd_prefix="/usr/bin/sudo"
+    # is sudo required for checking status ?
     ${cmd_prefix} ${INIT_PATH}/dafilesrv status > /dev/null
     if [[ $? -ne 0 ]];then
         ${cmd_prefix} ${INIT_PATH}/dafilesrv start > /dev/null
