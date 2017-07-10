@@ -775,8 +775,8 @@
 
           <para>Thor, the data refinery, as one of the critical components of
           HPCC Systems<superscript>®</superscript> needs to be backed up.
-          Backup Thor by configuring replication and setting up a nightly
-          backup cron task. Backup Thor on demand before and/or after any node
+          Backup Thor by configuring replication and setting up a nightly back
+          up cron task. Backup Thor on demand before and/or after any node
           swap or drive swap if you do not have a RAID configured.</para>
 
           <para>A very important part of administering Thor is to check the
@@ -786,8 +786,9 @@
 
           <para>Backupnode is a tool that is packaged with HPCC. Backupnode
           allows you to backup Thor nodes on demand or in a script. You can
-          also use backupnode regularly in a crontab. You would always want to
-          run it on the Thor master of that cluster.</para>
+          also use backupnode regularly in a crontab or by adding a backupnode
+          component with Configuration Manager to your environment. You would
+          always want to run it on the Thor master of that cluster.</para>
 
           <para>The following example is one suggested way for invoking
           backupnode manually.</para>
@@ -802,6 +803,9 @@
           would call start_backupnode thor400_7s.</para>
 
           <programlisting>  /bin/su - hpcc -c "/opt/HPCCSystems/bin/start_backupnode thor400_7s" &amp; </programlisting>
+
+          <para><emphasis role="bold">Backupnode run regularly</emphasis>
+          </para>
 
           <para>To run backupnode regularly you could use cron. For example,
           you may want a crontab entry (to backup thor400_7s) set to run at

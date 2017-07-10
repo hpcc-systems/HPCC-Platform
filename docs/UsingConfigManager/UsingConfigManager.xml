@@ -706,6 +706,70 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       environment XML file.</para>
 
       <sect2 role="brk">
+        <title>Backupnode</title>
+
+        <para>Backupnode allows you to back up Thor clusters at regular
+        intervals. The Backupnode component is a way to allow administrators
+        to manage the backupnode process without using a cron job.</para>
+
+        <para>To configure scheduled Thor node backups, add the backupnode
+        component, choose the hardware instance to run it on and then add Thor
+        groups to it. <graphic fileref="images/CM-img21.jpg"
+        vendor="configmgrSS" /></para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Right click on the <emphasis
+              role="bold">Software</emphasis> component in the <emphasis
+              role="bold">Navigator</emphasis> panel (on the right side),
+              choose <emphasis role="bold">New Components</emphasis> then
+              <emphasis role="bold">backupnode</emphasis> from the drop
+              list.</para>
+            </listitem>
+
+            <listitem>
+              <para>From the tabs on the right side, select the <emphasis
+              role="bold">Instances</emphasis> tab.</para>
+            </listitem>
+
+            <listitem>
+              <para>Right click on the <emphasis
+              role="bold">computer</emphasis> column and choose <emphasis
+              role="bold">Add Instances</emphasis>...<graphic
+              fileref="images/CM-img22.jpg" vendor="configmgrSS" /></para>
+            </listitem>
+
+            <listitem>
+              <para>Select the computer for the backupnode component, or press
+              <emphasis role="bold">Add Hardware</emphasis> to add a new
+              computer instance. You would always want to run backupnode on
+              the Thor master of the cluster.</para>
+            </listitem>
+
+            <listitem>
+              <para>Select the <emphasis role="bold">Thor Node
+              Groups</emphasis> tab.</para>
+            </listitem>
+
+            <listitem>
+              <para>Right click on the the <emphasis
+              role="bold">Interval</emphasis> column and choose the interval
+              and/or Thor group to back up.</para>
+            </listitem>
+
+            <listitem>
+              <para>Click the <inlinegraphic fileref="images/GS-img01c.png" />
+              disk icon to save</para>
+            </listitem>
+          </orderedlist>The default backup locations are:</para>
+
+        <programlisting> /var/lib/HPCCSystems/hpcc-data/backupnode/&lt;thorname&gt;/last_backup </programlisting>
+
+        <para>The interval attribute of the backupnode component determines
+        how many hours between backups.</para>
+      </sect2>
+
+      <sect2 role="brk">
         <title>Dali</title>
 
         <sect3>
@@ -1184,7 +1248,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             </listitem>
 
             <listitem>
-              <para>Select <emphasis role="bold">Drop Zone</emphasis> </para>
+              <para>Select <emphasis role="bold">Drop Zone</emphasis></para>
             </listitem>
           </orderedlist>
         </para>
@@ -1207,7 +1271,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
               <listitem>
                 <para>Double-click on the value on the right side of the
-                attribute table for the value you wish to modify. </para>
+                attribute table for the value you wish to modify.</para>
 
                 <para>For example, select the <emphasis
                 role="bold">name</emphasis> attribute, double click on the
