@@ -83,6 +83,7 @@ IStartableEngineRowStream *createRowStreamLookAhead(CSlaveActivity *activity, IE
 
 
 bool isSmartBufferSpillNeeded(CActivityBase *act);
+bool isFastThrough(IThorDataLink *input);
 
 StringBuffer &locateFilePartPath(CActivityBase *activity, const char *logicalFilename, IPartDescriptor &partDesc, StringBuffer &filePath);
 void doReplicate(CActivityBase *activity, IPartDescriptor &partDesc, ICopyFileProgress *iProgress=NULL);

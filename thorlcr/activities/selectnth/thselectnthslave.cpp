@@ -102,9 +102,12 @@ public:
         IStartableEngineRowStream *lookAhead = nullptr;
         if (!isLocal && rowN)
         {
-            lookAhead = createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), SELECTN_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(this), false, rowN, this, &container.queryJob().queryIDiskUsage());
-            originalInputStream.setown(replaceInputStream(0, lookAhead));
-            lookAhead->start();
+            if (!isFastThrough(input))
+            {
+                lookAhead = createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), SELECTN_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(this), false, rowN, this, &container.queryJob().queryIDiskUsage());
+                originalInputStream.setown(replaceInputStream(0, lookAhead));
+                lookAhead->start();
+            }
         }
 
         seenNth = false;

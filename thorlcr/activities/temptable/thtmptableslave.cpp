@@ -100,6 +100,7 @@ public:
         info.isSource = true;
         info.unknownRowsOutput = false;
         info.totalRowsMin = info.totalRowsMax = maxRow - startRow;
+        info.fastThrough = true;
         if (helper->getFlags() & TTFfiltered)
             info.totalRowsMin = 0;
     }
