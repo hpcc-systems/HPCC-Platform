@@ -19,6 +19,26 @@
 #include "hql.hpp"
 #include "hqlexpr.hpp"
 #include "hqldesc.hpp"
+#include "hqlatoms.hpp"
+
+enum InheritType : unsigned short
+{
+    inherited,
+    override,
+    local
+};
+
+const char * getInheritTypeText(InheritType ihType)
+{
+    switch(ihType)
+    {
+        case inherited : return "inherited";
+        case override : return "override";
+        case local : return "local";
+        default : return "unknown";
+    }
+    return "unknown";
+}
 
 void getFullName(StringBuffer & name, IHqlExpression * expr)
 {
@@ -51,7 +71,7 @@ void setFullNameProp(IPropertyTree * tree, const char * prop, const char * modul
 void setFullNameProp(IPropertyTree * tree, const char * prop, IHqlExpression * expr)
 {
     IHqlScope * scope = expr->queryScope();
-    if (scope)
+    if (scope && !containsCall(expr, false))
         tree->setProp(prop, scope->queryFullName());
     else
         setFullNameProp(tree, prop, str(lower(expr->queryFullContainerId())), str(expr->queryName()));
@@ -113,8 +133,87 @@ static void expandRecordSymbolsMeta(IPropertyTree * metaTree, IHqlExpression * r
     }
 }
 
+void expandScopeMeta(IPropertyTree * meta, IHqlExpression * expr)
+{
+    if (expr->hasAttribute(virtualAtom))
+        meta->setPropBool("@virtual", true);
 
-void expandSymbolMeta(IPropertyTree * metaTree, IHqlExpression * expr)
+    if (expr->hasAttribute(interfaceAtom))
+    {
+        meta->setProp("Type", "interface");
+    }
+    else
+    {
+        meta->setProp("Type", "module");
+    }
+
+    IPropertyTree* scopes = meta->addPropTree("Parents");
+
+    // Walk Attributes to determine inherited scopes
+    ForEachChild(i, expr)
+    {
+        IHqlExpression * cur = expr->queryChild(i);
+        IHqlScope * curBase = cur->queryScope();
+        if (curBase)
+        {
+            IPropertyTree* inherited = scopes->addPropTree("Parent");
+            inherited->setProp("@name", str(cur->queryId()));
+            setFullNameProp(inherited, "@ref", cur);
+        }
+    }
+
+    expandScopeSymbolsMeta(meta, expr->queryScope());
+}
+
+void expandParamMeta(IPropertyTree * meta, IHqlExpression * cur)
+{
+    IPropertyTree * param = meta->addPropTree("Param");
+    param->setProp("@name", str(cur->queryId()));
+}
+
+void expandFunctionMeta(IPropertyTree * meta, IHqlExpression * expr)
+{
+    IHqlExpression * child = queryFunctionParameters(expr);
+    IPropertyTree * params = meta->addPropTree("Params");
+    ForEachChild(i, child)
+    {
+        expandParamMeta(params, child->queryChild(i));
+    }
+
+    if (expr->isScope())
+    {
+        child = expr->queryChild(0);
+        if (child->isScope() && !isImport(child))
+        {
+            expandScopeMeta(meta, child);
+        }
+    }
+    else if (expr->isTransform())
+    {
+        meta->setProp("Type", "transform");
+        StringBuffer ecltype;
+        ecltype.append(queryOriginalRecord(expr)->queryName());
+        meta->setProp("Return", ecltype);
+    }
+    else if (isEmbedFunction(expr))
+    {
+        meta->setProp("Type", "embed");
+    }
+    else if (expr->isMacro())
+    {
+        meta->setProp("Type", "macro");
+    }
+    else if (expr->isType())
+    {
+        meta->setProp("Type", "type");
+    }
+    else
+    {
+        meta->setProp("Type", "function");
+    }
+}
+
+void expandSymbolMeta(IPropertyTree * metaTree, IHqlExpression * expr, InheritType ihType)
 {
     IPropertyTree * def = NULL;
     if (isImport(expr))
@@ -122,6 +221,15 @@ void expandSymbolMeta(IPropertyTree * metaTree, IHqlExpression * expr)
         def = metaTree->addPropTree("Import");
         IHqlExpression * original = expr->queryBody(true);
         setFullNameProp(def, "@ref", original);
+        IHqlScope * scope = expr->queryScope();
+        if(scope)
+        {
+            IHqlRemoteScope * remoteScope = queryRemoteScope(scope);
+            if (remoteScope)
+            {
+                def->setPropBool("@remotescope", true);
+            }
+        }
     }
     else
     {
@@ -136,35 +244,47 @@ void expandSymbolMeta(IPropertyTree * metaTree, IHqlExpression * expr)
         IHqlNamedAnnotation * symbol = queryNameAnnotation(expr);
         def->setProp("@name", str(expr->queryId()));
         def->setPropInt("@line", expr->getStartLine());
+
         if (expr->isExported())
             def->setPropBool("@exported", true);
         else if (isPublicSymbol(expr))
             def->setPropBool("@shared", true);
 
+        def->setProp("@inherittype", getInheritTypeText(ihType));
+
         if (symbol)
         {
-            setNonZeroPropInt(def, "@start", symbol->getStartPos());
-            setNonZeroPropInt(def, "@body", symbol->getBodyPos());
-            setNonZeroPropInt(def, "@end", symbol->getEndPos());
+            def->setPropInt("@start", symbol->getStartPos());
+            def->setPropInt("@body", symbol->getBodyPos());
+            def->setPropInt("@end", symbol->getEndPos());
+            setFullNameProp(def, "@fullname", expr);
         }
 
-        if (expr->isScope() && !isImport(expr))
+        if(expr->isFunction())
         {
-            def->setProp("@type", "module");
-            expandScopeSymbolsMeta(def, expr->queryScope());
+            expandFunctionMeta(def, expr);
+        }
+        else if (expr->isScope() && !isImport(expr))
+        {
+            expandScopeMeta(def, expr);
         }
         else if (expr->isRecord())
         {
-            def->setProp("@type", "record");
+            def->setProp("Type", "record");
             expandRecordSymbolsMeta(def, expr);
+        }
+        else if (expr->isType())
+        {
+            def->setProp("Type", "type");
+        }
+        else if (isImport(expr))
+        {
+
         }
         else
         {
-            StringBuffer ecltype;
-            expr->queryType()->getECLType(ecltype);
-            def->setProp("@type", ecltype);
+            def->setProp("Type", "attribute");
         }
-
     }
 }
 
@@ -190,6 +310,40 @@ void expandScopeSymbolsMeta(IPropertyTree * meta, IHqlScope * scope)
     scope->getSymbols(symbols);
     symbols.sort(compareSymbolsByPosition);
 
+    IHqlExpression * expr = queryExpression(scope);
+
+    IArrayOf<IHqlScope> bases;
+
+    ForEachChild(i, expr)
+    {
+        IHqlExpression * cur = expr->queryChild(i);
+        IHqlScope * curBase = cur->queryScope();
+        if (curBase)
+        {
+            bases.append(*LINK(curBase));
+        }
+    }
+
     ForEachItemIn(i, symbols)
-        expandSymbolMeta(meta, &symbols.item(i));
+    {
+        IHqlExpression * curSym = &symbols.item(i);
+        HqlDummyLookupContext lookupCtx(NULL);
+        IHqlExpression * lookupSym = scope->lookupSymbol(curSym->queryId(), LSFsharedOK|LSFignoreBase, lookupCtx);
+        InheritType ihType = local;
+        ForEachItemIn(iScope, bases)
+        {
+            IHqlScope * base = &bases.item(iScope);
+            IHqlExpression * baseSym = base->lookupSymbol(lookupSym->queryId(), LSFsharedOK|LSFfromderived, lookupCtx);
+            if (baseSym)
+            {
+                ihType = override;
+                if (baseSym->queryBody() == lookupSym->queryBody())
+                {
+                    ihType = inherited;
+                    break;
+                }
+            }
+        }
+        expandSymbolMeta(meta, curSym, ihType);
+    }
 }

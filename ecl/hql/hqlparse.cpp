@@ -2490,7 +2490,7 @@ IPropertyTree * HqlLex::getClearJavadoc()
         return NULL;
 
     IPropertyTree * tree = createPTree("javadoc");
-    extractJavadoc(tree, javaDocComment.str());
+    tree->addProp("content", javaDocComment.str());
     javaDocComment.clear();
     return tree;
 }
