@@ -4,3 +4,6 @@
 <Dataset name='stripResult'>
  <Row><Dataset><Row><name><first>Joe</first><last>Doe</last></name><address><city>Fresno</city><state>CA</state><zipcode>11111</zipcode></address></Row></Dataset><Exception><Source></Source><Code>0</Code><Message></Message></Exception></Row>
 </Dataset>
+<Dataset name='serverTooBusy'>
+ <Row><serverTooBusy>3000</serverTooBusy></Row>
+</Dataset>
