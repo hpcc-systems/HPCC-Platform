@@ -1083,6 +1083,12 @@ ecl run thor findperson.ecl -I C:\MyECL\
                   status). Use of this function requires that git be installed
                   and available on the path.</entry>
                 </row>
+
+                <row>
+                  <entry>-f-xxx</entry>
+
+                  <entry>Will pass the option -xxx to eclcc</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
