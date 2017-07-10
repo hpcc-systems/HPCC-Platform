@@ -1056,6 +1056,12 @@ ecl run thor findperson.ecl -I C:\MyECL\
 
                   <entry>Specify path to manifest file</entry>
                 </row>
+
+                <row>
+                  <entry>-f-xxx</entry>
+
+                  <entry>Will pass the option -xxx to eclcc</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
