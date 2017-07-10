@@ -361,6 +361,7 @@ protected:
     T_SOCKET        sock;
     char*           hostname;   // host address
     unsigned short  hostport;   // host port
+    unsigned short  localPort;
     SOCKETMODE      sockmode;
     IpAddress       targetip;
     SocketEndpoint  returnep;   // set by set_return_addr
@@ -409,6 +410,7 @@ public:
     int         peer_name(char *name,size32_t namemax);
     SocketEndpoint &getPeerEndpoint(SocketEndpoint &ep);
     IpAddress & getPeerAddress(IpAddress &addr);
+    SocketEndpoint &getEndpoint(SocketEndpoint &ep) const override;
     void        set_return_addr(int port,const char *name);  // sets returnep
     void        cancel_accept();
     size32_t    get_max_send_size();
@@ -893,6 +895,8 @@ int CSocket::post_connect ()
         nagling = true;
         set_nagle(false);
         state = ss_open;
+        SocketEndpoint ep;
+        localPort = getEndpoint(ep).port;
     }
     else if ((err!=JSE_TIMEDOUT)&&(err!=JSE_CONNREFUSED)) // handled by caller
         LOGERR2(err,1,"post_connect");
@@ -1064,21 +1068,9 @@ void CSocket::set_keep_alive(bool set)
 
 int CSocket::name(char *retname,size32_t namemax)
 {
-    if (!retname)
-        namemax = 0;
-    if (namemax)
-        retname[0] = 0;
-    if (state != ss_open) {
-        THROWJSOCKEXCEPTION(JSOCKERR_not_opened);
-    }
-    DEFINE_SOCKADDR(u);
-    socklen_t ul = sizeof(u);
-    if (::getsockname(sock,&u.sa, &ul)<0) {
-        THROWJSOCKEXCEPTION(ERRNO());
-    }
     SocketEndpoint ep;
-    getSockAddrEndpoint(u,ul,ep);
-    if (namemax>=1)
+    getEndpoint(ep);
+    if (retname && namemax)
     {
         StringBuffer s;
         ep.getIpText(s);
@@ -1163,6 +1155,19 @@ void CSocket::set_return_addr(int port,const char *retname)
 }
 
 
+SocketEndpoint &CSocket::getEndpoint(SocketEndpoint &ep) const
+{
+    if (state != ss_open) {
+        THROWJSOCKEXCEPTION(JSOCKERR_not_opened);
+    }
+    DEFINE_SOCKADDR(u);
+    socklen_t ul = sizeof(u);
+    if (::getsockname(sock,&u.sa, &ul)<0) {
+        THROWJSOCKEXCEPTION(ERRNO());
+    }
+    getSockAddrEndpoint(u,ul,ep);
+    return ep;
+}
 
 void CSocket::cancel_accept()
 {
@@ -1469,10 +1474,15 @@ void CSocket::setTraceName(const char * prefix, const char * name)
 #ifdef _TRACE
     StringBuffer peer;
     peer.append(prefix);
+    if (state == ss_open)
+        peer.append(":").append(localPort).append(" -> ");
     peer.append(name?name:"(NULL)");
+    peer.append(":").append(hostport);
+    if (sock != INVALID_SOCKET)
+        peer.append(" (").append(sock).append(")");
 
     free(tracename);
-    tracename = strdup(peer);
+    tracename = peer.detach();
 #endif
 }
 
@@ -1530,12 +1540,8 @@ void CSocket::logPollError(unsigned revents, const char *rwstr)
 {
     if (revents & POLLERR)
     {
-        char lname[256];
-        int lport = name(lname, sizeof(lname));
-        char rname[256];
-        int rport = peer_name(rname, sizeof(rname));
         StringBuffer errStr;
-        errStr.appendf("%s POLLERR %u l: %s:%d r: %s:%d", rwstr, sock, lname, lport, rname, rport);
+        errStr.appendf("%s POLLERR %u l:%d r:%s:%d", rwstr, sock, localPort, (hostname?hostname:"NULL"), hostport);
         int serror = 0;
         socklen_t serrlen = sizeof(serror);
         int srtn = getsockopt(sock, SOL_SOCKET, SO_ERROR, (char *)&serror, &serrlen);
@@ -2598,11 +2604,7 @@ void CSocket::set_ttl(unsigned _ttl)
 
 void CSocket::logConnectionInfo(unsigned timeoutms, unsigned conn_mstime)
 {
-    char lname[256];
-    int lport = name(lname, sizeof(lname));
-    char rname[256];
-    int rport = peer_name(rname, sizeof(rname));
-    PROGLOG("SOCKTRACE: connect(%u) - time:%u ms fd:%d l:%s:%d r:%s:%d", timeoutms, conn_mstime, sock, lname, lport, rname, rport);
+    PROGLOG("SOCKTRACE: connect(%u) - time:%u ms fd:%d l:%d r:%s:%d", timeoutms, conn_mstime, sock, localPort, (hostname?hostname:"NULL"), hostport);
     // PrintStackReport();
 }
 
@@ -2633,6 +2635,7 @@ CSocket::CSocket(const SocketEndpoint &ep,SOCKETMODE smode,const char *name)
 #endif
     nagling = true; // until turned off
     hostport = ep.port;
+    localPort = 0;
     hostname = NULL;
     mcastreq = NULL;
 #ifdef _TRACE
@@ -2662,7 +2665,7 @@ CSocket::CSocket(const SocketEndpoint &ep,SOCKETMODE smode,const char *name)
         SocketEndpoint self;
         self.setLocalHost(0);
         self.getUrlStr(hostname);
-        setTraceName("S>", hostname);
+        setTraceName("S>", hostname.str());
     }
 #endif
 }
@@ -2677,9 +2680,7 @@ CSocket::CSocket(T_SOCKET new_sock,SOCKETMODE smode,bool _owned)
     sock = new_sock;
     if (new_sock!=INVALID_SOCKET)
         STATS.activesockets++;
-    hostname = NULL;
     mcastreq = NULL;
-    hostport = 0;
 #ifdef _TRACE
     tracename = NULL;
 #endif
@@ -2691,9 +2692,12 @@ CSocket::CSocket(T_SOCKET new_sock,SOCKETMODE smode,bool _owned)
     accept_cancel_state = accept_not_cancelled;
     set_nagle(false);
     //set_linger(DEFAULT_LINGER_TIME); -- experiment with removing this as closesocket should still endevour to send outstanding data
-#ifdef _TRACE
     char peer[256];
-    peer_name(peer,sizeof(peer));
+    hostport = peer_name(peer,sizeof(peer));
+    hostname = strdup(peer);
+    SocketEndpoint ep;
+    localPort = getEndpoint(ep).port;
+#ifdef _TRACE
     setTraceName("A!", peer);
 #endif
 }
