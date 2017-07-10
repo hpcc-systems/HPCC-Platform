@@ -123,7 +123,8 @@
               <row>
                 <entry>unbind-method</entry>
 
-                <entry>Remove ESDL based method binding on target ESP.</entry>
+                <entry>Remove method from an ESDL binding on a target
+                ESP.</entry>
               </row>
 
               <row>
@@ -1227,12 +1228,12 @@
         </informaltable>
 
         <para>Use this command to unbind a method configuration currently
-        associated with a given ESDL binding. </para>
+        associated with a given ESDL binding.</para>
 
         <para>To unbind a method, provide the target ESP process name (esp
         which hosts the service.). It is also necessary to provide the Port on
         which this service is configured to run (ESP Binding), and the name of
-        the method you are unbinding. </para>
+        the method you are unbinding.</para>
 
         <para></para>
 
