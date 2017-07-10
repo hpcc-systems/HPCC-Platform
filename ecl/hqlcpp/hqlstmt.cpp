@@ -336,13 +336,6 @@ IHqlStmt * BuildCtx::addReturn(IHqlExpression * value)
     return appendSimple(next);
 }
 
-IHqlStmt * BuildCtx::addReturnAddressOf(const char * varname)
-{
-    StringBuffer s;
-    s.append("return &").append(varname).append(";");
-    return addQuoted(s);
-}
-
 IHqlStmt * BuildCtx::addFilter(IHqlExpression * condition)
 {
     HqlCompoundStmt * next = new HqlCompoundStmt(filter_stmt, curStmts);

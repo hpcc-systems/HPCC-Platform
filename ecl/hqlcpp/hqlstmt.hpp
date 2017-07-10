@@ -110,7 +110,6 @@ public:
     IHqlStmt *                  addExpr(IHqlExpression * condition);
     IHqlStmt *                  addExprOwn(IHqlExpression * condition);
     IHqlStmt *                  addReturn(IHqlExpression * value);
-    IHqlStmt *                  addReturnAddressOf(const char * varname);
     IHqlStmt *                  addFilter(IHqlExpression * condition);
     IHqlStmt *                  addFunction(IHqlExpression * funcdef);
     IHqlStmt *                  addGoto(const char * labelText);

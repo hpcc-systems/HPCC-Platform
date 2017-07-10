@@ -831,10 +831,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMerge(BuildCtx & ctx, IHql
 
     //NOTE: left is used instead of dataset in sort list
     DatasetReference dsRef(dataset, no_left, querySelSeq(expr));
-    StringBuffer compareClassInstance;
-    buildCompareClass(instance->nestedctx, "compare", sortOrder, dsRef, compareClassInstance);
-    MemberFunction func(*this, instance->startctx, "virtual ICompare * queryCompare()");
-    func.ctx.addReturnAddressOf(compareClassInstance);
+    buildCompareFuncHelper(*this, *instance, "compare", sortOrder, dsRef);
 
     if (expr->hasAttribute(dedupAtom))
         doBuildBoolFunction(instance->classctx, "dedup", true);
@@ -932,12 +929,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
     doBuildUnsignedFunction(instance->classctx, "numOrderFields", sortOrder->numChildren());
 
     //virtual ICompare * queryEqualCompare()
-    {
-        StringBuffer compareClassInstance;
-        buildCompareClass(instance->nestedctx, "equalCompare", equalityList, leftRef, compareClassInstance);
-        MemberFunction func(*this, instance->classctx, "virtual ICompare * queryEqualCompare()");
-        func.ctx.addReturnAddressOf(compareClassInstance);
-    }
+    buildCompareFuncHelper(*this, *instance, "equalCompare", equalityList, leftRef);
 
     //virtual ICompareEq * queryExactCompare()
     {
@@ -973,12 +965,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
 
     //NOTE: left is used instead of dataset in sort list
     //virtual ICompare * queryMergeCompare()
-    {
-        StringBuffer compareClassInstance;
-        buildCompareClass(instance->nestedctx, "mergeCompare", sortOrder, leftRef, compareClassInstance);
-        MemberFunction func(*this, instance->classctx, "virtual ICompare * queryMergeCompare()");
-        func.ctx.addReturnAddressOf(compareClassInstance);
-    }
+    buildCompareFuncHelper(*this, *instance, "mergeCompare", sortOrder, leftRef);
 
     if (createClearRow)
     {
