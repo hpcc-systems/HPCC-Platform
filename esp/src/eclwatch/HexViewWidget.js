@@ -124,28 +124,6 @@ define([
                     switch (name) {
                         case "hasCompleted": 
                             if (newValue === true) {
-                                this.wu.getInfo({
-                                    onGetWUExceptions: function (exceptions) {
-                                        if (exceptions.length) {
-                                            var msg = "";
-                                            arrayUtil.forEach(exceptions, function (exception) {
-                                                if (exception.Severity === "Error") {
-                                                    if (msg) {
-                                                        msg += "\n";
-                                                    }
-                                                    msg += exception.Message;
-                                                }
-                                            });
-                                            if (msg) {
-                                                dojo.publish("hpcc/brToaster", {
-                                                    Severity: "Error",
-                                                    Source: "HexViewWidget.remoteRead",
-                                                    Exceptions: [{ Source: context.wu.Wuid, Message: msg }]
-                                                });
-                                            }
-                                        }
-                                    }
-                                });
                                 context.wu.fetchResults(function (results) {
                                     context.cachedResponse = "";
                                     arrayUtil.forEach(results, function (result, idx) {

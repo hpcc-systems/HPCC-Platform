@@ -66,9 +66,3 @@ stripResult := SOAPCALL(TargetURL, 'roxie_keepwhitespace', roxieEchoTestStripReq
 
 OUTPUT(stripResult, NAMED('stripResult'));
 
-
-//Test handling of roxie 500 server too busy
-//if roxie thread counts increase greatly we could increase PARALLEL value, or make it dynamic somehow
-d :=DATASET(3000, TRANSFORM(roxieEchoTestRequestRecord, SELF.peeps := peeps_send));
-
-OUTPUT(count(sort(SOAPCALL(d, TargetURL,'roxie_keepwhitespace', roxieEchoTestRequestRecord, DATASET(roxieEchoTestResponseRecord), PARALLEL(300)), record)), NAMED('serverTooBusy'));

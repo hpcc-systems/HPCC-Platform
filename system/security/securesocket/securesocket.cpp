@@ -233,7 +233,7 @@ public:
         m_socket->shutdown(mode);
     }
 
-    // Get local name of accepted (or connected) socket and returns port
+    // Get name of accepted socket and returns port
     virtual int name(char *name,size32_t namemax)
     {
         return m_socket->name(name, namemax);
@@ -255,12 +255,6 @@ public:
     virtual IpAddress &getPeerAddress(IpAddress &addr)
     {
         return m_socket->getPeerAddress(addr);
-    }
-
-    // Get local endpoint of socket
-    virtual SocketEndpoint &getEndpoint(SocketEndpoint &ep) const override
-    {
-        return m_socket->getEndpoint(ep);
     }
 
     //

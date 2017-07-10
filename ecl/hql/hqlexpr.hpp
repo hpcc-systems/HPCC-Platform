@@ -819,7 +819,6 @@ public:
     virtual size32_t length() = 0;
     virtual bool isImplicitlySigned() = 0;
     virtual IHqlExpression * queryGpgSignature() = 0;
-    virtual bool isDirty() = 0;
 };
 
 //This class ensures that the pointer to the owner is cleared before both links are released, which allows
@@ -905,11 +904,9 @@ public:
     bool ignoreUnknownImport;
     bool ignoreSignatures;
     bool aborting;
-    bool checkDirty = false;
     Linked<ICodegenContextCallback> codegenCtx;
 
 private:
-    void setDefinitionText(IPropertyTree * target, const char * prop, IFileContents * contents);
     bool checkBeginMeta();
     bool checkEndMeta();
     void finishMeta();
@@ -961,7 +958,6 @@ public:
     inline unsigned numErrors() const { return errs ? errs->errCount() : 0; }
     inline bool isAborting() const { return parseCtx.isAborting(); }
     inline void setAborting() { parseCtx.setAborting(); }
-    inline bool checkDirty() const { return parseCtx.checkDirty; }
 
 protected:
 

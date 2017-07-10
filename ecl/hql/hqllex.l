@@ -1447,7 +1447,6 @@ FUNCTIONMACRO|MACRO {
                         bool isFunctionMacro = (CUR_TOKEN_LENGTH != 5);
                         lexer->macroGathering++;
                         bool inEmbed = false;
-                        bool embedColonSeen = false;
                         unsigned embedParens = 0;
                         while ((tok = lexer->yyLex(returnToken, false, activeState)) != ENDMACRO)
                         {
@@ -1463,19 +1462,11 @@ FUNCTIONMACRO|MACRO {
                             else if (tok == '@')
                                 isFunctionMacro = true;
                             else if (tok == UNKNOWN_ID && returnToken.queryId()->queryLower()==embedAtom)
-                            {
                                 inEmbed = true;
-                                embedColonSeen = false;
-                            }
-                            // Hairy code - if it's the two param version of EMBED we DON'T want to look for ENDEMBED
                             if (inEmbed)
                             {
                                 if (tok=='(')
                                     embedParens++;
-                                else if (embedParens==1 && tok==':')
-                                    embedColonSeen = true;
-                                else if (embedParens==1 && tok==',' && !embedColonSeen)
-                                    inEmbed = false;
                                 else if (tok==')')
                                 {
                                     embedParens--;

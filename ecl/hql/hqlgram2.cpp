@@ -2273,10 +2273,10 @@ void HqlGram::checkFoldConstant(attribute & attr)
         attr.setExpr(foldHqlExpression(expr), attr);
     }
     else
-        checkConstant(attr, false);
+        checkConstant(attr);
 }
 
-IHqlExpression * HqlGram::checkConstant(const attribute & errpos, IHqlExpression * expr, bool callAllowed)
+IHqlExpression * HqlGram::checkConstant(const attribute & errpos, IHqlExpression * expr)
 {
     if (expr->isConstant() || (expr->getOperator() == no_assertconstant))
         return LINK(expr);
@@ -2284,16 +2284,13 @@ IHqlExpression * HqlGram::checkConstant(const attribute & errpos, IHqlExpression
     if (expr->getOperator() == no_compound)
         reportError(ERR_ASSOCIATED_SIDEEFFECT, errpos, "Constant expression has an implicitly associated side effect");
 
-    if (!callAllowed && !lookupCtx.queryExpandCallsWhenBound() && containsCall(expr, true))
-        reportError(ERR_EXPECTED_CONST, errpos, "Constant expression should not contain unresolved function calls");
-
     return createValue(no_assertconstant, expr->getType(), LINK(expr), createLocationAttr(errpos));
 }
 
-void HqlGram::checkConstant(attribute & attr, bool callAllowed)
+void HqlGram::checkConstant(attribute & attr)
 {
     OwnedHqlExpr value = attr.getExpr();
-    attr.setExpr(checkConstant(attr, value, callAllowed));
+    attr.setExpr(checkConstant(attr, value));
 }
 
 
@@ -5810,9 +5807,9 @@ IHqlExpression * HqlGram::createAssert(attribute & condAttr, attribute * msgAttr
 {
     if (queryAttributeInList(constAtom, flagsAttr.queryExpr()))
     {
-        checkConstant(condAttr, true);
+        checkConstant(condAttr);
         if (msgAttr)
-            checkConstant(*msgAttr, true);
+            checkConstant(*msgAttr);
     }
 
     OwnedHqlExpr cond = condAttr.getExpr();
@@ -6618,7 +6615,7 @@ IHqlExpression * HqlGram::checkParameter(const attribute * errpos, IHqlExpressio
 
 //  if (formal->hasAttribute(constAtom) && funcdef && !isExternalFunction(funcdef))
     if (errpos && formal->hasAttribute(assertConstAtom))
-        ret.setown(checkConstant(*errpos, ret, true));
+        ret.setown(checkConstant(*errpos, ret));
 
     if (formal->hasAttribute(fieldAtom))
     {

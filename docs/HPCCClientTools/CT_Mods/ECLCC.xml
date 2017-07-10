@@ -178,6 +178,15 @@
               </row>
 
               <row>
+                <entry>-checkDirty</entry>
+
+                <entry>Causes eclcc to generate a warning for any attribute
+                that has been modified (according to the output of git
+                status). Use of this function requires that git be installed
+                and available on the path.</entry>
+              </row>
+
+              <row>
                 <entry>-foption[=value]</entry>
 
                 <entry>Set an ecl option. See #OPTION in the <emphasis>ECL

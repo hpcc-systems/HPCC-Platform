@@ -481,10 +481,7 @@ public:
                 IEspNamedValue &item = cmd.debugValues.item(i);
                 const char *name = item.getName();
                 const char *value = item.getValue();
-                cmdLine.append(' ');
-                if (!name || name[0]!='-')
-                    cmdLine.append("-f");
-                cmdLine.append(name);
+                cmdLine.append(" -f").append(name);
                 if (value)
                     cmdLine.append('=').append(value);
             }

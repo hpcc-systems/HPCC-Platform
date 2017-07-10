@@ -71,7 +71,7 @@ namespace couchbaseembed
             else if (status.isTemporary())
                 failx("TempErr: %s", status.description());
             else
-                failx("Couchbase err: %s (%d)", status.description(), status.errcode());
+                failx("Couchbase err: %s", status.description());
         }
 
         //consider parsing json result
@@ -899,163 +899,68 @@ namespace couchbaseembed
 
     void CouchbaseRowBuilder::processBeginDataset(const RtlFieldInfo * field)
     {
-        const char * xpath = xpathOrName(field);
+        /*
+         *
+         *childRec := RECORD real x; real y; END;
+         *parentRec := RECORD
+         * childRec child1,                        <-- flatens out the childrec, this function would receive a field of name x
+         * dataset(childRec) child2;               <-- keeps nested structure, this funciton would receive a field of name child2
+         *END;
+        */
 
-        if (xpath && *xpath)
-        {
-            PathTracker     newPathNode(xpath, true);
-            StringBuffer    newXPath;
-
-            constructNewXPath(newXPath, xpath);
-
-            newPathNode.childDatasetRowCount = m_oResultRow->getCount(newXPath);
-            m_pathStack.push_back(newPathNode);
-        }
-        else
-        {
-            failx("processBeginDataset: Field name or xpath missing");
-        }
+        if (getNumFields(field->type->queryChildType()) > 0)
+            m_oNestedField.set(m_oResultRow->queryBranch(field->name->queryStr()));
     }
 
     void CouchbaseRowBuilder::processBeginRow(const RtlFieldInfo * field)
     {
-        const char * xpath = xpathOrName(field);
-
-        if (xpath && *xpath)
-        {
-            if (strncmp(xpath, "<nested row>", 12) == 0)
-            {
-                // Row within child dataset
-                if (m_pathStack.back().isDataset)
-                {
-                    m_pathStack.back().currentDatasetRecord++;
-                }
-                else
-                {
-                    failx("<nested row> received with no outer dataset designated");
-                }
-            }
-            else
-            {
-                m_pathStack.push_back(PathTracker(xpath, false));
-            }
-        }
-        else
-        {
-            failx("processBeginRow: Field name or xpath missing");
-        }
+        m_fieldsProcessedCount = 0;
+        m_rowFieldCount = getNumFields(field->type);
     }
 
     bool CouchbaseRowBuilder::processNextRow(const RtlFieldInfo * field)
     {
-        return m_pathStack.back().childDatasetRowsProcessed < m_pathStack.back().childDatasetRowCount;
+        return m_fieldsProcessedCount + 1 == m_rowFieldCount;
     }
 
     void CouchbaseRowBuilder::processEndDataset(const RtlFieldInfo * field)
     {
-        const char * xpath = xpathOrName(field);
-
-        if (xpath && *xpath)
-        {
-        	if (!m_pathStack.empty() && strcmp(xpath, m_pathStack.back().nodeName.str()) == 0)
-        	{
-            	m_pathStack.pop_back();
-            }
-        }
-        else
-        {
-            failx("processEndDataset: Field name or xpath missing");
-        }
+        if(m_oNestedField)
+            m_oNestedField.clear();
     }
 
     void CouchbaseRowBuilder::processEndRow(const RtlFieldInfo * field)
     {
-        const char * xpath = xpathOrName(field);
-
-        if (xpath && *xpath)
-        {
-        	if (!m_pathStack.empty())
-        	{
-				if (m_pathStack.back().isDataset)
-				{
-					m_pathStack.back().childDatasetRowsProcessed++;
-				}
-				else if (strcmp(xpath, m_pathStack.back().nodeName.str()) == 0)
-				{
-					m_pathStack.pop_back();
-				}
-            }
-        }
-        else
-        {
-            failx("processEndRow: Field name or xpath missing");
-        }
+        if(m_oNestedField)
+            m_oNestedField.clear();
     }
 
     const char * CouchbaseRowBuilder::nextField(const RtlFieldInfo * field)
     {
-        const char * xpath = xpathOrName(field);
+        m_fieldsProcessedCount++;
+        if (!m_oResultRow)
+            failx("Missing result row data");
 
-        if (!xpath || !*xpath)
+        const char * fieldname = field->name->queryStr();
+        if (!fieldname || !*fieldname)
+            failx("Missing result column metadata (name)");
+
+        if (!m_oResultRow->hasProp(fieldname))
         {
-            failx("nextField: Field name or xpath missing");
-        }
-
-        StringBuffer fullXPath;
-        constructNewXPath(fullXPath, xpath);
-
-        return m_oResultRow->queryProp(fullXPath.str());
-    }
-
-    const char * CouchbaseRowBuilder::xpathOrName(const RtlFieldInfo * field) const
-    {
-        const char * xpath = NULL;
-
-        if (field->xpath)
-        {
-            if (field->xpath[0] == xpathCompoundSeparatorChar)
+            VStringBuffer nxpath("locationData/%s", fieldname);
+            if (m_oNestedField)
             {
-                xpath = field->xpath + 1;
-            }
-            else
-            {
-                xpath = field->xpath;
-            }
-        }
-        else
-        {
-            xpath = str(field->name);
-        }
-
-        return xpath;
-    }
-
-    void CouchbaseRowBuilder::constructNewXPath(StringBuffer& outXPath, const char * nextNode) const
-    {
-        for (std::vector<PathTracker>::const_iterator iter = m_pathStack.begin(); iter != m_pathStack.end(); iter++)
-        {
-            if (strncmp(iter->nodeName, "<row>", 5) != 0)
-            {
-                if (!outXPath.isEmpty())
+                if (!m_oNestedField->hasProp(fieldname))
                 {
-                    outXPath.append("/");
+                    StringBuffer xml;
+                    toXML(m_oResultRow, xml);
+                    failx("Result row does not contain field: %s: %s", fieldname, xml.str());
                 }
-                outXPath.append(iter->nodeName);
-                if (iter->isDataset)
-                {
-                    outXPath.appendf("[%d]", iter->currentDatasetRecord);
-                }
-            }
-        }
 
-        if (nextNode && *nextNode)
-        {
-            if (!outXPath.isEmpty())
-            {
-                outXPath.append("/");
+                return m_oNestedField->queryProp(fieldname);
             }
-            outXPath.append(nextNode);
         }
+        return m_oResultRow->queryProp(fieldname);
     }
 
     class CouchbaseEmbedContext : public CInterfaceOf<IEmbedContext>

@@ -81,7 +81,8 @@ define([
                     return retVal;
                 },
                 getLogicalFile: function () {
-                    return "~file::" + this.NetAddress + this.lfEncode(this.fullPath);
+                    //var filePath = this.DropZone.Path + "/" + 
+                    return "~file::" + this.DropZone.NetAddress + this.lfEncode(this.fullPath);
                 }
             };
             retVal[this.idProperty] = id;
