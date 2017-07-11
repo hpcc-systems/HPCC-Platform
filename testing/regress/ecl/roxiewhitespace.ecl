@@ -17,6 +17,12 @@ PersonRec := RECORD
   AddressRec Address;
 END;
 
+PersonRecOut := RECORD
+  NameRec Name;
+  string FullName {xpath('name/<>')};
+  AddressRec Address;
+END;
+
 peeps_send := DATASET([{{'  Joe  ', '  Doe  '}, {'Fresno', 'CA', 11111}}], PersonRec);
 
 roxieEchoTestRequestRecord := RECORD
@@ -30,7 +36,7 @@ exceptionRec := RECORD
 END;
 
 roxieEchoTestResponseRecord := RECORD
-  DATASET(PersonRec) Peeps {XPATH('Dataset/Row')} := DATASET([], PersonRec);
+  DATASET(PersonRecOut) Peeps {XPATH('Dataset/Row')} := DATASET([], PersonRecOut);
   exceptionRec Exception {XPATH('Exception')};
 END;
 

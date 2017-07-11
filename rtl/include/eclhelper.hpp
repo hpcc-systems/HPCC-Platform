@@ -2190,7 +2190,8 @@ enum
     SOAPFpreserveSpace  = 0x0080,
     SOAPFlogmin         = 0x0100,
     SOAPFlogusermsg     = 0x0200,
-    SOAPFhttpheaders    = 0x0400
+    SOAPFhttpheaders    = 0x0400,
+    SOAPFusescontents   = 0x0800
 };
 
 struct IHThorWebServiceCallActionArg : public IHThorArg
