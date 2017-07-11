@@ -230,8 +230,9 @@
   <sect2 id="Data_Types">
     <title>Data Types</title>
 
-    <para><emphasis role="bold">Please see the BEGINC++ documentation for data
-    type mapping.</emphasis></para>
+    <para><emphasis role="bold">Please see <link
+    linkend="ECL_to_Cplus_Mapping">ECL to C++ Mapping</link> documentation for
+    data type mapping.</emphasis></para>
   </sect2>
 
   <sect2 id="Passing_Set_Parameters_to_a_Service">
