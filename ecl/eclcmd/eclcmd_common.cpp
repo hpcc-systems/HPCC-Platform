@@ -454,6 +454,8 @@ public:
         cmdLine.append(" -E");
         if (cmd.optLegacy)
             cmdLine.append(" -legacy");
+        if (cmd.optCheckDirty)
+            cmdLine.append(" -checkDirty");
         if (cmd.optDebug)
             cmdLine.append(" -g");
         appendOptPath(cmdLine, 'I', cmd.optImpPath.str());
@@ -684,6 +686,8 @@ eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvItera
     if (iter.matchFlag(optNoArchive, ECLOPT_ECL_ONLY))
         return EclCmdOptionMatch;
     if (iter.matchFlag(optLegacy, ECLOPT_LEGACY) || iter.matchFlag(optLegacy, ECLOPT_LEGACY_DASH))
+        return EclCmdOptionMatch;
+    if (iter.matchFlag(optCheckDirty, ECLOPT_CHECKDIRTY))
         return EclCmdOptionMatch;
     if (iter.matchFlag(optDebug, ECLOPT_DEBUG) || iter.matchFlag(optDebug, ECLOPT_DEBUG_DASH))
         return EclCmdOptionMatch;
