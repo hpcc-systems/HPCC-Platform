@@ -17634,36 +17634,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
         }
     }
 
-    //virtual unsigned getFlags()
-    {
-        StringBuffer flags;
-        if (expr->hasAttribute(groupAtom))
-            flags.append("|SOAPFgroup");
-        if (expr->hasAttribute(onFailAtom))
-            flags.append("|SOAPFonfail");
-        if (logXml)
-            flags.append("|SOAPFlog");
-        if (expr->hasAttribute(trimAtom))
-            flags.append("|SOAPFtrim");
-        if (expr->hasAttribute(literalAtom))
-            flags.append("|SOAPFliteral");
-        if (namespaceAttr)
-            flags.append("|SOAPFnamespace");
-        if (expr->hasAttribute(encodingAtom))
-            flags.append("|SOAPFencoding");
-        if (responseAttr && responseAttr->hasAttribute(noTrimAtom))
-            flags.append("|SOAPFpreserveSpace");
-        if (logMin)
-            flags.append("|SOAPFlogmin");
-        if (logText)
-            flags.append("|SOAPFlogusermsg");
-        if (expr->hasAttribute(httpHeaderAtom))
-            flags.append("|SOAPFhttpheaders");
-
-        if (flags.length())
-            doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
-    }
-
     //virtual unsigned numParallelThreads()
     doBuildUnsignedFunction(instance->startctx, "numParallelThreads", queryAttributeChild(expr, parallelAtom, 0));
 
@@ -17697,13 +17667,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
         }
         doBuildFunctionReturn(func.ctx, unknownStringType, logText);
     }
+    bool usesContents = false;
     if (!isSink)
     {
         //virtual IXmlToRowTransformer * queryTransformer()
-        bool usesContents = false;
         doBuildXmlReadMember(*instance, expr, "queryInputTransformer", usesContents);
-        if (usesContents)
-            throwError(HQLERR_ContentsInSoapCall);
 
         //virtual const char * getInputIteratorPath()
         IHqlExpression * xpath = expr->queryAttribute(xpathAtom);
@@ -17723,6 +17691,37 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
             associateLocalFailure(func.ctx, "except");
             buildTransformBody(func.ctx, onFailTransform, dataset, NULL, expr, selSeq);
         }
+    }
+    //virtual unsigned getFlags()
+    {
+        StringBuffer flags;
+        if (expr->hasAttribute(groupAtom))
+            flags.append("|SOAPFgroup");
+        if (expr->hasAttribute(onFailAtom))
+            flags.append("|SOAPFonfail");
+        if (logXml)
+            flags.append("|SOAPFlog");
+        if (expr->hasAttribute(trimAtom))
+            flags.append("|SOAPFtrim");
+        if (expr->hasAttribute(literalAtom))
+            flags.append("|SOAPFliteral");
+        if (namespaceAttr)
+            flags.append("|SOAPFnamespace");
+        if (expr->hasAttribute(encodingAtom))
+            flags.append("|SOAPFencoding");
+        if (responseAttr && responseAttr->hasAttribute(noTrimAtom))
+            flags.append("|SOAPFpreserveSpace");
+        if (logMin)
+            flags.append("|SOAPFlogmin");
+        if (logText)
+            flags.append("|SOAPFlogusermsg");
+        if (expr->hasAttribute(httpHeaderAtom))
+            flags.append("|SOAPFhttpheaders");
+        if (usesContents)
+            flags.append("|SOAPFusescontents");
+
+        if (flags.length())
+            doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
     }
     buildInstanceSuffix(instance);
     if (boundDataset)
@@ -17796,32 +17795,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityHTTP(BuildCtx & ctx, IHqlExpre
         }
     }
 
-    //virtual unsigned getFlags()
-    {
-        StringBuffer flags;
-        if (expr->hasAttribute(groupAtom))
-            flags.append("|SOAPFgroup");
-        if (expr->hasAttribute(onFailAtom))
-            flags.append("|SOAPFonfail");
-        if (logXml)
-            flags.append("|SOAPFlog");
-        if (expr->hasAttribute(trimAtom))
-            flags.append("|SOAPFtrim");
-        if (expr->hasAttribute(literalAtom))
-            flags.append("|SOAPFliteral");
-        if (namespaceAttr)
-            flags.append("|SOAPFnamespace");
-        if (logMin)
-            flags.append("|SOAPFlogmin");
-        if (logText)
-            flags.append("|SOAPFlogusermsg");
-        if (expr->hasAttribute(httpHeaderAtom))
-            flags.append("|SOAPFhttpheaders");
-
-        if (flags.length())
-            doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
-    }
-
     //virtual unsigned numParallelThreads()
     doBuildUnsignedFunction(instance->classctx, "numParallelThreads", queryAttributeChild(expr, parallelAtom, 0));
 
@@ -17850,13 +17823,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityHTTP(BuildCtx & ctx, IHqlExpre
         doBuildFunctionReturn(func.ctx, unknownStringType, logText);
     }
 
+    bool usesContents = false;
     if (!isSink)
     {
         //virtual IXmlToRowTransformer * queryTransformer()
-        bool usesContents = false;
         doBuildXmlReadMember(*instance, expr, "queryInputTransformer", usesContents);
-        if (usesContents)
-            throwError(HQLERR_ContentsInSoapCall);
 
         //virtual const char * getInputIteratorPath()
         IHqlExpression * xpath = expr->queryAttribute(xpathAtom);
@@ -17871,6 +17842,33 @@ ABoundActivity * HqlCppTranslator::doBuildActivityHTTP(BuildCtx & ctx, IHqlExpre
             associateLocalFailure(func.ctx, "except");
             buildTransformBody(func.ctx, onFail->queryChild(0), dataset, NULL, expr, selSeq);
         }
+    }
+    //virtual unsigned getFlags()
+    {
+        StringBuffer flags;
+        if (expr->hasAttribute(groupAtom))
+            flags.append("|SOAPFgroup");
+        if (expr->hasAttribute(onFailAtom))
+            flags.append("|SOAPFonfail");
+        if (logXml)
+            flags.append("|SOAPFlog");
+        if (expr->hasAttribute(trimAtom))
+            flags.append("|SOAPFtrim");
+        if (expr->hasAttribute(literalAtom))
+            flags.append("|SOAPFliteral");
+        if (namespaceAttr)
+            flags.append("|SOAPFnamespace");
+        if (logMin)
+            flags.append("|SOAPFlogmin");
+        if (logText)
+            flags.append("|SOAPFlogusermsg");
+        if (expr->hasAttribute(httpHeaderAtom))
+            flags.append("|SOAPFhttpheaders");
+        if (usesContents)
+            flags.append("|SOAPFusescontents");
+
+        if (flags.length())
+            doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
     }
     buildInstanceSuffix(instance);
     if (boundDataset)
