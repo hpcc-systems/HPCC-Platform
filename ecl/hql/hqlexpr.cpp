@@ -11585,7 +11585,7 @@ protected:
     virtual IHqlExpression * createTransformed(IHqlExpression * expr)
     {
         //MORE: This test needs to be extended?
-        if (expr->isFullyBound() && !containsCall(expr, ctx.forceOutOfLineExpansion))
+        if (expr->isFullyBound() && (!ctx.expandNestedCalls || !containsCall(expr, ctx.forceOutOfLineExpansion)))
             return LINK(expr);
 
 #ifdef TRACE_BINDING
@@ -12216,6 +12216,7 @@ extern IHqlExpression * createBoundFunction(IErrorReceiver * errors, IHqlExpress
     CallExpansionContext ctx;
     ctx.errors = errors;
     ctx.functionCache = functionCache;
+    ctx.expandNestedCalls = false;
     OwnedHqlExpr call = createNormalizedCall(func, actuals);
     if (func->getOperator() != no_funcdef)
         return call.getClear();
