@@ -897,18 +897,45 @@ namespace couchbaseembed
         }
     }
 
+    void CouchbaseRowBuilder::processBeginSet(const RtlFieldInfo * field, bool &isAll)
+    {
+        isAll = false; // ALL not supported
+
+        const char * xpath = xpathOrName(field);
+
+        if (xpath && *xpath)
+        {
+            PathTracker     newPathNode(xpath, CPNTSet);
+            StringBuffer    newXPath;
+
+            constructNewXPath(newXPath, xpath);
+
+            newPathNode.childCount = m_oResultRow->getCount(newXPath);
+            m_pathStack.push_back(newPathNode);
+        }
+        else
+        {
+            failx("processBeginSet: Field name or xpath missing");
+        }
+    }
+
+    bool CouchbaseRowBuilder::processNextSet(const RtlFieldInfo * field)
+    {
+        return m_pathStack.back().childrenProcessed < m_pathStack.back().childCount;
+    }
+
     void CouchbaseRowBuilder::processBeginDataset(const RtlFieldInfo * field)
     {
         const char * xpath = xpathOrName(field);
 
         if (xpath && *xpath)
         {
-            PathTracker     newPathNode(xpath, true);
+            PathTracker     newPathNode(xpath, CPNTDataset);
             StringBuffer    newXPath;
 
             constructNewXPath(newXPath, xpath);
 
-            newPathNode.childDatasetRowCount = m_oResultRow->getCount(newXPath);
+            newPathNode.childCount = m_oResultRow->getCount(newXPath);
             m_pathStack.push_back(newPathNode);
         }
         else
@@ -926,9 +953,9 @@ namespace couchbaseembed
             if (strncmp(xpath, "<nested row>", 12) == 0)
             {
                 // Row within child dataset
-                if (m_pathStack.back().isDataset)
+                if (m_pathStack.back().nodeType == CPNTDataset)
                 {
-                    m_pathStack.back().currentDatasetRecord++;
+                    m_pathStack.back().currentChildIndex++;
                 }
                 else
                 {
@@ -937,7 +964,7 @@ namespace couchbaseembed
             }
             else
             {
-                m_pathStack.push_back(PathTracker(xpath, false));
+                m_pathStack.push_back(PathTracker(xpath, CPNTScalar));
             }
         }
         else
@@ -948,7 +975,17 @@ namespace couchbaseembed
 
     bool CouchbaseRowBuilder::processNextRow(const RtlFieldInfo * field)
     {
-        return m_pathStack.back().childDatasetRowsProcessed < m_pathStack.back().childDatasetRowCount;
+        return m_pathStack.back().childrenProcessed < m_pathStack.back().childCount;
+    }
+
+    void CouchbaseRowBuilder::processEndSet(const RtlFieldInfo * field)
+    {
+        const char * xpath = xpathOrName(field);
+
+        if (xpath && *xpath && !m_pathStack.empty() && strcmp(xpath, m_pathStack.back().nodeName.str()) == 0)
+        {
+            m_pathStack.pop_back();
+        }
     }
 
     void CouchbaseRowBuilder::processEndDataset(const RtlFieldInfo * field)
@@ -957,9 +994,9 @@ namespace couchbaseembed
 
         if (xpath && *xpath)
         {
-        	if (!m_pathStack.empty() && strcmp(xpath, m_pathStack.back().nodeName.str()) == 0)
-        	{
-            	m_pathStack.pop_back();
+            if (!m_pathStack.empty() && strcmp(xpath, m_pathStack.back().nodeName.str()) == 0)
+            {
+                m_pathStack.pop_back();
             }
         }
         else
@@ -974,16 +1011,16 @@ namespace couchbaseembed
 
         if (xpath && *xpath)
         {
-        	if (!m_pathStack.empty())
-        	{
-				if (m_pathStack.back().isDataset)
-				{
-					m_pathStack.back().childDatasetRowsProcessed++;
-				}
-				else if (strcmp(xpath, m_pathStack.back().nodeName.str()) == 0)
-				{
-					m_pathStack.pop_back();
-				}
+            if (!m_pathStack.empty())
+            {
+                if (m_pathStack.back().nodeType == CPNTDataset)
+                {
+                    m_pathStack.back().childrenProcessed++;
+                }
+                else if (strcmp(xpath, m_pathStack.back().nodeName.str()) == 0)
+                {
+                    m_pathStack.pop_back();
+                }
             }
         }
         else
@@ -1002,7 +1039,17 @@ namespace couchbaseembed
         }
 
         StringBuffer fullXPath;
-        constructNewXPath(fullXPath, xpath);
+
+        if (!m_pathStack.empty() && m_pathStack.back().nodeType == CPNTSet && strncmp(xpath, "<set element>", 13) == 0)
+        {
+            m_pathStack.back().currentChildIndex++;
+            constructNewXPath(fullXPath, NULL);
+            m_pathStack.back().childrenProcessed++;
+        }
+        else
+        {
+            constructNewXPath(fullXPath, xpath);
+        }
 
         return m_oResultRow->queryProp(fullXPath.str());
     }
@@ -1041,9 +1088,9 @@ namespace couchbaseembed
                     outXPath.append("/");
                 }
                 outXPath.append(iter->nodeName);
-                if (iter->isDataset)
+                if (iter->nodeType == CPNTDataset || iter->nodeType == CPNTSet)
                 {
-                    outXPath.appendf("[%d]", iter->currentDatasetRecord);
+                    outXPath.appendf("[%d]", iter->currentChildIndex);
                 }
             }
         }
