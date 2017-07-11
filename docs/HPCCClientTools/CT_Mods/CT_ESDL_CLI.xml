@@ -271,7 +271,7 @@
 
         <para>Examples:</para>
 
-        <programlisting>esdl ecl .\MathService.ecm .
+        <programlisting>esdl ecl MathService.ecm .
 </programlisting>
       </sect2>
 
@@ -360,7 +360,7 @@
                 dependencies. For example, passing 'internal' when some ESDL
                 definition objects have the attribute optional("internal")
                 ensures they appear in the XSD, otherwise they'd be filtered
-                out </entry>
+                out</entry>
               </row>
 
               <row>
@@ -368,8 +368,8 @@
                 namespace&gt; </emphasis></entry>
 
                 <entry>The target namespace passed to the transform via the
-                parameter 'tnsParam' used for the final output of the XSD.
-                </entry>
+                parameter 'tnsParam' used for the final output of the
+                XSD.</entry>
               </row>
 
               <row>
@@ -425,7 +425,7 @@
 
         <para>Examples:</para>
 
-        <programlisting>esdl xsd .\MathService.ecm .
+        <programlisting>esdl xsd MathService.ecm MathService
 </programlisting>
       </sect2>
 
@@ -585,7 +585,7 @@
 
         <para>Examples:</para>
 
-        <programlisting>esdl wsdl .\MathService.ecm .
+        <programlisting>esdl wsdl MathService.ecm MathService
 </programlisting>
       </sect2>
 
