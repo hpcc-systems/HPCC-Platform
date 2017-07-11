@@ -77,7 +77,7 @@
                         <xs:attribute name="interval" type="xs:nonNegativeInteger" use="required" default="24">
                             <xs:annotation>
                                 <xs:appinfo>
-                                    <tooltip>Interval in hours for backup to be ran</tooltip>
+                                    <tooltip>Interval in hours for backup to be run</tooltip>
                                     <colIndex>2</colIndex>
                                 </xs:appinfo>
                             </xs:annotation>
