@@ -646,6 +646,13 @@
 
     <para>Use SMART when the right side dataset is likely to be small enough
     to fit in memory, but is not guaranteed to fit.</para>
+
+    <para>If your job is spilling to disk or you get this error:</para>
+
+    <para><programlisting>“error: 1301: Pool memory exhausted: pool id 4194667 exhausted, requested 1 heap(1216/4294967295) global(1216/1216) (in Lookup Join” </programlisting></para>
+
+    <para>this means the <emphasis>rightrecset</emphasis> is too large and a
+    LOOKUP JOIN should not be used.</para>
   </sect2>
 
   <sect2 id="Keyed_Joins">
