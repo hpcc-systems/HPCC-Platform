@@ -99,7 +99,6 @@
 #define HQLERR_OverwriteMismatch                4075
 #define HQLERR_ExtendOverwriteMismatch          4076
 #define HQLERR_EmbeddedCppNotAllowed            4078
-#define HQLERR_ContentsInSoapCall               4079
 #define HQLERR_FullKeyedNeedsFile               4081
 #define HQLERR_ExpectedConstant                 4082
 #define HQLERR_AccessRowBlobInsideChildQuery    4083
@@ -406,7 +405,6 @@
 #define HQLERR_OverwriteMismatch_Text           "OVERWRITE is required on all outputs to NAMED(%s)"
 #define HQLERR_ExtendOverwriteMismatch_Text     "OVERWRITE/EXTEND should be consistent on all outputs to NAMED(%s)"
 #define HQLERR_EmbeddedCppNotAllowed_Text       "Insufficient access rights to use embedded code"
-#define HQLERR_ContentsInSoapCall_Text          "Tag contents syntax <> is not supported by SOAPCALL"
 #define HQLERR_FullKeyedNeedsFile_Text          "RIGHT side of a full keyed join must be a disk file"
 #define HQLERR_ExpectedConstant_Text            "Expression is not constant: %s"
 #define HQLERR_AccessRowBlobInsideChildQuery_Text "Unimplemented: Cannot access row blob inside a child query, contact tech support"
