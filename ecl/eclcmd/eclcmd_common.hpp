@@ -167,6 +167,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_MANIFEST_DASH "-manifest"
 #define ECLOPT_LEGACY "--legacy"
 #define ECLOPT_LEGACY_DASH "-legacy"
+#define ECLOPT_CHECKDIRTY "-checkDirty"
 #define ECLOPT_DEBUG "--debug"
 #define ECLOPT_DEBUG_DASH "-g"
 
@@ -261,7 +262,7 @@ public:
 class EclCmdWithEclTarget : public EclCmdCommon
 {
 public:
-    EclCmdWithEclTarget() : optLegacy(false), optNoArchive(false), optResultLimit((unsigned)-1), optDebug(false), paramCount(0)
+    EclCmdWithEclTarget() : optLegacy(false), optCheckDirty(false), optNoArchive(false), optResultLimit((unsigned)-1), optDebug(false), paramCount(0)
     {
     }
     virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt=false);
@@ -321,6 +322,7 @@ public:
     bool optNoArchive;
     bool optLegacy;
     bool optDebug;
+    bool optCheckDirty;
 };
 
 class EclCmdWithQueryTarget : public EclCmdCommon
