@@ -2097,6 +2097,10 @@ int EsdlBindingImpl::onGetXForm(IEspContext &context,
                 break;
             }
         }
+        const char* authMethod = context.getAuthenticationMethod();
+        if (authMethod && !strieq(authMethod, "none") && ((context.getDomainAuthType() == AuthPerSessionOnly) || (context.getDomainAuthType() == AuthTypeMixed)))
+            xform->setParameter("showLogout", "1");
+
         xform->transform(page);
         response->setContentType("text/html");
         response->setContent(page.str());

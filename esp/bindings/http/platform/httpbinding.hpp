@@ -367,6 +367,7 @@ public:
         return false;
     }
     void readAuthDomainCfg(IPropertyTree* procCfg);
+    void readUnrestrictedResources(const char* resources);
     void setSDSSession();
 
     static void escapeSingleQuote(StringBuffer& src, StringBuffer& escaped);

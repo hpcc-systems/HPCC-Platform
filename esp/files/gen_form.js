@@ -497,3 +497,19 @@ function  onClickValidate(chked)
         document.getElementById("esp_sort_result").checked = false;        
     }
 }
+
+function logout()
+{
+    var logoutRequest = new XMLHttpRequest();
+    logoutRequest.onreadystatechange = function()
+    { 
+        if (logoutRequest.readyState != 4)
+            console.log("Logout failed -- readyState: " + logoutRequest.readyState);
+        else if (logoutRequest.status != 200)
+            console.log("Logout failed -- status: " + logoutRequest.status);
+        else
+            parent.location = '/esp/files/userlogout.html';
+    }
+    logoutRequest.open( "GET", '/esp/logout', true );            
+    logoutRequest.send( null );
+}

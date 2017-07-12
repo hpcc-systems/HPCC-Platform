@@ -38,8 +38,7 @@
 static const char* const SESSION_ID_COOKIE = "ESPSessionID";
 static const char* const SESSION_START_URL_COOKIE = "ESPAuthURL";
 static const char* const DEFAULT_LOGIN_URL = "/esp/files/eclwatch/templates/Login.html";
-static const char* const DEFAULT_UNRESTRICTED_RESOURCE1 = "/favicon.ico";
-static const char* const DEFAULT_UNRESTRICTED_RESOURCE2 = "/esp/files/*,/esp/xslt/*";
+static const char* const DEFAULT_UNRESTRICTED_RESOURCES = "/favicon.ico,/esp/files/*,/esp/xslt/*";
 
 //xpath in dali
 static const char* const PathSessionRoot="Sessions";

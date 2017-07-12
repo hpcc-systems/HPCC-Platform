@@ -23,6 +23,8 @@
     <xsl:param name="soapbody" select="'yy'"/>
     <xsl:param name="inhouseUser" select="false()"/>
     <xsl:param name="showhttp" select="false()"/>
+    <xsl:param name="showLogout" select="showLogout"/>
+
     <!-- ===============================================================================-->
     <xsl:template match="/">
     <html>
@@ -37,6 +39,23 @@
 
 <script type="text/javascript">
 var showhttp = '<xsl:value-of select="$showhttp"/>';
+
+  function logout()
+  {
+    var logoutRequest = new XMLHttpRequest();
+    logoutRequest.onreadystatechange = function()
+    { 
+      if (logoutRequest.readyState != 4)
+        console.log("Logout failed -- readyState: " + logoutRequest.readyState);
+      else if (logoutRequest.status != 200)
+        console.log("Logout failed -- status: " + logoutRequest.status);
+      else
+        parent.location = '/esp/files/userlogout.html';
+    }
+    logoutRequest.open( "GET", '/esp/logout', true );            
+    logoutRequest.send( null );
+  }
+
 <![CDATA[ 
   var xmlhttp = null;
 
@@ -726,6 +745,9 @@ var gMethodName = "<xsl:value-of select="$methodName"/>";;
                         <tr align="left">
                             <td height="23" bgcolor="000099" align="center"><font color="#ffffff"><b><xsl:value-of select="concat('  ', $pageName, '  ')"/></b></font></td>
                             <td height="23" align="center"><font color="#ffffff"><b><xsl:value-of select="concat($serviceName, ' / ', $methodName)"/></b></font></td>
+                            <xsl:if test="$showLogout">
+                                <td><a href="javascript:void(0)" onclick="logout();">Log Out</a></td>
+                            </xsl:if>
                         </tr>
                     </table>
                 
