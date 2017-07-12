@@ -646,6 +646,18 @@
 
     <para>Use SMART when the right side dataset is likely to be small enough
     to fit in memory, but is not guaranteed to fit.</para>
+
+    <para>If you get an error similar to this: </para>
+
+    <para><programlisting>“error: 1301: Pool memory exhausted:<indexterm>
+          <primary>memory exhausted</primary>
+        </indexterm><indexterm>
+          <primary>Pool memory exhausted</primary>
+        </indexterm>..."</programlisting></para>
+
+    <para>this means the <emphasis>rightrecset</emphasis> is too large and a
+    LOOKUP JOIN should not be used. A SMART JOIN may be a good option in this
+    case. </para>
   </sect2>
 
   <sect2 id="Keyed_Joins">
