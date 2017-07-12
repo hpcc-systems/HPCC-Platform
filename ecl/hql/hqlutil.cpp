@@ -7805,6 +7805,9 @@ protected:
         case type_date:
             //may possibly have some support in the future, but not yet...
             return false;
+        case type_record:
+            result.append(lookupRepeat("R15IOutputMetaData"));
+            return true;
         }
         throwUnexpected();
     }

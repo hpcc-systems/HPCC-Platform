@@ -405,7 +405,6 @@ public:
     {
         return original->queryChildMeta(i);
     }
-
 protected:
     size32_t offset;
     IOutputMetaData *original;
@@ -540,6 +539,7 @@ public:
     {
         return original->queryChildMeta(i);
     }
+    virtual const RtlRecord *queryRecordAccessor(bool expand) const override { return original->queryRecordAccessor(expand); }
 
 protected:
     size32_t offset;

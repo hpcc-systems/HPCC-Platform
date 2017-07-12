@@ -1715,10 +1715,10 @@ public:
     virtual type_t getTypeCode() const { return type_record; }
     virtual size32_t getSize();
     virtual unsigned getAlignment();
-    virtual unsigned getPrecision() { assertex(!"tbd"); return 0; }
+    virtual unsigned getPrecision() { return 0; }
     virtual unsigned getBitSize()  { return 0; }
-    virtual unsigned getStringLen() { assertex(!"tbd"); return 0; }
-    virtual unsigned getDigits() { assertex(!"tbd"); return 0; }
+    virtual unsigned getStringLen() { return 0; }
+    virtual unsigned getDigits() { return 0; }
     virtual bool assignableFrom(ITypeInfo * source);
     virtual IValue * castFrom(bool isSignedValue, __int64 value) { return NULL; }
     virtual IValue * castFrom(double value)  { return NULL; }

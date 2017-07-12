@@ -349,31 +349,6 @@ extern ECLRTL_API void rtlLinkChildren(void * self, IOutputMetaData & meta);
 
 //---------------------------------------------------------------------------
 
-class ECLRTL_API CSimpleSourceRowPrefetcher : public ISourceRowPrefetcher, public RtlCInterface
-{
-public:
-    CSimpleSourceRowPrefetcher(IOutputMetaData & _meta, ICodeContext * _ctx, unsigned _activityId)
-    {
-        deserializer.setown(_meta.querySerializedDiskMeta()->createDiskDeserializer(_ctx, _activityId));
-        rowAllocator.setown(_ctx->getRowAllocator(&_meta, _activityId));
-    }
-
-    RTLIMPLEMENT_IINTERFACE
-
-    virtual void readAhead(IRowDeserializerSource & in)
-    {
-        RtlDynamicRowBuilder rowBuilder(rowAllocator);
-        size32_t len = deserializer->deserialize(rowBuilder, in);
-        rtlReleaseRow(rowBuilder.finalizeRowClear(len));
-    }
-
-protected:
-    Owned<IOutputRowDeserializer> deserializer;
-    Owned<IEngineRowAllocator> rowAllocator;
-};
-
-//---------------------------------------------------------------------------
-
 class ECLRTL_API RtlLinkedDatasetBuilder
 {
 public:

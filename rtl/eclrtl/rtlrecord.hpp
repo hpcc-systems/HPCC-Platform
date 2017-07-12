@@ -25,10 +25,164 @@
 #endif
 
 #include "eclrtl_imp.hpp"
+#include "rtlds_imp.hpp"
 #include "rtlfield.hpp"
 
+//---------------------------------------------------------------------------
+// Record size handling.
+
+class CGlobalHelperClass : public RtlCInterface
+{
+public:
+    inline CGlobalHelperClass(unsigned _activityId) { activityId = _activityId; ctx = NULL; }
+
+    inline void onCreate(ICodeContext * _ctx) { ctx = _ctx; }
+
+protected:
+    ICodeContext * ctx;
+    unsigned activityId;
+
+};
+
+class COutputRowSerializer : implements IOutputRowSerializer, public CGlobalHelperClass
+{
+public:
+    inline COutputRowSerializer(unsigned _activityId) : CGlobalHelperClass(_activityId) { }
+    RTLIMPLEMENT_IINTERFACE
+
+    virtual void serialize(IRowSerializerTarget & out, const byte * self) = 0;
+};
+
+
+class COutputRowDeserializer : implements IOutputRowDeserializer, public RtlCInterface
+{
+public:
+    inline COutputRowDeserializer(unsigned _activityId) { activityId = _activityId; ctx = NULL; }
+    RTLIMPLEMENT_IINTERFACE
+
+    inline void onCreate(ICodeContext * _ctx) { ctx = _ctx; }
+
+    virtual size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in) = 0;
+
+protected:
+    ICodeContext * ctx;
+    unsigned activityId;
+};
+
+
+class CSourceRowPrefetcher : implements ISourceRowPrefetcher, public RtlCInterface
+{
+public:
+    inline CSourceRowPrefetcher(unsigned _activityId) { activityId = _activityId; ctx = NULL; }
+    RTLIMPLEMENT_IINTERFACE
+
+    inline void onCreate(ICodeContext * _ctx) { ctx = _ctx; }
+
+    virtual void readAhead(IRowDeserializerSource & in) = 0;
+
+protected:
+    ICodeContext * ctx;
+    unsigned activityId;
+};
+
+
+class CFixedOutputRowSerializer : public COutputRowSerializer
+{
+public:
+    inline CFixedOutputRowSerializer(unsigned _activityId, unsigned _fixedSize) : COutputRowSerializer(_activityId) { fixedSize = _fixedSize; }
+
+    virtual void serialize(IRowSerializerTarget & out, const byte * self) { out.put(fixedSize, self); }
+
+protected:
+    size32_t fixedSize;
+};
+
+class CFixedOutputRowDeserializer : public COutputRowDeserializer
+{
+public:
+    inline CFixedOutputRowDeserializer(unsigned _activityId, unsigned _fixedSize) : COutputRowDeserializer(_activityId) { fixedSize = _fixedSize; }
+
+    virtual size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in) { in.read(fixedSize, rowBuilder.getSelf()); return fixedSize; }
+
+protected:
+    size32_t fixedSize;
+};
+
+class CFixedSourceRowPrefetcher : public CSourceRowPrefetcher
+{
+public:
+    inline CFixedSourceRowPrefetcher(unsigned _activityId, unsigned _fixedSize) : CSourceRowPrefetcher(_activityId) { fixedSize = _fixedSize; }
+
+    virtual void readAhead(IRowDeserializerSource & in) { in.skip(fixedSize); }
+
+protected:
+    size32_t fixedSize;
+};
+
+//---------------------------------------------------------------------------
+
+class CXmlToRowTransformer : implements IXmlToRowTransformer, public CGlobalHelperClass
+{
+public:
+    inline CXmlToRowTransformer(unsigned _activityId) : CGlobalHelperClass(_activityId) {}
+    RTLIMPLEMENT_IINTERFACE
+
+};
+
+//---------------------------------------------------------------------------
+// Record size handling.
+
+class CNormalizeChildIterator : implements INormalizeChildIterator, public RtlCInterface
+{
+public:
+    CNormalizeChildIterator(IOutputMetaData & _recordSize) : iter(0, NULL, _recordSize) {}
+    RTLIMPLEMENT_IINTERFACE
+
+    virtual byte * first(const void * parentRecord)         { init(parentRecord); return (byte *)iter.first(); }
+    virtual byte * next()                                   { return (byte *)iter.next(); }
+    virtual void init(const void * parentRecord) = 0;
+
+    inline void setDataset(size32_t len, const void * data) { iter.setDataset(len, data); }
+
+protected:
+    RtlVariableDatasetCursor    iter;
+};
+
+class CNormalizeLinkedChildIterator : implements INormalizeChildIterator, public RtlCInterface
+{
+public:
+    CNormalizeLinkedChildIterator() : iter(0, NULL) {}
+    RTLIMPLEMENT_IINTERFACE
+
+    virtual byte * first(const void * parentRecord)         { init(parentRecord); return (byte *)iter.first(); }
+    virtual byte * next()                                   { return (byte *)iter.next(); }
+    virtual void init(const void * parentRecord) = 0;
+
+    inline void setDataset(unsigned _numRows, byte * * _rows) { iter.setDataset(_numRows, _rows); }
+
+protected:
+    RtlSafeLinkedDatasetCursor  iter;
+};
+
+class CNormalizeStreamedChildIterator : implements INormalizeChildIterator, public RtlCInterface
+{
+public:
+    CNormalizeStreamedChildIterator() {}
+    RTLIMPLEMENT_IINTERFACE
+
+    virtual byte * first(const void * parentRecord)         { init(parentRecord); return (byte *)iter.first(); }
+    virtual byte * next()                                   { return (byte *)iter.next(); }
+    virtual void init(const void * parentRecord) = 0;
+
+    inline void setDataset(IRowStream * _streamed) { iter.init(_streamed); }
+
+protected:
+    RtlStreamedDatasetCursor  iter;
+};
+
+
 //These classes provides a relatively efficient way to access fields within a variable length record structure.
-// Probably convert to an interface with various concrete implementations for varing degrees of complexity
+// Probably convert to an interface with various concrete implementations for varying degrees of complexity
 //
 // Complications:
 // * ifblocks
@@ -36,11 +190,14 @@
 // * alien data types
 //
 
+class FieldNameToFieldNumMap;
+
 struct ECLRTL_API RtlRecord
 {
 public:
     friend class RtlRow;
     RtlRecord(const RtlRecordTypeInfo & fields, bool expandFields);
+    RtlRecord(const RtlFieldInfo * const * fields, bool expandFields);
     ~RtlRecord();
 
     void calcRowOffsets(size_t * variableOffsets, const void * _row) const;
@@ -63,9 +220,11 @@ public:
 
     virtual size32_t getMinRecordSize() const;
 
+    inline unsigned getNumFields() const { return numFields; }
     inline unsigned getNumVarFields() const { return numVarFields; }
     inline const RtlTypeInfo * queryType(unsigned field) const { return fields[field]->type; }
-
+    inline const char * queryName(unsigned field) const { return fields[field]->name; }
+    unsigned getFieldNum(const char *fieldName) const;
 protected:
     size_t * fixedOffsets;        // fixed portion of the field offsets + 1 extra
     unsigned * whichVariableOffset;// which variable offset should be added to the fixed
@@ -74,6 +233,7 @@ protected:
     unsigned numVarFields;
     const RtlFieldInfo * const * fields;
     const RtlFieldInfo * const * originalFields;
+    mutable const FieldNameToFieldNumMap *nameMap;
 };
 
 class ECLRTL_API RtlRow
@@ -147,5 +307,93 @@ public:
 protected:
     RtlRecord offsetInformation;
 };
+
+class CSourceRowPrefetcher;
+
+class ECLRTL_API COutputMetaData : implements IOutputMetaData, public RtlCInterface
+{
+public:
+    RTLIMPLEMENT_IINTERFACE
+    COutputMetaData();
+    ~COutputMetaData();
+
+    virtual void toXML(const byte * self, IXmlWriter & out) {
+                                                                const RtlTypeInfo * type = queryTypeInfo();
+                                                                if (type)
+                                                                {
+                                                                    RtlFieldStrInfo dummyField("",NULL,type);
+                                                                    type->toXML(self, self, &dummyField, out);
+                                                                }
+                                                            }
+    virtual unsigned getVersion() const                     { return OUTPUTMETADATA_VERSION; }
+    virtual unsigned getMetaFlags()                         { return MDFhasserialize|MDFhasxml; }
+
+    virtual void destruct(byte * self)                      {}
+    virtual IOutputMetaData * querySerializedDiskMeta()    { return this; }
+    virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId);
+    virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId);
+    //Default internal serializers are the same as the disk versions
+    virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId)
+    {
+        return createDiskSerializer(ctx, activityId);
+    }
+    virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId)
+    {
+        return createDiskDeserializer(ctx, activityId);
+    }
+    virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) { }
+    virtual IOutputMetaData * queryChildMeta(unsigned i) { return NULL; }
+
+    virtual const RtlRecord *queryRecordAccessor(bool expand) const;
+
+protected:
+    //This is the prefetch function that is actually generated by the code generator
+    virtual CSourceRowPrefetcher * doCreateDiskPrefetcher(unsigned activityId) { return NULL; }
+
+    ISourceRowPrefetcher * defaultCreateDiskPrefetcher(ICodeContext * ctx, unsigned activityId);
+    mutable RtlRecord *recordAccessor[2];
+};
+
+class ECLRTL_API CFixedOutputMetaData : public COutputMetaData
+{
+public:
+    CFixedOutputMetaData(size32_t _fixedSize)               { fixedSize = _fixedSize; }
+
+    virtual size32_t getRecordSize(const void *rec)         { return fixedSize; }
+    virtual size32_t getMinRecordSize() const               { return fixedSize; }
+    virtual size32_t getFixedSize() const                   { return fixedSize; }
+
+    virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId);
+    virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId);
+    virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId);
+
+protected:
+    size32_t fixedSize;
+};
+
+class ECLRTL_API CVariableOutputMetaData : public COutputMetaData
+{
+public:
+    CVariableOutputMetaData(size32_t _minSize) : minSize(_minSize) { }
+
+    virtual size32_t getMinRecordSize() const               { return minSize; }
+    virtual size32_t getFixedSize() const                   { return 0; }  // is variable
+
+protected:
+    size32_t minSize;
+};
+
+class ECLRTL_API CActionOutputMetaData : public COutputMetaData
+{
+public:
+    virtual size32_t getRecordSize(const void *)            { return 0; }
+    virtual size32_t getMinRecordSize() const               { return 0; }
+    virtual size32_t getFixedSize() const                   { return 0; }  // is pseudo-variable
+    virtual void toXML(const byte * self, IXmlWriter & out) { }
+    virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId);
+    virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId);
+    virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId);
+};
+
 
 #endif

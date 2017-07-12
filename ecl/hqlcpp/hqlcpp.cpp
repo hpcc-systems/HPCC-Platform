@@ -6162,6 +6162,11 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
                 normalizeBoundExpr(ctx, bound);
                 break;
             }
+        case type_record:
+            {
+                args.append(*buildMetaParameter(curParam));
+                break;
+            }
         default:
             {
                 buildExpr(ctx, castParam, bound);
@@ -6219,6 +6224,9 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
                 bound.expr.setown(getPointer(bound.expr));
                 break;
             }
+        case type_record:
+            done = true;
+            break;
         case type_array:
             UNIMPLEMENTED;
         }

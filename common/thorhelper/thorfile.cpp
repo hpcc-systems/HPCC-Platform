@@ -25,7 +25,8 @@
 #include "rtlfield.hpp"
 #include "rtlds_imp.hpp"
 
-namespace thorfile {
+namespace thorfile
+{  // Make sure we can't clash with generated versions or version check mechanism fails.
 #include "eclhelper_base.hpp"
 }
 #include "thorcommon.ipp"

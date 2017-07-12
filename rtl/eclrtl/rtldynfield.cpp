@@ -23,6 +23,7 @@
 #include "eclhelper.hpp"
 #include "eclrtl_imp.hpp"
 #include "rtldynfield.hpp"
+#include "rtlrecord.hpp"
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -463,29 +464,12 @@ extern ECLRTL_API IRtlFieldTypeDeserializer *createRtlFieldTypeDeserializer()
     return new CRtlFieldTypeDeserializer;
 }
 
-
-extern ECLRTL_API void dumpDatasetType(size32_t & __lenResult,char * & __result,IOutputMetaData &  metaVal,IRowStream * val)
-{
-    StringBuffer ret;
-    CRtlFieldTypeSerializer::serialize(ret, metaVal.queryTypeInfo());
-
-#ifdef _DEBUG
-    CRtlFieldTypeDeserializer deserializer;
-    StringBuffer ret2;
-    CRtlFieldTypeSerializer::serialize(ret2, deserializer.deserialize(ret));
-    assert(streq(ret, ret2));
-#endif
-
-    __lenResult = ret.length();
-    __result = ret.detach();
-}
-
 extern ECLRTL_API StringBuffer &dumpTypeInfo(StringBuffer &ret, const RtlTypeInfo *t)
 {
     return CRtlFieldTypeSerializer::serialize(ret, t);
 }
 
-extern ECLRTL_API void dumpRecordType(size32_t & __lenResult,char * & __result,IOutputMetaData &  metaVal,const byte * val)
+extern ECLRTL_API void dumpRecordType(size32_t & __lenResult,char * & __result,IOutputMetaData &metaVal)
 {
     StringBuffer ret;
     CRtlFieldTypeSerializer::serialize(ret, metaVal.queryTypeInfo());
@@ -499,4 +483,30 @@ extern ECLRTL_API void dumpRecordType(size32_t & __lenResult,char * & __result,I
 
     __lenResult = ret.length();
     __result = ret.detach();
+}
+
+extern ECLRTL_API void getFieldVal(size32_t & __lenResult,char * & __result, int column, IOutputMetaData &  metaVal, const byte *row)
+{
+    __lenResult = 0;
+    __result = nullptr;
+    if (column >= 0)
+    {
+        const RtlRecord *r = metaVal.queryRecordAccessor(true);
+        if (r)
+        {
+            unsigned numOffsets = r->getNumVarFields() + 1;
+            size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
+            RtlRow offsetCalculator(*r, row, numOffsets, variableOffsets);
+            if (column != (unsigned) -1)
+                offsetCalculator.getUtf8(__lenResult, __result, column);
+        }
+    }
+}
+
+extern ECLRTL_API int getFieldNum(const char *fieldName, IOutputMetaData &  metaVal)
+{
+    const RtlRecord *r = metaVal.queryRecordAccessor(true);
+    if (r)
+        return r->getFieldNum(fieldName);
+    return -1;
 }

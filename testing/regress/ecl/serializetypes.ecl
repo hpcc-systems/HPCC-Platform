@@ -18,8 +18,8 @@
 //Test serialization of various record/dataset types, including default values
 
 s := service
-   string dumpRecordType(row val) : eclrtl,pure,library='eclrtl',entrypoint='dumpRecordType',passParameterMeta(true),fold;
-   string dumpRecordTypeNF(row val) : eclrtl,pure,library='eclrtl',entrypoint='dumpRecordType',passParameterMeta(true);
+   string dumpRecordType(virtual record val) : eclrtl,pure,library='eclrtl',entrypoint='dumpRecordType',fold;
+   string dumpRecordTypeNF(virtual record val) : eclrtl,pure,library='eclrtl',entrypoint='dumpRecordType';
 end;
 
 rr := record
