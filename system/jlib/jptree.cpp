@@ -123,10 +123,19 @@ void initializeRoTable()
         constStr.clear().append(c).append("_0");
         AttrStrUnionWithValueTable::roValueTable->find(constStr.str(), true);
     }
-    for (unsigned c=0; c<35; c++) // spills
+    for (unsigned c=0; c<35; c++)
     {
         char ch = c<9 ? ('1' + c) : ('A' + (c-9));
-        constStr.clear().append("~spill::").append(ch);
+        constStr.clear().append("~spill::").append(ch); // spills
+        AttrStrUnionWithValueTable::roValueTable->find(constStr.str(), true);
+        constStr.clear().append("gl").append(ch); // graph results
+        AttrStrUnionWithValueTable::roValueTable->find(constStr.str(), true);
+        constStr.clear().append("mf").append(ch); // meta factories
+        AttrStrUnionWithValueTable::roValueTable->find(constStr.str(), true);
+    }
+    for (unsigned c=1; c<=10; c++) // global auto attributes
+    {
+        constStr.clear().append("auto").append(c);
         AttrStrUnionWithValueTable::roValueTable->find(constStr.str(), true);
     }
 #ifdef TRACE_ATOM_SIZE
