@@ -301,6 +301,7 @@ protected:
 };
 
 IHqlExpression * extractFilterConditions(HqlExprAttr & invariant, IHqlExpression * expr, IHqlExpression * dataset, bool spotCSE, bool spotCseInIfDatasetConditions);
+extern void buildCompareFuncHelper(HqlCppTranslator & translator, ActivityInstance & instance, const char * compareFuncName, IHqlExpression * sortList, const DatasetReference & dsRef);
 bool isLibraryScope(IHqlExpression * expr);
 extern IHqlExpression * constantMemberMarkerExpr;
 #endif

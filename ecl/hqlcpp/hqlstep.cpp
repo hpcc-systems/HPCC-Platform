@@ -828,11 +828,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMerge(BuildCtx & ctx, IHql
     buildInstancePrefix(instance);
 
     IHqlExpression * sortOrder = expr->queryChild(1);
-    instance->startctx.addQuotedLiteral("virtual ICompare * queryCompare() { return &compare; }");
 
     //NOTE: left is used instead of dataset in sort list
-    DatasetReference dsRef(dataset, no_left, querySelSeq(expr));        
-    buildCompareClass(instance->nestedctx, "compare", sortOrder, dsRef);
+    DatasetReference dsRef(dataset, no_left, querySelSeq(expr));
+    buildCompareFuncHelper(*this, *instance, "compare", sortOrder, dsRef);
 
     if (expr->hasAttribute(dedupAtom))
         doBuildBoolFunction(instance->classctx, "dedup", true);
@@ -930,10 +929,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
     doBuildUnsignedFunction(instance->classctx, "numOrderFields", sortOrder->numChildren());
 
     //virtual ICompare * queryEqualCompare()
-    {
-        buildCompareClass(instance->nestedctx, "equalCompare", equalityList, leftRef);
-        instance->classctx.addQuotedLiteral("virtual ICompare * queryEqualCompare() { return &equalCompare; }");
-    }
+    buildCompareFuncHelper(*this, *instance, "equalCompare", equalityList, leftRef);
 
     //virtual ICompareEq * queryExactCompare()
     {
@@ -969,10 +965,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
 
     //NOTE: left is used instead of dataset in sort list
     //virtual ICompare * queryMergeCompare()
-    {
-        buildCompareClass(instance->nestedctx, "mergeCompare", sortOrder, leftRef);
-        instance->classctx.addQuotedLiteral("virtual ICompare * queryMergeCompare() { return &mergeCompare; }");
-    }
+    buildCompareFuncHelper(*this, *instance, "mergeCompare", sortOrder, leftRef);
 
     if (createClearRow)
     {

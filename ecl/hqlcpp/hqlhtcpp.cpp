@@ -1389,6 +1389,12 @@ unsigned HqlCppTranslator::getConsistentUID(IHqlExpression * ptr)
 }
 
 
+unsigned HqlCppTranslator::getNextGlobalCompareId()
+{
+    return nextGlobalCompareId++;
+}
+
+
 unsigned HqlCppTranslator::beginFunctionGetCppIndex(unsigned activityId, bool isChildActivity)
 {
     activitiesThisCpp++;
@@ -5644,22 +5650,62 @@ void HqlCppTranslator::buildHashClass(BuildCtx & ctx, const char * name, IHqlExp
     endNestedClass(classStmt);
 }
 
-
-void HqlCppTranslator::buildCompareClass(BuildCtx & ctx, const char * name, IHqlExpression * sortList, const DatasetReference & dataset)
+static void buildCompareMemberFunction(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * sortList, const DatasetReference & dataset)
 {
-    BuildCtx comparectx(ctx);
-    IHqlStmt * classStmt = beginNestedClass(comparectx, name, "ICompare");
+    MemberFunction func(translator, ctx, "virtual int docompare(const void * _left, const void * _right) const" OPTIMIZE_FUNCTION_ATTRIBUTE);
+    func.ctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
+    func.ctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
+    func.ctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
 
+    translator.buildReturnOrder(func.ctx, sortList, dataset);
+}
+
+void HqlCppTranslator::buildCompareClass(BuildCtx & ctx, const char * name, IHqlExpression * sortList, const DatasetReference & dataset, StringBuffer & compareFuncName)
+{
+    if (options.useGlobalCompareClass)
     {
-        MemberFunction func(*this, comparectx, "virtual int docompare(const void * _left, const void * _right) const" OPTIMIZE_FUNCTION_ATTRIBUTE);
-        func.ctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
-        func.ctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
-        func.ctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
+        BuildCtx buildctx(*code, declareAtom);
 
-        buildReturnOrder(func.ctx, sortList, dataset);
+        // stop duplicate classes being generated.
+        OwnedHqlExpr searchKey = createAttribute(noSortAtom, LINK(sortList), LINK(dataset.queryDataset()->queryRecord()));
+        HqlExprAssociation * match = buildctx.queryMatchExpr(searchKey);
+        if (match)
+        {
+            match->queryExpr()->toString(compareFuncName);
+            return;
+        }
+        BuildCtx classctx(buildctx);
+        StringBuffer instanceName, startText, endText;
+
+        // Create global compare class
+        unsigned id = getNextGlobalCompareId();
+        instanceName.append("compare").append(id);
+        startText.append("struct Compare").append(id).append(" : public ICompare");
+        endText.append(" ").append(instanceName).append(";");
+        classctx.addQuotedCompound(startText,endText);
+
+        if (options.spanMultipleCpp)
+        {
+            BuildCtx declarectx(*code, declareAtom);
+            StringBuffer helperFunc;
+            createAccessFunctions(helperFunc, declarectx,  BuildCtx::NormalPrio, "ICompare", instanceName);
+            compareFuncName.set(helperFunc).append("()");
+        }
+        else
+            compareFuncName.set(instanceName);
+
+        buildCompareMemberFunction(*this, classctx, sortList, dataset);
+        OwnedHqlExpr temp = createVariable(compareFuncName, makeVoidType());
+        buildctx.associateExpr(searchKey, temp);
     }
-
-    endNestedClass(classStmt);
+    else
+    {
+        BuildCtx comparectx(ctx);
+        IHqlStmt * classStmt = beginNestedClass(comparectx, name, "ICompare");
+        buildCompareMemberFunction(*this, comparectx, sortList, dataset);
+        endNestedClass(classStmt);
+        compareFuncName.set(name);
+    }
 }
 
 
@@ -8448,10 +8494,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityMerge(BuildCtx & ctx, IHqlExpr
     if (sorts.ordinality() != 0)
     {
         OwnedHqlExpr sortOrder = createValueSafe(no_sortlist, makeSortListType(NULL), sorts);
-        instance->startctx.addQuotedLiteral("virtual ICompare * queryCompare() { return &compare; }");
-
         DatasetReference dsRef(dataset, no_activetable, NULL);
-        buildCompareClass(instance->nestedctx, "compare", sortOrder, dsRef);
+        buildCompareFuncHelper(*this, *instance, "compare", sortOrder, dsRef);
         if (!instance->isLocal)
             generateSerializeKey(instance->nestedctx, no_none, dsRef, sorts, !instance->isChildActivity(), true);
     }
@@ -10484,10 +10528,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
             HqlExprArray sorts;
             gatherIndexBuildSortOrder(sorts, expr, options.sortIndexPayload);
             OwnedHqlExpr sortOrder = createValueSafe(no_sortlist, makeSortListType(NULL), sorts);
-            instance->startctx.addQuotedLiteral("virtual ICompare * queryCompare() { return &compare; }");
-
-            DatasetReference dsRef(dataset);
-            buildCompareClass(instance->nestedctx, "compare", sortOrder, dsRef);
+            buildCompareFuncHelper(*this, *instance, "compare", sortOrder, DatasetReference(dataset));
         }
     }
     buildInstanceSuffix(instance);
@@ -14307,8 +14348,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDedup(BuildCtx & ctx, IHqlExpr
     if (info.keepBest)
     {
         IHqlExpression * sortOrder = expr->queryAttribute(bestAtom)->queryChild(0);
-        buildCompareClass(instance->startctx, "bestCompare", sortOrder, DatasetReference(dataset));
-        instance->startctx.addQuotedLiteral("virtual ICompare * queryCompareBest() { return &bestCompare; }");
+        buildCompareFuncHelper(*this, *instance, "compareBest", sortOrder, DatasetReference(dataset));
     }
 
     buildInstanceSuffix(instance);
@@ -14353,10 +14393,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDistribute(BuildCtx & ctx, IHq
         unwindChildren(sorts, cond);
 
         OwnedHqlExpr sortOrder = createValueSafe(no_sortlist, makeSortListType(NULL), sorts);
-        instance->startctx.addQuotedLiteral("virtual ICompare * queryCompare() { return &compare; }");
 
         DatasetReference dsRef(dataset);
-        buildCompareClass(instance->nestedctx, "compare", sortOrder, dsRef);
+        buildCompareFuncHelper(*this, *instance, "compare", sortOrder, dsRef);
+
         if (!instance->isLocal)
             generateSerializeKey(instance->nestedctx, no_none, dsRef, sorts, true, true);
 
@@ -16630,10 +16670,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
     StringBuffer s;
     buildInstancePrefix(instance);
 
-    instance->classctx.addQuotedLiteral("virtual ICompare * queryCompare() { return &compare; }");
-
 //  sortlist.setown(spotScalarCSE(sortlist));
-    buildCompareClass(instance->nestedctx, "compare", sortlist, DatasetReference(dataset));
+    buildCompareFuncHelper(*this, *instance, "compare", sortlist, DatasetReference(dataset));
 
     IHqlExpression * record = dataset->queryRecord();
     IAtom * serializeType = diskAtom; //MORE: Does this place a dependency on the implementation?
@@ -16642,8 +16680,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
     {
         if (record != serializedRecord)
         {
-            instance->classctx.addQuotedLiteral("virtual ICompare * queryCompareSerializedRow() { return &compareSR; }");
-
             OwnedHqlExpr selSeq = createSelectorSequence();
             OwnedHqlExpr leftSelector = createSelector(no_left, dataset, selSeq);
             OwnedHqlExpr mappedSortlist = replaceSelector(sortlist, dataset, leftSelector);
@@ -16652,7 +16688,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
             DatasetReference serializedRef(serializedDataset, no_left, selSeq);
             try
             {
-                buildCompareClass(instance->nestedctx, "compareSR", serializedSortlist, serializedRef);
+                buildCompareFuncHelper(*this, *instance, "compareSerializedRow", serializedSortlist, serializedRef);
             }
             catch (IException * e)
             {
@@ -16812,10 +16848,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityQuantile(BuildCtx & ctx, IHqlE
     IHqlExpression * dedupAttr = expr->queryAttribute(dedupAtom);
     IHqlExpression * range = queryAttributeChild(expr, rangeAtom, 0);
 
-    instance->classctx.addQuotedLiteral("virtual ICompare * queryCompare() { return &compare; }");
-
-    buildCompareClass(instance->nestedctx, "compare", sortlist, DatasetReference(dataset));
-
+    buildCompareFuncHelper(*this, *instance, "compare", sortlist, DatasetReference(dataset));
     doBuildUnsigned64Function(instance->startctx, "getNumDivisions", number);
 
     if (skew)
@@ -19473,6 +19506,26 @@ unsigned getVirtualFieldSize(IHqlExpression * record)
         }
     }
     return size;
+}
+
+// buildCompareFuncHelper() creates helper compare helper function.
+// Tasks:
+// 1) create a helper function within the nestedctx to return an ICompare *.  The helper function will be named "query"+compareFuncName (first letter capitalized)
+// 2) create an ICompare derived class and object
+//    - within the nested class (when useGlobalCompareClass=false) or
+//    - as a global class (when useGlobalCompareClass=true)
+void buildCompareFuncHelper(HqlCppTranslator & translator, ActivityInstance & instance, const char * compareFuncName, IHqlExpression * sortList, const DatasetReference & dsRef)
+{
+    assertex(compareFuncName[0]); // make sure func name is at least 1 char
+    StringBuffer compareClassInstance;
+    translator.buildCompareClass(instance.nestedctx, compareFuncName, sortList, dsRef, compareClassInstance);
+
+    StringBuffer s;
+    s.set("virtual ICompare * query").append(static_cast<char>(toupper(compareFuncName[0]))).append(compareFuncName+1).append("()");
+    MemberFunction func(translator, instance.classctx, s, MFdynamicproto);
+
+    s.set("return &").append(compareClassInstance).append(";");
+    func.ctx.addQuoted(s);
 }
 
 //---------------------------------------------------------------------------
