@@ -198,8 +198,8 @@
       <sect2 id="CT_ESDL_CLI_esdl_ecl" role="brk">
         <title>esdl ecl</title>
 
-        <para><emphasis role="bold">esdl ecl filename.ecm [&lt;outdir&gt;]
-        [options]</emphasis></para>
+        <para><emphasis role="bold">esdl ecl sourcePath outputPath
+        [options].</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -209,9 +209,17 @@
 
             <tbody>
               <row>
-                <entry><emphasis>filename.ecm</emphasis></entry>
+                <entry><emphasis>sourcePath</emphasis></entry>
 
-                <entry>The file containing the ESDL definitions.</entry>
+                <entry>The absolute path to the ESDL Definition file
+                containing the EsdlService definition for the service.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>outputPath</emphasis></entry>
+
+                <entry>The absolute path to the location where ECL output is
+                to be written.</entry>
               </row>
 
               <row>
@@ -258,7 +266,7 @@
               <row>
                 <entry>Output<emphasis> </emphasis></entry>
 
-                <entry>(srcdir|&lt;outdir&gt;)/filename.ecl</entry>
+                <entry>(sourcePath|outputPath&gt;)/filename.ecl</entry>
               </row>
             </tbody>
           </tgroup>
@@ -277,26 +285,126 @@
       <sect2 id="CT_ESDL_CLI_esdl_xsd" role="brk">
         <title>esdl xsd</title>
 
-        <para><emphasis role="bold">esdl xsd [options] filename.ecm
-        [&lt;outdir&gt;] </emphasis></para>
+        <para><emphasis role="bold">esdl xsd sourcePath serviceName
+        [options]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colwidth="80.50pt" />
+            <colspec align="left" colwidth="200pt" />
 
             <colspec />
 
             <tbody>
               <row>
-                <entry><emphasis>filename.ecm</emphasis></entry>
+                <entry><emphasis>sourcePath</emphasis></entry>
 
-                <entry>The file containing the ESDL definitions</entry>
+                <entry>The absolute path to the ESDL Definition file
+                containing the EsdlService definition for the service.</entry>
               </row>
 
               <row>
-                <entry><emphasis>-r|--recursive</emphasis></entry>
+                <entry><emphasis>serviceName</emphasis></entry>
 
-                <entry>process all includes</entry>
+                <entry>Name of ESDL Service defined in the given ESDL
+                file.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis> --version &lt;version
+                number&gt;</emphasis></entry>
+
+                <entry>Constrain to interface version</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>--method &lt;method name&gt;[;&lt;method
+                name&gt;]* </emphasis></entry>
+
+                <entry>Constrain to list of specific method(s)</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>--xslt &lt;xslt file path&gt;
+                </emphasis></entry>
+
+                <entry>Path to '/xslt/esxdl2xsd.xslt' file to transform
+                EsdlDef to XSD</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>--preprocess-output &lt;raw output
+                directory&gt; : </emphasis></entry>
+
+                <entry>Output preprocessed XML file to specified directory
+                before applying XSLT transform</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>--annotate &lt;all | none&gt;
+                </emphasis></entry>
+
+                <entry>Flag turning on either all annotations or none. By
+                default, annotations are generated for Enumerations. Setting
+                the flag to 'none' will disable those as well. Setting it to
+                al' enables additional annotations such as collapsed, cols,
+                form_ui, html_head and rows.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis> --noopt </emphasis></entry>
+
+                <entry>Turns off the enforcement of 'optional' attributes on
+                elements. If no -noopt is specified then all elements with an
+                'optional' are included in the output. By default 'optional'
+                filtering is enforced.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>-opt,--optional &lt;param value&gt;
+                </emphasis></entry>
+
+                <entry>Value to use for optional tag filter when gathering
+                dependencies. For example, passing 'internal' when some ESDL
+                definition objects have the attribute optional("internal")
+                ensures they appear in the XSD, otherwise they'd be filtered
+                out</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>-tns,--target-namespace &lt;target
+                namespace&gt; </emphasis></entry>
+
+                <entry>The target namespace passed to the transform via the
+                parameter 'tnsParam' used for the final output of the
+                XSD.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>-n &lt;int&gt; .</emphasis></entry>
+
+                <entry>Number of times to run transform after loading XSLT.
+                Defaults to 1</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>--show-inheritance</emphasis></entry>
+
+                <entry>Turns off the collapse feature. Collapsing optimizes
+                the XML output to strip out structures only used for
+                inheritance, and collapses their elements into their child.
+                That simplifies the stylesheet. By default this option is
+                on</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>--no-arrayof</emphasis></entry>
+
+                <entry>Supresses the use of the arrrayof element. arrayof
+                optimizes the XML output to include 'ArrayOf...' structure
+                definitions for those EsdlArray elements with no item_tag
+                attribute. Works in conjunction with an optimized stylesheet
+                that doesn't generate these itself. This defaults to
+                on.</entry>
               </row>
 
               <row>
@@ -324,33 +432,139 @@
 
         <para>Examples:</para>
 
-        <programlisting>esdl xsd MathService.ecm .
+        <programlisting>esdl xsd MathService.ecm MathService
 </programlisting>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_wsdl" role="brk">
         <title>esdl wsdl</title>
 
-        <para><emphasis role="bold">esdl wsdl [options] filename.ecm
-        [&lt;outdir&gt;] </emphasis></para>
+        <para><emphasis role="bold">esdl wsdl sourcePath serviceName
+        [options]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colwidth="80.50pt" />
+            <colspec align="left" colwidth="200pt" />
 
             <colspec />
 
             <tbody>
               <row>
-                <entry><emphasis>filename.ecm</emphasis></entry>
+                <entry><emphasis>sourcePath</emphasis></entry>
 
-                <entry>The file containing the ESDL definitions</entry>
+                <entry>The absolute path to the ESDL Definition file
+                containing the EsdlService definition for the service.</entry>
               </row>
 
               <row>
-                <entry><emphasis>-r|--recursive</emphasis></entry>
+                <entry><emphasis>serviceName</emphasis></entry>
 
-                <entry>process all includes</entry>
+                <entry>Name of ESDL Service defined in the given ESDL
+                file.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis> --version &lt;version
+                number&gt;</emphasis></entry>
+
+                <entry>Constrain to interface version</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>--method &lt;method name&gt;[;&lt;method
+                name&gt;]* </emphasis></entry>
+
+                <entry>Constrain to list of specific method(s)</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>--xslt &lt;xslt file path&gt;
+                </emphasis></entry>
+
+                <entry>Path to '/xslt/esxdl2xsd.xslt' file to transform
+                EsdlDef to XSD</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>--preprocess-output &lt;raw output
+                directory&gt; : </emphasis></entry>
+
+                <entry>Output preprocessed XML file to specified directory
+                before applying XSLT transform</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>--annotate &lt;all | none&gt;
+                </emphasis></entry>
+
+                <entry>Flag turning on either all annotations or none. By
+                default, annotations are generated for Enumerations. Setting
+                the flag to 'none' will disable those as well. Setting it to
+                al' enables additional annotations such as collapsed, cols,
+                form_ui, html_head and rows.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis> --noopt </emphasis></entry>
+
+                <entry>Turns off the enforcement of 'optional' attributes on
+                elements. If no -noopt is specified then all elements with an
+                'optional' are included in the output. By default 'optional'
+                filtering is enforced.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>-opt,--optional &lt;param value&gt;
+                </emphasis></entry>
+
+                <entry>Value to use for optional tag filter when gathering
+                dependencies. For example, passing 'internal' when some ESDL
+                definition objects have the attribute optional("internal")
+                ensures they appear in the XSD, otherwise they'd be filtered
+                out</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>-tns,--target-namespace &lt;target
+                namespace&gt; </emphasis></entry>
+
+                <entry>The target namespace passed to the transform via the
+                parameter 'tnsParam' used for the final output of the
+                XSD.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>-n &lt;int&gt; .</emphasis></entry>
+
+                <entry>Number of times to run transform after loading XSLT.
+                Defaults to 1</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>--show-inheritance</emphasis></entry>
+
+                <entry>Turns off the collapse feature. Collapsing optimizes
+                the XML output to strip out structures only used for
+                inheritance, and collapses their elements into their child.
+                That simplifies the stylesheet. By default this option is
+                on</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>--no-arrayof</emphasis></entry>
+
+                <entry>Supresses the use of the arrrayof element. arrayof
+                optimizes the XML output to include 'ArrayOf...' structure
+                definitions for those EsdlArray elements with no item_tag
+                attribute. Works in conjunction with an optimized stylesheet
+                that doesn't generate these itself. This defaults to
+                on.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>--wsdladdress </emphasis></entry>
+
+                <entry>Defines the output WSDL file's location address</entry>
               </row>
 
               <row>
@@ -378,7 +592,7 @@
 
         <para>Examples:</para>
 
-        <programlisting>esdl wsdl MathService.ecm .
+        <programlisting>esdl wsdl MathService.ecm MathService
 </programlisting>
       </sect2>
 
@@ -629,8 +843,6 @@
 
       <sect2 id="CT_ESDL_CLI_esdl_bind-service" role="brk">
         <title>esdl bind-service</title>
-
-        <para><emphasis role="bold">esdl bind-service</emphasis></para>
 
         <para><emphasis role="bold">esdl bind-service
         &lt;TargetESPProcessName&gt; &lt;TargetESPBindingPort |
