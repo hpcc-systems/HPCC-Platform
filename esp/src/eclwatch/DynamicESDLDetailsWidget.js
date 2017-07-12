@@ -104,10 +104,22 @@ define([
             this.bindingRefresh = registry.byId(this.id + "BindingRefresh");
             this.refreshButton = registry.byId(this.id + "Refresh");
 
+            this.dialog = new Dialog({
+                title: context.i18n.PleasePickADefinition,
+                style: "width: 300px;"
+            });
             this.addBindingButton = new Button({
                 id: this.id + "AddBinding",
                 disabled: true,
                 onClick: function (val) {
+                    if (context.definitionDropDown) {
+                        context.definitionDropDown.destroyRecursive();
+                    }
+                    context.definitionDropDown = new TargetSelectWidget({});
+                    context.dialog.addChild(context.definitionDropDown);
+                    context.definitionDropDown.init({
+                        LoadDESDLDefinitions: true
+                    });
                     context.dialog.show();
                 },
                 label: context.i18n.AddBinding
@@ -143,15 +155,6 @@ define([
                 },
                 label: context.i18n.DeleteBinding
             }).placeAt(this.addBindingButton.domNode, "after");
-            this.definitionDropDown = new TargetSelectWidget({});
-            this.definitionDropDown.init({
-                LoadDESDLDefinitions: true
-            });
-            this.dialog = new Dialog({
-                title: context.i18n.PleasePickADefinition,
-                style: "width: 300px;"
-            });
-            this.dialog.addChild(this.definitionDropDown);
             this.addDefinitionButton = new Button({
                 disabled: false,
                 style: "float:right;",
