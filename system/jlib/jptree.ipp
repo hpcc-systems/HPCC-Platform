@@ -518,7 +518,7 @@ struct AttrStrUnionWithTable : public AttrStrUnion
     static RONameTable *roNameTable;
 };
 
-struct AttrStrUnionWithValueTable : public AttrStrUnionWithTable
+struct AttrStrUnionWithValueTable : public AttrStrUnion
 {
     inline const char *get() const
     {
