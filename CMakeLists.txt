@@ -133,7 +133,7 @@ endif()
 
 include(${HPCC_SOURCE_DIR}/cmake_modules/optionDefaults.cmake)
 
-if ( REMBED )
+if ( REMBED AND (NOT INCLUDE_PLUGINS) )
   # various components that are not needed if only making the R plugin
   SET(USE_LIBARCHIVE 0)
   SET(USE_APR 0)
