@@ -36,8 +36,6 @@
 
 #include "bindutil.hpp"
 
-#include "espcontext.hpp"
-
 #include "httpbinding.hpp"
 #include "htmlpage.hpp"
 #include  "seclib.hpp"
@@ -47,6 +45,7 @@
 #include "xsdparser.hpp"
 #include "espsecurecontext.hpp"
 #include "jsonhelpers.hpp"
+#include "dasds.hpp"
 
 #define FILE_UPLOAD     "FileUploadAccess"
 
@@ -271,6 +270,108 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
             memCachedInitString.set("--SERVER=127.0.0.1");//using local memcached server
     }
 #endif
+    if (!m_secmgr.get())
+        return;
+
+    processName.set(procname);
+    const char* authDomain = bnd_cfg->queryProp("@authDomain");
+    if (!isEmptyString(authDomain))
+        domainName.set(authDomain);
+    else
+        domainName.set("default");
+
+    setSDSSession();
+    readAuthDomainCfg(proc_cfg);
+
+    checkSessionTimeoutSeconds = proc_cfg->getPropInt("@checkSessionTimeoutSeconds", ESP_CHECK_SESSION_TIMEOUT);
+}
+
+void EspHttpBinding::setSDSSession()
+{
+    espSessionSDSPath.setf("%s/%s[@name=\"%s\"]", PathSessionRoot, PathSessionProcess, processName.get());
+    Owned<IRemoteConnection> conn = querySDS().connect(espSessionSDSPath.str(), myProcessSession(), RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT);
+    if (!conn)
+        throw MakeStringException(-1, "Failed to connect SDS ESP Session.");
+
+    IPropertyTree* espSession = conn->queryRoot();
+    VStringBuffer appStr("%s[@port=\"%d\"]", PathSessionApplication, m_port);
+    IPropertyTree* appSessionTree = espSession->queryBranch(appStr.str());
+    if (!appSessionTree)
+    {
+        IPropertyTree* newAppSessionTree = espSession->addPropTree(PathSessionApplication);
+        newAppSessionTree->setPropInt("@port", m_port);
+    }
+    sessionSDSPath.setf("%s/%s/", espSessionSDSPath.str(), appStr.str());
+    sessionIDCookieName.setf("%s%d", SESSION_ID_COOKIE, m_port);
+}
+
+static int compareLength(char const * const *l, char const * const *r) { return strlen(*l) - strlen(*r); }
+
+void EspHttpBinding::readAuthDomainCfg(IPropertyTree* procCfg)
+{
+    VStringBuffer xpath("AuthDomains/AuthDomain[@domainName=\"%s\"]", domainName.get());
+    IPropertyTree* authDomainTree = procCfg->queryPropTree(xpath);
+    if (authDomainTree)
+    {
+        const char* authType = authDomainTree->queryProp("@authType");
+        if (isEmptyString(authType) || strieq(authType, "AuthTypeMixed"))
+            domainAuthType = AuthTypeMixed;
+        else if (strieq(authType, "AuthPerSessionOnly"))
+            domainAuthType = AuthPerSessionOnly;
+        else
+        {
+            domainAuthType = AuthPerRequestOnly;
+            return;
+        }
+
+        int sessionTimeoutMinutes = authDomainTree->getPropInt("@sessionTimeoutMinutes", 0);
+        if (sessionTimeoutMinutes == 0)
+            sessionTimeoutSeconds = ESP_SESSION_TIMEOUT;
+        else if (sessionTimeoutMinutes < 0)
+            sessionTimeoutSeconds = -1;
+        else
+            sessionTimeoutSeconds = sessionTimeoutMinutes * 60;
+
+        //The @unrestrictedResources contains URLs which may be used before a user is authenticated.
+        //For example, an icon file on the login page.
+        const char* unrestrictedResources = authDomainTree->queryProp("@unrestrictedResources");
+        if (!isEmptyString(unrestrictedResources))
+        {
+            StringArray urlArray;
+            urlArray.appendListUniq(unrestrictedResources, ",");
+            ForEachItemIn(i, urlArray)
+            {
+                const char* url = urlArray.item(i);
+                if (isEmptyString(url))
+                    continue;
+                if (isWildString(url))
+                    domainAuthResourcesWildMatch.append(url);
+                else
+                    domainAuthResources.setValue(url, true);
+            }
+        }
+
+        const char* _loginURL = authDomainTree->queryProp("@logonURL");
+        if (!isEmptyString(_loginURL))
+            loginURL.set(_loginURL);
+        else
+            loginURL.set(DEFAULT_LOGIN_URL);
+
+        const char* _logoutURL = authDomainTree->queryProp("@logoutURL");
+        if (!isEmptyString(_logoutURL))
+        {
+            logoutURL.set(_logoutURL);
+            domainAuthResources.setValue(logoutURL.get(), true);
+        }
+    }
+    else
+    {//old environment.xml
+        domainAuthType = AuthTypeMixed;
+        domainAuthResources.setValue(DEFAULT_UNRESTRICTED_RESOURCE1, true);
+        domainAuthResourcesWildMatch.append(DEFAULT_UNRESTRICTED_RESOURCE2);
+        loginURL.set(DEFAULT_LOGIN_URL);
+    }
+    domainAuthResourcesWildMatch.sortCompare(compareLength);
 }
 
 StringBuffer &EspHttpBinding::generateNamespace(IEspContext &context, CHttpRequest* request, const char *serv, const char *method, StringBuffer &ns)
@@ -1071,7 +1172,7 @@ int EspHttpBinding::onGetSoapBuilder(IEspContext &context, CHttpRequest* request
     bool inhouse = user && (user->getStatus()==SecUserStatus_Inhouse);
     xform->setParameter("inhouseUser", inhouse ? "true()" : "false()");
 
-    VStringBuffer url("%s?%s", methodQName.str(), params.str()); 
+    VStringBuffer url("%s?%s", methodQName.str(), params.str());
     xform->setStringParameter("destination", url.str());
         
     StringBuffer page;

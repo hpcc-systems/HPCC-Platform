@@ -31,6 +31,62 @@
 #include "esp.hpp"
 #include "esphttp.hpp"
 
+#define SESSION_SDS_LOCK_TIMEOUT (30*1000) // 30 seconds
+#define ESP_SESSION_TIMEOUT (600) // 10 Mins
+#define ESP_CHECK_SESSION_TIMEOUT (30) // 30 seconds
+
+static const char* const SESSION_ID_COOKIE = "ESPSessionID";
+static const char* const SESSION_START_URL_COOKIE = "ESPAuthURL";
+static const char* const DEFAULT_LOGIN_URL = "/esp/files/eclwatch/templates/Login.html";
+static const char* const DEFAULT_UNRESTRICTED_RESOURCE1 = "/favicon.ico";
+static const char* const DEFAULT_UNRESTRICTED_RESOURCE2 = "/esp/files/*,/esp/xslt/*";
+
+//xpath in dali
+static const char* const PathSessionRoot="Sessions";
+static const char* const PathSessionProcess="Process";
+static const char* const PathSessionApplication="Application";
+static const char* const PathSessionSession="Session";
+static const char* const PropSessionID = "@id";
+static const char* const PropSessionExternalID = "@externalid";
+static const char* const PropSessionUserID = "@userid";
+static const char* const PropSessionNetworkAddress = "@netaddr";
+static const char* const PropSessionState = "@state";
+static const char* const PropSessionCreateTime = "@createtime";
+static const char* const PropSessionLastAccessed = "@lastaccessed";
+static const char* const PropSessionTimeoutAt = "@timeoutAt";
+static const char* const PropSessionTimeoutByAdmin = "@timeoutByAdmin";
+static const char* const PropSessionLoginURL = "@loginurl";
+/* The following is an example of session data stored in Dali.
+<Sessions>
+ <Process name="myesp">
+   <Application port="8010">
+    <Session createtime="1497376914"
+             id="3831947145"
+             lastaccessed="1497377015"
+             loginurl="/"
+             netaddr="10.176.152.200"
+             state="1"
+             userid="TheAdmin"/>
+    <Session createtime="1497377427"
+             id="4106750941"
+             lastaccessed="1497377427"
+             loginurl="/"
+             netaddr="10.176.152.200"
+             state="0"/>
+   </Application>
+   <Application port="8002">
+    <Session createtime="1497376989"
+             id="3680948651"
+             lastaccessed="1497377003"
+             loginurl="/"
+             netaddr="10.176.152.200"
+             state="1"
+             userid="TheAdmin"/>
+   </Application>
+ </Process>
+</Sessions>
+ */
+
 interface IEspSecureContext;
 
 ESPHTTP_API IEspContext* createEspContext(IEspSecureContext* secureContext = NULL);

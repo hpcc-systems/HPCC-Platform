@@ -150,6 +150,20 @@ private:
     MapStringTo<bool> memCachedGlobalMap;
 #endif
 
+    StringAttr              processName;
+    StringAttr              domainName;
+    StringBuffer            sessionSDSPath;
+    StringBuffer            espSessionSDSPath;
+    StringBuffer            sessionIDCookieName;
+    AuthType                domainAuthType;
+
+    StringAttr              loginURL;
+    StringAttr              logoutURL;
+    int                     sessionTimeoutSeconds = ESP_SESSION_TIMEOUT; //-1: never
+    int                     checkSessionTimeoutSeconds = ESP_CHECK_SESSION_TIMEOUT;
+    BoolHash                domainAuthResources;
+    StringArray             domainAuthResourcesWildMatch;
+
     void getXMLMessageTag(IEspContext& ctx, bool isRequest, const char *method, StringBuffer& tag);
 #ifdef USE_LIBMEMCACHED
     void ensureMemCachedClient();
@@ -159,6 +173,7 @@ private:
     void addToMemCached(CHttpRequest* request, CHttpResponse* response, const char* memCachedID);
     bool sendFromMemCached(CHttpRequest* request, CHttpResponse* response, const char* memCachedID);
 #endif
+
 protected:
     MethodInfoArray m_methods;
     bool                    m_includeSoapTest;
@@ -320,7 +335,39 @@ public:
         }
         return false;
     }
-    ISecManager* querySecManager() {return m_secmgr.get(); }
+    ISecManager* querySecManager() const { return m_secmgr.get(); }
+    IAuthMap* queryAuthMAP() const { return m_authmap.get();}
+    const char* queryAuthMethod() const { return m_authmethod.str(); }
+    void setProcessName(const char* name) { processName.set(name); }
+    const char* queryProcessName() const { return processName.get(); }
+    void setDomainName(const char* name) { domainName.set(name ? name : "default"); }
+    const char* queryDomainName() const { return domainName.get(); }
+    void setSessionSDSPath(const char* path) { sessionSDSPath.set(path); }
+    const char* querySessionSDSPath() const { return sessionSDSPath.str(); }
+    void setESPSessionSDSPath(const char* path) { espSessionSDSPath.set(path); }
+    const char* queryESPSessionSDSPath() const { return espSessionSDSPath.str(); }
+    const char* querySessionIDCookieName() const { return sessionIDCookieName.str(); }
+    AuthType getDomainAuthType() const { return domainAuthType; }
+    const char* queryLoginURL() const { return loginURL.get(); }
+    const char* queryLogoutURL() const { return logoutURL.get(); }
+    int getSessionTimeoutSeconds() const { return sessionTimeoutSeconds; }
+    int getCheckSessionTimeoutSeconds() const { return checkSessionTimeoutSeconds; }
+    bool isDomainAuthResources(const char* resource)
+    {
+        bool* found = domainAuthResources.getValue(resource);
+        if (found && *found)
+            return true;
+
+        ForEachItemIn(i, domainAuthResourcesWildMatch)
+        {
+            const char* wildResourcePath = domainAuthResourcesWildMatch.item(i);
+            if (WildMatch(resource, wildResourcePath, true))
+                return true;
+        }
+        return false;
+    }
+    void readAuthDomainCfg(IPropertyTree* procCfg);
+    void setSDSSession();
 
     static void escapeSingleQuote(StringBuffer& src, StringBuffer& escaped);
 
@@ -341,7 +388,6 @@ protected:
                             const char *serviceName, const char* methodName);
     void sortResponse(IEspContext& context, CHttpRequest* request,MemoryBuffer& contentconst,
                             const char *serviceName, const char* methodName);
-    const char* queryAuthMethod() {return m_authmethod.str(); }
 };
 
 inline bool isEclIdeRequest(CHttpRequest *request)
