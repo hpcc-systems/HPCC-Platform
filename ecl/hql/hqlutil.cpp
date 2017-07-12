@@ -9052,7 +9052,7 @@ IHqlExpression * expandMacroDefinition(IHqlExpression * expr, HqlLookupContext &
             if (!def || !getFoldedConstantText(curParam, def))
             {
                 if (reportError)
-                    ctx.errs->reportError(HQLERR_CannotSubmitMacroX, "Cannot submit a MACRO with parameters that do no have default values", NULL, 1, 0, 0);
+                    ctx.errs->reportError(HQLERR_CannotSubmitMacroX, "Cannot submit a MACRO with parameters that do not have default values", NULL, 1, 0, 0);
                 return NULL;
             }
             macroParms->setProp(str(formal->queryName()), curParam.str());
