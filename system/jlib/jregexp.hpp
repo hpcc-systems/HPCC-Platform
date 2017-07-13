@@ -99,7 +99,7 @@ inline bool isWildString(const char *s)
     return false;
 }
 
-bool jlib_decl WildMatch(const char *src, int srclen, const char *pat, int patlen,bool nocase);
+bool jlib_decl WildMatch(const char *src, size_t srclen, const char *pat, size_t patlen,bool nocase);
 bool jlib_decl WildMatch(const char *src, const char *pat, bool nocase=false);
 bool jlib_decl WildMatchReplace(const char *src, const char *pat, const char *repl, bool nocase, StringBuffer &out);
 bool jlib_decl SoundexMatch(const char *src, const char *pat);

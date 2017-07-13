@@ -446,8 +446,8 @@ public:
     ITypeInfo *checkType(attribute &e1, attribute &e2);
     bool checkAlienTypeDef(IHqlScope* scope, const attribute& errpos);
     IHqlExpression* checkServiceDef(IHqlScope* serviceScope,IIdAtom * name, IHqlExpression* attrs, const attribute& errpos);
-    void checkConstant(attribute & attr);
-    IHqlExpression * checkConstant(const attribute & errpos, IHqlExpression * expr);
+    void checkConstant(attribute & attr, bool callAllowed);
+    IHqlExpression * checkConstant(const attribute & errpos, IHqlExpression * expr, bool callAllowed);
     void checkConstantEvent(attribute & attr);
     IHqlExpression * checkConcreteModule(const attribute & errpos, IHqlExpression * expr);
     void checkFoldConstant(attribute & attr);

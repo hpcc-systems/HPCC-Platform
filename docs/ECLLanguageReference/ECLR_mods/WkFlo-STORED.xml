@@ -162,6 +162,10 @@
   <emphasis>attribute</emphasis> to be evaluated at a global scope instead of
   the enclosing scope.</para>
 
+  <para>STORED creates a storage space in the workunit where the interface can
+  place the values to pass to a published query. See <emphasis>Working with
+  Roxie</emphasis> in the <emphasis>Programmer's Guide</emphasis>.</para>
+
   <para>Example:</para>
 
   <programlisting>  COUNT(person) : STORED('myname');

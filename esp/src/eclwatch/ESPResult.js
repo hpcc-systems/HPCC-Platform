@@ -86,7 +86,11 @@ define([
             if (!column.children && context._formattedRow[column.field] !== undefined) {
                 colLenBefore[column.field] = ("" + context._formattedRow[column.field]).split(LINE_SPLITTER).length;
             }
-            maxChildLen = Math.max(maxChildLen, context.formatCell(column, column.isRawHTML ? row[column.leafID] : safeEncode(row[column.leafID]), rowIdx));
+            var rowArr = row instanceof Array ? row : [row];
+            for (var colIdx = 0; colIdx < rowArr.length; ++colIdx) {
+                var r = rowArr[colIdx];
+                maxChildLen = Math.max(maxChildLen, context.formatCell(column, column.isRawHTML ? r[column.leafID] : safeEncode(r[column.leafID]), rowIdx));
+            }
         });
         arrayUtil.forEach(columns, function (column) {
             if (!column.children) {

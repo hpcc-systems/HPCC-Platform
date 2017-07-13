@@ -231,12 +231,15 @@ public:
         firstget = true;
         input->getMetaInfo(inputMeta);
         totallimit = (rowcount_t)helper->getLimit();
-        rowcount_t _skipCount = validRC(helper->numToSkip()); // max
-        rowcount_t maxRead = (totallimit>(RCUNBOUND-_skipCount))?RCUNBOUND:totallimit+_skipCount;
-        IStartableEngineRowStream *lookAhead = createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), FIRSTN_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(this), false,
-                                                                              maxRead, this, &container.queryJob().queryIDiskUsage()); // if a very large limit don't bother truncating
-        originalInputStream.setown(replaceInputStream(0, lookAhead));
-        lookAhead->start();
+        if (!isFastThrough(input))
+        {
+            rowcount_t _skipCount = validRC(helper->numToSkip()); // max
+            rowcount_t maxRead = (totallimit>(RCUNBOUND-_skipCount))?RCUNBOUND:totallimit+_skipCount;
+            IStartableEngineRowStream *lookAhead = createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), FIRSTN_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(this), false,
+                                                                                  maxRead, this, &container.queryJob().queryIDiskUsage()); // if a very large limit don't bother truncating
+            originalInputStream.setown(replaceInputStream(0, lookAhead));
+            lookAhead->start();
+        }
     }
     virtual void stop() override
     {

@@ -707,7 +707,10 @@ OUTPUT(People(Attr1=FALSE));
     role="bold">[</emphasis> <emphasis>, footertext</emphasis> <emphasis
     role="bold">] ] [, SINGLE<indexterm>
         <primary>SINGLE</primary>
-      </indexterm> ] )</emphasis></para>
+      </indexterm> ][, FORMAT<indexterm>
+        <primary>FORMAT</primary>
+      </indexterm></emphasis><emphasis>(stringfunction)</emphasis><emphasis
+    role="bold"> ] )</emphasis></para>
 
     <para><emphasis role="bold">SEPARATOR<indexterm>
         <primary>SEPARATOR</primary>
@@ -774,6 +777,21 @@ OUTPUT(People(Attr1=FALSE));
           </row>
 
           <row>
+            <entry><emphasis role="bold">FORMAT</emphasis></entry>
+
+            <entry>Optional. Specifies the headertext should be formatted
+            using the <emphasis>stringfunction</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>stringfunction</emphasis></entry>
+
+            <entry>Optional. The function to use to format the column headers.
+            This can be any function that takes a single string parameter and
+            returns a string result</entry>
+          </row>
+
+          <row>
             <entry><emphasis role="bold">SEPARATOR</emphasis></entry>
 
             <entry>Specifies the field delimiters.</entry>
@@ -836,6 +854,10 @@ OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(SINGLE)));
 
 //This example writes the header and footer to every file part:
 OUTPUT(XMLds,,'~thor::outdata.xml',CSV(HEADING('&lt;XML&gt;','&lt;/XML&gt;')));
+
+//FORMAT option writes the header using the specified formatting function:
+IMPORT STD;
+OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(FORMAT(STD.Str.ToUpperCase))));
 </programlisting>
   </sect2>
 

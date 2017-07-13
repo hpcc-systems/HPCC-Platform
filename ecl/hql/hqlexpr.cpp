@@ -914,7 +914,7 @@ void HqlParseContext::setGatherMeta(const MetaOptions & options)
 }
 
 
-static void setDefinitionText(IPropertyTree * target, const char * prop, IFileContents * contents)
+void HqlParseContext::setDefinitionText(IPropertyTree * target, const char * prop, IFileContents * contents)
 {
     StringBuffer sillyTempBuffer;
     getFileContentText(sillyTempBuffer, contents);  // We can't rely on IFileContents->getText() being null terminated..
@@ -922,6 +922,11 @@ static void setDefinitionText(IPropertyTree * target, const char * prop, IFileCo
 
     ISourcePath * sourcePath = contents->querySourcePath();
     target->setProp("@sourcePath", str(sourcePath));
+    if (checkDirty && contents->isDirty())
+    {
+        target->setPropBool("@dirty", true);
+    }
+
 }
 
 IPropertyTree * HqlParseContext::beginMetaSource(IFileContents * contents)
@@ -8087,6 +8092,7 @@ public:
     virtual bool isImplicitlySigned() { return contents->isImplicitlySigned(); }
     virtual IHqlExpression * queryGpgSignature() { return contents->queryGpgSignature(); }
     virtual timestamp_type getTimeStamp() { return contents->getTimeStamp(); }
+    virtual bool isDirty() override { return contents->isDirty(); }
 protected:
     Linked<IFileContents> contents;
     size32_t offset;
@@ -8641,6 +8647,9 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
 
     //Preserve ob_sandbox etc. annotated on the original definition, but not on the parsed code.
     unsigned repositoryFlags=ret->getSymbolFlags();
+    if (ctx.checkDirty() && contents->isDirty())
+        repositoryFlags |= ob_sandbox;
+
     IHqlNamedAnnotation * symbol = queryNameAnnotation(newSymbol);
     assertex(symbol);
     symbol->setRepositoryFlags(repositoryFlags);
@@ -8648,7 +8657,7 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
     if (repositoryFlags&ob_sandbox)
     {
         if (ctx.errs)
-            ctx.errs->reportWarning(CategoryInformation,WRN_DEFINITION_SANDBOXED,"Definition is sandboxed",filename,0,0,0);
+            ctx.errs->reportWarning(CategoryInformation,WRN_DEFINITION_SANDBOXED,"Definition is modified",str(contents->querySourcePath()),0,0,0);
     }
 
     if (!(newSymbol->isExported() || (lookupFlags & LSFsharedOK)))
@@ -11628,7 +11637,7 @@ protected:
     virtual IHqlExpression * createTransformed(IHqlExpression * expr)
     {
         //MORE: This test needs to be extended?
-        if (expr->isFullyBound() && !containsCall(expr, ctx.forceOutOfLineExpansion))
+        if (expr->isFullyBound() && (!ctx.expandNestedCalls || !containsCall(expr, ctx.forceOutOfLineExpansion)))
             return LINK(expr);
 
 #ifdef TRACE_BINDING
@@ -12259,6 +12268,7 @@ extern IHqlExpression * createBoundFunction(IErrorReceiver * errors, IHqlExpress
     CallExpansionContext ctx;
     ctx.errors = errors;
     ctx.functionCache = functionCache;
+    ctx.expandNestedCalls = false;
     OwnedHqlExpr call = createNormalizedCall(func, actuals);
     if (func->getOperator() != no_funcdef)
         return call.getClear();

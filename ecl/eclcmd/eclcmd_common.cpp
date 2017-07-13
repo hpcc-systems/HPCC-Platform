@@ -454,6 +454,8 @@ public:
         cmdLine.append(" -E");
         if (cmd.optLegacy)
             cmdLine.append(" -legacy");
+        if (cmd.optCheckDirty)
+            cmdLine.append(" -checkDirty");
         if (cmd.optDebug)
             cmdLine.append(" -g");
         appendOptPath(cmdLine, 'I', cmd.optImpPath.str());
@@ -481,7 +483,10 @@ public:
                 IEspNamedValue &item = cmd.debugValues.item(i);
                 const char *name = item.getName();
                 const char *value = item.getValue();
-                cmdLine.append(" -f").append(name);
+                cmdLine.append(' ');
+                if (!name || name[0]!='-')
+                    cmdLine.append("-f");
+                cmdLine.append(name);
                 if (value)
                     cmdLine.append('=').append(value);
             }
@@ -681,6 +686,8 @@ eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvItera
     if (iter.matchFlag(optNoArchive, ECLOPT_ECL_ONLY))
         return EclCmdOptionMatch;
     if (iter.matchFlag(optLegacy, ECLOPT_LEGACY) || iter.matchFlag(optLegacy, ECLOPT_LEGACY_DASH))
+        return EclCmdOptionMatch;
+    if (iter.matchFlag(optCheckDirty, ECLOPT_CHECKDIRTY))
         return EclCmdOptionMatch;
     if (iter.matchFlag(optDebug, ECLOPT_DEBUG) || iter.matchFlag(optDebug, ECLOPT_DEBUG_DASH))
         return EclCmdOptionMatch;

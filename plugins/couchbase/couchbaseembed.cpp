@@ -71,7 +71,7 @@ namespace couchbaseembed
             else if (status.isTemporary())
                 failx("TempErr: %s", status.description());
             else
-                failx("Couchbase err: %s", status.description());
+                failx("Couchbase err: %s (%d)", status.description(), status.errcode());
         }
 
         //consider parsing json result
@@ -897,70 +897,211 @@ namespace couchbaseembed
         }
     }
 
+    void CouchbaseRowBuilder::processBeginSet(const RtlFieldInfo * field, bool &isAll)
+    {
+        isAll = false; // ALL not supported
+
+        const char * xpath = xpathOrName(field);
+
+        if (xpath && *xpath)
+        {
+            PathTracker     newPathNode(xpath, CPNTSet);
+            StringBuffer    newXPath;
+
+            constructNewXPath(newXPath, xpath);
+
+            newPathNode.childCount = m_oResultRow->getCount(newXPath);
+            m_pathStack.push_back(newPathNode);
+        }
+        else
+        {
+            failx("processBeginSet: Field name or xpath missing");
+        }
+    }
+
+    bool CouchbaseRowBuilder::processNextSet(const RtlFieldInfo * field)
+    {
+        return m_pathStack.back().childrenProcessed < m_pathStack.back().childCount;
+    }
+
     void CouchbaseRowBuilder::processBeginDataset(const RtlFieldInfo * field)
     {
-        /*
-         *
-         *childRec := RECORD real x; real y; END;
-         *parentRec := RECORD
-         * childRec child1,                        <-- flatens out the childrec, this function would receive a field of name x
-         * dataset(childRec) child2;               <-- keeps nested structure, this funciton would receive a field of name child2
-         *END;
-        */
+        const char * xpath = xpathOrName(field);
 
-        if (getNumFields(field->type->queryChildType()) > 0)
-            m_oNestedField.set(m_oResultRow->queryBranch(field->name));
+        if (xpath && *xpath)
+        {
+            PathTracker     newPathNode(xpath, CPNTDataset);
+            StringBuffer    newXPath;
+
+            constructNewXPath(newXPath, xpath);
+
+            m_oNestedField.set(m_oResultRow->queryBranch(field->name->queryStr()));
+            m_pathStack.push_back(newPathNode);
+        }
+        else
+        {
+            failx("processBeginDataset: Field name or xpath missing");
+        }
     }
 
     void CouchbaseRowBuilder::processBeginRow(const RtlFieldInfo * field)
     {
-        m_fieldsProcessedCount = 0;
-        m_rowFieldCount = getNumFields(field->type);
+        const char * xpath = xpathOrName(field);
+
+        if (xpath && *xpath)
+        {
+            if (strncmp(xpath, "<nested row>", 12) == 0)
+            {
+                // Row within child dataset
+                if (m_pathStack.back().nodeType == CPNTDataset)
+                {
+                    m_pathStack.back().currentChildIndex++;
+                }
+                else
+                {
+                    failx("<nested row> received with no outer dataset designated");
+                }
+            }
+            else
+            {
+                m_pathStack.push_back(PathTracker(xpath, CPNTScalar));
+            }
+        }
+        else
+        {
+            failx("processBeginRow: Field name or xpath missing");
+        }
     }
 
     bool CouchbaseRowBuilder::processNextRow(const RtlFieldInfo * field)
     {
-        return m_fieldsProcessedCount + 1 == m_rowFieldCount;
+        return m_pathStack.back().childrenProcessed < m_pathStack.back().childCount;
+    }
+
+    void CouchbaseRowBuilder::processEndSet(const RtlFieldInfo * field)
+    {
+        const char * xpath = xpathOrName(field);
+
+        if (xpath && *xpath && !m_pathStack.empty() && strcmp(xpath, m_pathStack.back().nodeName.str()) == 0)
+        {
+            m_pathStack.pop_back();
+        }
     }
 
     void CouchbaseRowBuilder::processEndDataset(const RtlFieldInfo * field)
     {
-        if(m_oNestedField)
-            m_oNestedField.clear();
+        const char * xpath = xpathOrName(field);
+
+        if (xpath && *xpath)
+        {
+            if (!m_pathStack.empty() && strcmp(xpath, m_pathStack.back().nodeName.str()) == 0)
+            {
+                m_pathStack.pop_back();
+            }
+        }
+        else
+        {
+            failx("processEndDataset: Field name or xpath missing");
+        }
     }
 
     void CouchbaseRowBuilder::processEndRow(const RtlFieldInfo * field)
     {
-        if(m_oNestedField)
-            m_oNestedField.clear();
+        const char * xpath = xpathOrName(field);
+
+        if (xpath && *xpath)
+        {
+            if (!m_pathStack.empty())
+            {
+                if (m_pathStack.back().nodeType == CPNTDataset)
+                {
+                    m_pathStack.back().childrenProcessed++;
+                }
+                else if (strcmp(xpath, m_pathStack.back().nodeName.str()) == 0)
+                {
+                    m_pathStack.pop_back();
+                }
+            }
+        }
+        else
+        {
+            failx("processEndRow: Field name or xpath missing");
+        }
     }
 
     const char * CouchbaseRowBuilder::nextField(const RtlFieldInfo * field)
     {
-        m_fieldsProcessedCount++;
-        if (!m_oResultRow)
-            failx("Missing result row data");
+        const char * xpath = xpathOrName(field);
 
-        const char * fieldname = field->name;
-        if (!fieldname || !*fieldname)
-            failx("Missing result column metadata (name)");
-
-        if (!m_oResultRow->hasProp(fieldname))
+        if (!xpath || !*xpath)
         {
-            VStringBuffer nxpath("locationData/%s", fieldname);
-            if (m_oNestedField)
-            {
-                if (!m_oNestedField->hasProp(fieldname))
-                {
-                    StringBuffer xml;
-                    toXML(m_oResultRow, xml);
-                    failx("Result row does not contain field: %s: %s", fieldname, xml.str());
-                }
+            failx("nextField: Field name or xpath missing");
+        }
+        StringBuffer fullXPath;
 
-                return m_oNestedField->queryProp(fieldname);
+        if (!m_pathStack.empty() && m_pathStack.back().nodeType == CPNTSet && strncmp(xpath, "<set element>", 13) == 0)
+        {
+            m_pathStack.back().currentChildIndex++;
+            constructNewXPath(fullXPath, NULL);
+            m_pathStack.back().childrenProcessed++;
+        }
+        else
+        {
+            constructNewXPath(fullXPath, xpath);
+        }
+
+        return m_oResultRow->queryProp(fullXPath.str());
+    }
+
+    const char * CouchbaseRowBuilder::xpathOrName(const RtlFieldInfo * field) const
+    {
+        const char * xpath = NULL;
+
+        if (field->xpath)
+        {
+            if (field->xpath[0] == xpathCompoundSeparatorChar)
+            {
+                xpath = field->xpath + 1;
+            }
+            else
+            {
+                xpath = field->xpath;
             }
         }
-        return m_oResultRow->queryProp(fieldname);
+        else
+        {
+            xpath = str(field->name);
+        }
+
+        return xpath;
+    }
+
+    void CouchbaseRowBuilder::constructNewXPath(StringBuffer& outXPath, const char * nextNode) const
+    {
+        for (std::vector<PathTracker>::const_iterator iter = m_pathStack.begin(); iter != m_pathStack.end(); iter++)
+        {
+            if (strncmp(iter->nodeName, "<row>", 5) != 0)
+            {
+                if (!outXPath.isEmpty())
+                {
+                    outXPath.append("/");
+                }
+                outXPath.append(iter->nodeName);
+                if (iter->nodeType == CPNTDataset || iter->nodeType == CPNTSet)
+                {
+                    outXPath.appendf("[%d]", iter->currentChildIndex);
+                }
+            }
+        }
+
+        if (nextNode && *nextNode)
+        {
+            if (!outXPath.isEmpty())
+            {
+                outXPath.append("/");
+            }
+            outXPath.append(nextNode);
+        }
     }
 
     class CouchbaseEmbedContext : public CInterfaceOf<IEmbedContext>

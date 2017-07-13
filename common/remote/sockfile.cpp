@@ -950,6 +950,27 @@ static Semaphore                 treeCopySem;
 
 #define DEBUGSAMEIP false
 
+static void cleanupSocket(ISocket *sock)
+{
+    if (!sock)
+        return;
+    try
+    {
+        sock->shutdown();
+    }
+    catch (IException *e)
+    {
+        e->Release();
+    }
+    try
+    {
+        sock->close();
+    }
+    catch (IException *e)
+    {
+        e->Release();
+    }
+}
 
 //---------------------------------------------------------------------------
 
@@ -1002,7 +1023,8 @@ class CRemoteBase: public CInterface
             try {
                 if (tm.timemon) {
                     unsigned remaining;
-                    tm.timemon->timedout(&remaining);
+                    if (tm.timemon->timedout(&remaining))
+                        throwJSocketException(JSOCKERR_connection_failed);
                     socket.setown(ISocket::connect_timeout(ep,remaining));
                 }
                 else
@@ -1010,11 +1032,26 @@ class CRemoteBase: public CInterface
                 if (ep.port == securitySettings.daFileSrvSSLPort)
                 {
 #ifdef _USE_OPENSSL
-                    Owned<ISecureSocket> ssock = createSecureSocket(socket.getClear(), ClientSocket);
-                    int status = ssock->secure_connect();
-                    if (status < 0)
-                        throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection");
-                    socket.setown(ssock.getLink());
+                    Owned<ISecureSocket> ssock;
+                    try
+                    {
+                        ssock.setown(createSecureSocket(socket.getClear(), ClientSocket));
+                        int status = ssock->secure_connect();
+                        if (status < 0)
+                            throw MakeStringException(-1, "Failure to establish secure connection");
+                        socket.setown(ssock.getLink());
+                    }
+                    catch (IException *e)
+                    {
+                        cleanupSocket(ssock);
+                        ssock.clear();
+                        cleanupSocket(socket);
+                        socket.clear();
+                        StringBuffer eMsg;
+                        e->errorMessage(eMsg);
+                        e->Release();
+                        throw createDafsException(DAFSERR_connection_failed, eMsg.str());
+                    }
 #else
                     throw createDafsException(DAFSERR_connection_failed,"Failure to establish secure connection: OpenSSL disabled in build");
 #endif
@@ -1051,24 +1088,33 @@ class CRemoteBase: public CInterface
                         WARNLOG("Remote file authenticate %s for %s ",e->errorMessage(err).str(),ep.getUrlStr(eps.clear()).str());
                         e->Release();
                         if (!retries)
-                            break;
+                            break; // MCK - is this a warning or an error ? If an error, should we close and throw here ?
                     }
                 }
                 else
                     break;
             }
+            bool timeExpired = false;
             unsigned sleeptime = getRandom()%3000+1000;
-            if (tm.timemon) {
+            if (tm.timemon)
+            {
                 unsigned remaining;
-                tm.timemon->timedout(&remaining);
-                if (remaining/2<sleeptime)
-                    sleeptime = remaining/2;
+                if (tm.timemon->timedout(&remaining))
+                    timeExpired = true;
+                else
+                {
+                    if (remaining/2<sleeptime)
+                        sleeptime = remaining/2;
+                }
             }
-            Sleep(sleeptime);       // prevent multiple retries beating
-            if (ep.port == securitySettings.daFileSrvSSLPort)
-                PROGLOG("Retrying SECURE connect");
-            else
-                PROGLOG("Retrying connect");
+            if (!timeExpired)
+            {
+                Sleep(sleeptime);       // prevent multiple retries beating
+                if (ep.port == securitySettings.daFileSrvSSLPort)
+                    PROGLOG("Retrying SECURE connect");
+                else
+                    PROGLOG("Retrying connect");
+            }
         }
         if (ConnectionTable)
             ConnectionTable->addLink(ep,socket);
@@ -1330,17 +1376,6 @@ public:
     {
         ep = _ep;
         connectMethod = securitySettings.connectMethod;
-    }
-
-    void connect()
-    {
-        CriticalBlock block(crit);
-        CriticalBlock block2(CConnectionTable::crit); // this shouldn't ever block
-        if (AuthenticationEnabled) {
-            SocketEndpoint tep(ep);
-            setDafsEndpointPort(tep);
-            connectSocket(tep);
-        }
     }
 
     void disconnect()
@@ -5719,28 +5754,6 @@ public:
     IPooledThread *createCommandProcessor()
     {
         return new cCommandProcessor();
-    }
-
-    void cleanupSocket(ISocket *sock)
-    {
-        if (!sock)
-            return;
-        try
-        {
-            sock->shutdown();
-        }
-        catch (IException *e)
-        {
-            e->Release();
-        }
-        try
-        {
-            sock->close();
-        }
-        catch (IException *e)
-        {
-            e->Release();
-        }
     }
 
     void run(DAFSConnectCfg _connectMethod, SocketEndpoint &listenep, unsigned sslPort)

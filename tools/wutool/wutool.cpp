@@ -439,8 +439,11 @@ int main(int argc, const char *argv[])
                 {
                     IConstWorkUnitInfo& wi = it->query();
                     Owned<IConstWorkUnit> w = factory->openWorkUnit(wi.queryWuid());
-                    process(*w, globals);
-                    ret = 0; // There was at least one match
+                    if (w)
+                    {
+                        process(*w, globals);
+                        ret = 0; // There was at least one match
+                    }
                 }
             }
         }

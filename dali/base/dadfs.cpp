@@ -7003,6 +7003,8 @@ public:
                     cached = true;
                     if (entry.exception)
                         throw LINK(entry.exception);
+                    if (!entry.group)  //cache entry of a deleted groupname
+                        return NULL;
                     if (range.length()==0)
                     {
                         if (dirret)

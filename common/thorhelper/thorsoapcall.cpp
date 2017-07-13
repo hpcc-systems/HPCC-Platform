@@ -1766,7 +1766,7 @@ private:
             tail = "Dataset/Row";
 
         CMatchCB matchCB(*this, url, tail, meta);
-        Owned<IXMLParse> xmlParser = createXMLParse((const void *)response.str(), (unsigned)response.length(), path.str(), matchCB, options, false);
+        Owned<IXMLParse> xmlParser = createXMLParse((const void *)response.str(), (unsigned)response.length(), path.str(), matchCB, options, (master->flags&SOAPFusescontents)!=0);
         while (xmlParser->next());
     }
 
@@ -1776,7 +1776,7 @@ private:
         if(master->rowTransformer && master->inputpath.get())
             path.append(master->inputpath.get());
         CMatchCB matchCB(*this, url, NULL, meta);
-        Owned<IXMLParse> xmlParser = createXMLParse((const void *)response.str(), (unsigned)response.length(), path.str(), matchCB, options, false);
+        Owned<IXMLParse> xmlParser = createXMLParse((const void *)response.str(), (unsigned)response.length(), path.str(), matchCB, options, (master->flags&SOAPFusescontents)!=0);
         while (xmlParser->next());
     }
 
@@ -1788,9 +1788,9 @@ private:
         CMatchCB matchCB(*this, url, NULL, meta);
         Owned<IXMLParse> xmlParser;
         if (strieq(master->acceptType.str(), "application/json"))
-            xmlParser.setown(createJSONParse((const void *)response.str(), (unsigned)response.length(), path.str(), matchCB, options, false, true));
+            xmlParser.setown(createJSONParse((const void *)response.str(), (unsigned)response.length(), path.str(), matchCB, options, (master->flags&SOAPFusescontents)!=0, true));
         else
-            xmlParser.setown(createXMLParse((const void *)response.str(), (unsigned)response.length(), path.str(), matchCB, options, false));
+            xmlParser.setown(createXMLParse((const void *)response.str(), (unsigned)response.length(), path.str(), matchCB, options, (master->flags&SOAPFusescontents)!=0));
         while (xmlParser->next());
     }
 

@@ -1225,79 +1225,159 @@ static char *SoundexCode(const char *s,int l,char *res)
   return res;
 }
 
-static bool WildMatchN ( const char *src, int srclen, int srcidx,
-                    const char *pat, int patlen, int patidx,int nocase)
+//---------------------------------------------------------------------------------------------------------------------
+
+inline bool matches(char cur, char next, bool nocase)
 {
-  char next_char;
-  for (;;) {
-    if (patidx == patlen)
-       return (srcidx == srclen);
-    next_char = pat[patidx++];
-    if (next_char == '?') {
-      if (srcidx == srclen)
-        return false;
-      srcidx++;
-    }
-    else if (next_char != '*') {
-      if (nocase) {
-        if ((srcidx == srclen) ||
-           (toupper(src[srcidx])!=toupper(next_char)))
-          return false;
-      }
-      else
-        if ((srcidx == srclen) || (src[srcidx]!=next_char))
-          return false;
-      srcidx++;
-    }
-    else {
-        for (;;) {
-        if (patidx == patlen)
-          return true;
-        if (pat[patidx] != '*')
-            break;
-        patidx++;
-      }
-        for (;;) {
-        //No need to guard patLen since guaranteed to contain an ASTERISK
-        const char tail_char = pat[patlen-1];
-        if (tail_char == '*')
-            break;
-        if (srcidx == srclen)
-            return false;
-        if (tail_char != '?') {
-          if (nocase) {
-            if ((toupper(tail_char)!=toupper(src[srclen-1])))
-              return false;
-          }
-          else {
-            if ((tail_char!=src[srclen-1]))
-              return false;
-          }
-        }
-        patlen--;
-        srclen--;
-        if (patidx == patlen)
-            return true;
-      }
-      while (srcidx < srclen) {
-        if (WildMatchN(src,srclen,srcidx,
-                     pat, patlen, patidx,nocase))
-           return true;
-        srcidx++;
-      }
-      return false;
-    }
-  }
+    return (nocase ? (toupper(cur)==toupper(next)) : cur == next);
 }
 
-bool jlib_decl WildMatch(const char *src, int srclen, const char *pat, int patlen,bool nocase)
+/* Search for a pattern pat anywhere within the search string src */
+static bool WildSubStringMatch(const char *src, size_t srclen, const char *pat, size_t patlen, bool nocase)
+{
+    //On entry the pattern to match contains at least one leading non '*' character
+    char pat0 = pat[0];
+    if (nocase)
+        pat0 = toupper(pat[0]);
+
+    //Could special case '?' at the start of the string, but fairly unlikely.
+    for (size_t srcdelta=0; srcdelta < srclen; srcdelta++)
+    {
+        size_t patidx=0;
+        size_t srcidx = srcdelta;
+        if (likely(pat0 != '?'))
+        {
+            //Quick scan to find a match for the first character
+            if (!nocase)
+            {
+                for (;;)
+                {
+                    if (unlikely(src[srcdelta] == pat0))
+                        break;
+                    srcdelta++;
+                    if (unlikely(srcdelta == srclen))
+                        return false;
+                }
+            }
+            else
+            {
+                for (;;)
+                {
+                    if (unlikely(toupper(src[srcdelta]) == pat0))
+                        break;
+                    srcdelta++;
+                    if (unlikely(srcdelta == srclen))
+                        return false;
+                }
+            }
+            patidx=1;
+            srcidx = srcdelta+1;
+        }
+        for (;;)
+        {
+            if (patidx == patlen)
+                return true;
+
+            char next = pat[patidx];
+            if (next == '*')
+            {
+                do
+                {
+                    patidx++;
+                }
+                while ((patidx < patlen) && (pat[patidx] == '*'));
+                dbgassertex((patidx != patlen)); // pattern should never finish with a '*'
+                if (WildSubStringMatch(src+srcidx, srclen-srcidx, pat+patidx, patlen-patidx, nocase))
+                    return true;
+                break; // retry at next position
+            }
+            if (srcidx == srclen)
+                break; // retry at next position
+            if (next != '?')
+            {
+                char cur = src[srcidx];
+                if (!matches(cur, next, nocase))
+                    break; // retry at next position
+            }
+            patidx++;
+            srcidx++;
+        }
+    }
+    return false;
+}
+
+static bool WildMatchN ( const char *src, size_t srclen, size_t srcidx,
+                    const char *pat, size_t patlen, size_t patidx, bool nocase)
+{
+    //First check for matching prefix
+    char next;
+    while (patidx < patlen)
+    {
+        next = pat[patidx];
+        if (next == '*')
+            break;
+        if (srcidx >= srclen)
+            return false;
+        if (next != '?')
+        {
+            if (!matches(src[srcidx], next, nocase))
+                return false;
+        }
+        srcidx++;
+        patidx++;
+    }
+
+    //Now check for matching suffix
+    while (patidx < patlen)
+    {
+        next = pat[patlen-1];
+        if (next == '*')
+            break;
+        if (srcidx >= srclen)
+            return false;
+        if (next != '?')
+        {
+            if (!matches(src[srclen-1], next, nocase))
+                return false;
+        }
+        srclen--;
+        patlen--;
+    }
+
+    //String contains no wildcards...
+    if (patidx == patlen)
+        return (srcidx == srclen);
+
+    dbgassertex(pat[patidx] == '*');
+    dbgassertex(pat[patlen-1] == '*');
+
+    //Skip multiple wildcards on the prefix and suffix.
+    while (patidx < patlen && pat[patidx] == '*')
+        patidx++;
+    while (patidx < patlen && pat[patlen-1] == '*')
+        patlen--;
+
+    //abc*def
+    if (patidx == patlen)
+        return true;
+
+    //Must match at least one character, if no characters left in the search string, then it fails to match
+    if (srcidx == srclen)
+        return false;
+
+    //Search for the remaining pattern at an arbitrary position with the search string
+    return WildSubStringMatch(src+srcidx, srclen-srcidx, pat+patidx, patlen-patidx, nocase);
+}
+
+bool jlib_decl WildMatch(const char *src, size_t srclen, const char *pat, size_t patlen, bool nocase)
 {
   return WildMatchN(src,srclen,0,pat,patlen,0,nocase);
 }
 
 bool jlib_decl WildMatch(const char *src, const char *pat, bool nocase)
 {
-    return WildMatch(src,(size32_t)strlen(src),pat,(size32_t)strlen(pat),nocase);
+    //This could match constant prefixes before calling strlen(), but unlikely to be very significant
+    return WildMatchN(src, strlen(src), 0, pat, strlen(pat), 0, nocase);
 }
 
 bool jlib_decl containsWildcard(const char * pattern)

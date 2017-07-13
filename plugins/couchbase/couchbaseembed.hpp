@@ -43,6 +43,7 @@
 #include "rtlfield.hpp"
 #include "roxiemem.hpp"
 
+#include <vector>
 
 namespace couchbaseembed
 {
@@ -215,12 +216,39 @@ namespace couchbaseembed
         CouchbaseConnection(const CouchbaseConnection &);
     };
 
+    enum PathNodeType {CPNTScalar, CPNTDataset, CPNTSet};
+
+    struct PathTracker
+    {
+        StringBuffer    nodeName;
+        PathNodeType    nodeType;
+        unsigned int    currentChildIndex;
+        unsigned int    childCount;
+        unsigned int    childrenProcessed;
+
+        // Simple constructor
+        PathTracker()
+        {}
+
+        // Constructor given node name and dataset bool
+        PathTracker(const StringBuffer& _nodeName, PathNodeType _nodeType)
+            :   nodeName(_nodeName), nodeType(_nodeType), currentChildIndex(0), childCount(0), childrenProcessed(0)
+        {}
+
+        // Copy constructor
+        PathTracker(const PathTracker& other)
+            :   nodeName(other.nodeName), nodeType(other.nodeType), currentChildIndex(other.currentChildIndex), childCount(other.childCount), childrenProcessed(other.childrenProcessed)
+        {}
+    };
+
     class CouchbaseRowBuilder : public CInterfaceOf<IFieldSource>
     {
     public:
-        CouchbaseRowBuilder(IPropertyTree * resultrow) :  m_fieldsProcessedCount(0), m_rowFieldCount(0)
+        CouchbaseRowBuilder(IPropertyTree * resultrow)
         {
             m_oResultRow.set(resultrow);
+            if (!m_oResultRow)
+                failx("Missing result row data");
         }
 
         virtual bool getBooleanResult(const RtlFieldInfo *field);
@@ -232,33 +260,23 @@ namespace couchbaseembed
         virtual void getUTF8Result(const RtlFieldInfo *field, size32_t &chars, char * &result);
         virtual void getUnicodeResult(const RtlFieldInfo *field, size32_t &chars, UChar * &result);
         virtual void getDecimalResult(const RtlFieldInfo *field, Decimal &value);
-        virtual void processBeginSet(const RtlFieldInfo * field, bool &isAll)
-        {
-            UNSUPPORTED("Embedded Couchbase support error: processBeginSet() not supported");
-        }
-        virtual bool processNextSet(const RtlFieldInfo * field)
-        {
-            UNSUPPORTED("Embedded Couchbase support error: processNextSet() not supported");
-            return false;
-        }
+        virtual void processBeginSet(const RtlFieldInfo * field, bool &isAll);
+        virtual bool processNextSet(const RtlFieldInfo * field);
         virtual void processBeginDataset(const RtlFieldInfo * field);
         virtual void processBeginRow(const RtlFieldInfo * field);
         virtual bool processNextRow(const RtlFieldInfo * field);
-        virtual void processEndSet(const RtlFieldInfo * field)
-        {
-            UNSUPPORTED("Embedded Couchbase support error: processEndSet() not supported");
-        }
+        virtual void processEndSet(const RtlFieldInfo * field);
         virtual void processEndDataset(const RtlFieldInfo * field);
         virtual void processEndRow(const RtlFieldInfo * field);
 
     protected:
         const char * nextField(const RtlFieldInfo * field);
+        const char * xpathOrName(const RtlFieldInfo * field) const;
+        void constructNewXPath(StringBuffer& outXPath, const char * nextNode) const;
     private:
         TokenDeserializer m_tokenDeserializer;
         Owned<IPropertyTree> m_oResultRow;
-        Owned<IPropertyTree> m_oNestedField;
-        int m_fieldsProcessedCount;
-        int m_rowFieldCount;
+        std::vector<PathTracker> m_pathStack;
     };
 
     // Bind Couchbase columns from an ECL record

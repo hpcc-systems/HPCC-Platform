@@ -17,6 +17,12 @@ PersonRec := RECORD
   AddressRec Address;
 END;
 
+PersonRecOut := RECORD
+  NameRec Name;
+  string FullName {xpath('name/<>')};
+  AddressRec Address;
+END;
+
 peeps_send := DATASET([{{'  Joe  ', '  Doe  '}, {'Fresno', 'CA', 11111}}], PersonRec);
 
 roxieEchoTestRequestRecord := RECORD
@@ -30,7 +36,7 @@ exceptionRec := RECORD
 END;
 
 roxieEchoTestResponseRecord := RECORD
-  DATASET(PersonRec) Peeps {XPATH('Dataset/Row')} := DATASET([], PersonRec);
+  DATASET(PersonRecOut) Peeps {XPATH('Dataset/Row')} := DATASET([], PersonRecOut);
   exceptionRec Exception {XPATH('Exception')};
 END;
 
@@ -66,3 +72,9 @@ stripResult := SOAPCALL(TargetURL, 'roxie_keepwhitespace', roxieEchoTestStripReq
 
 OUTPUT(stripResult, NAMED('stripResult'));
 
+
+//Test handling of roxie 500 server too busy
+//if roxie thread counts increase greatly we could increase PARALLEL value, or make it dynamic somehow
+d :=DATASET(3000, TRANSFORM(roxieEchoTestRequestRecord, SELF.peeps := peeps_send));
+
+OUTPUT(count(sort(SOAPCALL(d, TargetURL,'roxie_keepwhitespace', roxieEchoTestRequestRecord, DATASET(roxieEchoTestResponseRecord), PARALLEL(300)), record)), NAMED('serverTooBusy'));

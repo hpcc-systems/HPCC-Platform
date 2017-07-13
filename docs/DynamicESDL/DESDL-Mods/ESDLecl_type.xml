@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<sect2 id="ESDL_Attributes_ecl_type">
+<sect1 id="ESDL_Attributes_ecl_type">
   <title>ecl_type <indexterm>
       <primary>ecl_type</primary>
     </indexterm>("<emphasis role="bold">type</emphasis><emphasis
@@ -16,4 +16,4 @@
 
   <para>ESDL does not have a monetary type, so we use
   <emphasis>ecl_type</emphasis> to define it.</para>
-</sect2>
+</sect1>
