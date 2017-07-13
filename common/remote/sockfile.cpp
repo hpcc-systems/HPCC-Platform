@@ -2233,6 +2233,21 @@ public:
         // then also send sMode, cFlags
         unsigned short sMode = parent->getShareMode();
         unsigned short cFlags = parent->getCreateFlags();
+        switch ((compatIFSHmode)_compatmode)
+        {
+            case compatIFSHnone:
+                sMode = IFSHnone;
+                break;
+            case compatIFSHread:
+                sMode = IFSHread;
+                break;
+            case compatIFSHwrite:
+                sMode = IFSHfull;
+                break;
+            case compatIFSHall:
+                sMode = IFSHfull;
+                break;
+        }
         sendBuffer.append((RemoteFileCommandType)RFCopenIO).append(localname).append((byte)_mode).append((byte)_compatmode).append((byte)_extraFlags).append(sMode).append(cFlags);
         parent->sendRemoteCommand(sendBuffer, replyBuffer);
 
