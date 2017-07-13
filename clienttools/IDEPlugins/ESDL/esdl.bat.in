@@ -40,6 +40,7 @@ if %action%==Commit goto genecl
 if %action%==Submit goto publish
 if %action%==Generate goto genecl
 if %action%==Custom1 goto publish
+if %action%==Unknown goto publish
 if %action%==Custom2 goto genecl
 if %action%==Custom3 goto eof
 if %action%==Custom4 goto eof
