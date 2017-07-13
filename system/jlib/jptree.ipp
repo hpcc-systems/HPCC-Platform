@@ -429,9 +429,9 @@ struct PtrStrUnion
         if (isPtr() && ptr)
             PTR::destroy(ptr);
     }
-    bool set(const char *key)
+    bool set(const char *key, bool useInline)
     {
-        if (key)
+        if (key && useInline)
         {
             size32_t l = strnlen(key, sizeof(PTR *));  // technically sizeof(PTR)-1 would do, but I suspect 8 bytes is actually more optimal to search than 7
             if (l <= sizeof(PTR *)-2)
@@ -498,9 +498,9 @@ struct AttrStrUnionWithTable : public AttrStrUnion
             return roNameTable->getIndex(idx2)->str_DO_NOT_USE_DIRECTLY;  // Should probably rename this back now!
         return AttrStrUnion::get();
     }
-    bool set(const char *key)
+    bool set(const char *key, bool useInline)
     {
-        if (AttrStrUnion::set(key))
+        if (AttrStrUnion::set(key, useInline))
             return true;
         if (key && key[0]=='@')
         {
@@ -547,6 +547,8 @@ public:
     ChildMap *queryChildren() { return children; }
     aindex_t findChild(IPropertyTree *child, bool remove=false);
     inline bool isnocase() const { return IptFlagTst(flags, ipt_caseInsensitive); }
+    inline bool isWriteable() const { return !IptFlagTst(flags, ipt_readonly); }
+    inline bool isReadOnly() const { return IptFlagTst(flags, ipt_readonly); }
     ipt_flags queryFlags() const { return (ipt_flags) flags; }
     void serializeSelf(MemoryBuffer &tgt);
     void serializeCutOff(MemoryBuffer &tgt, int cutoff=-1, int depth=0);
