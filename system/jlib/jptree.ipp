@@ -517,15 +517,45 @@ struct AttrStrUnionWithTable : public AttrStrUnion
     }
     static RONameTable *roNameTable;
 };
+
+struct AttrStrUnionWithValueTable : public AttrStrUnion
+{
+    inline const char *get() const
+    {
+        if (flag==3) // no point in also checking !isPtr() afaics
+            return roValueTable->getIndex(idx2)->str_DO_NOT_USE_DIRECTLY;  // Should probably rename this back now!
+        return AttrStrUnion::get();
+    }
+    bool set(const char *key)
+    {
+        if (key)
+        {
+            unsigned idx = roValueTable->findIndex(key, AttrStrC::getHash(key));
+            if (idx != (unsigned) -1)
+            {
+                assert(idx <= 0xffff);
+                flag = 3;
+                idx2 = idx;
+                return true;
+            }
+#ifdef _TRACE_VALUE_MISSES
+            PROGLOG("notfound key = %s", key);
+#endif
+        }
+        return false;
+    }
+    static RONameTable *roValueTable;
+};
 #else
 typedef AttrStrUnion AttrStrUnionWithTable;
+typedef AttrStrUnion AttrStrUnionWithValueTable;
 
 #endif
 
 struct AttrValue
 {
     AttrStrUnionWithTable key;
-    AttrStrUnion value;
+    AttrStrUnionWithValueTable value;
 };
 
 

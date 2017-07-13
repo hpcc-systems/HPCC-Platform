@@ -459,9 +459,9 @@ protected:
     }       
 
 public:
-    CMinHashTable<C>()
+    CMinHashTable<C>(unsigned _initialSize = 7)
     {
-        htn = 7;
+        htn = _initialSize;
         n = 0;
         table = (C **)calloc(sizeof(C *),htn);
     }
