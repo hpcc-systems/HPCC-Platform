@@ -466,6 +466,7 @@ public:
             initMetaInfo(cachedMetaInfo);
             cachedMetaInfo.isSource = true;
             getPartsMetaInfo(cachedMetaInfo, partDescs.ordinality(), partDescs.getArray(), partHandler);
+            cachedMetaInfo.fastThrough = true;
         }
         info = cachedMetaInfo;
         if (info.totalRowsMin==info.totalRowsMax)
@@ -877,6 +878,8 @@ public:
     {
         initMetaInfo(info);
         info.isSource = true;
+        if (totalCountKnown)
+            info.fastThrough = true;
         // MORE TBD
     }
     virtual bool isGrouped() const override { return false; }
