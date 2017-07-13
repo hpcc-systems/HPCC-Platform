@@ -44,8 +44,8 @@ ESPStruct [nil_remove] Session
 
 ESPrequest [nil_remove] SessionQueryRequest
 {
-    int    Port;
     string FromIP;
+    string UserID;
 };
 
 ESPresponse [exceptions_inline, nil_remove, http_encode(0)] SessionQueryResponse
@@ -67,8 +67,9 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] SessionInfoResponse
 ESPrequest [nil_remove] CleanSessionRequest
 {
     string ID;
+    string UserID;
     string FromIP;
-    int    Port;
+    bool   AllSessions(false);
 };
 
 ESPresponse [exceptions_inline, nil_remove, http_encode(0)] CleanSessionResponse
@@ -80,9 +81,10 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] CleanSessionResponse
 ESPrequest [nil_remove] SetSessionTimeoutRequest
 {
     string ID;
+    string UserID;
     string FromIP;
-    int    Port;
     int    TimeoutMinutes;
+    bool   AllSessions(false);
 };
 
 ESPresponse [exceptions_inline, nil_remove, http_encode(0)] SetSessionTimeoutResponse

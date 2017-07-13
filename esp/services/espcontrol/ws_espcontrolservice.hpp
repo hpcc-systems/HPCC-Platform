@@ -29,7 +29,11 @@ class CWSESPControlEx : public CWSESPControl
     const char* readSessionTimeStamp(int t, StringBuffer& str);
     float readSessionTimeoutMin(int sessionTimeoutMinutes, int lastAccessed);
     IRemoteConnection* querySDSConnection(const char* xpath, unsigned mode, unsigned timeout);
-    IEspSession* setSessionInfo(const char* sessionID, IPropertyTree* espSessionTree, unsigned port, IEspSession* session);
+    IRemoteConnection* querySDSConnectionForESPSession(unsigned mode, unsigned timeout);
+    const char* setSessionXPath(bool allSessions, const char* _id, const char* _userID, const char* _fromIP, StringBuffer& xPath);
+    IEspSession* setSessionInfo(IPropertyTree* espSessionTree, unsigned port, IEspSession* session);
+    void cleanSessions(bool allSessions, const char* _id, const char* _userID, const char* _fromIP);
+    void setSessionTimeout(int timeoutMinutes, IPropertyTree& session);
 
 public:
     IMPLEMENT_IINTERFACE;
