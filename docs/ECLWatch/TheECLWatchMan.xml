@@ -1028,7 +1028,7 @@
           </mediaobject>
         </figure></para>
 
-      <sect2 id="TopologyTargets">
+      <sect2 id="TopologyTargets" role="brk">
         <title>Targets</title>
 
         <para>The <emphasis role="bold">Targets</emphasis> Action button
@@ -1052,7 +1052,7 @@
         the selected component.</para>
       </sect2>
 
-      <sect2 id="TopologyServices">
+      <sect2 id="TopologyServices" role="brk">
         <title>Services</title>
 
         <para>Press the <emphasis role="bold">Services</emphasis> Action
@@ -1078,7 +1078,7 @@
         selected component.</para>
       </sect2>
 
-      <sect2 id="ECLWatch_Operations_TopologyMachines">
+      <sect2 id="ECLWatch_Operations_TopologyMachines" role="brk">
         <title>Machines</title>
 
         <para>Press the <emphasis role="bold">Machines</emphasis> Action
@@ -1099,6 +1099,22 @@
         opens a node oriented view of the tree. Expand the nodes to see the
         services on each node. Select the component to view the Summary,
         Configuration, or Logs tabs for that selected component.</para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>Roxie File Copy Status</title>
+
+        <para>In the Topology section for Roxie clusters, the <emphasis
+        role="bold">Roxie Files Copy Status</emphasis> tab shows the number of
+        files a cluster has left to copy.<figure>
+            <title>File Copy Status</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA467.jpg" vendor="ECLWatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
       </sect2>
     </sect1>
 
