@@ -204,11 +204,14 @@ public:
         if ((rightpartition && (0 == index)) || (!rightpartition && (1 == index)))
         {
             secondaryInputIndex = index;
-            IEngineRowStream *secondaryStream = queryInputStream(secondaryInputIndex);
-            IStartableEngineRowStream *lookAhead = createRowStreamLookAhead(this, secondaryStream, queryRowInterfaces(_input.itdl), JOIN_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(_input.itdl->queryFromActivity()),
-                                                        false, RCUNBOUND, this, &container.queryJob().queryIDiskUsage());
-            setLookAhead(secondaryInputIndex, lookAhead),
-            secondaryInputStream = lookAhead;
+            secondaryInputStream = queryInputStream(secondaryInputIndex);
+            if (!isFastThrough(_input.itdl))
+            {
+                IStartableEngineRowStream *lookAhead = createRowStreamLookAhead(this, secondaryInputStream, queryRowInterfaces(_input.itdl), JOIN_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(_input.itdl->queryFromActivity()),
+                                                            false, RCUNBOUND, this, &container.queryJob().queryIDiskUsage());
+                setLookAhead(secondaryInputIndex, lookAhead),
+                secondaryInputStream = lookAhead;
+            }
         }
         else
         {

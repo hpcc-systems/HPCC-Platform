@@ -425,6 +425,28 @@ void calcMetaInfoSize(ThorDataLinkMetaInfo &info, ThorDataLinkMetaInfo *infos, u
         info.totalRowsMin = 0; // a good bet
 }
 
+bool isFastThrough(IThorDataLink *input)
+{
+    CSlaveActivity *act = (CSlaveActivity *)input->queryFromActivity();
+    if (act)
+    {
+        ThorDataLinkMetaInfo info;
+        act->getMetaInfo(info);
+        if (!info.fastThrough)
+            return false;
+        unsigned i=0;
+        while (true)
+        {
+            input = act->queryInput(i++);
+            if (!input)
+                break;
+            if (!isFastThrough(input))
+                return false;
+        }
+    }
+    return true;
+}
+
 static bool canStall(CActivityBase *act)
 {
     if (!act)
