@@ -19,7 +19,8 @@
 // Service definition
 SHARED sqs := SERVICE : plugin('sqs'), namespace('SQSHPCCPlugin')
 
-    BOOLEAN PublishMessage(CONST VARSTRING region, CONST VARSTRING queueName, CONST VARSTRING message) : cpp,action,context,entrypoint='publishMessage';
+    BOOLEAN PublishMessage(CONST VARSTRING region, CONST VARSTRING queueName, CONST VARSTRING message,BOOLEAN useProxy,CONST VARSTRING proxyHost, INTEGER4 proxyPort,CONST VARSTRING proxyUsername,CONST VARSTRING proxyPassword) : cpp,action,context,entrypoint='publishMessage';
+    BOOLEAN PublishOrderedMessage(CONST VARSTRING region, CONST VARSTRING queueName, CONST VARSTRING message,CONST VARSTRING messagecount, BOOLEAN useProxy,CONST VARSTRING proxyHost,INTEGER4 proxyPort,CONST VARSTRING proxyUsername,CONST VARSTRING proxyPassword) : cpp,action,context,entrypoint='publishOrderedMessage';
     BOOLEAN IsQueueExist(CONST VARSTRING region,CONST VARSTRING queueName):cpp,action,context,entrypoint='isQueueExist';
     BOOLEAN CreateQueue(CONST VARSTRING region,CONST VARSTRING queueName):cpp,action,context,entrypoint='createQueue';
 END;
@@ -31,10 +32,11 @@ END;
  *                          cannot be an empty string; REQUIRED
  * @param   region          The AWS region is the zone where is the queue SQS is located. By default is "eu_west_1"       
  */
-EXPORT SQSPublisher(VARSTRING queue, VARSTRING region = 'eu_west_1') := MODULE
+EXPORT SQSPublisher(VARSTRING queue, VARSTRING region = 'eu_west_1',BOOLEAN useProxy=false,VARSTRING proxyHost='localhost', INTEGER4 proxyPort=0,VARSTRING proxyUsername='',VARSTRING proxyPassword='') := MODULE
 
 
-  EXPORT BOOLEAN PublishMessage(CONST VARSTRING message) := sqs.PublishMessage(region,queue,message);
+  EXPORT BOOLEAN PublishMessage(CONST VARSTRING message) := sqs.PublishMessage(region,queue,message,useProxy,proxyHost,proxyPort,proxyUsername,proxyPassword);
+  EXPORT BOOLEAN PublishOrderedMessage(CONST VARSTRING message,CONST VARSTRING messagecount) := sqs.PublishOrderedMessage(region,queue,message,messagecount,useProxy,proxyHost,proxyPort,proxyUsername,proxyPassword);
   EXPORT BOOLEAN IsQueueExist():= sqs.isQueueExist(region,queue);
   EXPORT BOOLEAN CreateQueue():= sqs.createQueue(region,queue);
 END;
