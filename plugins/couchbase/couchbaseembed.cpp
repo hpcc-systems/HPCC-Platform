@@ -935,7 +935,7 @@ namespace couchbaseembed
 
             constructNewXPath(newXPath, xpath);
 
-            m_oNestedField.set(m_oResultRow->queryBranch(field->name->queryStr()));
+            newPathNode.childCount = m_oResultRow->getCount(newXPath);
             m_pathStack.push_back(newPathNode);
         }
         else
