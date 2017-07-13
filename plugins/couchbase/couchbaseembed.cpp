@@ -1070,7 +1070,7 @@ namespace couchbaseembed
         }
         else
         {
-            xpath = str(field->name);
+            xpath = field->name;
         }
 
         return xpath;
