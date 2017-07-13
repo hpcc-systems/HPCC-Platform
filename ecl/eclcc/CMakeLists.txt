@@ -42,6 +42,7 @@ include_directories (
          ./../../dali/base
          ./../../system/mp
          ./../../rtl/include 
+         ./../../rtl/eclrtl 
          ./../../system/jlib 
          ./../../common/remote
          ./../../system/security/shared

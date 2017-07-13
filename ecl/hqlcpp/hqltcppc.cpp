@@ -3162,7 +3162,7 @@ bool ColumnToOffsetMap::buildReadAhead(HqlCppTranslator & translator, BuildCtx &
 void ColumnToOffsetMap::buildAccessor(StringBuffer & accessorName, HqlCppTranslator & translator, BuildCtx & declarectx, IHqlExpression * selector)
 {
     StringBuffer typeName;
-    translator.buildRtlType(typeName, record->queryType(), 0);
+    translator.buildRtlType(typeName, record->queryType());
 
     BuildCtx ctx(declarectx);
     ctx.setNextPriority(TypeInfoPrio);

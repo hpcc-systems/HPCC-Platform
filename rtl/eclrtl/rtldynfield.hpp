@@ -22,27 +22,84 @@
 
 //These classes support the dynamic creation of type and field information
 
-struct ECLRTL_API RtlDynFieldInfo : public RtlFieldInfo
-{
-public:
-    RtlDynFieldInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type)
-    : RtlFieldInfo(_name, _xpath, _type, nullptr)
-    {
-    }
-    ~RtlDynFieldInfo()
-    {
-        free(const_cast<char *>(name));
-        free(const_cast<char *>(xpath));
-    }
-};
-
-
 //-------------------------------------------------------------------------------------------------------------------
 
-struct ECLRTL_API RtlDynRecordTypeInfo : public RtlRecordTypeInfo
+/*
+ * Used to represent the info that is needed to dynamically create an RtlTypeInfo object
+ */
+struct ECLRTL_API FieldTypeInfoStruct
 {
-    inline RtlDynRecordTypeInfo(unsigned _fieldType, unsigned _length, const RtlFieldInfo * const * _fields) : RtlRecordTypeInfo(_fieldType, _length, _fields) {}
-    ~RtlDynRecordTypeInfo() { delete[] fields; }
+public:
+    unsigned fieldType = 0;
+    unsigned length = 0;
+    const char *locale = nullptr;
+    const char *className = nullptr;
+    const RtlTypeInfo *childType = nullptr;
+    const RtlFieldInfo * * fieldsArray = nullptr;
+
+    const RtlTypeInfo *createRtlTypeInfo() const;
 };
+
+interface ITypeInfo;
+
+/**
+ *   IRtlFieldTypeDeserializer is used to manage the creation of RtlTypeInfo structures dynamically.
+ *   All created structures are owned by the deserializer and will be destroyed when the deserializer is destroyed.
+ */
+interface IRtlFieldTypeDeserializer : public IInterface
+{
+    /*
+     * Create RtlTypeInfo structures from a serialized json representation
+     *
+     * @param json The json representation
+     * @return     Deserialized RtlTypeInfo structure
+     */
+    virtual const RtlTypeInfo *deserialize(const char *json) = 0;
+
+    /*
+     * Create a single RtlTypeInfo structure from a FieldTypeInfoStruct
+     *
+     * @param info The information used to create the type
+     * @param key  A unique pointer used to dedup typeinfo structures
+     * @return     RtlTypeInfo structure
+     */
+    virtual const RtlTypeInfo *addType(FieldTypeInfoStruct &info, const ITypeInfo *key) = 0;
+    /*
+     * Check if a type has already been created for a given key
+     *
+     * @param key  A unique pointer used to dedup typeinfo structures
+     * @return     RtlTypeInfo structure, or nullptr if not yet created
+     */
+    virtual const RtlTypeInfo *lookupType(const ITypeInfo *key) const = 0;
+    /*
+     * Create RtlFieldInfo structure as part of a RtlTypeInfo tree
+     *
+     * @param fieldName Field name
+     * @param xpath     XPath
+     * @param type      Field type
+     * @param flags     Field flags
+     * @param init      Field initializer, or nullptr
+     * @return          RtlFieldInfo structure. All strings will be owned by the deserializer object
+     */
+    virtual const RtlFieldInfo *addFieldInfo(const char *fieldName, const char *xpath, const RtlTypeInfo *type, unsigned flags, const char *init) = 0;
+
+};
+
+extern ECLRTL_API IRtlFieldTypeDeserializer *createRtlFieldTypeDeserializer();
+
+extern ECLRTL_API StringBuffer &dumpTypeInfo(StringBuffer &ret, const RtlTypeInfo *t);
+
+/**
+ * Serialize metadata of supplied stream to JSON, and return it to ECL caller as a string. Used for testing serializer.
+ *
+ */
+extern ECLRTL_API void dumpDatasetType(size32_t & __lenResult,char * & __result,IOutputMetaData &  metaVal,IRowStream * val);
+
+/**
+ * Serialize metadata of supplied record to JSON, and return it to ECL caller as a string. Used for testing serializer.
+ *
+ */
+extern ECLRTL_API void dumpRecordType(size32_t & __lenResult,char * & __result,IOutputMetaData &  metaVal,const byte * val);
+
 
 #endif

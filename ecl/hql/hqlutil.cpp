@@ -17,6 +17,7 @@
 #include "jliball.hpp"
 #include "hql.hpp"
 #include "eclrtl.hpp"
+#include "rtldynfield.hpp"
 
 #include "platform.h"
 #include "jlib.hpp"
@@ -7701,6 +7702,7 @@ public:
 
         if (formals->numChildren())
         {
+            bool hasMeta = getBoolAttribute(body, passParameterMetaAtom, false);
             ForEachChild(i, formals)
             {
                 IHqlExpression * param = formals->queryChild(i);
@@ -7711,7 +7713,7 @@ public:
 
                 if (isOut)
                     mangled.append("R");
-                if (!mangleSimpleType(mangled, paramType, isConst))
+                if (!mangleSimpleType(mangled, paramType, isConst, hasMeta))
                     return false;
             }
         }
@@ -7721,7 +7723,7 @@ public:
     }
 
 protected:
-    bool mangleSimpleType(StringBuffer & result, ITypeInfo * type, bool hasConst)
+    bool mangleSimpleType(StringBuffer & result, ITypeInfo * type, bool hasConst, bool hasMeta)
     {
         if (!type)
             return false;
@@ -7768,13 +7770,13 @@ protected:
             result.append("c");
             return true;
         case type_enumerated:
-            return mangleSimpleType(result, type->queryChildType(), hasConst);
+            return mangleSimpleType(result, type->queryChildType(), hasConst, hasMeta);
         case type_pointer:
             result.append("P");
-            return mangleSimpleType(result, type->queryChildType(), hasConst);
+            return mangleSimpleType(result, type->queryChildType(), hasConst, hasMeta);
         case type_array:
             result.append("A").append(type->getSize()).append("_");;
-            return mangleSimpleType(result, type->queryChildType(), hasConst);
+            return mangleSimpleType(result, type->queryChildType(), hasConst, hasMeta);
         case type_table:
         case type_groupedtable:
             result.append("j"); // size32_t
@@ -7786,7 +7788,9 @@ protected:
             result.append(lookupRepeat(hasConst ? "PKv" : "Pv")); // *
             return true;
         case type_row:
-            result.append(lookupRepeat("Ph"));
+            if (hasMeta)
+                result.append(lookupRepeat("R15IOutputMetaData"));
+            result.append(lookupRepeat("PKh"));  // Does not seem to depend on const
             return true;
         case type_void:
             result.append("v");
@@ -8684,10 +8688,16 @@ bool ConstantRowCreator::processFieldValue(IHqlExpression * optLhs, ITypeInfo * 
     switch (lhsType->getTypeCode())
     {
     case type_packedint:
+    {
         if (!rhs->queryValue())
             return false;
-        //MORE: Could handle this...
-        return false;
+        unsigned orig = out.length();
+        void *tgt = out.reserve(9);
+        rtlSetPackedUnsigned(tgt, rhs->queryValue()->getIntValue());
+        unsigned actualSize = rtlGetPackedSize(tgt);
+        out.setLength(orig+actualSize);
+        return true;
+    }
     case type_set:
         if (isNullList(rhs))
         {
@@ -8809,6 +8819,22 @@ bool ConstantRowCreator::processFieldValue(IHqlExpression * optLhs, ITypeInfo * 
             castValue->toMem(out.reserve(lenValue));
             return true;
         }
+    case type_varunicode:
+    {
+        if (sizeLhs == UNKNOWN_LENGTH)
+        {
+            void * target = out.reserve((lenValue+1)*sizeof(UChar));
+            castValue->toMem(target);
+        }
+        else
+        {
+            UChar * target = (UChar *) out.reserve(sizeLhs*sizeof(UChar));
+            for (size32_t pos = 0; pos < sizeLhs; pos++)
+                target[pos] = (UChar) ' ';
+            castValue->toMem(target);
+        }
+        return true;
+    }
     case type_varstring:
         {
             //Move to else
@@ -8819,9 +8845,6 @@ bool ConstantRowCreator::processFieldValue(IHqlExpression * optLhs, ITypeInfo * 
             }
             else
             {
-                //Disabled for the moment to prevent the size of generated expressions getting too big.
-                if (sizeLhs > 40)
-                    return false;
                 void * target = out.reserve(sizeLhs);
                 memset(target, ' ', sizeLhs);   // spaces expand better in the c++
                 castValue->toMem(target);
@@ -8837,9 +8860,6 @@ bool ConstantRowCreator::processFieldValue(IHqlExpression * optLhs, ITypeInfo * 
             castValue->toMem(out.reserve(castValue->getSize()));
             return true;
         }
-    //MORE:
-    //type_varunicode
-    //type_packedint
     }
     return false;
 }
@@ -9493,3 +9513,337 @@ IHqlExpression * convertSetToExpression(bool isAll, size32_t len, const void * p
     }
     return createValue(no_list, LINK(setType), results);
 }
+
+//-------------------------------------------------------------------------------------------------
+
+void getFieldTypeInfo(FieldTypeInfoStruct &out, ITypeInfo *type)
+{
+    assertex(type);
+    type_t tc = type->getTypeCode();
+    if (tc == type_record)
+        type = queryUnqualifiedType(type);
+
+    if (tc == type_alien)
+    {
+        ITypeInfo * physicalType = queryAlienType(type)->queryPhysicalType();
+        if (physicalType->getSize() != UNKNOWN_LENGTH)
+        {
+            //Don't use the generated class for xml generation since it will generate physical rather than logical
+            out.fieldType |= (RFTMalien|RFTMinvalidxml|RFTMnoserialize);
+            type = physicalType;
+            tc = type->getTypeCode();
+        }
+        else
+        {
+            out.fieldType |= RFTMunknownsize;
+            //can't work out the size of the field - to keep it as unknown for the moment.
+            //until the alien field type is supported
+        }
+    }
+    out.fieldType |= tc;
+    out.length = type->getSize();
+    out.locale = nullptr;
+    out.className = nullptr;
+    if (out.length == UNKNOWN_LENGTH)
+    {
+        out.fieldType |= RFTMunknownsize;
+        out.length = 0;
+    }
+
+    switch (tc)
+    {
+    case type_boolean:
+        out.className = "RtlBoolTypeInfo";
+        break;
+    case type_real:
+        out.className ="RtlRealTypeInfo";
+        break;
+    case type_date:
+    case type_enumerated:
+    case type_int:
+        out.className = "RtlIntTypeInfo";
+        if (!type->isSigned())
+            out.fieldType |= RFTMunsigned;
+        break;
+    case type_swapint:
+        out.className = "RtlSwapIntTypeInfo";
+        if (!type->isSigned())
+            out.fieldType |= RFTMunsigned;
+        break;
+    case type_packedint:
+        out.className = "RtlPackedIntTypeInfo";
+        if (!type->isSigned())
+            out.fieldType |= RFTMunsigned;
+        break;
+    case type_decimal:
+        out.className = "RtlDecimalTypeInfo";
+        if (!type->isSigned())
+            out.fieldType |= RFTMunsigned;
+        out.length = type->getDigits() | (type->getPrecision() << 16);
+        break;
+    case type_char:
+        out.className = "RtlCharTypeInfo";
+        break;
+    case type_data:
+        out.className = "RtlDataTypeInfo";
+        break;
+    case type_qstring:
+        out.className = "RtlQStringTypeInfo";
+        out.length = type->getStringLen();
+        break;
+    case type_varstring:
+        out.className = "RtlVarStringTypeInfo";
+        if (type->queryCharset() && type->queryCharset()->queryName()==ebcdicAtom)
+            out.fieldType |= RFTMebcdic;
+        out.length = type->getStringLen();
+        break;
+    case type_string:
+        out.className = "RtlStringTypeInfo";
+        if (type->queryCharset() && type->queryCharset()->queryName()==ebcdicAtom)
+            out.fieldType |= RFTMebcdic;
+        break;
+    case type_bitfield:
+        {
+        out.className = "RtlBitfieldTypeInfo";
+        unsigned size = type->queryChildType()->getSize();
+        unsigned bitsize = type->getBitSize();
+        unsigned offset = (unsigned)getIntValue(queryAttributeChild(type, bitfieldOffsetAtom, 0),-1);
+        bool isLastBitfield = (queryAttribute(type, isLastBitfieldAtom) != NULL);
+        if (isLastBitfield)
+            out.fieldType |= RFTMislastbitfield;
+        if (!type->isSigned())
+            out.fieldType |= RFTMunsigned;
+        out.length = size | (bitsize << 8) | (offset << 16);
+        break;
+        }
+    case type_record:
+        {
+            IHqlExpression * record = ::queryRecord(type);
+            out.className = "RtlRecordTypeInfo";
+            out.length = getMinRecordSize(record);
+            if (!isFixedSizeRecord(record))
+                out.fieldType |= RFTMunknownsize;
+            break;
+        }
+    case type_row:
+        {
+            out.className = "RtlRowTypeInfo";
+            if (hasLinkCountedModifier(type))
+                out.fieldType |= RFTMlinkcounted;
+            break;
+        }
+    case type_table:
+    case type_groupedtable:
+        {
+            out.className = "RtlDatasetTypeInfo";
+            if (hasLinkCountedModifier(type))
+            {
+                out.fieldType |= RFTMlinkcounted;
+                out.fieldType &= ~RFTMunknownsize;
+            }
+            break;
+        }
+    case type_dictionary:
+        {
+            out.className = "RtlDictionaryTypeInfo";
+            out.fieldType |= RFTMnoserialize;
+            if (hasLinkCountedModifier(type))
+            {
+                out.fieldType |= RFTMlinkcounted;
+                out.fieldType &= ~RFTMunknownsize;
+            }
+            break;
+        }
+    case type_set:
+        out.className = "RtlSetTypeInfo";
+        break;
+    case type_unicode:
+        out.className = "RtlUnicodeTypeInfo";
+        out.locale = str(type->queryLocale());
+        out.length = type->getStringLen();
+        break;
+    case type_varunicode:
+        out.className = "RtlVarUnicodeTypeInfo";
+        out.locale = str(type->queryLocale());
+        out.length = type->getStringLen();
+        break;
+    case type_utf8:
+        out.className = "RtlUtf8TypeInfo";
+        out.locale = str(type->queryLocale());
+        out.length = type->getStringLen();
+        break;
+    case type_blob:
+    case type_pointer:
+    case type_class:
+    case type_array:
+    case type_void:
+    case type_alien:
+    case type_none:
+    case type_any:
+    case type_pattern:
+    case type_rule:
+    case type_token:
+    case type_feature:
+    case type_event:
+    case type_null:
+    case type_scope:
+    case type_transform:
+    default:
+        out.className = "RtlUnimplementedTypeInfo";
+        out.fieldType |= (RFTMcontainsunknown|RFTMinvalidxml|RFTMnoserialize);
+        break;
+    }
+}
+
+bool checkXpathIsNonScalar(const char *xpath)
+{
+    return (strpbrk(xpath, "/?*[]<>")!=NULL); //anything other than a single tag/attr name cannot name a scalar field
+}
+
+unsigned buildRtlRecordFields(IRtlFieldTypeDeserializer &deserializer, unsigned &idx, const RtlFieldInfo * * fieldsArray, IHqlExpression *record, IHqlExpression *rowRecord)
+{
+    unsigned typeFlags = 0;
+    ForEachChild(i, record)
+    {
+        unsigned fieldFlags = 0;
+        IHqlExpression * field = record->queryChild(i);
+        switch (field->getOperator())
+        {
+        case no_ifblock:
+            typeFlags |= RFTMnoserialize;
+            break;
+        case no_field:
+        {
+            ITypeInfo *fieldType = field->queryType();
+            switch (fieldType->getTypeCode())
+            {
+            case type_alien:
+                //MORE:::
+                break;
+            case type_row:
+                //Backward compatibility - should revisit
+                fieldType = fieldType->queryChildType();
+                break;
+            case type_bitfield:
+                UNIMPLEMENTED;
+                break;
+            }
+
+            const RtlTypeInfo *type = buildRtlType(deserializer, fieldType);
+            typeFlags |= type->fieldType & RFTMinherited;
+            StringBuffer lowerName;
+            lowerName.append(field->queryName()).toLowerCase();
+
+            StringBuffer xpathName, xpathItem;
+            switch (field->queryType()->getTypeCode())
+            {
+            case type_set:
+                extractXmlName(xpathName, &xpathItem, NULL, field, "Item", false);
+                break;
+            case type_dictionary:
+            case type_table:
+            case type_groupedtable:
+                extractXmlName(xpathName, &xpathItem, NULL, field, "Row", false);
+                //Following should be in the type processing, and the type should include the information
+                if (field->hasAttribute(sizeAtom) || field->hasAttribute(countAtom))
+                    fieldFlags |= RFTMinvalidxml;
+                break;
+            default:
+                extractXmlName(xpathName, NULL, NULL, field, NULL, false);
+                break;
+            }
+            //Format of the xpath field is (nested-item 0x01 repeated-item)
+            if (xpathItem.length())
+                xpathName.append(xpathCompoundSeparatorChar).append(xpathItem);
+            if (xpathName.charAt(0) == '@')
+                fieldFlags |= RFTMhasxmlattr;
+            if (checkXpathIsNonScalar(xpathName))
+                fieldFlags |= RFTMhasnonscalarxpath;
+            const char *xpath = xpathName.str();
+            if (strcmp(lowerName, xpath)==0)
+                xpath = nullptr;
+
+            MemoryBuffer defaultInitializer;
+            IHqlExpression *defaultValue = queryAttributeChild(field, defaultAtom, 0);
+            if (defaultValue)
+            {
+                LinkedHqlExpr targetField = field;
+                if (fieldType->getTypeCode() == type_bitfield)
+                    targetField.setown(createField(field->queryId(), LINK(fieldType->queryChildType()), NULL));
+
+                if (!createConstantField(defaultInitializer, targetField, defaultValue))
+                    UNIMPLEMENTED;  // MORE - fail more gracefully!
+            }
+            fieldsArray[idx] = deserializer.addFieldInfo(lowerName, xpath, type, fieldFlags, (const char *) defaultInitializer.detach());
+            typeFlags |= fieldFlags & RFTMinherited;
+            idx++;
+            break;
+        }
+        case no_record:
+            typeFlags |= buildRtlRecordFields(deserializer, idx, fieldsArray, field, rowRecord);
+            break;
+        }
+    }
+    return typeFlags;
+}
+
+const RtlTypeInfo *buildRtlType(IRtlFieldTypeDeserializer &deserializer, ITypeInfo *type)
+{
+    assertex(type);
+    switch (type->getTypeCode())
+    {
+    case type_alien:
+        //MORE:::
+        break;
+    case type_row:
+        //Backward compatibility - should revisit
+        return buildRtlType(deserializer, type->queryChildType());
+    //case type_bitfield:
+        //fieldKey contains a field with a type annotated with offsets/isLastBitfield
+        //OwnedHqlExpr fieldKey = getRtlFieldKey(field, rowRecord);
+        //return buildRtlType(deserializer, fieldKey->queryType());
+    }
+
+    const RtlTypeInfo * found = deserializer.lookupType(type);
+    if (found)
+        return found;
+
+    FieldTypeInfoStruct info;
+    getFieldTypeInfo(info, type);
+
+    switch (info.fieldType & RFTMkind)
+    {
+    case type_record:
+        {
+            IHqlExpression * record = ::queryRecord(type);
+            unsigned numFields = getFlatFieldCount(record);
+            info.fieldsArray = new const RtlFieldInfo * [numFields+1];
+            unsigned idx = 0;
+            info.fieldType |= buildRtlRecordFields(deserializer, idx, info.fieldsArray, record, record);
+            info.fieldsArray[idx] = nullptr;
+            break;
+        }
+    case type_row:
+        {
+            info.childType = buildRtlType(deserializer, ::queryRecordType(type));
+            break;
+        }
+    case type_table:
+    case type_groupedtable:
+        {
+            info.childType = buildRtlType(deserializer, ::queryRecordType(type));
+            break;
+        }
+    case type_dictionary:
+        return nullptr;  // MORE - does this leak?
+    case type_set:
+        info.childType = buildRtlType(deserializer, type->queryChildType());
+        break;
+    }
+    if (info.childType)
+        info.fieldType |= info.childType->fieldType & RFTMinherited;
+
+    return deserializer.addType(info, type);
+}
+
+

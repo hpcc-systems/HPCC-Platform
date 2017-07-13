@@ -21,6 +21,7 @@
 #include "jstream.hpp"
 #include "jexcept.hpp"
 #include "jmisc.hpp"
+#include "rtldynfield.hpp"
 #include "deftype.hpp"
 #include "defvalue.hpp"
 #include "hqlexpr.hpp"
@@ -88,6 +89,9 @@ private:
     char*      stackbuf;
     char*      toFree[MAXARGS];
     int        numToFree;
+    bool       hasMeta;
+    Owned<IRtlFieldTypeDeserializer> deserializer;
+    IArrayOf<IOutputMetaData> metas;
 #ifdef MAXFPREGS
  #ifdef FPREG_FIXEDSIZE
     double      fpRegs[MAXFPREGS];
@@ -102,7 +106,7 @@ private:
 #endif
     unsigned align(unsigned size);
 public:
-    FuncCallStack(int size = DEFAULTSTACKSIZE);
+    FuncCallStack(bool hasMeta, int size);
     virtual ~FuncCallStack();
 
     unsigned getSp();
@@ -114,7 +118,8 @@ public:
  #endif
 #endif
 
-    int push(ITypeInfo* argType, IValue* paramValue);
+    int push(ITypeInfo* argType, IHqlExpression* curParam);
+    int pushMeta(ITypeInfo *type);
     int push(char* & val);
     int pushPtr(void * val);
     int pushRef(unsigned& val);

@@ -742,6 +742,35 @@ extern HQL_API IHqlExpression * queryTransformAssign(IHqlExpression * transform,
 extern HQL_API IHqlExpression * queryTransformAssignValue(IHqlExpression * transform, IHqlExpression * searchField);
 extern HQL_API IHqlExpression * convertSetToExpression(bool isAll, size32_t len, const void * ptr, ITypeInfo * setType);
 
+struct FieldTypeInfoStruct;
+interface IRtlFieldTypeDeserializer;
+class RtlTypeInfo;
+
+/*
+ * Check whether an xpath contains any non-scalar elements (and is this unsuitable for use when generating ECL)
+ *
+ * @param  xpath The xpath to check
+ * @return True if non-scalar elements are present.
+ */
+extern HQL_API bool checkXpathIsNonScalar(const char *xpath);
+
+/*
+ * Fill in field type information for specified type, for creation of runtime type information from compiler structures
+ *
+ * @param out  Filled in with resulting information
+ * @param type Compiler type
+ */
+extern HQL_API void getFieldTypeInfo(FieldTypeInfoStruct &out, ITypeInfo *type);
+
+/*
+ * Build a runtime type information structure from a compile-time type descriptor
+ *
+ * @param  deserializer Deserializer object used to create and own the resulting types
+ * @param  type         Compiler type information structure
+ * @return              Run-time type information structure, owned by supplied deserializer
+ */
+extern HQL_API const RtlTypeInfo *buildRtlType(IRtlFieldTypeDeserializer &deserializer, ITypeInfo *type);
+
 extern HQL_API bool isCommonSubstringRange(IHqlExpression * expr);
 extern HQL_API bool isFileOutput(IHqlExpression * expr);
 extern HQL_API bool isWorkunitOutput(IHqlExpression * expr);

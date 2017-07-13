@@ -1058,7 +1058,7 @@ public:
 
     IHqlExpression * getRtlFieldKey(IHqlExpression * expr, IHqlExpression * ownerRecord);
     unsigned buildRtlField(StringBuffer & instanceName, IHqlExpression * field, IHqlExpression * rowRecord);
-    unsigned buildRtlType(StringBuffer & instanceName, ITypeInfo * type, unsigned typeFlags);
+    unsigned buildRtlType(StringBuffer & instanceName, ITypeInfo * type);
     unsigned buildRtlRecordFields(StringBuffer & instanceName, IHqlExpression * record, IHqlExpression * rowRecord);
     unsigned expandRtlRecordFields(StringBuffer & fieldListText, IHqlExpression * record, IHqlExpression * rowRecord);
     unsigned buildRtlIfBlockField(StringBuffer & instanceName, IHqlExpression * ifblock, IHqlExpression * rowRecord);

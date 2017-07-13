@@ -1422,6 +1422,11 @@ protected:
         case type_any:
             line.append(irText);
             return;
+        case type_packedint:
+            if (!info.isSigned)
+                line.append("u");
+            line.append(irText);
+            return;
         case type_int:
         case type_swapint:
             {
@@ -1439,7 +1444,6 @@ protected:
                 line.append(info.length);
             return;
         case type_decimal:
-        case type_packedint:
         case type_bitfield:
         case type_enumerated:
             return;
@@ -1521,6 +1525,7 @@ protected:
             break;
         case type_int:
         case type_swapint:
+        case type_packedint:
             {
                 if (true)//info.isSigned)
                     line.append((__int64)info.intValue);
@@ -1534,7 +1539,6 @@ protected:
                 break;
             }
         case type_decimal:
-        case type_packedint:
         case type_string:
         case type_bitfield:
         case type_enumerated:
@@ -2063,13 +2067,13 @@ id_t ExpressionIRPlayer::doProcessConstant(IHqlExpression * expr)
         break;
     case type_int:
     case type_swapint:
+    case type_packedint:
         info.intValue = value->getIntValue();
         break;
     case type_real:
         info.realValue = value->getRealValue();
         break;
     case type_decimal:
-    case type_packedint:
     case type_string:
     case type_bitfield:
     case type_enumerated:

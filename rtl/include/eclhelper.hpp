@@ -44,8 +44,8 @@ typedef unsigned short UChar;
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      164
-#define MIN_ACTIVITY_INTERFACE_VERSION  164             //minimum value that is compatible with current interface - without using selectInterface
+#define ACTIVITY_INTERFACE_VERSION      165
+#define MIN_ACTIVITY_INTERFACE_VERSION  165             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
 
@@ -334,12 +334,14 @@ enum RtlFieldTypeMask
 
     RFTMalien               = 0x00000800,                   // this is the physical format of a user defined type, if unknown size we can't calculate it
     RFTMcontainsifblock     = 0x00000800,                   // contains an if block - if set on a record then it contains ifblocks, so can't work out field offsets.
-    RFTMhasnonscalarxpath   = 0x00001000,                   // field xpath contains only one node, and is therefore usable for naming scalar fields
+    RFTMhasnonscalarxpath   = 0x00001000,                   // field xpath contains multiple node, and is not therefore usable for naming scalar fields
 
     RFTMcontainsunknown     = 0x10000000,                   // contains a field of unknown type that we can't process properly
     RFTMinvalidxml          = 0x20000000,                   // cannot be called to generate xml
     RFTMhasxmlattr          = 0x40000000,                   // if specified, then xml output includes an attribute (recursive)
-    RFTMnoserialize         = 0x80000000,                   // cannot serialize this structure (contains ifblocks or other nasties)
+    RFTMnoserialize         = 0x80000000,                   // cannot serialize this typeinfo structure (contains ifblocks, dictionaries or other nasties)
+
+    RFTMinherited           = (RFTMcontainsunknown|RFTMinvalidxml|RFTMhasxmlattr|RFTMnoserialize)    // These flags are recursively set on any parent records too
 };
 
 //MORE: Can we provide any more useful information about ifblocks  E.g., a pseudo field?  We can add later if actually useful.
@@ -377,7 +379,6 @@ struct RtlTypeInfo : public RtlITypeInfo
     inline bool isFixedSize() const { return (fieldType & RFTMunknownsize) == 0; }
     inline bool isLinkCounted() const { return (fieldType & RFTMlinkcounted) != 0; }
     inline bool isUnsigned() const { return (fieldType & RFTMunsigned) != 0; }
-    inline bool hasNonScalarXpath() const { return (fieldType & RFTMhasnonscalarxpath) != 0; }
     inline unsigned getDecimalDigits() const { return (length & 0xffff); }
     inline unsigned getDecimalPrecision() const { return (length >> 16); }
     inline unsigned getBitfieldIntSize() const { return (length & 0xff); }
@@ -395,13 +396,16 @@ public:
 //Core struct used for representing meta for a field.  Effectively used as an interface.
 struct RtlFieldInfo
 {
-    inline RtlFieldInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type, const char *_initializer = NULL)
-    : name(_name), xpath(_xpath), type(_type), initializer((const byte *) _initializer) {}
+    inline RtlFieldInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type, unsigned _flags = 0, const char *_initializer = NULL)
+    : name(_name), xpath(_xpath), type(_type), flags(_type->fieldType | _flags), initializer((const byte *) _initializer) {}
 
     const char * name;
     const char * xpath;
     const RtlTypeInfo * type;
     const byte *initializer;
+    unsigned flags;
+
+    inline bool hasNonScalarXpath() const { return (flags & RFTMhasnonscalarxpath) != 0; }
 
     inline bool isFixedSize() const 
     { 

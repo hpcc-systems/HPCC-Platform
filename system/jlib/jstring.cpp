@@ -2169,10 +2169,13 @@ inline StringBuffer &encodeJSONChar(StringBuffer &s, const char *&ch, unsigned &
         case '\0':
             s.append("\\u0000");
             break;
+        case '\x7f':
+            s.append("\\u007f");
+            break;
         default:
             if (next >= ' ' && next < 128)
                 s.append(next);
-            else if (next < ' ' && next > 0)
+            else if (next < ' ')
                 s.append("\\u00").appendhex(next, true);
             else //json is always supposed to be utf8 (or other unicode formats)
             {

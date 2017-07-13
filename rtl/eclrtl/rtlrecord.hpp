@@ -24,9 +24,10 @@
 #include <alloca.h>
 #endif
 
+#include "eclrtl_imp.hpp"
 #include "rtlfield.hpp"
 
-//These classe provides a relatively efficient way to access fields within a variable length record structure.
+//These classes provides a relatively efficient way to access fields within a variable length record structure.
 // Probably convert to an interface with various concrete implementations for varing degrees of complexity
 //
 // Complications:
