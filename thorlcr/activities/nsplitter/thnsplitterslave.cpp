@@ -379,7 +379,6 @@ public:
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) override
     {
         initMetaInfo(info);
-        info.fastThrough = true;
         info.unknownRowsOutput = true;  // remove once calcMetaInfoSize() is called
 
         //GH->JCS I think the following line is correct and may remove some downstream spilling streams
