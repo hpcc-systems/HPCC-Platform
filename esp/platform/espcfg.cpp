@@ -113,26 +113,32 @@ StringBuffer &CVSBuildToEspVersion(char const * tag, StringBuffer & out)
 
 void CEspConfig::ensureSDSSessionDomains()
 {
+    bool hasAuthDomainSettings = false;
+    bool hasSessionAuth = false;
     bool hasDefaultSessionDomain = false;
     Owned<IPropertyTree> proc_cfg = getProcessConfig(m_envpt, m_process.str());
     Owned<IPropertyTreeIterator> it = proc_cfg->getElements("AuthDomains/AuthDomain");
     ForEach(*it)
     {
+        hasAuthDomainSettings = true;
         IPropertyTree& authDomain = it->query();
         const char* authType = authDomain.queryProp("@authType");
         if (isEmptyString(authType) || (!strieq(authType, "AuthPerSessionOnly") && !strieq(authType, "AuthTypeMixed")))
             continue;
 
+        hasSessionAuth = true;
         const char* authDomainName = authDomain.queryProp("@name");
-        if (isEmptyString(authDomainName))
+        if (isEmptyString(authDomainName) || strieq(authDomainName, "default"))
         {
             if (hasDefaultSessionDomain)
                 throw MakeStringException(-1, ">1 AuthDomains are not named.");
 
             hasDefaultSessionDomain = true;
-            authDomainName = "default";
         }
-
+    }
+    //Ensure SDS Session tree if there is session auth or there is no AuthDomain setting (ex. old environment.xml)
+    if (hasSessionAuth || !hasAuthDomainSettings)
+    {
         Owned<IRemoteConnection> conn = querySDS().connect(PathSessionRoot, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SESSION_SDS_LOCK_TIMEOUT);
         if (!conn)
             throw MakeStringException(-1, "Failed to connect to %s.", PathSessionRoot);

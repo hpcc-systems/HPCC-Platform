@@ -280,10 +280,13 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
     else
         domainName.set("default");
 
-    setSDSSession();
     readAuthDomainCfg(proc_cfg);
 
-    checkSessionTimeoutSeconds = proc_cfg->getPropInt("@checkSessionTimeoutSeconds", ESP_CHECK_SESSION_TIMEOUT);
+    if ((domainAuthType == AuthPerSessionOnly) || (domainAuthType == AuthTypeMixed))
+    {
+        setSDSSession();
+        checkSessionTimeoutSeconds = proc_cfg->getPropInt("@checkSessionTimeoutSeconds", ESP_CHECK_SESSION_TIMEOUT);
+    }
 }
 
 void EspHttpBinding::setSDSSession()
