@@ -202,15 +202,23 @@ define([
             }
 
             if (!this.dropZoneMachineSelect.initalized) {
+                var pathSepChar;
                 this.dropZoneMachineSelect.init({
                     DropZoneMachines: true,
                     callback: function (value, row) {
+                        var path = targetRow.machine.Directory.indexOf("\\");
                         targetRow.machine.Name = value
                         targetRow.machine.Netaddress = value
                         if (context.dropZoneFolderSelect) {
                             context.dropZoneFolderSelect._dropZoneTarget = targetRow;
-                            context.dropZoneFolderSelect.defaultValue = "/"
-                            context.dropZoneFolderSelect.loadDropZoneFolders();
+                            if (path > -1) {
+                                context.dropZoneFolderSelect.defaultValue = "\\"
+                                pathSepChar = "\\"
+                            } else {
+                                context.dropZoneFolderSelect.defaultValue = "/"
+                                pathSepChar = "/"
+                            }
+                            context.dropZoneFolderSelect.loadDropZoneFolders(pathSepChar);
                         }
                     }
                  });
