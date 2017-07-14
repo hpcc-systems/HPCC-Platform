@@ -886,7 +886,7 @@ public:
 
     void setGatherMeta(const MetaOptions & options);
 
-    inline IPropertyTree * getMetaTree() { return LINK(metaTree); }
+    inline IPropertyTree * getClearMetaTree() { return metaTree.getClear(); }
     inline IPropertyTree * queryArchive() const { return archive; }
     inline IEclRepository * queryRepository() const { return eclRepository; }
     inline bool isAborting() const { return aborting; }

@@ -223,6 +223,7 @@ public:
     Owned<IPropertyTree> srcArchive;
     Owned<IPropertyTree> generatedMeta;
     Owned<IPropertyTree> globalDependTree;
+    StringAttr metaOutputFilename;
     bool legacyImport;
     bool legacyWhen;
     bool fromArchive = false;
@@ -1260,8 +1261,13 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             }
 
 
-            if (optIncludeMeta || optGenerateMeta)
-                instance.generatedMeta.setown(parseCtx.getMetaTree());
+            if (optGenerateMeta)
+                instance.generatedMeta.setown(parseCtx.getClearMetaTree());
+            else if (optIncludeMeta && instance.metaOutputFilename)
+            {
+                Owned<IPropertyTree> meta = parseCtx.getClearMetaTree();
+                saveXML(instance.metaOutputFilename, meta, 0, XML_Embed|XML_LineBreak);
+            }
 
             if (parseCtx.globalDependTree)
                 instance.globalDependTree.set(parseCtx.globalDependTree);
@@ -2607,6 +2613,7 @@ void EclCC::processBatchedFile(IFile & file, bool multiThreaded)
 
             Owned<IErrorReceiver> localErrs = createFileErrorReceiver(logFile);
             EclCompileInstance info(&file, *localErrs, logFile, outFilename, optLegacyImport, optLegacyWhen, optIgnoreSignatures, optXml);
+            info.metaOutputFilename.set(metaFilename);
             processFile(info);
             if (info.wu &&
                 (info.wu->getDebugValueBool("generatePartialOutputOnError", false) || info.queryErrorProcessor().errCount() == 0))
@@ -2615,9 +2622,6 @@ void EclCC::processBatchedFile(IFile & file, bool multiThreaded)
                 Owned<IFile> xml = createIFile(xmlFilename);
                 info.stats.xmlSize = xml->size();
             }
-
-            if (info.generatedMeta)
-                saveXML(metaFilename, info.generatedMeta, 0, XML_Embed|XML_LineBreak);
 
             info.logStats(logTimings);
         }
