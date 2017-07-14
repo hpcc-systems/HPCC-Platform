@@ -32,6 +32,12 @@ echo New Input file:  %newinput% >> %TMP%\log.txt
 echo New Ouput file:  %newoutput% >> %TMP%\log.txt
 copy /Y %3 %newinput%
 
+set "clienttoolsdir=@ORIG_PREFIX@\@DIR_NAME@\@version@\clienttools"
+set "clienttoolsbindir=%clienttoolsdir%\bin"
+set "clienttoolscompdir=%clienttoolsdir%\componentfiles"
+
+echo clienttoolsdir: %clienttoolsdir% >> %TMP%\log.txt
+
 :begin
 if %action%==CalcIncludes goto eof
 if %action%==SyntaxCheck goto eof
@@ -54,12 +60,13 @@ for /f "tokens=1,2,3 delims=/:" %%a in ("%8") do set http=%%a&set server=%%b&set
 echo.server: %server% >> %TMP%\log.txt
 echo.port  : %port% >> %TMP%\log.txt
 
-:publish
-esdl publish %newinput% --server %server%  --port %port% --version 1.0 --username %6 --password %9 -v 2>%5 >>%TMP%\log.txt
+echo "%clienttoolsbindir%\esdl.exe publish %newinput% %2 --server %server%  --port %port% --version 1.0 --username %6 --password %9 -v" >>%TMP%\log.txt
+"%clienttoolsbindir%"\esdl.exe publish %newinput% %2 --server %server%  --port %port% --version 1.0 --username %6 --password %9 -v 2>%5 >>%TMP%\log.txt
 goto end
 
 :genecl
-esdl ecl %newinput% %TMP% --includes --rollup -cde "@ORIG_PREFIX@\@DIR_NAME@\@version@\clienttools\componentfiles" 2>%5 >>%TMP%\log.txt
+echo "%clienttoolsbindir%"\esdl.exe ecl %newinput% %TMP% --includes --rollup -cde "%clienttoolscompdir%" 2>%5 >>%TMP%\log.txt
+"%clienttoolsbindir%"\esdl.exe ecl %newinput% %TMP% --includes --rollup -cde "%clienttoolscompdir%" 2>%5 >>%TMP%\log.txt
 goto end
 
 :end
