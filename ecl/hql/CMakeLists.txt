@@ -156,7 +156,6 @@ target_link_libraries ( hql
          nbcd
          eclrtl
          deftype
-         workunit
          ${CPPUNIT_LIBRARIES}
     )
 

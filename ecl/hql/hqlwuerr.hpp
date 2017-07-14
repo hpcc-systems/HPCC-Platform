@@ -17,27 +17,8 @@
 #ifndef __HQLWUERR_HPP__
 #define __HQLWUERR_HPP__
 
+#include "jexcept.hpp"
 #include "hqlexpr.hpp"
-#include "workunit.hpp"
-
-class HQL_API WorkUnitErrorReceiver : implements IErrorReceiver, public CInterface
-{
-public:
-    WorkUnitErrorReceiver(IWorkUnit * _wu, const char * _component, bool _removeTimeStamp) { wu.set(_wu); component.set(_component); removeTimeStamp = _removeTimeStamp; }
-    IMPLEMENT_IINTERFACE;
-
-    virtual IError * mapError(IError * error);
-    virtual void exportMappings(IWorkUnit * wu) const { }
-    virtual void report(IError*);
-    virtual size32_t errCount();
-    virtual size32_t warnCount();
-
-private:
-    Owned<IWorkUnit> wu;
-    StringAttr component;
-    bool removeTimeStamp;
-};
-
 
 extern HQL_API IErrorReceiver * createCompoundErrorReceiver(IErrorReceiver * primary, IErrorReceiver * secondary);
 
