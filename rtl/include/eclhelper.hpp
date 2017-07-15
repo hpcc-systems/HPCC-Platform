@@ -361,9 +361,16 @@ interface RtlITypeInfo
     virtual const RtlTypeInfo * queryChildType() const = 0;
 
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const = 0;
+    virtual size32_t buildNull(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field) const = 0;
+    virtual size32_t buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *result) const = 0;
+    virtual size32_t buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *result) const = 0;
+    virtual size32_t buildInt(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, __int64 val) const = 0;
+    virtual size32_t buildReal(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, double val) const = 0;
 
+    virtual void getString(size32_t & resultLen, char * & result, const void * ptr) const = 0;
     virtual void getUtf8(size32_t & resultLen, char * & result, const void * ptr) const = 0;
     virtual __int64 getInt(const void * ptr) const = 0;
+    virtual double getReal(const void * ptr) const = 0;
     virtual size32_t getMinSize() const = 0;
 };
 
@@ -385,7 +392,10 @@ struct RtlTypeInfo : public RtlITypeInfo
     inline unsigned getBitfieldNumBits() const { return (length >> 8) & 0xff; }
     inline unsigned getBitfieldShift() const { return (length >> 16) & 0xff; }
     inline unsigned getType() const { return (fieldType & RFTMkind); }
-
+    virtual bool isScalar() const = 0;
+    virtual bool isNumeric() const = 0;
+    virtual bool canTruncate() const = 0;
+    virtual bool canExtend(char &) const = 0;
 public:
     unsigned fieldType;
     unsigned length;                // for bitfield (int-size, # bits, bitoffset) << 16

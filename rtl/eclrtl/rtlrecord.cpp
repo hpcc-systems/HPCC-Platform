@@ -24,6 +24,7 @@
 #include "eclrtl_imp.hpp"
 #include "rtlds_imp.hpp"
 #include "rtlrecord.hpp"
+#include "rtldynfield.hpp"
 
 /*
  * Potential different implementations (for all fixed size has no penalty):
@@ -111,7 +112,7 @@ static unsigned countFields(const RtlFieldInfo * const * fields, bool & contains
 }
 
 
-static const RtlFieldInfo * * expandNestedRows(const RtlFieldInfo * * target, const RtlFieldInfo * const * fields)
+static unsigned expandNestedRows(unsigned idx, const char *prefix, const RtlFieldInfo * const * fields, const RtlFieldInfo * * target, const char * *names)
 {
     for (;*fields;fields++)
     {
@@ -121,32 +122,36 @@ static const RtlFieldInfo * * expandNestedRows(const RtlFieldInfo * * target, co
         {
             const RtlFieldInfo * const * nested = type->queryFields();
             if (nested)
-                target = expandNestedRows(target, nested);
+            {
+                StringBuffer newPrefix(prefix);
+                newPrefix.append(cur->name).append('.');
+                idx = expandNestedRows(idx, newPrefix.str(), nested, target, names);
+            }
         }
         else
-            *target++ = cur;
+        {
+            if (prefix)
+            {
+                StringBuffer name(prefix);
+                name.append(cur->name);
+                names[idx] = name.detach();
+            }
+            else
+                names[idx] = nullptr;
+            target[idx++] = cur;
+        }
     }
-    return target;
+    return idx;
 }
 
 class FieldNameToFieldNumMap
 {
 public:
-    FieldNameToFieldNumMap(const RtlFieldInfo * const * fields, bool expand)
+    FieldNameToFieldNumMap(const RtlRecord &record)
     {
-        unsigned idx = 0;
-        if (expand)
-            expandFields(nullptr, idx, fields);
-        else
-        {
-            for (;*fields;fields++)
-            {
-                const RtlFieldInfo * cur = *fields;
-                const RtlTypeInfo * type = cur->type;
-                map.setValue(cur->name, idx);
-                idx++;
-            }
-        }
+        unsigned numFields = record.getNumFields();
+        for (unsigned idx = 0; idx < numFields;idx++)
+            map.setValue(record.queryName(idx), idx);
     }
     unsigned lookup(const char *name) const
     {
@@ -156,38 +161,7 @@ public:
         else
             return (unsigned) -1;
     }
-protected:
-    void expandFields(const char *prefix, unsigned &idx, const RtlFieldInfo * const * fields)
-    {
-        for (;*fields;fields++)
-        {
-            const RtlFieldInfo * cur = *fields;
-            const RtlTypeInfo * type = cur->type;
-            if (type->getType() == type_record)
-            {
-                const RtlFieldInfo * const * nested = type->queryFields();
-                if (nested)
-                {
-                    StringBuffer newPrefix(prefix);
-                    newPrefix.append(cur->name).append('.');
-                    expandFields(newPrefix, idx, nested);
-                }
-            }
-            else if (prefix)
-            {
-                StringBuffer name(prefix);
-                name.append(cur->name);
-                map.setValue(name, idx);
-                idx++;
-            }
-            else
-            {
-                map.setValue(cur->name, idx);
-                idx++;
-            }
-        }
-    }
-    MapStringTo<unsigned> map;
+    MapConstStringTo<unsigned> map;  // Note - does not copy strings - they should all have sufficient lifetime
 };
 
 RtlRecord::RtlRecord(const RtlRecordTypeInfo & record, bool expandFields)
@@ -195,10 +169,11 @@ RtlRecord::RtlRecord(const RtlRecordTypeInfo & record, bool expandFields)
 {
 }
 
-RtlRecord::RtlRecord(const RtlFieldInfo * const *_fields, bool expandFields) : fields(_fields), originalFields(_fields), nameMap(nullptr)
+RtlRecord::RtlRecord(const RtlFieldInfo * const *_fields, bool expandFields) : fields(_fields), originalFields(_fields), names(nullptr), nameMap(nullptr)
 {
     //MORE: Does not cope with ifblocks.
     numVarFields = 0;
+    numTables = 0;
     //Optionally expand out nested rows.
     if (expandFields)
     {
@@ -207,26 +182,41 @@ RtlRecord::RtlRecord(const RtlFieldInfo * const *_fields, bool expandFields) : f
         if (containsNested)
         {
             const RtlFieldInfo * * allocated  = new const RtlFieldInfo * [numFields+1];
+            names = new const char *[numFields];
             fields = allocated;
-            const RtlFieldInfo * * target = expandNestedRows(allocated, originalFields);
-            assertex(target == fields+numFields);
-            *target = nullptr;
+            unsigned idx = expandNestedRows(0, nullptr, originalFields, allocated, names);
+            assertex(idx == numFields);
+            allocated[idx] = nullptr;
         }
     }
     else
+    {
         numFields = countFields(fields);
-
+    }
     for (unsigned i=0; i < numFields; i++)
     {
-        if (!queryType(i)->isFixedSize())
+        const RtlTypeInfo *curType = queryType(i);
+        if (!curType->isFixedSize())
             numVarFields++;
+        if (curType->getType()==type_table || curType->getType()==type_record)
+            numTables++;
     }
 
     fixedOffsets = new size_t[numFields + 1];
     whichVariableOffset = new unsigned[numFields + 1];
     variableFieldIds = new unsigned[numVarFields];
-
+    if (numTables)
+    {
+        nestedTables = new const RtlRecord *[numTables];
+        tableIds = new unsigned[numTables];
+    }
+    else
+    {
+        nestedTables = nullptr;
+        tableIds = nullptr;
+    }
     unsigned curVariable = 0;
+    unsigned curTable = 0;
     size_t fixedOffset = 0;
     for (unsigned i=0;; i++)
     {
@@ -247,17 +237,46 @@ RtlRecord::RtlRecord(const RtlFieldInfo * const *_fields, bool expandFields) : f
             curVariable++;
             fixedOffset = 0;
         }
+        switch (curType->getType())
+        {
+        case type_table:
+            tableIds[curTable] = i;
+            nestedTables[curTable++] = new RtlRecord(curType->queryChildType()->queryFields(), expandFields);
+            break;
+        case type_record:
+            tableIds[curTable] = i;
+            nestedTables[curTable++] = new RtlRecord(curType->queryFields(), expandFields);
+            break;
+        }
     }
 }
 
 
 RtlRecord::~RtlRecord()
 {
+    if (names)
+    {
+        for (unsigned i = 0; i < numFields; i++)
+        {
+            free((char *) names[i]);
+        }
+        delete [] names;
+    }
     if (fields != originalFields)
+    {
         delete [] fields;
+    }
     delete [] fixedOffsets;
     delete [] whichVariableOffset;
     delete [] variableFieldIds;
+    delete [] tableIds;
+
+    if (nestedTables)
+    {
+        for (unsigned i = 0; i < numTables; i++)
+            delete nestedTables[i];
+        delete [] nestedTables;
+    }
     delete nameMap;
 }
 
@@ -286,9 +305,9 @@ size32_t RtlRecord::getMinRecordSize() const
     return minSize;
 }
 
-static const FieldNameToFieldNumMap *setupNameMap(const RtlFieldInfo * const * fields, bool expand, std::atomic<const FieldNameToFieldNumMap *> &aNameMap)
+static const FieldNameToFieldNumMap *setupNameMap(const RtlRecord &record, std::atomic<const FieldNameToFieldNumMap *> &aNameMap)
 {
-    const FieldNameToFieldNumMap *lnameMap = new FieldNameToFieldNumMap(fields, expand);
+    const FieldNameToFieldNumMap *lnameMap = new FieldNameToFieldNumMap(record);
     const FieldNameToFieldNumMap *expected = nullptr;
     if (aNameMap.compare_exchange_strong(expected, lnameMap))
         return lnameMap;
@@ -307,8 +326,25 @@ unsigned RtlRecord::getFieldNum(const char *fieldName) const
     std::atomic<const FieldNameToFieldNumMap *> &aNameMap = reinterpret_cast<std::atomic<const FieldNameToFieldNumMap *> &>(nameMap);
     const FieldNameToFieldNumMap *useMap = aNameMap.load(std::memory_order_relaxed);
     if (!useMap)
-        useMap = setupNameMap(originalFields, originalFields!=fields, aNameMap);
+        useMap = setupNameMap(*this, aNameMap);
     return useMap->lookup(fieldName);
+}
+
+const char *RtlRecord::queryName(unsigned field) const
+{
+    if (names && names[field])
+        return names[field];
+    return fields[field]->name;
+}
+
+const RtlRecord *RtlRecord::queryNested(unsigned fieldId) const
+{
+    // Map goes in wrong direction (for size reasons). We could replace with a hashtable or binsearch but
+    // should not be enough nested tables for it to be worth it;
+    for (unsigned i = 0; i < numTables; i++)
+        if (tableIds[i]==fieldId)
+            return nestedTables[i];
+    return nullptr;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -326,6 +362,20 @@ __int64 RtlRow::getInt(unsigned field) const
     const byte * self = reinterpret_cast<const byte *>(row);
     const RtlTypeInfo * type = info.queryType(field);
     return type->getInt(self + getOffset(field));
+}
+
+double RtlRow::getReal(unsigned field) const
+{
+    const byte * self = reinterpret_cast<const byte *>(row);
+    const RtlTypeInfo * type = info.queryType(field);
+    return type->getReal(self + getOffset(field));
+}
+
+void RtlRow::getString(size32_t & resultLen, char * & result, unsigned field) const
+{
+    const byte * self = reinterpret_cast<const byte *>(row);
+    const RtlTypeInfo * type = info.queryType(field);
+    return type->getString(resultLen, result, self + getOffset(field));
 }
 
 void RtlRow::getUtf8(size32_t & resultLen, char * & result, unsigned field) const
