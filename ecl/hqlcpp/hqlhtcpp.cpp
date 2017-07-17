@@ -63,7 +63,10 @@
 #include "eclrtl_imp.hpp"
 #include "rtlfield.hpp"
 #include "rtlds_imp.hpp"
+namespace hqlhtcpp
+{  // Make sure we can't clash with generated versions or version check mechanism fails (if this dll was ever in the future linked in runtime)
 #include "eclhelper_base.hpp"
+}
 
 #include "ctfile.hpp"   // for KEYBUILD_MAXLENGTH
 

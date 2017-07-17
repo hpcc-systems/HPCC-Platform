@@ -22,6 +22,7 @@
 #include "jlib.hpp"
 #include "eclhelper.hpp"
 #include "eclrtl_imp.hpp"
+#include "rtlds_imp.hpp"
 #include "rtlrecord.hpp"
 
 /*
@@ -128,8 +129,73 @@ static const RtlFieldInfo * * expandNestedRows(const RtlFieldInfo * * target, co
     return target;
 }
 
+class FieldNameToFieldNumMap
+{
+public:
+    FieldNameToFieldNumMap(const RtlFieldInfo * const * fields, bool expand)
+    {
+        unsigned idx = 0;
+        if (expand)
+            expandFields(nullptr, idx, fields);
+        else
+        {
+            for (;*fields;fields++)
+            {
+                const RtlFieldInfo * cur = *fields;
+                const RtlTypeInfo * type = cur->type;
+                map.setValue(cur->name, idx);
+                idx++;
+            }
+        }
+    }
+    unsigned lookup(const char *name) const
+    {
+        unsigned *result = map.getValue(name);
+        if (result)
+            return *result;
+        else
+            return (unsigned) -1;
+    }
+protected:
+    void expandFields(const char *prefix, unsigned &idx, const RtlFieldInfo * const * fields)
+    {
+        for (;*fields;fields++)
+        {
+            const RtlFieldInfo * cur = *fields;
+            const RtlTypeInfo * type = cur->type;
+            if (type->getType() == type_record)
+            {
+                const RtlFieldInfo * const * nested = type->queryFields();
+                if (nested)
+                {
+                    StringBuffer newPrefix(prefix);
+                    newPrefix.append(cur->name).append('.');
+                    expandFields(newPrefix, idx, nested);
+                }
+            }
+            else if (prefix)
+            {
+                StringBuffer name(prefix);
+                name.append(cur->name);
+                map.setValue(name, idx);
+                idx++;
+            }
+            else
+            {
+                map.setValue(cur->name, idx);
+                idx++;
+            }
+        }
+    }
+    MapStringTo<unsigned> map;
+};
 
-RtlRecord::RtlRecord(const RtlRecordTypeInfo & record, bool expandFields) : fields(record.fields), originalFields(record.fields)
+RtlRecord::RtlRecord(const RtlRecordTypeInfo & record, bool expandFields)
+: RtlRecord(record.fields, expandFields)  // delegated constructor
+{
+}
+
+RtlRecord::RtlRecord(const RtlFieldInfo * const *_fields, bool expandFields) : fields(_fields), originalFields(_fields), nameMap(nullptr)
 {
     //MORE: Does not cope with ifblocks.
     numVarFields = 0;
@@ -192,6 +258,7 @@ RtlRecord::~RtlRecord()
     delete [] fixedOffsets;
     delete [] whichVariableOffset;
     delete [] variableFieldIds;
+    delete nameMap;
 }
 
 
@@ -217,6 +284,31 @@ size32_t RtlRecord::getMinRecordSize() const
         minSize += queryType(i)->getMinSize();
 
     return minSize;
+}
+
+static const FieldNameToFieldNumMap *setupNameMap(const RtlFieldInfo * const * fields, bool expand, std::atomic<const FieldNameToFieldNumMap *> &aNameMap)
+{
+    const FieldNameToFieldNumMap *lnameMap = new FieldNameToFieldNumMap(fields, expand);
+    const FieldNameToFieldNumMap *expected = nullptr;
+    if (aNameMap.compare_exchange_strong(expected, lnameMap))
+        return lnameMap;
+    else
+    {
+        // Other thread already set it while we were creating
+        delete lnameMap;
+        return expected;  // has been updated to the value set by other thread
+    }
+}
+
+unsigned RtlRecord::getFieldNum(const char *fieldName) const
+{
+    // NOTE: the nameMap field cannot be declared as atomic, since the class definition is included in generated
+    // code which is not (yet) compiled using C++11. If that changes then the reinterpret_cast can be removed.
+    std::atomic<const FieldNameToFieldNumMap *> &aNameMap = reinterpret_cast<std::atomic<const FieldNameToFieldNumMap *> &>(nameMap);
+    const FieldNameToFieldNumMap *useMap = aNameMap.load(std::memory_order_relaxed);
+    if (!useMap)
+        useMap = setupNameMap(originalFields, originalFields!=fields, aNameMap);
+    return useMap->lookup(fieldName);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -259,4 +351,143 @@ RtlDynRow::~RtlDynRow()
 {
     delete [] variableOffsets;
 }
+
+//-----------------
+
+static const RtlRecord *setupRecordAccessor(const COutputMetaData &meta, bool expand, std::atomic<const RtlRecord *> &aRecordAccessor)
+{
+    const RtlRecord *lRecordAccessor = new RtlRecord(meta.queryTypeInfo()->queryFields(), expand);
+    const RtlRecord *expected = nullptr;
+    if (aRecordAccessor.compare_exchange_strong(expected, lRecordAccessor))
+        return lRecordAccessor;
+    else
+    {
+        // Other thread already set it while we were creating
+        delete lRecordAccessor;
+        return expected;  // has been updated to the value set by other thread
+    }
+}
+
+COutputMetaData::COutputMetaData()
+{
+    recordAccessor[0] = recordAccessor[1] = NULL;
+}
+
+COutputMetaData::~COutputMetaData()
+{
+    delete recordAccessor[0]; delete recordAccessor[1];
+}
+
+const RtlRecord *COutputMetaData::queryRecordAccessor(bool expand) const
+{
+    // NOTE: the recordAccessor field cannot be declared as atomic, since the class definition is included in generated
+    // code which is not (yet) compiled using C++11. If that changes then the reinterpret_cast can be removed.
+    std::atomic<const RtlRecord *> &aRecordAccessor = reinterpret_cast<std::atomic<const RtlRecord *> &>(recordAccessor[expand]);
+    const RtlRecord *useAccessor = aRecordAccessor.load(std::memory_order_relaxed);
+    if (!useAccessor)
+        useAccessor = setupRecordAccessor(*this, expand, aRecordAccessor);
+    return useAccessor;
+}
+
+class CVariableOutputRowSerializer : public COutputRowSerializer
+{
+public:
+    inline CVariableOutputRowSerializer(unsigned _activityId, IOutputMetaData * _meta) : COutputRowSerializer(_activityId) { meta = _meta; }
+
+    virtual void serialize(IRowSerializerTarget & out, const byte * self)
+    {
+        unsigned size = meta->getRecordSize(self);
+        out.put(size, self);
+    }
+
+protected:
+    IOutputMetaData * meta;
+};
+
+class ECLRTL_API CSimpleSourceRowPrefetcher : public ISourceRowPrefetcher, public RtlCInterface
+{
+public:
+    CSimpleSourceRowPrefetcher(IOutputMetaData & _meta, ICodeContext * _ctx, unsigned _activityId)
+    {
+        deserializer.setown(_meta.querySerializedDiskMeta()->createDiskDeserializer(_ctx, _activityId));
+        rowAllocator.setown(_ctx->getRowAllocator(&_meta, _activityId));
+    }
+
+    RTLIMPLEMENT_IINTERFACE
+
+    virtual void readAhead(IRowDeserializerSource & in)
+    {
+        RtlDynamicRowBuilder rowBuilder(rowAllocator);
+        size32_t len = deserializer->deserialize(rowBuilder, in);
+        rtlReleaseRow(rowBuilder.finalizeRowClear(len));
+    }
+
+protected:
+    Owned<IOutputRowDeserializer> deserializer;
+    Owned<IEngineRowAllocator> rowAllocator;
+};
+
+//---------------------------------------------------------------------------
+
+
+IOutputRowSerializer * COutputMetaData::createDiskSerializer(ICodeContext * ctx, unsigned activityId)
+{
+    return new CVariableOutputRowSerializer(activityId, this);
+}
+
+ISourceRowPrefetcher * COutputMetaData::createDiskPrefetcher(ICodeContext * ctx, unsigned activityId)
+{
+    ISourceRowPrefetcher * fetcher = defaultCreateDiskPrefetcher(ctx, activityId);
+    if (fetcher)
+        return fetcher;
+    //Worse case implementation using a deserialize
+    return new CSimpleSourceRowPrefetcher(*this, ctx, activityId);
+}
+
+ISourceRowPrefetcher *COutputMetaData::defaultCreateDiskPrefetcher(ICodeContext * ctx, unsigned activityId)
+{
+    if (getMetaFlags() & MDFneedserializedisk)
+        return querySerializedDiskMeta()->createDiskPrefetcher(ctx, activityId);
+    CSourceRowPrefetcher * fetcher = doCreateDiskPrefetcher(activityId);
+    if (fetcher)
+    {
+        fetcher->onCreate(ctx);
+        return fetcher;
+    }
+    return NULL;
+}
+
+IOutputRowSerializer *CFixedOutputMetaData::createDiskSerializer(ICodeContext * ctx, unsigned activityId)
+{
+    return new CFixedOutputRowSerializer(activityId, fixedSize);
+}
+
+IOutputRowDeserializer *CFixedOutputMetaData::createDiskDeserializer(ICodeContext * ctx, unsigned activityId)
+{
+    return new CFixedOutputRowDeserializer(activityId, fixedSize);
+}
+
+ISourceRowPrefetcher *CFixedOutputMetaData::createDiskPrefetcher(ICodeContext * ctx, unsigned activityId)
+{
+    ISourceRowPrefetcher * fetcher = defaultCreateDiskPrefetcher(ctx, activityId);
+    if (fetcher)
+        return fetcher;
+    return new CFixedSourceRowPrefetcher(activityId, fixedSize);
+}
+
+IOutputRowSerializer * CActionOutputMetaData::createDiskSerializer(ICodeContext * ctx, unsigned activityId)
+{
+    return new CFixedOutputRowSerializer(activityId, 0);
+}
+
+IOutputRowDeserializer * CActionOutputMetaData::createDiskDeserializer(ICodeContext * ctx, unsigned activityId)
+{
+    return new CFixedOutputRowDeserializer(activityId, 0);
+}
+
+ISourceRowPrefetcher * CActionOutputMetaData::createDiskPrefetcher(ICodeContext * ctx, unsigned activityId)
+{
+    return new CFixedSourceRowPrefetcher(activityId, 0);
+}
+
 

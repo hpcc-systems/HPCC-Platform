@@ -22,9 +22,6 @@
 #include "eclrtl_imp.hpp"
 #include "rtlfield.hpp"
 #include "rtlds_imp.hpp"
-namespace hqlstack {
-#include "eclhelper_base.hpp"
-}
 #include "rtlrecord.hpp"
 #include "rtldynfield.hpp"
 #include "hqlstack.hpp"
@@ -38,39 +35,37 @@ namespace hqlstack {
  *
  */
 
-class CDynamicOutputMetaData : public hqlstack::COutputMetaData
+class CDynamicOutputMetaData : public COutputMetaData
 {
 public:
-    CDynamicOutputMetaData(const RtlRecordTypeInfo & fields)
-    : offsetInformation(fields, true), typeInfo(fields)
+    CDynamicOutputMetaData(const RtlRecordTypeInfo & fields) : typeInfo(fields)
     {
-
     }
 
     virtual const RtlTypeInfo * queryTypeInfo() const { return &typeInfo; }
     virtual size32_t getRecordSize(const void * row)
     {
         //Allocate a temporary offset array on the stack to avoid runtime overhead.
-        unsigned numOffsets = offsetInformation.getNumVarFields() + 1;
+        const RtlRecord *offsetInformation = queryRecordAccessor(true);
+        unsigned numOffsets = offsetInformation->getNumVarFields() + 1;
         size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
-        RtlRow offsetCalculator(offsetInformation, row, numOffsets, variableOffsets);
+        RtlRow offsetCalculator(*offsetInformation, row, numOffsets, variableOffsets);
         return offsetCalculator.getRecordSize();
     }
 
     virtual size32_t getFixedSize() const
     {
-        return offsetInformation.getFixedSize();
+        return queryRecordAccessor(true)->getFixedSize();
     }
     // returns 0 for variable row size
     virtual size32_t getMinRecordSize() const
     {
-        return offsetInformation.getMinRecordSize();
+        return queryRecordAccessor(true)->getMinRecordSize();
     }
 
     virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId) { throwUnexpected(); }
 
 protected:
-    RtlRecord offsetInformation;
     const RtlTypeInfo &typeInfo;
 };
 
@@ -268,6 +263,19 @@ int FuncCallStack::push(ITypeInfo* argType, IHqlExpression* curParam)
         }
         else
             return -1;
+        break;
+    }
+    case type_record:
+    {
+        try
+        {
+            pushMeta(curParam->queryRecordType());
+        }
+        catch (IException *E)
+        {
+            ::Release(E);
+            return -1;
+        }
         break;
     }
     default:

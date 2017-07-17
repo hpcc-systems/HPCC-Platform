@@ -887,7 +887,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
     switch (paramType->getTypeCode())
     {
     case type_record:
-        out.append("IOutputMetaData * ");
+        out.append("IOutputMetaData &");
         break;
     case type_dictionary:
     case type_table:

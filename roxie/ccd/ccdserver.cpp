@@ -49,7 +49,7 @@
 #include "ftbase.ipp"
 
 namespace ccdserver_hqlhelper
-{
+{  // Make sure we can't clash with generated versions or version check mechanism fails.
 #include "eclhelper_base.hpp"
 }
 

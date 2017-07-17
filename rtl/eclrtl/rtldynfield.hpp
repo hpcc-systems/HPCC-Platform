@@ -90,16 +90,22 @@ extern ECLRTL_API IRtlFieldTypeDeserializer *createRtlFieldTypeDeserializer();
 extern ECLRTL_API StringBuffer &dumpTypeInfo(StringBuffer &ret, const RtlTypeInfo *t);
 
 /**
- * Serialize metadata of supplied stream to JSON, and return it to ECL caller as a string. Used for testing serializer.
- *
- */
-extern ECLRTL_API void dumpDatasetType(size32_t & __lenResult,char * & __result,IOutputMetaData &  metaVal,IRowStream * val);
-
-/**
  * Serialize metadata of supplied record to JSON, and return it to ECL caller as a string. Used for testing serializer.
  *
  */
-extern ECLRTL_API void dumpRecordType(size32_t & __lenResult,char * & __result,IOutputMetaData &  metaVal,const byte * val);
+extern ECLRTL_API void dumpRecordType(size32_t & __lenResult, char * & __result, IOutputMetaData &  metaVal);
+
+/**
+ * Extract a field from a record via dynamic column number
+ *
+ */
+extern ECLRTL_API void getFieldVal(size32_t & __lenResult, char * & __result, int column, IOutputMetaData &  metaVal, const byte *row);
+
+/**
+ * Extract a column number from a record via dynamic fieldname
+ *
+ */
+extern ECLRTL_API int getFieldNum(const char *fieldName, IOutputMetaData &  metaVal);
 
 
 #endif

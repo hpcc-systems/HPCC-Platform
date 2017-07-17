@@ -46,12 +46,10 @@
 #include "eclrtl_imp.hpp"
 #include "rtlread_imp.hpp"
 #include "rtlfield.hpp"
+#include "rtlrecord.hpp"
 #include "rtlds_imp.hpp"
 #include "rmtfile.hpp"
 
-namespace thormisc {  // Make sure we can't clash with generated versions or version check mechanism fails.
- #include "eclhelper_base.hpp" 
-}
 
 #define SDS_LOCK_TIMEOUT 30000
 
@@ -1133,7 +1131,7 @@ bool CFifoFileCache::isAvailable(const char *filename)
 IOutputMetaData *createFixedSizeMetaData(size32_t sz)
 {
     // sure if this allowed or is cheating!
-    return new thormisc::CFixedOutputMetaData(sz);
+    return new CFixedOutputMetaData(sz);
 }
 
 
