@@ -22,6 +22,8 @@
 ## Type of change:
 - [ ] This change is a bug fix (non-breaking change which fixes an issue).
 - [ ] This change is a new feature (non-breaking change which adds functionality).
+- [ ] This change improves the code (refactor or other change that does not change the functionality)
+- [ ] This change fixes warnings (the fix does not alter the functionality or the generated code)
 - [ ] This change is a breaking change (fix or feature that will cause existing behavior to change).
 - [ ] This change alters the query API (existing queries will have to be recompiled)
 
@@ -54,7 +56,7 @@
   - [ ] I have addressed them here
   - [ ] I have raised JIRA issues to address them separately
 - [ ] This is a user interface / front-end modification
-  - [ ] I have tested my changes in multiple modern browers
+  - [ ] I have tested my changes in multiple modern browsers
   - [ ] The component(s) render as expected
 
 ## Testing:
