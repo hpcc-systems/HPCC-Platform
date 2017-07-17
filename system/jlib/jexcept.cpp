@@ -1534,6 +1534,18 @@ IError * CError::cloneSetSeverity(ErrorSeverity newSeverity) const
                          getLine(), getColumn(), getPosition(), getActivity(), queryScope());
 }
 
+ErrorSeverity queryDefaultSeverity(WarnErrorCategory category)
+{
+    if (category == CategoryError)
+        return SeverityFatal;
+    if (category == CategoryInformation)
+        return SeverityInformation;
+    if (category == CategoryMistake)
+        return SeverityError;
+    return SeverityWarning;
+}
+
+
 IError *createError(WarnErrorCategory category, ErrorSeverity severity, int errNo, const char *msg, const char * filename, int lineno, int column, int pos, unsigned activity, const char * scope)
 {
     return new CError(category,severity,errNo,msg,filename,lineno,column,pos, activity, scope);
@@ -1557,3 +1569,21 @@ IError *createError(IPropertyTree * tree)
                       tree->getPropInt("@activity"),
                       tree->queryProp("@scope"));
 }
+
+//---------------------------------------------------------------------------------------------------------------------
+
+void IErrorReceiver::reportError(int errNo, const char *msg, const char *filename, int lineno, int column, int position)
+{
+    Owned<IError> err = createError(errNo,msg,filename,lineno,column,position);
+    report(err);
+}
+
+void IErrorReceiver::reportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int position)
+{
+    ErrorSeverity severity = queryDefaultSeverity(category);
+    Owned<IError> warn = createError(category, severity,warnNo,msg,filename,lineno,column,position);
+    report(warn);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+

@@ -224,12 +224,32 @@ public:
     virtual IPropertyTree * toTree() const = 0;
 };
 
+interface IWorkUnit;
+interface jlib_decl IErrorReceiver : public IInterface
+{
+    virtual void report(IError* error) = 0;
+    virtual IError * mapError(IError * error) = 0;
+    virtual size32_t errCount() = 0;
+    virtual size32_t warnCount() = 0;
+    virtual void exportMappings(IWorkUnit * wu) const = 0;
+
+    //global helper functions
+    void reportError(int errNo, const char *msg, const char *filename, int lineno, int column, int pos);
+    void reportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int pos);
+};
+
+
 inline bool isError(IError * error) { return isError(error->getSeverity()); }
 inline bool isFatal(IError * error) { return isFatal(error->getSeverity()); }
+extern jlib_decl ErrorSeverity queryDefaultSeverity(WarnErrorCategory category);
 
 extern jlib_decl IError *createError(WarnErrorCategory category, ErrorSeverity severity, int errNo, const char *msg, const char *filename, int lineno=0, int column=0, int pos=0, unsigned activity = 0, const char * scope = nullptr);
 extern jlib_decl IError *createError(WarnErrorCategory category, ErrorSeverity severity, int errNo, const char *msg, unsigned activity, const char * scope);
 extern jlib_decl IError *createError(IPropertyTree * tree);
+inline IError * createError(int errNo, const char *msg, const char *filename, int lineno=0, int column=0, int pos=0)
+{
+    return createError(CategoryError, SeverityFatal, errNo, msg, filename, lineno, column, pos);
+}
 
 #endif
 

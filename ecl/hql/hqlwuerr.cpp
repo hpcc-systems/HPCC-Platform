@@ -32,37 +32,6 @@ static void formatError(StringBuffer & out, int errNo, const char *msg, IIdAtom 
 }
 
 
-IError * WorkUnitErrorReceiver::mapError(IError * error)
-{
-    return LINK(error);
-}
-
-void WorkUnitErrorReceiver::report(IError* eclError)
-{
-    addWorkunitException(wu, eclError, removeTimeStamp);
-}
-
-size32_t WorkUnitErrorReceiver::errCount()
-{
-    unsigned count = 0;
-    Owned<IConstWUExceptionIterator> exceptions = &wu->getExceptions();
-    ForEach(*exceptions)
-        if (exceptions->query().getSeverity() == SeverityError)
-            count++;
-    return count;
-}
-
-size32_t WorkUnitErrorReceiver::warnCount()
-{
-    unsigned count = 0;
-    Owned<IConstWUExceptionIterator> exceptions = &wu->getExceptions();
-    ForEach(*exceptions)
-        if (exceptions->query().getSeverity() == SeverityWarning)
-            count++;
-    return count;
-}
-
-
 class CompoundErrorReceiver : implements IErrorReceiver, public CInterface
 {
 public:

@@ -36,17 +36,6 @@ ErrorSeverity getSeverity(IAtom * name)
     return SeverityUnknown;
 }
 
-ErrorSeverity queryDefaultSeverity(WarnErrorCategory category)
-{
-    if (category == CategoryError)
-        return SeverityFatal;
-    if (category == CategoryInformation)
-        return SeverityInformation;
-    if (category == CategoryMistake)
-        return SeverityError;
-    return SeverityWarning;
-}
-
 WarnErrorCategory getCategory(const char * category)
 {
     if (strieq(category, "all"))
@@ -93,21 +82,6 @@ ErrorSeverity getCheckSeverity(IAtom * name)
     ErrorSeverity severity = getSeverity(name);
     assertex(severity != SeverityUnknown);
     return severity;
-}
-
-//---------------------------------------------------------------------------------------------------------------------
-
-void IErrorReceiver::reportError(int errNo, const char *msg, const char *filename, int lineno, int column, int position)
-{
-    Owned<IError> err = createError(errNo,msg,filename,lineno,column,position);
-    report(err);
-}
-
-void IErrorReceiver::reportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int position)
-{
-    ErrorSeverity severity = queryDefaultSeverity(category);
-    Owned<IError> warn = createError(category, severity,warnNo,msg,filename,lineno,column,position);
-    report(warn);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
