@@ -701,28 +701,6 @@ bool WsWuInfo::hasSubGraphTimings()
     return times->first();
 }
 
-bool WsWuInfo::legacyHasSubGraphTimings()
-{
-    StatisticsFilter filter;
-    filter.setScopeDepth(1); // only "global" timers.
-    filter.setMeasure(SMeasureTimeNs);
-    Owned<IConstWUStatisticIterator> times = &cw->getStatistics(&filter);
-    ForEach(*times)
-    {
-        IConstWUStatistic & cur = times->query();
-        SCMStringBuffer name;
-        cur.getDescription(name, false);
-
-        StringAttr graphName;
-        unsigned graphNum;
-        unsigned subGraphNum;
-        unsigned subId;
-        if (parseGraphTimerLabel(name.str(), graphName, graphNum, subGraphNum, subId))
-            return true;
-    }
-    return false;
-}
-
 void WsWuInfo::doGetGraphs(IArrayOf<IEspECLGraph>& graphs)
 {
     SCMStringBuffer runningGraph;
@@ -782,7 +760,7 @@ void WsWuInfo::getGraphInfo(IEspECLWorkunit &info, unsigned long flags)
      {
         info.setHaveSubGraphTimings(false);
 
-        if (hasSubGraphTimings() || legacyHasSubGraphTimings())
+        if (hasSubGraphTimings())
             info.setHaveSubGraphTimings(true);
      }
 
@@ -850,42 +828,6 @@ void WsWuInfo::getGraphTimingData(IArrayOf<IConstECLTimingData> &timingData)
             matched = true;
         }
     }
-
-    if (!matched)
-        legacyGetGraphTimingData(timingData);
-}
-
-void WsWuInfo::legacyGetGraphTimingData(IArrayOf<IConstECLTimingData> &timingData)
-{
-    StatisticsFilter filter;
-    filter.setScopeDepth(1);
-    filter.setMeasure(SMeasureTimeNs);
-    Owned<IConstWUStatisticIterator> times = &cw->getStatistics(&filter);
-    ForEach(*times)
-    {
-        IConstWUStatistic & cur = times->query();
-        SCMStringBuffer name;
-        cur.getDescription(name, false); // was previously always filled in.
-
-        StringAttr graphName;
-        unsigned graphNum;
-        unsigned subGraphNum;
-        unsigned subId;
-
-        if (parseGraphTimerLabel(name.str(), graphName, graphNum, subGraphNum, subId))
-        {
-            unsigned time = (unsigned)nanoToMilli(cur.getValue());
-
-            Owned<IEspECLTimingData> g = createECLTimingData();
-            g->setName(name.str());
-            g->setGraphNum(graphNum);
-            g->setSubGraphNum(subGraphNum);
-            g->setGID(subId);
-            g->setMS(time);
-            g->setMin(time/60000);
-            timingData.append(*g.getClear());
-        }
-    }
 }
 
 void WsWuInfo::getEventScheduleFlag(IEspECLWorkunit &info)
@@ -946,23 +888,6 @@ unsigned WsWuInfo::getTotalThorTime()
     return getTotalThorTime(GLOBAL_SCOPE) + getTotalThorTime(LEGACY_GLOBAL_SCOPE);
 }
 
-unsigned WsWuInfo::getLegacyTotalThorTime()
-{
-    //4.2.x backward compatibility - only scope depth and measure filters work
-    StatisticsFilter filter;
-    filter.setScopeDepth(1); // only global
-    filter.setMeasure(SMeasureTimeNs);
-    Owned<IConstWUStatisticIterator> times = &cw->getStatistics(&filter);
-    SCMStringBuffer oldname;
-    ForEach(*times)
-    {
-        times->query().getDescription(oldname, false);      // description will be set up
-        if (streq(oldname.str(), TOTALTHORTIME))
-            return (unsigned)nanoToMilli(times->query().getValue());
-    }
-    return 0;
-}
-
 void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned long flags)
 {
     info.setWuid(cw->queryWuid());
@@ -993,9 +918,6 @@ void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned long flags)
     if (version > 1.27)
     {
         unsigned totalThorTimeMS = getTotalThorTime();
-        if (totalThorTimeMS == 0)
-            totalThorTimeMS = getLegacyTotalThorTime();
-
         if (totalThorTimeMS)
         {
             StringBuffer totalThorTimeStr;
