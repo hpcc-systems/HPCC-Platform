@@ -687,7 +687,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
 
     //This will become conditional on the flags....
     cycle_t startPrepareCycles = get_cycles_now();
-    ITimeReporter * reporter = timeReporter;
     if (expr->hasAttribute(tomitaAtom))
         nlpParse = createTomitaContext(expr, code->workunit, options);
     else
