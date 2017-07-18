@@ -1191,7 +1191,6 @@ void CSlaveGraph::getDone(MemoryBuffer &doneInfoMb)
                     jobS->queryProgressHandler()->stopGraph(*this, &doneInfoMb);
             }
             doneInfoMb.append(job.queryMaxDiskUsage());
-            queryJobChannel().queryTimeReporter().serialize(doneInfoMb);
         }
         catch (IException *)
         {
