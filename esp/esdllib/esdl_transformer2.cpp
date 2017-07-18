@@ -230,13 +230,22 @@ void Esdl2Base::serialize_attributes(StringBuffer &out)
     }
 }
 
-// return true if it passed version check
+// return true if it passed optional check and version check
 bool Esdl2Base::checkVersion(Esdl2TransformerContext &ctx)
 {
     if (!param_group.isEmpty())
-        if (!ctx.param_groups || !ctx.param_groups->hasProp(param_group.get()))
-            return false;
-
+    {
+        if (param_group.get()[0] == '!')
+        {
+           if (ctx.param_groups && ctx.param_groups->hasProp(param_group.get()+1))
+               return false;
+        }
+        else
+        {
+            if (!ctx.param_groups || !ctx.param_groups->hasProp(param_group.get()))
+                return false;
+        }
+    }
     return m_def->checkVersion(ctx.client_ver);
 }
 
