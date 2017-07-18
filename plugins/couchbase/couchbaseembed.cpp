@@ -901,14 +901,15 @@ namespace couchbaseembed
     {
         isAll = false; // ALL not supported
 
-        const char * xpath = xpathOrName(field);
+        StringBuffer    xpath;
+        xpathOrName(xpath, field);
 
-        if (xpath && *xpath)
+        if (!xpath.isEmpty())
         {
             PathTracker     newPathNode(xpath, CPNTSet);
             StringBuffer    newXPath;
 
-            constructNewXPath(newXPath, xpath);
+            constructNewXPath(newXPath, xpath.str());
 
             newPathNode.childCount = m_oResultRow->getCount(newXPath);
             m_pathStack.push_back(newPathNode);
@@ -926,14 +927,15 @@ namespace couchbaseembed
 
     void CouchbaseRowBuilder::processBeginDataset(const RtlFieldInfo * field)
     {
-        const char * xpath = xpathOrName(field);
+        StringBuffer    xpath;
+        xpathOrName(xpath, field);
 
-        if (xpath && *xpath)
+        if (!xpath.isEmpty())
         {
             PathTracker     newPathNode(xpath, CPNTDataset);
             StringBuffer    newXPath;
 
-            constructNewXPath(newXPath, xpath);
+            constructNewXPath(newXPath, xpath.str());
 
             newPathNode.childCount = m_oResultRow->getCount(newXPath);
             m_pathStack.push_back(newPathNode);
@@ -946,11 +948,12 @@ namespace couchbaseembed
 
     void CouchbaseRowBuilder::processBeginRow(const RtlFieldInfo * field)
     {
-        const char * xpath = xpathOrName(field);
+        StringBuffer    xpath;
+        xpathOrName(xpath, field);
 
-        if (xpath && *xpath)
+        if (!xpath.isEmpty())
         {
-            if (strncmp(xpath, "<nested row>", 12) == 0)
+            if (strncmp(xpath.str(), "<nested row>", 12) == 0)
             {
                 // Row within child dataset
                 if (m_pathStack.back().nodeType == CPNTDataset)
@@ -980,9 +983,10 @@ namespace couchbaseembed
 
     void CouchbaseRowBuilder::processEndSet(const RtlFieldInfo * field)
     {
-        const char * xpath = xpathOrName(field);
+        StringBuffer    xpath;
+        xpathOrName(xpath, field);
 
-        if (xpath && *xpath && !m_pathStack.empty() && strcmp(xpath, m_pathStack.back().nodeName.str()) == 0)
+        if (!xpath.isEmpty() && !m_pathStack.empty() && strcmp(xpath.str(), m_pathStack.back().nodeName.str()) == 0)
         {
             m_pathStack.pop_back();
         }
@@ -990,11 +994,12 @@ namespace couchbaseembed
 
     void CouchbaseRowBuilder::processEndDataset(const RtlFieldInfo * field)
     {
-        const char * xpath = xpathOrName(field);
+        StringBuffer    xpath;
+        xpathOrName(xpath, field);
 
-        if (xpath && *xpath)
+        if (!xpath.isEmpty())
         {
-            if (!m_pathStack.empty() && strcmp(xpath, m_pathStack.back().nodeName.str()) == 0)
+            if (!m_pathStack.empty() && strcmp(xpath.str(), m_pathStack.back().nodeName.str()) == 0)
             {
                 m_pathStack.pop_back();
             }
@@ -1007,9 +1012,10 @@ namespace couchbaseembed
 
     void CouchbaseRowBuilder::processEndRow(const RtlFieldInfo * field)
     {
-        const char * xpath = xpathOrName(field);
+        StringBuffer    xpath;
+        xpathOrName(xpath, field);
 
-        if (xpath && *xpath)
+        if (!xpath.isEmpty())
         {
             if (!m_pathStack.empty())
             {
@@ -1017,7 +1023,7 @@ namespace couchbaseembed
                 {
                     m_pathStack.back().childrenProcessed++;
                 }
-                else if (strcmp(xpath, m_pathStack.back().nodeName.str()) == 0)
+                else if (strcmp(xpath.str(), m_pathStack.back().nodeName.str()) == 0)
                 {
                     m_pathStack.pop_back();
                 }
@@ -1031,16 +1037,17 @@ namespace couchbaseembed
 
     const char * CouchbaseRowBuilder::nextField(const RtlFieldInfo * field)
     {
-        const char * xpath = xpathOrName(field);
+        StringBuffer    xpath;
+        xpathOrName(xpath, field);
 
-        if (!xpath || !*xpath)
+        if (xpath.isEmpty())
         {
             failx("nextField: Field name or xpath missing");
         }
 
         StringBuffer fullXPath;
 
-        if (!m_pathStack.empty() && m_pathStack.back().nodeType == CPNTSet && strncmp(xpath, "<set element>", 13) == 0)
+        if (!m_pathStack.empty() && m_pathStack.back().nodeType == CPNTSet && strncmp(xpath.str(), "<set element>", 13) == 0)
         {
             m_pathStack.back().currentChildIndex++;
             constructNewXPath(fullXPath, NULL);
@@ -1048,49 +1055,64 @@ namespace couchbaseembed
         }
         else
         {
-            constructNewXPath(fullXPath, xpath);
+            constructNewXPath(fullXPath, xpath.str());
         }
 
         return m_oResultRow->queryProp(fullXPath.str());
     }
 
-    const char * CouchbaseRowBuilder::xpathOrName(const RtlFieldInfo * field) const
+    void CouchbaseRowBuilder::xpathOrName(StringBuffer & outXPath, const RtlFieldInfo * field) const
     {
-        const char * xpath = NULL;
+        outXPath.clear();
 
         if (field->xpath)
         {
             if (field->xpath[0] == xpathCompoundSeparatorChar)
             {
-                xpath = field->xpath + 1;
+                outXPath.append(field->xpath + 1);
             }
             else
             {
-                xpath = field->xpath;
+                const char * sep = strchr(field->xpath, xpathCompoundSeparatorChar);
+
+                if (!sep)
+                {
+                    outXPath.append(field->xpath);
+                }
+                else
+                {
+                    outXPath.append(field->xpath, 0, static_cast<size32_t>(sep - field->xpath));
+                }
             }
         }
         else
         {
-            xpath = str(field->name);
+            outXPath.append(str(field->name));
         }
-
-        return xpath;
     }
 
     void CouchbaseRowBuilder::constructNewXPath(StringBuffer& outXPath, const char * nextNode) const
     {
-        for (std::vector<PathTracker>::const_iterator iter = m_pathStack.begin(); iter != m_pathStack.end(); iter++)
+        bool nextNodeIsFromRoot = (nextNode && *nextNode == '/');
+
+        outXPath.clear();
+
+        if (!nextNodeIsFromRoot)
         {
-            if (strncmp(iter->nodeName, "<row>", 5) != 0)
+            // Build up full parent xpath using our previous components
+            for (std::vector<PathTracker>::const_iterator iter = m_pathStack.begin(); iter != m_pathStack.end(); iter++)
             {
-                if (!outXPath.isEmpty())
+                if (strncmp(iter->nodeName, "<row>", 5) != 0)
                 {
-                    outXPath.append("/");
-                }
-                outXPath.append(iter->nodeName);
-                if (iter->nodeType == CPNTDataset || iter->nodeType == CPNTSet)
-                {
-                    outXPath.appendf("[%d]", iter->currentChildIndex);
+                    if (!outXPath.isEmpty())
+                    {
+                        outXPath.append("/");
+                    }
+                    outXPath.append(iter->nodeName);
+                    if (iter->nodeType == CPNTDataset || iter->nodeType == CPNTSet)
+                    {
+                        outXPath.appendf("[%d]", iter->currentChildIndex);
+                    }
                 }
             }
         }

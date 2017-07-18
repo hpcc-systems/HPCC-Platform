@@ -271,7 +271,7 @@ namespace couchbaseembed
 
     protected:
         const char * nextField(const RtlFieldInfo * field);
-        const char * xpathOrName(const RtlFieldInfo * field) const;
+        void xpathOrName(StringBuffer & outXPath, const RtlFieldInfo * field) const;
         void constructNewXPath(StringBuffer& outXPath, const char * nextNode) const;
     private:
         TokenDeserializer m_tokenDeserializer;
