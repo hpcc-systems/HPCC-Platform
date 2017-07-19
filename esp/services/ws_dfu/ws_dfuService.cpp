@@ -175,9 +175,8 @@ bool CWsDfuEx::onDFUSearch(IEspContext &context, IEspDFUSearchRequest & req, IEs
         Owned<IUserDescriptor> userdesc;
         if(username.length() > 0)
         {
-            const char* passwd = context.queryPassword();
             userdesc.setown(createUserDescriptor());
-            userdesc->set(username.str(), passwd);
+            userdesc->set(username.str(), context.queryPassword(), context.querySessionToken(), context.querySignature());
         }
 
         CTpWrapper dummy;
@@ -314,9 +313,8 @@ bool CWsDfuEx::onDFUQuery(IEspContext &context, IEspDFUQueryRequest & req, IEspD
         Owned<IUserDescriptor> userdesc;
         if(username.length() > 0)
         {
-            const char* passwd = context.queryPassword();
             userdesc.setown(createUserDescriptor());
-            userdesc->set(username.str(), passwd);
+            userdesc->set(username.str(), context.queryPassword(), context.querySessionToken(), context.querySignature());
         }
 
         doLogicalFileSearch(context, userdesc.get(), req, resp);
@@ -342,9 +340,8 @@ bool CWsDfuEx::onDFUInfo(IEspContext &context, IEspDFUInfoRequest &req, IEspDFUI
         Owned<IUserDescriptor> userdesc;
         if(username.length() > 0)
         {
-            const char* passwd = context.queryPassword();
             userdesc.setown(createUserDescriptor());
-            userdesc->set(username.str(), passwd);
+            userdesc->set(username.str(), context.queryPassword(), context.querySessionToken(), context.querySignature());
         }
 
         if (req.getUpdateDescription())
@@ -377,9 +374,8 @@ bool CWsDfuEx::onDFUSpace(IEspContext &context, IEspDFUSpaceRequest & req, IEspD
         Owned<IUserDescriptor> userdesc;
         if(username.length() > 0)
         {
-            const char* passwd = context.queryPassword();
             userdesc.setown(createUserDescriptor());
-            userdesc->set(username.str(), passwd);
+            userdesc->set(username.str(), context.queryPassword(), context.querySessionToken(), context.querySignature());
         }
 
         const char *countby = req.getCountBy();
@@ -1059,9 +1055,8 @@ int CWsDfuEx::superfileAction(IEspContext &context, const char* action, const ch
     Owned<IUserDescriptor> userdesc;
     if(username.length() > 0)
     {
-        const char* passwd = context.queryPassword();
         userdesc.setown(createUserDescriptor());
-        userdesc->set(username.str(), passwd);
+        userdesc->set(username.str(), context.queryPassword(), context.querySessionToken(), context.querySignature());
     }
 
     if (!autocreatesuper)
@@ -1359,7 +1354,7 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
     if(username && *username)
     {
         userdesc.setown(createUserDescriptor());
-        userdesc->set(username, context.queryPassword());
+        userdesc->set(username, context.queryPassword(), context.querySessionToken(), context.querySignature());
     }
 
     StringBuffer returnStr;
@@ -1410,9 +1405,8 @@ bool CWsDfuEx::onDFUArrayAction(IEspContext &context, IEspDFUArrayActionRequest 
         Owned<IUserDescriptor> userdesc;
         if(username.length() > 0)
         {
-            const char* passwd = context.queryPassword();
             userdesc.setown(createUserDescriptor());
-            userdesc->set(username.str(), passwd);
+            userdesc->set(username.str(), context.queryPassword(), context.querySessionToken(), context.querySignature());
         }
 
         IArrayOf<IEspDFUActionInfo> actionResults;
@@ -1507,9 +1501,8 @@ bool CWsDfuEx::onDFUDefFile(IEspContext &context,IEspDFUDefFileRequest &req, IEs
         Owned<IUserDescriptor> userdesc;
         if(username.length() > 0)
         {
-            const char* passwd = context.queryPassword();
             userdesc.setown(createUserDescriptor());
-            userdesc->set(username.str(), passwd);
+            userdesc->set(username.str(), context.queryPassword(), context.querySessionToken(), context.querySignature());
         }
 
         getDefFile(userdesc.get(), req.getName(),rawStr);
@@ -2262,9 +2255,8 @@ bool CWsDfuEx::onDFUFileView(IEspContext &context, IEspDFUFileViewRequest &req, 
 
         if(username.length() > 0)
         {
-            const char* passwd = context.queryPassword();
             userdesc.setown(createUserDescriptor());
-            userdesc->set(username.str(), passwd);
+            userdesc->set(username.str(), context.queryPassword(), context.querySessionToken(), context.querySignature());
         }
 
         int numDirs = 0;
@@ -3566,9 +3558,8 @@ bool CWsDfuEx::onSuperfileList(IEspContext &context, IEspSuperfileListRequest &r
         Owned<IUserDescriptor> userdesc;
         if(username.length() > 0)
         {
-            const char* passwd = context.queryPassword();
             userdesc.setown(createUserDescriptor());
-            userdesc->set(username.str(), passwd);
+            userdesc->set(username.str(), context.queryPassword(), context.querySessionToken(), context.querySignature());
         }
 
         Owned<IDFUhelper> dfuhelper = createIDFUhelper();
@@ -3608,13 +3599,7 @@ bool CWsDfuEx::onSuperfileAction(IEspContext &context, IEspSuperfileActionReques
         {
             Owned<IUserDescriptor> udesc;
             udesc.setown(createUserDescriptor());
-            {
-                StringBuffer userID;
-                StringBuffer pw;
-                context.getUserID(userID);
-                context.getPassword(pw);
-                udesc->set(userID.str(), pw.str());
-            }
+            udesc->set(context.queryUserId(), context.queryPassword(), context.querySessionToken(), context.querySignature());
             Owned<IDistributedSuperFile> fp = queryDistributedFileDirectory().lookupSuperFile(superfile,udesc);
             if (!fp)
                 resp.setRetcode(-1); //Superfile has been removed.
@@ -3637,9 +3622,8 @@ bool CWsDfuEx::onSavexml(IEspContext &context, IEspSavexmlRequest &req, IEspSave
         Owned<IUserDescriptor> userdesc;
         if(username.length() > 0)
         {
-            const char* passwd = context.queryPassword();
             userdesc.setown(createUserDescriptor());
-            userdesc->set(username.str(), passwd);
+            userdesc->set(username.str(), context.queryPassword(), context.querySessionToken(), context.querySignature());
         }
 
         if (!req.getName() || !*req.getName())
@@ -3670,9 +3654,8 @@ bool CWsDfuEx::onAdd(IEspContext &context, IEspAddRequest &req, IEspAddResponse 
         Owned<IUserDescriptor> userdesc;
         if(username.length() > 0)
         {
-            const char* passwd = context.queryPassword();
             userdesc.setown(createUserDescriptor());
-            userdesc->set(username.str(), passwd);
+            userdesc->set(username.str(), context.queryPassword(), context.querySessionToken(), context.querySignature());
         }
 
         if (!req.getDstname() || !*req.getDstname())
@@ -3699,18 +3682,16 @@ bool CWsDfuEx::onAddRemote(IEspContext &context, IEspAddRemoteRequest &req, IEsp
         Owned<IUserDescriptor> userdesc;
         if(username.length() > 0)
         {
-            const char* passwd = context.queryPassword();
             userdesc.setown(createUserDescriptor());
-            userdesc->set(username.str(), passwd);
+            userdesc->set(username.str(), context.queryPassword(), context.querySessionToken(), context.querySignature());
         }
 
         const char* srcusername = req.getSrcusername();
         Owned<IUserDescriptor> srcuserdesc;
         if(srcusername && *srcusername)
         {
-            const char* srcpasswd = req.getSrcpassword();
             srcuserdesc.setown(createUserDescriptor());
-            srcuserdesc->set(srcusername, srcpasswd);
+            srcuserdesc->set(srcusername, req.getSrcpassword(), context.querySessionToken(), context.querySignature());
         }
 
         const char* srcname = req.getSrcname();
@@ -3785,11 +3766,10 @@ bool CWsDfuEx::onDFUGetDataColumns(IEspContext &context, IEspDFUGetDataColumnsRe
 
             StringBuffer username;
             context.getUserID(username);
-            const char* passwd = context.queryPassword();
 
             Owned<IUserDescriptor> userdesc;
             userdesc.setown(createUserDescriptor());
-            userdesc->set(username.str(), passwd);
+            userdesc->set(username.str(), context.queryPassword(), context.querySessionToken(), context.querySignature());
 
             {
                 Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalNameStr.str(), userdesc);
@@ -4513,7 +4493,7 @@ bool CWsDfuEx::onDFUGetFileMetaData(IEspContext &context, IEspDFUGetFileMetaData
         {//Check whether the meta data is available for the file. If not, throw an exception.
             StringBuffer nameStr;
             Owned<IUserDescriptor> userdesc = createUserDescriptor();
-            userdesc->set(context.getUserID(nameStr).str(), context.queryPassword());
+            userdesc->set(context.getUserID(nameStr).str(), context.queryPassword(), context.querySessionToken(), context.querySignature());
             Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(fileName, userdesc);
             if(!df)
                 throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"CWsDfuEx::onDFUGetFileMetaData: Could not find file %s.", fileName);
@@ -4703,7 +4683,7 @@ bool CWsDfuEx::onDFUBrowseData(IEspContext &context, IEspDFUBrowseDataRequest &r
         try
         {
             userdesc.setown(createUserDescriptor());
-            userdesc->set(username.str(), passwd);
+            userdesc->set(username.str(), passwd, context.querySessionToken(), context.querySignature());
             Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalNameStr.str(), userdesc);
             if(df)
             {
@@ -5017,9 +4997,8 @@ bool CWsDfuEx::onListHistory(IEspContext &context, IEspListHistoryRequest &req, 
         Owned<IUserDescriptor> userdesc;
         if (username.length() > 0)
         {
-            const char* passwd = context.queryPassword();
             userdesc.setown(createUserDescriptor());
-            userdesc->set(username.str(), passwd);
+            userdesc->set(username.str(), context.queryPassword(), context.querySessionToken(), context.querySignature());
         }
 
         if (!req.getName() || !*req.getName())
@@ -5067,9 +5046,8 @@ bool CWsDfuEx::onEraseHistory(IEspContext &context, IEspEraseHistoryRequest &req
         Owned<IUserDescriptor> userdesc;
         if (username.length() > 0)
         {
-            const char* passwd = context.queryPassword();
             userdesc.setown(createUserDescriptor());
-            userdesc->set(username.str(), passwd);
+            userdesc->set(username.str(), context.queryPassword(), context.querySessionToken(), context.querySignature());
         }
 
         if (!req.getName() || !*req.getName())
@@ -5784,7 +5762,6 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
 
     StringBuffer username;
     context.getUserID(username);
-    const char* passwd = context.queryPassword();
 
     StringBuffer cluster;
     Owned<IUserDescriptor> userdesc;
@@ -5793,7 +5770,7 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
     try
     {
         userdesc.setown(createUserDescriptor());
-        userdesc->set(username.str(), passwd);
+        userdesc->set(username.str(), context.queryPassword(), context.querySessionToken(), context.querySignature());
         df.setown(queryDistributedFileDirectory().lookup(indexName, userdesc));
         if(!df)
             throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Could not find file %s.", indexName);
@@ -5834,7 +5811,7 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
     if(secUser && secUser->getName() && *secUser->getName())
     {
         udesc.setown(createUserDescriptor());
-        udesc->set(secUser->getName(), secUser->credentials().getPassword());
+        udesc->set(secUser->getName(), secUser->credentials().getPassword(), context.querySessionToken(), context.querySignature());
     }
 
     if (cluster.length())

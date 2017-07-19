@@ -67,7 +67,8 @@ private:
     StringAttr   m_sudoHost;
     StringAttr   m_sudoCommand;
     StringAttr   m_sudoOption;
-    MemoryBuffer m_mbToken;
+    MemoryBuffer m_sessionToken;//User's ESP session token
+    MemoryBuffer m_signature;//User's digital signature
 
 public:
     IMPLEMENT_IINTERFACE
@@ -154,8 +155,10 @@ public:
     bool setPassword(const char * pw);
     const char* getPassword();
     bool setEncodedPassword(SecPasswordEncoding enc, void * pw, unsigned length, void * salt, unsigned saltlen);
-    bool addToken(MemoryBuffer * token);
-    bool getToken(MemoryBuffer * token);
+    void setSessionToken(const MemoryBuffer * const token);
+    const MemoryBuffer & getSessionToken();
+    void setSignature(const MemoryBuffer * const signature);
+    const MemoryBuffer & getSignature();
 
 // Posix specific fields
     virtual void setGidnumber(const char* gidnumber)
