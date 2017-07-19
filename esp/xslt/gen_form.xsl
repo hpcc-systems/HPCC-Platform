@@ -104,6 +104,7 @@
                 <script type="text/javascript" src="files_/req_array.js"/>
                 <script type="text/javascript" src="files_/hashtable.js"/>
                 <script type="text/javascript" src="files_/gen_form.js"/>
+                <script type="text/javascript" src="files_/logout.js"/>
                 <script type="text/javascript">         
   var isIE = (navigator.appName == "Microsoft Internet Explorer");  
   

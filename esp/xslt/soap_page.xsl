@@ -36,25 +36,10 @@
       <script type="text/javascript" src="/esp/files/get_input.js"/>
       <script type="text/javascript" src="/esp/files/stack.js"/>
       <script type="text/javascript" src="/esp/files/stringbuffer.js"/>
+      <script type="text/javascript" src="/esp/files/logout.js"/>
 
 <script type="text/javascript">
 var showhttp = '<xsl:value-of select="$showhttp"/>';
-
-  function logout()
-  {
-    var logoutRequest = new XMLHttpRequest();
-    logoutRequest.onreadystatechange = function()
-    { 
-      if (logoutRequest.readyState != 4)
-        console.log("Logout failed -- readyState: " + logoutRequest.readyState);
-      else if (logoutRequest.status != 200)
-        console.log("Logout failed -- status: " + logoutRequest.status);
-      else
-        parent.location = '/esp/files/userlogout.html';
-    }
-    logoutRequest.open( "GET", '/esp/logout', true );            
-    logoutRequest.send( null );
-  }
 
 <![CDATA[ 
   var xmlhttp = null;
