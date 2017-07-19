@@ -1617,9 +1617,10 @@ IValue *IntValue::castTo(ITypeInfo *t)
     case type_qstring:
     case type_utf8:
     case type_unicode:
+    case type_varstring:
+    case type_varunicode:
         return castViaString(t);
     case type_string:
-    case type_varstring:
     {
         if (nLen == UNKNOWN_LENGTH)
             return castViaString(t);

@@ -2659,8 +2659,19 @@ void HqlCppTranslator::buildExprAssignViaType(BuildCtx & ctx, const CHqlBoundTar
     buildExprAssign(ctx, target, temp);
 }
 
-void HqlCppTranslator::buildExprAssignViaString(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr, unsigned len)
+void HqlCppTranslator::buildExprAssignViaString(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr, ITypeInfo *dest)
 {
+    unsigned len;
+    switch (dest->getTypeCode())
+    {
+    case type_varstring:
+    case type_varunicode:
+        len = UNKNOWN_LENGTH;
+        break;
+    default:
+        len = dest->getStringLen();
+        break;
+    }
     OwnedITypeInfo type = makeStringType(len, NULL, NULL);
     buildExprAssignViaType(ctx, target, expr, type);
 }
@@ -10624,7 +10635,7 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
         default:
             //Need to go via a temporary string.
             OwnedHqlExpr temp = pure.getTranslatedExpr();
-            buildExprAssignViaString(ctx, target, temp, to->getStringLen());
+            buildExprAssignViaString(ctx, target, temp, to);
             return;
         }
         break;
@@ -10741,7 +10752,7 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
                     if (queryDefaultTranslation(tgtset, from->queryCharset()))
                     {
                         OwnedHqlExpr temp = pure.getTranslatedExpr();
-                        buildExprAssignViaString(ctx, target, temp, to->getStringLen());
+                        buildExprAssignViaString(ctx, target, temp, to);
                     }
                     else
                     {
@@ -10796,7 +10807,7 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
                             break;
                         case type_varstring:
                             OwnedHqlExpr temp = pure.getTranslatedExpr();
-                            buildExprAssignViaString(ctx, target, temp, to->getStringLen());
+                            buildExprAssignViaString(ctx, target, temp, to);
                             return;
                         }
                         args.append(*getSizetConstant(toSize));
@@ -10940,7 +10951,7 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
                     if (toType == type_varunicode)
                     {
                         OwnedHqlExpr temp = pure.getTranslatedExpr();
-                        OwnedITypeInfo type = makeUnicodeType(to->getStringLen(), NULL);
+                        OwnedITypeInfo type = makeUnicodeType(UNKNOWN_LENGTH, NULL);
                         buildExprAssignViaType(ctx, target, temp, type);
                         return;
                     }
@@ -10961,7 +10972,7 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
             }
         default:
             OwnedHqlExpr temp = pure.getTranslatedExpr();
-            buildExprAssignViaString(ctx, target, temp, to->getStringLen());
+            buildExprAssignViaString(ctx, target, temp, to);
             return;
         }
         break;
@@ -11005,7 +11016,7 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
             }
         default:
             OwnedHqlExpr temp = pure.getTranslatedExpr();
-            buildExprAssignViaString(ctx, target, temp, to->getStringLen());
+            buildExprAssignViaString(ctx, target, temp, to);
             return;
         }
         break;
