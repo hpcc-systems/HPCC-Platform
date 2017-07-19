@@ -33,7 +33,7 @@ const char* CWSESPControlEx::readSessionTimeStamp(int t, StringBuffer& str)
     return time.getString(str).str();
 }
 
-IEspSession* CWSESPControlEx::setSessionInfo(const char* id, IPropertyTree* espSessionTree, unsigned port, IEspSession* session)
+IEspSession* CWSESPControlEx::setSessionInfo(IPropertyTree* espSessionTree, unsigned port, IEspSession* session)
 {
     if (espSessionTree == nullptr)
         return nullptr;
@@ -42,7 +42,7 @@ IEspSession* CWSESPControlEx::setSessionInfo(const char* id, IPropertyTree* espS
     int lastAccessed = espSessionTree->getPropInt(PropSessionLastAccessed, 0);
 
     session->setPort(port);
-    session->setID(id);
+    session->setID(espSessionTree->queryProp(PropSessionExternalID));
     session->setUserID(espSessionTree->queryProp(PropSessionUserID));
     session->setNetworkAddress(espSessionTree->queryProp(PropSessionNetworkAddress));
     session->setCreateTime(readSessionTimeStamp(espSessionTree->getPropInt(PropSessionCreateTime, 0), createTimeStr));
@@ -107,10 +107,16 @@ bool CWSESPControlEx::onSetLogging(IEspContext& context, IEspSetLoggingRequest& 
 
 IRemoteConnection* CWSESPControlEx::querySDSConnection(const char* xpath, unsigned mode, unsigned timeout)
 {
-    Owned<IRemoteConnection> globalLock = querySDS().connect(xpath, myProcessSession(), RTM_LOCK_READ, SESSION_SDS_LOCK_TIMEOUT);
+    Owned<IRemoteConnection> globalLock = querySDS().connect(xpath, myProcessSession(), mode, timeout);
     if (!globalLock)
         throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Unable to connect to ESP Session information in dali %s", xpath);
     return globalLock.getClear();
+}
+
+IRemoteConnection* CWSESPControlEx::querySDSConnectionForESPSession(unsigned mode, unsigned timeout)
+{
+    VStringBuffer xpath("/%s/%s[@name='%s']", PathSessionRoot, PathSessionProcess, espProcess.get());
+    return querySDSConnection(xpath.str(), mode, timeout);
 }
 
 bool CWSESPControlEx::onSessionQuery(IEspContext& context, IEspSessionQueryRequest& req, IEspSessionQueryResponse& resp)
@@ -123,27 +129,24 @@ bool CWSESPControlEx::onSessionQuery(IEspContext& context, IEspSessionQueryReque
             throw MakeStringException(ECLWATCH_SUPER_USER_ACCESS_DENIED, "Failed to query session. Permission denied.");
 #endif
 
-        StringBuffer fromIP = req.getFromIP();
-        unsigned port = 8010;
-        if (!req.getPort_isNull())
-            port = req.getPort();
-
-        VStringBuffer xpath("/%s/%s[@name='%s']/%s[@port='%d']", PathSessionRoot, PathSessionProcess,
-            espProcess.get(), PathSessionApplication, port);
-        Owned<IRemoteConnection> globalLock = querySDSConnection(xpath.str(), RTM_LOCK_READ, SESSION_SDS_LOCK_TIMEOUT);
+        StringBuffer xpath;
+        setSessionXPath(false, nullptr, req.getUserID(), req.getFromIP(), xpath);
 
         IArrayOf<IEspSession> sessions;
-        if (!fromIP.trim().isEmpty())
-            xpath.setf("%s[%s='%s']", PathSessionSession, PropSessionNetworkAddress, fromIP.str());
-        else
-            xpath.set("*");
-        Owned<IPropertyTreeIterator> iter = globalLock->queryRoot()->getElements(xpath.str());
+        Owned<IRemoteConnection> globalLock = querySDSConnectionForESPSession(RTM_LOCK_READ, SESSION_SDS_LOCK_TIMEOUT);
+        Owned<IPropertyTreeIterator> iter = globalLock->queryRoot()->getElements("*");
         ForEach(*iter)
         {
-            IPropertyTree& sessionTree = iter->query();
-            Owned<IEspSession> s = createSession();
-            setSessionInfo(sessionTree.queryProp(PropSessionExternalID), &sessionTree, port, s);
-            sessions.append(*s.getLink());
+            IPropertyTree& appSessionTree = iter->query();
+            unsigned port = appSessionTree.getPropInt("@port");
+            Owned<IPropertyTreeIterator> iter1 = appSessionTree.getElements(xpath.str());
+            ForEach(*iter1)
+            {
+                IPropertyTree& sessionTree = iter1->query();
+                Owned<IEspSession> s = createSession();
+                setSessionInfo(&sessionTree, port, s);
+                sessions.append(*s.getLink());
+            }
         }
         resp.setSessions(sessions);
     }
@@ -172,10 +175,21 @@ bool CWSESPControlEx::onSessionInfo(IEspContext& context, IEspSessionInfoRequest
         if (!req.getPort_isNull())
             port = req.getPort();
 
+        Owned<IRemoteConnection> globalLock;
         VStringBuffer xpath("/%s/%s[@name='%s']/%s[@port='%d']/%s[%s='%s']", PathSessionRoot, PathSessionProcess, espProcess.get(),
             PathSessionApplication, port, PathSessionSession, PropSessionExternalID, id.str());
-        Owned<IRemoteConnection> globalLock = querySDSConnection(xpath.str(), RTM_LOCK_READ, SESSION_SDS_LOCK_TIMEOUT);
-        setSessionInfo(id.str(), globalLock->queryRoot(), port, &resp.updateSession());
+        try
+        {
+            globalLock.setown(querySDSConnection(xpath.str(), RTM_LOCK_READ, SESSION_SDS_LOCK_TIMEOUT));
+        }
+        catch(IException* e)
+        {
+            VStringBuffer msg("Failed to get session info for id %s on port %u: ", id.str(), port);
+            e->errorMessage(msg);
+            e->Release();
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "%s", msg.str());
+        }
+        setSessionInfo(globalLock->queryRoot(), port, &resp.updateSession());
     }
     catch(IException* e)
     {
@@ -194,29 +208,17 @@ bool CWSESPControlEx::onCleanSession(IEspContext& context, IEspCleanSessionReque
             throw MakeStringException(ECLWATCH_SUPER_USER_ACCESS_DENIED, "Failed to clean session. Permission denied.");
 #endif
 
-        StringBuffer id = req.getID();
-        StringBuffer fromIP = req.getFromIP();
-        if ((id.trim().isEmpty()) && (fromIP.trim().isEmpty()))
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "ID or FromIP has to be specified.");
-
-        unsigned port = 8010;
-        if (!req.getPort_isNull())
-            port = req.getPort();
-
-        VStringBuffer xpath("/%s/%s[@name='%s']/%s[@port='%d']", PathSessionRoot, PathSessionProcess,
-            espProcess.get(), PathSessionApplication, port);
-        Owned<IRemoteConnection> globalLock = querySDSConnection(xpath.str(), RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT);
-
-        IArrayOf<IPropertyTree> toRemove;
-        if (!id.isEmpty())
-            xpath.setf("%s[%s='%s']", PathSessionSession, PropSessionExternalID, id.str());
-        else
-            xpath.setf("%s[%s='%s']", PathSessionSession, PropSessionNetworkAddress, fromIP.str());
-        Owned<IPropertyTreeIterator> iter = globalLock->queryRoot()->getElements(xpath.str());
-        ForEach(*iter)
-            toRemove.append(*LINK(&iter->query()));
-        ForEachItemIn(i, toRemove)
-            globalLock->queryRoot()->removeTree(&toRemove.item(i));
+        StringBuffer id, userID, fromIP;
+        bool allSessions = req.getAllSessions();
+        if (!allSessions)
+        {
+            id.set(req.getID());
+            userID.set(req.getUserID());
+            fromIP.set(req.getFromIP());
+            if ((id.trim().isEmpty()) && (userID.trim().isEmpty()) && (fromIP.trim().isEmpty()))
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "ID, userID or FromIP has to be specified.");
+        }
+        cleanSessions(allSessions, id.str(), userID.str(), fromIP.str());
 
         resp.setStatus(0);
         resp.setMessage("Session is cleaned.");
@@ -238,42 +240,34 @@ bool CWSESPControlEx::onSetSessionTimeout(IEspContext& context, IEspSetSessionTi
             throw MakeStringException(ECLWATCH_SUPER_USER_ACCESS_DENIED, "Failed to set session timeout. Permission denied.");
 #endif
 
-        StringBuffer id = req.getID();
-        StringBuffer fromIP = req.getFromIP();
-        if (id.trim().isEmpty() && fromIP.trim().isEmpty())
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "ID or FromIP has to be specified.");
-
-        unsigned port = 8010;
-        if (!req.getPort_isNull())
-            port = req.getPort();
-
-        VStringBuffer xpath("/%s/%s[@name='%s']/%s[@port='%d']", PathSessionRoot, PathSessionProcess,
-            espProcess.get(), PathSessionApplication, port);
-        Owned<IRemoteConnection> globalLock = querySDSConnection(xpath.str(), RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT);
-
-        IArrayOf<IPropertyTree> toRemove;
-        int timeoutMinutes = req.getTimeoutMinutes_isNull() ? 0 : req.getTimeoutMinutes();
-        if (!id.isEmpty())
-            xpath.setf("%s[%s='%s']", PathSessionSession, PropSessionExternalID, id.str());
-        else
-            xpath.setf("%s[%s='%s']", PathSessionSession, PropSessionNetworkAddress, fromIP.str());
-        Owned<IPropertyTreeIterator> iter = globalLock->queryRoot()->getElements(xpath.str());
-        ForEach(*iter)
+        StringBuffer id, userID, fromIP;
+        bool allSessions = req.getAllSessions();
+        if (!allSessions)
         {
-            IPropertyTree& item = iter->query();
-            if (timeoutMinutes <= 0)
-                toRemove.append(*LINK(&item));
-            else
+            id.set(req.getID());
+            userID.set(req.getUserID());
+            fromIP.set(req.getFromIP());
+            if ((id.trim().isEmpty()) && (userID.trim().isEmpty()) && (fromIP.trim().isEmpty()))
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "ID, userID or FromIP has to be specified.");
+        }
+
+        int timeoutMinutes = req.getTimeoutMinutes_isNull() ? 0 : req.getTimeoutMinutes();
+        if (timeoutMinutes <= 0)
+            cleanSessions(allSessions, id.str(), userID.str(), fromIP.str());
+        else
+        {
+            StringBuffer searchPath;
+            setSessionXPath(allSessions, id.str(), userID.str(), fromIP.str(), searchPath);
+
+            Owned<IRemoteConnection> globalLock = querySDSConnectionForESPSession(RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT);
+            Owned<IPropertyTreeIterator> iter = globalLock->queryRoot()->getElements("*");
+            ForEach(*iter)
             {
-                CDateTime timeNow;
-                timeNow.setNow();
-                time_t simple = timeNow.getSimple() + timeoutMinutes*60;
-                item.setPropInt64(PropSessionTimeoutAt, simple);
-                item.setPropBool(PropSessionTimeoutByAdmin, true);
+                Owned<IPropertyTreeIterator> iter1 = iter->query().getElements(searchPath.str());
+                ForEach(*iter1)
+                    setSessionTimeout(timeoutMinutes, iter1->query());
             }
         }
-        ForEachItemIn(i, toRemove)
-            globalLock->queryRoot()->removeTree(&toRemove.item(i));
 
         resp.setStatus(0);
         resp.setMessage("Session timeout is updated.");
@@ -283,4 +277,51 @@ bool CWSESPControlEx::onSetSessionTimeout(IEspContext& context, IEspSetSessionTi
         FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
     }
     return true;
+}
+
+const char* CWSESPControlEx::setSessionXPath(bool allSessions, const char* id, const char* userID, const char* fromIP, StringBuffer& xPath)
+{
+    if (allSessions)
+    {
+        xPath.set("*");
+        return xPath.str();
+    }
+
+    if (!isEmptyString(userID))
+        xPath.setf("%s[%s='%s']", PathSessionSession, PropSessionUserID, userID);
+    else if (!isEmptyString(fromIP))
+        xPath.setf("%s[%s='%s']", PathSessionSession, PropSessionNetworkAddress, fromIP);
+    else if (!isEmptyString(id))
+        xPath.setf("%s[%s='%s']", PathSessionSession, PropSessionExternalID, id);
+    else
+        xPath.set("*");
+    return xPath.str();
+}
+
+void CWSESPControlEx::cleanSessions(bool allSessions, const char* _id, const char* _userID, const char* _fromIP)
+{
+    StringBuffer searchPath;
+    setSessionXPath(allSessions, _id, _userID, _fromIP, searchPath);
+
+    Owned<IRemoteConnection> globalLock = querySDSConnectionForESPSession(RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT);
+    Owned<IPropertyTreeIterator> iter = globalLock->queryRoot()->getElements("*");
+    ForEach(*iter)
+    {
+        IArrayOf<IPropertyTree> toRemove;
+        Owned<IPropertyTreeIterator> iter1 = iter->query().getElements(searchPath.str());
+        ForEach(*iter1)
+            toRemove.append(*LINK(&iter1->query()));
+
+        ForEachItemIn(i, toRemove)
+            iter->query().removeTree(&toRemove.item(i));
+    }
+}
+
+void CWSESPControlEx::setSessionTimeout(int timeoutMinutes, IPropertyTree& session)
+{
+    CDateTime timeNow;
+    timeNow.setNow();
+    time_t simple = timeNow.getSimple() + timeoutMinutes*60;
+    session.setPropInt64(PropSessionTimeoutAt, simple);
+    session.setPropBool(PropSessionTimeoutByAdmin, true);
 }
