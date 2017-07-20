@@ -3265,6 +3265,11 @@ void rtlVUnicodeToData(unsigned outlen, void * out, UChar const * in)
     rtlUnicodeToData(outlen, out, rtlUnicodeStrlen(in), in);
 }
 
+void rtlVUnicodeToDataX(unsigned& outlen, void * &out, UChar const * in)
+{
+    rtlUnicodeToDataX(outlen, out, rtlUnicodeStrlen(in), in);
+}
+
 void rtlVUnicodeToVCodepage(unsigned outlen, char * out, UChar const * in, char const * codepage)
 {
     rtlUnicodeToVCodepage(outlen, out, rtlUnicodeStrlen(in), in, codepage);
@@ -4663,7 +4668,13 @@ unsigned rtlUnicodeStrlen(UChar const * str)
 void rtlUtf8ToData(size32_t outlen, void * out, size32_t inlen, const char *in)
 {
     unsigned insize = rtlUtf8Size(inlen, in);
-    rtlCodepageToCodepage(outlen, (char *)out, insize, in, ASCII_LIKE_CODEPAGE, UTF8_CODEPAGE);
+    if (insize >= outlen)
+        rtlCodepageToCodepage(outlen, (char *)out, insize, in, ASCII_LIKE_CODEPAGE, UTF8_CODEPAGE);
+    else
+    {
+        rtlCodepageToCodepage(insize, (char *)out, insize, in, ASCII_LIKE_CODEPAGE, UTF8_CODEPAGE);
+        memset((char*)out + insize, 0, outlen-insize);
+    }
 }
 
 void rtlUtf8ToDataX(size32_t & outlen, void * & out, size32_t inlen, const char *in)

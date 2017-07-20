@@ -148,6 +148,7 @@ const char * cppSystemText[]  = {
     "   varstring unicode2VCodepageX(const unicode src, const varstring codepage) : eclrtl,pure,library='eclrtl',entrypoint='rtlUnicodeToVCodepageX';",
     "   string vunicode2CodepageX(const varunicode src, const varstring codepage) : eclrtl,pure,library='eclrtl',entrypoint='rtlVUnicodeToCodepageX';",
     "   varstring vunicode2VCodepageX(const varunicode src, const varstring codepage) : eclrtl,pure,library='eclrtl',entrypoint='rtlVUnicodeToVCodepageX';",
+    "   data vunicode2DataX(const varunicode src) : eclrtl,pure,library='eclrtl',entrypoint='rtlVUnicodeToDataX';",
     "   unicode unicode2UnicodeX(const unicode src) :   eclrtl,pure,library='eclrtl',entrypoint='rtlUnicodeToUnicodeX';",
     "   varunicode unicode2VUnicodeX(const unicode src) :   eclrtl,pure,library='eclrtl',entrypoint='rtlUnicodeToVUnicodeX';",
     "   unicode vunicode2UnicodeX(const varunicode src) :   eclrtl,pure,library='eclrtl',entrypoint='rtlVUnicodeToUnicodeX';",

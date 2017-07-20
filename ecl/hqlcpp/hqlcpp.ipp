@@ -1214,7 +1214,7 @@ public:
     void doBuildChoose(BuildCtx & ctx, const CHqlBoundTarget * target, IHqlExpression * expr);
 
     void buildExprAssignViaType(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr, ITypeInfo * type);
-    void buildExprAssignViaString(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr, unsigned len);
+    void buildExprAssignViaString(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr, ITypeInfo * dest);
     void doBuildDivideByZero(BuildCtx & ctx, const CHqlBoundTarget * target, IHqlExpression * zero, CHqlBoundExpr * bound);
 
     void doBuildAssignAddSets(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * value);
