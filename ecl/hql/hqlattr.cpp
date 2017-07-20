@@ -1398,7 +1398,7 @@ IHqlExpression * HqlUnadornedNormalizer::createTransformed(IHqlExpression * expr
             ForEachChild(idx, expr)
             {
                 IHqlExpression * cur = expr->queryChild(idx);
-                if (cur->isAttribute())
+                if (cur->isAttribute() && (cur->queryName() != _payload_Atom))
                 {
                     IHqlExpression * mapped = transform(cur);
                     children.append(*mapped);

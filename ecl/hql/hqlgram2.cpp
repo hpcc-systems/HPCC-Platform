@@ -8291,6 +8291,9 @@ void HqlGram::expandPayload(HqlExprArray & fields, IHqlExpression * payload, IHq
             break;
         case no_ifblock:
             lastFieldType = NULL;
+            // MORE - it might make sense to annotate the fields here (and below) - i.e.
+            // fields.append(*appendOwnedOperand(cur, createAttribute(_payload_Atom)));
+            // But that causes some changes to crcs, new errors about incompatible rows, etc
             fields.append(*LINK(cur));
             break;
         case no_field:
@@ -8312,6 +8315,9 @@ void HqlGram::expandPayload(HqlExprArray & fields, IHqlExpression * payload, IHq
                 else
                 {
                     lastFieldType = cur->queryType();
+                    // MORE - it might make sense to annotate the fields here (and above) - i.e.
+                    // fields.append(*appendOwnedOperand(cur, createAttribute(_payload_Atom)));
+                    // But that causes some changes to crcs, new errors about incompatible rows, etc
                     fields.append(*LINK(cur));
                 }
                 break;
