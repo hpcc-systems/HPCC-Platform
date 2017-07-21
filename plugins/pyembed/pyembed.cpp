@@ -519,19 +519,6 @@ PyObject *PythonThreadContext::compileEmbeddedScript(size32_t lenChars, const ch
     return script.getLink();
 }
 
-static int countFields(const RtlFieldInfo * const * fields)
-{
-    unsigned count = 0;
-    for (;;)
-    {
-        if (!*fields)
-            break;
-        fields++;
-        count++;
-    }
-    return count;
-}
-
 // Conversions from Python objects to ECL data
 
 __declspec(noreturn) static void typeError(const char *expected, const RtlFieldInfo *field) __attribute__((noreturn));

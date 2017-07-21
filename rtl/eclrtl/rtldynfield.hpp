@@ -57,6 +57,14 @@ interface IRtlFieldTypeDeserializer : public IInterface
     virtual const RtlTypeInfo *deserialize(const char *json) = 0;
 
     /*
+     * Create RtlTypeInfo structures from a serialized binary representation
+     *
+     * @param buf  The binary representation
+     * @return     Deserialized RtlTypeInfo structure
+     */
+    virtual const RtlTypeInfo *deserialize(MemoryBuffer &buf) = 0;
+
+    /*
      * Create a single RtlTypeInfo structure from a FieldTypeInfoStruct
      *
      * @param info The information used to create the type

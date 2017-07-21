@@ -336,6 +336,14 @@ enum RtlFieldTypeMask
     RFTMcontainsifblock     = 0x00000800,                   // contains an if block - if set on a record then it contains ifblocks, so can't work out field offsets.
     RFTMhasnonscalarxpath   = 0x00001000,                   // field xpath contains multiple node, and is not therefore usable for naming scalar fields
 
+    // These flags are used in the serialized info only
+    RFTMserializerFlags     = 0x01f00000,                   // Mask to remove from saved values
+    RFTMhasChildType        = 0x00100000,                   // type has child type
+    RFTMhasLocale           = 0x00200000,                   // type has locale
+    RFTMhasFields           = 0x00400000,                   // type has fields
+    RFTMhasXpath            = 0x00800000,                   // field has xpath
+    RFTMhasInitializer      = 0x01000000,                   // field has initialzer
+
     RFTMcontainsunknown     = 0x10000000,                   // contains a field of unknown type that we can't process properly
     RFTMinvalidxml          = 0x20000000,                   // cannot be called to generate xml
     RFTMhasxmlattr          = 0x40000000,                   // if specified, then xml output includes an attribute (recursive)

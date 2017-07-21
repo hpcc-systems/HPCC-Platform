@@ -2402,6 +2402,13 @@ RtlFieldStrInfo::RtlFieldStrInfo(const char * _name, const char * _xpath, const 
 {
 }
 
+unsigned ECLRTL_API countFields(const RtlFieldInfo * const * fields)
+{
+    unsigned cnt = 0;
+    for (;*fields;fields++)
+        cnt++;
+    return cnt;
+}
 
 /* 
 
