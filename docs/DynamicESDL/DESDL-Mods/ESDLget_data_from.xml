@@ -1,11 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
- 
-   <sect2 id="ESDL_Attributes_get_data_from">
-      <title>get_data_from ("<emphasis role="bold">field</emphasis><emphasis
-      role="bold">")</emphasis></title>
+<sect1 id="ESDL_Attributes_get_data_from">
+  <title><emphasis role="bold">get_data_from</emphasis></title>
 
-      <para>For code reuse and simplification, when complex versioning changes
-      have been made.</para>
-    </sect2>
+  <para><indexterm>
+      <primary>get_data_from</primary>
+    </indexterm>The get_data_from attribute allows you to specify that a field
+  gets its data from another variable. This supports code reuse when complex
+  versioning changes are made.</para>
+
+  <para><emphasis role="bold">Example:</emphasis></para>
+
+  <programlisting>ESPresponse RoxieEchoPersonInfoResponse
+{
+  ESPstruct NameInfo Name;
+  string Var1;
+  [get_data_from("Var1")] string Var2;
+};
+</programlisting>
+
+  <para>In the example above, the query returns the data in Var1 then the
+  service puts the data into the Var2 field and sends that in the response to
+  the client. </para>
+
+  <para>In this example both Var1 and Var2 are in the response to the client.
+  Typically, Var1 and Var2 are in non-overlapping versions so only one will be
+  in the response depending on the version specified. </para>
+
+  <para>Since the get_data_from attribute supports complex data types, such as
+  an ESPstruct, the fields do not have to be limited to string types.</para>
+</sect1>
