@@ -23,6 +23,8 @@
     <xsl:param name="soapbody" select="'yy'"/>
     <xsl:param name="inhouseUser" select="false()"/>
     <xsl:param name="showhttp" select="false()"/>
+    <xsl:param name="showLogout" select="showLogout"/>
+
     <!-- ===============================================================================-->
     <xsl:template match="/">
     <html>
@@ -34,9 +36,11 @@
       <script type="text/javascript" src="/esp/files/get_input.js"/>
       <script type="text/javascript" src="/esp/files/stack.js"/>
       <script type="text/javascript" src="/esp/files/stringbuffer.js"/>
+      <script type="text/javascript" src="/esp/files/logout.js"/>
 
 <script type="text/javascript">
 var showhttp = '<xsl:value-of select="$showhttp"/>';
+
 <![CDATA[ 
   var xmlhttp = null;
 
@@ -726,6 +730,9 @@ var gMethodName = "<xsl:value-of select="$methodName"/>";;
                         <tr align="left">
                             <td height="23" bgcolor="000099" align="center"><font color="#ffffff"><b><xsl:value-of select="concat('  ', $pageName, '  ')"/></b></font></td>
                             <td height="23" align="center"><font color="#ffffff"><b><xsl:value-of select="concat($serviceName, ' / ', $methodName)"/></b></font></td>
+                            <xsl:if test="$showLogout">
+                                <td><a href="javascript:void(0)" onclick="logout();">Log Out</a></td>
+                            </xsl:if>
                         </tr>
                     </table>
                 

@@ -339,20 +339,7 @@ void EspHttpBinding::readAuthDomainCfg(IPropertyTree* procCfg)
         //For example, an icon file on the login page.
         const char* unrestrictedResources = authDomainTree->queryProp("@unrestrictedResources");
         if (!isEmptyString(unrestrictedResources))
-        {
-            StringArray urlArray;
-            urlArray.appendListUniq(unrestrictedResources, ",");
-            ForEachItemIn(i, urlArray)
-            {
-                const char* url = urlArray.item(i);
-                if (isEmptyString(url))
-                    continue;
-                if (isWildString(url))
-                    domainAuthResourcesWildMatch.append(url);
-                else
-                    domainAuthResources.setValue(url, true);
-            }
-        }
+            readUnrestrictedResources(unrestrictedResources);
 
         const char* _loginURL = authDomainTree->queryProp("@logonURL");
         if (!isEmptyString(_loginURL))
@@ -370,11 +357,26 @@ void EspHttpBinding::readAuthDomainCfg(IPropertyTree* procCfg)
     else
     {//old environment.xml
         domainAuthType = AuthTypeMixed;
-        domainAuthResources.setValue(DEFAULT_UNRESTRICTED_RESOURCE1, true);
-        domainAuthResourcesWildMatch.append(DEFAULT_UNRESTRICTED_RESOURCE2);
+        readUnrestrictedResources(DEFAULT_UNRESTRICTED_RESOURCES);
         loginURL.set(DEFAULT_LOGIN_URL);
     }
     domainAuthResourcesWildMatch.sortCompare(compareLength);
+}
+
+void EspHttpBinding::readUnrestrictedResources(const char* resources)
+{
+    StringArray resourceArray;
+    resourceArray.appendListUniq(resources, ",");
+    ForEachItemIn(i, resourceArray)
+    {
+        const char* resource = resourceArray.item(i);
+        if (isEmptyString(resource))
+            continue;
+        if (isWildString(resource))
+            domainAuthResourcesWildMatch.append(resource);
+        else
+            domainAuthResources.setValue(resource, true);
+    }
 }
 
 StringBuffer &EspHttpBinding::generateNamespace(IEspContext &context, CHttpRequest* request, const char *serv, const char *method, StringBuffer &ns)
@@ -1177,7 +1179,10 @@ int EspHttpBinding::onGetSoapBuilder(IEspContext &context, CHttpRequest* request
 
     VStringBuffer url("%s?%s", methodQName.str(), params.str());
     xform->setStringParameter("destination", url.str());
-        
+    const char* authMethod = context.getAuthenticationMethod();
+    if (authMethod && !strieq(authMethod, "none") && ((context.getDomainAuthType() == AuthPerSessionOnly) || (context.getDomainAuthType() == AuthTypeMixed)))
+        xform->setParameter("showLogout", "1");
+
     StringBuffer page;
     xform->transform(page);     
 
@@ -2094,11 +2099,13 @@ int EspHttpBinding::onGetXForm(IEspContext &context, CHttpRequest* request, CHtt
         StringBuffer schema;
         context.addOptions(ESPCTX_ALL_ANNOTATION);
         getSchema(schema, context, request, serv, method, true);
-        //DBGLOG("Schema: %s", schema.str());
 
         Owned<IXslTransform> xform = xslp->createXslTransform();
         xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/gen_form.xsl").str());
         xform->setXmlSource(schema.str(), schema.length()+1);
+        const char* authMethod = context.getAuthenticationMethod();
+        if (authMethod && !strieq(authMethod, "none") && ((context.getDomainAuthType() == AuthPerSessionOnly) || (context.getDomainAuthType() == AuthTypeMixed)))
+            xform->setParameter("showLogout", "1");
 
         // params
         xform->setStringParameter("serviceName", serviceQName);

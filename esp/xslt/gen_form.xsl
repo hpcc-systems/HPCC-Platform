@@ -43,6 +43,7 @@
     <xsl:param name="includeJsonReqSample" select="0"/>
     <xsl:param name="schemaRoot" select="xsd:schema"/>
     <xsl:param name="esdl_links" select="0"/>
+    <xsl:param name="showLogout" select="showLogout"/>
     
     
     <!-- ===============================================================================
@@ -103,8 +104,8 @@
                 <script type="text/javascript" src="files_/req_array.js"/>
                 <script type="text/javascript" src="files_/hashtable.js"/>
                 <script type="text/javascript" src="files_/gen_form.js"/>
+                <script type="text/javascript" src="files_/logout.js"/>
                 <script type="text/javascript">         
-  
   var isIE = (navigator.appName == "Microsoft Internet Explorer");  
   
   function getRequestFormHtml()
@@ -168,6 +169,9 @@
                                 </b>
                             </font>
                         </td>
+                        <xsl:if test="$showLogout">
+                            <td><a href="javascript:void(0)" onclick="logout();">Log Out</a></td>
+                        </xsl:if>
                     </tr>
                     <tr class='method'>
                         <td height="23" align="left">
