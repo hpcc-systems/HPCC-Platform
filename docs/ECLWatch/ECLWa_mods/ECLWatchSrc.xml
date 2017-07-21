@@ -294,7 +294,7 @@
         </variablelist>
 
         <para>When you specify any Filter options, the Filter Action button
-        displays <emphasis>Filter Set</emphasis>. <figure>
+        displays <emphasis role="bold">Filter Set</emphasis>. <figure>
             <title>Filter Set</title>
 
             <mediaobject>
@@ -1511,7 +1511,7 @@
 
             <listitem>
               <para>Select the <emphasis role="bold">Superfiles</emphasis> tab
-              (when enabled) to display the super file information. </para>
+              (when enabled) to display the superfile information.</para>
             </listitem>
 
             <listitem>
@@ -1526,8 +1526,8 @@
 
             <listitem>
               <para>Select the <emphasis role="bold">Graphs</emphasis> tab
-              (when enabled) to display any graphs associated with the file.
-              </para>
+              (when enabled) to display any graphs associated with the
+              file.</para>
             </listitem>
 
             <listitem>
