@@ -3326,7 +3326,7 @@ public:
     }
 
     virtual bool isValid()  { return false; }
-    virtual IFile & query() { return *(IFile *)NULL; }
+    virtual IFile & query() { throwUnexpected(); }
     virtual bool isDir() {  return false; }
 
 };
@@ -3889,7 +3889,7 @@ public:
     {
         if (isValid())
             return *item(idx).file;
-        return *(IFile *) NULL;
+        throwUnexpected();
     }
     virtual StringBuffer &getName(StringBuffer &buf)
     {
