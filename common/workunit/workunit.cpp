@@ -2010,7 +2010,7 @@ mapEnums workunitSortFields[] =
    { WUSFpriority, "@priorityClass" },
    { WUSFprotected, "@protected" },
    { WUSFwuid, "@" },
-   { WUSFecl, "Query/Text" },
+   { WUSFecl, "Query/ShortText" },
    { WUSFfileread, "FilesRead/File/@name" },
    { WUSFtotalthortime, "@totalThorTime|"
                         "Statistics/Statistic[@c='summary'][@creator='thor'][@kind='TimeElapsed']/@value|"
@@ -7403,7 +7403,10 @@ void CLocalWUQuery::setQueryType(WUQueryType qt)
 
 IStringVal& CLocalWUQuery::getQueryText(IStringVal &str) const
 {
-    str.set(p->queryProp("Text"));
+    const char *text = p->queryProp("Text");
+    if (!text)
+        text = p->queryProp("ShortText");
+    str.set(text);
     return str;
 }
 
@@ -7488,10 +7491,10 @@ unsigned CLocalWUQuery::getQueryDllCrc() const
 
 void CLocalWUQuery::setQueryText(const char *text)
 {
-    p->setProp("Text", text);
     bool isArchive = isArchiveQuery(text);
     if (isArchive)
     {
+        p->setProp("Text", text);
         Owned<IPropertyTree> xml = createPTreeFromXMLString(text, ipt_caseInsensitive|ipt_lowmem);
         const char * path = xml->queryProp("Query/@attributePath");
         if (path)
@@ -7502,6 +7505,12 @@ void CLocalWUQuery::setQueryText(const char *text)
         }
         else
             p->setProp("ShortText", xml->queryProp("Query"));
+    }
+    else
+    {
+        p->setProp("Text", text);     // At some point in the future we may be able to remove this,
+                                      // but as long as there may be new workunits compiled by old systems, we can't
+        p->setProp("ShortText", text);
     }
     p->setPropBool("@isArchive", isArchive);
     if (isArchive)

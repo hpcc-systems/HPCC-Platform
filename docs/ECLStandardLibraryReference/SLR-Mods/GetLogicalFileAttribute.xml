@@ -86,7 +86,7 @@ OUTPUT(STD.File.GetLogicalFileAttribute(file,'workunit'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'accessed'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'maxRecordSize'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'csvQuote'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'blockCompressed '));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'blockCompressed'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'compressedSize'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'fileCrc'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'formatCrc'));

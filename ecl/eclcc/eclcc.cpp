@@ -402,6 +402,7 @@ protected:
     bool optShowPaths = false;
     bool optNoSourcePath = false;
     bool optFastSyntax = false;
+    bool optCheckIncludePaths = true;
     bool optXml = false;
     mutable bool daliConnected = false;
     mutable bool disconnectReported = false;
@@ -1852,6 +1853,40 @@ bool EclCC::generatePrecompiledHeader()
     }
 }
 
+static void checkForOverlappingPaths(const char * path)
+{
+    StringArray originalPaths;
+    originalPaths.appendList(path, ENVSEPSTR);
+
+    StringArray expandedPaths;
+    ForEachItemIn(i1, originalPaths)
+    {
+        const char * cur = originalPaths.item(i1);
+        if (*cur)
+        {
+            StringBuffer expanded;
+            makeAbsolutePath(cur, expanded);
+            expandedPaths.append(expanded);
+        }
+    }
+
+    //Sort alphabetically, smallest strings will come first
+    expandedPaths.sortAscii(!filenamesAreCaseSensitive);
+
+    //If one string is a subset of another then the shorter will come immediately before at least one that overlaps
+    for (unsigned i=1; i < expandedPaths.ordinality(); i++)
+    {
+        const char * prev = expandedPaths.item(i-1);
+        const char * next = expandedPaths.item(i);
+        if (hasPrefix(next, prev, filenamesAreCaseSensitive))
+        {
+            if (!streq(next, prev))
+                throw MakeStringException(99, "Include paths -I '%s' and '%s' overlap", prev, next);
+        }
+    }
+}
+
+
 
 bool EclCC::processFiles()
 {
@@ -1888,9 +1923,11 @@ bool EclCC::processFiles()
 
 
     StringBuffer searchPath;
-    if (!optNoStdInc)
+    if (!optNoStdInc && stdIncludeLibraryPath.length())
         searchPath.append(stdIncludeLibraryPath).append(ENVSEPCHAR);
     searchPath.append(includeLibraryPath);
+    if (optCheckIncludePaths)
+        checkForOverlappingPaths(searchPath);
 
     Owned<IErrorReceiver> errs = optXml ? createXmlFileErrorReceiver(stderr) : createFileErrorReceiver(stderr);
     pluginsRepository.setown(createNewSourceFileEclRepository(errs, pluginsPath.str(), ESFallowplugins, logVerbose ? PLUGIN_DLL_MODULE : 0));
@@ -2251,6 +2288,10 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchOption(optWUID, "-wuid"))
         {
             // For use by eclccserver - not documented in usage()
+        }
+        else if (iter.matchFlag(optCheckIncludePaths, "--checkIncludePaths"))
+        {
+            //Only here to provide backward compatibility for the include path checking if it proves to cause issues.
         }
         else if (iter.matchOption(tempArg, "--deny"))
         {

@@ -231,6 +231,12 @@
     <xi:include href="DynamicESDL/DESDL-Mods/ESDLdepr_ver.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLget_data_from.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="DynamicESDL/DESDL-Mods/ESDLoptional.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="DynamicESDL/DESDL-Mods/ESDLhelp.xml"
                 xpointer="element(/1)"

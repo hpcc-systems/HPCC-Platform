@@ -279,6 +279,7 @@ public:
             cachedMetaInfo.isSource = true;
             getPartsMetaInfo(cachedMetaInfo, partDescs.ordinality(), partDescs.getArray(), partHandler);
             cachedMetaInfo.unknownRowsOutput = true; // at least I don't think we know
+            cachedMetaInfo.fastThrough = true;
         }
         info = cachedMetaInfo;
     }

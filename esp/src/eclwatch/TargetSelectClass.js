@@ -302,6 +302,11 @@ define([
                     }
                 }).then(function (response) {
                     if (lang.exists("TpDropZoneQueryResponse.TpDropZones.TpDropZone", response)) {
+                        context.set("options", []);
+                        context.options.push({
+                            label: "&nbsp;",
+                            value: ""
+                        });
                         arrayUtil.forEach(response.TpDropZoneQueryResponse.TpDropZones.TpDropZone, function(item, idx) {
                             var targetData = item.TpMachines.TpMachine;
                             for (var i = 0; i < targetData.length; ++i) {
@@ -310,14 +315,14 @@ define([
                                     value: targetData[i].Netaddress
                                 });
                             }
+                            context._postLoad();
                         });
                     }
-                    context._postLoad();
                 });
             }
         },
 
-        _loadDropZoneFolders: function (Netaddr, Path, OS, depth) {
+        _loadDropZoneFolders: function (pathSepChar, Netaddr, Path, OS, depth) {
             depth = depth || 0;
             var retVal = [];
             retVal.push(Path);
@@ -341,7 +346,7 @@ define([
                         var files = response.FileListResponse.files.PhysicalFileStruct;
                         for (var i = 0; i < files.length; ++i) {
                             if (files[i].isDir) {
-                                requests.push(context._loadDropZoneFolders(Netaddr, Path + "/" + files[i].name, OS, ++depth));
+                                requests.push(context._loadDropZoneFolders(pathSepChar, Netaddr, Path + pathSepChar + files[i].name, OS, ++depth));
                             }
                         }
                     }
@@ -360,7 +365,7 @@ define([
             return str.indexOf(suffix, str.length - suffix.length) !== -1;
         },
 
-        loadDropZoneFolders: function () {
+        loadDropZoneFolders: function (pathSepChar) {
             var context = this;
             this.getDropZoneFolder = function () {
                 var baseFolder = this._dropZoneTarget.machine.Directory;
@@ -368,7 +373,7 @@ define([
                 return baseFolder + selectedFolder;
             }
             if (this._dropZoneTarget) {
-                this._loadDropZoneFolders(this._dropZoneTarget.machine.Netaddress, this._dropZoneTarget.machine.Directory, this._dropZoneTarget.machine.OS).then(function (results) {
+                this._loadDropZoneFolders(pathSepChar, this._dropZoneTarget.machine.Netaddress, this._dropZoneTarget.machine.Directory, this._dropZoneTarget.machine.OS).then(function (results) {
                     results.sort();
                     var store = new Memory({
                         data: arrayUtil.map(results, function (_path) {

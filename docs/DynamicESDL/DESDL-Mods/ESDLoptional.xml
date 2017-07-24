@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ESDL_Attributes_optional">
+  <title><emphasis role="bold">optional</emphasis></title>
+
+  <para><indexterm>
+      <primary>optional</primary>
+    </indexterm>The optional attribute allows you to specify that a field is
+  optional and is hidden or not depending on the absence or presence of a URL
+  decoration.</para>
+
+  <para>When a field has an optional attribute, the field is visible only when
+  the option appears on the URL. But when the option starts with an
+  exclamation point (!), then the field is hidden only if the option is in the
+  URL.</para>
+
+  <para><emphasis role="bold">Example:</emphasis></para>
+
+  <programlisting>ESPrequest RoxieEchoPersonInfoRequest
+{
+     ESPstruct NameInfo Name;
+                            string First;
+                            string Middle;
+                            string Last;
+     [optional("dev")]      string NickName;
+     [optional("!_NonUS_")] string SSN;
+};</programlisting>
+
+  <para>Assuming the service is running on a server with the hostname of
+  example.com and the service binding is set to 8003:</para>
+
+  <para>If the URL is <programlisting>http://example.com:8003/ </programlisting></para>
+
+  <para>then SSN is visible and NickName is hidden;</para>
+
+  <para>If the URL is <programlisting>http://example.com:8003/?dev </programlisting></para>
+
+  <para>then SSN and NickName are both visible</para>
+
+  <para>If the URL is <programlisting>http://example.com:8003/?dev&amp;_NonUS_ </programlisting></para>
+
+  <para>then NickName is visible and SSN is hidden.</para>
+
+  <para>If the URL is <programlisting>http://example.com:8003/?_NonUS_</programlisting>
+  then both NickName and SSN are hidden.</para>
+</sect1>

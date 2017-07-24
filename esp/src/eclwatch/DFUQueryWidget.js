@@ -89,6 +89,7 @@ define([
         templateString: template,
         baseClass: "DFUQueryWidget",
         i18n: nlsHPCC,
+        pathSepCharG: "/",
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -134,15 +135,25 @@ define([
                 origOnOpen.apply(context.desprayTooltipDialog, arguments);
 
                 if (!context.desprayIPSelect.initalized) {
+                    var pathSepChar;
                     context.desprayIPSelect.init({
                         DropZoneMachines: true,
                         callback: function (value, row) {
+                            var path = targetRow.machine.Directory.indexOf("\\");
                             targetRow.machine.Name = value
                             targetRow.machine.Netaddress = value
                             if (context.desprayTargetPath) {
                                 context.desprayTargetPath._dropZoneTarget = targetRow;
-                                context.desprayTargetPath.defaultValue = "/"
-                                context.desprayTargetPath.loadDropZoneFolders();
+                                if (path > -1) {
+                                    context.desprayTargetPath.defaultValue = "\\"
+                                    pathSepChar = "\\"
+                                    context.pathSepCharG = "\\"
+                                } else {
+                                    context.desprayTargetPath.defaultValue = "/"
+                                    pathSepChar = "/";
+                                    context.pathSepCharG = "/"
+                                }
+                                context.desprayTargetPath.loadDropZoneFolders(pathSepChar);
                             }
                         }
                     });
@@ -306,8 +317,8 @@ define([
                 arrayUtil.forEach(this.desprayGrid.store.data, function (item, idx) {
                     var request = domForm.toObject(context.id + "DesprayForm");
                     request.destPath = context.desprayTargetPath.getDropZoneFolder();
-                    if (!context.endsWith(request.destPath, "/")) {
-                        request.destPath += "/";
+                    if (!context.endsWith(request.destPath, context.pathSepCharG)) {
+                        request.destPath += context.pathSepCharG;
                     }
                     request.destPath += item.targetName;
                     item.despray({
