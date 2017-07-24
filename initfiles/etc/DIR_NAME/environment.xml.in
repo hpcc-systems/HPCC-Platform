@@ -430,6 +430,25 @@
                   required="Read"
                   resource="WsEclAccess"/>
    </EspBinding>
+   <EspControlBinding defaultForPort="true"
+               defaultServiceVersion=""
+               name="espcontrol"
+               protocol="http"
+               resourcesBasedn="ou=WsEspControl,ou=EspServices,ou=ecl"
+               service="espcontrol"
+               type=""
+               wsdlServiceAddress="">
+    <Authenticate access="Read"
+               description="Root access to WS Esp Control service"
+               path="/"
+               required="Read"
+               resource="WsEspControlAccess"/>
+    <AuthenticateFeature authenticate="Yes"
+               description="Access to WS Esp Control service"
+               path="WsEspControlAccess"
+               resource="WsEspControlAccess"
+               service="espcontrol"/>
+   </EspControlBinding>
   </EspProcess>
   <Directories name="${DIR_NAME}">
    <Category dir="$ENV{DESTDIR}${EXEC_PREFIX}/log/[NAME]/[INST]" name="log"/>
