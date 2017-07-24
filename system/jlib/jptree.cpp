@@ -56,7 +56,7 @@ public:
     virtual bool first() override { return false; }
     virtual bool next() override { return false; }
     virtual bool isValid() override { return false; }
-    virtual IPropertyTree & query() override { assertex(false); return *(IPropertyTree *)NULL; }
+    virtual IPropertyTree & query() override { throwUnexpected(); }
 } *nullPTreeIterator;
 
 IPropertyTreeIterator *createNullPTreeIterator() { return LINK(nullPTreeIterator); } // initialize in init mod below.
