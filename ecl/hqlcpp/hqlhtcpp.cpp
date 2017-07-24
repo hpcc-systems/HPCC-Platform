@@ -9920,15 +9920,11 @@ void HqlCppTranslator::buildClusterHelper(BuildCtx & ctx, IHqlExpression * expr)
 }
 
 
-void HqlCppTranslator::buildRecordEcl(BuildCtx & subctx, IHqlExpression * dataset, const char * methodName, bool removeXpath)
+void HqlCppTranslator::buildRecordEcl(BuildCtx & subctx, IHqlExpression * record, const char * methodName)
 {
     StringBuffer eclFuncName;
     StringBuffer s;
 
-    //Ensure the ECL for the record reflects its serialized form, not the internal form
-    OwnedHqlExpr record = getSerializedForm(dataset->queryRecord(), diskAtom);
-    if (removeXpath)
-        record.setown(removeAttributeFromFields(record, xpathAtom));
     appendUniqueId(eclFuncName.append("ecl"), getConsistentUID(record));
 
     BuildCtx declarectx(*code, declareAtom);
@@ -10320,6 +10316,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
     buildUpdateHelper(instance->createctx, *instance, dataset, updateAttr);
     buildClusterHelper(instance->classctx, expr);
 
+    LinkedHqlExpr serializedRecord = record;
+
     // virtual unsigned getKeyedSize()
     HqlExprArray fields;
     unwindChildren(fields, record);
@@ -10327,12 +10325,16 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
     fields.popn(numPayloadFields(expr));
     OwnedHqlExpr keyedRecord = createRecord(fields); // must be fixed length => no maxlength
     if (expr->hasAttribute(_payload_Atom))
+    {
         instance->classctx.addQuoted(s.clear().append("virtual unsigned getKeyedSize() { return ").append(getFixedRecordSize(keyedRecord)).append("; }"));
+        serializedRecord.setown(notePayloadFields(serializedRecord, numPayloadFields(expr)));
+    }
     else
         instance->classctx.addQuoted(s.clear().append("virtual unsigned getKeyedSize() { return (unsigned) -1; }"));
 
     //virtual const char * queryRecordECL() = 0;
-    buildRecordEcl(instance->createctx, dataset, "queryRecordECL", false);
+    serializedRecord.setown(getSerializedForm(serializedRecord, diskAtom));
+    buildRecordEcl(instance->createctx, serializedRecord, "queryRecordECL");
 
     doBuildSequenceFunc(instance->classctx, querySequence(expr), false);
     HqlExprArray xmlnsAttrs;
@@ -10636,7 +10638,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
                 doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
 
             //virtual const char * queryRecordECL() = 0;
-            buildRecordEcl(instance->createctx, dataset, "queryRecordECL", expr->hasAttribute(noXpathAtom));
+            //Ensure the ECL for the record reflects its serialized form, not the internal form
+            OwnedHqlExpr record = getSerializedForm(dataset->queryRecord(), diskAtom);
+            if (expr->hasAttribute(noXpathAtom))
+                record.setown(removeAttributeFromFields(record, xpathAtom));
+            buildRecordEcl(instance->createctx, record, "queryRecordECL");
 
             buildExpiryHelper(instance->createctx, expireAttr);
             buildUpdateHelper(instance->createctx, *instance, dataset, updateAttr);

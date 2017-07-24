@@ -1186,6 +1186,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             //First output the attributes...
             //MORE: Add attributes to the record definition
             bool first = true;
+            bool firstPayload = true;
             ForEachChild(idx, expr)
             {
                 IHqlExpression *child = queryChild(expr, idx);
@@ -1196,11 +1197,29 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                     if (fieldsInline)
                     {
                         if (!first)
-                            s.append(",");
+                        {
+                            if (firstPayload && child->hasAttribute(_payload_Atom))
+                            {
+                                s.append(" =>");
+                                firstPayload = false;
+                            }
+                            else
+                                s.append(",");
+                        }
                         s.append(" ");
                     }
                     else
+                    {
+                        if (!first)
+                        {
+                            if (firstPayload && child->hasAttribute(_payload_Atom))
+                            {
+                                s.remove(s.length()-2,2).append("\n").pad(indent).append("=>\n");
+                                firstPayload = false;
+                            }
+                        }
                         s.pad(indent);
+                    }
                     toECL(child, s, false, inType, idx+1);
                     if (!fieldsInline)
                         s.append(";\n");

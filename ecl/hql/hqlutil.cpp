@@ -6390,6 +6390,29 @@ void TempTableTransformer::reportWarning(WarnErrorCategory category, IHqlExpress
     errorProcessor.reportWarning(category, code, errorMsg.str(), str(where->sourcePath), where->lineno, where->column, where->position);
 }
 
+IHqlExpression *notePayloadFields(IHqlExpression *record, unsigned payloadCount)
+{
+    HqlExprArray fields;
+    unwindChildren(fields, record);
+    unsigned idx = fields.length();
+    while (idx && payloadCount)
+    {
+        IHqlExpression * cur = &fields.item(--idx);
+        switch (cur->getOperator())
+        {
+        case no_record:
+            throwUnexpected();
+            break;
+        case no_field:
+        case no_ifblock:
+            fields.replace(*appendOwnedOperand(cur, createAttribute(_payload_Atom)), idx);
+            payloadCount--;
+            break;
+        }
+    }
+    return createRecord(fields);
+}
+
 IHqlExpression *getDictionaryKeyRecord(IHqlExpression *record)
 {
     IHqlExpression * payload = record->queryAttribute(_payload_Atom);

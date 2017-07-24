@@ -1713,7 +1713,7 @@ public:
     void buildHTTPtoXml(BuildCtx & ctx);
     void buildSOAPtoXml(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * transform, IHqlExpression * selSeq);
 
-    void buildRecordEcl(BuildCtx & subctx, IHqlExpression * dataset, const char * methodName, bool removeXpath);
+    void buildRecordEcl(BuildCtx & subctx, IHqlExpression * dataset, const char * methodName);
     void doTransform(BuildCtx & ctx, IHqlExpression * transform, BoundRow * self);
     void doUpdateTransform(BuildCtx & ctx, IHqlExpression * transform, BoundRow * self, BoundRow * previous, bool alwaysNextRow);
     void doInlineTransform(BuildCtx & ctx, IHqlExpression * transform, BoundRow * targetRow);

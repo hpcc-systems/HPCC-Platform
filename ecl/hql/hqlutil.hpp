@@ -521,6 +521,7 @@ extern HQL_API IHqlExpression * extractCppBodyAttrs(unsigned len, const char * v
 extern HQL_API unsigned cleanupEmbeddedCpp(unsigned len, char * buffer);
 extern HQL_API bool isNullList(IHqlExpression * expr);
 
+extern HQL_API IHqlExpression *notePayloadFields(IHqlExpression *record, unsigned payloadCount);
 extern HQL_API IHqlExpression *getDictionaryKeyRecord(IHqlExpression *record);
 extern HQL_API IHqlExpression *getDictionarySearchRecord(IHqlExpression *record);
 extern HQL_API IHqlExpression * createSelectMapRow(IErrorReceiver & errorProcessor, ECLlocation & location, IHqlExpression * dict, IHqlExpression *values);
