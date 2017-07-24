@@ -127,7 +127,7 @@ void CEspConfig::ensureSDSSessionDomains()
             continue;
 
         hasSessionAuth = true;
-        const char* authDomainName = authDomain.queryProp("@name");
+        const char* authDomainName = authDomain.queryProp("@domainName");
         if (isEmptyString(authDomainName) || strieq(authDomainName, "default"))
         {
             if (hasDefaultSessionDomain)
