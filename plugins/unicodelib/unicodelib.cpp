@@ -82,6 +82,7 @@ static const char * EclDefinition =
 "  boolean UnicodeLocaleEditDistanceWithinRadius(const unicode left, const unicode right, unsigned4 radius,  const varstring localename) : c,time,pure,entrypoint='ulUnicodeLocaleEditDistanceWithinRadius', hole; \n"
 "  unsigned4 UnicodeLocaleWordCount(const unicode text, const varstring localename) : c, pure,entrypoint='ulUnicodeLocaleWordCount', hole; \n"
 "  unicode UnicodeLocaleGetNthWord(const unicode text, unsigned4 n, const varstring localename) : c,pure,entrypoint='ulUnicodeLocaleGetNthWord';\n"
+"  unicode UnicodeLocaleExcludeNthWord(const unicode text, unsigned4 n, const varstring localename) :c,pure,entrypoint='ulUnicodeLocaleExcludeNthWord';\n"
 "END;\n";
 
 static const char * compatibleVersions[] = {
@@ -716,6 +717,45 @@ unsigned unicodeEditDistanceV4(UnicodeString & left, UnicodeString & right, unsi
     }
 
     return da[mask(leftLen-1)][rightLen-1];
+}
+
+void excludeNthWord(RuleBasedBreakIterator& bi, UnicodeString & source, unsigned n)
+{
+    bi.setText(source);
+    int32_t idx = bi.first();
+    int32_t wordidx = 0;
+    unsigned wordBeginning = 0;
+    while (idx != BreakIterator::DONE)
+    {
+        int breakType = bi.getRuleStatus();
+        if (breakType != UBRK_WORD_NONE)
+        {
+            // Exclude spaces, punctuation, and the like.
+            //   A status value UBRK_WORD_NONE indicates that the boundary does
+            //   not start a word or number.
+            if (++wordidx == n)
+            {
+                if (n == 1)
+                {
+                    wordBeginning = 0;
+                }
+                unsigned wordEnd;
+                do
+                {
+                    wordEnd = idx;
+                    idx = bi.next();
+                } while (bi.getRuleStatus() == UBRK_WORD_NONE && idx != BreakIterator::DONE);
+                source.removeBetween(wordBeginning, wordEnd);
+                return;
+            }
+        }
+        wordBeginning = idx;
+        idx = bi.next();
+    }
+    if (!wordidx)
+    {
+        source.removeBetween(bi.first(), bi.last());
+    }
 }
 
 UnicodeString getNthWord(RuleBasedBreakIterator& bi, UnicodeString const & source, unsigned n)
@@ -1416,3 +1456,23 @@ UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleGetNthWord(unsigned & tgtLen,
     }
 }
 
+UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleExcludeNthWord(unsigned & tgtLen, UChar * & tgt, unsigned textLen, UChar const * text, unsigned n, char const * localename)
+{
+    UErrorCode status = U_ZERO_ERROR;
+    Locale locale(localename);
+    RuleBasedBreakIterator* bi = (RuleBasedBreakIterator*)RuleBasedBreakIterator::createWordInstance(locale, status);
+    UnicodeString processed(text, textLen);
+    excludeNthWord(*bi, processed, n);
+    delete bi;
+    if (processed.length()>0)
+    {
+        tgtLen = processed.length();
+        tgt = (UChar *)CTXMALLOC(parentCtx, tgtLen*2);
+        processed.extract(0, tgtLen, tgt);
+    }
+    else
+    {
+        tgtLen = 0;
+        tgt = 0;
+    }
+}

@@ -1,4 +1,4 @@
-/*##############################################################################
+﻿/*##############################################################################
 ## HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.  All rights reserved.
 ############################################################################## */
 
@@ -381,5 +381,21 @@ EXPORT unsigned4 WordCount(unicode text, varstring localename = '') :=
 
 EXPORT unicode GetNthWord(unicode text, unsigned4 n, varstring localename = '') :=
     lib_unicodelib.UnicodeLib.UnicodeLocaleGetNthWord(text, n, localename);
+
+/**
+ * Returns everything but the string's nth word and some whitespaces. Words are marked by the unicode break semantics.
+ * Trailing whitespaes are always removed with the word.
+ * Leading whitespaces are only removed with the word if the nth word is the first word.
+ * Returns a blank string if there are no words in the source string.
+ * Returns the source string if the number of words in the string is less than the n parameter's assigned value.
+ *
+ * @param text          The string to be broken into words.
+ * @param n             Which word should be removed from the string.
+ * @param localname     The locale to use for the break semantics.  Defaults to ''.
+ * @return              The string excluding the nth word.
+ */
+
+EXPORT ExcludeNthWord(unicode text, unsigned4 n, varstring localename = '') :=
+    lib_unicodelib.UnicodeLib.UnicodeLocaleExcludeNthWord(text, n, localename);
 
 END;
