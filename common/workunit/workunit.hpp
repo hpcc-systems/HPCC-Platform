@@ -36,6 +36,7 @@
 #include "jutil.hpp"
 #include "jprop.hpp"
 #include "wuattr.hpp"
+#include <vector>
 
 #define LEGACY_GLOBAL_SCOPE "workunit"
 #define GLOBAL_SCOPE ""
@@ -989,6 +990,8 @@ interface IConstWUStatisticIterator : extends IScmIterator
     virtual IConstWUStatistic & query() = 0;
 };
 
+//---------------------------------------------------------------------------------------------------------------------
+
 /*
  * An interface that is provided as a callback to a scope iterator to report the when iterating scopes
  */
@@ -1002,15 +1005,117 @@ interface IWuScopeVisitor
 /*
  * Interface for an iterator that walks through the different logical elements (scopes) within a workunit
  */
+enum WuPropertyTypes : unsigned
+{
+    PTnone                  = 0x00,
+    PTstatistics            = 0x01,
+    PTattributes            = 0x02,
+    PThints                 = 0x04,
+    PTscope                 = 0x08, // Just the existence of the scope is interesting
+    PTall                   = 0xFF,
+};
+BITMASK_ENUM(WuPropertyTypes);
+
+enum WuScopeSourceFlags : unsigned
+{
+    SSFsearchDefault        = 0x0000,
+    SSFsearchGlobalStats    = 0x0001,
+    SSFsearchGraphStats     = 0x0002,
+    SSFsearchGraph          = 0x0004,
+    SSFsearchExceptions     = 0x0008,
+    SSFsearchAll            = UINT_MAX,
+};
+BITMASK_ENUM(WuScopeSourceFlags);
+
+/* WuScopeFilter syntax:
+ * initial match:   scope[<scope-id>] | stype[<scope-type>] | id[<scope-id>] | depth[<value>| <min>,<max>]
+ *                  source[global|stats|graph|exception]
+ * stats filter:    where[<stat> | <stat>(=|!=|<|>|<=|>=)value | <stat>=<min>..<max>]
+ *
+ * returned scopes: matched[true|false] | nested[<depth>] | include[<scope-type>]
+ * returned information:
+ *                  prop[stat|attr|hint|scope]
+ *                  stat[<stat-name>] | attr[<attr-name>] | hint[<hint-name>] | measure[<measure-name>]
+ */
+class WORKUNIT_API WuScopeFilter
+{
+public:
+    WuScopeFilter() = default;
+    WuScopeFilter(const char * filter);
+
+    void addFilter(const char * filter);
+    void addScope(const char * scope);
+    void addScopeType(const char * scopeType);
+    void addId(const char * id);
+    void setDepth(unsigned low, unsigned high);
+    void setSource(const char * source);
+
+    void setIncludeMatch(bool value);
+    void setIncludeNesting(unsigned depth);
+    void setIncludeScopeType(const char * scopeType);
+
+    void addOutput(const char * prop);              // Which statistics/properties/hints are required.
+    void addOutputProperties(const char * prop);    // stat/attr/hint/scope
+    void addOutputStatistic(const char * prop);
+    void addOutputAttribute(const char * prop);
+    void addOutputHint(const char * prop);
+
+    void finishedFilter(); // Call once filter has been completely set up
+
+    bool includeStatistic(StatisticKind kind) const;
+    bool includeAttribute(WuAttr attr) const;
+    bool includeHint(const char * kind) const;
+    bool includeScope(const char * scope) const;
+
+    ScopeCompare compareMatchScopes(const char * scope) const;
+    const ScopeFilter & queryIterFilter() const;
+    bool isOptimized() const { return optimized; }
+
+protected:
+    void addRequiredStat(const char * filter);
+    bool matchOnly(StatisticScopeType scopeType) const;
+
+    //MORE: Make the following protected/private
+public:
+//The following members control which scopes are matched by the iterator
+    ScopeFilter scopeFilter;                            // Filter that must be matched by a scope
+    std::vector<StatisticValueFilter> requiredStats;    // The attributes that must be present for a particular scope
+    WuScopeSourceFlags sourceFlags = SSFsearchDefault;  // Which sources within the workunit should be included.  Default is to calculate from the properties.
+
+// Once a match has been found which scopes are returned?
+    struct
+    {
+        bool matchedScope = true;
+        unsigned nestedDepth = UINT_MAX;
+        UnsignedArray scopeTypes;
+    } include;
+
+// For all scopes that are returned, what information is required?
+    WuPropertyTypes properties = PTnone;  // What kind of information is desired (can be used to optimize the scopes). Default is scopes (for selected sources)
+    UnsignedArray desiredStats;
+    UnsignedArray desiredAttrs;
+    StringArray desiredHints;
+    StatisticMeasure desiredMeasure = SMeasureAll;
+
+    __uint64 minVersion = 0;
+    bool preFilterScope = false;
+    bool optimized = false;
+    //NB: Optimize scopeFilter.hasSingleMatch() + bail out early
+};
+
 interface IConstWUScopeIterator : extends IScmIterator
 {
+    //Allow iteration of the tree without walking through all the nodes.
+    virtual bool nextSibling() = 0;
+    virtual bool nextParent() = 0;
+
     //These return values are invalid after a call to next() or another call to the same function
     virtual const char * queryScope() const = 0;
     virtual StatisticScopeType getScopeType() const = 0;
 
     //Provide information about all stats, attributes and hints
     //MORE: should allow a mask to indicate which information is reported
-    virtual void playProperties(IWuScopeVisitor & visitor) = 0;
+    virtual void playProperties(WuPropertyTypes whichProperties, IWuScopeVisitor & visitor) = 0;
 
     //Return true if the stat is present, if found and update the value - queryStat() wrapper is generally easier to use.
     virtual bool getStat(StatisticKind kind, unsigned __int64 & value) const = 0;
@@ -1024,6 +1129,8 @@ interface IConstWUScopeIterator : extends IScmIterator
         return value;
     }
 };
+
+//---------------------------------------------------------------------------------------------------------------------
 
 //! IWorkUnit
 //! Provides high level access to WorkUnit "header" data.
@@ -1105,7 +1212,7 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual IConstWUWebServicesInfo * getWebServicesInfo() const = 0;
     virtual IConstWUStatisticIterator & getStatistics(const IStatisticsFilter * filter) const = 0; // filter must currently stay alive while the iterator does.
     virtual IConstWUStatistic * getStatistic(const char * creator, const char * scope, StatisticKind kind) const = 0;
-    virtual IConstWUScopeIterator & getScopeIterator(const IStatisticsFilter * filter) const = 0; // filter must currently stay alive while the iterator does.
+    virtual IConstWUScopeIterator & getScopeIterator(const WuScopeFilter & filter) const = 0; // filter must currently stay alive while the iterator does.
     virtual IConstWUResult * getVariableByName(const char * name) const = 0;
     virtual IConstWUResultIterator & getVariables() const = 0;
     virtual bool isPausing() const = 0;

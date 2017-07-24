@@ -21,10 +21,12 @@
 
 #include "jlib.hpp"
 #include "jmutex.hpp"
+#include <vector>
 
 #include "jstatcodes.h"
 
-const unsigned __int64 MaxStatisticValue = (unsigned __int64)-1;
+typedef unsigned __int64 stat_type;
+const unsigned __int64 MaxStatisticValue = (unsigned __int64)0-1U;
 const unsigned __int64 AnyStatisticValue = MaxStatisticValue; // Use the maximum value to also represent unknown, since it is unlikely to ever occur.
 
 inline StatisticKind queryStatsVariant(StatisticKind kind) { return (StatisticKind)(kind & ~StKindMask); }
@@ -44,9 +46,14 @@ public:
         : name(_name), scopeType(_scopeType)
     {
     }
+    StatsScopeId(const char * _scope)
+    {
+        setScopeText(_scope);
+    }
 
     StatisticScopeType queryScopeType() const { return scopeType; }
     StringBuffer & getScopeText(StringBuffer & out) const;
+    bool isWildcard() const;
 
     unsigned getHash() const;
     bool matches(const StatsScopeId & other) const;
@@ -147,6 +154,26 @@ protected:
     IStatisticGatherer & gatherer;
 };
 
+
+class jlib_decl StatsAggregation
+{
+public:
+    void noteValue(stat_type value);
+
+    stat_type getCount() const { return count; }
+    stat_type getMin() const { return minValue; }
+    stat_type getMax() const { return maxValue; }
+    stat_type getSum() const { return sumValue; }
+    stat_type getAve() const;
+    //MORE: StDev would require a sum of squares.
+
+protected:
+    stat_type count = 0;
+    stat_type sumValue = 0;
+    stat_type minValue = 0;
+    stat_type maxValue = 0;
+};
+
 //---------------------------------------------------------------------------------------------------------------------
 
 class StatsSubgraphScope : public StatsScopeBlock
@@ -209,6 +236,86 @@ protected:
     StringAttr value;
     bool hasWildcard;
 };
+
+class jlib_decl StatisticValueFilter
+{
+public:
+    StatisticValueFilter(StatisticKind _kind, stat_type _minValue, stat_type _maxValue) :
+        kind(_kind), minValue(_minValue), maxValue(_maxValue)
+    {
+    }
+
+    bool matches(stat_type value) const
+    {
+        return ((value >= minValue) && (value <= maxValue));
+    }
+
+    StatisticKind queryKind() const { return kind; }
+
+protected:
+    StatisticKind kind;
+    stat_type minValue;
+    stat_type maxValue;
+};
+
+//These could be template definitions, but that would potentially affect too many classes.
+//MORE: Would it be useful to move this to a common definition point?
+#define BITMASK_ENUM(X) \
+inline constexpr X operator | (X l, X r) { return (X)((unsigned)l | (unsigned)r); } \
+inline constexpr X operator ~ (X l) { return (X)(~(unsigned)l); } \
+inline X & operator |= (X & l, X r) { l = l | r; return l; } \
+inline X & operator &= (X & l, X r) { l = (X)(l & r); return l; }
+
+enum ScopeCompare : unsigned
+{
+    SCunknown   = 0x0000,   //
+    SCparent    = 0x0001,   // is a parent of: w1, w1:g1
+    SCchild     = 0x0002,   // is a child of: w1:g1, w1
+    SCequal     = 0x0004,   // w1:g1, w1:g1 - may extend to wildcards later.
+    SCrelated   = 0x0008,   // w1:g1, w1:g2 - some shared relationship
+    SCunrelated = 0x0010,   // no connection
+};
+BITMASK_ENUM(ScopeCompare);
+
+
+/*
+ * compare two scopes, and return a value indicating their relationship
+ */
+
+extern jlib_decl ScopeCompare compareScopes(const char * scope, const char * key);
+
+class jlib_decl ScopeFilter
+{
+public:
+    ScopeFilter() = default;
+    ScopeFilter(const char * scopeList);
+
+    void addScope(const char * scope);
+    void addScopes(const char * scope);
+    void addScopeType(StatisticScopeType scopeType);
+    void addId(const char * id);
+    void setDepth(unsigned low, unsigned high);
+    void setDepth(unsigned value) { setDepth(value, value); }
+
+    /*
+     * Return a mask containing information about whether the scope will match the filter
+     * It errs on the side of false positives - e.g. SCparent is set if it might be the parent of a match
+     */
+    ScopeCompare compare(const char * scope) const;
+
+    int compareDepth(unsigned depth) const; // -1 too shallow, 0 a match, +1 too deep
+    bool hasSingleMatch() const;
+    const StringArray & queryScopes() const { return scopes; }
+    bool matchOnly(StatisticScopeType scopeType) const;
+
+protected:
+    UnsignedArray scopeTypes;
+    StringArray scopes;
+    StringArray ids;
+    unsigned minDepth = 0;
+    unsigned maxDepth = UINT_MAX;
+};
+
 
 class jlib_decl StatisticsFilter : public CInterfaceOf<IStatisticsFilter>
 {
@@ -571,6 +678,7 @@ extern jlib_decl unsigned __int64 getIPV4StatsValue(const IpAddress & ip);
 extern jlib_decl void formatStatistic(StringBuffer & out, unsigned __int64 value, StatisticMeasure measure);
 extern jlib_decl void formatStatistic(StringBuffer & out, unsigned __int64 value, StatisticKind kind);
 extern jlib_decl void formatTimeStampAsLocalTime(StringBuffer & out, unsigned __int64 value);
+extern jlib_decl stat_type readStatisticValue(const char * cur, const char * * end, StatisticMeasure measure);
 
 extern jlib_decl unsigned __int64 mergeStatistic(StatisticMeasure measure, unsigned __int64 value, unsigned __int64 otherValue);
 extern jlib_decl unsigned __int64 mergeStatisticValue(unsigned __int64 prevValue, unsigned __int64 newValue, StatsMergeAction mergeAction);
@@ -612,6 +720,9 @@ extern jlib_decl unsigned __int64 extractTimeCollatable(const char *s, bool nano
 //activities are in numeric order
 //edges must come before activities.
 extern jlib_decl int compareScopeName(const char * left, const char * right);
+extern jlib_decl unsigned queryScopeDepth(const char * text);
+extern jlib_decl const char * queryScopeTail(const char * scope);
+extern jlib_decl bool getParentScope(StringBuffer & parent, const char * scope);
 
 //This interface is primarily here to reduce the dependency between the different components.
 interface IStatisticTarget

@@ -50,6 +50,7 @@ public:
     inline aindex_t length() const                 { return used; } /* Return number of items  */
     inline aindex_t ordinality() const             { return used; } /* Return number of items  */
     inline bool empty() const                    { return (used==0); }
+    inline explicit operator bool() const        { return (used != 0); }
 
 protected:
     void * _doBAdd(void *, size32_t size, StdCompare compare, bool & isNew);

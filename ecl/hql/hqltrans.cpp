@@ -170,8 +170,7 @@ void HqlTransformStats::gatherTransformStats(IStatisticTarget & target, const ch
 {
 #ifdef TRANSFORM_STATS_TIME
     target.addStatistic(SSTcompilestage, scope, StTimeTotalExecute, nullptr, cycle_to_nanosec(totalTime), 1, 0, StatsMergeSum);
-    if ((childTime-recursiveTime) != 0)
-        target.addStatistic(SSTcompilestage, scope, StTimeLocalExecute, nullptr, cycle_to_nanosec(totalTime-(childTime-recursiveTime)), 1, 0, StatsMergeSum);
+    target.addStatistic(SSTcompilestage, scope, StTimeLocalExecute, nullptr, cycle_to_nanosec(totalTime-(childTime-recursiveTime)), 1, 0, StatsMergeSum);
 #endif
 }
 

@@ -121,6 +121,19 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 
 extern jlib_decl int compareScopeName(const char * left, const char * right)
 {
+    if (!*left)
+    {
+        if (!*right)
+            return 0;
+        else
+            return -1;
+    }
+    else
+    {
+        if (!*right)
+            return +1;
+    }
+
     StatsScopeId leftId;
     StatsScopeId rightId;
     for(;;)
@@ -421,8 +434,76 @@ void formatStatistic(StringBuffer & out, unsigned __int64 value, StatisticKind k
 
 //--------------------------------------------------------------------------------------------------------------------
 
-unsigned queryStatisticsDepth(const char * text)
+stat_type readStatisticValue(const char * cur, const char * * end, StatisticMeasure measure)
 {
+    char * next;
+    stat_type value = strtoll(cur, &next, 10);
+
+    switch (measure)
+    {
+    case SMeasureTimeNs:
+        //Allow s, ms and us as scaling suffixes
+        if (next[0] == 's')
+        {
+            value *= 1000000000;
+            next++;
+        }
+        else if ((next[0] == 'm') && (next[1] == 's'))
+        {
+            value *= 1000000;
+            next += 2;
+        }
+        else if ((next[0] == 'u') && (next[1] == 's'))
+        {
+            value *= 1000;
+            next += 2;
+        }
+        break;
+    case SMeasureCount:
+    case SMeasureSize:
+        //Allow K, M, G as scaling suffixes
+        if (next[0] == 'K')
+        {
+            value *= 0x400;
+            next++;
+        }
+        else if (next[0] == 'M')
+        {
+            value *= 0x100000;
+            next++;
+        }
+        else if (next[0] == 'G')
+        {
+            value *= 0x40000000;
+            next++;
+        }
+        //Skip bytes marker
+        if ((*next == 'b') || (*next == 'B'))
+            next++;
+        break;
+    case SMeasurePercent:
+        //MORE: Extend to allow fractional percentages
+        //Allow % to mean a percentage - instead of ppm
+        if (next[0] == '%')
+        {
+            value *= 10000;
+            next++;
+        }
+        break;
+    }
+
+    if (end)
+        *end = next;
+    return value;
+}
+
+//--------------------------------------------------------------------------------------------------------------------
+
+unsigned queryScopeDepth(const char * text)
+{
+    if (!*text)
+        return 0;
+
     unsigned depth = 1;
     for (;;)
     {
@@ -436,6 +517,27 @@ unsigned queryStatisticsDepth(const char * text)
         }
         text++;
     }
+}
+
+const char * queryScopeTail(const char * scope)
+{
+    const char * colon = strrchr(scope, ':');
+    if (colon)
+        return colon+1;
+    else
+        return scope;
+}
+
+bool getParentScope(StringBuffer & parent, const char * scope)
+{
+    const char * colon = strrchr(scope, ':');
+    if (colon)
+    {
+        parent.append(colon-scope, scope);
+        return true;
+    }
+    else
+        return false;
 }
 
 
@@ -1104,6 +1206,11 @@ unsigned StatsScopeId::getHash() const
     default:
         return hashc((const byte *)&id, sizeof(id), (unsigned)scopeType);
     }
+}
+
+bool StatsScopeId::isWildcard() const
+{
+    return (id == 0) && (extra == 0) && !name;
 }
 
 int StatsScopeId::compare(const StatsScopeId & other) const
@@ -2447,6 +2554,242 @@ CRuntimeStatisticCollection * CNestedSummaryRuntimeStatisticMap::createStats(con
 
 //---------------------------------------------------
 
+void StatsAggregation::noteValue(stat_type value)
+{
+    if (count == 0)
+    {
+        minValue = value;
+        maxValue = value;
+    }
+    else
+    {
+        if (value < minValue)
+            minValue = value;
+        else if (value > maxValue)
+            maxValue = value;
+    }
+
+    count++;
+    sumValue += value;
+}
+
+stat_type StatsAggregation::getAve() const
+{
+    return (sumValue / count);
+}
+
+
+//---------------------------------------------------
+
+ScopeCompare compareScopes(const char * scope, const char * key)
+{
+    byte left = *scope;
+    byte right = *key;
+    //Check for root scope "" compared with anything
+    if (!left)
+    {
+        if (!right)
+            return SCequal;
+        return SCparent;
+    }
+    else if (!right)
+    {
+        return SCchild;
+    }
+
+    bool hadCommonScope = false;
+    for (;;)
+    {
+        if (left != right)
+        {
+            //FUTURE: Extend this function to support skipping numbers to allow wildcard matching
+            if (!left)
+            {
+                if (right == ':')
+                    return SCparent; // scope is a parent (prefix) of the key
+            }
+            if (!right)
+            {
+                if (left == ':')
+                    return SCchild;  // scope is a child (superset) of the key
+            }
+            return hadCommonScope ? SCrelated : SCunrelated;
+        }
+
+        if (!left)
+            return SCequal;
+
+        if (left == ':')
+            hadCommonScope = true;
+
+        left = *++scope;
+        right =*++key;
+    }
+}
+
+ScopeFilter::ScopeFilter(const char * scopeList)
+{
+    //MORE: This currently expands a list of scopes - it should probably be improved
+    scopes.appendList(scopeList, ",");
+}
+
+void ScopeFilter::addScope(const char * scope)
+{
+    if (!scope)
+        return;
+
+    if (streq(scope, "*"))
+    {
+        scopes.kill();
+        minDepth = 0;
+        maxDepth = UINT_MAX;
+        return;
+    }
+
+    dbgassertex(!ids && !scopeTypes); // Illegal to specify scopes and ids or scope Types.
+    unsigned depth = queryScopeDepth(scope);
+    if ((scopes.ordinality() == 0) || (depth < minDepth))
+        minDepth = depth;
+    if ((scopes.ordinality() == 0) || (depth > maxDepth))
+        maxDepth = depth;
+    scopes.append(scope);
+}
+
+void ScopeFilter::addScopes(const char * scope)
+{
+    StringArray list;
+    list.appendList(scope, ",");
+    ForEachItemIn(i, list)
+        addScope(list.item(i));
+}
+
+void ScopeFilter::addScopeType(StatisticScopeType scopeType)
+{
+    if (scopeType == SSTall)
+        return;
+
+    dbgassertex(!scopes && !ids);
+    scopeTypes.append(scopeType);
+}
+
+void ScopeFilter::addId(const char * id)
+{
+    dbgassertex(!scopes && !scopeTypes);
+    ids.append(id);
+}
+
+void ScopeFilter::setDepth(unsigned low, unsigned high)
+{
+    minDepth = low;
+    maxDepth = high;
+}
+
+
+ScopeCompare ScopeFilter::compare(const char * scope) const
+{
+    ScopeCompare result = SCunknown;
+    if (scopes)
+    {
+        //If scopes have been provided, then we are searching for an exact match against that scope
+        ForEachItemIn(i, scopes)
+            result |= compareScopes(scope, scopes.item(i));
+    }
+    else
+    {
+        //How does the depth of the scope compare with the range we are expecting?
+        unsigned depth = queryScopeDepth(scope);
+        if (depth < minDepth)
+            return SCparent;
+        if (depth > maxDepth)
+            return SCchild;
+
+        //Assume it is a match until proven otherwise
+        result |= SCequal;
+        // Could be the child of a match
+        if (depth > minDepth)
+            result |= SCchild;
+        //Could be the parent of a match
+        if (depth < maxDepth)
+            result |= SCparent;
+
+        //Check if the type of the current object matches the type
+        const char * tail = queryScopeTail(scope);
+        if (scopeTypes.ordinality())
+        {
+            StatsScopeId id(tail);
+            if (!scopeTypes.contains(id.queryScopeType()))
+                result &= ~SCequal;
+        }
+
+        if (ids)
+        {
+            if (!ids.contains(tail))
+                result &= ~SCequal;
+        }
+    }
+
+    if (!(result & SCequal))
+        return result;
+
+    //Have a match - now check that the attributes match as required
+    //MORE:
+    if (false)
+    {
+        result &= ~SCequal;
+    }
+
+    return result;
+}
+
+int ScopeFilter::compareDepth(unsigned depth) const
+{
+    if (depth < minDepth)
+        return -1;
+    if (depth > maxDepth)
+        return +1;
+    return 0;
+}
+
+bool ScopeFilter::hasSingleMatch() const
+{
+    return scopes.ordinality() == 1 || ids.ordinality() == 1;
+}
+
+bool ScopeFilter::matchOnly(StatisticScopeType scopeType) const
+{
+    if ((scopeTypes.ordinality() == 1) && (scopeTypes.item(0) == scopeType))
+        return true;
+
+    //Check the types of the scopes that are being searched
+    if (scopes.ordinality())
+    {
+        ForEachItemIn(i, scopes)
+        {
+            const char * scopeId = queryScopeTail(scopes.item(i));
+            StatsScopeId id(scopeId);
+            if (id.queryScopeType() != scopeType)
+                return false;
+        }
+        return true;
+    }
+
+    if (ids.ordinality())
+    {
+        ForEachItemIn(i, ids)
+        {
+            const char * scopeId = ids.item(i);
+            StatsScopeId id(scopeId);
+            if (id.queryScopeType() != scopeType)
+                return false;
+        }
+        return true;
+    }
+
+    return false;
+}
+
+//---------------------------------------------------
+
 bool ScopedItemFilter::matchDepth(unsigned low, unsigned high) const
 {
     if (maxDepth && low && maxDepth < low)
@@ -2476,7 +2819,7 @@ bool ScopedItemFilter::match(const char * search) const
 
         if (minDepth || maxDepth)
         {
-            unsigned searchDepth = queryStatisticsDepth(search);
+            unsigned searchDepth = queryScopeDepth(search);
             if (searchDepth < minDepth)
                 return false;
             if (maxDepth && searchDepth > maxDepth)
@@ -2492,7 +2835,7 @@ bool ScopedItemFilter::recurseChildScopes(const char * curScope) const
     if (maxDepth == 0 || !curScope)
         return true;
 
-    if (queryStatisticsDepth(curScope) >= maxDepth)
+    if (queryScopeDepth(curScope) >= maxDepth)
         return false;
     return true;
 }
@@ -2502,7 +2845,7 @@ void ScopedItemFilter::set(const char * _value)
     if (_value && !streq(_value, "*") )
     {
         value.set(_value);
-        minDepth = queryStatisticsDepth(_value);
+        minDepth = queryScopeDepth(_value);
         if (!strchr(_value, '*'))
         {
             maxDepth = minDepth;

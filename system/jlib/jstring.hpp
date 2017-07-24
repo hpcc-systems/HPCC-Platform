@@ -579,7 +579,7 @@ inline bool hasPrefix(const char * text, const char * prefix, bool caseSensitive
 }
 
 // Search for a string in a null terminated array of const char * strings
-extern jlib_decl unsigned matchString(const char * search, const char * * strings);
+extern jlib_decl unsigned matchString(const char * search, const char * const * strings);
 
 extern jlib_decl char *j_strtok_r(char *str, const char *delim, char **saveptr);
 extern jlib_decl int j_memicmp (const void *s1, const void *s2, size32_t len); 
