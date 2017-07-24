@@ -46,6 +46,7 @@
 #include "espsecurecontext.hpp"
 #include "jsonhelpers.hpp"
 #include "dasds.hpp"
+#include "daclient.hpp"
 
 #define FILE_UPLOAD     "FileUploadAccess"
 
@@ -270,8 +271,18 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
             memCachedInitString.set("--SERVER=127.0.0.1");//using local memcached server
     }
 #endif
-    if (!m_secmgr.get())
+    if (!m_secmgr.get() || !daliClientActive())
+    {
+        if (!daliClientActive())
+        {
+            if (proc_cfg->hasProp("AuthDomains"))
+                throw MakeStringException(-1, "ESP cannot have an 'AuthDomains' setting because no dali connection is available.");
+            if (bnd_cfg->hasProp("@authDomain"))
+                throw MakeStringException(-1, "ESP Binding %s cannot have an '@authDomain' setting because no dali connection is available.", bindname);
+        }
+        domainAuthType = AuthPerRequestOnly;
         return;
+    }
 
     processName.set(procname);
     const char* authDomain = bnd_cfg->queryProp("@authDomain");

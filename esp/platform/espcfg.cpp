@@ -372,6 +372,7 @@ void CEspConfig::initDali(const char *servers)
         setPasswordsFromSDS();
 
         serverstatus = new CSDSServerStatus("ESPserver");
+        ensureSDSSessionDomains();
     }
 }
 

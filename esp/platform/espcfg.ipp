@@ -177,8 +177,6 @@ public:
 
     void loadAll()
     {
-        ensureSDSSessionDomains();
-
         DBGLOG("loadServices");
         loadServices();
         loadProtocols();
