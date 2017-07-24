@@ -953,11 +953,11 @@ public:
         in.read(value);
     }
 
-    virtual StatisticKind queryKind() const
+    StatisticKind queryKind() const
     {
         return kind;
     }
-    virtual unsigned __int64 queryValue() const
+    unsigned __int64 queryValue() const
     {
         return value;
     }
