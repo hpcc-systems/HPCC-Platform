@@ -68,7 +68,6 @@ class jlib_decl Mapping : extends MappingBase
     MappingKey          key;
 };
 
-
 class jlib_decl AtomBase : public CInterfaceOf<IAtom>
 {
 public:
@@ -171,6 +170,27 @@ class MappingStringTo : extends Atom
 
    protected:
      VALUE_T    val;
+};
+
+template <class VALUE_T,class VALINIT>
+class MappingConstStringTo : public CInterfaceOf<IAtom>
+{
+public:
+    MappingConstStringTo(const char *k, VALINIT a) : key(k), val(a), hash(0)
+    { };
+
+    inline VALUE_T &            getValue()      { return val; };
+
+//interface:IMapping
+    virtual const char *        queryStr() const { return key; }
+    virtual const void *        getKey() const { return key; }
+    virtual unsigned            getHash() const { return hash; }
+    virtual void                setHash(unsigned hval) { hash = hval; }
+
+  protected:
+    unsigned hash;
+    const char * key;
+    VALUE_T val;
 };
 
 
@@ -307,6 +327,33 @@ class MapStringTo : extends StringMapOf<MAPPING>
     MapStringTo():StringMapOf<MAPPING>(false){};
     MapStringTo(unsigned initsize, bool _ignorecase):StringMapOf<MAPPING>(initsize, _ignorecase){};
     MapStringTo(bool _ignorecase):StringMapOf<MAPPING>(_ignorecase){};
+    VALUE_T *   getValue(const char *k) const
+    {
+       MAPPING * map = SELF::find(k);
+       if (map)
+          return &map->getValue();
+       return NULL;
+    }
+    static inline VALUE_T * mapToValue(IMapping * _map)
+    {
+       MAPPING * map = (MAPPING *)_map;
+       return &map->getValue();
+    }
+    bool        setValue(const char *k, VALINIT v)
+    {
+       MAPPING * map = new MAPPING(k, v);
+       return this->replaceOwn(*map);
+    }
+};
+
+template <class VALUE_T, class VALINIT = VALUE_T, class MAPPING = MappingConstStringTo<VALUE_T, VALINIT> >
+class MapConstStringTo : extends StringMapOf<MAPPING>
+{
+    typedef MapConstStringTo<VALUE_T, VALINIT, MAPPING> SELF;
+  public:
+    MapConstStringTo():StringMapOf<MAPPING>(false){};
+    MapConstStringTo(unsigned initsize, bool _ignorecase):StringMapOf<MAPPING>(initsize, _ignorecase){};
+    MapConstStringTo(bool _ignorecase):StringMapOf<MAPPING>(_ignorecase){};
     VALUE_T *   getValue(const char *k) const
     {
        MAPPING * map = SELF::find(k);

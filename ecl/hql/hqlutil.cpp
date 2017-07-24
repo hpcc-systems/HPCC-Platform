@@ -8696,7 +8696,10 @@ bool ConstantRowCreator::processFieldValue(IHqlExpression * optLhs, ITypeInfo * 
             return false;
         unsigned orig = out.length();
         void *tgt = out.reserve(9);
-        rtlSetPackedUnsigned(tgt, rhs->queryValue()->getIntValue());
+        if (lhsType->isSigned())
+            rtlSetPackedSigned(tgt, rhs->queryValue()->getIntValue());
+        else
+            rtlSetPackedUnsigned(tgt, rhs->queryValue()->getIntValue());
         unsigned actualSize = rtlGetPackedSize(tgt);
         out.setLength(orig+actualSize);
         return true;
@@ -8831,8 +8834,8 @@ bool ConstantRowCreator::processFieldValue(IHqlExpression * optLhs, ITypeInfo * 
         }
         else
         {
-            UChar * target = (UChar *) out.reserve(sizeLhs*sizeof(UChar));
-            for (size32_t pos = 0; pos < sizeLhs; pos++)
+            UChar * target = (UChar *) out.reserve(sizeLhs);
+            for (size32_t pos = 0; pos < sizeLhs/sizeof(UChar); pos++)
                 target[pos] = (UChar) ' ';
             castValue->toMem(target);
         }

@@ -107,5 +107,6 @@ extern ECLRTL_API void getFieldVal(size32_t & __lenResult, char * & __result, in
  */
 extern ECLRTL_API int getFieldNum(const char *fieldName, IOutputMetaData &  metaVal);
 
+extern ECLRTL_API IRowStream * transformRecord(IEngineRowAllocator * resultAllocator,IOutputMetaData &  metaInput,IRowStream * input);
 
 #endif

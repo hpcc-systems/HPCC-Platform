@@ -192,7 +192,7 @@ protected:
 
 class FieldNameToFieldNumMap;
 
-struct ECLRTL_API RtlRecord
+class ECLRTL_API RtlRecord
 {
 public:
     friend class RtlRow;
@@ -222,17 +222,23 @@ public:
 
     inline unsigned getNumFields() const { return numFields; }
     inline unsigned getNumVarFields() const { return numVarFields; }
+    inline const RtlFieldInfo * queryField(unsigned field) const { return fields[field]; }
     inline const RtlTypeInfo * queryType(unsigned field) const { return fields[field]->type; }
-    inline const char * queryName(unsigned field) const { return fields[field]->name; }
+    const char * queryName(unsigned field) const;
     unsigned getFieldNum(const char *fieldName) const;
+    const RtlRecord *queryNested(unsigned field) const;
 protected:
-    size_t * fixedOffsets;        // fixed portion of the field offsets + 1 extra
+    size_t * fixedOffsets;         // fixed portion of the field offsets + 1 extra
     unsigned * whichVariableOffset;// which variable offset should be added to the fixed
-    unsigned * variableFieldIds;  // map variable field to real field id.
+    unsigned * variableFieldIds;   // map variable field to real field id.
+    unsigned * tableIds;           // map nested table id to real field id.
     unsigned numFields;
     unsigned numVarFields;
+    unsigned numTables;
     const RtlFieldInfo * const * fields;
     const RtlFieldInfo * const * originalFields;
+    const RtlRecord **nestedTables;
+    const char **names;
     mutable const FieldNameToFieldNumMap *nameMap;
 };
 
@@ -242,11 +248,18 @@ public:
     RtlRow(const RtlRecord & _info, const void * optRow, unsigned numOffsets, size_t * _variableOffsets);
 
     __int64 getInt(unsigned field) const;
+    double getReal(unsigned field) const;
+    void getString(size32_t & resultLen, char * & result, unsigned field) const;
     void getUtf8(size32_t & resultLen, char * & result, unsigned field) const;
 
     size_t getOffset(unsigned field) const
     {
         return info.getOffset(variableOffsets, field);
+    }
+
+    size_t getSize(unsigned field) const
+    {
+        return info.getOffset(variableOffsets, field+1) - info.getOffset(variableOffsets, field);
     }
 
     size_t getRecordSize() const
