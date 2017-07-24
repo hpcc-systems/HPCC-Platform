@@ -896,6 +896,9 @@ EspAuthState CEspHttpServer::checkUserAuth()
     if (authState != authUnknown)
         return authState;
 
+    StringBuffer authorizationHeader;
+    m_request->getHeader("Authorization", authorizationHeader);
+
     StringBuffer servName(authReq.ctx->queryServiceName(nullptr));
     if (servName.isEmpty())
     {
@@ -905,27 +908,21 @@ EspAuthState CEspHttpServer::checkUserAuth()
 
     AuthType domainAuthType = authReq.authBinding->getDomainAuthType();
     authReq.ctx->setDomainAuthType(domainAuthType);
-    if (domainAuthType != AuthPerRequestOnly)
+    if (authorizationHeader.isEmpty() && domainAuthType != AuthPerRequestOnly)
     {//Try session based authentication now.
         EspAuthState authState = checkUserAuthPerSession(authReq);
         if (authState != authUnknown)
             return authState;
     }
     if (domainAuthType != AuthPerSessionOnly)
-    {// BasicAuthentication
+    {// BasicAuthentication or SOAP calls
         EspAuthState authState = checkUserAuthPerRequest(authReq);
         if (authState != authUnknown)
             return authState;
     }
 
-    //authentication failed. Send out a login page or 401.
-    StringBuffer userName;
-    bool authSession =  false;
-    if ((domainAuthType == AuthPerSessionOnly) || ((domainAuthType == AuthTypeMixed)
-        && !authReq.ctx->getUserID(userName).length() && strieq(authReq.httpMethod.str(), GET_METHOD)))
-    { //This is in session based authentication and the first request from a browser using GET with no userID.
-        authSession = true;
-    }
+    //HTTP authentication failed. Send out a login page or 401.
+    bool authSession = (domainAuthType == AuthPerSessionOnly) || ((domainAuthType == AuthTypeMixed) && authorizationHeader.isEmpty());
     handleAuthFailed(authSession, authReq);
     return authFailed;
 }
