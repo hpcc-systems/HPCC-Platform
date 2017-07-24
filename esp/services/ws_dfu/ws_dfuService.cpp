@@ -1893,7 +1893,8 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
     tmpstr<<c1;
     FileDetails.setFilesize(tmpstr.str());
 
-    if(df->isCompressed())
+    bool isKeyFile = isFileKey(df);
+    if (isKeyFile || df->isCompressed())
     {
         if (version < 1.22)
             FileDetails.setZipFile(true);
@@ -1911,6 +1912,8 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
                     FileDetails.setPercentCompressed(d.getCString());
                 }
             }
+            else if (isKeyFile)
+                FileDetails.setCompressedFileSize(size);
         }
     }
 
@@ -3346,8 +3349,13 @@ bool CWsDfuEx::addToLogicalFileList(IPropertyTree& file, const char* nodeGroup, 
         if (isKeyFile || isCompressed(file))
         {
             isFileCompressed = true;
-            if ((version >= 1.22) && file.hasProp(getDFUQResultFieldName(DFUQRFcompressedsize)))
-                lFile->setCompressedFileSize(file.getPropInt64(getDFUQResultFieldName(DFUQRFcompressedsize)));
+            if (version >= 1.22)
+            {
+                if (file.hasProp(getDFUQResultFieldName(DFUQRFcompressedsize)))
+                    lFile->setCompressedFileSize(file.getPropInt64(getDFUQResultFieldName(DFUQRFcompressedsize)));
+                else if (isKeyFile)
+                    lFile->setCompressedFileSize(size);
+            }
         }
         if (version < 1.22)
             lFile->setIsZipfile(isFileCompressed);
