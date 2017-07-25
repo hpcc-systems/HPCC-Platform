@@ -42,15 +42,18 @@
       <para></para>
     </legalnotice>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -773,7 +776,8 @@
                   xpointer="xpointer(//*[@id='Desprays'])"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-      <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml" xpointer="xpointer(//*[@id='Copy'])"
+      <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                  xpointer="xpointer(//*[@id='Copy'])"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
 
       <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
@@ -1168,6 +1172,12 @@
       to the documentation; <emphasis>Dynamic ESDL</emphasis> available from
       the HPCC Systems portal: <ulink
       url="https://hpccsystems.com/download/documentation/learning-ecl/dynamic-esdl">https://hpccsystems.com/download/documentation/learning-ecl/dynamic-esdl</ulink></para>
+
+      <para>The <emphasis role="bold">Definitions</emphasis> Explorer tab,
+      also accessible from the <emphasis role="bold">Dynamic ESDL</emphasis>
+      button's sub-menu, lists all available ESDL definitions and provides a
+      view into any of the definitions. These definitions are used to
+      dynamically create webservices through the DESDL process.</para>
 
       <sect2 id="USING_Dynamic_ESDL">
         <title>Using Dynamic ESDL</title>
