@@ -194,26 +194,30 @@ public:
 
 
 static CriticalSection              secureContextCrit;
-static Owned<ISecureSocketContext>  secureContext;
+static Owned<ISecureSocketContext>  secureContextServer;
+static Owned<ISecureSocketContext>  secureContextClient;
 
 #ifdef _USE_OPENSSL
-static ISecureSocket *createSecureSocket(ISocket *sock,SecureSocketType type)
+static ISecureSocket *createSecureSocket(ISocket *sock, SecureSocketType type)
 {
     {
         CriticalBlock b(secureContextCrit);
-        if (!secureContext)
+        if (type == ServerSocket)
         {
-            if (securitySettings.certificate)
-                secureContext.setown(createSecureSocketContextEx(securitySettings.certificate, securitySettings.privateKey, securitySettings.passPhrase, type));
-            else
-                secureContext.setown(createSecureSocketContext(type));
+            if (!secureContextServer)
+                secureContextServer.setown(createSecureSocketContextEx(securitySettings.certificate, securitySettings.privateKey, securitySettings.passPhrase, type));
         }
+        else if (!secureContextClient)
+            secureContextClient.setown(createSecureSocketContext(type));
     }
+    int loglevel = SSLogNormal;
 #ifdef _DEBUG
-    return secureContext->createSecureSocket(sock, SSLogMax);
-#else
-    return secureContext->createSecureSocket(sock);
+    loglevel = SSLogMax;
 #endif
+    if (type == ServerSocket)
+        return secureContextServer->createSecureSocket(sock, loglevel);
+    else
+        return secureContextClient->createSecureSocket(sock, loglevel);
 }
 #endif
 
