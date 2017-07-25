@@ -1269,7 +1269,7 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual WUGraphState queryNodeState(const char *graphName, WUGraphIDType nodeId) const = 0;
     virtual void setGraphState(const char *graphName, WUGraphState state) const = 0;
     virtual void setNodeState(const char *graphName, WUGraphIDType nodeId, WUGraphState state) const = 0;
-    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned subgraph) const = 0;
+    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph) const = 0;
     virtual void clearGraphProgress() const = 0;
     virtual IStringVal & getAbortBy(IStringVal & str) const = 0;
     virtual unsigned __int64 getAbortTimeStamp() const = 0;
@@ -1668,7 +1668,7 @@ extern WORKUNIT_API void gatherLibraryNames(StringArray &names, StringArray &unr
 extern WORKUNIT_API void associateLocalFile(IWUQuery * query, WUFileType type, const char * name, const char * description, unsigned crc, unsigned minActivity=0, unsigned maxActivity=0);
 
 interface ITimeReporter;
-extern WORKUNIT_API void updateWorkunitTimeStat(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * description, unsigned __int64 value);
+extern WORKUNIT_API void updateWorkunitTimeStat(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * description, unsigned __int64 value, unsigned wfid=0);
 extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, ITimeReporter *timer);
 extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, StatisticScopeType scopeType, StatisticKind kind, ITimeReporter *timer);
 extern WORKUNIT_API void aggregateStatistic(StatsAggregation & result, IConstWorkUnit * wu, const WuScopeFilter & filter, StatisticKind search);
@@ -1683,7 +1683,7 @@ extern WORKUNIT_API const char * getWorkunitStateStr(WUState state);
 extern WORKUNIT_API const char * getWorkunitActionStr(WUAction action);
 extern WORKUNIT_API WUAction getWorkunitAction(const char * actionStr);
 
-extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind);
+extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, unsigned wfid=0);
 extern WORKUNIT_API IPropertyTree * getWUGraphProgress(const char * wuid, bool readonly);
 
 class WORKUNIT_API WorkUnitErrorReceiver : implements IErrorReceiver, public CInterface

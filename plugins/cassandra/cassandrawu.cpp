@@ -2668,8 +2668,8 @@ public:
     class CCassandraWuGraphStats : public CWuGraphStats
     {
     public:
-        CCassandraWuGraphStats(const CCassandraWorkUnit *_parent, StatisticCreatorType _creatorType, const char * _creator, const char * _rootScope, unsigned _id)
-        : CWuGraphStats(createPTree(_rootScope), _creatorType, _creator, _rootScope, _id),
+        CCassandraWuGraphStats(const CCassandraWorkUnit *_parent, StatisticCreatorType _creatorType, const char * _creator, unsigned _wfid, const char * _rootScope, unsigned _id)
+        : CWuGraphStats(createPTree(_rootScope), _creatorType, _creator, _wfid, _rootScope, _id),
           parent(_parent)
         {
         }
@@ -2684,10 +2684,9 @@ public:
         StringAttr wuid;
     };
 
-
-    IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned subgraph) const
+    IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned wfid, unsigned subgraph) const override
     {
-        return new CCassandraWuGraphStats(this, creatorType, creator, graphName, subgraph);
+        return new CCassandraWuGraphStats(this, creatorType, creator, wfid, graphName, subgraph);
     }
 
 

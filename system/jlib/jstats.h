@@ -125,6 +125,7 @@ public:
     virtual void beginSubGraphScope(unsigned id) = 0;
     virtual void beginActivityScope(unsigned id) = 0;
     virtual void beginEdgeScope(unsigned id, unsigned oid) = 0;
+    virtual void beginChildGraphScope(unsigned id) = 0;
     virtual void endScope() = 0;
     virtual void addStatistic(StatisticKind kind, unsigned __int64 value) = 0;
     virtual void updateStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction) = 0;
@@ -174,6 +175,15 @@ public:
     inline StatsSubgraphScope(IStatisticGatherer & _gatherer, unsigned id) : StatsScopeBlock(_gatherer)
     {
         gatherer.beginSubGraphScope(id);
+    }
+};
+
+class StatsChildGraphScope : public StatsScopeBlock
+{
+public:
+    inline StatsChildGraphScope(IStatisticGatherer & _gatherer, unsigned id) : StatsScopeBlock(_gatherer)
+    {
+        gatherer.beginChildGraphScope(id);
     }
 };
 

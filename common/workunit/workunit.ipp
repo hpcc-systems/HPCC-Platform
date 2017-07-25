@@ -275,7 +275,7 @@ public:
     virtual void setGraphState(const char *graphName, WUGraphState state) const;
     virtual void setNodeState(const char *graphName, WUGraphIDType nodeId, WUGraphState state) const;
     virtual WUGraphState queryNodeState(const char *graphName, WUGraphIDType nodeId) const;
-    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned subgraph) const;
+    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph) const override;
     void clearGraphProgress() const;
 
     virtual const char *queryJobName() const;
@@ -692,7 +692,7 @@ public:
 class WORKUNIT_API CWuGraphStats : public CInterfaceOf<IWUGraphStats>
 {
 public:
-    CWuGraphStats(IPropertyTree *_progress, StatisticCreatorType _creatorType, const char * _creator, const char * _rootScope, unsigned _id);
+    CWuGraphStats(IPropertyTree *_progress, StatisticCreatorType _creatorType, const char * _creator, unsigned wfid, const char * _rootScope, unsigned _id);
     virtual void beforeDispose();
     virtual IStatisticGatherer & queryStatsBuilder();
 protected:

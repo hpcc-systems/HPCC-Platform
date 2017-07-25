@@ -1872,45 +1872,51 @@ public:
     {
         scopes.append(*scope);
     }
-    virtual void beginScope(const StatsScopeId & id)
+    virtual void beginScope(const StatsScopeId & id) override
     {
         CStatisticCollection & tos = scopes.tos();
         scopes.append(*tos.ensureSubScope(id, true));
     }
-    virtual void beginActivityScope(unsigned id)
+    virtual void beginActivityScope(unsigned id) override
     {
         StatsScopeId scopeId(SSTactivity, id);
         CStatisticCollection & tos = scopes.tos();
         scopes.append(*tos.ensureSubScope(scopeId, false));
     }
-    virtual void beginSubGraphScope(unsigned id)
+    virtual void beginSubGraphScope(unsigned id) override
     {
         StatsScopeId scopeId(SSTsubgraph, id);
         CStatisticCollection & tos = scopes.tos();
         scopes.append(*tos.ensureSubScope(scopeId, true));
     }
-    virtual void beginEdgeScope(unsigned id, unsigned oid)
+    virtual void beginEdgeScope(unsigned id, unsigned oid) override
     {
         StatsScopeId scopeId(SSTedge, id, oid);
         CStatisticCollection & tos = scopes.tos();
         scopes.append(*tos.ensureSubScope(scopeId, false));
     }
-    virtual void endScope()
+    virtual void beginChildGraphScope(unsigned id) override
+    {
+        StatsScopeId scopeId(SSTchildgraph, id);
+        CStatisticCollection & tos = scopes.tos();
+        scopes.append(*tos.ensureSubScope(scopeId, true));
+    }
+    virtual void endScope() override
     {
         scopes.tos().Release();
         scopes.pop();
     }
-    virtual void addStatistic(StatisticKind kind, unsigned __int64 value)
+    virtual void addStatistic(StatisticKind kind, unsigned __int64 value) override
     {
         CStatisticCollection & tos = scopes.tos();
         tos.addStatistic(kind, value);
     }
-    virtual void updateStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction)
+    virtual void updateStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction) override
     {
         CStatisticCollection & tos = scopes.tos();
         tos.updateStatistic(kind, value, mergeAction);
     }
-    virtual IStatisticCollection * getResult()
+    virtual IStatisticCollection * getResult() override
     {
         return LINK(rootScope);
     }
@@ -1961,6 +1967,7 @@ public:
         beginScope(temp.str());
     }
     virtual void beginSubGraphScope(unsigned id) { throwUnexpected(); }
+    virtual void beginChildGraphScope(unsigned id) { throwUnexpected(); }
     virtual void beginActivityScope(unsigned id) { throwUnexpected(); }
     virtual void beginEdgeScope(unsigned id, unsigned oid) { throwUnexpected(); }
     virtual void endScope()
