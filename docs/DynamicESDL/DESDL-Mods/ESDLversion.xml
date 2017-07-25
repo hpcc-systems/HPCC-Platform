@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ESDL_Attributes_version">
+  <title><emphasis role="bold">version <indexterm>
+      <primary>version</primary>
+    </indexterm>and default_client_version</emphasis></title>
+
+  <para><indexterm>
+      <primary>default_client_version</primary>
+    </indexterm>The <emphasis role="bold">version</emphasis> and <emphasis
+  role="bold">default_client_version</emphasis> attributes (valid only for an
+  ESPService) allow you to specify the version to use when a version is not
+  explicitly specified in the request. </para>
+
+  <para>The <emphasis role="bold">default_client_version</emphasis> is used
+  for API requests in SOAP format if the client doesn't specify the version.
+  The <emphasis role="bold">version</emphasis> is used for requests coming
+  from a web browser without a version decoration in the URL.</para>
+
+  <para>These attributes provide better API backward compatibility while
+  allowing API developers to see the latest interface using a browser. </para>
+
+  <para>If <emphasis role="bold">default_client_version</emphasis> is higher
+  than <emphasis role="bold">version</emphasis>, the service uses <emphasis
+  role="bold">default_client_version</emphasis> for all requests that don't
+  specify a <emphasis role="bold">version</emphasis>.</para>
+
+  <para>Even though defaults can be specified for a service, you should still
+  encourage API developers to specify a version in requests to ensure
+  compatibility between their application and the service. </para>
+
+  <para><emphasis role="bold">Example:</emphasis></para>
+
+  <programlisting> ESPservice [version("0.02"), default_client_version("0.01")] EsdlExample
+{
+    ESPmethod EchoPersonInfo(EchoPersonInfoRequest, EchoPersonInfoResponse);
+    ESPmethod RoxieEchoPersonInfo(RoxieEchoPersonInfoRequest, RoxieEchoPersonInfoResponse);
+};</programlisting>
+</sect1>
