@@ -3224,6 +3224,61 @@ unsigned countTotalFields(IHqlExpression * record, bool includeVirtual)
     return count;
 }
 
+static unsigned getFieldNumberFromRecord(IHqlExpression * record, IHqlExpression * field, bool & matched)
+{
+    matched = false;
+
+    unsigned fieldNum = 0;
+    ForEachChild(i, record)
+    {
+        IHqlExpression * cur = record->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_field:
+            if (cur == field)
+            {
+                matched = true;
+                return fieldNum;
+            }
+            if (cur->isDatarow())
+                fieldNum += countTotalFields(cur->queryRecord(), false);
+            else
+                fieldNum++;
+            break;
+        case no_ifblock:
+            fieldNum += getFieldNumberFromRecord(cur->queryChild(1), field, matched);
+            if (matched)
+                return fieldNum;
+            break;
+        case no_record:
+            fieldNum += getFieldNumberFromRecord(cur, field, matched);
+            if (matched)
+                return fieldNum;
+            break;
+        }
+    }
+    return fieldNum;
+}
+
+unsigned getFieldNumber(IHqlExpression * ds, IHqlExpression * selector)
+{
+    assertex(selector->getOperator() == no_select);
+
+    IHqlExpression * parent = selector->queryChild(0);
+    IHqlExpression * field = selector->queryChild(1);
+    unsigned fieldNum = 0;
+    if (parent != ds)
+    {
+        assertex(parent->isDatarow());
+        fieldNum = getFieldNumber(ds, parent);
+    }
+
+    bool matched;
+    fieldNum += getFieldNumberFromRecord(parent->queryRecord(), field, matched);
+    assertex(matched);
+    return fieldNum;
+}
+
 bool transformContainsSkip(IHqlExpression * transform)
 {
     return containsSkip(transform);

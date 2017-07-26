@@ -887,7 +887,7 @@ public:
             resentInfo.read(usedKey);
             if (usedKey)
             {
-                cursor.setown(manager->createCursor());
+                cursor.setown(manager->createCursor(diskMeta->queryRecordAccessor(true)));
                 cursor->deserializeCursorPos(resentInfo);
                 isKeyed = true;
             }
@@ -956,7 +956,7 @@ public:
         if (!segment->isWild())
         {
             if (!cursor)
-                cursor.setown(manager->createCursor());
+                cursor.setown(manager->createCursor(diskSize.queryOriginal()->queryRecordAccessor(true)));
             cursor->append(segment);
         }
     }

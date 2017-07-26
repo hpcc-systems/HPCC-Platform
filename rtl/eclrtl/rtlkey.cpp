@@ -21,6 +21,7 @@
 #include "rtlkey.hpp"
 #include "rtlkey2.hpp"
 #include "eclrtl_imp.hpp"
+#include "rtlrecord.hpp"
 
 #define KSM_SET             0x01
 #define KSM_WILD            0x02
@@ -46,6 +47,11 @@ public:
         mb.read(size).read(offset).read(hash);
     }
 
+    virtual bool matchesBuffer(const void * rawRow) const = 0;
+    virtual bool matches(const RtlRow * rawRow) const
+    {
+        return matchesBuffer(rawRow->queryRow());
+    }
 
     virtual bool increment(void *keyval) const;
     virtual unsigned getOffset() const { return offset; }
@@ -56,6 +62,7 @@ public:
     virtual void *queryValue() const { return NULL; }
     virtual bool isSigned() const { return false; }
     virtual bool isLittleEndian() const { return false; }
+    virtual unsigned numFieldsRequired() const { return 0; }  // Fixed offset segmonitors don't care about field numbers
 
     virtual int docompare(const void * l, const void * r) const
     {
@@ -63,12 +70,15 @@ public:
         char *rptr = ((char *) r) + offset;
         return memcmp(lptr, rptr, size);
     }
-
     virtual int docompareraw(const void *l, const void *r) const
     {
         char *lptr = ((char *) l) + offset;
         char *rptr = ((char *) r) + offset;
         return memcmp(lptr, rptr, size);
+    }
+    virtual int docompareraw(const RtlRow *l, const RtlRow *r) const
+    {
+        return docompareraw(l->queryRow(), r->queryRow());
     }
 
     virtual bool equivalentTo(const IKeySegmentMonitor &other) const 
@@ -103,7 +113,7 @@ public:
         char *rptr = ((char *) r) + offset;
         memcpy(lptr, rptr, size);
     }
-    
+
     virtual MemoryBuffer &serialize(MemoryBuffer &mb) const
     {
         KeySegmentMonitorSerializeType typ = serializeType();
@@ -142,7 +152,7 @@ public:
 
     virtual void setLow(void *keyval) const { throwUnexpected(); }
     virtual void endRange(void *keyval) const { throwUnexpected(); }
-    virtual bool matches(const void *keyval) const { throwUnexpected(); }
+    virtual bool matchesBuffer(const void *keyval) const { throwUnexpected(); }
     virtual IKeySegmentMonitor *merge(IKeySegmentMonitor *with) const { throwUnexpected(); }
     virtual IKeySegmentMonitor *combine(const IKeySegmentMonitor *with) const { throwUnexpected(); }
     virtual unsigned getFlags() const 
@@ -180,7 +190,7 @@ public:
     }
 
     virtual IKeySegmentMonitor * split(unsigned splitSize);
-    virtual bool matches(const void *keyval) const; 
+    virtual bool matchesBuffer(const void *keyval) const;
     virtual int docompare(const void *,const void *) const;
     virtual int docompareraw(const void *,const void *) const;
     virtual void setLow(void *keyval) const;
@@ -222,7 +232,7 @@ public:
 // IKeySegmentMonitor
     virtual bool increment(void *keyval) const;
     virtual void setLow(void *keyval) const;
-    virtual bool matches(const void *keyval) const; 
+    virtual bool matchesBuffer(const void *keyval) const;
     virtual void endRange(void *keyval) const;
     virtual IKeySegmentMonitor *merge(IKeySegmentMonitor *next) const { return NULL; }
     virtual IKeySegmentMonitor *combine(const IKeySegmentMonitor *with) const;
@@ -312,7 +322,7 @@ IKeySegmentMonitor *CWildKeySegmentMonitor::clone() const
     return new CWildKeySegmentMonitor(offset, size);
 }
 
-bool CWildKeySegmentMonitor::matches(const void *keyval) const
+bool CWildKeySegmentMonitor::matchesBuffer(const void *keyval) const
 { 
     return true;
 }
@@ -416,7 +426,7 @@ void CSetKeySegmentMonitor::endRange(void *bufptr) const
     verifyex(set->getTransitionValue(ptr, nextTransition));
 }
 
-bool CSetKeySegmentMonitor::matches(const void *bufptr) const
+bool CSetKeySegmentMonitor::matchesBuffer(const void *bufptr) const
 {
     // MORE - should investigate sometime how much benefit we get from this caching...
 
@@ -508,7 +518,7 @@ public:
         char *ptr = ((char *) bufptr) + offset;
         memcpy(ptr, val, size);
     }
-    virtual bool matches(const void *bufptr) const
+    virtual bool matchesBuffer(const void *bufptr) const
     {
         // Is current a permitted value?
         char *ptr = ((char *) bufptr) + offset;
@@ -519,7 +529,7 @@ public:
     {
         // Set to last permitted value in the range that includes current (which is asserted to be valid)
 #ifdef DEBUG
-        assertex(matches(bufptr));
+        assertex(matchesBuffer(bufptr));
 #endif
     }
 
@@ -594,7 +604,7 @@ public:
     {
         assertex(equivalentTo(*with)); // note - badly named - does not mean the condition is equivalent, only the field being compared
         // result is either clone of myself, or emptySet
-        if (with->matches(val))
+        if (with->matchesBuffer(val))  // MORE - this looks wrong! Only works with offset=0 ??
             return clone();
         else
             return createEmptyKeySegmentMonitor(optional, offset, size);
@@ -791,6 +801,7 @@ public:
     virtual bool isLittleEndian() const                     { return base->isLittleEndian(); }
     virtual bool isWellKeyed() const                        { return base->isWellKeyed(); }
     virtual bool isOptional() const                         { return base->isOptional(); }
+    virtual unsigned numFieldsRequired() const              { return base->numFieldsRequired(); }
 
     virtual unsigned queryHashCode() const
     {
@@ -815,54 +826,86 @@ protected:
     unsigned offset;
 };
 
-//The base monitor provided to this segment monitor is constructed with offsets of 0
-class CVarOffsetKeySegmentMonitor : public CIndirectKeySegmentMonitor
+// The base monitor provided to this segment monitor is constructed with offsets of 0
+// offset refers to where the field would be in an "expanded" version of the record (all variable size - and thus unkeyed - fields being assumed null)
+
+class CNewVarOffsetKeySegmentMonitor : public CIndirectKeySegmentMonitor
 {
 public:
-    CVarOffsetKeySegmentMonitor(IKeySegmentMonitor * _base, unsigned _offset, IKeySegmentOffsetTranslator * _offsetTranslator) : CIndirectKeySegmentMonitor(_base, _offset) { offsetTranslator.setown(_offsetTranslator); }
+    CNewVarOffsetKeySegmentMonitor(IKeySegmentMonitor * _base, unsigned _offset, unsigned _fieldIdx)
+    : CIndirectKeySegmentMonitor(_base, _offset), fieldIdx(_fieldIdx)
+    {
+    }
 
-    CVarOffsetKeySegmentMonitor(MemoryBuffer &mb)
-        : CIndirectKeySegmentMonitor(mb)
+    CNewVarOffsetKeySegmentMonitor(MemoryBuffer &mb)
+    : CIndirectKeySegmentMonitor(mb)
+    {
+        mb.read(fieldIdx);
+    }
+
+    virtual bool matches(const RtlRow *keyval) const override
+    {
+        return base->matchesBuffer(getSegmentBase(keyval));
+    }
+
+    virtual unsigned numFieldsRequired() const override { return fieldIdx+1; }
+
+    // We can't presently build in-memory indexes for varoffset fields, as we don't have a way to
+    // translate the offsets in the lhs (keybuffer) side of the compare.
+    // I suppose if we wanted to lift that we could pass in RtlRow for both parameters?
+    // For now, these methods can never be called
+
+    virtual bool matchesBuffer(const void *keyval) const override
+    {
+        throwUnexpected();
+    }
+    virtual int docompare(const void * expandedLeft, const void * rawRight) const override
+    {
+        throwUnexpected();
+    }
+    virtual void copy(void * expandedRow, const void * rawRight) const override
+    {
+        throwUnexpected();
+    }
+    virtual int docompareraw(const void * left, const void * right) const override
     {
         throwUnexpected();
     }
 
-    virtual bool matches(const void *keyval) const
+    virtual bool isSimple() const override
     {
-        return base->matches(offsetTranslator->getSegmentBase(keyval));
-    }
-    virtual int docompare(const void * expandedLeft, const void * rawRight) const
-    {
-        return base->docompare((const byte *)expandedLeft + offset, offsetTranslator->getSegmentBase(rawRight));
-    }
-    virtual void copy(void * expandedRow, const void * rawRight) const
-    {
-        base->copy((byte *)expandedRow + offset, offsetTranslator->getSegmentBase(rawRight));
-    }
-    virtual int docompareraw(const void * left, const void * right) const
-    {
-        return base->docompare(offsetTranslator->getSegmentBase(left), offsetTranslator->getSegmentBase(right));
-    }
-    virtual bool isSimple() const
-    {
-        return false; // No way to serialize/persist at present
+        return false;  // Does not support in-memory indexes
     }
 
     virtual unsigned getFlags() const                       { return KSM_VAROFFSET; }
 
-    virtual KeySegmentMonitorSerializeType serializeType() const
+    virtual MemoryBuffer &serialize(MemoryBuffer &mb) const override
     {
-        return KSMST_none;
+        return CIndirectKeySegmentMonitor::serialize(mb).append(fieldIdx);
     }
 
-    virtual IKeySegmentMonitor *clone() const
+    virtual KeySegmentMonitorSerializeType serializeType() const override
     {
-        return NULL;
+        if ((base->serializeType()==KSMST_none))
+            return KSMST_none;
+        return KSMST_VAROFFSETKEYSEGMENTMONITOR;
+    }
+
+
+    virtual IKeySegmentMonitor *clone() const override
+    {
+        return NULL; // MORE - can probably be done now
     }
 
 protected:
-    Owned<IKeySegmentOffsetTranslator> offsetTranslator;
+    const void *getSegmentBase(const RtlRow *inRec) const
+    {
+        return ((const byte *) inRec->queryRow()) + inRec->getOffset(fieldIdx);
+    }
+
+    unsigned fieldIdx;
 };
+
 
 
 class CTranslatedKeySegmentMonitor : public CIndirectKeySegmentMonitor
@@ -887,11 +930,11 @@ public:
         return NULL;
     }
 
-    virtual bool matches(const void *keyval) const
+    virtual bool matchesBuffer(const void *keyval) const
     {
         void *expandedLeft = alloca(size);
         formatTranslator->extractField(expandedLeft, keyval);
-        return base->matches(expandedLeft);
+        return base->matchesBuffer(expandedLeft);
     }
     virtual int docompare(const void * left,const void * right) const
     {
@@ -914,6 +957,25 @@ public:
         formatTranslator->extractField(expandedLeft, left);
         formatTranslator->extractField(expandedRight, right);
         return base->docompare(expandedLeft, expandedRight);
+    }
+
+    virtual bool matches(const RtlRow *keyval) const
+    {
+        return matchesBuffer(keyval->queryRow());
+    }
+    virtual int docompare(const void * left,const RtlRow * right) const
+    {
+        return docompare(left, right->queryRow());
+    }
+
+    virtual void copy(void * left,const RtlRow * right) const
+    {
+        copy(left, right->queryRow());
+    }
+
+    virtual int docompareraw(const RtlRow * left,const RtlRow * right) const
+    {
+        return docompareraw(left->queryRow(), right->queryRow());
     }
 
     virtual bool isSimple() const
@@ -966,7 +1028,7 @@ public:
         return hash;
     }
 
-    virtual bool matches(const void *keyval) const
+    virtual bool matchesBuffer(const void *keyval) const
     {
         if (overridden)
         {
@@ -974,7 +1036,11 @@ public:
             return memcmp((char *) keyval+offset, (char *) overridden+offset, base->getSize()) == 0;
         }
         else
-            return base->matches(keyval);
+            return base->matchesBuffer(keyval);
+    }
+    virtual bool matches(const RtlRow *keyval) const
+    {
+        return matchesBuffer(keyval->queryRow());
     }
 
     virtual bool increment(void *keyval) const
@@ -1036,6 +1102,7 @@ public:
     virtual bool isLittleEndian() const                     { return base->isLittleEndian(); }
     virtual bool isWellKeyed() const                        { return overridden ? true : base->isWellKeyed(); }
     virtual bool isOptional() const                         { return base->isOptional(); }
+    virtual unsigned numFieldsRequired() const              { return base->numFieldsRequired(); }
 
     virtual int docompare(const void * expandedLeft, const void *rawRight) const
     {
@@ -1049,7 +1116,20 @@ public:
     {
         return base->docompare(left, right);
     }
-    virtual bool setOffset(unsigned _offset)
+
+    virtual int docompare(const void * expandedLeft, const RtlRow *rawRight) const
+    {
+        return base->docompare(expandedLeft, rawRight);
+    }
+    virtual void copy(void * expandedRow, const RtlRow *rawRight) const
+    {
+        base->copy(expandedRow, rawRight); // MORE - is this right?
+    }
+    virtual int docompareraw(const RtlRow * left, const RtlRow * right) const
+    {
+        return base->docompare(left, right);
+    }
+virtual bool setOffset(unsigned _offset)
     {
         throwUnexpected();
     }
@@ -1215,9 +1295,9 @@ ECLRTL_API IKeySegmentMonitor *createDummyKeySegmentMonitor(unsigned _offset, un
 //  return new CDummyKeySegmentMonitor(_offset, _size, isSigned, isLittleEndian);
 }
 
-ECLRTL_API IKeySegmentMonitor *createVarOffsetKeySegmentMonitor(IKeySegmentMonitor * base, unsigned offset, IKeySegmentOffsetTranslator * translator)
+ECLRTL_API IKeySegmentMonitor *createNewVarOffsetKeySegmentMonitor(IKeySegmentMonitor * base, unsigned offset, unsigned fieldIdx)
 {
-    return new CVarOffsetKeySegmentMonitor(base, offset, translator);
+    return new CNewVarOffsetKeySegmentMonitor(base, offset, fieldIdx);
 }
 
 ECLRTL_API IKeySegmentMonitor *createTranslatedKeySegmentMonitor(IKeySegmentMonitor * base, unsigned offset, IKeySegmentFormatTranslator * translator)
@@ -1244,6 +1324,8 @@ ECLRTL_API IKeySegmentMonitor *deserializeKeySegmentMonitor(MemoryBuffer &mb)
             return new CSingleLittleKeySegmentMonitor(mb);
         case KSMST_DUMMYKEYSEGMENTMONITOR:
             return new CDummyKeySegmentMonitor(mb);
+        case KSMST_VAROFFSETKEYSEGMENTMONITOR:
+            return new CNewVarOffsetKeySegmentMonitor(mb);
         case KSMST_OVERRIDEABLEKEYSEGMENTMONITOR:
             return new COverrideableKeySegmentMonitor(mb);
     }
@@ -2355,29 +2437,29 @@ protected:
         Owned<IKeySegmentMonitor> result;
         result.setown(segA->combine(segA2));
         CPPUNIT_ASSERT(!result->isEmpty());
-        CPPUNIT_ASSERT(result->matches("A"));
+        CPPUNIT_ASSERT(result->matchesBuffer("A"));
 
         result.setown(segA->combine(segJ));
         CPPUNIT_ASSERT(result->isEmpty());
 
         result.setown(segA->combine(segAZ));
         CPPUNIT_ASSERT(!result->isEmpty());
-        CPPUNIT_ASSERT(result->matches("A"));
-        CPPUNIT_ASSERT(!result->matches("B"));
+        CPPUNIT_ASSERT(result->matchesBuffer("A"));
+        CPPUNIT_ASSERT(!result->matchesBuffer("B"));
 
         result.setown(segAZ->combine(segDJ));
         CPPUNIT_ASSERT(!result->isEmpty());
-        CPPUNIT_ASSERT(!result->matches("C"));
-        CPPUNIT_ASSERT(result->matches("D"));
-        CPPUNIT_ASSERT(result->matches("J"));
-        CPPUNIT_ASSERT(!result->matches("K"));
+        CPPUNIT_ASSERT(!result->matchesBuffer("C"));
+        CPPUNIT_ASSERT(result->matchesBuffer("D"));
+        CPPUNIT_ASSERT(result->matchesBuffer("J"));
+        CPPUNIT_ASSERT(!result->matchesBuffer("K"));
 
         result.setown(segHZ->combine(segDJ));
         CPPUNIT_ASSERT(!result->isEmpty());
-        CPPUNIT_ASSERT(!result->matches("G"));
-        CPPUNIT_ASSERT(result->matches("H"));
-        CPPUNIT_ASSERT(result->matches("J"));
-        CPPUNIT_ASSERT(!result->matches("K"));
+        CPPUNIT_ASSERT(!result->matchesBuffer("G"));
+        CPPUNIT_ASSERT(result->matchesBuffer("H"));
+        CPPUNIT_ASSERT(result->matchesBuffer("J"));
+        CPPUNIT_ASSERT(!result->matchesBuffer("K"));
 
     }
 };

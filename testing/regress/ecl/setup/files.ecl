@@ -113,6 +113,7 @@ EXPORT DG_OutRecChild := RECORD
 END;
 
 EXPORT DG_VarOutRec := RECORD
+  string emptyField { default('')};  // Makes all following field offsets variable... 
   DG_OutRec;
   IFBLOCK(self.DG_Prange%2=0)
     string20 ExtraField;

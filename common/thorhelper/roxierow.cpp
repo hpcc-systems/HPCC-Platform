@@ -642,6 +642,7 @@ protected:
         virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
         virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) {}
         virtual IOutputMetaData * queryChildMeta(unsigned i) { return NULL; }
+        virtual const RtlRecord &queryRecordAccessor(bool expand) const { UNIMPLEMENTED; }
 
         size32_t minSize;
         size32_t fixedSize;

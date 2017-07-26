@@ -46,7 +46,7 @@ interface IInMemoryIndexManager : extends IInterface
 {
     virtual void load(IFileIOArray *, IRecordSize *, bool preload, int numKeys) = 0;
     virtual bool IsShared() const = 0;
-    virtual IInMemoryIndexCursor *createCursor() = 0;
+    virtual IInMemoryIndexCursor *createCursor(const RtlRecord &recInfo) = 0;
     virtual IDirectReader *createReader(offset_t readPos, unsigned partNo, unsigned numParts) = 0;
     virtual void getTrackedInfo(const char *id, StringBuffer &xml) = 0;
     virtual void setKeyInfo(IPropertyTree &indexInfo) = 0;

@@ -27,6 +27,7 @@
 #include "eclhelper.hpp"
 #include "ccdquery.hpp"
 #include "ccdstate.hpp"
+#include "rtlrecord.hpp"
 #include "rtlkey.hpp"
 
 #ifdef _DEBUG
@@ -1141,7 +1142,7 @@ public:
     }
 
     void deserializeCursorPos(MemoryBuffer &mb, InMemoryIndexCursor *cursor);
-    virtual IInMemoryIndexCursor *createCursor();
+    virtual IInMemoryIndexCursor *createCursor(const RtlRecord &recInfo);
     bool selectKey(InMemoryIndexCursor *cursor);
 
     inline const char *queryFileName() const
@@ -1516,6 +1517,10 @@ class InMemoryIndexCursor : implements IInMemoryIndexCursor, public CInterface
     bool canMatch;
     bool postFiltering;
     PtrToOffsetMapper &baseMap;
+    const RtlRecord &recInfo;
+    RtlDynRow rowinfo;
+    unsigned numSegFieldsRequired = 0;
+    unsigned numPostFieldsRequired = 0;
 
     Owned<IKeySegmentMonitor> lastmatch;
     unsigned lastoffset;
@@ -1594,6 +1599,8 @@ class InMemoryIndexCursor : implements IInMemoryIndexCursor, public CInterface
             if (!match)
                 break;  // MORE - could do wildcarding....
             segMonitors.append(*match);
+            if (match->numFieldsRequired() > numSegFieldsRequired)
+                numSegFieldsRequired = match->numFieldsRequired();
             size32_t lim = o+match->getSize();
             if (lim > keySize)
                 keySize = lim;
@@ -1667,7 +1674,7 @@ class InMemoryIndexCursor : implements IInMemoryIndexCursor, public CInterface
         }
     }
 
-    bool matches(const void *r, const SegMonitorArray &segs) const
+    bool matches(const RtlRow *r, const SegMonitorArray &segs) const
     {
         ForEachItemIn(idx, segs)
         {
@@ -1702,7 +1709,7 @@ class InMemoryIndexCursor : implements IInMemoryIndexCursor, public CInterface
                 unsigned lim = segMonitors.length();
                 for (;;)
                 {
-                    if (!segMonitors.item(seg).matches(row))
+                    if (!segMonitors.item(seg).matchesBuffer(row))  // Technically should be using RtlRow here but we don't support varoffset in indexes yet
                         break;
                     seg++;
                     if (seg==lim)
@@ -1738,9 +1745,6 @@ class InMemoryIndexCursor : implements IInMemoryIndexCursor, public CInterface
         }
         if (a>start)
             a--;
-#ifdef _DEBUG
-        assertex(matches(GETROW(a), segMonitors));
-#endif
         return a;
     }
 
@@ -1764,7 +1768,7 @@ class InMemoryIndexCursor : implements IInMemoryIndexCursor, public CInterface
 public:
     IMPLEMENT_IINTERFACE; 
 
-    InMemoryIndexCursor(InMemoryIndexManager *_manager, PtrToOffsetMapper &_baseMap) : manager(_manager), baseMap(_baseMap)
+    InMemoryIndexCursor(InMemoryIndexManager *_manager, PtrToOffsetMapper &_baseMap, const RtlRecord &_recInfo) : manager(_manager), baseMap(_baseMap), recInfo(_recInfo), rowinfo(_recInfo)
     {
 #ifdef BASED_POINTERS
         base = NULL;
@@ -1804,6 +1808,8 @@ public:
                 bool added;
                 // Unless and until resolve is called, all segmonitors are postfilter...
                 postFilter.bAdd(val, compareSegments, added);
+                if (segment->numFieldsRequired() > numPostFieldsRequired)
+                    numPostFieldsRequired = segment->numFieldsRequired();
                 assertex(added);
             }
         }
@@ -1857,9 +1863,9 @@ public:
     {
         for (;;)
         {
-            const void *ret;
+            const void *row;
             if (midx <= lidx)
-                ret = GETROW(midx++);
+                row = GETROW(midx++);
             else 
             {
                 if (eof || !nextRange())
@@ -1867,17 +1873,24 @@ public:
                     eof = true;
                     return NULL;
                 }
-                ret = GETROW(midx++);
+                row = GETROW(midx++);
             }
-            assertex(ret);
-            if ((!postFiltering) || matches(ret, postFilter))
-                return ret;
+            if (!postFiltering)
+                return row;
+            rowinfo.setRow(row, numPostFieldsRequired);
+            if (matches(&rowinfo, postFilter))
+                return row;
         }
     }
 
     virtual bool isFiltered(const void *row)
     {
-        return !canMatch || !matches(row, postFilter);
+        if (!canMatch)
+            return true;
+        if (!postFiltering)
+            return false;
+        rowinfo.setRow(row, numPostFieldsRequired);
+        return !matches(&rowinfo, postFilter);
     }
 
     virtual unsigned __int64 getFilePosition(const void *_ptr)
@@ -1918,9 +1931,9 @@ public:
     }
 };
 
-IInMemoryIndexCursor *InMemoryIndexManager::createCursor()
+IInMemoryIndexCursor *InMemoryIndexManager::createCursor(const RtlRecord &recInfo)
 {
-    return new InMemoryIndexCursor(this, baseMap);
+    return new InMemoryIndexCursor(this, baseMap, recInfo);
 }
 
 void InMemoryIndexManager::deserializeCursorPos(MemoryBuffer &mb, InMemoryIndexCursor *cursor)
@@ -2031,6 +2044,10 @@ protected:
             virtual size32_t getFixedSize() const { return sizeof(unsigned); }
             virtual size32_t getMinRecordSize() const { return sizeof(unsigned); }
         } x;
+        RtlIntTypeInfo ty1(type_int|type_unsigned, sizeof(unsigned));
+        RtlFieldInfo f1("f1", nullptr, &ty1);
+        const RtlFieldInfo * const fields [] = {&f1, nullptr};
+        RtlRecord dummy(fields, true);
         unsigned testarray[] = {1,2,2,2,4,3,8,9,0,5};
         InMemoryIndex di;
         di.load(testarray, sizeof(testarray), &x, 0);
@@ -2043,7 +2060,7 @@ protected:
         InMemoryIndexManager indexes(false, "test1");
         indexes.append(*LINK(&di));
 
-        Owned<IInMemoryIndexCursor> d = indexes.createCursor();
+        Owned<IInMemoryIndexCursor> d = indexes.createCursor(dummy);
         d->append(createSingleKeySegmentMonitor(false, 0, sizeof(unsigned), &searchval));
         d->selectKey();
         d->reset();
@@ -2051,7 +2068,7 @@ protected:
         ASSERT(d->nextMatch()==NULL);
         ASSERT(d->nextMatch()==NULL);
 
-        d.setown(indexes.createCursor());
+        d.setown(indexes.createCursor(dummy));
         searchval = 10;
         d->append(createSingleKeySegmentMonitor(false, 0, sizeof(unsigned), &searchval));
         d->selectKey();
@@ -2065,7 +2082,7 @@ protected:
         indexes.setKeyInfo(*keyInfo.get());
         Sleep(1000); // to give key time to build!
 
-        d.setown(indexes.createCursor());
+        d.setown(indexes.createCursor(dummy));
         IStringSet *set = createStringSet(sizeof(unsigned));
         searchval = 2;
         set->addRange(&searchval, &searchval);
@@ -2086,6 +2103,11 @@ protected:
     {
         InMemoryIndex di;
         unsigned searchval = 1;
+        RtlIntTypeInfo ty1(type_int|type_unsigned, sizeof(unsigned));
+        RtlFieldInfo f1("f1", nullptr, &ty1);
+        const RtlFieldInfo * const fields [] = {&f1, nullptr};
+        RtlRecord dummy(fields, true); // NOTE - not accurate but good enough for these tests
+
         IKeySegmentMonitor *ksm = createSingleLittleKeySegmentMonitor(false, 8, sizeof(unsigned), &searchval);
         ASSERT(ksm->isSigned()==false);
         ASSERT(ksm->isLittleEndian()==true);
@@ -2106,7 +2128,7 @@ protected:
         indexes.append(*LINK(&di));
         indexes.append(*LINK(&di2));
 
-        Owned<IInMemoryIndexCursor> dd = indexes.createCursor();
+        Owned<IInMemoryIndexCursor> dd = indexes.createCursor(dummy);
         InMemoryIndexCursor *d = QUERYINTERFACE(dd.get(), InMemoryIndexCursor);
         ASSERT(d != nullptr);
         dd->append(createSingleKeySegmentMonitor(false, 4, sizeof(unsigned), &searchval));
@@ -2121,7 +2143,7 @@ protected:
         ASSERT(d->segMonitors.item(0).getOffset()==8);
         ASSERT(d->segMonitors.item(1).getOffset()==4);
 
-        dd.setown(indexes.createCursor());
+        dd.setown(indexes.createCursor(dummy));
         d = QUERYINTERFACE(dd.get(), InMemoryIndexCursor);
         ASSERT(d != nullptr);
         dd->append(createSingleKeySegmentMonitor(false, 16, sizeof(unsigned), &searchval));
@@ -2136,7 +2158,7 @@ protected:
         ASSERT(d->segMonitors.item(0).getOffset()==8);
         ASSERT(d->postFilter.item(0).getOffset()==16);
     
-        dd.setown(indexes.createCursor());
+        dd.setown(indexes.createCursor(dummy));
         d = QUERYINTERFACE(dd.get(), InMemoryIndexCursor);
         ASSERT(d != nullptr);
         dd->append(createSingleKeySegmentMonitor(false, 12, sizeof(unsigned), &searchval));

@@ -46,21 +46,21 @@ public:
     virtual size32_t getRecordSize(const void * row)
     {
         //Allocate a temporary offset array on the stack to avoid runtime overhead.
-        const RtlRecord *offsetInformation = queryRecordAccessor(true);
-        unsigned numOffsets = offsetInformation->getNumVarFields() + 1;
+        const RtlRecord &offsetInformation = queryRecordAccessor(true);
+        unsigned numOffsets = offsetInformation.getNumVarFields() + 1;
         size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
-        RtlRow offsetCalculator(*offsetInformation, row, numOffsets, variableOffsets);
+        RtlRow offsetCalculator(offsetInformation, row, numOffsets, variableOffsets);
         return offsetCalculator.getRecordSize();
     }
 
     virtual size32_t getFixedSize() const
     {
-        return queryRecordAccessor(true)->getFixedSize();
+        return queryRecordAccessor(true).getFixedSize();
     }
     // returns 0 for variable row size
     virtual size32_t getMinRecordSize() const
     {
-        return queryRecordAccessor(true)->getMinRecordSize();
+        return queryRecordAccessor(true).getMinRecordSize();
     }
 
     virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId) { throwUnexpected(); }

@@ -4520,51 +4520,9 @@ interface IKeySegmentFormatTranslator : public IInterface
 
 void MonitorExtractor::generateOffsetWrapping(StringBuffer & createMonitorText, IHqlExpression * selector, unsigned curOffset)
 {
-    //MORE: Common up classes if same field filtered more than once.
-    OwnedHqlExpr key = createAttribute(wrapperAtom, LINK(selector));
-
-    BuildCtx declarectx(*translator.code, declareAtom);
-    StringBuffer s, suffix, instanceName, className, factoryName;
-    unique_id_t id = translator.getUniqueId();
-    appendUniqueId(className.append("c"), id);
-    appendUniqueId(instanceName.append("i"), id);
-    appendUniqueId(factoryName.append("f"), id);
-
-    declarectx.setPriority(SegMonitorPrio);
-    BuildCtx classctx(declarectx);
-    //MORE: Use a base class for implementing this to save Link()/Release()
-    s.clear().append("struct ").append(className).append(" : public RtlCInterface, public IKeySegmentOffsetTranslator");
-    suffix.append(instanceName).append(";");
-    classctx.addQuotedCompound(s, suffix);
-    classctx.addQuotedLiteral("virtual void Link() const { RtlCInterface::Link(); }");
-    classctx.addQuotedLiteral("virtual bool Release() const { return RtlCInterface::Release(); }");
-    classctx.addQuoted(s.clear().append("virtual const char * queryFactoryName() const { return \"").append(factoryName).append("\"; }"));
-
-    {
-        MemberFunction func(translator, classctx, "virtual const void * getSegmentBase(const void * _row) const");
-        func.ctx.addQuotedLiteral("const byte * row = (const byte *)_row;");
-        func.ctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
-        translator.bindTableCursor(func.ctx, tableExpr, "row");
-        CHqlBoundExpr bound;
-        Owned<IReferenceSelector> ds = translator.buildReference(func.ctx, selector);
-        ds->buildAddress(func.ctx, bound);
-        func.ctx.addReturn(bound.expr);
-    }
-
-    declarectx.addQuoted(s.clear().append("IKeySegmentOffsetTranslator * ").append(factoryName).append("() { return new ").append(className).append("; }"));
-
-    if (translator.options.spanMultipleCpp)
-    {
-        s.clear().append("extern IKeySegmentOffsetTranslator * ").append(factoryName).append("();");
-        BuildCtx protoctx(*translator.code, mainprototypesAtom);
-        protoctx.addQuoted(s);
-    }
-
-
-    //TAKE NOTE: Child activities are only colocal if whole graph is colocal, or targeting roxie and activity is colocal.
-    //Email Richard if any objections to changing parameters so byte * not void *.  Would save quite a lot of generated boilerplate code.
-
-    s.clear().append("createVarOffsetKeySegmentMonitor(").append(createMonitorText).append(",").append(curOffset).append(",").append(factoryName).append("())");
+    unsigned curFieldIdx = getFieldNumber(tableExpr->queryNormalizedSelector(), selector);
+    StringBuffer s;
+    s.clear().append("createNewVarOffsetKeySegmentMonitor(").append(createMonitorText).append(",").append(curOffset).append(",").append(curFieldIdx).append(")");
     createMonitorText.swapWith(s);
 }
 

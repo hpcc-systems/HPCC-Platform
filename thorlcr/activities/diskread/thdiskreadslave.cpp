@@ -26,6 +26,7 @@
 
 #include "dafdesc.hpp"
 #include "rtlkey.hpp"
+#include "rtlrecord.hpp"
 #include "eclhelper.hpp" // tmp for IHThor..Arg interfaces.
 
 #include "thormisc.hpp"
@@ -51,13 +52,22 @@ protected:
     bool grouped;
     bool isFixedDiskWidth;
     size32_t diskRowMinSz;
+    const RtlRecord *recInfo = nullptr;
+    unsigned numOffsets = 0;
+    unsigned numSegFieldsUsed = 0;
 
     inline bool segMonitorsMatch(const void *buffer)
     {
-        ForEachItemIn(idx, segMonitors)
+        if (segMonitors.length())
         {
-            if (!segMonitors.item(idx).matches(buffer))
-                return false;
+            size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
+            RtlRow rowinfo(*recInfo, nullptr, numOffsets, variableOffsets);
+            rowinfo.setRow(buffer, numSegFieldsUsed);
+            ForEachItemIn(idx, segMonitors)
+            {
+                if (!segMonitors.item(idx).matches(&rowinfo))
+                    return false;
+            }
         }
         return true;
     }
@@ -73,6 +83,8 @@ public:
         isFixedDiskWidth = diskRowMeta->isFixedSize();
         diskRowMinSz = diskRowMeta->getMinRecordSize();
         helper->createSegmentMonitors(this);
+        recInfo = &diskRowMeta->queryRecordAccessor(true);
+        numOffsets = recInfo->getNumVarFields() + 1;  // MORE - note max field used in segmonitors
         grouped = false;
     }
 
@@ -82,7 +94,11 @@ public:
         if (segment->isWild())
             segment->Release();
         else
+        {
             segMonitors.append(*segment);
+            if (segment->numFieldsRequired() > numSegFieldsUsed)
+                numSegFieldsUsed = segment->numFieldsRequired();
+        }
     }
 
     unsigned ordinality() const

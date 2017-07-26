@@ -701,6 +701,7 @@ public:
     virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) {}
     virtual IOutputMetaData * queryChildMeta(unsigned i) { return NULL; }
+    virtual const RtlRecord &queryRecordAccessor(bool expand) const { throwUnexpected(); }  // Could be implemented if needed
 };
 
 class EclBoundLoopGraph : implements IHThorBoundLoopGraph, public CInterface

@@ -373,7 +373,7 @@ bool SegMonitorList::matched(void *keyBuffer, unsigned &lastMatch) const
     lastMatch = 0;
     for (; lastMatch < segMonitors.length(); lastMatch++)
     {
-        if (!segMonitors.item(lastMatch).matches(keyBuffer))
+        if (!segMonitors.item(lastMatch).matchesBuffer(keyBuffer))
             return false;
     }
     return true;
@@ -486,7 +486,7 @@ protected:
         unsigned lastSeg = segs.lastRealSeg();
         for (; j <= lastSeg; j++)
         {
-            canmatch = segs.segMonitors.item(j).matches(keyBuffer);
+            canmatch = segs.segMonitors.item(j).matchesBuffer(keyBuffer);
             if (!canmatch)
             {
                 eof = !incrementKey(j);
@@ -739,7 +739,7 @@ public:
                 matched = true;
                 for (; i <= lastSeg; i++)
                 {
-                    matched = segs.segMonitors.item(i).matches(keyBuffer);
+                    matched = segs.segMonitors.item(i).matchesBuffer(keyBuffer);
                     if (!matched)
                         break;
                 }
@@ -2719,7 +2719,7 @@ public:
                     memcpy(nextBuffer, keyBuffer, keySize);
                     keyBuffer = nextBuffer;
 #ifdef _DEBUG
-                    assertex(segs.segMonitors.item(sortFromSeg-1).matches(keyBuffer));
+                    assertex(segs.segMonitors.item(sortFromSeg-1).matchesBuffer(keyBuffer));
 #endif
                     if (!segs.incrementKey(sortFromSeg-1, keyBuffer))
                         break;
