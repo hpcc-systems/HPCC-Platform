@@ -25,7 +25,7 @@
 //------------------------------------------------------------------------------------------
 // Workflow
 
-mapEnums wftypes[] =
+EnumMapping wftypes[] =
 {
     { WFTypeNormal, "normal" },
     { WFTypeSuccess, "success" },
@@ -35,7 +35,7 @@ mapEnums wftypes[] =
     { WFTypeSize, NULL }
 };
 
-mapEnums wfmodes[] =
+EnumMapping wfmodes[] =
 {
     { WFModeNormal, "normal" },
     { WFModeCondition, "condition" },
@@ -49,7 +49,7 @@ mapEnums wfmodes[] =
     { WFModeSize, NULL}
 };
 
-mapEnums wfstates[] =
+EnumMapping wfstates[] =
 {
    { WFStateNull, "null" },
    { WFStateReqd, "reqd" },
@@ -61,7 +61,7 @@ mapEnums wfstates[] =
    { WFStateSize, NULL }
 };
 
-static void setEnum(IPropertyTree *p, const char *propname, int value, mapEnums *map) 
+static void setEnum(IPropertyTree *p, const char *propname, int value, EnumMapping *map)
 {
     const char *defval = map->str;
     while (map->str)
@@ -77,7 +77,7 @@ static void setEnum(IPropertyTree *p, const char *propname, int value, mapEnums 
     p->setProp(propname, defval);
 }
 
-static int getEnum(IPropertyTree *p, const char *propname, mapEnums *map) 
+static int getEnum(IPropertyTree *p, const char *propname, EnumMapping *map)
 {
     const char *v = p->queryProp(propname);
     if (v)
