@@ -1059,13 +1059,13 @@ EspAuthState CEspHttpServer::checkUserAuthPerSession(EspAuthRequest& authReq)
         return authSucceeded;
     }
 
-    if (urlCookie.isEmpty())
+    if (authReq.serviceName.isEmpty() || authReq.methodName.isEmpty() || !strieq(authReq.serviceName.str(), "esp") || !strieq(authReq.methodName.str(), "login"))
         return authUnknown;
 
     const char* userName = (authReq.requestParams) ? authReq.requestParams->queryProp("username") : NULL;
     const char* password = (authReq.requestParams) ? authReq.requestParams->queryProp("password") : NULL;
     if (!isEmptyString(userName) && !isEmptyString(password))
-        return authNewSession(authReq, userName, password, urlCookie.str());
+        return authNewSession(authReq, userName, password, urlCookie.isEmpty() ? "/" : urlCookie.str());
 
     if (authReq.isSoapPost) //from SOAP Test page
         sendMessage("Authentication failed: empty user name or password.", "text/html; charset=UTF-8");

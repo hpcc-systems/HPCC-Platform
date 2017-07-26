@@ -774,7 +774,14 @@ void CHttpMessage::logMessage(MessageLogFlag messageLogFlag, const char *prefix)
             else if ((m_content_type.length() > 0) && (strieq(m_content_type.get(), "text/css") || strieq(m_content_type.get(), "text/javascript")))
                 DBGLOG("%s<content_type: %s>", prefix, m_content_type.get());
             else
-                logMessage(m_content.str(), prefix);
+            {
+                StringBuffer httpPath;
+                getPath(httpPath);
+                if (!strieq(httpPath.str(), "/esp/login"))
+                    logMessage(m_content.str(), prefix);
+                else
+                    logMessage(m_content.str(), prefix, "password=*", "password=(hidden)");
+            }
         }
     }
     catch (IException *e)
@@ -1093,16 +1100,6 @@ StringBuffer& CHttpRequest::getMethod(StringBuffer & method)
 void CHttpRequest::setMethod(const char* method)
 {
     m_httpMethod.set(method);
-}
-
-StringBuffer& CHttpRequest::getPath(StringBuffer & path)
-{
-    return path.append(m_httpPath.str());
-}
-
-void CHttpRequest::setPath(const char* path)
-{
-    m_httpPath.set(path);
 }
 
 void CHttpRequest::parseQueryString(const char* querystr)

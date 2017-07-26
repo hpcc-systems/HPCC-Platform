@@ -59,6 +59,7 @@ protected:
     ISocket&     m_socket;
     Owned<IBufferedSocket> m_bufferedsocket;
 
+    StringAttr   m_httpPath;
     StringAttr   m_content_type;
     __int64      m_content_length;
     StringBuffer m_content;
@@ -142,6 +143,10 @@ public:
     {
         port = m_socket.name(host.reserveTruncate(32), 32);
     }
+
+    virtual void setPath(const char* path) { m_httpPath.set(path); };
+    virtual StringBuffer& getPath(StringBuffer& path) { return path.append(m_httpPath.str()); };
+    virtual const char* queryPath() {return m_httpPath.str();}
 
     virtual StringBuffer& getParameter(const char* paramname, StringBuffer& paramval);
     virtual StringBuffer& getAttachment(const char* name, StringBuffer& attachment);
@@ -293,7 +298,6 @@ class esp_http_decl CHttpRequest : public CHttpMessage
 {
 private:
     StringAttr    m_httpMethod;
-    StringAttr    m_httpPath;
     StringAttr    m_espServiceName;
     StringAttr    m_espMethodName;
     StringAttr    m_espPathEx;
@@ -321,10 +325,6 @@ public:
     virtual const char* queryServiceName() { return m_espServiceName.str(); }
     virtual const char* queryServiceMethod() { return m_espMethodName.str(); }
     
-    virtual void setPath(const char* path);
-    virtual StringBuffer& getPath(StringBuffer& path);
-    virtual const char *queryPath(){return m_httpPath.str();}
-
     virtual void parseQueryString(const char* querystr);
 
     virtual void parseEspPathInfo();
