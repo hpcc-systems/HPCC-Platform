@@ -1169,8 +1169,8 @@
       The DESDL-based ESP services available are listed in the navigator pane
       on the left as children of their parent ESP process.</para>
 
-      <para>The <emphasis role="bold">Definitions</emphasis> Explorer tab,
-      also accessible from the <emphasis role="bold">Dynamic ESDL</emphasis>
+      <para>The <emphasis role="bold">Definitions</emphasis> tab, also
+      accessible from the <emphasis role="bold">Dynamic ESDL</emphasis>
       button's sub-menu, lists all available ESDL definitions and provides a
       view into any of the definitions. These definitions are used to
       dynamically define interfaces for existing ESP web services.</para>
