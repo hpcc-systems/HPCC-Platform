@@ -13,6 +13,8 @@ EXPORT TestTranslate := MODULE
     EXPORT Test04 := ASSERT(Str.Translate(' ABCDEF FEDCBA ', 'AB', '$!')+'X' = ' $!CDEF FEDC!$ X', CONST);
     EXPORT Test05 := ASSERT(Str.Translate(' \377ABCDEF FEDCBA ', 'AB', '$!')+'X' = ' \377$!CDEF FEDC!$ X', CONST);
     EXPORT Test06 := ASSERT(Str.Translate(' ABCDEF FEDCBA ', 'AAA', '!%$')+'X' = ' $BCDEF FEDCB$ X', CONST);
+    EXPORT Test07 := ASSERT(Str.Translate(' ABCDEF FEDCBA ', 'AB', 'BW')+'X' = ' BWCDEF FEDCWB X', CONST);
+
   END;
 
 END;

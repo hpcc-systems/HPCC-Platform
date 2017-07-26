@@ -75,6 +75,7 @@ target_link_libraries(
     ${XALAN_LIBRARIES}
     ${XERCES_LIBRARIES}
     jlib
+	dalibase
     xmllib
     )
 
