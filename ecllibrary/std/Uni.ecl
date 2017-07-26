@@ -398,4 +398,19 @@ EXPORT unicode GetNthWord(unicode text, unsigned4 n, varstring localename = '') 
 EXPORT ExcludeNthWord(unicode text, unsigned4 n, varstring localename = '') :=
     lib_unicodelib.UnicodeLib.UnicodeLocaleExcludeNthWord(text, n, localename);
 
+/**
+ * Returns the source string with the all characters that match characters in the search string replaced
+ * with the character at the corresponding position in the replacement string.
+ * The isEmpty() tests in the beginning of the function check for invalid sequences in addition to blank strings.
+ * If any of the isEmpty() tests are true, the function will return the source string.
+ *
+ * @param src           The string that is being tested.
+ * @param search        The string containing the set of characters to be included.
+ * @param replacement   The string containing the characters to act as replacements.
+ * @return              The string containing the source string but with the translated characters.
+ */
+
+EXPORT Translate(unicode text, unicode sear, unicode repl) :=
+    lib_unicodelib.UnicodeLib.UnicodeLocaleTranslate(text, sear, repl);
+
 END;
