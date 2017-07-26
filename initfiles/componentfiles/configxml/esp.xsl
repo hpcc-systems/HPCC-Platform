@@ -90,20 +90,22 @@
               <xsl:value-of disable-output-escaping="yes" select="$indent" />
               <xsl:value-of disable-output-escaping="yes" select="$indent" />
               <xsl:value-of disable-output-escaping="yes" select="$indent" />
-              <AuthDomains>
-                <xsl:for-each select="AuthDomain">
+              <xsl:if test="AuthDomains/AuthDomain[1]">
+                <AuthDomains>
+                  <xsl:for-each select="AuthDomains/AuthDomain">
+                    <xsl:value-of disable-output-escaping="yes" select="$break" />
+                    <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                    <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                    <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                    <xsl:value-of disable-output-escaping="yes" select="$indent" />
+                    <xsl:copy-of select="."/>
+                  </xsl:for-each>
                   <xsl:value-of disable-output-escaping="yes" select="$break" />
                   <xsl:value-of disable-output-escaping="yes" select="$indent" />
                   <xsl:value-of disable-output-escaping="yes" select="$indent" />
                   <xsl:value-of disable-output-escaping="yes" select="$indent" />
-                  <xsl:value-of disable-output-escaping="yes" select="$indent" />
-                  <xsl:copy-of select="."/>
-                </xsl:for-each>
-                <xsl:value-of disable-output-escaping="yes" select="$break" />
-                <xsl:value-of disable-output-escaping="yes" select="$indent" />
-                <xsl:value-of disable-output-escaping="yes" select="$indent" />
-                <xsl:value-of disable-output-escaping="yes" select="$indent" />
-              </AuthDomains>
+                </AuthDomains>
+              </xsl:if>
             </xsl:if>
 
             <xsl:for-each select="Authentication">
@@ -349,6 +351,11 @@
     <!--don't produce in output -->
     <xsl:template match="@buildSet|@maxRequestEntityLength"/>
 
+    <!--don't produce in output -->
+    <xsl:template match="EspProcess/AuthDomains"/>
+
+    <!--don't produce in output -->
+    <xsl:template match="EspProcess/EspControlBinding"/>
 
     <xsl:template match="/|@*|node()">
         <!--matches any attribute or child of any types-->
