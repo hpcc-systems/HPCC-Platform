@@ -202,19 +202,24 @@ bool CLdapSecUser::setEncodedPassword(SecPasswordEncoding enc, void * pw, unsign
     return FALSE;  //not supported yet
 }
 
-bool CLdapSecUser::addToken(MemoryBuffer * token)
+void CLdapSecUser::setSessionToken(const MemoryBuffer * const token)
 {
-    m_mbToken.clear().append(*token);
-    return true;
+    m_sessionToken.clear().append(token);
 }
 
-bool CLdapSecUser::getToken(MemoryBuffer * token)
+const MemoryBuffer & CLdapSecUser::getSessionToken()
 {
-    if (m_mbToken.length() == 0)
-        return false;
-    if(token)
-        token->append(m_mbToken);
-    return true;
+    return m_sessionToken;
+}
+
+void CLdapSecUser::setSignature(const MemoryBuffer * const signature)
+{
+    m_signature.clear().append(*signature);
+}
+
+const MemoryBuffer & CLdapSecUser::getSignature()
+{
+    return m_signature;
 }
 
 void CLdapSecUser::copyTo(ISecUser& destination)
@@ -238,7 +243,8 @@ void CLdapSecUser::copyTo(ISecUser& destination)
     dest->setUserID(m_userid);
     dest->setPasswordExpiration(m_passwordExpiration);
     dest->setDistinguishedName(m_distinguishedName);
-    dest->credentials().addToken(&m_mbToken);
+    dest->credentials().setSessionToken(&m_sessionToken);
+    dest->credentials().setSignature(&m_signature);
 }
 
 ISecUser * CLdapSecUser::clone()
@@ -656,7 +662,7 @@ bool CLdapSecManager::authenticate(ISecUser* user)
         return true;
     }
 
-    if (user->credentials().getToken(nullptr))//Token exist?
+    if (user->credentials().getSessionToken().length())//Already authenticated it token exists
     {
         user->setAuthenticateStatus(AS_AUTHENTICATED);
         if(m_permissionsCache->isCacheEnabled() && !m_usercache_off)

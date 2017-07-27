@@ -113,7 +113,7 @@ void ensureWsCreateWorkunitAccess(IEspContext& cxt)
 StringBuffer &getWuidFromLogicalFileName(IEspContext &context, const char *logicalName, StringBuffer &wuid)
 {
     Owned<IUserDescriptor> userdesc = createUserDescriptor();
-    userdesc->set(context.queryUserId(), context.queryPassword());
+    userdesc->set(context.queryUserId(), context.queryPassword(), context.querySessionToken(), context.querySignature());
     Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, userdesc);
     if (!df)
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",logicalName);
@@ -205,7 +205,7 @@ void WsWuInfo::getSourceFiles(IEspECLWorkunit &info, unsigned long flags)
         context.getUserID(username);
         const char* passwd = context.queryPassword();
         userdesc.setown(createUserDescriptor());
-        userdesc->set(username.str(), passwd);
+        userdesc->set(username.str(), passwd, context.querySessionToken(), context.querySignature());
 
         IArrayOf<IEspECLSourceFile> files;
         if (version < 1.27)
@@ -1295,7 +1295,7 @@ IDistributedFile* WsWuInfo::getLogicalFileData(IEspContext& context, const char*
     StringBuffer username;
     context.getUserID(username);
     Owned<IUserDescriptor> userdesc(createUserDescriptor());
-    userdesc->set(username.str(), context.queryPassword());
+    userdesc->set(username.str(), context.queryPassword(), context.querySessionToken(), context.querySignature());
     Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, userdesc);
     if (!df)
         return NULL;

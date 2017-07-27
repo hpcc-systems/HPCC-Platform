@@ -380,7 +380,7 @@ bool CWsESDLConfigEx::onPublishESDLDefinition(IEspContext &context, IEspPublishE
         if (user && *user && *password && *password)
         {
             userdesc.setown(createUserDescriptor());
-            userdesc->set(user, password);
+            userdesc->set(user, password, context.querySessionToken(), context.querySignature());
         }
 
         DBGLOG("CWsESDLConfigEx::onPublishESDLDefinition User=%s",user);

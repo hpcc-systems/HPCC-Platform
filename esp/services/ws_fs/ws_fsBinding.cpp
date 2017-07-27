@@ -127,7 +127,7 @@ int CFileSpraySoapBindingEx::onGetInstantQuery(IEspContext &context, CHttpReques
                 {
                     const char* passwd = context.queryPassword();
                     userdesc.setown(createUserDescriptor());
-                    userdesc->set(username.str(), passwd);
+                    userdesc->set(username.str(), passwd, context.querySessionToken(), context.querySignature());
 
                     try 
                     {
