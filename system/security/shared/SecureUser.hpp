@@ -39,6 +39,7 @@ private:
     StringBuffer    m_Fqdn;
     StringBuffer    m_Peer;
     SecUserStatus   m_status;
+    MemoryBuffer    m_sessionToken;
     Owned<IProperties> m_parameters;
 
     CriticalSection crit;
@@ -214,12 +215,15 @@ public:
 
     bool addToken(MemoryBuffer * token)
     {
-        return false;  //not supported yet
+        m_sessionToken.clear().append(token);
+        return true;
     }
 
     bool getToken(MemoryBuffer * token)
     {
-        return false; //not supported yet
+        if (token && m_sessionToken.length())
+            token->clear().append(m_sessionToken);
+        return m_sessionToken.length() ? true : false;
     }
 
     virtual unsigned getUserID()
