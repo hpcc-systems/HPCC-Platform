@@ -4233,7 +4233,7 @@ StringBuffer &sharedObjectFileName(StringBuffer &filename, const char *name, con
 {
     filename.append((name && *name) ? name : "workunit");
     if (copy)
-        filename.append('-').append(copy);
+        filename.append('_').append(copy);
     if (notEmpty(ext))
         filename.append(ext);
     return filename;
