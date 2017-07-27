@@ -1171,4 +1171,45 @@ public:
 CPPUNIT_TEST_SUITE_REGISTRATION(JlibWildMatchTiming);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibWildMatchTiming, "JlibWildMatchTiming");
 
+
+const EnumMapping mapping[] = {
+        { 1, "one" },
+        { 3, "three" },
+        { 5, "five" },
+        {0, nullptr }
+};
+const char * strings[] = { "zero", "one", "two", "three", "four", nullptr };
+class JlibMapping : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(JlibMapping);
+        CPPUNIT_TEST(testEnum);
+        CPPUNIT_TEST(testMatch);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void testEnum()
+    {
+        CPPUNIT_ASSERT(streq("one", getEnumText(1, mapping)));
+        CPPUNIT_ASSERT(streq("three", getEnumText(3, mapping)));
+        CPPUNIT_ASSERT(streq("five", getEnumText(5, mapping)));
+        CPPUNIT_ASSERT(streq("two", getEnumText(2, mapping, "two")));
+        CPPUNIT_ASSERT(!getEnumText(2, mapping, nullptr));
+        CPPUNIT_ASSERT_EQUAL(1, getEnum("one", mapping));
+        CPPUNIT_ASSERT_EQUAL(3, getEnum("three", mapping));
+        CPPUNIT_ASSERT_EQUAL(5, getEnum("five", mapping));
+        CPPUNIT_ASSERT_EQUAL(99, getEnum("seven", mapping, 99));
+    }
+    void testMatch()
+    {
+        CPPUNIT_ASSERT_EQUAL(0U, matchString("zero", strings));
+        CPPUNIT_ASSERT_EQUAL(1U, matchString("one", strings));
+        CPPUNIT_ASSERT_EQUAL(4U, matchString("four", strings));
+        CPPUNIT_ASSERT_EQUAL(UINT_MAX, matchString("ten", strings));
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(JlibMapping);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibMapping, "JlibMapping");
+
+
 #endif // _USE_CPPUNIT

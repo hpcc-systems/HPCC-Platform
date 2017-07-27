@@ -473,7 +473,7 @@ unsigned WsWuInfo::getTimerCount()
     return numTimers;
 }
 
-mapEnums queryFileTypes[] = {
+EnumMapping queryFileTypes[] = {
    { FileTypeCpp, "cpp" },
    { FileTypeDll, "dll" },
    { FileTypeResText, "res" },

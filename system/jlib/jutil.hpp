@@ -388,9 +388,13 @@ interface jlib_thrown_decl ICorruptDllException: extends IException
 {
 };
 
-struct mapEnums { int val; const char *str; };
+struct EnumMapping { int val; const char *str; };
 
-extern jlib_decl const char *getEnumText(int value, const mapEnums *map);
+extern jlib_decl const char *getEnumText(int value, const EnumMapping *map); // fails if no match
+extern jlib_decl int getEnum(const char *v, const EnumMapping *map); //fails if no match
+extern jlib_decl const char *getEnumText(int value, const EnumMapping *map, const char * defval);
+extern jlib_decl int getEnum(const char *v, const EnumMapping *map, int defval);
+
 
 class jlib_decl QuantilePositionIterator
 {

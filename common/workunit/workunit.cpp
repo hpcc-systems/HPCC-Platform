@@ -716,7 +716,7 @@ private:
 
 //--------------------------------------------------------------------------------------------------------------------
 
-mapEnums states[] = {
+EnumMapping states[] = {
    { WUStateUnknown, "unknown" },
    { WUStateCompiled, "compiled" },
    { WUStateRunning, "running" },
@@ -737,7 +737,7 @@ mapEnums states[] = {
    { WUStateSize, NULL }
 };
 
-mapEnums actions[] = {
+EnumMapping actions[] = {
    { WUActionUnknown, "unknown" },
    { WUActionCompile, "compile" },
    { WUActionCheck, "check" },
@@ -749,7 +749,7 @@ mapEnums actions[] = {
    { WUActionSize, NULL },
 };
 
-mapEnums priorityClasses[] = {
+EnumMapping priorityClasses[] = {
    { PriorityClassUnknown, "unknown" },
    { PriorityClassLow, "low" },
    { PriorityClassNormal, "normal" },
@@ -763,7 +763,7 @@ const char * getWorkunitStateStr(WUState state)
     return states[state].str; // MORE - should be using getEnumText, or need to take steps to ensure values remain contiguous and in order.
 }
 
-void setEnum(IPropertyTree *p, const char *propname, int value, const mapEnums *map)
+void setEnum(IPropertyTree *p, const char *propname, int value, const EnumMapping *map)
 {
     const char *defval = map->str;
     while (map->str)
@@ -779,22 +779,7 @@ void setEnum(IPropertyTree *p, const char *propname, int value, const mapEnums *
     p->setProp(propname, defval);
 }
 
-static int getEnum(const char *v, const mapEnums *map)
-{
-    if (v && *v)
-    {
-        while (map->str)
-        {
-            if (stricmp(v, map->str)==0)
-                return map->val;
-            map++;
-        }
-        assertex(!"Unexpected value in getEnum");
-    }
-    return 0;
-}
-
-static int getEnum(const IPropertyTree *p, const char *propname, const mapEnums *map)
+static int getEnum(const IPropertyTree *p, const char *propname, const EnumMapping *map)
 {
     return getEnum(p->queryProp(propname),map);
 }
@@ -2001,7 +1986,7 @@ public:
     virtual IStringVal & str(IStringVal &s) { s.clear(); return s; }
 };
 
-mapEnums workunitSortFields[] =
+EnumMapping workunitSortFields[] =
 {
    { WUSFuser, "@submitID" },
    { WUSFcluster, "@clusterName" },
@@ -2031,7 +2016,7 @@ extern const char *queryFilterXPath(WUSortField field)
     return getEnumText(field, workunitSortFields);
 }
 
-mapEnums querySortFields[] =
+EnumMapping querySortFields[] =
 {
    { WUQSFId, "@id" },
    { WUQSFwuid, "@wuid" },
@@ -5239,7 +5224,7 @@ void CLocalWorkUnit::setSnapshot(const char * val)
     p->setProp("SNAPSHOT", val);
 }
 
-const static mapEnums warningSeverityMap[] =
+const static EnumMapping warningSeverityMap[] =
 {
     { SeverityInformation, "info" },
     { SeverityWarning, "warning" },
@@ -6833,7 +6818,7 @@ void CLocalWorkUnit::loadGraphs(bool heavy) const
     }
 }
 
-mapEnums graphTypes[] = {
+EnumMapping graphTypes[] = {
    { GraphTypeAny, "unknown" },
    { GraphTypeProgress, "progress" },
    { GraphTypeEcl, "ECL" },
@@ -7317,7 +7302,7 @@ void CLocalWUGraph::setType(WUGraphType _type)
 
 //=================================================================================================
 
-mapEnums queryFileTypes[] = {
+EnumMapping queryFileTypes[] = {
    { FileTypeCpp, "cpp" },
    { FileTypeDll, "dll" },
    { FileTypeResText, "res" },
@@ -7382,7 +7367,7 @@ CLocalWUQuery::CLocalWUQuery(IPropertyTree *props) : p(props)
     associatedCached = false;
 }
 
-mapEnums queryTypes[] = {
+EnumMapping queryTypes[] = {
    { QueryTypeUnknown, "unknown" },
    { QueryTypeEcl, "ECL" },
    { QueryTypeSql, "SQL" },
@@ -7772,7 +7757,7 @@ CLocalWUResult::CLocalWUResult(IPropertyTree *props) : p(props)
 {
 }
 
-mapEnums resultStatuses[] = {
+EnumMapping resultStatuses[] = {
    { ResultStatusUndefined, "undefined" },
    { ResultStatusCalculated, "calculated" },
    { ResultStatusSupplied, "supplied" },
@@ -9370,7 +9355,7 @@ void CLocalWorkUnit::deschedule()
     doDescheduleWorkkunit(p->queryName());
 }
 
-mapEnums localFileUploadTypes[] = {
+EnumMapping localFileUploadTypes[] = {
     { UploadTypeFileSpray, "FileSpray" },
     { UploadTypeWUResult, "WUResult" },
     { UploadTypeWUResultCsv, "WUResultCsv" },

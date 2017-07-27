@@ -2463,6 +2463,18 @@ bool endsWithIgnoreCase(const char* src, const char* dst)
     return false;
 }
 
+unsigned matchString(const char * search, const char * * strings)
+{
+    for (unsigned i=0;;i++)
+    {
+        const char * cur = strings[i];
+        if (!cur)
+            return UINT_MAX;
+        if (streq(search, cur))
+            return i;
+    }
+}
+
 char *j_strtok_r(char *str, const char *delim, char **saveptr)
 {
     if (!str) 

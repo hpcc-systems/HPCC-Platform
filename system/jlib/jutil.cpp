@@ -2819,16 +2819,54 @@ jlib_decl StringBuffer &getTempFilePath(StringBuffer & target, const char * comp
     return target.set(dir);
 }
 
-jlib_decl const char *getEnumText(int value, const mapEnums *map)
+const char *getEnumText(int value, const EnumMapping *map)
 {
-    const char *defval = map->str;
     while (map->str)
     {
         if (value==map->val)
             return map->str;
         map++;
     }
-    assertex(!"Unexpected value in getEnumText");
+    throwUnexpectedX("Unexpected value in getEnumText");
+}
+
+int getEnum(const char *v, const EnumMapping *map)
+{
+    if (v && *v)
+    {
+        while (map->str)
+        {
+            if (stricmp(v, map->str)==0)
+                return map->val;
+            map++;
+        }
+        throwUnexpectedX("Unexpected value in getEnum");
+    }
+    return 0;
+}
+
+const char *getEnumText(int value, const EnumMapping *map, const char * defval)
+{
+    while (map->str)
+    {
+        if (value==map->val)
+            return map->str;
+        map++;
+    }
+    return defval;
+}
+
+int getEnum(const char *v, const EnumMapping *map, int defval)
+{
+    if (v && *v)
+    {
+        while (map->str)
+        {
+            if (stricmp(v, map->str)==0)
+                return map->val;
+            map++;
+        }
+    }
     return defval;
 }
 
