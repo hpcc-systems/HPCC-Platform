@@ -149,6 +149,7 @@ public:
     StringBuffer &generateNamespace(IEspContext &context, CHttpRequest* request, const char *serv, const char *method, StringBuffer &ns);
 
     virtual int getQualifiedNames(IEspContext& ctx, MethodInfoArray & methods){return 0;}
+    virtual unsigned getCacheMethodCount(){return 0;}
 
     void getNavigationData(IEspContext &context, IPropertyTree & data);
     void getRootNavigationFolders(IEspContext &context, IPropertyTree & data);

@@ -261,16 +261,6 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
     if(m_challenge_realm.length() == 0)
         m_challenge_realm.append("ESP");
 
-#ifdef USE_LIBMEMCACHED
-    if(proc_cfg)
-    {
-        const char* initString = proc_cfg->queryProp("@memCachedOptionString");
-        if (!isEmptyString(initString))
-            memCachedInitString.set(initString);
-        else
-            memCachedInitString.set("--SERVER=127.0.0.1");//using local memcached server
-    }
-#endif
     if (!m_secmgr.get() || !daliClientActive())
     {
         if (!daliClientActive())
@@ -636,105 +626,92 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
     return authorized;
 }
 
-#ifdef USE_LIBMEMCACHED
-void EspHttpBinding::ensureMemCachedClient()
-{
-    if ((memCachedMethods == 0) || memCachedClient)
-        return;
-
-    memCachedClient.setown(new ESPMemCached());
-    if (!memCachedClient->init(memCachedInitString.get()))
-        memCachedClient.clear();
-}
-
-int EspHttpBinding::queryMemCacheSeconds(const char *method)
+bool EspHttpBinding::queryCacheSeconds(const char *method, unsigned& cacheSeconds)
 {
     StringBuffer key(method);
-    int* value = memCachedSecondsMap.getValue(key.toUpperCase().str());
+    unsigned* value = cacheSecondsMap.getValue(key.toUpperCase().str());
     if (!value)
-        return -1;
-    return unsigned (*value);
+        return false;
+    cacheSeconds = *value;
+    return true;
 }
 
-bool EspHttpBinding::queryMemCacheGlobal(const char *method)
+bool EspHttpBinding::queryCacheGlobal(const char *method)
 {
     StringBuffer key(method);
-    bool* cacheGlobal = memCachedGlobalMap.getValue(key.toUpperCase().str());
+    bool* cacheGlobal = cacheGlobalMap.getValue(key.toUpperCase().str());
     return cacheGlobal && *cacheGlobal;
 }
 
-const char* EspHttpBinding::createMemCachedID(CHttpRequest* request, StringBuffer& memCachedID)
+const char* EspHttpBinding::createESPCacheID(CHttpRequest* request, StringBuffer& cacheID)
 {
-    memCachedID.clear();
-
-    const char* method = request->queryServiceMethod();
-    int cacheSeconds = queryMemCacheSeconds(method);
-    if (cacheSeconds < 0) //no memcache required for this method
-        return memCachedID.str();
-
+    StringBuffer idStr, msgType;
     if(request->isSoapMessage())
-        memCachedID.append(request->createUniqueRequestHash(queryMemCacheGlobal(method), "SOAP"));
+        msgType.set("SOAP");
     else if(request->isFormSubmission())
-        memCachedID.append(request->createUniqueRequestHash(queryMemCacheGlobal(method), "FORM"));
-    else
-        memCachedID.append(request->createUniqueRequestHash(queryMemCacheGlobal(method), ""));
-    return memCachedID.str();
+        msgType.set("FORM");
+
+    if (!queryCacheGlobal(request->queryServiceMethod()))
+    {
+        const char* userID = request->queryContext()->queryUserId();
+        if (!isEmptyString(userID))
+            idStr.append(userID).append("_");
+    }
+    if (!msgType.isEmpty())
+        idStr.append(msgType.str()).append("_");
+    idStr.appendf("%s_%s_%s", request->queryServiceName(), request->queryServiceMethod(), request->queryAllParameterString());
+    cacheID.append(hashc((unsigned char *)idStr.str(), idStr.length(), 0));
+    return cacheID.str();
 }
 
-bool EspHttpBinding::sendFromMemCached(CHttpRequest* request, CHttpResponse* response, const char* memCachedID)
+bool EspHttpBinding::sendFromESPCache(CHttpRequest* request, CHttpResponse* response, const char* cacheID)
 {
-    StringBuffer content, contentType, contentTypeCachedID;
-    contentTypeCachedID.set(memCachedID).append("t");
-
-    {
-        CriticalBlock block(memCachedCrit);
-
-        if (memCachedClient->exists("ESPResponse", memCachedID))
-            memCachedClient->get("ESPResponse", memCachedID, content);
-        if (memCachedClient->exists("ESPResponse", contentTypeCachedID.str()))
-            memCachedClient->get("ESPResponse", contentTypeCachedID.str(), contentType);
-    }
+    StringBuffer content, contentType;
+    if (!espCacheClient->readResponseCache(cacheID, content.clear(), contentType.clear()))
+        ESPLOG(LogMax, "Failed to read from ESP Cache for %s.", request->queryServiceMethod());
     if (content.isEmpty() || contentType.isEmpty())
         return false;
 
-    ESPLOG(LogMax, "Sending MemCached for %s.", request->queryServiceMethod());
+    ESPLOG(LogMax, "Sending from ESP Cache for %s.", request->queryServiceMethod());
     response->setContentType(contentType.str());
     response->setContent(content.str());
     response->send();
     return true;
 }
 
-void EspHttpBinding::addToMemCached(CHttpRequest* request, CHttpResponse* response, const char* memCachedID)
+void EspHttpBinding::addToESPCache(CHttpRequest* request, CHttpResponse* response, const char* cacheID)
 {
+    unsigned cacheSeconds = 0;
     const char* method = request->queryServiceMethod();
-    int cacheSeconds = queryMemCacheSeconds(method);
-    if (cacheSeconds < 0) //no memcache required for this method
+    if (!queryCacheSeconds(method, cacheSeconds)) //no cache required for this method
         return;
 
-    StringBuffer content, contentType, contentTypeID;
-    contentTypeID.set(memCachedID).append("t");
+    StringBuffer content, contentType;
     response->getContent(content);
     response->getContentType(contentType);
-    {
-        CriticalBlock block(memCachedCrit);
-        memCachedClient->set("ESPResponse", memCachedID, content.str(), (unsigned) cacheSeconds);
-        memCachedClient->set("ESPResponse", contentTypeID.str(), contentType.str(), (unsigned) cacheSeconds);
-    }
-    ESPLOG(LogMax, "AddTo MemCached for %s.", method);
+    if (espCacheClient->cacheResponse(cacheID, cacheSeconds, content.str(), contentType.str()))
+        ESPLOG(LogMax, "AddTo ESP Cache for %s.", method);
+    else
+        ESPLOG(LogMax, "Failed to add ESP Cache for %s.", method);
 }
-#endif
 
 void EspHttpBinding::handleHttpPost(CHttpRequest *request, CHttpResponse *response)
 {
-#ifdef USE_LIBMEMCACHED
-    ensureMemCachedClient();
-
-    StringBuffer memCachedID;
-    if (memCachedClient)
-        createMemCachedID(request, memCachedID);
-    if (!memCachedID.isEmpty() && sendFromMemCached(request, response, memCachedID.str()))
-        return;
-#endif
+    StringBuffer cacheID;
+    if (cacheMethods > 0)
+    {
+        unsigned cacheSeconds = 0;
+        const char* method = request->queryServiceMethod();
+        if (queryCacheSeconds(method, cacheSeconds)) //ESP cache is needed for this method
+        {
+            if (!espCacheClient)
+                espCacheClient.setown(createESPCache(espCacheInitString.get()));
+            if (espCacheClient)
+                createESPCacheID(request, cacheID);
+            if (!cacheID.isEmpty() && sendFromESPCache(request, response, cacheID.str()))
+                return;
+        }
+    }
 
     if(request->isSoapMessage()) 
     {
@@ -746,10 +723,8 @@ void EspHttpBinding::handleHttpPost(CHttpRequest *request, CHttpResponse *respon
     else
         onPost(request, response);
 
-#ifdef USE_LIBMEMCACHED
-    if (!memCachedID.isEmpty())
-        addToMemCached(request, response, memCachedID.str());
-#endif
+    if (!cacheID.isEmpty())
+        addToESPCache(request, response, cacheID.str());
 }
 
 int EspHttpBinding::onGet(CHttpRequest* request, CHttpResponse* response)

@@ -799,3 +799,21 @@ IEspPlugin* CEspConfig::getPlugin(const char* name)
     return NULL;
 }
 
+bool CEspConfig::checkESPCache()
+{
+    bool espCacheAvailable = false ;
+    list<binding_cfg*>::iterator iter = m_bindings.begin();
+    while (iter!=m_bindings.end())
+    {
+        binding_cfg& xcfg = **iter;
+        if (xcfg.bind->getCacheMethodCount() > 0)
+        {
+            Owned<IEspCache> espCache = createESPCache(m_cfg->queryProp("@espCacheInitString"));
+            espCacheAvailable = (espCache != nullptr);
+            break;
+        }
+        iter++;
+    }
+    return espCacheAvailable;
+}
+

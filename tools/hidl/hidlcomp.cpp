@@ -5530,6 +5530,7 @@ void EspServInfo::write_esp_binding_ipp()
     outf("\tC%sSoapBinding(IPropertyTree* cfg, const char *bindname=NULL, const char *procname=NULL, http_soap_log_level level=hsl_none);\n", name_);
 
     outs("\tvirtual void init_strings();\n");
+    outs("\tvirtual unsigned getCacheMethodCount(){return m_cacheMethodCount;}\n");
 
     //method ==> processRequest
     outs("\tvirtual int processRequest(IRpcMessage* rpc_call, IRpcMessage* rpc_response);\n");
@@ -5622,6 +5623,7 @@ void EspServInfo::write_esp_binding_ipp()
 
     outs("private:\n");
     outs("\tMapStringTo<SecAccessFlags> m_accessmap;\n");
+    outs("\tunsigned m_cacheMethodCount = 0;\n");
 
     outs("};\n\n");
 }
@@ -5670,13 +5672,14 @@ void EspServInfo::write_esp_binding()
             StrBuffer tmp; 
             outf("\taddMethodHelp(\"%s\", \"%s\");\n", mthi->getName(), printfEncode(val.str(), tmp).str());
         }
+        int cacheGlobal = mthi->getMetaInt("cache_global", 0);
         int cacheSeconds = mthi->getMetaInt("cache_seconds", -1);
         if (cacheSeconds > -1) {
-            outf("\taddMemCachedSeconds(\"%s\", %d);\n", mthi->getName(), cacheSeconds);
-        }
-        int cacheGlobel = mthi->getMetaInt("cache_globel", 0);
-        if (cacheGlobel > 0) {
-            outf("\taddMemCachedGlobal(\"%s\", 1);\n", mthi->getName());
+            if (cacheGlobal > 0)
+                outf("\tsetCacheTimeout(\"%s\", %d, 1);\n", mthi->getName(), cacheSeconds);
+            else
+                outf("\tsetCacheTimeout(\"%s\", %d, 0);\n", mthi->getName(), cacheSeconds);
+            outs("\tm_cacheMethodCount++;\n");
         }
     }
     outs("}\n");

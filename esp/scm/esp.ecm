@@ -311,6 +311,7 @@ SCMinterface IEspRpcBinding(IInterface)
     void setContainer(IEspContainer *ic);
     void setXslProcessor(IInterface *xslp);
     IEspContainer* queryContainer();
+    unsigned getCacheMethodCount();
 };
 
 SCMinterface IEspUriMap(IInterface)

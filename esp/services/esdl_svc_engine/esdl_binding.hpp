@@ -375,6 +375,7 @@ public:
 
     bool usesESDLDefinition(const char * name, int version);
     bool usesESDLDefinition(const char * id);
+    virtual unsigned getCacheMethodCount(){return 0;}
 
 private:
     int onGetRoxieBuilder(CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method);
