@@ -466,5 +466,6 @@ struct ECLRTL_API RtlFieldStrInfo : public RtlFieldInfo
     RtlFieldStrInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type, const char * _initializer);  // So old WU dlls can load (and then fail) rather than failing to load.
 };
 
+extern unsigned ECLRTL_API countFields(const RtlFieldInfo * const * fields);
 
 #endif

@@ -99,6 +99,7 @@ const RtlTypeInfo *FieldTypeInfoStruct::createRtlTypeInfo() const
 };
 
 typedef MapBetween<const RtlTypeInfo *, const RtlTypeInfo *, StringAttr, const char *> TypeNameMap;
+typedef MapBetween<const RtlTypeInfo *, const RtlTypeInfo *, unsigned, unsigned> TypeNumMap;
 
 /**
  * class CRtlFieldTypeSerializer
@@ -294,6 +295,118 @@ private:
     bool commaPending = false;
 };
 
+class CRtlFieldTypeBinSerializer
+{
+public:
+    /**
+     * Serialize a RtlTypeInfo structure to binary
+     *
+     * @param  out  Buffer for resulting serialized string
+     * @param  type RtlTypeInfo structure to be serialized
+     * @return Referenced to supplied buffer
+     */
+     static MemoryBuffer &serialize(MemoryBuffer &out, const RtlTypeInfo *type)
+     {
+         CRtlFieldTypeBinSerializer s(out);
+         s.serializeType(type);
+         return out;
+     }
+private:
+    CRtlFieldTypeBinSerializer(MemoryBuffer &_out)
+    : out(_out)
+    {
+    }
+    void serializeType(const RtlTypeInfo *type)
+    {
+        if (!serialized(type))
+        {
+            // Make sure all child types are serialized first
+            const RtlTypeInfo *child = type->queryChildType();
+            if (child)
+                serializeType(child);
+            const RtlFieldInfo * const * fields = type->queryFields();
+            if (fields)
+            {
+                for (;;)
+                {
+                    const RtlFieldInfo * child = *fields;
+                    if (!child)
+                        break;
+                    serializeType(child->type);
+                    fields++;
+                }
+            }
+            // Now serialize this one
+            types.setValue(type, nextTypeNum++);
+            serializeMe(type);
+        }
+    }
+
+    void serializeMe(const RtlTypeInfo *type)
+    {
+        if (!type->canSerialize())
+            throw makeStringException(MSGAUD_user, 1000, "IFBLOCK and DICTIONARY type structures cannot be serialized");
+        unsigned fieldType = type->fieldType;
+        const char *locale = type->queryLocale();
+        if (locale && *locale)
+            fieldType |= RFTMhasLocale;
+        const RtlTypeInfo *child = type->queryChildType();
+        if (child)
+            fieldType |= RFTMhasChildType;
+        const RtlFieldInfo * const * fields = type->queryFields();
+        if (fields)
+            fieldType |= RFTMhasFields;
+        out.append(fieldType);
+        out.append(type->length);
+        if (fieldType & RFTMhasLocale)
+            out.append(locale);
+        if (child)
+            out.appendPacked(queryTypeIdx(child));
+        if (fields)
+        {
+            unsigned count = countFields(fields);
+            out.appendPacked(count);
+            for (;;)
+            {
+                const RtlFieldInfo * child = *fields;
+                if (!child)
+                    break;
+                out.append(child->name);
+                out.appendPacked(queryTypeIdx(child->type));
+                unsigned flags = child->flags;
+                if (child->xpath)
+                    flags |= RFTMhasXpath;
+                if (child->initializer)
+                    flags |= RFTMhasInitializer;
+                out.append(flags);
+                if (child->xpath)
+                    out.append(child->xpath);
+                // initializer is tricky - it's not (in general) a null-terminated string but the actual length is not easily available
+                if (child->initializer)
+                {
+                    unsigned initLength = child->type->size(child->initializer, nullptr);
+                    out.appendPacked(initLength).append(initLength, child->initializer);
+                }
+                fields++;
+            }
+        }
+    }
+    bool serialized(const RtlTypeInfo *type)
+    {
+        return types.find(type) != nullptr;
+    }
+    unsigned queryTypeIdx(const RtlTypeInfo *type)
+    {
+        unsigned *typeNum = types.getValue(type);
+        assertex(typeNum);
+        return *typeNum;
+    }
+
+    TypeNumMap types;
+    MemoryBuffer &out;
+    unsigned nextTypeNum = 0;
+};
+
 /**
  * class CRtlFieldTypeDeserializer
  *
@@ -351,6 +464,34 @@ public:
         return base;
     }
 
+    /**
+     * Obtain the deserialized type information
+     * <p>
+     * Note that the RtlTypeInfo objects are not link-counted, so the lifetime of these objects
+     * is determined by the lifetime of the deserializer. They will be released once the deserializer
+     * that created them is deleted.
+     * <p>
+     * Do not call more than once.
+     *
+     * @param  _json JSON text to be deserialized, as created by CRtlFieldTypeSerializer
+     * @return Deserialized type object
+     */
+    virtual const RtlTypeInfo *deserialize(MemoryBuffer &buf) override
+    {
+        assertex(!base);
+        unsigned nextTypeNum = 0;
+        while (buf.remaining())
+        {
+            if (base)
+            {
+                addType(base, nextTypeNum++);
+                base = nullptr;  // in case of exceptions...
+            }
+            base = deserializeType(buf);
+        }
+        return base;
+    }
+
     virtual const RtlTypeInfo *addType(FieldTypeInfoStruct &info, const ITypeInfo *type) override
     {
         VStringBuffer name("%p", type);
@@ -358,7 +499,7 @@ public:
         if (found)
             return *found;
         info.locale = keep(info.locale);
-        const RtlTypeInfo * ret = info.createRtlTypeInfo(); // MORE - need to add to types to ensure freed - also would be nice to dedup?
+        const RtlTypeInfo * ret = info.createRtlTypeInfo();
         types.setValue(name, ret);
         return ret;
     }
@@ -417,6 +558,21 @@ private:
         types.setValue(name, type);
         return type;
     }
+    const RtlTypeInfo *lookupType(unsigned idx)
+    {
+        // Could keep an expanding array of types instead - but the hash table is already there for json support...
+        VStringBuffer key("%u", idx);
+        const RtlTypeInfo ** found = types.getValue(key);
+        if (found)
+            return *found;
+        throw makeStringException(-1, "Invalid serialized type information");
+    }
+    void addType(const RtlTypeInfo *type, unsigned idx)
+    {
+        VStringBuffer key("%u", idx);
+        assert(types.getValue(key)==nullptr);
+        types.setValue(key, type);
+    }
     const char *keep(const char *string)
     {
         if (string)
@@ -460,6 +616,56 @@ private:
         }
         return info.createRtlTypeInfo();
     }
+
+    const RtlTypeInfo *deserializeType(MemoryBuffer &type)
+    {
+        FieldTypeInfoStruct info;
+        type.read(info.fieldType);
+        type.read(info.length);
+        if (info.fieldType & RFTMhasLocale)
+        {
+            const char *locale;
+            type.read(locale);
+            info.locale = keep(locale);
+        }
+        if (info.fieldType & RFTMhasChildType)
+        {
+            unsigned childIdx;
+            type.readPacked(childIdx);
+            info.childType = lookupType(childIdx);
+        }
+        if (info.fieldType & RFTMhasFields)
+        {
+            unsigned numFields;
+            type.readPacked(numFields);
+            info.fieldsArray = new const RtlFieldInfo * [numFields+1];
+            info.fieldsArray[numFields] = nullptr;
+            for (int n = 0; n < numFields; n++)
+            {
+                const char *fieldName;
+                type.read(fieldName);
+                unsigned fieldType;
+                type.readPacked(fieldType);
+                unsigned fieldFlags;
+                type.read(fieldFlags);
+                const char *xpath = nullptr;
+                if (fieldFlags & RFTMhasXpath)
+                    type.read(xpath);
+                void *init = nullptr;
+                if (fieldFlags & RFTMhasInitializer)
+                {
+                    unsigned initLength;
+                    type.readPacked(initLength);
+                    init = malloc(initLength);
+                    memcpy(init, type.readDirect(initLength), initLength);
+                }
+                fieldFlags &= ~RFTMserializerFlags;
+                info.fieldsArray[n] = new RtlFieldStrInfo(keep(fieldName), keep(xpath), lookupType(fieldType), fieldFlags, (const char *) init);
+            }
+        }
+        info.fieldType &= ~RFTMserializerFlags;
+        return info.createRtlTypeInfo();
+    }
 };
 
 extern ECLRTL_API IRtlFieldTypeDeserializer *createRtlFieldTypeDeserializer()
@@ -478,9 +684,14 @@ extern ECLRTL_API void dumpRecordType(size32_t & __lenResult,char * & __result,I
     CRtlFieldTypeSerializer::serialize(ret, metaVal.queryTypeInfo());
 
 #ifdef _DEBUG
-    CRtlFieldTypeDeserializer deserializer;
     StringBuffer ret2;
+    CRtlFieldTypeDeserializer deserializer;
     CRtlFieldTypeSerializer::serialize(ret2, deserializer.deserialize(ret));
+    assert(streq(ret, ret2));
+    MemoryBuffer out;
+    CRtlFieldTypeBinSerializer::serialize(out, metaVal.queryTypeInfo());
+    CRtlFieldTypeDeserializer bindeserializer;
+    CRtlFieldTypeSerializer::serialize(ret2.clear(), bindeserializer.deserialize(out));
     assert(streq(ret, ret2));
 #endif
 

@@ -84,14 +84,6 @@
  *   For nested selects the code would need to be consistent.
  */
 
-static unsigned countFields(const RtlFieldInfo * const * fields)
-{
-    unsigned cnt = 0;
-    for (;*fields;fields++)
-        cnt++;
-    return cnt;
-}
-
 static unsigned countFields(const RtlFieldInfo * const * fields, bool & containsNested)
 {
     unsigned cnt = 0;
