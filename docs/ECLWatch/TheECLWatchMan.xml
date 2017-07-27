@@ -1500,9 +1500,6 @@
       role="bold">Dynamic ESDL</emphasis> from the navigation sub-menu
       bar.</para>
 
-      <para>The DESDL-based ESP services available are listed in the navigator
-      pane on the left as children of their parent ESP process.</para>
-
       <figure>
         <title>Dynamic ESDL sub-menu</title>
 
@@ -1513,11 +1510,21 @@
         </mediaobject>
       </figure>
 
-      <para>This tab contains a list of all DESDL based ESP Services and their
-      ESDL Binding information.. For more information about Dynamic ESDL refer
-      to the documentation; <emphasis>Dynamic ESDL</emphasis> available from
-      the HPCC Systems portal: <ulink
-      url="https://hpccsystems.com/download/documentation/learning-ecl/dynamic-esdl">https://hpccsystems.com/download/documentation/learning-ecl/dynamic-esdl</ulink></para>
+      <para>The <emphasis role="bold">Dynamic ESDL</emphasis> tab contains a
+      list of all DESDL based ESP Services and their ESDL Binding information.
+      The DESDL-based ESP services available are listed in the navigator pane
+      on the left as children of their parent ESP process.</para>
+
+      <para>The <emphasis role="bold">Definitions</emphasis> tab, also
+      accessible from the <emphasis role="bold">Dynamic ESDL</emphasis>
+      button's sub-menu, lists all available ESDL definitions and provides a
+      view into any of the definitions. These definitions are used to
+      dynamically define interfaces for existing ESP web services.</para>
+
+      <para>For more information about Dynamic ESDL refer to the
+      documentation; <emphasis>Dynamic ESDL</emphasis> available from the HPCC
+      Systems portal: <ulink
+      url="https://hpccsystems.com/training/documentation/learning-ecl/">https://hpccsystems.com/training/documentation/learning-ecl/dynamic-esdl</ulink></para>
 
       <sect2 id="USING_Dynamic_ESDL">
         <title>Using Dynamic ESDL</title>
