@@ -46,7 +46,7 @@ IF (NOT EXAMPLE_PLUGIN_DEP_FOUND)
   #"#define EXAMPLE_PLUGIN_DEP_PATCH 2"
   #The minimum version to requirement is made visible to this cmake file from
   #HPCC/plugins/exampleplugin/CMakeLists.txt:ADD_PLUGIN(EXAMPLEPLUGIN PACKAGES EXAMPLE_PLUGIN_DEP MINVERSION 4.6.2)
-  IF  (EXAMPLE_PLUGIN_DEP_INCLUDE_DIR)
+  IF  (EXISTS "${EXAMPLE_PLUGIN_DEP_INCLUDE_DIR}/hpcc-example-plugin-deps.h")
     #MAJOR
     FILE (STRINGS "${EXAMPLE_PLUGIN_DEP_INCLUDE_DIR}/hpcc-example-plugin-deps.h" major REGEX "#define EXAMPLE_PLUGIN_DEP_MAJOR")
     STRING (REGEX REPLACE "#define EXAMPLE_PLUGIN_DEP_MAJOR " "" major "${major}")
