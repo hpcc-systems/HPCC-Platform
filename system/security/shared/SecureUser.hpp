@@ -39,8 +39,9 @@ private:
     StringBuffer    m_Fqdn;
     StringBuffer    m_Peer;
     SecUserStatus   m_status;
-    MemoryBuffer    m_sessionToken;
     Owned<IProperties> m_parameters;
+    MemoryBuffer    m_sessionToken;
+    MemoryBuffer    m_signature;
 
     CriticalSection crit;
 public:
@@ -213,17 +214,24 @@ public:
         return m_pw.str();
     }
 
-    bool addToken(MemoryBuffer * token)
+    void setSessionToken(const MemoryBuffer * const token)
     {
         m_sessionToken.clear().append(token);
-        return true;
     }
 
-    bool getToken(MemoryBuffer * token)
+    const MemoryBuffer & getSessionToken()
     {
-        if (token && m_sessionToken.length())
-            token->clear().append(m_sessionToken);
-        return m_sessionToken.length() ? true : false;
+        return m_sessionToken;
+    }
+
+    void setSignature(const MemoryBuffer * const signature)
+    {
+        m_signature.clear().append(signature);
+    }
+
+    const MemoryBuffer & getSignature()
+    {
+        return m_signature;
     }
 
     virtual unsigned getUserID()

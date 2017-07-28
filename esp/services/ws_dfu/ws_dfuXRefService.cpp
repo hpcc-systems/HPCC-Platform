@@ -113,9 +113,8 @@ bool CWsDfuXRefEx::onDFUXRefArrayAction(IEspContext &context, IEspDFUXRefArrayAc
         Owned<IUserDescriptor> userdesc;
         if(username.length() > 0)
         {
-            const char* passwd = context.queryPassword();
             userdesc.setown(createUserDescriptor());
-            userdesc->set(username.str(), passwd);
+            userdesc->set(username.str(), context.queryPassword(), context.querySessionToken(), context.querySignature());
         }
 
         if(*req.getAction() == 0 || *req.getType() == 0 || *req.getCluster() == 0)
@@ -210,9 +209,8 @@ void CWsDfuXRefEx::readLostFileQueryResult(IEspContext &context, StringBuffer& b
     context.getUserID(username);
     if(username.length() > 0)
     {
-        const char* passwd = context.queryPassword();
         userdesc.setown(createUserDescriptor());
-        userdesc->set(username.str(), passwd);
+        userdesc->set(username.str(), context.queryPassword(), context.querySessionToken(), context.querySignature());
     }
 
     Owned<IPropertyTreeIterator> iter = lostFilesQueryResult->getElements("File");

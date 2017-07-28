@@ -1124,7 +1124,7 @@ EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char*
     authOptionalGroups(authReq);
 
     unsigned sessionID = createHTTPSession(authReq, sessionStartURL);
-    authReq.ctx->addUserToken(sessionID);
+    authReq.ctx->setSessionToken(sessionID);
 
     ESPLOG(LogMax, "Authenticated for %s@%s", _userName, peer.str());
 
@@ -1205,11 +1205,11 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
     authOptionalGroups(authReq);
 
     //The UserID has to be set before the populateRequest() because the UserID is used to create the user object.
-    //After the user object is created, we may call addUserToken().
+    //After the user object is created, we may call addSessionToken().
     StringAttr userName = sessionTree->queryProp(PropSessionUserID);
     authReq.ctx->setUserID(userName.str());
     authReq.authBinding->populateRequest(m_request.get());
-    authReq.ctx->addUserToken(sessionID);
+    authReq.ctx->setSessionToken(sessionID);
 
     ESPLOG(LogMax, "Authenticated for %s<%u> %s@%s", PropSessionID, sessionID, userName.str(), sessionTree->queryProp(PropSessionNetworkAddress));
     if (!authReq.serviceName.isEmpty() && !authReq.methodName.isEmpty() && strieq(authReq.serviceName.str(), "esp") && strieq(authReq.methodName.str(), "logout"))

@@ -357,7 +357,15 @@ bool CPermissionsCache::lookup(ISecUser& sec_user)
             const char* cachedpw = user->queryUser()->credentials().getPassword();
             const char * pw = sec_user.credentials().getPassword();
 
-            if(cachedpw && pw && *pw != '\0')
+            if ((sec_user.credentials().getSessionToken().length() > 0) ||  (sec_user.credentials().getSignature().length() > 0))
+            {//presence of session token or signature means user is authenticated
+#ifdef _DEBUG
+                DBGLOG("CACHE: CPermissionsCache Found validated user %s", username);
+#endif
+                user->queryUser()->copyTo(sec_user);
+                return true;
+            }
+            else if(cachedpw && pw && *pw != '\0')
             {
                 if(strcmp(cachedpw, pw) == 0)
                 {

@@ -180,7 +180,7 @@ bool copyWULogicalFiles(IEspContext &context, IConstWorkUnit &cw, const char *cl
         throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "copyWULogicalFiles Cluster parameter not set.");
 
     Owned<IUserDescriptor> udesc = createUserDescriptor();
-    udesc->set(context.queryUserId(), context.queryPassword());
+    udesc->set(context.queryUserId(), context.queryPassword(), context.querySessionToken(), context.querySignature());
 
     IArrayOf<IEspWULogicalFileCopyInfo> foreign;
     IArrayOf<IEspWULogicalFileCopyInfo> onCluster;
