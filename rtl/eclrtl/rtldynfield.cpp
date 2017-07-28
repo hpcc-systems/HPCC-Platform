@@ -705,23 +705,18 @@ extern ECLRTL_API void getFieldVal(size32_t & __lenResult,char * & __result, int
     __result = nullptr;
     if (column >= 0)
     {
-        const RtlRecord *r = metaVal.queryRecordAccessor(true);
-        if (r)
-        {
-            unsigned numOffsets = r->getNumVarFields() + 1;
-            size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
-            RtlRow offsetCalculator(*r, row, numOffsets, variableOffsets);
-            offsetCalculator.getUtf8(__lenResult, __result, column);
-        }
+        const RtlRecord &r = metaVal.queryRecordAccessor(true);
+        unsigned numOffsets = r.getNumVarFields() + 1;
+        size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
+        RtlRow offsetCalculator(r, row, numOffsets, variableOffsets);
+        offsetCalculator.getUtf8(__lenResult, __result, column);
     }
 }
 
 extern ECLRTL_API int getFieldNum(const char *fieldName, IOutputMetaData &  metaVal)
 {
-    const RtlRecord *r = metaVal.queryRecordAccessor(true);
-    if (r)
-        return r->getFieldNum(fieldName);
-    return -1;
+    const RtlRecord r = metaVal.queryRecordAccessor(true);
+    return r.getFieldNum(fieldName);
 }
 enum FieldMatchType {
     // On a field, exactly one of the above is set, but translator returns a bitmap indicating
@@ -823,7 +818,7 @@ public:
                 const RtlTypeInfo *sourceType = sourceRecInfo.queryType(matchField);
                 size_t sourceOffset = sourceRow.getOffset(matchField);
                 const byte *source = sourceRec + sourceOffset;
-                size_t copySize = sourceRow.getOffset(matchField+1) - sourceOffset;
+                size_t copySize = sourceRow.getSize(matchField);
                 switch (match.matchType)
                 {
                 case match_perfect:
@@ -1311,8 +1306,8 @@ extern ECLRTL_API IRowStream * transformRecord(IEngineRowAllocator * resultAlloc
     if (resultAllocator->queryOutputMeta()==&metaInput)
         return LINK(input);
     Owned<TranslatedRowStream> stream = new TranslatedRowStream(input, resultAllocator,
-                                                                *resultAllocator->queryOutputMeta()->queryRecordAccessor(true),
-                                                                *metaInput.queryRecordAccessor(true));
+                                                                resultAllocator->queryOutputMeta()->queryRecordAccessor(true),
+                                                                metaInput.queryRecordAccessor(true));
     if (!stream->needsTranslate())
         return LINK(input);
     else if (!stream->canTranslate())

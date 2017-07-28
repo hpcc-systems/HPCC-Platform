@@ -8371,7 +8371,7 @@ void CHThorDiskReadBaseActivity::open()
 //=====================================================================================================
 
 CHThorBinaryDiskReadBase::CHThorBinaryDiskReadBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, IHThorCompoundBaseArg & _segHelper, ThorActivityKind _kind)
-: CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind), segHelper(_segHelper), prefetchBuffer(NULL)
+: CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind), segHelper(_segHelper), prefetchBuffer(NULL), recInfo(outputMeta.queryOriginal()->queryRecordAccessor(true)),rowInfo(recInfo)
 {
 }
 
@@ -8385,7 +8385,11 @@ void CHThorBinaryDiskReadBase::append(IKeySegmentMonitor *segment)
     if (segment->isWild())
         segment->Release();
     else
+    {
         segMonitors.append(*segment);
+        if (segment->numFieldsRequired() > numFieldsRequired)
+            numFieldsRequired = segment->numFieldsRequired();
+    }
 }
 
 void CHThorBinaryDiskReadBase::setMergeBarrier(unsigned barrierOffset)
@@ -8412,6 +8416,7 @@ void CHThorBinaryDiskReadBase::ready()
     if (!diskMeta)
         diskMeta.set(outputMeta);
     segMonitors.kill();
+    numFieldsRequired = 0;
     segHelper.createSegmentMonitors(this);
     prefetcher.setown(diskMeta->createDiskPrefetcher(agent.queryCodeContext(), activityId));
     deserializer.setown(diskMeta->createDiskDeserializer(agent.queryCodeContext(), activityId));
@@ -9599,6 +9604,7 @@ public:
     virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) {}
     virtual IOutputMetaData * queryChildMeta(unsigned i) { return NULL; }
+    virtual const RtlRecord &queryRecordAccessor(bool expand) const { throwUnexpected(); } // could provide a static implementation if needed
 };
 
 //=====================================================================================================

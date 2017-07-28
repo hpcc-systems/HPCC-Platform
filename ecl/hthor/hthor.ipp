@@ -40,6 +40,7 @@
 #include "eclrtl_imp.hpp"
 #include "rtlds_imp.hpp"
 #include "rtlread_imp.hpp"
+#include "rtlrecord.hpp"
 #include "roxiemem.hpp"
 #include "roxierowbuff.hpp"
 
@@ -2296,7 +2297,9 @@ protected:
     Owned<IOutputRowDeserializer> deserializer;
     CThorContiguousRowBuffer prefetchBuffer;
     CThorStreamDeserializerSource deserializeSource;
-
+    const RtlRecord &recInfo;
+    RtlDynRow rowInfo;
+    unsigned numFieldsRequired = 0;
 public:
     CHThorBinaryDiskReadBase(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, IHThorCompoundBaseArg & _segHelper, ThorActivityKind _kind);
 
@@ -2318,12 +2321,16 @@ protected:
     inline bool segMonitorsMatch(const void * buffer)
     {
         bool match = true;
-        ForEachItemIn(idx, segMonitors)
+        if (segMonitors.length())
         {
-            if (!segMonitors.item(idx).matches(buffer))
+            rowInfo.setRow(buffer, numFieldsRequired);
+            ForEachItemIn(idx, segMonitors)
             {
-                match = false;
-                break;
+                if (!segMonitors.item(idx).matches(&rowInfo))
+                {
+                    match = false;
+                    break;
+                }
             }
         }
         return match;

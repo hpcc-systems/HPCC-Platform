@@ -111,6 +111,7 @@ extern HQL_API IHqlExpression * querySequence(IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryResultName(IHqlExpression * expr);
 extern HQL_API int getResultSequenceValue(IHqlExpression * expr);
 extern HQL_API unsigned countTotalFields(IHqlExpression * record, bool includeVirtual);
+extern HQL_API unsigned getFieldNumber(IHqlExpression * ds, IHqlExpression * selector);
 extern HQL_API bool transformContainsSkip(IHqlExpression * transform);
 extern HQL_API bool transformListContainsSkip(IHqlExpression * transforms);
 extern HQL_API bool recordContainsNestedRow(IHqlExpression * record);

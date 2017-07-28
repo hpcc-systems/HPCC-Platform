@@ -15429,6 +15429,7 @@ public:
     virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) {}
     virtual IOutputMetaData * queryChildMeta(unsigned i) { return NULL; }
+    virtual const RtlRecord &queryRecordAccessor(bool expand) const { throwUnexpected(); } // could provide a static implementation if needed
 };
 
 class CRoxieServerLoopActivityFactory : public CRoxieServerActivityFactory
@@ -21567,7 +21568,7 @@ public:
         if (!segment->isWild())
         {
             if (!cursor)
-                cursor.setown(manager->createCursor());
+                cursor.setown(manager->createCursor(diskSize.queryOriginal()->queryRecordAccessor(true)));
             cursor->append(segment);
         }
     }
@@ -27804,6 +27805,7 @@ public:
     virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) {}
     virtual IOutputMetaData * queryChildMeta(unsigned i) { return NULL; }
+    virtual const RtlRecord &queryRecordAccessor(bool expand) const { throwUnexpected(); }
 } testMeta;
 
 class TestInput : public CInterface, implements IFinalRoxieInput, implements IEngineRowStream

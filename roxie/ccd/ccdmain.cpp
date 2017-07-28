@@ -543,6 +543,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             topology->setPropInt("RoxieFarmProcess/@port", port);
             topology->setProp("@daliServers", globals->queryProp("--daliServers"));
             topology->setProp("@traceLevel", globals->queryProp("--traceLevel"));
+            topology->setPropInt("@allFilesDynamic", globals->getPropInt("--allFilesDynamic", 1));
             topology->setProp("@memTraceLevel", globals->queryProp("--memTraceLevel"));
         }
         if (topology->hasProp("PreferredCluster"))

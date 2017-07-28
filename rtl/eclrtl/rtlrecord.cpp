@@ -272,17 +272,23 @@ RtlRecord::~RtlRecord()
     delete nameMap;
 }
 
-
-void RtlRecord::calcRowOffsets(size_t * variableOffsets, const void * _row) const
+void RtlRecord::calcRowOffsets(size_t * variableOffsets, const void * _row, unsigned numFieldsUsed) const
 {
     const byte * row = static_cast<const byte *>(_row);
-    for (unsigned i = 0; i < numVarFields; i++)
+    unsigned maxVarField = (numFieldsUsed>=numFields) ? numVarFields : whichVariableOffset[numFieldsUsed];
+    for (unsigned i = 0; i < maxVarField; i++)
     {
         unsigned fieldIndex = variableFieldIds[i];
         size_t offset = getOffset(variableOffsets, fieldIndex);
         size_t fieldSize = queryType(fieldIndex)->size(row + offset, row);
         variableOffsets[i+1] = offset+fieldSize;
     }
+#ifdef _DEBUG
+    for (unsigned i = maxVarField; i < numVarFields; i++)
+    {
+        variableOffsets[i+1] = 0x7fffffff;
+    }
+#endif
 }
 
 size32_t RtlRecord::getMinRecordSize() const
@@ -384,6 +390,12 @@ void RtlRow::setRow(const void * _row)
         info.calcRowOffsets(variableOffsets, _row);
 }
 
+void RtlRow::setRow(const void * _row, unsigned _numFields)
+{
+    row = _row;
+    if (_row)
+        info.calcRowOffsets(variableOffsets, _row, _numFields);
+}
 
 RtlDynRow::RtlDynRow(const RtlRecord & _info, const void * optRow) : RtlRow(_info, optRow, _info.getNumVarFields()+1, new size_t[_info.getNumVarFields()+1])
 {
@@ -420,7 +432,7 @@ COutputMetaData::~COutputMetaData()
     delete recordAccessor[0]; delete recordAccessor[1];
 }
 
-const RtlRecord *COutputMetaData::queryRecordAccessor(bool expand) const
+const RtlRecord &COutputMetaData::queryRecordAccessor(bool expand) const
 {
     // NOTE: the recordAccessor field cannot be declared as atomic, since the class definition is included in generated
     // code which is not (yet) compiled using C++11. If that changes then the reinterpret_cast can be removed.
@@ -428,7 +440,7 @@ const RtlRecord *COutputMetaData::queryRecordAccessor(bool expand) const
     const RtlRecord *useAccessor = aRecordAccessor.load(std::memory_order_relaxed);
     if (!useAccessor)
         useAccessor = setupRecordAccessor(*this, expand, aRecordAccessor);
-    return useAccessor;
+    return *useAccessor;
 }
 
 class CVariableOutputRowSerializer : public COutputRowSerializer

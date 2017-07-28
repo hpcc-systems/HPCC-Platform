@@ -493,7 +493,7 @@ interface IOutputMetaData : public IRecordSize
     virtual void process(const byte * self, IFieldProcessor & target, unsigned from, unsigned to) {}            // from and to are *hints* for the range of fields to call through with
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) = 0;
     virtual IOutputMetaData * queryChildMeta(unsigned i) = 0;
-    virtual const RtlRecord *queryRecordAccessor(bool expand) const { return NULL; }
+    virtual const RtlRecord &queryRecordAccessor(bool expand) const = 0;
 };
 
 

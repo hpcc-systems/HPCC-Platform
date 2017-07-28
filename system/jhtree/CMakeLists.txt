@@ -28,7 +28,6 @@ project( jhtree )
 set (    SRCS 
          hlzw.cpp 
          ctfile.cpp 
-         jhrtl.cpp 
          jhtree.cpp 
          jhutil.cpp 
          keybuild.cpp 
@@ -50,6 +49,7 @@ include_directories (
          ./../../common/deftype 
          ./../../common/thorhelper 
          ./../../rtl/eclrtl 
+         ./../../rtl/include
          ./../../system/include 
          ./../../system/jlib 
          ./../../testing/unittests
@@ -60,6 +60,7 @@ ADD_DEFINITIONS( -D_USRDLL -DJHTREE_EXPORTS -DECLRTL_LOCAL )
 HPCC_ADD_LIBRARY( jhtree SHARED ${SRCS} ${INCLUDES} )
 install ( TARGETS jhtree RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( jhtree 
+         eclrtl
          jlib
          ${CPPUNIT_LIBRARIES}
     )
