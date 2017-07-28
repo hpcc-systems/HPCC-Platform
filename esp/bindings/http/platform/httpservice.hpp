@@ -42,7 +42,7 @@ typedef enum espAuthState_
     authProvided,
     authSucceeded,
     authPending,
-    authUpdatePassword,
+    authTaskDone,
     authFailed
 } EspAuthState;
 
@@ -93,6 +93,7 @@ protected:
     void clearCookie(const char* cookieName);
     unsigned readCookie(const char* cookieName);
     const char* readCookie(const char* cookieName, StringBuffer& cookieValue);
+    void createGetSessionTimeoutResponse(StringBuffer& resp, ESPSerializationFormat format, IPropertyTree* sessionTree);
     void sendMessage(const char* msg, const char* msgType);
     IRemoteConnection* getSDSConnection(const char* xpath, unsigned mode, unsigned timeout);
 
