@@ -83,6 +83,7 @@ static const char * EclDefinition =
 "  unsigned4 UnicodeLocaleWordCount(const unicode text, const varstring localename) : c, pure,entrypoint='ulUnicodeLocaleWordCount', hole; \n"
 "  unicode UnicodeLocaleGetNthWord(const unicode text, unsigned4 n, const varstring localename) : c,pure,entrypoint='ulUnicodeLocaleGetNthWord';\n"
 "  unicode UnicodeLocaleExcludeNthWord(const unicode text, unsigned4 n, const varstring localename) :c,pure,entrypoint='ulUnicodeLocaleExcludeNthWord';\n"
+"  unicode UnicodeLocaleTranslate(const unicode text, unicode sear, unicode repl, varstring localename) :c,pure,entrypoint='ulUnicodeLocaleTranslate';\n"
 "END;\n";
 
 static const char * compatibleVersions[] = {
@@ -717,6 +718,34 @@ unsigned unicodeEditDistanceV4(UnicodeString & left, UnicodeString & right, unsi
     }
 
     return da[mask(leftLen-1)][rightLen-1];
+}
+
+void translate(UnicodeString & source, UChar const * sear, unsigned searLen, UChar const * repl, unsigned replLen)
+{
+    UnicodeString search(sear, searLen);
+    UnicodeString replace(repl, replLen);
+    if (search.countChar32() != replace.countChar32() || source.isEmpty() || search.isEmpty() || replace.isEmpty())
+    {
+        return;
+    }
+    StringCharacterIterator it(source);
+    source.remove();
+    int32_t Beg = it.setToStart();
+    while (Beg != it.endIndex())
+    {
+        int32_t x = search.lastIndexOf(it.current32());
+        if (x == -1)
+        {
+            source.append(it.current32());
+        }
+        else
+        {
+            x = replace.moveIndex32(0, x);
+            source.append(replace.char32At(x));
+        }
+        Beg = it.move32(1, CharacterIterator::kCurrent);
+    }
+    return;
 }
 
 void excludeNthWord(RuleBasedBreakIterator& bi, UnicodeString & source, unsigned n)
@@ -1469,6 +1498,24 @@ UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleExcludeNthWord(unsigned & tgt
         tgtLen = processed.length();
         tgt = (UChar *)CTXMALLOC(parentCtx, tgtLen*2);
         processed.extract(0, tgtLen, tgt);
+    }
+    else
+    {
+        tgtLen = 0;
+        tgt = 0;
+    }
+}
+
+UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleTranslate(unsigned & tgtLen, UChar * & tgt, unsigned textLen, UChar const * text, unsigned searLen, UChar const * sear, unsigned replLen, UChar * repl, char const * localename)
+{
+    UErrorCode status = U_ZERO_ERROR;
+    UnicodeString source(text, textLen);
+    translate(source, sear, searLen, repl, replLen);
+    if (source.length()>0)
+    {
+        tgtLen = source.length();
+        tgt = (UChar *)CTXMALLOC(parentCtx, tgtLen * 2);
+        source.extract(0, tgtLen, tgt);
     }
     else
     {
