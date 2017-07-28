@@ -82,12 +82,11 @@ protected:
     EspAuthState authExistingSession(EspAuthRequest& req, unsigned sessionID);
     void logoutSession(EspAuthRequest& authReq, unsigned sessionID, IPropertyTree* domainSessions);
     void askUserLogin(EspAuthRequest& authReq);
-    void handleAuthFailed(bool sessionAuth, EspAuthRequest& authReq);
-    void handlePasswordExpired(bool sessionAuth);
+    EspAuthState handleAuthFailed(bool sessionAuth, EspAuthRequest& authReq);
     EspHttpBinding* getEspHttpBinding(EspAuthRequest& req);
     bool isAuthRequiredForBinding(EspAuthRequest& req);
     void authOptionalGroups(EspAuthRequest& req);
-    unsigned createHTTPSession(EspAuthRequest& authReq, const char* loginURL);
+    unsigned createHTTPSession(EspHttpBinding* authBinding, const char* userID, const char* loginURL);
     void timeoutESPSessions(EspHttpBinding* authBinding, IPropertyTree* espSessions);
     void addCookie(const char* cookieName, const char *cookieValue, int maxAgeSec);
     void clearCookie(const char* cookieName);
