@@ -35,7 +35,6 @@ const char * getInheritTypeText(InheritType ihType)
         case inherited : return "inherited";
         case override : return "override";
         case local : return "local";
-        default : return "unknown";
     }
     return "unknown";
 }
