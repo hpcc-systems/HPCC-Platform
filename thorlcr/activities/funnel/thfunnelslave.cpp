@@ -273,7 +273,6 @@ class FunnelSlaveActivity : public CSlaveActivity
     unsigned currentMarker;
     bool grouped, *eog, eogNext, parallel;
     rowcount_t readThisInput;
-    unsigned stopped;
     Owned<IRowStream> parallelOutput;
 
 public:
@@ -284,7 +283,6 @@ public:
         currentMarker = 0;
         eogNext = false;
         readThisInput = 0;
-        stopped = true;
         IHThorFunnelArg *helper = (IHThorFunnelArg *)queryHelper();
         parallel = !container.queryGrouped() && !helper->isOrdered() && getOptBool(THOROPT_PARALLEL_FUNNEL, true);
         grouped = container.queryGrouped();
@@ -307,7 +305,6 @@ public:
         else
         {
             eogNext = false;
-            stopped = 0;
             if (grouped)
             {
                 if (eog)
@@ -343,10 +340,10 @@ public:
         else
         {
             current = NULL;
-            unsigned i = stopped;
+            unsigned i = currentMarker;
             for (;i<inputs.ordinality(); i++)
                 stopInput(i);
-            stopped = 0;
+            currentMarker = 0;
         }
         dataLinkStop();
     }
@@ -373,7 +370,6 @@ public:
                 {
                     readThisInput = 0;
                     stopInput(currentMarker);
-                    ++stopped;
                     currentMarker++;
                     ActPrintLog("FUNNEL: changing to input %d", currentMarker);
                     current = queryInputStream(currentMarker);
@@ -427,7 +423,6 @@ public:
                 {
                     readThisInput = 0;
                     stopInput(currentMarker);
-                    ++stopped;
                     currentMarker++;
                     ActPrintLog("FUNNEL: changing to input %d", currentMarker);
                     current = queryInputStream(currentMarker);
