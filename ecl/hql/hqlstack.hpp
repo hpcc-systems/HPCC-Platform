@@ -87,7 +87,7 @@ private:
     unsigned   tos;
     unsigned   sp;
     char*      stackbuf;
-    char*      toFree[MAXARGS];
+    char*      toFree[MAXARGS] = {};
     int        numToFree;
     bool       hasMeta;
     Owned<IRtlFieldTypeDeserializer> deserializer;
