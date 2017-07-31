@@ -1128,9 +1128,8 @@
       <sect2 id="CT_ESDL_CLI_esdl_unbind-service" role="brk">
         <title>esdl unbind-service</title>
 
-        <para><emphasis role="bold">esdl unbind-service
-        &lt;TargetESPProcessName&gt; &lt;ESPBindingName&gt;
-        [options]</emphasis></para>
+        <para><emphasis role="bold">esdl unbind-service &lt;ESPProcessName&gt;
+        &lt;ESPBindingName&gt; [options]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -1140,7 +1139,7 @@
 
             <tbody>
               <row>
-                <entry>TargetESPProcessName</entry>
+                <entry>ESPProcessName</entry>
 
                 <entry>The ESP Process name</entry>
               </row>
