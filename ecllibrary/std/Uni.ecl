@@ -413,4 +413,15 @@ EXPORT ExcludeNthWord(unicode text, unsigned4 n, varstring localename = '') :=
 EXPORT Translate(unicode text, unicode sear, unicode repl) :=
     lib_unicodelib.UnicodeLib.UnicodeLocaleTranslate(text, sear, repl);
 
+/*
+ * Returns everything except the first word from the string.  Words are marked by the unicode break semantics.
+ * Whitespace before and after the first word is also removed.
+ *
+ * @param text          The string to be broken into words.
+ * @return              The string excluding the first word.
+ */
+
+EXPORT ExcludeFirstWord(unicode text, varstring localename = '') :=
+    lib_unicodelib.UnicodeLib.UnicodeLocaleExcludeNthWord(text, 1, localename);
+
 END;
