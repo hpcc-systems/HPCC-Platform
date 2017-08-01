@@ -846,8 +846,8 @@
 
         <para><emphasis role="bold">esdl bind-service
         &lt;TargetESPProcessName&gt; &lt;TargetESPBindingPort |
-        TargetESPServic eName&gt; &lt;ESDLDefinitionId&gt;
-        &lt;ESDLServiceName&gt; [command options]</emphasis></para>
+        TargetESPServiceName&gt; &lt;ESDLDefinitionId&gt;
+        (&lt;ESDLServiceName&gt;) [command options]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -880,8 +880,8 @@
                 <entry>ESDLServiceName</entry>
 
                 <entry>The Name of the ESDL Service (as defined in the ESDL
-                Definition). Optional if the ESDL definition contains only one
-                service.</entry>
+                Definition) Required if ESDL definition contains multiple
+                services</entry>
               </row>
 
               <row>
@@ -953,8 +953,8 @@
         (ESP Process which will host the ESP Service as defined in the ESDL
         Definition.)</para>
 
-        <para>You must also provide the Port on which this service is
-        configured to run (ESP Binding), and the name of the service you are
+        <para>You must also provide either the port on which this service is
+        configured to run (ESP Binding) or the name of the service you are
         binding.</para>
 
         <para>Optionally provide configuration information either directly
@@ -1128,9 +1128,8 @@
       <sect2 id="CT_ESDL_CLI_esdl_unbind-service" role="brk">
         <title>esdl unbind-service</title>
 
-        <para><emphasis role="bold">esdl unbind-service
-        &lt;TargetESPProcessName&gt; &lt;TargetESPBindingPort | TargetESPServ
-        iceName&gt; [options]</emphasis></para>
+        <para><emphasis role="bold">esdl unbind-service &lt;ESPProcessName&gt;
+        &lt;ESPBindingName&gt; [options]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -1140,16 +1139,15 @@
 
             <tbody>
               <row>
-                <entry>TargetESPProcessName</entry>
+                <entry>ESPProcessName</entry>
 
-                <entry>The target ESP Process name</entry>
+                <entry>The ESP Process name</entry>
               </row>
 
               <row>
-                <entry>TargetESPBindingPort | TargetESPServiceName</entry>
+                <entry>ESPBindingName</entry>
 
-                <entry>Either target ESP binding port or the target ESP
-                service name</entry>
+                <entry>The ESP Binding name</entry>
               </row>
 
               <row>
@@ -1198,20 +1196,17 @@
           </tgroup>
         </informaltable>
 
-        <para><emphasis role="bold"></emphasis></para>
+        <para>Use this command to unbind ESDL service based bindings. </para>
 
-        <para>Use this command to unpublish ESDL Service based
-        bindings.</para>
+        <para>To unbind a given ESDL binding, provide the ESP process name and
+        the ESP binding which make up this ESDL binding. </para>
 
-        <para>To unbind an ESDL Service, provide the target ESP process name
-        (ESP Process which will host the ESP Service as defined in the ESDL
-        Definition.) You must also provide the Port on which this service is
-        configured to run (the ESP Binding), and the name of the service you
-        are unbinding.</para>
+        <para>Available ESDL bindings to unbind can be found using the "esdl
+        list-bindings" command </para>
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <programlisting>esdl unbind-service myesp 8003 </programlisting>
+        <programlisting>esdl unbind-service myesp myServiceBinding </programlisting>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esd_bind-method" role="brk">
@@ -1328,7 +1323,7 @@
         (ESP Process which will host the ESP Service as defined in the ESDL
         Definition.)</para>
 
-        <para>You must also provide the Port on which this service is
+        <para>You must also provide the port on which this service is
         configured to run (ESP Binding), and the name of the service you are
         binding.</para>
 
@@ -1349,10 +1344,9 @@
       <sect2 id="CT_ESDL_CLI_esdl_unbind-method" role="brk">
         <title>esdl unbind-method</title>
 
-        <para><emphasis role="bold">esdl unbind-method
-        &lt;TargetESPProcessName&gt; &lt;TargetESPBindingName&gt;
-        &lt;TargetServiceName&gt; &lt;TargetServiceDefVersion&gt;
-        &lt;TargetMethodName&gt; [options]</emphasis></para>
+        <para><emphasis role="bold">esdl unbind-method &lt;ESPProcessName&gt;
+        &lt;ESPBindingName&gt; &lt;ESDLServiceName&gt; &lt;MethodName&gt;
+        [options]</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -1362,35 +1356,30 @@
 
             <tbody>
               <row>
-                <entry>TargetESPProcessName</entry>
+                <entry>ESPProcessName</entry>
 
                 <entry>The target ESP Process name</entry>
               </row>
 
               <row>
-                <entry>TargetESPBindingName</entry>
+                <entry>ESPBindingName</entry>
 
                 <entry>The target ESP binding name associated with this
                 service</entry>
               </row>
 
               <row>
-                <entry>TargetServiceName</entry>
+                <entry>ESDLServiceName</entry>
 
-                <entry>The name of the Service as defined in ESDL</entry>
+                <entry>The name of the ESDLService associated with the target
+                method. </entry>
               </row>
 
               <row>
-                <entry>TargetServiceDefVersion</entry>
+                <entry>MethodName</entry>
 
-                <entry>The version of the target service ESDL
-                definition</entry>
-              </row>
-
-              <row>
-                <entry>TargetMethodName</entry>
-
-                <entry>The name of the target method</entry>
+                <entry>The name of the target method (must exist in the
+                service ESDL definition)</entry>
               </row>
 
               <row>
@@ -1439,19 +1428,19 @@
           </tgroup>
         </informaltable>
 
-        <para>Use this command to unbind a method configuration currently
-        associated with a given ESDL binding.</para>
+        <para>Use this command to unbind a method configuration associated
+        with a given ESDL binding0.</para>
 
-        <para>To unbind a method, provide the target ESP process name (esp
-        which hosts the service.). It is also necessary to provide the Port on
-        which this service is configured to run (ESP Binding), and the name of
-        the method you are unbinding.</para>
+        <para>To unbind a method, provide the target ESP process name (the ESP
+        which hosts the service.)</para>
 
-        <para></para>
+        <para>You must also provide the ESP binding on which this service is
+        configured to run, the name of the ESDL service, and the name of the
+        method you are unbinding.</para>
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <programlisting>esdl unbind-method myesp mybinding WsMyService mymethod </programlisting>
+        <programlisting>esdl unbind-method myesp myespbinding WsMyService mymethod </programlisting>
       </sect2>
 
       <sect2 id="CT_ESDL_CLI_esdl_get-binding" role="brk">
