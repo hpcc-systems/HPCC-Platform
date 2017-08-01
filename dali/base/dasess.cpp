@@ -2021,13 +2021,13 @@ public:
         decrypt(buf,passwordenc);
         return buf;
     }
-    const MemoryBuffer &querySessionToken()
+    const MemoryBuffer *querySessionToken()
     {
-        return sessionToken;
+        return &sessionToken;
     }
-    const MemoryBuffer &querySignature()
+    const MemoryBuffer *querySignature()
     {
-        return signature;
+        return &signature;
     }
     virtual void set(const char *name,const char *password)
     {
@@ -2036,7 +2036,7 @@ public:
         encrypt(buf,password);
         passwordenc.set(buf.str());
     }
-    void set(const char *_name, const char *_password, const MemoryBuffer &_sessionToken, const MemoryBuffer &_signature)
+    void set(const char *_name, const char *_password, const MemoryBuffer *_sessionToken, const MemoryBuffer *_signature)
     {
         set(_name, _password);
         sessionToken.clear().append(_sessionToken);
