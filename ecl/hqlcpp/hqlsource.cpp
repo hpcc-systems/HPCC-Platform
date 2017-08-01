@@ -3101,7 +3101,7 @@ void DiskAggregateBuilder::buildMembers(IHqlExpression * expr)
     {
         BuildCtx rowctx(instance->startctx);
         rowctx.addQuotedFunction("virtual void processRow(ARowBuilder & crSelf, const void * src)");
-        rowctx.addQuotedLiteral("doProcessRow(crSelf, (byte *)src);");
+        rowctx.addQuotedLiteral("doProcessRow(crSelf, (const byte *)src);");
     }
 
     //virtual void processRows(void * self, size32_t srcLen, const void * src) = 0;
@@ -3124,7 +3124,7 @@ void DiskAggregateBuilder::buildMembers(IHqlExpression * expr)
 
 void DiskAggregateBuilder::buildTransform(IHqlExpression * expr)
 {
-    MemberFunction func(translator, instance->startctx, "void doProcessRow(ARowBuilder & crSelf, byte * left)");
+    MemberFunction func(translator, instance->startctx, "void doProcessRow(ARowBuilder & crSelf, const byte * left)");
     translator.ensureRowAllocated(func.ctx, "crSelf");
     buildTransformBody(func.ctx, expr, false, false, true);
 }
@@ -3178,8 +3178,7 @@ void DiskCountBuilder::buildTransform(IHqlExpression * expr)
 {
     if (transformCanFilter||isNormalize)
     {
-        MemberFunction func(translator, instance->startctx, "size32_t valid(byte * _left)");
-        func.ctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
+        MemberFunction func(translator, instance->startctx, "size32_t valid(const byte * left)");
         OwnedHqlExpr cnt;
         if (isNormalize)
         {
@@ -3269,7 +3268,7 @@ void DiskGroupAggregateBuilder::buildMembers(IHqlExpression * expr)
 
 void DiskGroupAggregateBuilder::buildTransform(IHqlExpression * expr)
 {
-    MemberFunction func(translator, instance->startctx, "void doProcessRow(byte * left, IHThorGroupAggregateCallback * callback)");
+    MemberFunction func(translator, instance->startctx, "void doProcessRow(const byte * left, IHThorGroupAggregateCallback * callback)");
     bool accessesCallback = containsOperator(expr, no_filepos) || containsOperator(expr, no_file_logicalname); 
     buildGroupAggregateTransformBody(func.ctx, expr, isNormalize || accessesCallback, true);
 }
@@ -6616,7 +6615,7 @@ void IndexAggregateBuilder::buildMembers(IHqlExpression * expr)
     {
         BuildCtx rowctx(instance->startctx);
         rowctx.addQuotedFunction("virtual void processRow(ARowBuilder & crSelf, const void * src)");
-        rowctx.addQuotedLiteral("doProcessRow(crSelf, (byte *)src);");
+        rowctx.addQuotedLiteral("doProcessRow(crSelf, (const byte *)src);");
     }
 
     {
@@ -6638,7 +6637,7 @@ void IndexAggregateBuilder::buildMembers(IHqlExpression * expr)
 
 void IndexAggregateBuilder::buildTransform(IHqlExpression * expr)
 {
-    MemberFunction func(translator, instance->startctx, "void doProcessRow(ARowBuilder & crSelf, byte * left)");
+    MemberFunction func(translator, instance->startctx, "void doProcessRow(ARowBuilder & crSelf, const byte * left)");
     translator.ensureRowAllocated(func.ctx, "crSelf");
     translator.associateBlobHelper(func.ctx, tableExpr, "fpp");
     buildTransformBody(func.ctx, expr, false, false, true);
@@ -6881,7 +6880,7 @@ void IndexGroupAggregateBuilder::doBuildProcessCountMembers(BuildCtx & ctx, IHql
 
 void IndexGroupAggregateBuilder::buildTransform(IHqlExpression * expr)
 {
-    MemberFunction func(translator, instance->startctx, "void doProcessRow(byte * left, IHThorGroupAggregateCallback * callback)");
+    MemberFunction func(translator, instance->startctx, "void doProcessRow(const byte * left, IHThorGroupAggregateCallback * callback)");
     translator.associateBlobHelper(func.ctx, tableExpr, "fpp");
     buildGroupAggregateTransformBody(func.ctx, expr, isNormalize || transformAccessesCallback, true);
 }

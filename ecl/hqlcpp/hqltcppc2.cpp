@@ -636,7 +636,7 @@ void CChildLinkedDatasetColumnInfo::buildColumnExpr(HqlCppTranslator & translato
 
 void CChildLinkedDatasetColumnInfo::gatherSize(SizeStruct & target)
 {
-    unsigned thisSize = sizeof(size32_t) + sizeof(byte * *);
+    unsigned thisSize = sizeof(size32_t) + sizeof(const byte * *);
     if (isConditional())
         addVariableSize(thisSize, target);      // the size is used for ensure if condition is true
     else
@@ -646,13 +646,13 @@ void CChildLinkedDatasetColumnInfo::gatherSize(SizeStruct & target)
 
 IHqlExpression * CChildLinkedDatasetColumnInfo::buildSizeOfUnbound(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector)
 {
-    return getSizetConstant(sizeof(size32_t) + sizeof(byte * *));
+    return getSizetConstant(sizeof(size32_t) + sizeof(const byte * *));
 }
 
 void CChildLinkedDatasetColumnInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeFormat)
 {
     if (isConditional())
-        checkAssignOk(translator, ctx, selector, queryZero(), sizeof(size32_t) + sizeof(byte * *));
+        checkAssignOk(translator, ctx, selector, queryZero(), sizeof(size32_t) + sizeof(const byte * *));
 
     OwnedHqlExpr addressSize = getColumnAddress(translator, ctx, selector, sizetType, 0);
     OwnedHqlExpr addressData = getColumnAddress(translator, ctx, selector, queryType(), sizeof(size32_t));

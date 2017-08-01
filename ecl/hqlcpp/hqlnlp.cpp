@@ -594,7 +594,8 @@ void HqlCppTranslator::doBuildParseSearchText(BuildCtx & classctx, IHqlExpressio
             buildExpr(func.ctx, castSearch, bound);
             OwnedHqlExpr len = getBoundLength(bound);
             func.ctx.addAssign(target.length, len);
-            func.ctx.addAssign(target.expr, bound.expr);
+            OwnedHqlExpr transferred = createValue(no_cast, LINK(retType), LINK(bound.expr));
+            func.ctx.addAssign(target.expr, transferred);
         }
         if (tempLen)
         {

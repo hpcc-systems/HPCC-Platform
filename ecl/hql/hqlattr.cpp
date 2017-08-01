@@ -923,7 +923,7 @@ static IHqlExpression * evaluateFieldAttrSize(IHqlExpression * expr)
             {
                 if (expr->hasAttribute(_linkCounted_Atom))
                 {
-                    thisSize = sizeof(size32_t) + sizeof(byte * *);
+                    thisSize = sizeof(size32_t) + sizeof(const byte * *);
                     break;
                 }
                 IHqlExpression * count = NULL;

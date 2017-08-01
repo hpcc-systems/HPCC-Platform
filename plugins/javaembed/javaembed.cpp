@@ -2922,7 +2922,7 @@ public:
         argsig++;
         addArg(v);
     }
-    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *val)
+    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, const byte *val) override
     {
         if (*argsig != 'L')  // should tell us the type of the object we need to create to pass in
             typeError("RECORD");

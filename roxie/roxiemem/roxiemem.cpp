@@ -1094,7 +1094,7 @@ void HeapletBase::release(const void *ptr)
 }
 
 
-void HeapletBase::releaseRowset(unsigned count, byte * * rowset)
+void HeapletBase::releaseRowset(unsigned count, const byte * * rowset)
 {
     if (isValidRoxiePtr(rowset))
     {
@@ -1720,7 +1720,7 @@ public:
         }
     }
 
-    virtual void noteReleased(unsigned numRows, byte * * rowset) override
+    virtual void noteReleased(unsigned numRows, const byte * * rowset) override
     {
         checkPtr(rowset, "Release");
 
@@ -2017,7 +2017,7 @@ public:
         }
     }
 
-    virtual void noteReleased(unsigned numRows, byte * * rowset) override
+    virtual void noteReleased(unsigned numRows, const byte * * rowset) override
     {
         char *ptr = (char *) rowset - chunkHeaderSize;
         ChunkHeader * header = (ChunkHeader *)ptr;
@@ -2236,7 +2236,7 @@ public:
         }
     }
 
-    virtual void noteReleased(unsigned numRows, byte * * rowset) override
+    virtual void noteReleased(unsigned numRows, const byte * * rowset) override
     {
         //NORE: See comment on FixedSizeHeaplet::noteReleased() regarding the memory order operands
 
@@ -6361,7 +6361,7 @@ void DataBufferBottom::noteReleased(const void *ptr)
     buffer->noteReleased(ptr);
 }
 
-void DataBufferBottom::noteReleased(unsigned numRows, byte * * rowset)
+void DataBufferBottom::noteReleased(unsigned numRows, const byte * * rowset)
 {
     throwUnexpected();
 }

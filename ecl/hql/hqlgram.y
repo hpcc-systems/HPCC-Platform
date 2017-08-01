@@ -2940,7 +2940,7 @@ buildFlag
     | skewAttribute
     | THRESHOLD '(' expression ')'
                         {
-                            parser->normalizeExpression($3, type_numeric, true);
+                            parser->normalizeExpression($3, type_int, true);
                             $$.setExpr(createExprAttribute(thresholdAtom, $3.getExpr()));
                         }
     | FEW               {
@@ -10687,7 +10687,7 @@ JoinFlag
                         }
     | THRESHOLD '(' expression ')'
                         {
-                            parser->normalizeExpression($3, type_numeric, true);
+                            parser->normalizeExpression($3, type_int, true);
                             $$.setExpr(createAttribute(thresholdAtom, $3.getExpr()));
                             $$.setPosition($1);
                         }
@@ -11732,7 +11732,7 @@ sortItem
                         }
     | THRESHOLD '(' expression ')'
                         {
-                            parser->normalizeExpression($3, type_numeric, true);
+                            parser->normalizeExpression($3, type_int, true);
                             $$.setExpr(createAttribute(thresholdAtom, $3.getExpr()));
                         }
     | WHOLE RECORD      {   $$.setExpr(createAttribute(recordAtom)); }

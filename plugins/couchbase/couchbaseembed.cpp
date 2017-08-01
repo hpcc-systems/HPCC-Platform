@@ -940,7 +940,7 @@ namespace couchbaseembed
         return typeInfo->build(rowBuilder, 0, &dummyField, couchbaseRowBuilder);
     }
 
-    void CouchbaseEmbedFunctionContext::bindRowParam(const char *name, IOutputMetaData & metaVal, byte *val)
+    void CouchbaseEmbedFunctionContext::bindRowParam(const char *name, IOutputMetaData & metaVal, const byte *val)
     {
         CouchbaseRecordBinder binder(logctx, metaVal.queryTypeInfo(), m_pQcmd, m_nextParam);
         binder.processRow(val);

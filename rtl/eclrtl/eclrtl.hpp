@@ -175,23 +175,23 @@ ECLRTL_API int rtlVStrToInt4(const char * t);
 ECLRTL_API __int64 rtlVStrToInt8(const char * t);
 ECLRTL_API bool rtlVStrToBool(const char * t);
 
-ECLRTL_API int rtlSearchTableStringN(unsigned count, char * * table, unsigned width, const char * search);
-ECLRTL_API int rtlSearchTableVStringN(unsigned count, char * * table, const char * search);
+ECLRTL_API int rtlSearchTableStringN(unsigned count, const char * * table, unsigned width, const char * search);
+ECLRTL_API int rtlSearchTableVStringN(unsigned count, const char * * table, const char * search);
 
-ECLRTL_API int rtlNewSearchDataTable(unsigned count, unsigned elemlen, char * * table, unsigned width, const char * search);
-ECLRTL_API int rtlNewSearchEStringTable(unsigned count, unsigned elemlen, char * * table, unsigned width, const char * search);
-ECLRTL_API int rtlNewSearchQStringTable(unsigned count, unsigned elemlen, char * * table, unsigned width, const char * search);
-ECLRTL_API int rtlNewSearchStringTable(unsigned count, unsigned elemlen, char * * table, unsigned width, const char * search);
+ECLRTL_API int rtlNewSearchDataTable(unsigned count, unsigned elemlen, const char * * table, unsigned width, const char * search);
+ECLRTL_API int rtlNewSearchEStringTable(unsigned count, unsigned elemlen, const char * * table, unsigned width, const char * search);
+ECLRTL_API int rtlNewSearchQStringTable(unsigned count, unsigned elemlen, const char * * table, unsigned width, const char * search);
+ECLRTL_API int rtlNewSearchStringTable(unsigned count, unsigned elemlen, const char * * table, unsigned width, const char * search);
 
-ECLRTL_API int rtlNewSearchUnicodeTable(unsigned count, unsigned elemlen, UChar * * table, unsigned width, const UChar * search, const char * locale);
-ECLRTL_API int rtlNewSearchVUnicodeTable(unsigned count, UChar * * table, const UChar * search, const char * locale);
-ECLRTL_API int rtlNewSearchUtf8Table(unsigned count, unsigned elemlen, char * * table, unsigned width, const char * search, const char * locale);
+ECLRTL_API int rtlNewSearchUnicodeTable(unsigned count, unsigned elemlen, const UChar * * table, unsigned width, const UChar * search, const char * locale);
+ECLRTL_API int rtlNewSearchVUnicodeTable(unsigned count, const UChar * * table, const UChar * search, const char * locale);
+ECLRTL_API int rtlNewSearchUtf8Table(unsigned count, unsigned elemlen, const char * * table, unsigned width, const char * search, const char * locale);
 
 
-ECLRTL_API int rtlSearchTableInteger8(unsigned count, __int64 * table, __int64 search);
-ECLRTL_API int rtlSearchTableUInteger8(unsigned count, unsigned __int64 * table, unsigned __int64 search);
-ECLRTL_API int rtlSearchTableInteger4(unsigned count, int * table, int search);
-ECLRTL_API int rtlSearchTableUInteger4(unsigned count, unsigned * table, unsigned search);
+ECLRTL_API int rtlSearchTableInteger8(unsigned count, const __int64 * table, __int64 search);
+ECLRTL_API int rtlSearchTableUInteger8(unsigned count, const unsigned __int64 * table, unsigned __int64 search);
+ECLRTL_API int rtlSearchTableInteger4(unsigned count, const int * table, int search);
+ECLRTL_API int rtlSearchTableUInteger4(unsigned count, const unsigned * table, unsigned search);
 
 ECLRTL_API int searchTableStringN(unsigned count, const char * * table, unsigned width, const char * search);
 ECLRTL_API unsigned rtlCrc32(unsigned len, const void * buffer, unsigned crc);
@@ -512,8 +512,8 @@ ECLRTL_API size32_t rtlGetPackedSizeFromFirst(byte first);
 
 ECLRTL_API void rtlReleaseRow(const void * row);
 ECLRTL_API void * rtlLinkRow(const void * row);
-ECLRTL_API void rtlReleaseRowset(unsigned count, byte * * rowset);
-ECLRTL_API byte * * rtlLinkRowset(byte * * rowset);
+ECLRTL_API void rtlReleaseRowset(unsigned count, const byte * * rowset);
+ECLRTL_API const byte * * rtlLinkRowset(const byte * * rowset);
 
 ECLRTL_API void ensureRtlLoaded();      // call this to create a static link to the rtl...
 
@@ -555,9 +555,9 @@ ECLRTL_API void deserializeUnicodeX(size32_t & len, UChar * & data, MemoryBuffer
 ECLRTL_API void deserializeUtf8X(size32_t & len, char * & data, MemoryBuffer &in);
 ECLRTL_API UChar * deserializeVUnicodeX(MemoryBuffer &in);
 ECLRTL_API void deserializeQStrX(size32_t & len, char * & data, MemoryBuffer &out);
-ECLRTL_API void deserializeRowsetX(size32_t & count, byte * * & data, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, MemoryBuffer &in);
-ECLRTL_API void deserializeGroupedRowsetX(size32_t & count, byte * * & data, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, MemoryBuffer &in);
-ECLRTL_API void deserializeDictionaryX(size32_t & count, byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, MemoryBuffer &in);
+ECLRTL_API void deserializeRowsetX(size32_t & count, const byte * * & data, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, MemoryBuffer &in);
+ECLRTL_API void deserializeGroupedRowsetX(size32_t & count, const byte * * & data, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, MemoryBuffer &in);
+ECLRTL_API void deserializeDictionaryX(size32_t & count, const byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, MemoryBuffer &in);
 
 ECLRTL_API byte * rtlDeserializeRow(IEngineRowAllocator * rowAllocator, IOutputRowDeserializer * deserializer, const void * src);
 ECLRTL_API byte * rtlDeserializeBufferRow(IEngineRowAllocator * rowAllocator, IOutputRowDeserializer * deserializer, MemoryBuffer & buffer);
@@ -570,10 +570,10 @@ ECLRTL_API void serializeSet(bool isAll, size32_t len, const void * data, Memory
 ECLRTL_API void serializeUnicodeX(size32_t len, const UChar * data, MemoryBuffer &out);
 ECLRTL_API void serializeUtf8X(size32_t len, const char * data, MemoryBuffer &out);
 ECLRTL_API void serializeQStrX(size32_t len, const char * data, MemoryBuffer &out);
-ECLRTL_API void serializeRowsetX(size32_t count, byte * * data, IOutputRowSerializer * serializer, MemoryBuffer &out);
-ECLRTL_API void serializeGroupedRowsetX(size32_t count, byte * * data, IOutputRowSerializer * serializer, MemoryBuffer &out);
+ECLRTL_API void serializeRowsetX(size32_t count, const  byte * * data, IOutputRowSerializer * serializer, MemoryBuffer &out);
+ECLRTL_API void serializeGroupedRowsetX(size32_t count, const byte * * data, IOutputRowSerializer * serializer, MemoryBuffer &out);
 ECLRTL_API void serializeRow(const void * row, IOutputRowSerializer * serializer, MemoryBuffer & out);
-ECLRTL_API void serializeDictionaryX(size32_t count, byte * * rows, IOutputRowSerializer * serializer, MemoryBuffer & buffer);
+ECLRTL_API void serializeDictionaryX(size32_t count, const byte * * rows, IOutputRowSerializer * serializer, MemoryBuffer & buffer);
 
 ECLRTL_API void serializeFixedString(unsigned len, const char *field, MemoryBuffer &out);
 ECLRTL_API void serializeLPString(unsigned len, const char *field, MemoryBuffer &out);
@@ -786,7 +786,7 @@ interface IRowStream;
 
 //-----------------------------------------------------------------------------
 
-ECLRTL_API IRowStream * createRowStream(size32_t count, byte * * rowset);
+ECLRTL_API IRowStream * createRowStream(size32_t count, const byte * * rowset);
 
 //-----------------------------------------------------------------------------
 struct RtlTypeInfo;
@@ -822,7 +822,7 @@ interface IEmbedFunctionContext : extends IInterface
     virtual IRowStream *getDatasetResult(IEngineRowAllocator * _resultAllocator) = 0;
     virtual byte * getRowResult(IEngineRowAllocator * _resultAllocator) = 0;
     virtual size32_t getTransformResult(ARowBuilder & builder) = 0;
-    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *val) = 0;
+    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, const byte *val) = 0;
     virtual void bindDatasetParam(const char *name, IOutputMetaData & metaVal, IRowStream * val) = 0;
 
     virtual void bindFloatParam(const char *name, float val) = 0;

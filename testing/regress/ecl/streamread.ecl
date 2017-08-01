@@ -80,7 +80,7 @@ linkcounted dataset(outRecord) doReadRows(const varstring name) := EMBED(C++ : d
     #body
     //Can return constant allocations as roxie rows
     __countResult = 4;
-    __result = (byte * *)rows2;
+    __result = (const byte * *)rows2;
 ENDEMBED;
 
 

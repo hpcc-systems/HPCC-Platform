@@ -5436,7 +5436,7 @@ void HqlCppTranslator::buildNaryCompareClass(BuildCtx & ctx, const char * name, 
     {
         MemberFunction func(*this, classctx, "virtual bool match(unsigned numRows, const void * * _rows) const");
         func.ctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _rows[0];");
-        func.ctx.addQuotedLiteral("unsigned char * * rows = (unsigned char * *) _rows;");
+        func.ctx.addQuotedLiteral("const byte * * rows = (const byte * *) _rows;");
         func.ctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
 
         bindTableCursor(func.ctx, dataset, "left", no_left, selSeq);
@@ -8590,7 +8590,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLoop(BuildCtx & ctx, IHqlExpre
     if (loopCond)
     {
         MemberFunction func(*this, instance->startctx, "virtual bool loopAgain(unsigned counter, unsigned numRows, const void * * _rows)");
-        func.ctx.addQuotedLiteral("unsigned char * * rows = (unsigned char * *) _rows;");
+        func.ctx.addQuotedLiteral("const byte * * rows = (const byte * *) _rows;");
 
         associateCounter(func.ctx, counter, "counter");
 
@@ -12297,8 +12297,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
             associateLocalJoinTransformFlags(func.ctx, "flags", dataset1, no_left, selSeq);
             associateLocalJoinTransformFlags(func.ctx, "flags", dataset2, no_right, selSeq);
 
-            func.ctx.addQuotedLiteral("unsigned char * * rows = (unsigned char * *) _rows;");
-
+            func.ctx.addQuotedLiteral("const byte * * rows = (const byte * *) _rows;");
 
             BoundRow * selfCursor = buildTransformCursors(func.ctx, transform, dataset1, dataset2, instance->dataset, selSeq);
             bindRows(func.ctx, no_right, selSeq, expr->queryAttribute(_rowsid_Atom), dataset2, "numRows", "rows", options.mainRowsAreLinkCounted);
@@ -13871,9 +13870,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLinkedRawChildDataset(BuildCtx
     OwnedHqlExpr zero = getSizetConstant(0);
     buildTempExpr(*callctx, *declarectx, boundActiveIndex, zero, FormatNatural, false);
 
-    //virtual byte * next() = 0;
+    //virtual const byte * next() = 0;
     {
-        MemberFunction func(*this, instance->startctx, "virtual byte * next()");
+        MemberFunction func(*this, instance->startctx, "virtual const byte * next()");
         OwnedHqlExpr count = getBoundCount(boundDs);
         OwnedHqlExpr test = createValue(no_lt, makeBoolType(), LINK(boundActiveIndex.expr), LINK(count));
         BuildCtx subctx(func.ctx);
@@ -15176,9 +15175,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySerialize(BuildCtx & ctx, IHql
 
     {
         MemberFunction func(*this, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf, const void * _left)");
+        func.ctx.addQuotedLiteral("const unsigned char * left = (const byte *) left;");
 
         // Bind left to "left" and right to RIGHT
-        bindTableCursor(func.ctx, dataset, "_left");
+        bindTableCursor(func.ctx, dataset, "left");
         BoundRow * selfCursor = bindSelf(func.ctx, expr, "crSelf");
 
         //MORE: I don't have any examples that trigger this code as far as I know...
@@ -15393,7 +15393,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityFilterGroup(BuildCtx & ctx, IH
     {
         MemberFunction func(*this, instance->startctx, "virtual bool isValid(unsigned numRows, const void * * _rows)");
         func.ctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _rows[0];");
-        func.ctx.addQuotedLiteral("unsigned char * * rows = (unsigned char * *) _rows;");
+        func.ctx.addQuotedLiteral("const byte * * rows = (const byte * *) _rows;");
 
         bindTableCursor(func.ctx, dataset, "left", no_left, selSeq);
         bindRows(func.ctx, no_left, selSeq, rowsid, dataset, "numRows", "rows", options.mainRowsAreLinkCounted);
@@ -15511,7 +15511,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCombineGroup(BuildCtx & ctx, I
         {
             func.ctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *)_left;");
             func.ctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _rows[0];");
-            func.ctx.addQuotedLiteral("unsigned char * * rows = (unsigned char * *) _rows;");
+            func.ctx.addQuotedLiteral("const byte * * rows = (const byte * *) _rows;");
             ensureRowAllocated(func.ctx, "crSelf");
 
             bindTableCursor(func.ctx, left, "left", no_left, selSeq);
@@ -15560,7 +15560,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityRollupGroup(BuildCtx & ctx, IH
         if (transform->getOperator() != no_skip)
         {
             func.ctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _rows[0];");
-            func.ctx.addQuotedLiteral("unsigned char * * rows = (unsigned char * *) _rows;");
+            func.ctx.addQuotedLiteral("const byte * * rows = (const byte * *) _rows;");
             ensureRowAllocated(func.ctx, "crSelf");
 
             bindTableCursor(func.ctx, dataset, "left", no_left, selSeq);

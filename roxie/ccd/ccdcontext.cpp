@@ -754,12 +754,12 @@ CRoxieWorkflowMachine *createRoxieWorkflowMachine(IPropertyTree *_workflowInfo, 
 
 //=======================================================================================================================
 
-typedef byte *row_t;
-typedef row_t * rowset_t;
+typedef const byte *row_t;
+typedef const byte ** rowset_t;
 
 class DeserializedDataReader : implements IWorkUnitRowReader, public CInterface
 {
-    const rowset_t data;
+    rowset_t data;
     size32_t count;
     unsigned idx;
 public:
@@ -769,7 +769,7 @@ public:
     {
         idx = 0;
     }
-    virtual const void * nextRow()
+    virtual const void * nextRow() override
     {
         if (idx < count)
         {
@@ -781,7 +781,7 @@ public:
         }
         return NULL;
     }
-    virtual void getResultRowset(size32_t & tcount, byte * * & tgt)
+    virtual void getResultRowset(size32_t & tcount, const byte * * & tgt) override
     {
         tcount = count;
         if (data)
@@ -805,11 +805,11 @@ public:
             rowset_t rows = stored.item(idx);
             if (rows)
             {
-                rtlReleaseRowset(counts.item(idx), (byte**) rows);
+                rtlReleaseRowset(counts.item(idx), rows);
             }
         }
     }
-    virtual int addResult(size32_t count, rowset_t data, IOutputMetaData *meta)
+    virtual int addResult(size32_t count, rowset_t data, IOutputMetaData *meta) override
     {
         SpinBlock b(lock);
         stored.append(data);
@@ -817,16 +817,16 @@ public:
         metas.append(meta);
         return stored.ordinality()-1;
     }
-    virtual void queryResult(int id, size32_t &count, rowset_t &data) const
+    virtual void queryResult(int id, size32_t &count, rowset_t &data) const override
     {
         count = counts.item(id);
         data = stored.item(id);
     }
-    virtual IWorkUnitRowReader *createDeserializedReader(int id) const
+    virtual IWorkUnitRowReader *createDeserializedReader(int id) const override
     {
         return new DeserializedDataReader(counts.item(id), stored.item(id));
     }
-    virtual void serialize(unsigned & tlen, void * & tgt, int id, ICodeContext *codectx) const
+    virtual void serialize(unsigned & tlen, void * & tgt, int id, ICodeContext *codectx) const override
     {
         IOutputMetaData *meta = metas.item(id);
         rowset_t data = stored.item(id);
@@ -870,7 +870,7 @@ public:
 
     }
 
-    virtual void getResultRowset(size32_t & tcount, byte * * & tgt)
+    virtual void getResultRowset(size32_t & tcount, const byte * * & tgt) override
     {
         bool atEOG = true;
         RtlLinkedDatasetBuilder builder(rowAllocator);
@@ -934,7 +934,7 @@ public:
         if (bufferBase)
             free(bufferBase);
     }
-    virtual const void *nextRow()
+    virtual const void *nextRow() override
     {
         if (eof)
             return NULL;
@@ -972,7 +972,7 @@ public:
     {
     }
 
-    virtual bool nextBlock(unsigned & tlen, void * & tgt, void * & base)
+    virtual bool nextBlock(unsigned & tlen, void * & tgt, void * & base) override
     {
         base = tgt = NULL;
         if (xml)
@@ -1004,7 +1004,7 @@ public:
         offset = 0;
     }
 
-    virtual bool nextBlock(unsigned & tlen, void * & tgt, void * & base)
+    virtual bool nextBlock(unsigned & tlen, void * & tgt, void * & base) override
     {
         try
         {
@@ -1073,7 +1073,7 @@ public:
     {
     }
 
-    virtual bool nextBlock(unsigned & tlen, void * & tgt, void * & base)
+    virtual bool nextBlock(unsigned & tlen, void * & tgt, void * & base) override
     {
         tgt = NULL;
         base = NULL;
@@ -1109,7 +1109,7 @@ public:
         rows->first();
     }
 
-    virtual const void *nextRow()
+    virtual const void *nextRow() override
     {
         if (rows->isValid())
         {
@@ -1734,7 +1734,7 @@ public:
             return createRoxieRowAllocator(cache, *rowManager, meta, activityId, id, flags);
     }
 
-    virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * stepname, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
+    virtual void getResultRowset(size32_t & tcount, const byte * * & tgt, const char * stepname, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) override
     {
         try
         {
@@ -1754,7 +1754,7 @@ public:
         }
     }
 
-    virtual void getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher)
+    virtual void getResultDictionary(size32_t & tcount, const byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) override
     {
         try
         {
@@ -3188,7 +3188,7 @@ public:
             }
         }
     }
-    virtual void appendResultDeserialized(const char *name, unsigned sequence, size32_t count, rowset_t data, bool extend, IOutputMetaData *meta)
+    virtual void appendResultDeserialized(const char *name, unsigned sequence, size32_t count, rowset_t data, bool extend, IOutputMetaData *meta) override
     {
         CriticalBlock b(contextCrit);
         IPropertyTree &ctx = useContext(sequence);

@@ -1021,7 +1021,7 @@ void EclAgent::getExternalResultRaw(unsigned & tlen, void * & tgt, const char * 
     }
 }
 
-void EclAgent::getResultRowset(size32_t & tcount, byte * * & tgt, const char * stepname, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
+void EclAgent::getResultRowset(size32_t & tcount, const byte * * & tgt, const char * stepname, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
 {
     tgt = NULL;
     PROTECTED_GETRESULT(stepname, sequence, "Rowset", "rowset",
@@ -1035,7 +1035,7 @@ void EclAgent::getResultRowset(size32_t & tcount, byte * * & tgt, const char * s
     );
 }
 
-void EclAgent::getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher)
+void EclAgent::getResultDictionary(size32_t & tcount, const byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher)
 {
     tcount = 0;
     tgt = NULL;

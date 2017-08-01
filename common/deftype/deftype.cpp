@@ -1998,6 +1998,12 @@ ITypeInfo * makeConstantModifier(ITypeInfo * basetype)
 }
 
 /* In basetype: linked. Return: linked */
+ITypeInfo * makeNonConstantModifier(ITypeInfo * basetype)
+{
+    return makeModifier(basetype, typemod_nonconst, NULL);
+}
+
+/* In basetype: linked. Return: linked */
 ITypeInfo * makeReferenceModifier(ITypeInfo * basetype)
 {
     return makeModifier(basetype, typemod_ref, NULL);

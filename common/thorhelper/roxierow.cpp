@@ -132,76 +132,76 @@ public:
     IMPLEMENT_IINTERFACE
 
 //interface IEngineRowsetAllocator
-    virtual byte * * createRowset(unsigned count)
+    virtual const byte * * createRowset(unsigned count) override
     {
         if (count == 0)
             return NULL;
-        return (byte **) rowManager.allocate(count * sizeof(void *), allocatorId | ACTIVITY_FLAG_ISREGISTERED);
+        return (const byte **) rowManager.allocate(count * sizeof(void *), allocatorId | ACTIVITY_FLAG_ISREGISTERED);
     }
 
-    virtual void releaseRowset(unsigned count, byte * * rowset)
+    virtual void releaseRowset(unsigned count, const byte * * rowset) override
     {
         rtlReleaseRowset(count, rowset);
     }
 
-    virtual byte * * linkRowset(byte * * rowset)
+    virtual const byte * * linkRowset(const byte * * rowset) override
     {
         return rtlLinkRowset(rowset);
     }
 
-    virtual byte * * appendRowOwn(byte * * rowset, unsigned newRowCount, void * row)
+    virtual const byte * * appendRowOwn(const byte * * rowset, unsigned newRowCount, void * row) override
     {
-        byte * * expanded = doReallocRows(rowset, newRowCount-1, newRowCount);
+        const byte * * expanded = doReallocRows(rowset, newRowCount-1, newRowCount);
         expanded[newRowCount-1] = (byte *)row;
         return expanded;
     }
 
-    virtual byte * * reallocRows(byte * * rowset, unsigned oldRowCount, unsigned newRowCount)
+    virtual const byte * * reallocRows(const byte * * rowset, unsigned oldRowCount, unsigned newRowCount) override
     {
         //New rows (if any) aren't cleared....
         return doReallocRows(rowset, oldRowCount, newRowCount);
     }
 
-    virtual void releaseRow(const void * row)
+    virtual void releaseRow(const void * row) override
     {
         ReleaseRoxieRow(row);
     }
 
-    virtual void * linkRow(const void * row)
+    virtual void * linkRow(const void * row) override
     {
         LinkRoxieRow(row);
         return const_cast<void *>(row);
     }
 
-    virtual IOutputMetaData * queryOutputMeta()
+    virtual IOutputMetaData * queryOutputMeta() override
     {
         return meta.queryOriginal();
     }
-    virtual unsigned queryActivityId() const
+    virtual unsigned queryActivityId() const override
     {
         return activityId;
     }
-    virtual StringBuffer &getId(StringBuffer &idStr)
+    virtual StringBuffer &getId(StringBuffer &idStr) override
     {
         return idStr.append(activityId); // MORE - may want more context info in here
     }
-    virtual IOutputRowSerializer *createDiskSerializer(ICodeContext *ctx)
+    virtual IOutputRowSerializer *createDiskSerializer(ICodeContext *ctx) override
     {
         return meta.createDiskSerializer(ctx, activityId);
     }
-    virtual IOutputRowDeserializer *createDiskDeserializer(ICodeContext *ctx)
+    virtual IOutputRowDeserializer *createDiskDeserializer(ICodeContext *ctx) override
     {
         return meta.createDiskDeserializer(ctx, activityId);
     }
-    virtual IOutputRowSerializer *createInternalSerializer(ICodeContext *ctx)
+    virtual IOutputRowSerializer *createInternalSerializer(ICodeContext *ctx) override
     {
         return meta.createInternalSerializer(ctx, activityId);
     }
-    virtual IOutputRowDeserializer *createInternalDeserializer(ICodeContext *ctx)
+    virtual IOutputRowDeserializer *createInternalDeserializer(ICodeContext *ctx) override
     {
         return meta.createInternalDeserializer(ctx, activityId);
     }
-    virtual IEngineRowAllocator *createChildRowAllocator(const RtlTypeInfo *type)
+    virtual IEngineRowAllocator *createChildRowAllocator(const RtlTypeInfo *type) override
     {
         CriticalBlock block(cs); // Not very likely but better be safe
         if (children.empty())
@@ -224,7 +224,7 @@ public:
     }
 
 protected:
-    inline byte * * doReallocRows(byte * * rowset, unsigned oldRowCount, unsigned newRowCount)
+    inline const byte * * doReallocRows(const byte * * rowset, unsigned oldRowCount, unsigned newRowCount)
     {
         if (!rowset)
             return createRowset(newRowCount);
@@ -233,10 +233,10 @@ protected:
         //target rowset.  It could be that the rowset is unshared immediately, but that is inefficient at worst.
         if (RoxieRowIsShared(rowset))
         {
-            byte * * newset = createRowset(newRowCount);
+            const byte * * newset = createRowset(newRowCount);
             for (unsigned i=0; i < oldRowCount; i++)
             {
-                byte * cur = rowset[i];
+                const byte * cur = rowset[i];
                 LinkRoxieRow(cur);
                 newset[i] = cur;
             }
@@ -251,7 +251,7 @@ protected:
         memsize_t capacity;
         void * ptr = (void *)rowset;
         rowManager.resizeRow(capacity, ptr, oldRowCount * sizeof(void *), newRowCount * sizeof(void *), allocatorId | ACTIVITY_FLAG_ISREGISTERED);
-        return (byte * *)ptr;
+        return (const byte * *)ptr;
     }
 
 protected:

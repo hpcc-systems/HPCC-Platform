@@ -177,7 +177,7 @@ public:
         len = mb.length();
         data = mb.detach();
     }
-    virtual void getLinkedResult(unsigned &countResult, byte * * & result)
+    virtual void getLinkedResult(unsigned &countResult, const byte * * & result) override
     {
         assertex(rowStreamCount==((unsigned)rowStreamCount)); // catch, just in case
         Owned<IRowStream> stream = getRowStream();
@@ -189,7 +189,7 @@ public:
             OwnedConstThorRow row = stream->nextRow();
             rowset[countResult++] = row.getClear();
         }
-        result = (byte **)_rowset.getClear();
+        result = (const byte **)_rowset.getClear();
     }
     virtual const void * getLinkedRowResult()
     {
@@ -2101,13 +2101,13 @@ IThorResult *CGraphBase::createGraphLoopResult(CActivityBase &activity, IThorRow
 }
 
 // IEclGraphResults
-void CGraphBase::getDictionaryResult(unsigned & count, byte * * & ret, unsigned id)
+void CGraphBase::getDictionaryResult(unsigned & count, const byte * * & ret, unsigned id)
 {
     Owned<IThorResult> result = getResult(id, true); // will get collated distributed result
     result->getLinkedResult(count, ret);
 }
 
-void CGraphBase::getLinkedResult(unsigned & count, byte * * & ret, unsigned id)
+void CGraphBase::getLinkedResult(unsigned & count, const byte * * & ret, unsigned id)
 {
     Owned<IThorResult> result = getResult(id, true); // will get collated distributed result
     result->getLinkedResult(count, ret);

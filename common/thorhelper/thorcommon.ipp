@@ -834,11 +834,11 @@ protected:
 class ChildRowLinkerWalker : implements IIndirectMemberVisitor
 {
 public:
-    virtual void visitRowset(size32_t count, byte * * rows)
+    virtual void visitRowset(size32_t count, const byte * * rows) override
     {
         rtlLinkRowset(rows);
     }
-    virtual void visitRow(const byte * row)
+    virtual void visitRow(const byte * row) override
     {
         rtlLinkRow(row);
     }

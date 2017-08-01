@@ -1060,7 +1060,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
         ensureRowAllocated(func.ctx, "crSelf");
         func.ctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _rows[0];");
         func.ctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _rows[1];");
-        func.ctx.addQuotedLiteral("unsigned char * * rows = (unsigned char * *) _rows;");
+        func.ctx.addQuotedLiteral("const byte * * rows = (const byte * *) _rows;");
 
         bindTableCursor(func.ctx, dataset, "left", no_left, selSeq);
         bindTableCursor(func.ctx, dataset, "right", no_right, selSeq);

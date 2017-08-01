@@ -117,7 +117,7 @@ interface IThorResult : extends IInterface
     virtual CActivityBase *queryActivity() = 0;
     virtual bool isDistributed() const = 0;
     virtual void serialize(MemoryBuffer &mb) = 0;
-    virtual void getLinkedResult(unsigned & count, byte * * & ret) = 0;
+    virtual void getLinkedResult(unsigned & count, const byte * * & ret) = 0;
     virtual const void * getLinkedRowResult() = 0;
 };
 
@@ -543,8 +543,8 @@ class graph_decl CGraphBase : public CGraphStub, implements IEclGraphResults
         virtual const IContextLogger &queryContextLogger() const { return ctx->queryContextLogger(); }
         virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const { return ctx->getRowAllocator(meta, activityId); }
         virtual IEngineRowAllocator * getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, unsigned heapFlags) const { return ctx->getRowAllocatorEx(meta, activityId, heapFlags); }
-        virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { ctx->getResultRowset(tcount, tgt, name, sequence, _rowAllocator, isGrouped, xmlTransformer, csvTransformer); }
-        virtual void getResultDictionary(size32_t & tcount, byte * * & tgt,IEngineRowAllocator * _rowAllocator,  const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) { ctx->getResultDictionary(tcount, tgt, _rowAllocator, name, sequence, xmlTransformer, csvTransformer, hasher); }
+        virtual void getResultRowset(size32_t & tcount, const byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) override { ctx->getResultRowset(tcount, tgt, name, sequence, _rowAllocator, isGrouped, xmlTransformer, csvTransformer); }
+        virtual void getResultDictionary(size32_t & tcount, const byte * * & tgt,IEngineRowAllocator * _rowAllocator,  const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) override { ctx->getResultDictionary(tcount, tgt, _rowAllocator, name, sequence, xmlTransformer, csvTransformer, hasher); }
 
         virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) { convertRowToXML(lenResult, result, info, row, flags); }
         virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) { convertRowToJSON(lenResult, result, info, row, flags); }
@@ -753,13 +753,13 @@ public:
     virtual IThorResult *createGraphLoopResult(CActivityBase &activity, IThorRowInterfaces *rowIf, ThorGraphResultType resultType, unsigned spillPriority=SPILL_PRIORITY_RESULT);
 
 // IEclGraphResults
-    virtual void getDictionaryResult(unsigned & count, byte * * & ret, unsigned id);
-    virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id);
+    virtual void getDictionaryResult(unsigned & count, const byte * * & ret, unsigned id) override;
+    virtual void getLinkedResult(unsigned & count, const byte * * & ret, unsigned id) override;
     virtual const void * getLinkedRowResult(unsigned id);
 
 // IThorChildGraph
 //  virtual void getResult(size32_t & retSize, void * & ret, unsigned id);
-//  virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id);
+//  virtual void getLinkedResult(unsigned & count, const byte * * & ret, unsigned id);
     virtual IEclGraphResults *evaluate(unsigned parentExtractSz, const byte * parentExtract);
 
 friend class CGraphElementBase;
@@ -1173,8 +1173,7 @@ protected:
         virtual bool isDistributed() const { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual void serialize(MemoryBuffer &mb) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual void getResult(size32_t & retSize, void * & ret) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
-        virtual void getLinkedResult(unsigned & count, byte * * & ret) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
-        virtual void getDictionaryResult(unsigned & count, byte * * & ret) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
+        virtual void getLinkedResult(unsigned & count, const byte * * & ret) override { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual const void * getLinkedRowResult() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
     };
     IArrayOf<IThorResult> results;
@@ -1223,12 +1222,12 @@ public:
             results.append(*LINK(result));
     }
     virtual unsigned count() { return results.ordinality(); }
-    virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id)
+    virtual void getLinkedResult(unsigned & count, const byte * * & ret, unsigned id) override
     {
         Owned<IThorResult> result = getResult(id, true);
         result->getLinkedResult(count, ret);
     }
-    virtual void getDictionaryResult(unsigned & count, byte * * & ret, unsigned id)
+    virtual void getDictionaryResult(unsigned & count, const byte * * & ret, unsigned id) override
     {
         Owned<IThorResult> result = getResult(id, true);
         result->getLinkedResult(count, ret);

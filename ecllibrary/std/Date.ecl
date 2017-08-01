@@ -1159,9 +1159,9 @@ END;
  */
 
 EXPORT BOOLEAN IsValidTime(Time_t time) := FUNCTION
-    hourInBounds := (Hour(time) BETWEEN 0 AND 23);
-    minuteInBounds := (Minute(time) BETWEEN 0 AND 59);
-    secondInBounds := (Second(time) BETWEEN 0 AND 59);
+    hourInBounds := (Hour(time) <= 23);
+    minuteInBounds := (Minute(time) <= 59);
+    secondInBounds := (Second(time) <= 59);
 
     RETURN hourInBounds AND minuteInBounds AND secondInBounds;
 END;

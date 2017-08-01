@@ -1299,7 +1299,7 @@ public:
             break;
         }
     }
-    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *row)
+    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, const byte *row) override
     {
         // We create a list
         const RtlTypeInfo *typeInfo = metaVal.queryTypeInfo();

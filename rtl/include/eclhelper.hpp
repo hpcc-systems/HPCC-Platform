@@ -244,11 +244,11 @@ interface IOutputRowDeserializer;
 class CRuntimeStatisticCollection;
 interface IEngineRowAllocator : extends IInterface
 {
-    virtual byte * * createRowset(unsigned _numItems) = 0;
-    virtual byte * * linkRowset(byte * * rowset) = 0;
-    virtual void releaseRowset(unsigned count, byte * * rowset) = 0;
-    virtual byte * * appendRowOwn(byte * * rowset, unsigned newRowCount, void * row) = 0;
-    virtual byte * * reallocRows(byte * * rowset, unsigned oldRowCount, unsigned newRowCount) = 0;
+    virtual const byte * * createRowset(unsigned _numItems) = 0;
+    virtual const byte * * linkRowset(const byte * * rowset) = 0;
+    virtual void releaseRowset(unsigned count, const byte * * rowset) = 0;
+    virtual const byte * * appendRowOwn(const byte * * rowset, unsigned newRowCount, void * row) = 0;
+    virtual const byte * * reallocRows(const byte * * rowset, unsigned oldRowCount, unsigned newRowCount) = 0;
 
     virtual void * createRow() = 0;
     virtual void releaseRow(const void * row) = 0;
@@ -463,7 +463,7 @@ enum
 
 interface IIndirectMemberVisitor
 {
-    virtual void visitRowset(size32_t count, byte * * rows) = 0;
+    virtual void visitRowset(size32_t count, const byte * * rows) = 0;
     virtual void visitRow(const byte * row) = 0;
     //MORE: add new functions if anything else is implemented out of line (e.g., strings)
 };
@@ -563,8 +563,8 @@ interface IResourceContext
 //Provided by engine=>can extent
 interface IEclGraphResults : public IInterface
 {
-    virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id) = 0;
-    virtual void getDictionaryResult(size32_t & tcount, byte * * & tgt, unsigned id) = 0;
+    virtual void getLinkedResult(unsigned & count, const byte * * & ret, unsigned id) = 0;
+    virtual void getDictionaryResult(size32_t & tcount, const byte * * & tgt, unsigned id) = 0;
     virtual const void * getLinkedRowResult(unsigned id) = 0;
 };
 
@@ -598,12 +598,12 @@ interface ICodeContext : public IResourceContext
     virtual bool getResultBool(const char * name, unsigned sequence) = 0;
     virtual void getResultData(unsigned & tlen, void * & tgt, const char * name, unsigned sequence) = 0;
     virtual void getResultDecimal(unsigned tlen, int precision, bool isSigned, void * tgt, const char * stepname, unsigned sequence) = 0;
-    virtual void getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) = 0;
+    virtual void getResultDictionary(size32_t & tcount, const byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) = 0;
     virtual void getResultRaw(unsigned & tlen, void * & tgt, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) = 0;
     virtual void getResultSet(bool & isAll, size32_t & tlen, void * & tgt, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) = 0;
     virtual __int64 getResultInt(const char * name, unsigned sequence) = 0;
     virtual double getResultReal(const char * name, unsigned sequence) = 0;
-    virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) = 0;
+    virtual void getResultRowset(size32_t & tcount, const byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) = 0;
     virtual void getResultString(unsigned & tlen, char * & tgt, const char * name, unsigned sequence) = 0;
     virtual void getResultStringF(unsigned tlen, char * tgt, const char * name, unsigned sequence) = 0;
     virtual void getResultUnicode(unsigned & tlen, UChar * & tgt, const char * name, unsigned sequence) = 0;
@@ -1510,7 +1510,7 @@ struct IHThorRawIteratorArg : public IHThorArg
 
 struct IHThorLinkedRawIteratorArg : public IHThorArg
 {
-    virtual byte * next() = 0;
+    virtual const byte * next() = 0;
 };
 
 

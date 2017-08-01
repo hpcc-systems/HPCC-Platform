@@ -3480,27 +3480,27 @@ protected:
 class CLibraryConstantRawIteratorArg : public CThorLinkedRawIteratorArg
 {
 public:
-    inline CLibraryConstantRawIteratorArg(unsigned _numRows, byte * * _rows, IOutputMetaData * _meta)
+    inline CLibraryConstantRawIteratorArg(unsigned _numRows, const byte * * _rows, IOutputMetaData * _meta)
         : meta(_meta), numRows(_numRows), rows(_rows)
     {
         cur = 0;
     }
 
-    virtual void onStart(const byte *, MemoryBuffer * ) { cur = 0U; }
+    virtual void onStart(const byte *, MemoryBuffer * ) override { cur = 0U; }
 
-    virtual byte * next()
+    virtual const byte * next() override
     {
         if (cur < numRows)
             return rows[cur++];
         return NULL;
     }
 
-    virtual IOutputMetaData * queryOutputMeta() { return meta; }
+    virtual IOutputMetaData * queryOutputMeta() override { return meta; }
 
 protected:
     unsigned numRows;
     IOutputMetaData * meta;
-    byte * * rows;
+    const byte * * rows;
     unsigned cur;
 };
 

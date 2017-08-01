@@ -177,18 +177,18 @@ public:
 
     inline void clear()                 { dispose(); rows = NULL; }
 
-    inline byte * * * addrrows()        { clear(); return &rows; }
+    inline const byte * * * addrrows()  { clear(); return &rows; }
 
-    inline byte * * queryrows() const   { return rows; }
+    inline const byte * * queryrows() const   { return rows; }
     inline unsigned querycount() const  { return count; }
 
-    byte * * linkrows() const;
+    const byte * * linkrows() const;
 
-    inline byte * * & refrows()         { clear(); return rows; }
+    inline const byte * * & refrows()   { clear(); return rows; }
 
-    void set(size32_t _count, byte * * _rows);
+    void set(size32_t _count, const byte * * _rows);
     void setRow(IEngineRowAllocator * rowAllocator, const byte * row);
-    void setown(size32_t _count, byte * * _rows);
+    void setown(size32_t _count, const byte * * _rows);
 
 protected:
     void dispose();
@@ -202,7 +202,7 @@ public:
     unsigned count;
 
 protected:
-    byte * * rows;
+    const byte * * rows;
 };
 
 //---------------------------------------------------------------------------
@@ -356,7 +356,7 @@ public:
     ~RtlLinkedDatasetBuilder();
 
     void append(const void * source);
-    void appendRows(size32_t num, byte * * rows);
+    void appendRows(size32_t num, const byte * * rows);
     inline void appendEOG() { appendOwn(NULL); }
     byte * createRow();
     void cloneRow(size32_t len, const void * ptr);
@@ -370,8 +370,8 @@ public:
     inline RtlDynamicRowBuilder & rowBuilder() { return builder; }
     inline void ensure(size32_t required) { if (required > max) expand(required); }
     inline size32_t getcount() { finalizeRows(); return count; }
-    byte * * linkrows();
-    inline byte * * queryrows() { finalizeRows(); return rowset; }
+    const byte * * linkrows();
+    inline const byte * * queryrows() { finalizeRows(); return rowset; }
     void appendOwn(const void * row);
 
     inline byte * row() const { return builder.row(); }
@@ -379,7 +379,7 @@ public:
 protected:
     IEngineRowAllocator * rowAllocator;
     RtlDynamicRowBuilder builder;
-    byte * * rowset;
+    const byte * * rowset;
     size32_t count;
     size32_t max;
     size32_t choosenLimit;
@@ -394,10 +394,10 @@ public:
 
     void append(const void * source);
     void appendOwn(const void * source);
-    void appendRows(size32_t num, byte * * rows);
+    void appendRows(size32_t num, const byte * * rows);
 
     inline size32_t getcount() { return tableSize; }
-    inline byte * * linkrows() { return rtlLinkRowset(table); }
+    inline const byte * * linkrows() { return rtlLinkRowset(table); }
 
     byte * createRow()         { return builder.getSelf(); }
     void finalizeRow(size32_t len);
@@ -413,8 +413,8 @@ public:
 
     inline void ensure(size32_t required) { if (required > max) expand(required); }
     */
-    inline byte * * queryrows() { return table; }
-    inline byte * row() const { return builder.row(); }
+    inline const byte * * queryrows() { return table; }
+    inline const byte * row() const { return builder.row(); }
 
 protected:
     void checkSpace();
@@ -425,68 +425,68 @@ protected:
     IHash *hash;
     ICompare *compare;
     RtlDynamicRowBuilder builder;
-    byte * * table;
+    const byte * * table;
     size32_t usedCount;
     size32_t usedLimit;
     size32_t initialSize;
     size32_t tableSize;
 };
 
-extern ECLRTL_API unsigned __int64 rtlDictionaryCount(size32_t tableSize, byte **table);
-extern ECLRTL_API bool rtlDictionaryExists(size32_t tableSize, byte **table);
-extern ECLRTL_API byte *rtlDictionaryLookup(IHThorHashLookupInfo &hashInfo, size32_t tableSize, byte **table, const byte *source, byte *defaultRow);
-extern ECLRTL_API byte *rtlDictionaryLookupString(size32_t tableSize, byte **table, size32_t len, const char *source, byte *defaultRow);
-extern ECLRTL_API byte *rtlDictionaryLookupStringN(size32_t tableSize, byte **table, size32_t N, size32_t len, const char *source, byte *defaultRow);
-extern ECLRTL_API byte *rtlDictionaryLookupSigned(size32_t tableSize, byte **table, __int64 source, byte *defaultRow);
-extern ECLRTL_API byte *rtlDictionaryLookupUnsigned(size32_t tableSize, byte **table, __uint64 source, byte *defaultRow);
-extern ECLRTL_API byte *rtlDictionaryLookupSignedN(size32_t tableSize, byte **table, size32_t size, __int64 source, byte *defaultRow);
-extern ECLRTL_API byte *rtlDictionaryLookupUnsignedN(size32_t tableSize, byte **table, size32_t size, __uint64 source, byte *defaultRow);
+extern ECLRTL_API unsigned __int64 rtlDictionaryCount(size32_t tableSize, const byte **table);
+extern ECLRTL_API bool rtlDictionaryExists(size32_t tableSize, const byte **table);
+extern ECLRTL_API const byte *rtlDictionaryLookup(IHThorHashLookupInfo &hashInfo, size32_t tableSize, const byte **table, const byte *source, const byte *defaultRow);
+extern ECLRTL_API const byte *rtlDictionaryLookupString(size32_t tableSize, const byte **table, size32_t len, const char *source, const byte *defaultRow);
+extern ECLRTL_API const byte *rtlDictionaryLookupStringN(size32_t tableSize, const byte **table, size32_t N, size32_t len, const char *source, const byte *defaultRow);
+extern ECLRTL_API const byte *rtlDictionaryLookupSigned(size32_t tableSize, const byte **table, __int64 source, const byte *defaultRow);
+extern ECLRTL_API const byte *rtlDictionaryLookupUnsigned(size32_t tableSize, const byte **table, __uint64 source, const byte *defaultRow);
+extern ECLRTL_API const byte *rtlDictionaryLookupSignedN(size32_t tableSize, const byte **table, size32_t size, __int64 source, const byte *defaultRow);
+extern ECLRTL_API const byte *rtlDictionaryLookupUnsignedN(size32_t tableSize, const byte **table, size32_t size, __uint64 source, const byte *defaultRow);
 
-extern ECLRTL_API bool rtlDictionaryLookupExists(IHThorHashLookupInfo &hashInfo, size32_t tableSize, byte **table, const byte *source);
-extern ECLRTL_API bool rtlDictionaryLookupExistsString(size32_t tableSize, byte **table, size32_t len, const char *source);
-extern ECLRTL_API bool rtlDictionaryLookupExistsStringN(size32_t tableSize, byte **table, size32_t N, size32_t len, const char *source);
-extern ECLRTL_API bool rtlDictionaryLookupExistsSigned(size32_t tableSize, byte **table, __int64 source);
-extern ECLRTL_API bool rtlDictionaryLookupExistsUnsigned(size32_t tableSize, byte **table, __uint64 source);
-extern ECLRTL_API bool rtlDictionaryLookupExistsSignedN(size32_t tableSize, byte **table, size32_t size, __uint64 source);
-extern ECLRTL_API bool rtlDictionaryLookupExistsUnsignedN(size32_t tableSize, byte **table, size32_t size, __uint64 source);
+extern ECLRTL_API bool rtlDictionaryLookupExists(IHThorHashLookupInfo &hashInfo, size32_t tableSize, const byte **table, const byte *source);
+extern ECLRTL_API bool rtlDictionaryLookupExistsString(size32_t tableSize, const byte **table, size32_t len, const char *source);
+extern ECLRTL_API bool rtlDictionaryLookupExistsStringN(size32_t tableSize, const byte **table, size32_t N, size32_t len, const char *source);
+extern ECLRTL_API bool rtlDictionaryLookupExistsSigned(size32_t tableSize, const byte **table, __int64 source);
+extern ECLRTL_API bool rtlDictionaryLookupExistsUnsigned(size32_t tableSize, const byte **table, __uint64 source);
+extern ECLRTL_API bool rtlDictionaryLookupExistsSignedN(size32_t tableSize, const byte **table, size32_t size, __int64 source);
+extern ECLRTL_API bool rtlDictionaryLookupExistsUnsignedN(size32_t tableSize, const byte **table, size32_t size, __uint64 source);
 
-extern ECLRTL_API void appendRowsToRowset(size32_t & targetCount, byte * * & targetRowset, IEngineRowAllocator * rowAllocator, size32_t count, byte * * rows);
+extern ECLRTL_API void appendRowsToRowset(size32_t & targetCount, const byte * * & targetRowset, IEngineRowAllocator * rowAllocator, size32_t count, const byte * * rows);
 
 
 //Functions that are used to convert between the serialized and internal memory format
 //functions containing child also serialize the length of the dataset, functions without it pass it independently
 
-extern ECLRTL_API void rtlDeserializeChildRowset(size32_t & count, byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, IRowDeserializerSource & in);
-extern ECLRTL_API void rtlDeserializeChildGroupRowset(size32_t & count, byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, IRowDeserializerSource & in);
-extern ECLRTL_API void rtlSerializeChildRowset(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows);
-extern ECLRTL_API void rtlSerializeChildGroupRowset(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows);
+extern ECLRTL_API void rtlDeserializeChildRowset(size32_t & count, const byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, IRowDeserializerSource & in);
+extern ECLRTL_API void rtlDeserializeChildGroupedRowset(size32_t & count, const byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, IRowDeserializerSource & in);
+extern ECLRTL_API void rtlSerializeChildRowset(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, const byte * * rows);
+extern ECLRTL_API void rtlSerializeChildGroupedRowset(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, const byte * * rows);
 
 //Functions for converting between rowsets and complete datasets (where length is known)
-extern ECLRTL_API void rtlDataset2RowsetX(size32_t & count, byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, size32_t lenSrc, const void * src, bool isGrouped);
-extern ECLRTL_API void rtlRowset2DatasetX(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, byte * * rows, bool isGrouped);
+extern ECLRTL_API void rtlDataset2RowsetX(size32_t & count, const byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, size32_t lenSrc, const void * src, bool isGrouped);
+extern ECLRTL_API void rtlRowset2DatasetX(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, const byte * * rows, bool isGrouped);
 
-extern ECLRTL_API void rtlDataset2RowsetX(size32_t & count, byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, size32_t lenSrc, const void * src);
-extern ECLRTL_API void rtlGroupedDataset2RowsetX(size32_t & count, byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, size32_t lenSrc, const void * src);
-extern ECLRTL_API void rtlRowset2DatasetX(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, byte * * rows);
-extern ECLRTL_API void rtlGroupedRowset2DatasetX(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, byte * * rows);
+extern ECLRTL_API void rtlDataset2RowsetX(size32_t & count, const byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, size32_t lenSrc, const void * src);
+extern ECLRTL_API void rtlGroupedDataset2RowsetX(size32_t & count, const byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, size32_t lenSrc, const void * src);
+extern ECLRTL_API void rtlRowset2DatasetX(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, const byte * * rows);
+extern ECLRTL_API void rtlGroupedRowset2DatasetX(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, const byte * * rows);
 
 extern ECLRTL_API size32_t rtlDeserializeToBuilder(ARowBuilder & builder, IOutputRowDeserializer * deserializer, const void * src);
 extern ECLRTL_API size32_t rtlSerializeToBuilder(ARowBuilder & builder, IOutputRowSerializer * serializer, const void * src);
 
 //Dictionary serialization/deserialization
-extern ECLRTL_API void rtlDeserializeDictionary(size32_t & count, byte * * & rowset, IEngineRowAllocator * rowAllocator, IOutputRowDeserializer * deserializer, size32_t lenSrc, const void * src);
-extern ECLRTL_API void rtlDeserializeDictionaryFromDataset(size32_t & count, byte * * & rowset, IEngineRowAllocator * rowAllocator, IOutputRowDeserializer * deserializer, IHThorHashLookupInfo & hashInfo, size32_t lenSrc, const void * src);
-extern ECLRTL_API void rtlSerializeDictionary(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, byte * * rows);
-extern ECLRTL_API void rtlSerializeDictionaryToDataset(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, byte * * rows);
+extern ECLRTL_API void rtlDeserializeDictionary(size32_t & count, const byte * * & rowset, IEngineRowAllocator * rowAllocator, IOutputRowDeserializer * deserializer, size32_t lenSrc, const void * src);
+extern ECLRTL_API void rtlDeserializeDictionaryFromDataset(size32_t & count, const byte * * & rowset, IEngineRowAllocator * rowAllocator, IOutputRowDeserializer * deserializer, IHThorHashLookupInfo & hashInfo, size32_t lenSrc, const void * src);
+extern ECLRTL_API void rtlSerializeDictionary(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, const byte * * rows);
+extern ECLRTL_API void rtlSerializeDictionaryToDataset(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, const byte * * rows);
 
-extern ECLRTL_API void rtlSerializeDictionary(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows);
-extern ECLRTL_API void rtlSerializeDictionaryToDataset(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows);
+extern ECLRTL_API void rtlSerializeDictionary(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, const byte * * rows);
+extern ECLRTL_API void rtlSerializeDictionaryToDataset(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, const byte * * rows);
 
 //Dictionary serialization/deserialization to a stream - includes length prefix
-extern ECLRTL_API void rtlDeserializeChildDictionary(size32_t & count, byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, IRowDeserializerSource & in);
-extern ECLRTL_API void rtlDeserializeChildDictionaryFromDataset(size32_t & count, byte * * & rowset, IEngineRowAllocator * rowAllocator, IOutputRowDeserializer * deserializer, IHThorHashLookupInfo & hashInfo, IRowDeserializerSource & in);
-extern ECLRTL_API void rtlSerializeChildDictionary(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows);
-extern ECLRTL_API void rtlSerializeChildDictionaryToDataset(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows);
+extern ECLRTL_API void rtlDeserializeChildDictionary(size32_t & count, const byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, IRowDeserializerSource & in);
+extern ECLRTL_API void rtlDeserializeChildDictionaryFromDataset(size32_t & count, const byte * * & rowset, IEngineRowAllocator * rowAllocator, IOutputRowDeserializer * deserializer, IHThorHashLookupInfo & hashInfo, IRowDeserializerSource & in);
+extern ECLRTL_API void rtlSerializeChildDictionary(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, const byte * * rows);
+extern ECLRTL_API void rtlSerializeChildDictionaryToDataset(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, const byte * * rows);
 
 //---------------------------------------------------------------------------
 
@@ -551,11 +551,11 @@ protected:
 class ECLRTL_API RtlLinkedDatasetCursor : public ARtlDatasetCursor
 {
 public:
-    RtlLinkedDatasetCursor(unsigned _numRows, byte * * _rows);
+    RtlLinkedDatasetCursor(unsigned _numRows, const byte * * _rows);
     RtlLinkedDatasetCursor();
 
-    void setDataset(unsigned _numRows, byte * * _rows) { init(_numRows, _rows); }
-    void init(unsigned _numRows, byte * * _rows);
+    void setDataset(unsigned _numRows, const byte * * _rows) { init(_numRows, _rows); }
+    void init(unsigned _numRows, const byte * * _rows);
 
     inline size32_t count() { return numRows; }
     inline bool exists() { return numRows != 0; }
@@ -567,7 +567,7 @@ public:
     bool isValid();
 
 protected:
-    byte * * rows;
+    const byte * * rows;
     unsigned numRows;
     unsigned cur;
 };
@@ -578,12 +578,12 @@ protected:
 class ECLRTL_API RtlSafeLinkedDatasetCursor : public RtlLinkedDatasetCursor
 {
 public:
-    RtlSafeLinkedDatasetCursor(unsigned _numRows, byte * * _rows);
+    RtlSafeLinkedDatasetCursor(unsigned _numRows, const byte * * _rows);
     RtlSafeLinkedDatasetCursor() {}
     ~RtlSafeLinkedDatasetCursor();
 
-    void setDataset(unsigned _numRows, byte * * _rows) { init(_numRows, _rows); }
-    void init(unsigned _numRows, byte * * _rows);
+    void setDataset(unsigned _numRows, const byte * * _rows) { init(_numRows, _rows); }
+    void init(unsigned _numRows, const byte * * _rows);
 
 };
 
@@ -627,7 +627,7 @@ public:
     ~RtlCompoundIterator();
 
     void init(unsigned numLevels);
-    void addIter(unsigned idx, IRtlDatasetSimpleCursor * iter, byte * * cursor);
+    void addIter(unsigned idx, IRtlDatasetSimpleCursor * iter, const byte * * cursor);
     bool first(unsigned level);
     bool next(unsigned level);
 
@@ -638,12 +638,12 @@ public:
 protected:
     inline void setCursor(unsigned level, const void * value)
     {
-        *cursors[level] = (byte *)value;
+        *cursors[level] = (const byte *) value;
     }
 
 protected:
     IRtlDatasetSimpleCursor * * iters;
-    byte * * * cursors;
+    const byte * * * cursors;
     unsigned numLevels;
     bool ok;
 };
@@ -653,7 +653,7 @@ protected:
 class ECLRTL_API RtlSimpleIterator
 {
 public:
-    void addIter(unsigned idx, IRtlDatasetSimpleCursor * iter, byte * * cursor);
+    void addIter(unsigned idx, IRtlDatasetSimpleCursor * iter, const byte * * cursor);
     bool first();
     bool next();
 
@@ -661,7 +661,7 @@ public:
 
 protected:
     IRtlDatasetSimpleCursor * iter;
-    byte * * cursor;
+    const byte * * cursor;
 };
 
 #endif

@@ -9291,10 +9291,10 @@ void CHThorDictionaryResultWriteActivity::execute()
     }
     IHThorGraphResult * result = graph->createResult(helper.querySequence(), LINK(rowAllocator));
     size32_t dictSize = builder.getcount();
-    byte ** dictRows = builder.queryrows();
+    const byte ** dictRows = builder.queryrows();
     for (size32_t row = 0; row < dictSize; row++)
     {
-        byte *thisRow = dictRows[row];
+        const byte *thisRow = dictRows[row];
         if (thisRow)
             LinkRoxieRow(thisRow);
         result->addRowOwn(thisRow);

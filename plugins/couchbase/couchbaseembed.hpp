@@ -414,7 +414,7 @@ namespace couchbaseembed
            virtual IRowStream * getDatasetResult(IEngineRowAllocator * _resultAllocator);
            virtual byte * getRowResult(IEngineRowAllocator * _resultAllocator);
            virtual size32_t getTransformResult(ARowBuilder & rowBuilder);
-           virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *val);
+           virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, const byte *val) override;
            virtual void bindDatasetParam(const char *name, IOutputMetaData & metaVal, IRowStream * val);
            virtual void bindBooleanParam(const char *name, bool val);
            virtual void bindDataParam(const char *name, size32_t len, const void *val);

@@ -1553,7 +1553,7 @@ public:
         }
         addArg(name, vval.getLink());
     }
-    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *val)
+    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, const byte *val) override
     {
         const RtlTypeInfo *typeInfo = metaVal.queryTypeInfo();
         assertex(typeInfo);

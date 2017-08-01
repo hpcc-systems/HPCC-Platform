@@ -589,7 +589,7 @@ void KeyedJoinInfo::buildTransform(BuildCtx & ctx)
     case no_denormalizegroup:
         {
             func.start("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, const void * _right, unsigned numRows, const void * * _rows)");
-            func.ctx.addQuotedLiteral("unsigned char * * rows = (unsigned char * *) _rows;");
+            func.ctx.addQuotedLiteral("const byte * * rows = (const byte * *) _rows;");
             break;
         }
     }   
