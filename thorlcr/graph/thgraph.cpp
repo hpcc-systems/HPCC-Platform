@@ -1254,8 +1254,6 @@ void CGraphBase::reset()
         }
         dependentSubGraphs.kill();
     }
-    if (!queryOwner() || isGlobal())
-        jobChannel.queryTimeReporter().reset();
     if (!queryOwner())
         clearNodeStats();
 }
@@ -2815,7 +2813,6 @@ CJobChannel::CJobChannel(CJobBase &_job, IMPServer *_mpServer, unsigned _channel
 {
     aborted = false;
     thorAllocator.setown(job.getThorAllocator(channel));
-    timeReporter = createStdTimeReporter();
     jobComm.setown(mpServer->createCommunicator(&job.queryJobGroup()));
     myrank = job.queryJobGroup().rank(queryMyNode());
     graphExecutor.setown(new CGraphExecutor(*this));
@@ -2829,7 +2826,6 @@ CJobChannel::~CJobChannel()
     wait();
     clean();
     codeCtx.clear();
-    timeReporter->Release();
 }
 
 INode *CJobChannel::queryMyNode()

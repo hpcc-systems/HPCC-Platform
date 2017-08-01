@@ -2609,8 +2609,6 @@ void CMasterGraph::getFinalProgress()
                 minNode = n;
             }
             totalDiskUsage += nodeDiskUsage;
-            Owned<ITimeReporter> slaveReport = createStdTimeReporter(msg);
-            queryJobChannel().queryTimeReporter().merge(*slaveReport);
         }
     }
     if (totalDiskUsage)
@@ -2633,40 +2631,6 @@ void CMasterGraph::done()
     {
         if (globals->getPropBool("@watchdogProgressEnabled"))
             queryJobManager().queryDeMonServer()->endGraph(this, true);
-    }
-    if (!queryOwner())
-    {
-        if (queryJobChannel().queryTimeReporter().numSections())
-        {
-            if (globals->getPropBool("@reportTimingsToWorkunit", true))
-            {
-                struct CReport : implements ITimeReportInfo
-                {
-                    Owned<IWorkUnit> wu;
-                    CGraphBase &graph;
-                    CReport(CGraphBase &_graph) : graph(_graph)
-                    {
-                        wu.setown(&graph.queryJob().queryWorkUnit().lock());
-                    }
-                    virtual void report(const char * timerScope, const char *description, const __int64 totaltime, const __int64 maxtime, const unsigned count)
-                    {
-                        StringBuffer timerStr(graph.queryJob().queryGraphName());
-                        timerStr.append("(").append(graph.queryGraphId()).append("): ");
-                        timerStr.append(description);
-
-                        StringBuffer scope;
-                        //GH-.JCS is this correct queryGraphId() is a subgraph?
-                        formatGraphTimerScope(scope, graph.queryJob().queryGraphName(), graph.queryGraphId(), 0);
-                        scope.append(":").append(timerScope);
-                        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsection, scope, StTimeElapsed, timerStr.str(), totaltime, count, maxtime, StatsMergeReplace);
-
-                    }
-                } wureport(*this);
-                queryJobChannel().queryTimeReporter().report(wureport);
-            }
-            else
-                queryJobChannel().queryTimeReporter().printTimings();
-        }
     }
 }
 

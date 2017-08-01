@@ -930,7 +930,6 @@ protected:
     CJobBase &job;
     Owned<IThorAllocator> thorAllocator;
     Owned<IGraphExecutor> graphExecutor;
-    ITimeReporter *timeReporter;
     CriticalSection crit;
     CGraphTable subGraphs;
     CGraphTableCopy allGraphs; // for lookup, includes all child graphs
@@ -963,7 +962,6 @@ public:
     void clean();
     void init();
     void wait();
-    ITimeReporter &queryTimeReporter() { return *timeReporter; }
     virtual CGraphBase *createGraph() = 0;
     void startGraph(CGraphBase &graph, bool checkDependencies, size32_t parentExtractSize, const byte *parentExtract);
     INode *queryMyNode();
