@@ -5,7 +5,7 @@
     "*",
     "\\,",
     "0 secs",
-    "-1"
+    "-1",
     "1:1",
     "1:M",
     "Access to cluster topology",
