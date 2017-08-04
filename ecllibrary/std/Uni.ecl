@@ -436,4 +436,17 @@ EXPORT unicode ExcludeLastWord(unicode text, varstring localename = '') :=
 EXPORT Translate(unicode text, unicode sear, unicode repl) :=
     lib_unicodelib.UnicodeLib.UnicodeLocaleTranslate(text, sear, repl);
 
+/**
+ * Returns true if the prefix string matches the leading characters in the source string.  Trailing and Leading spaces
+ * are stripped from the prefix before matching. Unless specified, normalization will not occur. Unless initiated as hex and
+ * then converted to Unicode using TRANSFER, ecl will perform its own normalization on your declared Unicode string.
+ *
+ * @param src           The string being searched in.
+ * @param pref          The prefix to search for.
+ * @param form          The type of Normalization to be employed.
+ */
+
+EXPORT BOOLEAN StartsWith(unicode src, unicode pref, string form) :=
+	lib_unicodelib.UnicodeLib.UnicodeLocaleStartsWith(src, pref, form);
+
 END;
