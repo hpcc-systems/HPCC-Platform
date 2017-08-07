@@ -382,7 +382,17 @@
 
           <listitem>
             <para><emphasis role="bold">Restore</emphasis> - Restores an
-            archived workunit. (Workunits are archived by Sasha).</para>
+            archived workunit. (Workunits are archived by Sasha). </para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Reschedule</emphasis> - Changes a
+            selected scheduled workunit.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Deschedule</emphasis> - Stop a
+            selected scheduled workunit from running.</para>
           </listitem>
 
           <listitem>
