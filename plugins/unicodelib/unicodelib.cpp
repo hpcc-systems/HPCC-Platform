@@ -88,6 +88,7 @@ static const char * EclDefinition =
 "  boolean UnicodeLocaleStartsWith(const unicode src, unicode pref, string form) :c,pure,entrypoint='ulUnicodeLocaleStartsWith';\n"
 "  boolean UnicodeLocaleEndsWith(const unicode src, const unicode suff, const string form) :c,pure,entrypoint='ulUnicodeLocaleEndsWith';\n"
 "  string UnicodeVersion():c,pure,entrypoint='ulUnicodeVersion';\n"
+"  unicode UnicodeLocaleRemoveSuffix(const unicode src, const unicode suff, const string form) :c,pure,entrypoint='ulUnicodeLocaleRemoveSuffix';\n"
 "END;\n";
 
 static const char * compatibleVersions[] = {
@@ -124,21 +125,18 @@ IPluginContext * parentCtx = NULL;
 
 void doTrimRight(UnicodeString & source)
 {
-        int32_t oldLength = source.length();
-        if (!oldLength)
-            return;
-        int32_t currentLength = oldLength;
-        bool uSpace = true;
-        do {
-            UChar32 c = source[--currentLength];
-            if(c != 0x20) {
-                currentLength++;
-                uSpace = false;
-            }
-        } while (uSpace && currentLength>0);
-        if (currentLength < oldLength) {
-            source.truncate(currentLength);
-        }
+    int32_t oldLength = source.length();
+    int32_t currentLength = oldLength;
+    while (currentLength > 0)
+    {
+        UChar32 c = source[currentLength-1];
+        if (c != 0x20)
+            break;
+        currentLength--;
+    }
+
+    if (currentLength < oldLength)
+        source.truncate(currentLength);
 }
 
 
@@ -774,6 +772,17 @@ void normalizationFormCheck(UnicodeString & source, const char * form)
 #endif
 }
 
+static void removeSuffix(UnicodeString & toProcess, UnicodeString const & suf)
+{
+    if (toProcess.isEmpty() || suf.isEmpty())
+    {
+        return;
+    }
+    int32_t last = toProcess.length();
+    int32_t suffixLength = suf.length();
+    toProcess.removeBetween((last - suffixLength), last);
+}
+
 static bool endsWith(UnicodeString const & processed, UnicodeString const & suffix)
 {
     if (processed.isEmpty() || suffix.isEmpty())
@@ -793,7 +802,7 @@ static bool startsWith(UnicodeString & processed, UnicodeString & prefix)
     {
         return false;
     }
-    prefix.trim();
+    doTrimRight(prefix);
     if (processed.compareCodePointOrder(0, prefix.length(), prefix) != 0)
     {
         return false;
@@ -1688,7 +1697,8 @@ UNICODELIB_API bool UNICODELIB_CALL ulUnicodeLocaleEndsWith(unsigned srcLen, UCh
 {
     UnicodeString pro(src, srcLen);
     UnicodeString suf(suff, suffLen);
-    suf.trim();
+    doTrimRight(pro);
+    doTrimRight(suf);
     if (formLen == 3 || formLen == 4)
     {
         normalizationFormCheck(pro, form);
@@ -1706,4 +1716,25 @@ UNICODELIB_API void UNICODELIB_CALL ulUnicodeVersion(unsigned & tgtLen, char * &
     tgtLen = strlen(version);
     tgt = (char *)CTXMALLOC(parentCtx, tgtLen);
     memcpy(tgt, version, tgtLen);
+}
+
+
+UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleRemoveSuffix(unsigned & tgtLen, UChar * & tgt, unsigned srcLen, UChar const * src, unsigned suffLen, UChar const * suff, unsigned formLen, char const * form)
+{
+    UnicodeString pro(src, srcLen);
+    UnicodeString suf(suff, suffLen);
+    doTrimRight(pro);
+    doTrimRight(suf);
+    if (formLen == 3 || formLen == 4)
+    {
+        normalizationFormCheck(pro, form);
+        normalizationFormCheck(suf, form);
+    }
+
+    if (endsWith(pro, suf))
+        removeSuffix(pro, suf);
+
+    tgtLen = pro.length();
+    tgt = (UChar *)CTXMALLOC(parentCtx, tgtLen * 2);
+    pro.extract(0, tgtLen, tgt);
 }
