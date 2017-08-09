@@ -87,6 +87,7 @@ static const char * EclDefinition =
 "  unicode UnicodeLocaleTranslate(const unicode text, unicode sear, unicode repl) :c,pure,entrypoint='ulUnicodeLocaleTranslate';\n"
 "  boolean UnicodeLocaleStartsWith(const unicode src, unicode pref, string form) :c,pure,entrypoint='ulUnicodeLocaleStartsWith';\n"
 "  boolean UnicodeLocaleEndsWith(const unicode src, const unicode suff, const string form) :c,pure,entrypoint='ulUnicodeLocaleEndsWith';\n"
+"  unicode UnicodeLocaleRemoveSuffix(const unicode src, const unicode suff, const string form) :c,pure,entrypoint='ulUnicodeLocaleRemoveSuffix';\n"
 "END;\n";
 
 static const char * compatibleVersions[] = {
@@ -771,6 +772,17 @@ void normalizationFormCheck(UnicodeString & source, const char * form)
 
     source = result;
 #endif
+}
+
+static void removeSuffix(UnicodeString & toProcess, UnicodeString const & suf)
+{
+    if (toProcess.isEmpty() || suf.isEmpty())
+    {
+        return;
+    }
+    int32_t last = toProcess.length();
+    int32_t suffixLength = suf.length();
+    toProcess.removeBetween((last - suffixLength), last);
 }
 
 static bool endsWith(UnicodeString const & processed, UnicodeString const & suffix)
@@ -1694,4 +1706,31 @@ UNICODELIB_API bool UNICODELIB_CALL ulUnicodeLocaleEndsWith(unsigned srcLen, UCh
         normalizationFormCheck(suf, form);
     }
     return endsWith(pro, suf);
+}
+
+UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleRemoveSuffix(unsigned & tgtLen, UChar * & tgt, unsigned srcLen, UChar const * src, unsigned suffLen, UChar const * suff, unsigned formLen, char const * form)
+{
+    UnicodeString pro(src, srcLen);
+    UnicodeString suf(suff, suffLen);
+    suf.trim();
+    if (formLen == 3 || formLen == 4)
+    {
+        normalizationFormCheck(pro, form);
+        normalizationFormCheck(suf, form);
+    }
+    if (endsWith(pro, suf))
+    {
+        removeSuffix(pro, suf);
+    }
+    if (pro.length()>0)
+    {
+        tgtLen = pro.length();
+        tgt = (UChar *)CTXMALLOC(parentCtx, tgtLen * 2);
+        pro.extract(0, tgtLen, tgt);
+    }
+    else
+    {
+        tgtLen = 0;
+        tgt = 0;
+    }
 }
