@@ -462,4 +462,29 @@ EXPORT BOOLEAN StartsWith(unicode src, unicode pref, string form) :=
 EXPORT BOOLEAN EndsWith(unicode src, unicode suff, string form) :=
 	lib_unicodelib.UnicodeLib.UnicodeLocaleEndsWith(src, suff, form);
 
+/**
+ * Removes the suffix from the search string, if present, and returns the result. Trailing spaces are
+ * stripped from both strings before matching.
+ *
+ * @param src           The string being searched in.
+ * @param suffix        The prefix to search for.
+ * @param form          The type of Normalization to be employed.
+ * @param return        The string excluding the suffix, if endsWith is true
+ */
+
+EXPORT RemoveSuffix(unicode src, unicode suff, string form) :=
+    lib_unicodelib.UnicodeLib.UnicodeLocaleRemoveSuffix(src, suff, form);
+
+/**
+ * Returns the number of occurences of the second string within the first string.
+ *
+ * @param src           The string that is searched.
+ * @param hit           The string being sought.
+ * @param form          The optional, specified normalization form.
+ * @return              The number of occurences, matches.
+ */
+
+EXPORT unsigned4 FindCount(unicode src, unicode hit, string form) :=
+    lib_unicodelib.UnicodeLib.UnicodeLocaleFindCount(src, hit, form);
+
 END;
