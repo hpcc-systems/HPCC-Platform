@@ -105,6 +105,7 @@ UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleExcludeNthWord(unsigned & tgt
 UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleExcludeLastWord(unsigned & tgtLen, UChar * & tgt, unsigned textLen, UChar const * text, char const * localename);
 UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleTranslate(unsigned & tgtLen, UChar * & tgt, unsigned textLen, UChar const * text, unsigned searLen, UChar const * sear, unsigned replLen, UChar * repl);
 UNICODELIB_API bool UNICODELIB_CALL ulUnicodeLocaleStartsWith(unsigned srcLen, UChar const * src, unsigned prefLen, UChar const * pref, unsigned formLen, char const * form);
+UNICODELIB_API bool UNICODELIB_CALL ulUnicodeLocaleEndsWith(unsigned srcLen, UChar const * src, unsigned suffLen, UChar const * suff, unsigned formLen, char const * form);
 }
 
 #endif
