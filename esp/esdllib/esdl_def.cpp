@@ -269,16 +269,23 @@ public:
         // must provide a parameter on the URL '?internal' to see those elements
         // in the WSDL or web form.
 
-        if( opts && defOptional )
+        if (opts && defOptional)
         {
-            if( opts->hasProp(defOptional) )
+            if (*defOptional == '!')
             {
-                return true;
-            } else {
-                return false;
+                if (!opts->hasProp(defOptional+1))
+                    return true;
+                else
+                    return false;
+            }
+            else
+            {
+                if (opts->hasProp(defOptional))
+                    return true;
+                else
+                    return false;
             }
         }
-
         return true;
     }
 };
