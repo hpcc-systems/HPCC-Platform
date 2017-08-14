@@ -398,4 +398,17 @@ EXPORT unicode GetNthWord(unicode text, unsigned4 n, varstring localename = '') 
 EXPORT ExcludeNthWord(unicode text, unsigned4 n, varstring localename = '') :=
     lib_unicodelib.UnicodeLib.UnicodeLocaleExcludeNthWord(text, n, localename);
 
+/**
+ * Returns the delimited words that the string contains in a UnicodeSet.  Words are separated by one or more separator strings. No 
+ * spaces are stripped from either string before matching. allowBlankItems set to false by default.
+ * 
+ * @param src               The string being searched in.
+ * @param delim             The string used to separate words
+ * @param allowBlankItems   Indicates if empty/blank string items are included in the results.
+ * @return                  A UnicodeSet whose members are the delimited words
+ */
+
+EXPORT SplitWords(unicode src, unicode delim, boolean allowBlankItems = FALSE) :=
+    lib_unicodelib.UnicodeLib.UnicodeLocaleSplitWords(src, delim, allowBlankItems);
+
 END;
