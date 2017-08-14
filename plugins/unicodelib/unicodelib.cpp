@@ -82,7 +82,8 @@ static const char * EclDefinition =
 "  boolean UnicodeLocaleEditDistanceWithinRadius(const unicode left, const unicode right, unsigned4 radius,  const varstring localename) : c,time,pure,entrypoint='ulUnicodeLocaleEditDistanceWithinRadius', hole; \n"
 "  unsigned4 UnicodeLocaleWordCount(const unicode text, const varstring localename) : c, pure,entrypoint='ulUnicodeLocaleWordCount', hole; \n"
 "  unicode UnicodeLocaleGetNthWord(const unicode text, unsigned4 n, const varstring localename) : c,pure,entrypoint='ulUnicodeLocaleGetNthWord';\n"
-"  unicode UnicodeLocaleExcludeNthWord(const unicode text, unsigned4 n, const varstring localename) :c,pure,entrypoint='ulUnicodeLocaleExcludeNthWord';\n"
+"  unicode UnicodeLocaleExcludeNthWord(const unicode text, unsigned4 n, const varstring localename) : c,pure,entrypoint='ulUnicodeLocaleExcludeNthWord';\n"
+"  unsigned4 UnicodeLocaleCountWords(const unicode src, const unicode delim, boolean allowBlankItems) : c,pure,entrypoint='ulUnicodeLocaleCountWords', hole;\n"
 "END;\n";
 
 static const char * compatibleVersions[] = {
@@ -717,6 +718,68 @@ unsigned unicodeEditDistanceV4(UnicodeString & left, UnicodeString & right, unsi
     }
 
     return da[mask(leftLen-1)][rightLen-1];
+}
+
+unsigned countWords(UnicodeString const & source, unsigned delimLen, UChar const * delim, bool allowBlankItems)
+{
+    int32_t wordCount = 0;
+    UnicodeString const delimiter(delim, delimLen);
+    if (source.isEmpty() || delimiter.isEmpty())
+    {
+        return wordCount;
+    }
+    bool startedWord = FALSE;
+    int32_t idx = 0;
+    int32_t sourceLength = source.countChar32();
+    int32_t delimiterLength = delimiter.countChar32();
+    if (sourceLength < delimiterLength)
+    {
+        return 1;
+    }
+    int32_t max = source.length() - (delimiter.length() - 1);
+    UnicodeString temp;
+    StringCharacterIterator it(source);
+    UChar32 startChar = delimiter.char32At(0);
+    while (idx < max)
+    {
+        if (it.current32() == startChar)
+        {
+            source.extractBetween(idx, source.moveIndex32(idx, delimiterLength), temp);
+            if (!delimiter.compareCodePointOrder(temp))
+            {
+                if (startedWord || allowBlankItems)
+                {
+                    wordCount++;
+                    startedWord = FALSE;
+                }
+                idx = it.move32(delimiterLength, CharacterIterator::kCurrent);
+            }
+            else
+            {
+                idx = it.move32(1, CharacterIterator::kCurrent);
+                if (!startedWord)
+                {
+                    startedWord = TRUE;
+                }
+            }
+        }
+        else
+        {
+            idx = it.move32(1, CharacterIterator::kCurrent);
+            if (!startedWord)
+            {
+                startedWord = TRUE;
+            }
+        }
+    }
+    /*source.length() used instead of sourceLength because the iterator's value is representative of code units
+     *despite incrementing by code points
+     */
+    if (startedWord || idx != source.length() || allowBlankItems)
+    {
+        wordCount++;
+    }
+    return wordCount;
 }
 
 void excludeNthWord(RuleBasedBreakIterator& bi, UnicodeString & source, unsigned n)
@@ -1475,4 +1538,11 @@ UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleExcludeNthWord(unsigned & tgt
         tgtLen = 0;
         tgt = 0;
     }
+}
+
+UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleCountWords(unsigned srcLen, UChar const * src, unsigned delimLen, UChar const * delim, bool allowBlankItems)
+{
+    UnicodeString const processed(src, srcLen);
+    unsigned count = countWords(processed, delimLen, delim, allowBlankItems);
+    return count;
 }
