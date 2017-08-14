@@ -1662,7 +1662,7 @@ void EsdlDefinition::walkDefinitionDepthFirst( AddedObjs& foundByName, EsdlDefOb
     // ancestors- they've already been added.
     // Checking up front here will also allow us to detect cycles in the strcuture
     // graph -such as we have with BpsReportRelative- and avoid an infinite loop
-    if( found || esdlObj->checkOptional(opts) == false || esdlObj->checkVersion(requestedVer) == false )
+    if (found || esdlObj->checkOptional(opts) == false || (requestedVer != 0.0 && esdlObj->checkVersion(requestedVer) == false))
     {
         //DBGLOG("%s</%s><Skipped/>", indent.str(), esdlObj->queryName());
         return;

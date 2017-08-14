@@ -155,7 +155,7 @@ bool EsdlCMDShell::parseCommandLineOptions(ArgvIterator &iter)
             iter.next();
             break;
         }
-        if (iter.matchFlag(boolValue, "--version"))
+        if (iter.matchFlag(boolValue, ESDLOPT_VERSION))
         {
             fprintf(stdout, "%s\n", BUILD_TAG);
             return false;
@@ -180,7 +180,7 @@ bool EsdlCMDShell::parseCommandLineOptions(ArgvIterator &iter)
 void EsdlCMDShell::usage()
 {
     fprintf(stdout,"\nUsage:\n"
-        "    esdl [--version] <command> [<args>]\n\n"
+        "    esdl <command> [<args>]\n\n"
            "Commonly used commands:\n"
            "   xml               Generate XML from ESDL definition.\n"
            "   ecl               Generate ECL from ESDL definition.\n"
@@ -188,6 +188,7 @@ void EsdlCMDShell::usage()
            "   wsdl              Generate WSDL from ESDL definition.\n"
            "   publish           Publish ESDL Definition for ESP use.\n"
            "   list-definitions  List all ESDL definitions.\n"
+           "   get-definition    Get ESDL definition.\n"
            "   delete            Delete ESDL Definition.\n"
            "   bind-service      Configure ESDL based service on target ESP (with existing ESP Binding).\n"
            "   list-bindings     List all ESDL bindings.\n"
@@ -198,6 +199,7 @@ void EsdlCMDShell::usage()
            "   monitor           Generate ECL code for result monitoring / differencing\n"
            "   monitor-template  Generate a template for use with 'monitor' command\n"
            ""
-           "\nRun 'esdl help <command>' for more information on a specific command\n\n"
+           "\nRun 'esdl help <command>' for more information on a specific command\n"
+           "\nRun 'esdl --version' to get version information\n\n"
     );
 }

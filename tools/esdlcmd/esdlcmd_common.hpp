@@ -62,6 +62,8 @@ typedef IEsdlCommand *(*EsdlCommandFactory)(const char *cmdname);
 #define ESDLOPT_XSLT_PATH               "--xslt"
 
 #define ESDLOPT_VERSION                 "--version"
+#define ESDLOPT_INTERFACE_VERSION       "--interface-version"
+#define ESDLOPT_INTERFACE_VERSION_S     "-iv"
 #define ESDLOPT_SERVICE                 "--service"
 #define ESDLOPT_METHOD                  "--method"
 #define ESDLOPT_PREPROCESS_OUT          "--preprocess-output"

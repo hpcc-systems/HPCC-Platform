@@ -30,8 +30,6 @@ protected:
     StringAttr optService;
     StringAttr optWSProcAddress;
     StringAttr optWSProcPort;
-    StringAttr optVersionStr;
-    double     optVersion;
     StringAttr optUser;
     StringAttr optPass;
     StringAttr optESDLDefID;
@@ -79,7 +77,6 @@ public:
                 "   --port <port>                WsESDLConfig service port\n"
                 "   -u, --username <name>        Username for accessing WsESDLConfig service\n"
                 "   -pw, --password <pw>         Password for accessing WsESDLConfig service\n"
-                "   --version <ver>              ESDL service version\n"
                 );
         EsdlCmdCommon::usage();
     }
@@ -93,8 +90,6 @@ public:
         if (iter.matchFlag(optWSProcAddress, ESDL_OPT_SERVICE_SERVER) || iter.matchFlag(optWSProcAddress, ESDL_OPTION_SERVICE_SERVER))
             return true;
         if (iter.matchFlag(optWSProcPort, ESDL_OPTION_SERVICE_PORT) || iter.matchFlag(optWSProcPort, ESDL_OPT_SERVICE_PORT))
-            return true;
-        if (iter.matchFlag(optVersionStr, ESDLOPT_VERSION))
             return true;
         if (iter.matchFlag(optUser, ESDL_OPT_SERVICE_USER) || iter.matchFlag(optUser, ESDL_OPTION_SERVICE_USER))
             return true;
@@ -127,7 +122,7 @@ public:
         Owned<IClientPublishESDLDefinitionRequest> request = esdlConfigClient->createPublishESDLDefinitionRequest();
 
         StringBuffer esxml;
-        esdlHelper->getServiceESXDL(optSource.get(), optESDLService.get(), esxml, optVersion);
+        esdlHelper->getServiceESXDL(optSource.get(), optESDLService.get(), esxml, 0);
 
         if (esxml.length()==0)
         {
@@ -152,7 +147,7 @@ public:
             return 1;
         }
 
-        fprintf(stdout, "\nESDL Service: %s(%f): %s", optESDLService.get() ,optVersion, resp->getStatus().getDescription());
+        fprintf(stdout, "\nESDL Service: %s: %s", optESDLService.get(), resp->getStatus().getDescription());
 
         return 0;
     }
@@ -229,19 +224,6 @@ public:
 
     bool finalizeOptions(IProperties *globals)
     {
-        if (!optVersionStr.isEmpty())
-        {
-            optVersion = atof( optVersionStr.get() );
-            if( optVersion <= 0 )
-            {
-                throw MakeStringException( 0, "Version option must be followed by a real number > 0" );
-            }
-        }
-        else
-        {
-            fprintf(stderr, "\nWARNING: ESDL Version not specified.\n");
-        }
-
         if (optSource.isEmpty())
             throw MakeStringException( 0, "Source ESDL definition file (ecm|esdl|xml) must be provided" );
 
@@ -558,12 +540,9 @@ public:
         Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
         Owned<IClientDeleteESDLDefinitionRequest> request = esdlConfigClient->createDeleteESDLDefinitionRequest();
 
-        fprintf(stdout,"\nAttempting to delete ESDL definition: '%s.%d'\n", optESDLService.get(), (int)optVersion);
+        fprintf(stdout,"\nAttempting to delete ESDL definition: '%s'\n", optESDLDefID.get());
 
-        StringBuffer id;
-        id.setf("%s.%d", optESDLService.get(), (int)optVersion);
-
-        request->setId(id);
+        request->setId(optESDLDefID.get());
 
         Owned<IClientDeleteESDLRegistryEntryResponse> resp = esdlConfigClient->DeleteESDLDefinition(request);
 
@@ -581,18 +560,17 @@ public:
     void usage()
     {
         printf( "\nUsage:\n\n"
-                "esdl delete <ESDLServiceDefinitionName> <ESDLServiceDefinitionVersion> [command options]\n\n"
-                "   ESDLServiceDefinitionName         The name of the ESDL service definition to delete\n"
-                "   ESDLServiceDefinitionVersion      The version of the ESDL service definition to delete\n");
+                "esdl delete <ESDLDefinitionID> [command options]\n\n"
+                "   ESDLDefinitionID      The ESDL definition id <esdldefname>.<esdldefver>\n");
 
         EsdlPublishCmdCommon::usage();
 
         printf( "\n   Use this command to delete an ESDL Service definition.\n"
-                "   To delete an ESDL Service definition, provide the definition name and version\n"
+                "   To delete an ESDL Service definition, provide the ESDL definition id\n"
                 );
 
         printf("\nExample:"
-                ">esdl delete myesdldef 5\n"
+                ">esdl delete myesdldef.5\n"
                 );
     }
 
@@ -604,7 +582,7 @@ public:
             return false;
         }
 
-        for (int cur = 0; cur < 2 && !iter.done(); cur++)
+        for (int cur = 0; cur < 1 && !iter.done(); cur++)
         {
            const char *arg = iter.query();
            if (*arg != '-')
@@ -612,10 +590,7 @@ public:
                switch (cur)
                {
                 case 0:
-                    optESDLService.set(arg);
-                    break;
-                case 1:
-                    optVersionStr.set(arg);
+                    optESDLDefID.set(arg);
                     break;
                }
            }
@@ -652,19 +627,8 @@ public:
     bool finalizeOptions(IProperties *globals)
     {
 
-        if (optESDLService.isEmpty())
-            throw MakeStringException( 0, "Name of ESDL service definition must be provided!" );
-
-        if (!optVersionStr.isEmpty())
-        {
-            optVersion = atof( optVersionStr.get() );
-            if( optVersion <= 0 )
-            {
-                throw MakeStringException( 0, "Version option must be followed by a real number > 0" );
-            }
-        }
-        else
-            throw MakeStringException( 0, "ESDL service definition version must be provided!" );
+        if (optESDLDefID.isEmpty())
+            throw MakeStringException( 0, "ESDLDefinitionID must be provided!" );
 
         return EsdlPublishCmdCommon::finalizeOptions(globals);
     }
@@ -823,8 +787,7 @@ public:
         request->setEspProcName(optTargetESPProcName);
         request->setEspBindingName(optBindingName);
         request->setEsdlServiceName(optService.get());
-        VStringBuffer id("%s.%d", optService.get(), (int)optVersion);
-        request->setEsdlDefinitionID(id.str());
+        request->setEsdlDefinitionID(optESDLDefID.get());
         request->setConfig(optInput);
         request->setOverwrite(optOverWrite);
 
@@ -847,11 +810,11 @@ public:
     void usage()
     {
         printf( "\nUsage:\n\n"
-                "esdl bind-method <TargetESPProcessName> <TargetESPBindingName> <TargetServiceName> <TargetServiceDefVersion> <TargetMethodName> [command options]\n\n"
+                "esdl bind-method <TargetESPProcessName> <TargetESPBindingName> <TargetServiceName> <TargetESDLDefinitionID> <TargetMethodName> [command options]\n\n"
                 "   TargetESPProcessName                             The target ESP Process name\n"
                 "   TargetESPBindingName                             The target ESP binding name associated with this service\n"
                 "   TargetServiceName                                The name of the Service to bind (must already be defined in dali.)\n"
-                "   TargetServiceDefVersion                          The version of the target service ESDL definition (must exist in dali)\n"
+                "   TargetESDLDefinitionID                           The id of the target ESDL definition (must exist in dali)\n"
                 "   TargetMethodName                                 The name of the target method (must exist in the service ESDL definition)\n"
 
                 "\nOptions (use option flag followed by appropriate value):\n"
@@ -863,7 +826,7 @@ public:
         printf( "\n Use this command to publish ESDL Service based bindings.\n"
                 "   To bind a ESDL Service, provide the target ESP process name\n"
                 "   (esp which will host the service.) \n"
-                "   It is also necessary to provide the Port on which this service is configured to run (ESP Binding),\n"
+                "   It is also necessary to provide the target ESP binding name,\n"
                 "   and the name of the service you are binding.\n"
                 "   Optionally provide configuration information either directly, or via a\n"
                 "   configuration file in the following syntax:\n"
@@ -874,7 +837,7 @@ public:
                 );
 
         printf("\nExample:"
-                ">esdl bind-service myesp 8088 WsMyService --config /myService/methods.xml\n"
+                ">esdl bind-method myesp mybinding WsMyService WsMyService.1 myMethod --config /myService/methods.xml\n"
                 );
     }
 
@@ -904,7 +867,7 @@ public:
                     optService.set(arg);
                     break;
                 case 3:
-                    optVersionStr.set(arg);
+                    optESDLDefID.set(arg);
                     break;
                 case 4:
                     optMethod.set(arg);
@@ -947,22 +910,14 @@ public:
             }
         }
 
-        if (!optVersionStr.isEmpty())
-        {
-            optVersion = atof( optVersionStr.get() );
-            if( optVersion <= 0 )
-            {
-                throw MakeStringException( 0, "Version option must be followed by a real number > 0" );
-            }
-        }
-        else
-            throw MakeStringException( 0, "ESDL service definition version must be provided!" );
-
         if(optTargetESPProcName.isEmpty())
             throw MakeStringException( 0, "Name of Target ESP process must be provided" );
 
         if (optService.isEmpty())
             throw MakeStringException( 0, "Name of ESDL based service must be provided" );
+
+        if (optESDLDefID.isEmpty())
+            throw MakeStringException( 0, "ESDLDefinitionID must be provided!" );
 
         if (optMethod.isEmpty())
             throw MakeStringException( 0, "Name of ESDL based method must be provided" );
