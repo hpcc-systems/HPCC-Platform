@@ -3071,7 +3071,7 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr)
     // if IP4only or using MS V6 can only resolve IPv4 using 
     static bool recursioncheck = false; // needed to stop error message recursing
     unsigned retry=10;
-#if defined(__linux__) || defined(getaddrinfo)
+#if defined(__linux__) || defined (__APPLE__) ||defined(getaddrinfo)
     if (IP4only) {
 #else
     {
@@ -3116,7 +3116,7 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr)
         }
         return false;
     }
-#if defined(__linux__) || defined(getaddrinfo)
+#if defined(__linux__) || defined (__APPLE__) || defined(getaddrinfo)
     struct addrinfo hints;
     memset(&hints,0,sizeof(hints));
     struct addrinfo  *addrInfo = NULL;
