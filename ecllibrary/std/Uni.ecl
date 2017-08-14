@@ -504,4 +504,17 @@ EXPORT Repeat(unicode src, unsigned4 n) :=
 EXPORT unsigned4 FindCount(unicode src, unicode hit, string form) :=
     lib_unicodelib.UnicodeLib.UnicodeLocaleFindCount(src, hit, form);
 
+/**
+ * Returns the number of words that the string contains.  Words are separated by one or more separator strings. No 
+ * spaces are stripped from either string before matching. allowBlankItems set to false by default.
+ *
+ * @param src               The string being searched in.
+ * @param delim             The string used to separate words
+ * @param allowBlankItems   Indicates if empty/blank string items are included in the results.
+ * @return                  The number of delimited tokens in the source string
+ */
+
+EXPORT unsigned4 CountWords(unicode src, unicode delim, boolean allowBlankItems = FALSE) :=
+    lib_unicodelib.UnicodeLib.UnicodeLocaleCountWords(src, delim, allowBlankItems);
+
 END;
