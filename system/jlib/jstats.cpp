@@ -135,9 +135,9 @@ extern jlib_decl int compareScopeName(const char * left, const char * right)
         if (!left || !right)
         {
             if (left)
-                return +2;
+                return +1;
             if (right)
-                return -2;
+                return -1;
             return 0;
         }
         left++;

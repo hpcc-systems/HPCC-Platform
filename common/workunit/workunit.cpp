@@ -1052,7 +1052,7 @@ protected:
 class GraphScopeIterator : public CInterfaceOf<IConstWUScopeIterator>
 {
 private:
-    //This uses a state machine - this enumation contains the different states.
+    //This uses a state machine - this enumeration contains the different states.
     enum State
     {
         SGraphBegin,
