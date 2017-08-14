@@ -768,6 +768,7 @@
             <xsl:with-param name="inputCtrlHtml" select="$inputCtrlHtml"/>
             <xsl:with-param name="isAttr" select="name($node)='xsd:attribute'"/>
             <xsl:with-param name="isBool" select="$node/@type='xsd:boolean'"/>
+            <xsl:with-param name="optional" select="$node/xsd:annotation/xsd:appinfo/form/@optional | $node/xsd:annotation/xsd:appinfo/xsd:form/@optional"/>
         </xsl:call-template>
     </xsl:template >
     
@@ -781,6 +782,7 @@
         <xsl:param name="inputCtrlHtml" select="''"/>
         <xsl:param name="isAttr" select="false()"/>
         <xsl:param name="isBool" select="false()"/>
+        <xsl:param name="optional" select="''"/>
 
         <!--    <xsl:if test="$verbose"><xsl:value-of select="concat('GenOneInputCtrlHtmlRaw(parentId=', $parentId, ', fieldId=', $fieldId, ', ui=', $ui, ', inputCtrlHtml=', $inputCtrlHtml, ')&lt;br/&gt;') "/> </xsl:if> -->     
 
@@ -824,6 +826,9 @@
                                 <xsl:text disable-output-escaping="yes"><![CDATA['> <b>]]></xsl:text>
                 <xsl:value-of select="$fieldName"/>
                 <xsl:text disable-output-escaping="yes"><![CDATA[</b>]]></xsl:text>
+                <xsl:call-template name="showOptionalSupscript">
+                    <xsl:with-param name="optional" select="$optional"/>
+                </xsl:call-template>
                 <xsl:value-of select="$ctrlId"/>
                 <xsl:choose>
                     <xsl:when test="$isBool">
@@ -844,6 +849,9 @@
                 <xsl:value-of select="$fieldName"/>
                 <xsl:if test="$isAttr"><![CDATA[</i>]]></xsl:if>
                 <xsl:text disable-output-escaping="yes"><![CDATA[</b></span>]]></xsl:text>
+                <xsl:call-template name="showOptionalSupscript">
+                    <xsl:with-param name="optional" select="$optional"/>
+                </xsl:call-template>
                 <xsl:value-of select="$ctrlId"/>
                 <xsl:choose>
                     <xsl:when test="$isBool">
@@ -1463,6 +1471,15 @@
                     </xsl:choose>
             </xsl:otherwise>
         </xsl:choose>
+    </xsl:template>
+    <xsl:template name="showOptionalSupscript">
+      <xsl:param name="optional" select="''"/>
+      <!-- optional starts with _ is deeemed as implementation specific and don't show it -->
+      <xsl:if test="$optional and substring($optional,1,1)!='_' and substring($optional,1,2)!='!_'">
+        <xsl:text><![CDATA[<sup style='color:red'>]]></xsl:text>
+        <xsl:value-of select="$optional"/>
+        <xsl:text><![CDATA[</sup>]]></xsl:text>
+      </xsl:if>
     </xsl:template>
 </xsl:stylesheet>
 
