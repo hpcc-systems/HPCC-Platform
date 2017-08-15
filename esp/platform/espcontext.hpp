@@ -35,6 +35,7 @@
 #define ESP_SESSION_TIMEOUT (600) // 10 Mins
 #define ESP_CHECK_SESSION_TIMEOUT (30) // 30 seconds
 
+static const char* const USER_NAME_COOKIE = "ESPUserName";
 static const char* const SESSION_ID_COOKIE = "ESPSessionID";
 static const char* const SESSION_START_URL_COOKIE = "ESPAuthURL";
 static const char* const SESSION_ID_TEMP_COOKIE = "ESPAuthIDTemp";

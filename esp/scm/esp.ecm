@@ -59,7 +59,8 @@ typedef enum AuthType_
 {
     AuthTypeMixed,
     AuthPerSessionOnly,
-    AuthPerRequestOnly
+    AuthPerRequestOnly,
+    AuthUserNameOnly
 } AuthType;
 
 #define ESPCTX_NO_NAMESPACES    0x00000001

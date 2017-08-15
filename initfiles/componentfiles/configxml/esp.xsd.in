@@ -298,6 +298,7 @@
                                 <xs:restriction base="xs:string">
                                     <xs:enumeration value="none"/>
                                     <xs:enumeration value="local"/>
+                                    <xs:enumeration value="userNameOnly"/>
                                     <xs:enumeration value="ldap"/>
                                     <xs:enumeration value="ldaps"/>
                                     <xs:enumeration value="secmgrPlugin"/>
@@ -342,6 +343,20 @@
                           <xs:annotation>
                             <xs:appinfo>
                               <tooltip>Enable file and column access permission checking for all view enabled queries</tooltip>
+                            </xs:appinfo>
+                          </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="getUserNameURL" type="xs:string" use="optional" default="/esp/files/eclwatch/templates/GetUserName.html">
+                          <xs:annotation>
+                            <xs:appinfo>
+                              <tooltip>URL to getUserName</tooltip>
+                            </xs:appinfo>
+                            </xs:annotation>
+                          </xs:attribute>
+                        <xs:attribute name="getUserNameUnrestrictedResources" type="xs:string" use="optional" default="/favicon.ico,/esp/files/*,/esp/xslt/*">
+                          <xs:annotation>
+                            <xs:appinfo>
+                              <tooltip>unrestricted resources for getUserNameURL</tooltip>
                             </xs:appinfo>
                           </xs:annotation>
                         </xs:attribute>

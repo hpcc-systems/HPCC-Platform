@@ -270,7 +270,28 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
             if (bnd_cfg->hasProp("@authDomain"))
                 throw MakeStringException(-1, "ESP Binding %s cannot have an '@authDomain' setting because no dali connection is available.", bindname);
         }
+
         domainAuthType = AuthPerRequestOnly;
+        Owned<IPropertyTree> authcfg = proc_cfg->getPropTree("Authentication");
+        if (authcfg)
+        {
+            const char* authmethod = authcfg->queryProp("@method");
+            if (authmethod && strieq(authmethod, "userNameOnly"))
+            {
+                //The @getUserNameUnrestrictedResources contains URLs which may be used by the getUserNameURL page.
+                //For example, an icon file on the getUserNameURL page.
+                const char* unrestrictedResources = authcfg->queryProp("@getUserNameUnrestrictedResources");
+                if (!isEmptyString(unrestrictedResources))
+                    readUnrestrictedResources(unrestrictedResources);
+
+                const char* getUserNameURL = authcfg->queryProp("@getUserNameURL");
+                if (!isEmptyString(getUserNameURL))
+                    loginURL.set(getUserNameURL);
+                else
+                    loginURL.set(DEFAULT_LOGIN_URL);
+                domainAuthType = AuthUserNameOnly;
+            }
+        }
         return;
     }
 
