@@ -1185,6 +1185,75 @@ void CEspHttpServer::createGetSessionTimeoutResponse(StringBuffer& resp, ESPSeri
     }
 }
 
+void CEspHttpServer::resetSessionTimeout(EspAuthRequest& authReq, unsigned sessionID, StringBuffer& resp, ESPSerializationFormat format, IPropertyTree* sessionTree)
+{
+    if (format == ESPSerializationJSON)
+    {
+        resp.set("{ \"ResetSessionTimeoutResponse\": { ");
+    }
+    else
+    {
+        resp.set("<ResetSessionTimeoutResponse>");
+    }
+    if (!sessionTree)
+    {
+        if (format == ESPSerializationJSON)
+        {
+            resp.append("\"The session has already expired\": true");
+        }
+        else
+        {
+            resp.append("The session has already expired.");
+        }
+    }
+    else
+    {
+        unsigned timeoutSeconds = 60 * authReq.requestParams->getPropInt("_timeout");
+        if (timeoutSeconds == 0)
+            timeoutSeconds = authReq.authBinding->getSessionTimeoutSeconds();
+
+        CDateTime now;
+        now.setNow();
+        time_t createTime = now.getSimple();
+        time_t timeoutAt = createTime + timeoutSeconds;
+        sessionTree->setPropInt64(PropSessionLastAccessed, createTime);
+        sessionTree->setPropInt64(PropSessionTimeoutAt, timeoutAt);
+
+        VStringBuffer sessionIDStr("%u", sessionID);
+        addCookie(authReq.authBinding->querySessionIDCookieName(), sessionIDStr.str(), timeoutSeconds);
+
+        if (getEspLogLevel()>=LogMax)
+        {
+            CDateTime timeoutAtCDT;
+            StringBuffer timeoutAtString, nowString;
+            timetToIDateTime(&timeoutAtCDT, timeoutAt);
+            PROGLOG("Reset %s for (/%s/%s) at <%s><%ld> : expires at <%s><%ld>", PropSessionTimeoutAt,
+                authReq.serviceName.isEmpty() ? "" : authReq.serviceName.str(), authReq.methodName.isEmpty() ? "" : authReq.methodName.str(),
+                now.getString(nowString).str(), createTime, timeoutAtCDT.getString(timeoutAtString).str(), timeoutAt);
+        }
+        else
+            ESPLOG(LogMin, "Reset %s for (/%s/%s) : %ld", PropSessionTimeoutAt, authReq.serviceName.isEmpty() ? "" : authReq.serviceName.str(),
+                authReq.methodName.isEmpty() ? "" : authReq.methodName.str(), timeoutAt);
+
+        if (format == ESPSerializationJSON)
+        {
+            resp.append("\"Session timer reset\": true");
+        }
+        else
+        {
+            resp.append("Session timer reset");
+        }
+    }
+    if (format == ESPSerializationJSON)
+    {
+        resp.append(" } }");
+    }
+    else
+    {
+        resp.append("</ResetSessionTimeoutResponse>");
+    }
+}
+
 EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsigned sessionID)
 {
     ESPLOG(LogMax, "authExistingSession: %s<%u>", PropSessionID, sessionID);
@@ -1205,14 +1274,19 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
 
     VStringBuffer xpath("%s[@port=\"%d\"]/%s[%s='%u']", PathSessionApplication, authReq.authBinding->getPort(), PathSessionSession, PropSessionID, sessionID);
     IPropertyTree* sessionTree = espSessions->queryBranch(xpath.str());
-    if (!authReq.serviceName.isEmpty() && !authReq.methodName.isEmpty() &&
-        strieq(authReq.serviceName.str(), "esp") && strieq(authReq.methodName.str(), "get_session_timeout"))
+    if (!authReq.serviceName.isEmpty() && !authReq.methodName.isEmpty() && strieq(authReq.serviceName.str(), "esp"))
     {
         StringBuffer content;
         ESPSerializationFormat respFormat = m_request->queryContext()->getResponseFormat();
-        createGetSessionTimeoutResponse(content, respFormat, sessionTree);
-        sendMessage(content.str(), (respFormat == ESPSerializationJSON) ? "application/json" : "text/xml");
-        return authTaskDone;
+        if (strieq(authReq.methodName.str(), "get_session_timeout"))
+            createGetSessionTimeoutResponse(content, respFormat, sessionTree);
+        else if (strieq(authReq.methodName.str(), "reset_session_timeout"))
+            resetSessionTimeout(authReq, sessionID, content, respFormat, sessionTree);
+        if (!content.isEmpty())
+        {
+            sendMessage(content.str(), (respFormat == ESPSerializationJSON) ? "application/json" : "text/xml");
+            return authTaskDone;
+        }
     }
 
     if (!sessionTree)
