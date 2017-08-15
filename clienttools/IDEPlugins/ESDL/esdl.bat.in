@@ -71,19 +71,29 @@ goto end
 
 :end
 
+find /i "syntax error" "%TMP%\log.txt" >>%5
+if %errorlevel%==0 goto nomod
+
 rem =====================================
 rem  MAKE FILE INTO MOD FILE FORMAT
 rem =====================================
-set "newoutputUnique=%2Gen"
-echo //IMPORT:%1.%newoutputUnique% >> %TMP%\modfile.tmp
+echo //IMPORT:%1.%2 >> %TMP%\modfile.tmp
 type %newoutput% >> %TMP%\modfile.tmp
 del %newoutput%
 copy /Y %TMP%\modfile.tmp %newoutput%
 del %TMP%\modfile.tmp
 
 copy /Y %3 %TMP%\in.txt
-copy /Y %newoutput% %TMP%\%newoutputUnique%.ecl
-copy /Y %TMP%\%newoutputUnique%.ecl %4
+copy /Y %newoutput% %TMP%\%2.ecl
+copy /Y %TMP%\%2.ecl %4
+copy /Y %4 %TMP%\out.txt
+del %newoutput%
+copy /Y %5 %TMP%\err.txt
+goto eof
+
+:nomod
+
+copy /Y %3 %TMP%\in.txt
 copy /Y %4 %TMP%\out.txt
 del %newoutput%
 copy /Y %5 %TMP%\err.txt
