@@ -46,7 +46,7 @@ static const char* const DEFAULT_UNRESTRICTED_RESOURCES = "/favicon.ico,/esp/fil
 static const char* const PathSessionRoot="Sessions";
 static const char* const PathSessionProcess="Process";
 static const char* const PathSessionApplication="Application";
-static const char* const PathSessionSession="Session";
+static const char* const PathSessionSession="Session_";
 static const char* const PropSessionID = "@id";
 static const char* const PropSessionExternalID = "@externalid";
 static const char* const PropSessionUserID = "@userid";
@@ -61,28 +61,29 @@ static const char* const PropSessionLoginURL = "@loginurl";
 <Sessions>
  <Process name="myesp">
    <Application port="8010">
-    <Session createtime="1497376914"
+    <Session_3831947145 createtime="1497376914"
              id="3831947145"
              lastaccessed="1497377015"
+             timeoutAt="1497477015"
              loginurl="/"
              netaddr="10.176.152.200"
-             state="1"
-             userid="TheAdmin"/>
-    <Session createtime="1497377427"
+             userid="user1"/>
+    <Session_4106750941 createtime="1497377427"
              id="4106750941"
              lastaccessed="1497377427"
+             timeoutAt="1497477427"
              loginurl="/"
              netaddr="10.176.152.200"
-             state="0"/>
+             userid="user2"/>
    </Application>
    <Application port="8002">
-    <Session createtime="1497376989"
+    <Session_3680948651 createtime="1497376989"
              id="3680948651"
              lastaccessed="1497377003"
+             timeoutAt="1497477003"
              loginurl="/"
              netaddr="10.176.152.200"
-             state="1"
-             userid="TheAdmin"/>
+             userid="user1"/>
    </Application>
  </Process>
 </Sessions>
