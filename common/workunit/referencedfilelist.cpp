@@ -179,6 +179,11 @@ public:
         return numParts;
     }
     virtual const StringArray &getSubFileNames() const { return subFileNames; };
+    virtual void appendSubFileNames(const StringArray &names)
+    {
+        ForEachItemIn(i, names)
+            subFileNames.append(names.item(i));
+    };
 public:
     StringArray subFileNames;
     StringAttr logicalName;
@@ -215,7 +220,7 @@ public:
             user.set(userDesc);
     }
 
-    void ensureFile(const char *ln, unsigned flags, const char *pkgid, bool noDfsResolution, const char *daliip=NULL, const char *srcCluster=NULL, const char *remotePrefix=NULL);
+    void ensureFile(const char *ln, unsigned flags, const char *pkgid, bool noDfsResolution, const StringArray *subfileNames, const char *daliip=NULL, const char *srcCluster=NULL, const char *remotePrefix=NULL);
 
     virtual void addFile(const char *ln, const char *daliip=NULL, const char *srcCluster=NULL, const char *remotePrefix=NULL);
     virtual void addFiles(StringArray &files);
@@ -543,7 +548,7 @@ public:
     Owned<HashIterator> iter;
 };
 
-void ReferencedFileList::ensureFile(const char *ln, unsigned flags, const char *pkgid, bool noDfsResolution, const char *daliip, const char *srcCluster, const char *prefix)
+void ReferencedFileList::ensureFile(const char *ln, unsigned flags, const char *pkgid, bool noDfsResolution, const StringArray *subfileNames, const char *daliip, const char *srcCluster, const char *prefix)
 {
     if (!allowForeign && checkForeign(ln))
         throw MakeStringException(-1, "Foreign file not allowed%s: %s", (flags & RefFileInPackage) ? " (declared in package)" : "", ln);
@@ -551,6 +556,8 @@ void ReferencedFileList::ensureFile(const char *ln, unsigned flags, const char *
     Owned<ReferencedFile> file = new ReferencedFile(ln, daliip, srcCluster, prefix, false, flags, pkgid, noDfsResolution, allowSizeCalc);
     if (!file->logicalName.length())
         return;
+    if (subfileNames)
+        file->appendSubFileNames(*subfileNames);
     ReferencedFile *existing = map.getValue(file->getLogicalName());
     if (existing)
         existing->flags |= flags;
@@ -564,7 +571,7 @@ void ReferencedFileList::ensureFile(const char *ln, unsigned flags, const char *
 
 void ReferencedFileList::addFile(const char *ln, const char *daliip, const char *srcCluster, const char *prefix)
 {
-    ensureFile(ln, 0, NULL, false, daliip, srcCluster, prefix);
+    ensureFile(ln, 0, NULL, false, nullptr, daliip, srcCluster, prefix);
 }
 
 void ReferencedFileList::addFiles(StringArray &files)
@@ -649,6 +656,7 @@ bool ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackag
             if (node.getPropBool("att[@name='_isSpill']/@value") ||
                 node.getPropBool("att[@name='_isTransformSpill']/@value"))
                 continue;
+            StringArray subfileNames;
             unsigned flags = isOpt ? RefFileOptional : RefFileNotOptional;
             if (pkg)
             {
@@ -664,14 +672,15 @@ bool ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackag
                         {
                             StringBuffer subfile;
                             ssfe->getSubFileName(count, subfile);
-                            ensureFile(subfile, RefSubFile | RefFileInPackage, pkgid, false);
+                            ensureFile(subfile, RefSubFile | RefFileInPackage, pkgid, false, nullptr);
+                            subfileNames.append(subfile);
                         }
                     }
                 }
-                ensureFile(logicalName, flags, pkgid, pkg->isCompulsory());
+                ensureFile(logicalName, flags, pkgid, pkg->isCompulsory(), &subfileNames);
             }
             else
-                ensureFile(logicalName, flags, NULL, false);
+                ensureFile(logicalName, flags, NULL, false, &subfileNames);
         }
     }
     return pkg ? pkg->isCompulsory() : false;

@@ -2291,6 +2291,7 @@ public:
     {
         inErrorsCol = -1;
         prevErrors = 0;
+        firstCall = true;
     }
     bool reportSnmpInfo()
     {
@@ -2327,7 +2328,13 @@ public:
                     {
                         ok = true;
                         unsigned errors = strtoul(cols.item(inErrorsCol), NULL, 10);
-                        if (errors > prevErrors)
+                        if (firstCall)
+                        {
+                            firstCall = false;
+                            if (errors)
+                                LOG(MCoperatorWarning, unknownJob, "UDP Initial InError total: %u", errors);
+                        }
+                        else if (errors > prevErrors)
                             LOG(MCoperatorError, unknownJob, "UDP InErrors: %u (total %u)", errors-prevErrors, errors);
                         prevErrors = errors;
                     }
@@ -2343,6 +2350,7 @@ private:
     StringArray columnNames;
     int inErrorsCol;
     unsigned prevErrors;
+    bool firstCall;
 };
 
 static class CMemoryUsageReporter: public Thread

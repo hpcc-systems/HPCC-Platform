@@ -31,7 +31,7 @@ IF (NOT HIREDIS_FOUND)
   FIND_PATH(HIREDIS_INCLUDE_DIR hiredis/hiredis.h PATHS /usr/include /usr/share/include /usr/local/include PATH_SUFFIXES hiredis)
   FIND_LIBRARY(HIREDIS_LIBRARY NAMES ${libhiredis} PATHS /usr/lib /usr/share /usr/lib64 /usr/local/lib /usr/local/lib64)
 
-  IF(HIREDIS_INCLUDE_DIR)
+  IF(EXISTS "${HIREDIS_INCLUDE_DIR}/hiredis/hiredis.h")
     #MAJOR
     FILE (STRINGS "${HIREDIS_INCLUDE_DIR}/hiredis/hiredis.h" major REGEX "#define HIREDIS_MAJOR")
     STRING(REGEX REPLACE "#define HIREDIS_MAJOR " "" major "${major}")

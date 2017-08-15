@@ -9265,7 +9265,7 @@ IHqlExpression * expandMacroDefinition(IHqlExpression * expr, HqlLookupContext &
 static IHqlExpression * transformAttributeToQuery(IHqlExpression * expr, HqlLookupContext & ctx, bool syntaxCheck)
 {
     if (expr->isMacro())
-        return expandMacroDefinition(expr, ctx, true);
+        return expandMacroDefinition(expr, ctx, !syntaxCheck);
 
     if (expr->isFunction())
     {

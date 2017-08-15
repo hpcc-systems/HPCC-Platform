@@ -41,7 +41,7 @@
 #define LOGPFX "XREF: "
 #define LOGPFX2 "FILEEXPIRY: "
 
-#define RECENTCUTOFF 1  // day
+#define DEFAULT_RECENT_CUTOFF_DAYS 1
 
 inline bool nextCsvToken(const char *&s,StringBuffer &tok) 
 {
@@ -1178,7 +1178,7 @@ public:
     }   
 
 
-    void listOrphans(cFileDesc *f,const char *basedir,bool &abort)
+    void listOrphans(cFileDesc *f,const char *basedir,bool &abort,unsigned int recentCutoffDays)
     {
         if (abort)
             return;
@@ -1328,7 +1328,7 @@ public:
                 if (drv) 
                     setReplicateFilename(tmp,1);
                 CDateTime co(mostrecent[drv]);
-                co.adjustTime(RECENTCUTOFF*60*24);
+                co.adjustTime(recentCutoffDays*60*24);
                 if (co.compare(now)>=0) {
                     warn(tmp.str(),"Recent orphans ignored");
                     branch[drv].clear();
@@ -1416,7 +1416,7 @@ public:
         }
     }
 
-    void listOrphans(cDirDesc *d,StringBuffer &basedir,bool &abort)
+    void listOrphans(cDirDesc *d,StringBuffer &basedir,bool &abort,unsigned int recentCutoffDays)
     {
         if (abort)
             return;
@@ -1439,7 +1439,7 @@ public:
         unsigned i =0;
         cFileDesc *file = d->files.first(i);
         while (file) {
-            listOrphans(file,basedir,abort);
+            listOrphans(file,basedir,abort,recentCutoffDays);
             if (abort)
                 return;
             file = d->files.next(i);
@@ -1447,7 +1447,7 @@ public:
         i = 0;
         cDirDesc *dir = d->dirs.first(i);
         while (dir) {
-            listOrphans(dir,basedir,abort);
+            listOrphans(dir,basedir,abort,recentCutoffDays);
             if (abort)
                 return;
             dir = d->dirs.next(i);
@@ -1468,12 +1468,12 @@ public:
         return stricmp(pt2->queryProp("Name"),pt1->queryProp("Name")); // rev
     }
 
-    void listOrphans(bool &abort)
+    void listOrphans(bool &abort,unsigned int recentCutoffDays)
     {   
         // also does directories
         log("Scanning for orphans");
         StringBuffer basedir;
-        listOrphans(NULL,basedir,abort);
+        listOrphans(NULL,basedir,abort,recentCutoffDays);
         if (abort)
             return;
         log("Orphan scan complete");
@@ -1484,7 +1484,7 @@ public:
     }
 
 
-    void listLost(bool &abort,bool ignorelazylost)
+    void listLost(bool &abort,bool ignorelazylost,unsigned int recentCutoffDays)
     {
         log("Scanning for lost files");
         StringBuffer tmp;
@@ -1527,7 +1527,7 @@ public:
                 CDateTime now;
                 now.setNow();
                 CDateTime co(dt);
-                co.adjustTime(RECENTCUTOFF*60*24);
+                co.adjustTime(recentCutoffDays*60*24);
                 if (co.compare(now)>=0) {
                     warn(lfn.get(),"Recent file ignored");
                     continue;
@@ -2105,13 +2105,14 @@ public:
             if (stopped)
                 break;
             unsigned numThreads = serverConfig->getPropInt("DfuXRef/@numThreads", DEFAULT_MAXDIRTHREADS);
+            unsigned int recentCutoffDays = serverConfig->getPropInt("DfuXRef/@cutoff", DEFAULT_RECENT_CUTOFF_DAYS);
             if (manager.scanDirectories(stopped,numThreads)) {
                 manager.updateStatus(true);
                 manager.scanLogicalFiles(stopped);
                 manager.updateStatus(true);
-                manager.listLost(stopped,ignorelazylost);
+                manager.listLost(stopped,ignorelazylost,recentCutoffDays);
                 manager.updateStatus(true);
-                manager.listOrphans(stopped);
+                manager.listOrphans(stopped,recentCutoffDays);
                 manager.updateStatus(true);
                 manager.saveToEclWatch(stopped,byscheduler);
                 manager.updateStatus(true);

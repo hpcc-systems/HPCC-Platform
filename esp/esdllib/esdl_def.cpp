@@ -269,16 +269,23 @@ public:
         // must provide a parameter on the URL '?internal' to see those elements
         // in the WSDL or web form.
 
-        if( opts && defOptional )
+        if (opts && defOptional)
         {
-            if( opts->hasProp(defOptional) )
+            if (*defOptional == '!')
             {
-                return true;
-            } else {
-                return false;
+                if (!opts->hasProp(defOptional+1))
+                    return true;
+                else
+                    return false;
+            }
+            else
+            {
+                if (opts->hasProp(defOptional))
+                    return true;
+                else
+                    return false;
             }
         }
-
         return true;
     }
 };
@@ -1662,7 +1669,7 @@ void EsdlDefinition::walkDefinitionDepthFirst( AddedObjs& foundByName, EsdlDefOb
     // ancestors- they've already been added.
     // Checking up front here will also allow us to detect cycles in the strcuture
     // graph -such as we have with BpsReportRelative- and avoid an infinite loop
-    if( found || esdlObj->checkOptional(opts) == false || esdlObj->checkVersion(requestedVer) == false )
+    if (found || esdlObj->checkOptional(opts) == false || (requestedVer != 0.0 && esdlObj->checkVersion(requestedVer) == false))
     {
         //DBGLOG("%s</%s><Skipped/>", indent.str(), esdlObj->queryName());
         return;

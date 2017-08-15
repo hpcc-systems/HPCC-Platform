@@ -190,7 +190,7 @@ namespace couchbaseembed
         inline CouchbaseConnection(bool useSSL, const char * host, unsigned port, const char * bucketname, const char * user, const char * password, const char * connOptions)
         {
             m_connectionString.setf("couchbase%s://%s:%d/%s%s", useSSL ? "s" : "", host, port, bucketname, connOptions);
-            m_pCouchbaseClient = new Couchbase::Client(m_connectionString.str());//USER/PASS still needed
+            m_pCouchbaseClient = new Couchbase::Client(m_connectionString.str(), password);
             m_pQuery = nullptr;
         }
 
@@ -271,7 +271,7 @@ namespace couchbaseembed
 
     protected:
         const char * nextField(const RtlFieldInfo * field);
-        const char * xpathOrName(const RtlFieldInfo * field) const;
+        void xpathOrName(StringBuffer & outXPath, const RtlFieldInfo * field) const;
         void constructNewXPath(StringBuffer& outXPath, const char * nextNode) const;
     private:
         TokenDeserializer m_tokenDeserializer;
