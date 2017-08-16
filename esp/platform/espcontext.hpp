@@ -32,7 +32,7 @@
 #include "esphttp.hpp"
 
 #define SESSION_SDS_LOCK_TIMEOUT (30*1000) // 30 seconds
-#define ESP_SESSION_TIMEOUT (600) // 10 Mins
+#define ESP_SESSION_TIMEOUT (120*60) // 120 Mins
 #define ESP_CHECK_SESSION_TIMEOUT (30) // 30 seconds
 
 static const char* const SESSION_ID_COOKIE = "ESPSessionID";
