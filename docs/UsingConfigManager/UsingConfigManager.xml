@@ -898,7 +898,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           </para>
         </sect3>
 
-        <sect3>
+        <sect3 role="brk">
           <title>DaliServerPlugin Options</title>
 
           <para>This section describes the DaliServerPlugin options</para>
@@ -1643,6 +1643,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
 
+          <?hard-pagebreak ?>
+
           <para>The following tables describe the ESPProcess Service Bindings,
           <emphasis role="bold">Feature Authentications</emphasis>.</para>
 
@@ -1824,6 +1826,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                         xpointer="xpointer(//*[@id='MyWS2-T01'])"
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
+
+          <?hard-pagebreak ?>
 
           <para>Ws ECL VIPS option attributes.</para>
 
@@ -2323,7 +2327,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
         <?hard-pagebreak ?>
 
-        <sect3>
+        <sect3 id="ThorClusterAttributesTab">
           <title>ThorCluster Attributes</title>
 
           <para>This section describes the Thor Cluster Attributes tab.</para>
@@ -2332,63 +2336,63 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <graphic fileref="images/CM-img18-1.jpg" vendor="configmgrSS" />
           </para>
 
-          <para>
-            <emphasis role="bold">Thor Memory Settings</emphasis>
-          </para>
+          <sect4 id="ThorMemorySettings">
+            <title>Thor Memory Settings</title>
 
-          <para>If <emphasis role="bold">globalMemorySize</emphasis> is left
-          unset, Thor[master] detects total physical memory and allocates 75%
-          of it. If there are multiple slaves per node (slavesPerNode&gt;1) it
-          divides the total among the slaves. If globalMemorySize is defined,
-          then it allocates that amount of memory to each slave. The
-          masterMemorySize attribute allocates memory for the Thor master. If
-          omitted, Thor master uses globalMemorySize, or the default 75% of
-          memory.</para>
+            <para>When the <emphasis role="bold">globalMemorySize</emphasis>
+            is left unset, Thor[master] detects total physical memory and
+            allocates 75% of it. If there are multiple slaves per node
+            (slavesPerNode&gt;1) it divides the total among the slaves. If
+            globalMemorySize is defined, then it allocates that amount of
+            memory to each slave. The masterMemorySize attribute allocates
+            memory for the Thor master. If omitted, Thor master uses
+            globalMemorySize, or the default 75% of memory.</para>
 
-          <para>On systems with a lot of memory, the default 75% of physical
-          memory is probably too conservative and reserving total physical
-          minus 2GB (for the OS and other processes) is sensible. You should
-          then divide that number by the number of slavesPerNode.</para>
+            <para>On systems with a lot of memory, the default 75% of physical
+            memory is probably too conservative and reserving total physical
+            minus 2GB (for the OS and other processes) is sensible. You should
+            then divide that number by the number of slavesPerNode.</para>
 
-          <para>If there are multiple Thors sharing the same nodes, then
-          globalMemorySize must be configured to take that into
-          account.</para>
+            <para>If there are multiple Thors sharing the same nodes, then
+            globalMemorySize must be configured to take that into
+            account.</para>
 
-          <para>For example, if there are 2 Thors each with 2 slaves per box,
-          that will mean there are 4 slaves per physical node. So you should
-          use a formula similar to the following in your calculations when
-          configuring globalMemorySize:</para>
+            <para>For example, if there are 2 Thors each with 2 slaves per
+            box, that will mean there are 4 slaves per physical node. So you
+            should use a formula similar to the following in your calculations
+            when configuring globalMemorySize:</para>
 
-          <programlisting>globalMemorySize = (total-physical-memory)-2GB / (2*2) </programlisting>
+            <programlisting>globalMemorySize = (total-physical-memory)-2GB / (2*2) </programlisting>
 
-          <para>Without any specified setting, Thor assumes it has exclusive
-          access to the memory and would therefore use too much (because each
-          Thor is unaware of the other's configuration and memory
-          usage).</para>
+            <para>Without any specified setting, Thor assumes it has exclusive
+            access to the memory and would therefore use too much (because
+            each Thor is unaware of the other's configuration and memory
+            usage).</para>
 
-          <para>if <emphasis role="bold">localThor</emphasis> is set to true
-          and <emphasis role="bold">masterMemorySize</emphasis> and <emphasis
-          role="bold">globalMemorySize</emphasis> are unspecified, then the
-          defaults will be 50% for <emphasis
-          role="bold">globalMemorySize</emphasis> (divided by <emphasis
-          role="bold">slavesPerNode</emphasis>) and 25% for <emphasis
-          role="bold">masterMemorySize.</emphasis></para>
+            <para>If <emphasis role="bold">localThor</emphasis> is set to true
+            and <emphasis role="bold">masterMemorySize</emphasis> and
+            <emphasis role="bold">globalMemorySize</emphasis> are unspecified,
+            then the defaults will be 50% for <emphasis
+            role="bold">globalMemorySize</emphasis> (divided by <emphasis
+            role="bold">slavesPerNode</emphasis>) and 25% for <emphasis
+            role="bold">masterMemorySize.</emphasis></para>
 
-          <para>Although a configuration may be set using upper memory limits
-          that exceed total physical memory, Thor will not actually reserve
-          the memory ahead of time and will only hit memory problems when and
-          if your jobs use all of memory. So, for example, two Thors that are
-          configured to use all available memory could peacefully co-exist
-          until a query on each are simultaneously using more memory than the
-          node has available.</para>
+            <para>Although a configuration may be set using upper memory
+            limits that exceed total physical memory, Thor will not actually
+            reserve the memory ahead of time and will only hit memory problems
+            when and if your jobs use all of memory. So, for example, two
+            Thors that are configured to use all available memory could
+            peacefully co-exist until a query on each are simultaneously using
+            more memory than the node has available.</para>
 
-          <!--configMgr-Thor-Attribute-Include-XXX-->
+            <!--configMgr-Thor-Attribute-Include-XXX-->
 
-          <para>
-            <xi:include href="XMLGeneration/xml/thor.xsd.mod.xml"
-                        xpointer="xpointer(//*[@id='Th.t1'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
-          </para>
+            <para>
+              <xi:include href="XMLGeneration/xml/thor.xsd.mod.xml"
+                          xpointer="xpointer(//*[@id='Th.t1'])"
+                          xmlns:xi="http://www.w3.org/2001/XInclude" />
+            </para>
+          </sect4>
         </sect3>
 
         <?hard-pagebreak ?>
