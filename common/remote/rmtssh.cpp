@@ -39,7 +39,6 @@
 class CFRunSSH: public CInterface, implements IFRunSSH
 {
 
-
     unsigned numthreads;
     unsigned connecttimeout;
     unsigned attempts;
@@ -63,16 +62,18 @@ class CFRunSSH: public CInterface, implements IFRunSSH
     CriticalSection sect;
 
 
-
     StringBuffer expandCmd(StringBuffer &cmdbuf, unsigned nodenum, unsigned treefrom)
     {
         const char *cp=cmd.get();
         if (!cp)
             return cmdbuf;
-        for (; *cp; cp++) {
-            if ((*cp=='%') && cp[1]) {
+        for (; *cp; cp++)
+        {
+            if ((*cp=='%') && cp[1])
+            {
                 cp++;
-                switch (*cp) {
+                switch (*cp)
+                {
                 case 'n': // Node number
                     cmdbuf.append(nodenum+1);
                     break;
@@ -82,7 +83,7 @@ class CFRunSSH: public CInterface, implements IFRunSSH
                 case 'l': // Node list
                     cmdbuf.append(slavesfile);
                     break;
-                case '%': 
+                case '%':
                     cmdbuf.append('%');
                     break;
                 case 'x': // Next Node
@@ -97,7 +98,8 @@ class CFRunSSH: public CInterface, implements IFRunSSH
                     else
                         cmdbuf.append(treeroot);
                     break;
-                case 's': { // ssh params
+                case 's':
+                    { // ssh params
                         bool usepssh = !password.isEmpty();
                         cmdbuf.appendf("%s -o LogLevel=QUIET -o StrictHostKeyChecking=%s -o BatchMode=yes ",usepssh?"pssh":"ssh",strict?"yes":"no");
                         if (!identityfile.isEmpty())
@@ -126,16 +128,20 @@ class CFRunSSH: public CInterface, implements IFRunSSH
     void loadSlaves()
     {
         FILE *slavesFile  = fopen(slavesfile.get(), "rt");
-        if( !slavesFile) {
+        if( !slavesFile)
+        {
             const char * s = slavesfile.get();
             while (*s&&(isdigit(*s)||(*s=='.')||(*s==',')||(*s==':')||(*s=='-')||(*s=='*')))
                 s++;
-            if (!*s) {
+            if (!*s)
+            {
                 SocketEndpointArray sa;
                 sa.fromText(slavesfile.get(),0);
-                if (sa.ordinality()) {
+                if (sa.ordinality())
+                {
                     StringBuffer ns;
-                    ForEachItemIn(i,sa) {
+                    ForEachItemIn(i,sa)
+                    {
                         sa.item(i).getIpText(ns.clear());
                         slaves.append(ns.str());
                     }
@@ -146,18 +152,21 @@ class CFRunSSH: public CInterface, implements IFRunSSH
         }
         char inbuf[1000];
         StringAttr slave;
-        while (fgets( inbuf, sizeof(inbuf), slavesFile)) {
+        while (fgets( inbuf, sizeof(inbuf), slavesFile))
+        {
             char *hash = strchr(inbuf, '#');
             if (hash)
                 *hash = 0;
             char *finger = inbuf;
-            for (;;) {
+            for (;;)
+            {
                 while (isspace(*finger))
                     finger++;
                 char *start = finger;
                 while (*finger && !isspace(*finger))
                     finger++;
-                if (finger > start) {
+                if (finger > start)
+                {
                     slave.set(start, finger - start);
                     slaves.append(slave);
                 }
@@ -193,17 +202,21 @@ public:
         verbose = false;
         dryrun = false;
         useplink = false;
-        for (int i=1; i<argc; i++) {
+        for (int i=1; i<argc; i++)
+        {
             const char *arg = argv[i];
-            if (arg[0]=='-') {
+            if (arg[0]=='-')
+            {
                 arg++;
                 const char *parm = (arg[1]==':')?(arg+2):(arg+1);
-                switch (toupper(*arg)) {
+                switch (toupper(*arg))
+                {
                     case 'N':
                         numthreads = *parm?atoi(parm):numthreads;
                         break;
                     case 'T':
-                        if (toupper(arg[1])=='R') {
+                        if (toupper(arg[1])=='R')
+                        {
                             parm = (arg[2]==':')?(arg+3):(arg+2);
                             treeroot.set(parm);
                             break;
@@ -222,7 +235,7 @@ public:
                     case 'D':
                         if (*parm)
                             workdir.set(parm);
-                        else 
+                        else
                             dryrun = true;
                         break;
                     case 'S':
@@ -239,7 +252,8 @@ public:
                         break;
                     case 'P':
 #ifdef _WIN32
-                        if (toupper(arg[1])=='L') {
+                        if (toupper(arg[1])=='L')
+                        {
                             useplink = true;
                             break;
                         }
@@ -247,13 +261,15 @@ public:
                         parm = (arg[2]==':')?(arg+3):(arg+2);
                         if (!*parm)
                             break;
-                        if (toupper(arg[1])=='W') {
+                        if (toupper(arg[1])=='W')
+                        {
                             StringBuffer buf;
                             encrypt(buf,parm);
                             password.set(buf.str());
                             break;
                         }
-                        else if (toupper(arg[1])=='E') {
+                        else if (toupper(arg[1])=='E')
+                        {
                             password.set(parm);
                             break;
                         }
@@ -262,8 +278,10 @@ public:
                         throw MakeStringException(-1,"Unknown option %s",argv[i]);
                 }
             }
-            else {
-                if (slavesfile.isEmpty()) {
+            else
+            {
+                if (slavesfile.isEmpty())
+                {
                     slavesfile.set(argv[i]);
                     loadSlaves();
                 }
@@ -277,13 +295,14 @@ public:
             numthreads=1;
         if (!identityfile.isEmpty()&&!checkFileExists(identityfile.get()))
             throw MakeStringException(-1,"Cannot find identity file: %s",identityfile.get());
-        if (!password.isEmpty()&&!identityfile.isEmpty()) {
+        if (!password.isEmpty()&&!identityfile.isEmpty())
+        {
             WARNLOG("SSH identity file specified, ignoring password");
             password.clear();
         }
     }
 
-    void init(  
+    void init(
                 const char *cmdline,
                 const char *identfilename,
                 const char *username,
@@ -299,13 +318,14 @@ public:
 #ifdef _WIN32
         identityfile.set(identfilename);
 #else
-        if (identfilename&&*identfilename) {
+        if (identfilename&&*identfilename)
+        {
             wordexp_t exp_result;  // expand ~ etc
             wordexp(identfilename, &exp_result, 0);
             identityfile.set(exp_result.we_wordv[0]);
             wordfree(&exp_result);
         }
-        else 
+        else
             identityfile.clear();
 #endif
         user.set(username);
@@ -317,7 +337,8 @@ public:
     {
         assertex(n);
         unsigned ret=0;
-        while (n>1) {
+        while (n>1)
+        {
             ret++;
             n /= 2;
         }
@@ -327,7 +348,7 @@ public:
     unsigned pow2(unsigned n)
     {
         unsigned ret=1;
-        while (n--) 
+        while (n--)
             ret *= 2;
         return ret;
     }
@@ -337,17 +358,20 @@ public:
         return n-pow2(log2(n));
     }
 
- 
+
     void exec(unsigned i,unsigned treefrom)
     {
         int retcode=-1;
         StringBuffer outbuf;
-        try {
+        try
+        {
             bool usepssh = false;
             StringBuffer cmdline;
-            if (!password.isEmpty()) {
+            if (!password.isEmpty())
+            {
 #ifdef _WIN32
-                if (useplink) {
+                if (useplink)
+                {
                     cmdline.append("plink -ssh -batch ");
                     if (!user.isEmpty())
                         cmdline.append(" -l ").append(user);
@@ -361,7 +385,8 @@ public:
                     const char *dir = cmd.get();
                     const char *s = dir;
                     const char *e = NULL;
-                    while (*s>' ') {
+                    while (*s>' ')
+                    {
                         if (*s=='\\')
                             e = s;
                         s++;
@@ -373,7 +398,8 @@ public:
                     cmdline.append('"');
 #endif
                 }
-                else {
+                else
+                {
                 // windows use psexec
                     cmdline.append("psexec \\\\").append(slaves.item(i));
                     if (!user.isEmpty())
@@ -391,7 +417,8 @@ public:
                 usepssh = true;
 #endif
             }
-            if (cmdline.length()==0) {
+            if (cmdline.length()==0)
+            {
                 // ssh
                 cmdline.appendf("%s -n -o LogLevel=QUIET -o StrictHostKeyChecking=%s ",usepssh?"pssh":"ssh",strict?"yes":"no -o UserKnownHostsFile=/dev/null");
                 if (!usepssh)
@@ -404,7 +431,8 @@ public:
                     cmdline.appendf("-o ConnectTimeout=%d ",connecttimeout);
                 if (attempts)
                     cmdline.appendf("-o ConnectionAttempts=%d ",attempts);
-                if (usepssh) {
+                if (usepssh)
+                {
                     StringBuffer tmp;
                     decrypt(tmp,password);
                     cmdline.appendf("-o password=%s ",tmp.str());
@@ -416,15 +444,19 @@ public:
                 expandCmd(cmdline,i,treefrom);
                 cmdline.append('"');
             }
-            if (dryrun) 
+            if (dryrun)
                 printf("%s\n",cmdline.str());
-            else {
+            else
+            {
+                DBGLOG(-1, "%s\n",cmdline.str());
                 Owned<IPipeProcess> pipe = createPipeProcess();
                 if (pipe->run((verbose&&!usepssh)?"FRUNSSH":NULL,cmdline.str(),workdir,
-                    useplink, // for some reason plink needs input handle
-                    true,true)) {
+                              useplink, // for some reason plink needs input handle
+                              true,true))
+                {
                     byte buf[4096];
-                    for (;;) {
+                    for (;;)
+                    {
                         size32_t read = pipe->read(sizeof(buf),buf);
                         if (!read)
                             break;
@@ -432,12 +464,18 @@ public:
                     }
                     retcode = pipe->wait();
                     bool firsterr=true;
-                    for (;;) {
+                    for (;;)
+                    {
                         size32_t read = pipe->readError(sizeof(buf),buf);
                         if (!read)
                             break;
-                        if (firsterr) {
+
+                        if (firsterr)
+                        {
                             firsterr = false;
+                            if ((strstr((const char *)buf, "ftslave") != nullptr) && !retcode)
+                                retcode = -3;
+
                             if (outbuf.length())
                                 outbuf.append('\n');
                             outbuf.append("STDERR: ");
@@ -445,9 +483,15 @@ public:
                         outbuf.append(read,(const char *)buf);
                     }
                 }
+                else
+                {
+                    retcode = -4;
+                    outbuf.append("PIPE process failed to start");
+                }
             }
         }
-        catch (IException *e) {
+        catch (IException *e)
+        {
             e->errorMessage(outbuf);
             retcode = -2;
         }
@@ -459,9 +503,10 @@ public:
 
     void exec()
     {
-        if (!treeroot.isEmpty()) {
+        if (!treeroot.isEmpty())
+        {
             // remove from slaves
-            ForEachItemInRev(i,slaves) 
+            ForEachItemInRev(i,slaves)
                 if (strcmp(slaves.item(i),treeroot)==0)
                     slaves.remove(i);
         }
@@ -477,8 +522,9 @@ public:
                 : parent(_parent)
             {
                 treemode = !parent.treeroot.isEmpty();
-                if (treemode) {
-                    treesem = new Semaphore[parent.slaves.ordinality()+1];  // don't actually use all 
+                if (treemode)
+                {
+                    treesem = new Semaphore[parent.slaves.ordinality()+1];  // don't actually use all
                     treesem[0].signal();
                 }
                 else
@@ -490,7 +536,8 @@ public:
             }
             void Do(unsigned i)
             {
-                if (treemode) {
+                if (treemode)
+                {
                     unsigned from = parent.treesrc(i+1);
                     treesem[from].wait();
                     parent.exec(i,from);
@@ -504,15 +551,19 @@ public:
         afor.For(slaves.ordinality(),(numthreads>slaves.ordinality())?slaves.ordinality():numthreads,!treeroot.isEmpty(),treeroot.isEmpty());
         if (dryrun)
             return;
-        if (slaves.ordinality()>1) {
+        if (slaves.ordinality()>1)
+        {
             int errCode = 0;
             Owned<IMultiException> multiException = MakeMultiException();
-            for (unsigned i=0;i<done.ordinality();i++) {
+            for (unsigned i=0;i<done.ordinality();i++)
+            {
                 unsigned n = done.item(i);
                 StringBuffer res(replytext.item(n));
                 while (res.length()&&(res.charAt(res.length()-1)<=' '))
                     res.setLength(res.length()-1);
-                if (reply.item(n)) {
+
+                if (reply.item(n))
+                {
                     errCode = reply.item(n);
                     if (res.length())
                         multiException->append(*MakeStringExceptionDirect(errCode,res.str()));
@@ -523,11 +574,13 @@ public:
             if (errCode)
                 throw multiException.getClear();
         }
-        else {
+        else
+        {
             StringBuffer res(replytext.item(0));
             while (res.length()&&(res.charAt(res.length()-1)<=' '))
                 res.setLength(res.length()-1);
-            if (reply.item(0)) {
+            if (reply.item(0))
+            {
                 if (res.length())
                     throw MakeStringExceptionDirect(reply.item(0), res.str());
                 else
@@ -554,12 +607,12 @@ public:
 
     const StringArray &getReplyText() const
     {
-      return replytext;
+        return replytext;
     }
 
     const UnsignedArray &getReply() const
     {
-      return reply;
+        return reply;
     }
 };
 
