@@ -308,27 +308,26 @@ public:
     }
 } *DaliServixIntercept = NULL;
 
-bool testDaliServixPresent(const SocketEndpoint &_ep)
+unsigned short getActiveDaliServixPort(const IpAddress &ip)
 {
-    SocketEndpoint ep(_ep);
+    if (ip.isNull())
+        return 0;
+    SocketEndpoint ep(0, ip);
     setDafsEndpointPort(ep);
-    if (ep.isNull())
-        return false;
     try {
         Owned<ISocket> socket = connectDafs(ep, 10000);
-        return true;
+        return ep.port;
     }
     catch (IException *e)
     {
         e->Release();
     }
-    return false;
+    return 0;
 }
 
 bool testDaliServixPresent(const IpAddress &ip)
 {
-    SocketEndpoint ep(0,ip);
-    return testDaliServixPresent(ep);
+    return getActiveDaliServixPort(ip) != 0;
 }
 
 unsigned getDaliServixVersion(const SocketEndpoint &_ep,StringBuffer &ver)
