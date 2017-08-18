@@ -241,14 +241,24 @@ void CWsESDLConfigEx::addESDLDefinition(IPropertyTree * queryRegistry, const cha
         {
             newSeq--;
             xpath.appendf("[@seq='%d']", newSeq);
-            origTimestamp.set(queryRegistry->queryPropTree(xpath)->queryProp("@created"));
-            origOwner.set(queryRegistry->queryPropTree(xpath)->queryProp("@publishedBy"));
 
-            queryRegistry->removeTree(queryRegistry->queryPropTree(xpath));
+            IPropertyTree * definition = queryRegistry->queryPropTree(xpath);
+            if (definition)
+            {
+                origTimestamp.set(definition->queryProp("@created"));
+                origOwner.set(definition->queryProp("@publishedBy"));
+                queryRegistry->removeTree(definition);
+            }
+            else
+            {
+                DBGLOG("Could not overwrite Definition: '%s.%d'", name, newSeq);
+                return;
+            }
         }
         else
         {
             DBGLOG("Will not delete previous ESDL definition version because it is referenced in an ESDL binding.");
+            return;
         }
     }
 
@@ -615,9 +625,19 @@ int CWsESDLConfigEx::publishESDLBinding(const char * bindingName,
     {
         if(overwrite)
         {
-           origTimestamp.set(bindings->queryPropTree(xpath)->queryProp("@created"));
-           origOwner.set(bindings->queryPropTree(xpath)->queryProp("@publishedBy"));
-           bindings->removeTree(bindings->queryPropTree(xpath));
+            IPropertyTree * binding = bindings->queryPropTree(xpath);
+            if (binding)
+            {
+                origTimestamp.set(binding->queryProp("@created"));
+                origOwner.set(binding->queryProp("@publishedBy"));
+                bindings->removeTree(binding);
+            }
+            else
+            {
+                message.setf("Could not overwrite binding '%s.%s'!", espProcName, bindingName);
+                conn->close(false);
+                return -1;
+            }
         }
         else
         {
