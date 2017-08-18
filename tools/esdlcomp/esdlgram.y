@@ -1686,7 +1686,7 @@ void yyerror(const char *s)
       yytext = (char*)strdup("EOL");
     }
     // the following error format work with Visual Studio double click.
-    printf("%s(%d) : syntax error H%d : %s near \"%s\"\n",hcp->filename, linenum, errnum, s, yytext);
+    fprintf(stderr, "%s(%d) : syntax error H%d : %s near \"%s\"\n",hcp->filename, linenum, errnum, s, yytext);
     outf("*** %s(%d) syntax error H%d : %s near \"%s\"\n",hcp->filename, linenum, errnum, s, yytext);
     errnum = 0;
 }
