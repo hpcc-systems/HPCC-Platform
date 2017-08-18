@@ -83,6 +83,7 @@ static const char * EclDefinition =
 "  unsigned4 UnicodeLocaleWordCount(const unicode text, const varstring localename) : c, pure,entrypoint='ulUnicodeLocaleWordCount', hole; \n"
 "  unicode UnicodeLocaleGetNthWord(const unicode text, unsigned4 n, const varstring localename) : c,pure,entrypoint='ulUnicodeLocaleGetNthWord';\n"
 "  unicode UnicodeLocaleExcludeNthWord(const unicode text, unsigned4 n, const varstring localename) :c,pure,entrypoint='ulUnicodeLocaleExcludeNthWord';\n"
+"  unicode UnicodeLocaleTranslate(const unicode text, unicode sear, unicode repl) :c,pure,entrypoint='ulUnicodeLocaleTranslate';\n"
 "END;\n";
 
 static const char * compatibleVersions[] = {
@@ -717,6 +718,33 @@ unsigned unicodeEditDistanceV4(UnicodeString & left, UnicodeString & right, unsi
     }
 
     return da[mask(leftLen-1)][rightLen-1];
+}
+
+void translate(UnicodeString & toProcess, UChar const * sear, unsigned searLen, UChar const * repl, unsigned replLen)
+{
+    UnicodeString search(false, sear, searLen);
+    UnicodeString replace(repl, replLen);
+    if (search.countChar32() != replace.countChar32() || toProcess.isEmpty() || search.isEmpty() || replace.isEmpty())
+    {
+        return;
+    }
+    StringCharacterIterator it(toProcess);
+    toProcess.remove();
+    int32_t idx = it.setToStart();
+    while (idx != it.endIndex())
+    {
+        int32_t x = search.lastIndexOf(it.current32());
+        if (x == -1)
+        {
+            toProcess.append(it.current32());
+        }
+        else
+        {
+            x = replace.moveIndex32(0, x);
+            toProcess.append(replace.char32At(x));
+        }
+        idx = it.move32(1, CharacterIterator::kCurrent);
+    }
 }
 
 void excludeNthWord(RuleBasedBreakIterator& bi, UnicodeString & source, unsigned n)
@@ -1468,6 +1496,23 @@ UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleExcludeNthWord(unsigned & tgt
     {
         tgtLen = processed.length();
         tgt = (UChar *)CTXMALLOC(parentCtx, tgtLen*2);
+        processed.extract(0, tgtLen, tgt);
+    }
+    else
+    {
+        tgtLen = 0;
+        tgt = 0;
+    }
+}
+
+UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleTranslate(unsigned & tgtLen, UChar * & tgt, unsigned textLen, UChar const * text, unsigned searLen, UChar const * sear, unsigned replLen, UChar * repl)
+{
+    UnicodeString processed(text, textLen);
+    translate(processed, sear, searLen, repl, replLen);
+    if (processed.length()>0)
+    {
+        tgtLen = processed.length();
+        tgt = (UChar *)CTXMALLOC(parentCtx, tgtLen * 2);
         processed.extract(0, tgtLen, tgt);
     }
     else
