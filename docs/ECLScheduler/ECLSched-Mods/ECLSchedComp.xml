@@ -183,6 +183,20 @@
 
         <para>To view the workunit details, click on the workunit ID (WUID)
         link for the workunit.</para>
+
+        <para>You can modify scheduled workunits from the workunit details
+        page in ECL Watch. Select the workunit details page, then press the
+        <emphasis role="bold">Reschedule</emphasis> button to reschedule a
+        descheduled workunit. Press the <emphasis
+        role="bold">Deschedule</emphasis> button to stop a selected scheduled
+        workunit from running. You can also access the Reschedule and
+        Deschedule options from the context menu when you right click on a
+        workunit. </para>
+
+        <para>If you are using a WHEN clause and it contains a COUNT number,
+        when rescheduled the workunit will continue the COUNT from the point
+        where it stopped and resumes the remaining COUNT. Once a workunit
+        completes the COUNT, there is no reschedule option.</para>
       </sect2>
 
       <sect2 id="ECLSched_PushingEvents" role="brk">
