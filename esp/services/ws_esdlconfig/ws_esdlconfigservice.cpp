@@ -232,25 +232,60 @@ void CWsESDLConfigEx::addESDLDefinition(IPropertyTree * queryRegistry, const cha
             newSeq = thisSeq + 1;
     }
 
+    StringBuffer origTimestamp;
+    StringBuffer origOwner;
+
     if (deleteprev && newSeq > 1)
     {
         if (!isESDLDefinitionBound(lcName, newSeq -1))
         {
             newSeq--;
-            queryRegistry->removeTree(queryRegistry->queryPropTree(xpath.appendf("[@seq='%d']", newSeq)));
+            xpath.appendf("[@seq='%d']", newSeq);
+
+            IPropertyTree * definition = queryRegistry->queryPropTree(xpath);
+            if (definition)
+            {
+                origTimestamp.set(definition->queryProp("@created"));
+                origOwner.set(definition->queryProp("@publishedBy"));
+                queryRegistry->removeTree(definition);
+            }
+            else
+            {
+                DBGLOG("Could not overwrite Definition: '%s.%d'", name, newSeq);
+                return;
+            }
         }
         else
         {
             DBGLOG("Will not delete previous ESDL definition version because it is referenced in an ESDL binding.");
+            return;
         }
     }
+
+    CDateTime dt;
+    dt.setNow();
+    StringBuffer str;
 
     newId.set(lcName).append(".").append(newSeq);
     definitionInfo->setProp("@name", lcName);
     definitionInfo->setProp("@id", newId);
     definitionInfo->setPropInt("@seq", newSeq);
-    if (userid && *userid)
-        definitionInfo->setProp("@publishedBy", userid);
+    if (origOwner.length())
+    {
+        definitionInfo->setProp("@lastEditedBy", (userid && *userid) ? userid : "Anonymous") ;
+        definitionInfo->setProp("@publishedBy", origOwner.str()) ;
+    }
+    else
+        definitionInfo->setProp("@publishedBy", (userid && *userid) ? userid : "Anonymous") ;
+
+    if (origTimestamp.length())
+    {
+        definitionInfo->setProp("@created", origTimestamp.str());
+        definitionInfo->setProp("@lastEdit",dt.getString(str).str());
+    }
+    else
+        definitionInfo->setProp("@created",dt.getString(str).str());
+
     queryRegistry->addPropTree(ESDL_DEF_ENTRY, LINK(definitionInfo));
 }
 
@@ -548,7 +583,8 @@ int CWsESDLConfigEx::publishESDLBinding(const char * bindingName,
                                          int esdlDefinitionVersion,
                                          const char * esdlServiceName,
                                          StringBuffer & message,
-                                         bool overwrite)
+                                         bool overwrite,
+                                         const char * user)
 {
     if (!esdlDefinitionName || !*esdlDefinitionName)
     {
@@ -582,10 +618,27 @@ int CWsESDLConfigEx::publishESDLBinding(const char * bindingName,
 
     bool duplicateBindings = bindings->hasProp(xpath.str());
 
+    StringBuffer origTimestamp;
+    StringBuffer origOwner;
+
     if (duplicateBindings)
     {
         if(overwrite)
-           bindings->removeTree(bindings->queryPropTree(xpath));
+        {
+            IPropertyTree * binding = bindings->queryPropTree(xpath);
+            if (binding)
+            {
+                origTimestamp.set(binding->queryProp("@created"));
+                origOwner.set(binding->queryProp("@publishedBy"));
+                bindings->removeTree(binding);
+            }
+            else
+            {
+                message.setf("Could not overwrite binding '%s.%s'!", espProcName, bindingName);
+                conn->close(false);
+                return -1;
+            }
+        }
         else
         {
            message.setf("Could not configure Service '%s' because this service has already been configured for binding '%s' on ESP Process '%s'", esdlServiceName, bindingName, espProcName);
@@ -600,6 +653,26 @@ int CWsESDLConfigEx::publishESDLBinding(const char * bindingName,
     bindingtree->setProp("@espbinding", bindingName);
     bindingtree->setProp("@id", qbindingid.str());
 
+    CDateTime dt;
+    dt.setNow();
+    StringBuffer str;
+
+    if (origTimestamp.length())
+    {
+        bindingtree->setProp("@created", origTimestamp.str());
+        bindingtree->setProp("@lastEdit", dt.getString(str).str());
+    }
+    else
+        bindingtree->setProp("@created",  dt.getString(str).str());
+
+    if (origOwner.length())
+    {
+        bindingtree->setProp("@publisheBy", origOwner.str()) ;
+        bindingtree->setProp("@lastEditedBy", (user && *user) ? user : "Anonymous");
+    }
+    else
+        bindingtree->setProp("@publishedBy", (user && *user) ? user : "Anonymous") ;
+
     if (esdlDefinitionVersion <= 0)
         esdlDefinitionVersion = 1;
 
@@ -607,9 +680,11 @@ int CWsESDLConfigEx::publishESDLBinding(const char * bindingName,
     newId.set(lcName).append(".").append(esdlDefinitionVersion);
 
     Owned<IPropertyTree> esdldeftree  = createPTree();
+
     esdldeftree->setProp("@name", lcName);
     esdldeftree->setProp("@id", newId);
     esdldeftree->setProp("@esdlservice", esdlServiceName);
+
 
     esdldeftree->addPropTree("Methods", LINK(methodsConfig));
 
@@ -761,7 +836,8 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
                                                            esdlver,
                                                            esdlServiceName.str(),
                                                            msg,
-                                                           overwrite
+                                                           overwrite,
+                                                           username.str()
                                                            ));
 
             if (ver >= 1.2)
