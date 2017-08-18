@@ -1653,7 +1653,10 @@ bool addWUQueryFilter(WUSortField *filters, unsigned short &count, MemoryBuffer 
     if (isEmpty(name))
         return false;
     filters[count++] = value;
-    buff.append(name);
+    if ((value & WUSFwild) != 0 && !containsWildcard(name))
+        buff.append("*").append(name).append("*");
+    else
+        buff.append(name);
     return true;
 }
 
