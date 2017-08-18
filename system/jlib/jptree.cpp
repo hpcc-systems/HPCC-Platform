@@ -198,6 +198,25 @@ static int comparePropTrees(IInterface * const *ll, IInterface * const *rr)
     return stricmp(l->queryName(), r->queryName());
 };
 
+class CPTArrayIterator : public ArrayIIteratorOf<IArrayOf<IPropertyTree>, IPropertyTree, IPropertyTreeIterator>
+{
+    IArrayOf<IPropertyTree> elems;
+public:
+    CPTArrayIterator(IPropertyTreeIterator &iter, TreeCompareFunc compare) : ArrayIIteratorOf<IArrayOf<IPropertyTree>, IPropertyTree, IPropertyTreeIterator>(elems)
+    {
+        ForEach(iter)
+            elems.append(iter.get());
+        elems.sort(compare);
+    }
+};
+IPropertyTreeIterator * createSortedIterator(IPropertyTreeIterator & iter)
+{
+    return new CPTArrayIterator(iter, comparePropTrees);
+}
+IPropertyTreeIterator * createSortedIterator(IPropertyTreeIterator & iter, TreeCompareFunc compare)
+{
+    return new CPTArrayIterator(iter, compare);
+}
 //////////////////
 
 unsigned ChildMap::getHashFromElement(const void *e) const
@@ -239,23 +258,10 @@ IPropertyTreeIterator *ChildMap::getIterator(bool sort)
         virtual bool isValid() override { return hiter->isValid(); }
         virtual IPropertyTree & query() override { return hiter->query(); }
     };
-    class CPTArrayIterator : public ArrayIIteratorOf<IArrayOf<IPropertyTree>, IPropertyTree, IPropertyTreeIterator>
-    {
-        IArrayOf<IPropertyTree> elems;
-    public:
-        CPTArrayIterator(IPropertyTreeIterator &iter) : ArrayIIteratorOf<IArrayOf<IPropertyTree>, IPropertyTree, IPropertyTreeIterator>(elems)
-        {
-            ForEach(iter)
-                elems.append(iter.get());
-            elems.sort(comparePropTrees);
-        }
-    };
-    IPropertyTreeIterator *baseIter = new CPTHashIterator(*this);
+    Owned<IPropertyTreeIterator> baseIter = new CPTHashIterator(*this);
     if (!sort)
-        return baseIter;
-    IPropertyTreeIterator *it = new CPTArrayIterator(*baseIter);
-    baseIter->Release();
-    return it;
+        return baseIter.getClear();
+    return createSortedIterator(*baseIter);
 }
 
 ///////////
@@ -5534,6 +5540,20 @@ jlib_decl StringBuffer &toXML(const IPropertyTree *tree, StringBuffer &ret, unsi
 void toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, unsigned flags)
 {
     _toXML(tree, out, indent, flags);
+}
+
+void printXML(const IPropertyTree *tree, unsigned indent, unsigned flags)
+{
+    StringBuffer xml;
+    toXML(tree, xml, indent, flags);
+    printf("%s", xml.str());
+}
+
+void dbglogXML(const IPropertyTree *tree, unsigned indent, unsigned flags)
+{
+    StringBuffer xml;
+    toXML(tree, xml, indent, flags);
+    DBGLOG("%s", xml.str());
 }
 
 void saveXML(const char *filename, const IPropertyTree *tree, unsigned indent, unsigned flags)

@@ -2556,7 +2556,6 @@ static void dumpStats(IConstWorkUnit * workunit, const StatisticsFilter & filter
         IConstWUStatistic & cur = stats->query();
         StringBuffer xml;
         SCMStringBuffer curCreator;
-        SCMStringBuffer curScope;
         SCMStringBuffer curDescription;
         SCMStringBuffer curFormattedValue;
 
@@ -2568,8 +2567,8 @@ static void dumpStats(IConstWorkUnit * workunit, const StatisticsFilter & filter
         unsigned __int64 count = cur.getCount();
         unsigned __int64 max = cur.getMax();
         unsigned __int64 ts = cur.getTimestamp();
+        const char * curScope = cur.queryScope();
         cur.getCreator(curCreator);
-        cur.getScope(curScope);
         cur.getDescription(curDescription, false);
         cur.getFormattedValue(curFormattedValue);
 
@@ -2586,8 +2585,8 @@ static void dumpStats(IConstWorkUnit * workunit, const StatisticsFilter & filter
             if (curScopeType != SSTnone)
                 xml.append(queryScopeTypeName(curScopeType));
             xml.append(",");
-            if (curScope.length())
-                xml.append(curScope.str());
+            if (!isEmptyString(curScope))
+                xml.append(curScope);
             xml.append(",");
             if (curMeasure != SMeasureNone)
                 xml.append(queryMeasureName(curMeasure));
@@ -2620,8 +2619,8 @@ static void dumpStats(IConstWorkUnit * workunit, const StatisticsFilter & filter
                 xml.append("<creator>").append(curCreator.str()).append("</creator>");
             if (curScopeType != SSTnone)
                 xml.append("<stype>").append(queryScopeTypeName(curScopeType)).append("</stype>");
-            if (curScope.length())
-                xml.append("<scope>").append(curScope.str()).append("</scope>");
+            if (!isEmptyString(curScope))
+                xml.append("<scope>").append(curScope).append("</scope>");
             if (curMeasure != SMeasureNone)
                 xml.append("<unit>").append(queryMeasureName(curMeasure)).append("</unit>");
             if (curKind != StKindNone)
@@ -2677,6 +2676,117 @@ static void dumpStats(const char *wuid, const char * creatorTypeText, const char
         if (!workunit)
             return;
         dumpStats(workunit, filter, csv);
+    }
+}
+
+
+/* Callback used to output the different scope properties as xml */
+class ScopeDumper : public IWuScopeVisitor
+{
+public:
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & cur) override
+    {
+        StringBuffer xml;
+        SCMStringBuffer curCreator;
+        SCMStringBuffer curDescription;
+        SCMStringBuffer curFormattedValue;
+
+        StatisticCreatorType curCreatorType = cur.getCreatorType();
+        StatisticScopeType curScopeType = cur.getScopeType();
+        StatisticMeasure curMeasure = cur.getMeasure();
+        unsigned __int64 count = cur.getCount();
+        unsigned __int64 max = cur.getMax();
+        unsigned __int64 ts = cur.getTimestamp();
+        const char * curScope = cur.queryScope();
+        cur.getCreator(curCreator);
+        cur.getDescription(curDescription, false);
+        cur.getFormattedValue(curFormattedValue);
+
+        if (kind != StKindNone)
+            xml.append(" kind='").append(queryStatisticName(kind)).append("'");
+        xml.append(" value='").append(value).append("'");
+        xml.append(" formatted='").append(curFormattedValue).append("'");
+        if (curMeasure != SMeasureNone)
+            xml.append(" unit='").append(queryMeasureName(curMeasure)).append("'");
+        if (curCreatorType != SCTnone)
+            xml.append(" ctype='").append(queryCreatorTypeName(curCreatorType)).append("'");
+        if (curCreator.length())
+            xml.append(" creator='").append(curCreator.str()).append("'");
+        if (count != 1)
+            xml.append(" count='").append(count).append("'");
+        if (max)
+            xml.append(" max='").append(value).append("'");
+        if (ts)
+        {
+            xml.append(" ts='");
+            formatStatistic(xml, ts, SMeasureTimestampUs);
+            xml.append("'");
+        }
+        if (curDescription.length())
+            xml.append(" desc='").append(curDescription.str()).append("'");
+        printf(" <attr%s/>\n", xml.str());
+    }
+    virtual void noteAttribute(WuAttr attr, const char * value)
+    {
+        StringBuffer xml;
+        xml.appendf("<attr kind='%s' value='%s'/>", queryWuAttributeName(attr), value);
+        printf(" %s\n", xml.str());
+    }
+    virtual void noteHint(const char * kind, const char * value)
+    {
+        StringBuffer xml;
+        xml.appendf("<attr kind='hint:%s' value='%s'/>", kind, value);
+        printf(" %s\n", xml.str());
+    }
+};
+
+static void dumpWorkunitAttr(IConstWorkUnit * workunit, const StatisticsFilter & filter)
+{
+    ScopeDumper dumper;
+
+    printf("<Workunit wuid=\"%s\">\n", workunit->queryWuid());
+
+    Owned<IConstWUScopeIterator> iter = &workunit->getScopeIterator(&filter);
+    ForEach(*iter)
+    {
+        printf("<scope scope='%s' type='%s'>\n", iter->queryScope(), queryScopeTypeName(iter->getScopeType()));
+        iter->playProperties(dumper);
+        printf("</scope>\n");
+    }
+
+    printf("</Workunit>\n");
+}
+
+static void dumpWorkunitAttr(const char *wuid, const char * creatorTypeText, const char * creator, const char * scopeTypeText, const char * scope, const char * kindText, const char * userFilter)
+{
+    StatisticsFilter filter(checkDash(creatorTypeText), checkDash(creator), checkDash(scopeTypeText), checkDash(scope), NULL, checkDash(kindText));
+    if (userFilter)
+        filter.setFilter(userFilter);
+
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+    const char * star = strchr(wuid, '*');
+    if (star)
+    {
+        WUSortField filters[2];
+        MemoryBuffer filterbuf;
+        filters[0] = WUSFwildwuid;
+        filterbuf.append(wuid);
+        filters[1] = WUSFterm;
+        Owned<IConstWorkUnitIterator> iter = factory->getWorkUnitsSorted((WUSortField) (WUSFwuid), filters, filterbuf.bufferBase(), 0, INT_MAX, NULL, NULL);
+
+        ForEach(*iter)
+        {
+            Owned<IConstWorkUnit> workunit = factory->openWorkUnit(iter->query().queryWuid());
+            if (workunit)
+                dumpWorkunitAttr(workunit, filter);
+        }
+    }
+    else
+    {
+        Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
+        if (!workunit)
+            return;
+        dumpWorkunitAttr(workunit, filter);
     }
 }
 
@@ -3551,6 +3661,19 @@ int main(int argc, char* argv[])
                             optArray.getString(options, ",");
                         }
                         migrateFiles(srcGroup, dstGroup, filemask, options);
+                    }
+                    else if (stricmp(cmd, "wuattr") == 0) {
+                        CHECKPARAMS(1, 6);
+                        if ((params.ordinality() >= 3) && (strchr(params.item(2), '[')))
+                        {
+                            dumpWorkunitAttr(params.item(1), "-", "-", "-", "-", "-", params.item(2));
+                        }
+                        else
+                        {
+                            while (params.ordinality() < 7)
+                                params.append("*");
+                            dumpWorkunitAttr(params.item(1), params.item(2), params.item(3), params.item(4), params.item(5), params.item(6), nullptr);
+                        }
                     }
                     else
                         ERRLOG("Unknown command %s",cmd);

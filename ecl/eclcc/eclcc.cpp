@@ -1997,14 +1997,13 @@ void EclCompileInstance::logStats(bool logTimings)
     if (logTimings)
     {
         Owned<IConstWUStatisticIterator> stats = &wu->getStatistics(nullptr);
-        SCMStringBuffer scope;
         ForEach(*stats)
         {
             IConstWUStatistic & cur = stats->query();
-            cur.getScope(scope);
+            const char * scope = cur.queryScope();
             OwnedPTree tree = createPTree("stat", ipt_fast);
             tree->setProp("@kind", queryStatisticName(cur.getKind()));
-            tree->setProp("@scope", scope.str());
+            tree->setProp("@scope", scope);
             tree->setPropInt("@scopeType", (unsigned)cur.getScopeType());
             tree->setPropInt64("@value", cur.getValue());
             tree->setPropInt64("@max", cur.getMax());

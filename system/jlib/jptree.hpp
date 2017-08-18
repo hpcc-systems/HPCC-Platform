@@ -230,6 +230,9 @@ jlib_decl IPropertyTree *createPTreeFromHttpPath(const char *nameWithAttrs, IPro
 jlib_decl IPropertyTree *createPTreeFromHttpParameters(const char *nameWithAttrs, IProperties *parameters, bool skipLeadingDotParameters, bool nestedRoot, ipt_flags flags=ipt_none);
 jlib_decl bool checkParseUrlPathNodeValue(const char *s, StringBuffer &name, StringAttr &value);
 
+typedef int (*TreeCompareFunc)(IInterface * const *ll, IInterface * const *rr);
+jlib_decl IPropertyTreeIterator * createSortedIterator(IPropertyTreeIterator & iter, TreeCompareFunc compare);
+
 
 #define XML_SortTags 0x01
 #define XML_Embed    0x02
@@ -248,6 +251,8 @@ jlib_decl void saveXML(const char *filename, const IPropertyTree *tree, unsigned
 jlib_decl void saveXML(IFile &ifile, const IPropertyTree *tree, unsigned indent = 0, unsigned=XML_Format);
 jlib_decl void saveXML(IFileIO &ifileio, const IPropertyTree *tree, unsigned indent = 0, unsigned flags=XML_Format);
 jlib_decl void saveXML(IIOStream &stream, const IPropertyTree *tree, unsigned indent = 0, unsigned flags=XML_Format);
+jlib_decl void printXML(const IPropertyTree *tree, unsigned indent = 0, unsigned flags=XML_Format);
+jlib_decl void dbglogXML(const IPropertyTree *tree, unsigned indent = 0, unsigned flags=XML_Format);
 
 #define JSON_SortTags 0x01
 #define JSON_Format   0x02

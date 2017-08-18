@@ -71,6 +71,7 @@ enum StatisticScopeType
     SSTfunction,                        // a function call
     SSTworkflow,
     SSTchildgraph,
+    SSTunknown,
     SSTmax
 };
 
@@ -88,6 +89,9 @@ enum StatisticMeasure
     SMeasurePercent,                    // actually stored as parts per million, displayed as a percentage
     SMeasureIPV4,
     SMeasureCycle,
+    SMeasureEnum,                       // A value from an enumeration
+    SMeasureText,                       // A textual value (from a graph attribute rather than a statistic)
+    SMeasureBool,                       // A boolean
     SMeasureMax,
 };
 
@@ -217,6 +221,8 @@ enum StatisticKind
     StStdDevX                           = 0xa0000,  // standard deviation in the value of X
     StNextModifier                      = 0xb0000,
 
+    //NOTE: Do not use 0x80000000 since wu attributes use those values, and they should not overlap
 };
+constexpr StatisticKind operator |(StatisticKind l, StatisticKind r) { return (StatisticKind)((unsigned)l | (unsigned)r); }
 
 #endif
