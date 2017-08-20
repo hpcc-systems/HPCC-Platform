@@ -47,7 +47,7 @@ IConstWorkUnit *WsEclWuInfo::ensureWorkUnit()
 
 void appendVariableParmInfo(IArrayOf<IPropertyTree> &parts, IResultSetFactory *resultSetFactory, IConstWUResult &var, unsigned hashWebserviceSeq=0)
 {
-    Owned<IResultSetMetaData> meta = resultSetFactory->createResultSetMeta(&var);
+    Owned<IResultSetMetaData> meta = resultSetFactory->createResultSetMeta(&var, false);
     StringAttr noinput;
     if (var.getResultFieldOpt("noinput", StringAttrAdaptor(noinput)).length() && strToBool(noinput.length(), noinput.get()))  //developer specified not to show field on form
         return;
@@ -312,7 +312,7 @@ void WsEclWuInfo::getSchemaFromResult(StringBuffer &schema, IConstWUResult &res)
         StringBufferAdaptor s(schema);
         
         Owned<IResultSetFactory> resultSetFactory(getResultSetFactory(username, password));
-        Owned<IResultSetMetaData> meta = resultSetFactory->createResultSetMeta(&res);
+        Owned<IResultSetMetaData> meta = resultSetFactory->createResultSetMeta(&res, wu->getDebugValueBool("writeInlineContent", false));
         meta->getXmlXPathSchema(s, true);
         const char *finger=schema.str();
         while (finger && strncmp(finger, "<xs:schema", 10))

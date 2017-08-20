@@ -184,7 +184,7 @@ public:
     void getEclSchemaChildFields(IArrayOf<IEspECLSchemaItem>& schemas, IHqlExpression * expr, bool isConditional);
     void getEclSchemaFields(IArrayOf<IEspECLSchemaItem>& schemas, IHqlExpression * expr, bool isConditional);
     bool getResultEclSchemas(IConstWUResult &r, IArrayOf<IEspECLSchemaItem>& schemas);
-    void getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, unsigned long flags);
+    void getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, unsigned long flags, bool allowInlineContent);
     void getStats(StatisticsFilter& filter, bool createDescriptions, IArrayOf<IEspWUStatisticItem>& statistics);
 
     void getWorkunitEclAgentLog(const char* eclAgentInstance, const char* agentPid, MemoryBuffer& buf);

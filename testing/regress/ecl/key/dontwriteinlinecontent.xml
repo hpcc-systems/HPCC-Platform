@@ -1,0 +1,128 @@
+<Dataset name='OrigInline'>
+ <Row><peeps><Row><color>&lt;rgb&gt;Red&lt;/rgb&gt;</color><Shape>&lt;cst&gt;Circle&lt;/cst&gt;</Shape><texture>&lt;sss&gt;Sandy&lt;/sss&gt;</texture></Row><Row><color>&lt;rgb&gt;Green&lt;/rgb&gt;</color><Shape>&lt;cst&gt;Square&lt;/cst&gt;</Shape><texture>&lt;sss&gt;Smooth&lt;/sss&gt;</texture></Row><Row><color>&lt;rgb&gt;Blue&lt;/rgb&gt;</color><Shape>&lt;cst&gt;Triangle&lt;/cst&gt;</Shape><texture>&lt;sss&gt;Spikey&lt;/sss&gt;</texture></Row></peeps></Row>
+</Dataset>
+<Dataset name='Result 2'>
+</Dataset>
+<Dataset name='readWrittenOrig'>
+ <Row><peeps><Row><color>&lt;rgb&gt;Red&lt;/rgb&gt;</color><Shape>&lt;cst&gt;Circle&lt;/cst&gt;</Shape><texture>&lt;sss&gt;Sandy&lt;/sss&gt;</texture></Row><Row><color>&lt;rgb&gt;Green&lt;/rgb&gt;</color><Shape>&lt;cst&gt;Square&lt;/cst&gt;</Shape><texture>&lt;sss&gt;Smooth&lt;/sss&gt;</texture></Row><Row><color>&lt;rgb&gt;Blue&lt;/rgb&gt;</color><Shape>&lt;cst&gt;Triangle&lt;/cst&gt;</Shape><texture>&lt;sss&gt;Spikey&lt;/sss&gt;</texture></Row></peeps></Row>
+</Dataset>
+<Dataset name='OrigInlineJson'>
+ <Row><peeps><Row><color>{&quot;rgb&quot;: &quot;Red&quot;}</color><Shape>{&quot;cst&quot;: &quot;Circle&quot;}</Shape><texture>{&quot;sss&quot;: &quot;Sandy&quot;}</texture></Row><Row><color>{&quot;rgb&quot;: &quot;Green&quot;}</color><Shape>{&quot;cst&quot;: &quot;Square&quot;}</Shape><texture>{&quot;sss&quot;: &quot;Smooth&quot;}</texture></Row><Row><color>{&quot;rgb&quot;: &quot;Blue&quot;}</color><Shape>{&quot;cst&quot;: &quot;Triangle&quot;}</Shape><texture>{&quot;sss&quot;: &quot;Spikey&quot;}</texture></Row></peeps></Row>
+</Dataset>
+<Dataset name='Result 5'>
+</Dataset>
+<Dataset name='readWrittenOrigJson'>
+ <Row><peeps><Row><color>{&quot;rgb&quot;: &quot;Red&quot;}</color><Shape>{&quot;cst&quot;: &quot;Circle&quot;}</Shape><texture>{&quot;sss&quot;: &quot;Sandy&quot;}</texture></Row><Row><color>{&quot;rgb&quot;: &quot;Green&quot;}</color><Shape>{&quot;cst&quot;: &quot;Square&quot;}</Shape><texture>{&quot;sss&quot;: &quot;Smooth&quot;}</texture></Row><Row><color>{&quot;rgb&quot;: &quot;Blue&quot;}</color><Shape>{&quot;cst&quot;: &quot;Triangle&quot;}</Shape><texture>{&quot;sss&quot;: &quot;Spikey&quot;}</texture></Row></peeps></Row>
+</Dataset>
+<Dataset name='NamedInline'>
+ <Row><L1><L2><color>&lt;rgb&gt;Red&lt;/rgb&gt;</color><Shape>&lt;cst&gt;Circle&lt;/cst&gt;</Shape><texture>&lt;sss&gt;Sandy&lt;/sss&gt;</texture></L2><L2><color>&lt;rgb&gt;Green&lt;/rgb&gt;</color><Shape>&lt;cst&gt;Square&lt;/cst&gt;</Shape><texture>&lt;sss&gt;Smooth&lt;/sss&gt;</texture></L2><L2><color>&lt;rgb&gt;Blue&lt;/rgb&gt;</color><Shape>&lt;cst&gt;Triangle&lt;/cst&gt;</Shape><texture>&lt;sss&gt;Spikey&lt;/sss&gt;</texture></L2></L1></Row>
+</Dataset>
+<Dataset name='Result 8'>
+</Dataset>
+<Dataset name='readWrittenNamed'>
+ <Row><L1><L2><color>&lt;rgb&gt;Red&lt;/rgb&gt;</color><Shape>&lt;cst&gt;Circle&lt;/cst&gt;</Shape><texture>&lt;sss&gt;Sandy&lt;/sss&gt;</texture></L2><L2><color>&lt;rgb&gt;Green&lt;/rgb&gt;</color><Shape>&lt;cst&gt;Square&lt;/cst&gt;</Shape><texture>&lt;sss&gt;Smooth&lt;/sss&gt;</texture></L2><L2><color>&lt;rgb&gt;Blue&lt;/rgb&gt;</color><Shape>&lt;cst&gt;Triangle&lt;/cst&gt;</Shape><texture>&lt;sss&gt;Spikey&lt;/sss&gt;</texture></L2></L1></Row>
+</Dataset>
+<Dataset name='NamedInlineJson'>
+ <Row><L1><L2><color>{&quot;rgb&quot;: &quot;Red&quot;}</color><Shape>{&quot;cst&quot;: &quot;Circle&quot;}</Shape><texture>{&quot;sss&quot;: &quot;Sandy&quot;}</texture></L2><L2><color>{&quot;rgb&quot;: &quot;Green&quot;}</color><Shape>{&quot;cst&quot;: &quot;Square&quot;}</Shape><texture>{&quot;sss&quot;: &quot;Smooth&quot;}</texture></L2><L2><color>{&quot;rgb&quot;: &quot;Blue&quot;}</color><Shape>{&quot;cst&quot;: &quot;Triangle&quot;}</Shape><texture>{&quot;sss&quot;: &quot;Spikey&quot;}</texture></L2></L1></Row>
+</Dataset>
+<Dataset name='Result 11'>
+</Dataset>
+<Dataset name='readWrittenNamedJson'>
+ <Row><L1><L2><color>{&quot;rgb&quot;: &quot;Red&quot;}</color><Shape>{&quot;cst&quot;: &quot;Circle&quot;}</Shape><texture>{&quot;sss&quot;: &quot;Sandy&quot;}</texture></L2><L2><color>{&quot;rgb&quot;: &quot;Green&quot;}</color><Shape>{&quot;cst&quot;: &quot;Square&quot;}</Shape><texture>{&quot;sss&quot;: &quot;Smooth&quot;}</texture></L2><L2><color>{&quot;rgb&quot;: &quot;Blue&quot;}</color><Shape>{&quot;cst&quot;: &quot;Triangle&quot;}</Shape><texture>{&quot;sss&quot;: &quot;Spikey&quot;}</texture></L2></L1></Row>
+</Dataset>
+<Dataset name='UnnamedInline'>
+ <Row><L1><L2><color>&lt;rgb&gt;Red&lt;/rgb&gt;</color><Shape>&lt;cst&gt;Circle&lt;/cst&gt;</Shape><texture>&lt;sss&gt;Sandy&lt;/sss&gt;</texture></L2><L2><color>&lt;rgb&gt;Green&lt;/rgb&gt;</color><Shape>&lt;cst&gt;Square&lt;/cst&gt;</Shape><texture>&lt;sss&gt;Smooth&lt;/sss&gt;</texture></L2><L2><color>&lt;rgb&gt;Blue&lt;/rgb&gt;</color><Shape>&lt;cst&gt;Triangle&lt;/cst&gt;</Shape><texture>&lt;sss&gt;Spikey&lt;/sss&gt;</texture></L2></L1></Row>
+</Dataset>
+<Dataset name='Result 14'>
+</Dataset>
+<Dataset name='readWrittenUnnamed'>
+ <Row><L1><L2><color>&lt;rgb&gt;Red&lt;/rgb&gt;</color><Shape>&lt;cst&gt;Circle&lt;/cst&gt;</Shape><texture>&lt;sss&gt;Sandy&lt;/sss&gt;</texture></L2><L2><color>&lt;rgb&gt;Green&lt;/rgb&gt;</color><Shape>&lt;cst&gt;Square&lt;/cst&gt;</Shape><texture>&lt;sss&gt;Smooth&lt;/sss&gt;</texture></L2><L2><color>&lt;rgb&gt;Blue&lt;/rgb&gt;</color><Shape>&lt;cst&gt;Triangle&lt;/cst&gt;</Shape><texture>&lt;sss&gt;Spikey&lt;/sss&gt;</texture></L2></L1></Row>
+</Dataset>
+<Dataset name='UnnamedInlineJson'>
+ <Row><L1><L2><color>&quot;rgb&quot;: &quot;Red&quot;</color><Shape>&quot;cst&quot;: &quot;Circle&quot;</Shape><texture>&quot;sss&quot;: &quot;Sandy&quot;</texture></L2><L2><color>&quot;rgb&quot;: &quot;Green&quot;</color><Shape>&quot;cst&quot;: &quot;Square&quot;</Shape><texture>&quot;sss&quot;: &quot;Smooth&quot;</texture></L2><L2><color>&quot;rgb&quot;: &quot;Blue&quot;</color><Shape>&quot;cst&quot;: &quot;Triangle&quot;</Shape><texture>&quot;sss&quot;: &quot;Spikey&quot;</texture></L2></L1></Row>
+</Dataset>
+<Dataset name='Result 17'>
+</Dataset>
+<Dataset name='readWrittenUnnamedJson'>
+ <Row><L1><L2><color>&quot;rgb&quot;: &quot;Red&quot;</color><Shape>&quot;cst&quot;: &quot;Circle&quot;</Shape><texture>&quot;sss&quot;: &quot;Sandy&quot;</texture></L2><L2><color>&quot;rgb&quot;: &quot;Green&quot;</color><Shape>&quot;cst&quot;: &quot;Square&quot;</Shape><texture>&quot;sss&quot;: &quot;Smooth&quot;</texture></L2><L2><color>&quot;rgb&quot;: &quot;Blue&quot;</color><Shape>&quot;cst&quot;: &quot;Triangle&quot;</Shape><texture>&quot;sss&quot;: &quot;Spikey&quot;</texture></L2></L1></Row>
+</Dataset>
+<Dataset name='NonameInline'>
+ <Row><L1><color>&lt;rgb&gt;Red&lt;/rgb&gt;</color>&lt;cst&gt;Circle&lt;/cst&gt;<texture>&lt;sss&gt;Sandy&lt;/sss&gt;</texture></L1><L1><color>&lt;rgb&gt;Green&lt;/rgb&gt;</color>&lt;cst&gt;Square&lt;/cst&gt;<texture>&lt;sss&gt;Smooth&lt;/sss&gt;</texture></L1><L1><color>&lt;rgb&gt;Blue&lt;/rgb&gt;</color>&lt;cst&gt;Triangle&lt;/cst&gt;<texture>&lt;sss&gt;Spikey&lt;/sss&gt;</texture></L1></Row>
+</Dataset>
+<Dataset name='Result 20'>
+</Dataset>
+<Dataset name='readWrittenNoname'>
+ <Row><L1><color>&lt;rgb&gt;Red&lt;/rgb&gt;</color><Shape></Shape><texture>&lt;sss&gt;Sandy&lt;/sss&gt;</texture></L1><L1><color>&lt;rgb&gt;Green&lt;/rgb&gt;</color><Shape></Shape><texture>&lt;sss&gt;Smooth&lt;/sss&gt;</texture></L1><L1><color>&lt;rgb&gt;Blue&lt;/rgb&gt;</color><Shape></Shape><texture>&lt;sss&gt;Spikey&lt;/sss&gt;</texture></L1></Row>
+</Dataset>
+<Dataset name='NonameInlineJson'>
+ <Row><L1><color>&quot;rgb&quot;: &quot;Red&quot;</color>&quot;cst&quot;: &quot;Circle&quot;<texture>&quot;sss&quot;: &quot;Sandy&quot;</texture></L1><L1><color>&quot;rgb&quot;: &quot;Green&quot;</color>&quot;cst&quot;: &quot;Square&quot;<texture>&quot;sss&quot;: &quot;Smooth&quot;</texture></L1><L1><color>&quot;rgb&quot;: &quot;Blue&quot;</color>&quot;cst&quot;: &quot;Triangle&quot;<texture>&quot;sss&quot;: &quot;Spikey&quot;</texture></L1></Row>
+</Dataset>
+<Dataset name='Result 23'>
+</Dataset>
+<Dataset name='readWrittenNonameJson'>
+ <Row><L1><color>&quot;rgb&quot;: &quot;Red&quot;</color><Shape></Shape><texture>&quot;sss&quot;: &quot;Sandy&quot;</texture></L1><L1><color>&quot;rgb&quot;: &quot;Green&quot;</color><Shape></Shape><texture>&quot;sss&quot;: &quot;Smooth&quot;</texture></L1><L1><color>&quot;rgb&quot;: &quot;Blue&quot;</color><Shape></Shape><texture>&quot;sss&quot;: &quot;Spikey&quot;</texture></L1></Row>
+</Dataset>
+<Dataset name='setOrigInline'>
+ <Row><shapes><Item>&lt;cst&gt;Circle&lt;/cst&gt;</Item><Item>&lt;cst&gt;Square&lt;/cst&gt;</Item><Item>&lt;cst&gt;Triangle&lt;/cst&gt;</Item></shapes></Row>
+</Dataset>
+<Dataset name='Result 26'>
+</Dataset>
+<Dataset name='setreadWrittenOrig'>
+ <Row><shapes><Item>&lt;cst&gt;Circle&lt;/cst&gt;</Item><Item>&lt;cst&gt;Square&lt;/cst&gt;</Item><Item>&lt;cst&gt;Triangle&lt;/cst&gt;</Item></shapes></Row>
+</Dataset>
+<Dataset name='setOrigInlineJson'>
+ <Row><shapes><Item>{&quot;cst&quot;: &quot;Circle&quot;}</Item><Item>{&quot;cst&quot;: &quot;Square&quot;}</Item><Item>{&quot;cst&quot;: &quot;Triangle&quot;}</Item></shapes></Row>
+</Dataset>
+<Dataset name='Result 29'>
+</Dataset>
+<Dataset name='setreadWrittenOrigJson'>
+ <Row><shapes><Item>{&quot;cst&quot;: &quot;Circle&quot;}</Item><Item>{&quot;cst&quot;: &quot;Square&quot;}</Item><Item>{&quot;cst&quot;: &quot;Triangle&quot;}</Item></shapes></Row>
+</Dataset>
+<Dataset name='setNamedInline'>
+ <Row><Shapes><Shape>&lt;cst&gt;Circle&lt;/cst&gt;</Shape><Shape>&lt;cst&gt;Square&lt;/cst&gt;</Shape><Shape>&lt;cst&gt;Triangle&lt;/cst&gt;</Shape></Shapes></Row>
+</Dataset>
+<Dataset name='Result 32'>
+</Dataset>
+<Dataset name='setreadWrittenNamed'>
+ <Row><Shapes><Shape>&lt;cst&gt;Circle&lt;/cst&gt;</Shape><Shape>&lt;cst&gt;Square&lt;/cst&gt;</Shape><Shape>&lt;cst&gt;Triangle&lt;/cst&gt;</Shape></Shapes></Row>
+</Dataset>
+<Dataset name='setNamedInlineJson'>
+ <Row><Shapes><Shape>{&quot;cst&quot;: &quot;Circle&quot;}</Shape><Shape>{&quot;cst&quot;: &quot;Square&quot;}</Shape><Shape>{&quot;cst&quot;: &quot;Triangle&quot;}</Shape></Shapes></Row>
+</Dataset>
+<Dataset name='Result 35'>
+</Dataset>
+<Dataset name='setreadWrittenNamedJson'>
+ <Row><Shapes><Shape>{&quot;cst&quot;: &quot;Circle&quot;}</Shape><Shape>{&quot;cst&quot;: &quot;Square&quot;}</Shape><Shape>{&quot;cst&quot;: &quot;Triangle&quot;}</Shape></Shapes></Row>
+</Dataset>
+<Dataset name='setUnnamedInline'>
+ <Row><Shapes><Shape>&lt;cst&gt;Circle&lt;/cst&gt;</Shape><Shape>&lt;cst&gt;Square&lt;/cst&gt;</Shape><Shape>&lt;cst&gt;Triangle&lt;/cst&gt;</Shape></Shapes></Row>
+</Dataset>
+<Dataset name='Result 38'>
+</Dataset>
+<Dataset name='setreadWrittenUnnamed'>
+ <Row><Shapes></Shapes></Row>
+</Dataset>
+<Dataset name='setUnnamedInlineJson'>
+ <Row><Shapes><Shape>{&quot;cst&quot;: &quot;Circle&quot;}</Shape><Shape>{&quot;cst&quot;: &quot;Square&quot;}</Shape><Shape>{&quot;cst&quot;: &quot;Triangle&quot;}</Shape></Shapes></Row>
+</Dataset>
+<Dataset name='Result 41'>
+</Dataset>
+<Dataset name='setreadWrittenUnnamedJson'>
+ <Row><Shapes><Shape>{&quot;cst&quot;: &quot;Circle&quot;}</Shape><Shape>{&quot;cst&quot;: &quot;Square&quot;}</Shape><Shape>{&quot;cst&quot;: &quot;Triangle&quot;}</Shape></Shapes></Row>
+</Dataset>
+<Dataset name='setNonameInline'>
+ <Row><Shapes>&lt;cst&gt;Circle&lt;/cst&gt;</Shapes><Shapes>&lt;cst&gt;Square&lt;/cst&gt;</Shapes><Shapes>&lt;cst&gt;Triangle&lt;/cst&gt;</Shapes></Row>
+</Dataset>
+<Dataset name='Result 44'>
+</Dataset>
+<Dataset name='setreadWrittenNoname'>
+ <Row><Shapes></Shapes></Row>
+</Dataset>
+<Dataset name='setNonameInlineJson'>
+ <Row><Shapes>{&quot;cst&quot;: &quot;Circle&quot;}</Shapes><Shapes>{&quot;cst&quot;: &quot;Square&quot;}</Shapes><Shapes>{&quot;cst&quot;: &quot;Triangle&quot;}</Shapes></Row>
+</Dataset>
+<Dataset name='Result 47'>
+</Dataset>
+<Dataset name='setreadWrittenNonameJson'>
+ <Row><Shapes></Shapes></Row>
+</Dataset>

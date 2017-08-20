@@ -302,8 +302,8 @@ typedef IArrayOf<ITypeInfo> TypeInfoArray;
 interface ISchemaBuilder
 {
 public:
-    virtual void addField(const char * name, ITypeInfo & type, bool keyed) = 0;
-    virtual void addSetField(const char * name, const char * itemname, ITypeInfo & type) = 0;
+    virtual void addField(const char * name, ITypeInfo & type, bool keyed, byte contentFlags) = 0;
+    virtual void addSetField(const char * name, const char * itemname, ITypeInfo & type, byte contentFlags) = 0;
     virtual void beginIfBlock() = 0;
     virtual bool beginDataset(const char * name, const char * childname, bool hasMixedContent, unsigned *updateMixed) = 0;
     virtual void beginRecord(const char * name, bool hasMixedContent, unsigned *updateMixed) = 0;
@@ -314,13 +314,20 @@ public:
     virtual bool addSingleFieldDataset(const char * name, const char * childname, ITypeInfo & type) = 0;        // return true if supported
 };
 
+enum
+{
+    XSBLD_contentInline = 0x01,
+    XSBLD_contentNamed = 0x02,
+    XSBLD_contentMixed = 0x04
+};
+
 class DEFTYPE_API XmlSchemaBuilder : public ISchemaBuilder
 {
 public:
     XmlSchemaBuilder(bool _addHeader) { optionalNesting = 0; addHeader = _addHeader; }
 
-    virtual void addField(const char * name, ITypeInfo & type, bool keyed);
-    virtual void addSetField(const char * name, const char * itemname, ITypeInfo & type);
+    virtual void addField(const char * name, ITypeInfo & type, bool keyed, byte contentFlags);
+    virtual void addSetField(const char * name, const char * itemname, ITypeInfo & type, byte contentFlags);
     virtual void beginIfBlock()                                     { optionalNesting++; }
     virtual bool beginDataset(const char * name, const char * childname, bool hasMixedContent, unsigned *updateMixed);
     virtual void beginRecord(const char * name, bool hasMixedContent, unsigned *updateMixed);
@@ -339,6 +346,9 @@ private:
     void clear();
     void getXmlTypeName(StringBuffer & xmlType, ITypeInfo & type);
     void appendField(StringBuffer &xml, const char * name, ITypeInfo & type, bool keyed);
+    void appendField(StringBuffer &xml, const char * name, ITypeInfo & type, bool keyed, byte contentFlags);
+    void addSetField(const char * name, const char * itemname, ITypeInfo & type);
+
 
 protected:
     StringBuffer xml;

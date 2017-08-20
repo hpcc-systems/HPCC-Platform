@@ -63,12 +63,12 @@ private:
     Linked<IRecordSize> recordSize;
 };
     
-
 //NB: In the following the following convention is used:
 // storedX - size/structure in WU/on disk
 // returnedX - size/structure of the data actually sent to the program
 // transformedX - size/structure of data after applying transformation.
 // for workunit storedX == returnedX  for disk returnedX==transformedX
+
 
 class DataSourceMetaData;
 class DataSourceMetaItem : public CInterface
@@ -79,6 +79,8 @@ public:
     virtual void serialize(MemoryBuffer & out) const;
     virtual DataSourceMetaData * queryChildMeta() { return NULL; }
     bool isXmlAttribute() const { return (tagname.length() && *tagname.get()=='@'); }
+    bool hasInlineContentXpath() const { return (contentFlags & XSBLD_contentInline)!=0;}
+    bool hasNamedContentXpath() const { return (contentFlags & XSBLD_contentNamed)!=0;}
 
 public:
     StringAttr  name;
@@ -88,6 +90,7 @@ public:
     OwnedITypeInfo type;
     byte           flags;
     bool hasMixedContent;
+    byte contentFlags = 0;
 };
 
 class DataSourceMetaData : implements IFvDataSourceMetaData, public IRecordSizeEx, public CInterface
@@ -108,13 +111,14 @@ public:
     virtual bool supportsRandomSeek() const;
     virtual void serialize(MemoryBuffer & out) const;
     virtual unsigned queryFieldFlags(unsigned column) const;
-    virtual const char *queryXmlTag(unsigned column) const;
+    virtual const char *queryXmlTag(unsigned column, bool allowInlineContent) const;
     virtual const char *queryXmlTag() const;
     virtual const IntArray &queryAttrList() const;
     virtual const IntArray &queryAttrList(unsigned column) const;
     virtual bool mixedContent(unsigned column) const;
     virtual bool mixedContent() const;
-
+    virtual byte getContentFlags(unsigned column) const;
+    virtual byte getContentFlags() const { return contentFlags; }
 
     virtual IFvDataSourceMetaData * queryChildMeta(unsigned column) const;
     virtual IFvDataSource * createChildDataSource(unsigned column, unsigned len, const void * data);
@@ -141,9 +145,9 @@ public:
     virtual size32_t getMinRecordSize() const;
 
 protected:
-    void addSimpleField(const char * name, const char * xpath, ITypeInfo * type, unsigned flag=FVFFnone);
-    void gatherFields(IHqlExpression * expr, bool isConditional, bool *pMixedContent);
-    void gatherChildFields(IHqlExpression * expr, bool isConditional, bool *pMixedContent);
+    void addSimpleField(const char * name, const char * xpath, ITypeInfo * type, unsigned flag/*=FVFFnone */, byte *contentFlags);
+    void gatherFields(IHqlExpression * expr, bool isConditional, bool *pMixedContent, byte *contentFlags);
+    void gatherChildFields(IHqlExpression * expr, bool isConditional, bool *pMixedContent, byte *contentFlags);
     void gatherAttributes();
     void gatherNestedAttributes(DataSourceMetaItem &rec, aindex_t &idx);
     void init();
@@ -159,6 +163,7 @@ protected:
     bool isStoredFixedWidth;
     bool randomIsOk;
     bool hasMixedContent;
+    byte contentFlags = 0; //interpreted later depending on allowInlineContent
     byte numFieldsToIgnore;
     StringAttr tagname;
 };

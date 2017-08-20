@@ -909,7 +909,7 @@ void WuWebView::addInputsFromPTree(IPropertyTree *pt)
         IConstWUResult *vardef = wu->getVariableByName(varname);
         if (vardef)
         {
-            Owned<IResultSetMetaData> metadef = resultSetFactory->createResultSetMeta(vardef);
+            Owned<IResultSetMetaData> metadef = resultSetFactory->createResultSetMeta(vardef, false);
             if (metadef)
                 addVariableFromPTree(wu.get(), *vardef, *metadef, varname, &eclparm);
         }

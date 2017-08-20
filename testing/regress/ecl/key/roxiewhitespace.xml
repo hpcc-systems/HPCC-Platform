@@ -1,9 +1,12 @@
 <Dataset name='keepResult'>
- <Row><Dataset><Row><name><first>  Joe</first><last>  Doe</last></name><fullname>&lt;name&gt;&lt;first&gt;  Joe&lt;/first&gt;&lt;last&gt;  Doe&lt;/last&gt;&lt;/name&gt;</fullname><address><city>Fresno</city><state>CA</state><zipcode>11111</zipcode></address></Row></Dataset><Exception><Source></Source><Code>0</Code><Message></Message></Exception></Row>
+ <Row><Dataset><Row><name><first>  Joe</first><last>  Doe</last></name><name><name><first>  Joe</first><last>  Doe</last></name></name><address><city>Fresno</city><state>CA</state><zipcode>11111</zipcode></address></Row></Dataset><Exception><Source></Source><Code>0</Code><Message></Message></Exception></Row>
 </Dataset>
 <Dataset name='stripResult'>
- <Row><Dataset><Row><name><first>Joe</first><last>Doe</last></name><fullname>&lt;name&gt;&lt;first&gt;Joe&lt;/first&gt;&lt;last&gt;Doe&lt;/last&gt;&lt;/name&gt;</fullname><address><city>Fresno</city><state>CA</state><zipcode>11111</zipcode></address></Row></Dataset><Exception><Source></Source><Code>0</Code><Message></Message></Exception></Row>
+ <Row><Dataset><Row><name><first>Joe</first><last>Doe</last></name><name><name><first>Joe</first><last>Doe</last></name></name><address><city>Fresno</city><state>CA</state><zipcode>11111</zipcode></address></Row></Dataset><Exception><Source></Source><Code>0</Code><Message></Message></Exception></Row>
 </Dataset>
 <Dataset name='serverTooBusy'>
  <Row><serverTooBusy>3000</serverTooBusy></Row>
+</Dataset>
+<Dataset name='inlineXmlResult'>
+ <Row><Dataset><Row><name><first>a</first><last>b</last></name><name><name><first>a</first><last>b</last></name></name><address><city>c</city><state>s</state><zipcode>9</zipcode></address></Row></Dataset><Exception><Source></Source><Code>0</Code><Message></Message></Exception></Row>
 </Dataset>

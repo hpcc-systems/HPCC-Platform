@@ -2773,7 +2773,7 @@ void getWsWuResult(IEspContext &context, const char* wuid, const char *name, con
         rs.setown(resultSetFactory->createNewFileResultSet(logicalName.str(), cw->queryClusterName())); //MORE is this wrong cluster?
     }
     else
-        rs.setown(resultSetFactory->createNewResultSet(result, wuid));
+        rs.setown(resultSetFactory->createNewResultSet(result, wuid, cw->getDebugValueBool("writeInlineContent", false )));
     if (!filterBy || !filterBy->length())
         appendResultSet(mb, rs, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryResultXmlns());
     else
@@ -3183,7 +3183,7 @@ bool CWsWorkunitsEx::onWUResultSummary(IEspContext &context, IEspWUResultSummary
         if (r)
         {
             WsWuInfo winfo(context, cw);
-            winfo.getResult(*r, results, 0);
+            winfo.getResult(*r, results, 0, cw->getDebugValueBool("writeInlineContent", false));
             resp.setFormat(r->getResultFormat());
             resp.setResult(results.item(0));
          }
@@ -3277,7 +3277,7 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
         const char* resultName = req.getResultName();
 
         Owned<DataCacheElement> data;
-        if (!req.getBypassCachedResult())
+        if (0)//!req.getBypassCachedResult())
             data.setown(dataCache->lookup(context, filter, awusCacheMinutes));
         if (data)
         {

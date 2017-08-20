@@ -2905,7 +2905,7 @@ IHqlExpression * CXmlColumnInfo::getXmlDatasetExpr(HqlCppTranslator & translator
     
     StringBuffer s;
     StringBuffer fieldTag, rowTag, iterTag;
-    extractXmlName(fieldTag, &rowTag, NULL, expr, "Row", true);
+    extractXmlName(fieldTag, &rowTag, NULL, expr, "Row", true, nullptr);
 
     iterTag.append(prefix);
     if (fieldTag.length())
@@ -2952,7 +2952,7 @@ IHqlExpression * CXmlColumnInfo::getXmlSetExpr(HqlCppTranslator & translator, Bu
     ITypeInfo * elementType = expr->queryType()->queryChildType();
     StringBuffer s;
     StringBuffer fieldTag, itemTag, valueTag, iterTag, fullFieldPath;
-    extractXmlName(fieldTag, &itemTag, &valueTag, expr, "Item", true);
+    extractXmlName(fieldTag, &itemTag, &valueTag, expr, "Item", true, nullptr);
 
     fullFieldPath.append(prefix).append(fieldTag);
     iterTag.append(prefix);

@@ -466,6 +466,7 @@ const char * cppSystemText[]  = {
     "   outputXmlUInt(unsigned8 value, unsigned4 size, const varstring name) :  eclrtl,omethod,entrypoint='outputUInt';",
     "   outputXmlUnicode(const unicode value, const varstring name) :   eclrtl,omethod,entrypoint='outputUnicode';",
     "   outputXmlUtf8(const utf8 value, const varstring name) : eclrtl,omethod,entrypoint='outputUtf8';",
+    "   outputXmlInline(const utf8 value, const varstring name) : eclrtl,omethod,entrypoint='outputInline';",
     "   outputXmlBeginArray(const varstring name) :  eclrtl,omethod,entrypoint='outputBeginArray';",
     "   outputXmlEndArray(const varstring name) :  eclrtl,omethod,entrypoint='outputEndArray';",
     "   outputXmlBeginNested(const varstring name, boolean nestChildren) :  eclrtl,omethod,entrypoint='outputBeginNested';",

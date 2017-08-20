@@ -3749,6 +3749,36 @@ void XmlSchemaBuilder::getXmlTypeName(StringBuffer & xmlType, ITypeInfo & type)
     }
 }
 
+void XmlSchemaBuilder::appendField(StringBuffer &s, const char * name, ITypeInfo & type, bool keyed, byte contentFlags)
+{
+    if (*name=='@' || !(contentFlags & XSBLD_contentInline))
+    {
+        appendField(s, name, type, keyed);
+        return;
+    }
+    if (!name || !*name || (contentFlags & XSBLD_contentNamed)==0)
+    {
+        s.append("<xs:any minOccurs=\"0\" maxOccurs=\"unbounded\"");
+        if (keyed)
+            s.append("><xs:annotation><xs:appinfo hpcc:keyed=\"true\"/></xs:annotation></xs:any>\n");
+        else
+            s.append("/>\n");
+
+    }
+    else
+    {
+        s.append("<xs:element name=\"").append(name).append("\"");
+        if (optionalNesting)
+            s.append(" minOccurs=\"0\"");
+        if (keyed)
+            s.append("><xs:annotation><xs:appinfo hpcc:keyed=\"true\"/></xs:annotation>");
+        else
+            s.append(">");
+        s.append("<xs:complexType mixed=\"true\"><xs:sequence><xs:any minOccurs=\"0\" maxOccurs=\"unbounded\"/></xs:sequence></xs:complexType>");
+        s.append("</xs:element>\n");
+    }
+}
+
 void XmlSchemaBuilder::appendField(StringBuffer &s, const char * name, ITypeInfo & type, bool keyed)
 {
     const char * tag = name;
@@ -3787,12 +3817,12 @@ void XmlSchemaBuilder::appendField(StringBuffer &s, const char * name, ITypeInfo
         s.append("/>\n");
 }
 
-void XmlSchemaBuilder::addField(const char * name, ITypeInfo & type, bool keyed)
+void XmlSchemaBuilder::addField(const char * name, ITypeInfo & type, bool keyed, byte contentFlags)
 {
     if (xml.length() == 0)
         addSchemaPrefix();
 
-    if (!*name)
+    if (!*name && !(contentFlags & XSBLD_contentInline))
         return;
 
     if (*name == '@')
@@ -3801,17 +3831,55 @@ void XmlSchemaBuilder::addField(const char * name, ITypeInfo & type, bool keyed)
             appendField(attributes.tos(), name, type, keyed);
     }
     else
-        appendField(xml, name, type, keyed);
+        appendField(xml, name, type, keyed, contentFlags);
 }
 
-void XmlSchemaBuilder::addSetField(const char * name, const char * itemname, ITypeInfo & type)
+
+void XmlSchemaBuilder::addSetField(const char * name, const char * itemname, ITypeInfo & type, byte contentFlags)
 {
     if (xml.length() == 0)
         addSchemaPrefix();
 
-    if (!name || !*name) //xpath('') content inherited by parent
+    if ((!name || !*name) && (!itemname || !*itemname))
         return;
 
+    if (!(contentFlags & XSBLD_contentInline))
+    {
+        addSetField(name, itemname, type);
+        return;
+    }
+
+    if ((contentFlags & XSBLD_contentNamed) && (!itemname || !*itemname))
+    {
+        itemname = name;
+        name = NULL;
+    }
+
+    if (name && *name)
+    {
+        xml.append("<xs:element name=\"").append(name).append("\"");
+        if (optionalNesting)
+            xml.append(" minOccurs=\"0\"");
+        xml.append(">").newline();
+        xml.append("<xs:complexType><xs:sequence>");                // could use xs::choice instead
+        xml.append("<xs:element name=\"All\" minOccurs=\"0\"/>").newline();
+    }
+
+    if ((contentFlags & XSBLD_contentNamed)==0)
+        xml.append("<xs:any minOccurs=\"0\" maxOccurs=\"unbounded\"/>\n");
+    else
+    {
+        xml.append("<xs:element name=\"").append(itemname).append("\" minOccurs=\"0\"  maxOccurs=\"unbounded\">");
+        xml.append("<xs:complexType mixed=\"true\"><xs:sequence><xs:any minOccurs=\"0\" maxOccurs=\"unbounded\"/></xs:sequence></xs:complexType>");
+        xml.append("</xs:element>").newline();
+    }
+
+    if (name && *name)
+        xml.append("</xs:sequence></xs:complexType></xs:element>").newline();
+}
+
+void XmlSchemaBuilder::addSetField(const char * name, const char * itemname, ITypeInfo & type)
+{
     StringBuffer elementType;
     getXmlTypeName(elementType, *type.queryChildType());
 
@@ -3956,7 +4024,7 @@ bool XmlSchemaBuilder::addSingleFieldDataset(const char * name, const char * chi
     }
 
     xml.append("<xs:sequence minOccurs=\"0\" maxOccurs=\"unbounded\">").newline();
-    addField(childname, type, false);
+    addField(childname, type, false, 0);
     xml.append("</xs:sequence>").newline();
 
     if (name && *name)

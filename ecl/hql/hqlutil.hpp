@@ -709,9 +709,16 @@ extern HQL_API IHqlExpression * createDefaultAssertMessage(IHqlExpression * expr
 extern HQL_API bool createMangledFunctionName(StringBuffer & name, IHqlExpression * funcdef);
 extern HQL_API bool createMangledFunctionName(StringBuffer & mangled, IHqlExpression * funcdef, CompilerType compiler);
 
-extern HQL_API void extractXmlName(StringBuffer & name, StringBuffer * itemName, StringBuffer * valueName, IHqlExpression * field, const char * defaultItemName, bool reading);
-extern HQL_API void extractXmlName(SharedHqlExpr & name, OwnedHqlExpr * itemName, OwnedHqlExpr * valueName, IHqlExpression * field, const char * defaultItemName, bool reading);
-extern HQL_API void getRecordXmlSchema(StringBuffer & result, IHqlExpression * record, bool useXPath, unsigned keyedCount);
+enum
+{
+    XPathContentInline      = 0x01,
+    XPathContentNamed       = 0x02,
+    XPathContentMixed       = 0x04
+};
+
+extern HQL_API void extractXmlName(StringBuffer & name, StringBuffer * itemName, StringBuffer * valueName, IHqlExpression * field, const char * defaultItemName, bool reading, byte *contentFlags);
+extern HQL_API void extractXmlName(SharedHqlExpr & name, OwnedHqlExpr * itemName, OwnedHqlExpr * valueName, IHqlExpression * field, const char * defaultItemName, bool reading, byte *contentFlags);
+extern HQL_API void getRecordXmlSchema(StringBuffer & result, IHqlExpression * record, bool useXPath, unsigned keyedCount, bool allowInlineContent);
 
 extern HQL_API IHqlExpression * querySimplifyInExpr(IHqlExpression * expr);
 extern HQL_API IHqlExpression * createSizeof(IHqlExpression * expr);

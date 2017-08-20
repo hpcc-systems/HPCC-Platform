@@ -75,7 +75,7 @@ class CResultSetMetaData : implements IResultSetMetaData, public CInterface
     friend class CResultSet;
     friend class CResultSetCursor;
 public:
-    CResultSetMetaData(IFvDataSourceMetaData * _meta, bool _useXPath);
+    CResultSetMetaData(IFvDataSourceMetaData * _meta, bool _useXPath, bool allowInlineContent);
     CResultSetMetaData(const CResultSetMetaData & _meta);
     IMPLEMENT_IINTERFACE
 
@@ -116,6 +116,7 @@ protected:
     CIArrayOf<CResultSetColumnInfo> columns;
     bool fixedSize;
     bool alwaysUseXPath;
+    bool allowInlineContent = false;
 };
 
 //Extend the Result interface with the stateless functions required by the cursors
@@ -154,7 +155,7 @@ protected:
 class CResultSet : public CResultSetBase
 {
 public:
-    CResultSet(IFvDataSource * _dataSource, bool _useXPath);
+    CResultSet(IFvDataSource * _dataSource, bool _useXPath, bool _allowInlineContent);
 
 //interface IResultSet
     virtual int findColumn(const char * columnName) const;
@@ -380,6 +381,7 @@ protected:
     bool isMappedIndexField(unsigned columnIndex) { return resultSet->isMappedIndexField(columnIndex); }
     const byte * getColumn(unsigned idx) const      { return (const byte *)curRowData.toByteArray() + offsets[idx]; }
     void writeXmlText(IXmlWriter &writer, int columnIndex, const char *tag=NULL);
+    void writeXmlText(IXmlWriter &writer, int columnIndex, const char *tag, byte contentFlags);
 
     virtual __int64 getCurRow() const;
     virtual __int64 translateRow(__int64 row) const;
@@ -578,15 +580,15 @@ public:
     CResultSetFactory(const char * _username, const char * _password);
     CResultSetFactory(ISecManager &secmgr, ISecUser &secuser);
 
-    virtual INewResultSet * createNewResultSet(IConstWUResult * wuResult, const char * wuid);
+    virtual INewResultSet * createNewResultSet(IConstWUResult * wuResult, const char * wuid, bool allowInlineContent);
     virtual INewResultSet * createNewFileResultSet(const char * logicalFile, const char * cluster);
     virtual INewResultSet * createNewResultSet(const char * wuid, unsigned sequence, const char * name);
     virtual INewResultSet * createNewFileResultSet(const char * logicalFile);
-    virtual IResultSetMetaData * createResultSetMeta(IConstWUResult * wuResult);
+    virtual IResultSetMetaData * createResultSetMeta(IConstWUResult * wuResult,  bool allowInlineContent);
     virtual IResultSetMetaData * createResultSetMeta(const char * wuid, unsigned sequence, const char * name);
 
 protected:
-    CResultSet * createResultSet(IFvDataSource * ds, bool _useXPath);
+    CResultSet * createResultSet(IFvDataSource * ds, bool _useXPath, bool _allowInlineContent);
     IDistributedFile * lookupLogicalName(const char * logicalName);
 };
 
@@ -607,11 +609,11 @@ public:
     CRemoteResultSetFactory(const char * remoteServer, const char * _username, const char * _password);
     CRemoteResultSetFactory(const char * remoteServer, ISecManager &secmgr, ISecUser &secuser);
 
-    virtual INewResultSet * createNewResultSet(IConstWUResult * wuResult, const char * wuid);
+    virtual INewResultSet * createNewResultSet(IConstWUResult * wuResult, const char * wuid, bool allowInlineContent);
     virtual INewResultSet * createNewFileResultSet(const char * logicalFile, const char * cluster);
     virtual INewResultSet * createNewResultSet(const char * wuid, unsigned sequence, const char * name);
     virtual INewResultSet * createNewFileResultSet(const char * logicalFile);
-    virtual IResultSetMetaData * createResultSetMeta(IConstWUResult * wuResult);
+    virtual IResultSetMetaData * createResultSetMeta(IConstWUResult * wuResult, bool allowInlineContent);
     virtual IResultSetMetaData * createResultSetMeta(const char * wuid, unsigned sequence, const char * name);
 
 protected:
