@@ -83,6 +83,7 @@ static const char * EclDefinition =
 "  unsigned4 UnicodeLocaleWordCount(const unicode text, const varstring localename) : c, pure,entrypoint='ulUnicodeLocaleWordCount', hole; \n"
 "  unicode UnicodeLocaleGetNthWord(const unicode text, unsigned4 n, const varstring localename) : c,pure,entrypoint='ulUnicodeLocaleGetNthWord';\n"
 "  unicode UnicodeLocaleExcludeNthWord(const unicode text, unsigned4 n, const varstring localename) :c,pure,entrypoint='ulUnicodeLocaleExcludeNthWord';\n"
+"  unicode UnicodeLocaleExcludeLastWord(const unicode text, const varstring localename) : c,pure,entrypoint='ulUnicodeLocaleExcludeLastWord';\n"
 "  unicode UnicodeLocaleTranslate(const unicode text, unicode sear, unicode repl) :c,pure,entrypoint='ulUnicodeLocaleTranslate';\n"
 "END;\n";
 
@@ -745,6 +746,53 @@ void translate(UnicodeString & toProcess, UChar const * sear, unsigned searLen, 
         }
         idx = it.move32(1, CharacterIterator::kCurrent);
     }
+}
+
+void excludeLastWord(RuleBasedBreakIterator& bi, UnicodeString & toProcess)
+{
+    bi.setText(toProcess);
+    int32_t idx = bi.last();
+    int32_t wordidx = 0;
+    int32_t wordBeginning = 0;
+    int32_t wordEnd = idx;
+    while (idx != 0)
+    {
+        //Backwards iterator operates until the iterator reaches 0 from bi.last()
+        int breakType = bi.getRuleStatus();
+        if (breakType != UBRK_WORD_NONE)
+        {
+            // Exclude spaces, punctuation, and the like.
+            //   A status value UBRK_WORD_NONE indicates that the boundary does
+            //   not start a word or number.
+            ++wordidx;
+            wordBeginning = bi.previous();
+            //Increments the wordidx count and then moves iterator backwards past the one word that was recorded.
+            //Iterator located just before the start of the last word.
+            if (bi.getRuleStatus() != UBRK_WORD_NONE)
+            {
+                //Check for languages that do not use space characters to separate words.
+                //If a word lies before the current location of the iterator,
+                //incremement the wordidx to prevent removal of this extra word.
+                ++wordidx;
+            }
+            if (bi.previous() == 0 && wordidx == 1)
+            {
+                //Check for single word string. In place to remove leading whitespaces if so.
+                //Moves iterator backwards to the next boundary: either the beginning or end of a word.
+                //If at the beginning of a word, wordidx should be 2,
+                //and the condition should fail regardless of the iterator being the first position.
+                //If at the end of a word, wordidx should be 1,
+                //and the condition should fail because the iterator is not the first position.
+                wordBeginning = 0;
+            }
+            toProcess.removeBetween(wordBeginning, wordEnd);
+            return;
+        }
+        //Should only be called once before reaching a word or the beginning of the string.
+        idx = bi.previous();
+    }
+    //Called if the string has no words.
+    toProcess.removeBetween(0, bi.last());
 }
 
 void excludeNthWord(RuleBasedBreakIterator& bi, UnicodeString & source, unsigned n)
@@ -1496,6 +1544,27 @@ UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleExcludeNthWord(unsigned & tgt
     {
         tgtLen = processed.length();
         tgt = (UChar *)CTXMALLOC(parentCtx, tgtLen*2);
+        processed.extract(0, tgtLen, tgt);
+    }
+    else
+    {
+        tgtLen = 0;
+        tgt = 0;
+    }
+}
+
+UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleExcludeLastWord(unsigned & tgtLen, UChar * & tgt, unsigned textLen, UChar const * text, char const * localename)
+{
+    UErrorCode status = U_ZERO_ERROR;
+    Locale locale(localename);
+    RuleBasedBreakIterator* bi = (RuleBasedBreakIterator*)RuleBasedBreakIterator::createWordInstance(locale, status);
+    UnicodeString processed(text, textLen);
+    excludeLastWord(*bi, processed);
+    delete bi;
+    if (processed.length()>0)
+    {
+        tgtLen = processed.length();
+        tgt = (UChar *)CTXMALLOC(parentCtx, tgtLen * 2);
         processed.extract(0, tgtLen, tgt);
     }
     else

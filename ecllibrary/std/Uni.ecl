@@ -399,6 +399,29 @@ EXPORT ExcludeNthWord(unicode text, unsigned4 n, varstring localename = '') :=
     lib_unicodelib.UnicodeLib.UnicodeLocaleExcludeNthWord(text, n, localename);
 
 /**
+ * Returns everything except the first word from the string.  Words are marked by the unicode break semantics.
+ * Whitespace before and after the first word is also removed.
+ *
+ * @param text          The string to be broken into words.
+ * @return              The string excluding the first word.
+ */
+
+EXPORT ExcludeFirstWord(unicode text, varstring localename = '') :=
+    lib_unicodelib.UnicodeLib.UnicodeLocaleExcludeNthWord(text, 1, localename);
+
+/**
+ * Returns everything except the last word from the string.  Word boundaries are marked by the unicode break semantics.
+ * Whitespace after a word is removed with the word and leading whitespace is removed with the first word.
+ *
+ * @param text          The string to be broken into words.
+ * @param localname     The locale to use for the break semantics. Defaults to ''.
+ * @return              The string excluding the last word.
+ */
+
+EXPORT unicode ExcludeLastWord(unicode text, varstring localename = '') :=
+    lib_unicodelib.UnicodeLib.UnicodeLocaleExcludeLastWord(text, localename);
+
+/**
  * Returns the source string with the all characters that match characters in the search string replaced
  * with the character at the corresponding position in the replacement string.
  * The isEmpty() tests in the beginning of the function check for invalid sequences in addition to blank strings.
@@ -412,16 +435,5 @@ EXPORT ExcludeNthWord(unicode text, unsigned4 n, varstring localename = '') :=
 
 EXPORT Translate(unicode text, unicode sear, unicode repl) :=
     lib_unicodelib.UnicodeLib.UnicodeLocaleTranslate(text, sear, repl);
-
-/*
- * Returns everything except the first word from the string.  Words are marked by the unicode break semantics.
- * Whitespace before and after the first word is also removed.
- *
- * @param text          The string to be broken into words.
- * @return              The string excluding the first word.
- */
-
-EXPORT ExcludeFirstWord(unicode text, varstring localename = '') :=
-    lib_unicodelib.UnicodeLib.UnicodeLocaleExcludeNthWord(text, 1, localename);
 
 END;
