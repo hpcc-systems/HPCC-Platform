@@ -169,11 +169,7 @@ void fetchESDLDefinitionFromDaliByNameOnly(const char * name, StringBuffer & def
     if (!conn)
        throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
 
-    conn->close(false);//release lock right away
-
     IPropertyTree * esdlDefinitions = conn->queryRoot();
-    if (!esdlDefinitions)
-       throw MakeStringException(-1, "Unable to open ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
 
     VStringBuffer xpath("%s[@name='%s']", ESDL_DEF_ENTRY, name);
     Owned<IPropertyTreeIterator> iter = esdlDefinitions->getElements(xpath.str());
