@@ -1007,7 +1007,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             </listitem>
 
             <listitem>
-              <para>right-click on a computer in the computer column, and
+              <para>Right-click on a computer in the computer column, and
               select Add Instance .</para>
             </listitem>
 
@@ -1371,7 +1371,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <title>ECL Agent</title>
 
         <sect3>
-          <title>instances</title>
+          <title>Instances</title>
 
           <orderedlist>
             <listitem>
@@ -1518,7 +1518,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <title>ECL Scheduler</title>
 
         <sect3>
-          <title>instances</title>
+          <title>Instances</title>
 
           <orderedlist>
             <listitem>
@@ -1873,7 +1873,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>right-click on a computer in the computer column, and
+              <para>Right-click on a computer in the computer column, and
               select Add Instance.</para>
 
               <para>
@@ -2284,7 +2284,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             </listitem>
 
             <listitem>
-              <para>right-click on the Master node</para>
+              <para>Right-click on the Master node</para>
             </listitem>
 
             <listitem>
@@ -2330,7 +2330,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <sect3 id="ThorClusterAttributesTab">
           <title>ThorCluster Attributes</title>
 
-          <para>This section describes the Thor Cluster Attributes tab.</para>
+          <para>This section describes the Thor Cluster Attributes tab.
+          </para>
 
           <para>
             <graphic fileref="images/CM-img18-1.jpg" vendor="configmgrSS" />
@@ -2394,6 +2395,10 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             </para>
           </sect4>
         </sect3>
+
+        <xi:include href="ECLWatch/TheECLWatchMan.xml"
+                    xpointer="xpointer(//*[@id='ECLWatchXREFMultiThor'])"
+                    xmlns:xi="http://www.w3.org/2001/XInclude" />
 
         <?hard-pagebreak ?>
 
