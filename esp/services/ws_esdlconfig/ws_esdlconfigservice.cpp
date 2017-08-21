@@ -157,10 +157,48 @@ bool isESDLDefinitionBound(const char * esdldefname, int version)
     return isESDLDefinitionBound(id);
 }
 
+
+void fetchESDLDefinitionFromDaliByNameOnly(const char * name, StringBuffer & def)
+{
+    if (!name || !*name)
+        throw MakeStringException(-1, "Unable to fetch ESDL Service definition information, definition name is not available");
+
+    DBGLOG("ESDL Binding: Fetching ESDL Definition from Dali based on name: %s ", name);
+
+    Owned<IRemoteConnection> conn = querySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
+    if (!conn)
+       throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
+
+    conn->close(false);//release lock right away
+
+    IPropertyTree * esdlDefinitions = conn->queryRoot();
+    if (!esdlDefinitions)
+       throw MakeStringException(-1, "Unable to open ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
+
+    VStringBuffer xpath("%s[@name='%s']", ESDL_DEF_ENTRY, name);
+    Owned<IPropertyTreeIterator> iter = esdlDefinitions->getElements(xpath.str());
+
+    unsigned latestSeq = 1;
+    ForEach(*iter)
+    {
+        IPropertyTree &item = iter->query();
+        unsigned thisSeq = item.getPropInt("@seq");
+        if (thisSeq > latestSeq)
+            latestSeq = thisSeq;
+    }
+
+    xpath.setf("%s[@id='%s.%d'][1]/esxdl", ESDL_DEF_ENTRY, name, latestSeq);
+    IPropertyTree * deftree = esdlDefinitions->getPropTree(xpath);
+    if(deftree)
+        toXML(deftree, def, 0,0);
+    else
+        throw MakeStringException(-1, "Unable to fetch ESDL Service definition from dali: '%s'", name);
+}
+
 void fetchESDLDefinitionFromDaliById(const char *id, StringBuffer & def)
 {
     if (!id || !*id)
-        throw MakeStringException(-1, "Unable to fetch ESDL Service definition information, service id is not available");
+        throw MakeStringException(-1, "Unable to fetch ESDL Service definition information, definition id is not available");
 
     DBGLOG("ESDL Binding: Fetching ESDL Definition from Dali: %s ", id);
 
@@ -1602,15 +1640,33 @@ bool CWsESDLConfigEx::onGetESDLDefinition(IEspContext &context, IEspGetESDLDefin
 
     StringBuffer id = req.getId();
     StringBuffer definition;
-    resp.setId(id.str());
-    StringBuffer message;
-    int respcode = 0;
 
     double ver = context.getClientVersion();
 
+    StringBuffer message;
+    int respcode = 0;
+
     try
     {
-        fetchESDLDefinitionFromDaliById(id.toLowerCase(), definition);
+        if (ver >= 1.3)
+        {
+            if (!id.length())
+            {
+                id.set(req.getName());
+                if(id.length() > 0)
+                {
+                    if (!req.getSeq_isNull())
+                        id.append(".").append(req.getSeq());
+                }
+            }
+        }
+        resp.setId(id.str());
+
+        if (strchr (id.str(), '.'))
+            fetchESDLDefinitionFromDaliById(id.toLowerCase(), definition);
+        else
+            fetchESDLDefinitionFromDaliByNameOnly(id.toLowerCase(), definition);
+
         message.setf("Successfully fetched ESDL Defintion: %s from Dali.", id.str());
         if (definition.length() == 0 )
         {
