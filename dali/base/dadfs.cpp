@@ -12189,7 +12189,7 @@ IDFProtectedIterator *CDistributedFileDirectory::lookupProtectedFiles(const char
 
 const char* DFUQResultFieldNames[] = { "@name", "@description", "@group", "@kind", "@modified", "@job", "@owner",
     "@DFUSFrecordCount", "@recordCount", "@recordSize", "@DFUSFsize", "@size", "@workunit", "@DFUSFcluster", "@numsubfiles",
-    "@accessed", "@numparts", "@compressedSize", "@directory", "@partmask", "@superowners", "@persistent", "@protect" };
+    "@accessed", "@numparts", "@compressedSize", "@directory", "@partmask", "@superowners", "@persistent", "@protect", "@isCompressedFile" };
 
 extern da_decl const char* getDFUQResultFieldName(DFUQResultField feild)
 {
@@ -12252,6 +12252,19 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned nu
             return;
         }
 
+        void setIsCompressed(IPropertyTree* file)
+        {
+            if (isCompressed(*file))
+            {
+                file->setPropBool(getDFUQResultFieldName(DFUQRFiscompressed), true);
+                return;
+            }
+
+            const char * kind = file->queryProp(getDFUQResultFieldName(DFUQRFkind));
+            if (!isEmptyString(kind) && strieq(kind, "key"))
+                file->setPropBool(getDFUQResultFieldName(DFUQRFiscompressed), true);
+        }
+
         IPropertyTree *deserializeFileAttr(MemoryBuffer &mb, StringArray& nodeGroupFilter)
         {
             IPropertyTree *attr = getEmptyAttr();
@@ -12289,6 +12302,7 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned nu
             }
             attr->setPropInt64(getDFUQResultFieldName(DFUQRFsize), attr->getPropInt64(getDFUQResultFieldName(DFUQRForigsize), -1));//Sort the files with empty size to front
             setRecordCount(attr);
+            setIsCompressed(attr);
             return attr;
         }
 
