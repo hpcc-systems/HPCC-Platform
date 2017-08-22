@@ -83,6 +83,7 @@ static const char * EclDefinition =
 "  unsigned4 UnicodeLocaleWordCount(const unicode text, const varstring localename) : c, pure,entrypoint='ulUnicodeLocaleWordCount', hole; \n"
 "  unicode UnicodeLocaleGetNthWord(const unicode text, unsigned4 n, const varstring localename) : c,pure,entrypoint='ulUnicodeLocaleGetNthWord';\n"
 "  unicode UnicodeLocaleExcludeNthWord(const unicode text, unsigned4 n, const varstring localename) :c,pure,entrypoint='ulUnicodeLocaleExcludeNthWord';\n"
+"  unicode UnicodeLocaleRepeat(const unicode src, unsigned4 n) : c, pure,entrypoint='ulUnicodeLocaleRepeat'; \n"
 "END;\n";
 
 static const char * compatibleVersions[] = {
@@ -717,6 +718,38 @@ unsigned unicodeEditDistanceV4(UnicodeString & left, UnicodeString & right, unsi
     }
 
     return da[mask(leftLen-1)][rightLen-1];
+}
+
+void repeat(UChar * buffer, unsigned & tgtLen, char * & tgt, unsigned srcLen, UChar const * src, unsigned n)
+{
+    UnicodeString source(src, srcLen);
+    if ((int)n < 0)
+        return;
+    if (n == 0 || (srcLen == 0))
+    {
+        tgtLen = 0;
+    }
+    else
+    {
+        tgtLen = srcLen*n;
+        if (tgtLen / n != srcLen) // Check did not overflow
+            return;
+        buffer = (UChar *)CTXMALLOC(parentCtx, tgtLen);
+        if (buffer == 0)
+            return;
+        if (srcLen == 1)
+        {
+            //memset(buffer, *src, n);
+        }
+        else
+        {
+            for (unsigned i = 0; i < n; ++i)
+            {
+                source.extract(0, srcLen, buffer, tgtLen + i*srcLen);
+            }
+        }
+    }
+    return;
 }
 
 void excludeNthWord(RuleBasedBreakIterator& bi, UnicodeString & source, unsigned n)
@@ -1475,4 +1508,10 @@ UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleExcludeNthWord(unsigned & tgt
         tgtLen = 0;
         tgt = 0;
     }
+}
+
+UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleRepeat(unsigned & tgtLen, char * & tgt, unsigned srcLen, UChar const * src, unsigned n)
+{
+    UChar * buffer = NULL;
+    repeat(buffer, tgtLen, tgt, srcLen, src, n);
 }

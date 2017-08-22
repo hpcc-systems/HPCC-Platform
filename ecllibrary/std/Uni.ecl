@@ -398,4 +398,15 @@ EXPORT unicode GetNthWord(unicode text, unsigned4 n, varstring localename = '') 
 EXPORT ExcludeNthWord(unicode text, unsigned4 n, varstring localename = '') :=
     lib_unicodelib.UnicodeLib.UnicodeLocaleExcludeNthWord(text, n, localename);
 
+/*
+ * Returns a string containing text repeated n times.
+ *
+ * @param src           The string to be repeated.
+ * @param n             Number of repetitions.
+ * @return              A string containing n concatenations of the string text.
+ */
+
+EXPORT Repeat(unicode src, unsigned4 n) :=
+    lib_unicodelib.UnicodeLib.UnicodeLocaleRepeat(src, n);
+
 END;
