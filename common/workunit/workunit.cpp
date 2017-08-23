@@ -911,7 +911,7 @@ private:
         StatisticKind kind;
         StatisticCreatorType creatorType;
         StatisticScopeType scopeType;
-        unsigned __int64 value;
+        unsigned __int64 value = 0;
         unsigned __int64 timeStamp;
         unsigned curStatIndex = 0;
         unsigned numStats = 0;
@@ -919,7 +919,7 @@ private:
 
     Owned<IRemoteConnection> conn;
     StringBuffer curScopeName;
-    StatisticScopeType curScopeType;
+    StatisticScopeType curScopeType = SSTnone;
     const IStatisticsFilter * filter;
     StringArray scopes;
     StringBuffer rootPath;
@@ -1041,7 +1041,7 @@ protected:
 
 protected:
     IArrayOf<IConstWUStatistic> statistics;
-    unsigned curIndex;
+    unsigned curIndex = 0;
     unsigned numStatistics = 1;
 };
 
