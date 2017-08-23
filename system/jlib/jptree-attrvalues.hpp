@@ -475,6 +475,7 @@
     "ou=workunits,ou=ecl",
     "ou=WsEcl,ou=EspServices,ou=ecl",
     "OwnWorkunitsAccess",
+    "PackageMapAccess",
     "parallel",
     "Parameters",
     "_parentActivity",
