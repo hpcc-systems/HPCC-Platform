@@ -165,7 +165,7 @@
                 </xsl:attribute>
             </xsl:if>
             <xsl:if test="boolean($all_annot_Param)">
-                <xsl:if test="@html_head or @form_ui or @collapsed or @cols or @rows">
+                <xsl:if test="@html_head or @form_ui or @collapsed or @cols or @rows or @optional">
                     <xsd:annotation>
                         <xsd:appinfo>
                             <form>
@@ -188,6 +188,9 @@
                                 </xsl:if>
                                 <xsl:if test="@rows">
                                     <xsl:attribute name="formRows"><xsl:value-of select="@rows"/></xsl:attribute>
+                                </xsl:if>
+                                <xsl:if test="@optional">
+                                    <xsl:attribute name="optional"><xsl:value-of select="@optional"/></xsl:attribute>
                                 </xsl:if>
                             </form>
                         </xsd:appinfo>

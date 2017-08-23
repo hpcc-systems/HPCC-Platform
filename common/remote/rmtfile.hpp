@@ -54,7 +54,7 @@ extern REMOTE_API void setDaliServixSocketCaching(bool set);
 extern REMOTE_API bool canAccessDirectly(const RemoteFilename & file);
 extern REMOTE_API IFile *createDaliServixFile(const RemoteFilename & file);
 extern REMOTE_API bool testDaliServixPresent(const IpAddress &ip);
-extern REMOTE_API bool testDaliServixPresent(const SocketEndpoint &ep);
+extern REMOTE_API unsigned short getActiveDaliServixPort(const IpAddress &ip);
 extern REMOTE_API unsigned getDaliServixVersion(const IpAddress &ip,StringBuffer &ver);
 extern REMOTE_API unsigned getDaliServixVersion(const SocketEndpoint &ep,StringBuffer &ver);
 extern REMOTE_API DAFS_OS getDaliServixOs(const SocketEndpoint &ep);

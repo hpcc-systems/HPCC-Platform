@@ -80,18 +80,17 @@ namespace couchbaseembed
     }
 
     CouchbaseRowStream::CouchbaseRowStream(IEngineRowAllocator* resultAllocator, Couchbase::Query * cbaseQuery)
-       :   m_CouchBaseQuery(cbaseQuery),
-           m_resultAllocator(resultAllocator)
+       :   m_resultAllocator(resultAllocator)
     {
         m_currentRow = 0;
         m_shouldRead = true;
 
         //iterating over result rows and copying them to stringarray
         //is there a way to independently step through original result rows?
-        for (auto cbrow : *m_CouchBaseQuery)
+        for (auto cbrow : *cbaseQuery)
             m_Rows.append(cbrow.json().to_string().c_str());
 
-        reportIfQueryFailure(m_CouchBaseQuery);
+        reportIfQueryFailure(cbaseQuery);
     }
 
     CouchbaseRowStream::~CouchbaseRowStream() {}
@@ -105,12 +104,12 @@ namespace couchbaseembed
             Owned<IPropertyTree> contentTree = createPTreeFromJSONString(json,ipt_caseInsensitive);
             if (contentTree)
             {
-                CouchbaseRowBuilder * cbRowBuilder = new CouchbaseRowBuilder(contentTree);
+                CouchbaseRowBuilder cbRowBuilder(contentTree);
                 RtlDynamicRowBuilder rowBuilder(m_resultAllocator);
                 const RtlTypeInfo *typeInfo = m_resultAllocator->queryOutputMeta()->queryTypeInfo();
                 assertex(typeInfo);
                 RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
-                size32_t len = typeInfo->build(rowBuilder, 0, &dummyField, *cbRowBuilder);
+                size32_t len = typeInfo->build(rowBuilder, 0, &dummyField, cbRowBuilder);
                 return rowBuilder.finalizeRowClear(len);
             }
             else
@@ -128,7 +127,7 @@ namespace couchbaseembed
    Couchbase::Query * CouchbaseConnection::query(Couchbase::QueryCommand * qcommand)
    {
        Couchbase::Status queryStatus;
-       Couchbase::Query * pQuery = new Couchbase::Query(*m_pCouchbaseClient, *qcommand, queryStatus);
+       Couchbase::Query * pQuery = new Couchbase::Query(*m_pCouchbaseClient, *qcommand, queryStatus); // will be owned by method caller
 
        if (!queryStatus)
            failx("Couldn't issue query: %s", queryStatus.description());
@@ -137,7 +136,7 @@ namespace couchbaseembed
            failx("Couldn't execute query, reason: %s\nBody is: ", pQuery->meta().body().data());
 
        if (pQuery->meta().status().errcode() != LCB_SUCCESS )//rows.length() == 0)
-           failx("Query execution error: %s", m_pQuery->meta().body().data());
+           failx("Query execution error: %s", pQuery->meta().body().data());
 
        return pQuery;
    }
@@ -364,8 +363,6 @@ namespace couchbaseembed
     CouchbaseEmbedFunctionContext::CouchbaseEmbedFunctionContext(const IContextLogger &_logctx, const char *options, unsigned _flags)
     : logctx(_logctx), m_NextRow(), m_nextParam(0), m_numParams(0), m_scriptFlags(_flags)
     {
-        cbQueryIterator = NULL;
-        m_pCouchbaseClient = nullptr;
         m_pQuery = nullptr;
         m_pQcmd = nullptr;
 
@@ -416,6 +413,21 @@ namespace couchbaseembed
         m_oCBConnection->connect();
     }
 
+    CouchbaseEmbedFunctionContext::~CouchbaseEmbedFunctionContext()
+    {
+        if (m_pQcmd)
+        {
+            delete m_pQcmd;
+            m_pQcmd = nullptr;
+        }
+
+        if (m_pQuery)
+        {
+            delete m_pQuery;
+            m_pQuery = nullptr;
+        }
+    }
+
     IPropertyTree * CouchbaseEmbedFunctionContext::nextResultRowTree()
     {
         for (auto cbrow : *m_pQuery)
@@ -449,15 +461,16 @@ namespace couchbaseembed
 
     const char * CouchbaseEmbedFunctionContext::nextResultScalar()
     {
-        auto resultrow = nextResultRowIterator();
-        if (resultrow)
+        m_resultrow.setown(nextResultRowIterator());
+
+        if (m_resultrow)
         {
-            resultrow->first();
-            if(resultrow->isValid() == true)
+            m_resultrow->first();
+            if(m_resultrow->isValid() == true)
             {
-                if (resultrow->query().hasChildren())
+                if (m_resultrow->query().hasChildren())
                     typeError("scalar", "");
-                return resultrow->query().queryProp("");
+                return m_resultrow->query().queryProp("");
             }
             else
                 failx("Could not fetch next result column.");
@@ -562,14 +575,14 @@ namespace couchbaseembed
     IRowStream * CouchbaseEmbedFunctionContext::getDatasetResult(IEngineRowAllocator * _resultAllocator)
     {
         Owned<CouchbaseRowStream> cbaseRowStream;
-        cbaseRowStream.set(new CouchbaseRowStream(_resultAllocator, m_pQuery));
+        cbaseRowStream.setown(new CouchbaseRowStream(_resultAllocator, m_pQuery));
         return cbaseRowStream.getLink();
     }
 
     byte * CouchbaseEmbedFunctionContext::getRowResult(IEngineRowAllocator * _resultAllocator)
     {
         Owned<CouchbaseRowStream> cbaseRowStream;
-        cbaseRowStream.set(new CouchbaseRowStream(_resultAllocator, m_pQuery));
+        cbaseRowStream.setown(new CouchbaseRowStream(_resultAllocator, m_pQuery));
         return (byte *)cbaseRowStream->nextRow();
     }
 
@@ -733,12 +746,28 @@ namespace couchbaseembed
     {
         if (script && *script)
         {
-            m_pQcmd = new Couchbase::QueryCommand(script);
+            // Incoming script is not necessarily null terminated. Note that the chars refers to utf8 characters and not bytes.
 
-            if ((m_scriptFlags & EFnoparams) == 0)
-                m_numParams = countParameterPlaceholders(script);
+            size32_t len = rtlUtf8Size(chars, script);
+
+            if (len > 0)
+            {
+                StringAttr queryScript;
+                queryScript.set(script, len);
+                const char * terminatedScript = queryScript.get(); // Now null terminated
+
+                if (m_pQcmd)
+                    delete m_pQcmd;
+
+                m_pQcmd = new Couchbase::QueryCommand(terminatedScript);
+
+                if ((m_scriptFlags & EFnoparams) == 0)
+                    m_numParams = countParameterPlaceholders(terminatedScript);
+                else
+                    m_numParams = 0;
+            }
             else
-                m_numParams = 0;
+                failx("Empty N1QL query detected");
         }
         else
             failx("Empty N1QL query detected");
@@ -755,6 +784,9 @@ namespace couchbaseembed
             m_oInputStream->executeAll(m_oCBConnection);
         else
         {
+            if (m_pQuery)
+                delete m_pQuery;
+
             m_pQuery = m_oCBConnection->query(m_pQcmd);
 
             reportIfQueryFailure(m_pQuery);
@@ -901,14 +933,15 @@ namespace couchbaseembed
     {
         isAll = false; // ALL not supported
 
-        const char * xpath = xpathOrName(field);
+        StringBuffer    xpath;
+        xpathOrName(xpath, field);
 
-        if (xpath && *xpath)
+        if (!xpath.isEmpty())
         {
             PathTracker     newPathNode(xpath, CPNTSet);
             StringBuffer    newXPath;
 
-            constructNewXPath(newXPath, xpath);
+            constructNewXPath(newXPath, xpath.str());
 
             newPathNode.childCount = m_oResultRow->getCount(newXPath);
             m_pathStack.push_back(newPathNode);
@@ -926,14 +959,15 @@ namespace couchbaseembed
 
     void CouchbaseRowBuilder::processBeginDataset(const RtlFieldInfo * field)
     {
-        const char * xpath = xpathOrName(field);
+        StringBuffer    xpath;
+        xpathOrName(xpath, field);
 
-        if (xpath && *xpath)
+        if (!xpath.isEmpty())
         {
             PathTracker     newPathNode(xpath, CPNTDataset);
             StringBuffer    newXPath;
 
-            constructNewXPath(newXPath, xpath);
+            constructNewXPath(newXPath, xpath.str());
 
             newPathNode.childCount = m_oResultRow->getCount(newXPath);
             m_pathStack.push_back(newPathNode);
@@ -946,11 +980,12 @@ namespace couchbaseembed
 
     void CouchbaseRowBuilder::processBeginRow(const RtlFieldInfo * field)
     {
-        const char * xpath = xpathOrName(field);
+        StringBuffer    xpath;
+        xpathOrName(xpath, field);
 
-        if (xpath && *xpath)
+        if (!xpath.isEmpty())
         {
-            if (strncmp(xpath, "<nested row>", 12) == 0)
+            if (strncmp(xpath.str(), "<nested row>", 12) == 0)
             {
                 // Row within child dataset
                 if (m_pathStack.back().nodeType == CPNTDataset)
@@ -980,9 +1015,10 @@ namespace couchbaseembed
 
     void CouchbaseRowBuilder::processEndSet(const RtlFieldInfo * field)
     {
-        const char * xpath = xpathOrName(field);
+        StringBuffer    xpath;
+        xpathOrName(xpath, field);
 
-        if (xpath && *xpath && !m_pathStack.empty() && strcmp(xpath, m_pathStack.back().nodeName.str()) == 0)
+        if (!xpath.isEmpty() && !m_pathStack.empty() && strcmp(xpath.str(), m_pathStack.back().nodeName.str()) == 0)
         {
             m_pathStack.pop_back();
         }
@@ -990,11 +1026,12 @@ namespace couchbaseembed
 
     void CouchbaseRowBuilder::processEndDataset(const RtlFieldInfo * field)
     {
-        const char * xpath = xpathOrName(field);
+        StringBuffer    xpath;
+        xpathOrName(xpath, field);
 
-        if (xpath && *xpath)
+        if (!xpath.isEmpty())
         {
-            if (!m_pathStack.empty() && strcmp(xpath, m_pathStack.back().nodeName.str()) == 0)
+            if (!m_pathStack.empty() && strcmp(xpath.str(), m_pathStack.back().nodeName.str()) == 0)
             {
                 m_pathStack.pop_back();
             }
@@ -1007,9 +1044,10 @@ namespace couchbaseembed
 
     void CouchbaseRowBuilder::processEndRow(const RtlFieldInfo * field)
     {
-        const char * xpath = xpathOrName(field);
+        StringBuffer    xpath;
+        xpathOrName(xpath, field);
 
-        if (xpath && *xpath)
+        if (!xpath.isEmpty())
         {
             if (!m_pathStack.empty())
             {
@@ -1017,7 +1055,7 @@ namespace couchbaseembed
                 {
                     m_pathStack.back().childrenProcessed++;
                 }
-                else if (strcmp(xpath, m_pathStack.back().nodeName.str()) == 0)
+                else if (strcmp(xpath.str(), m_pathStack.back().nodeName.str()) == 0)
                 {
                     m_pathStack.pop_back();
                 }
@@ -1031,16 +1069,17 @@ namespace couchbaseembed
 
     const char * CouchbaseRowBuilder::nextField(const RtlFieldInfo * field)
     {
-        const char * xpath = xpathOrName(field);
+        StringBuffer    xpath;
+        xpathOrName(xpath, field);
 
-        if (!xpath || !*xpath)
+        if (xpath.isEmpty())
         {
             failx("nextField: Field name or xpath missing");
         }
 
         StringBuffer fullXPath;
 
-        if (!m_pathStack.empty() && m_pathStack.back().nodeType == CPNTSet && strncmp(xpath, "<set element>", 13) == 0)
+        if (!m_pathStack.empty() && m_pathStack.back().nodeType == CPNTSet && strncmp(xpath.str(), "<set element>", 13) == 0)
         {
             m_pathStack.back().currentChildIndex++;
             constructNewXPath(fullXPath, NULL);
@@ -1048,49 +1087,64 @@ namespace couchbaseembed
         }
         else
         {
-            constructNewXPath(fullXPath, xpath);
+            constructNewXPath(fullXPath, xpath.str());
         }
 
         return m_oResultRow->queryProp(fullXPath.str());
     }
 
-    const char * CouchbaseRowBuilder::xpathOrName(const RtlFieldInfo * field) const
+    void CouchbaseRowBuilder::xpathOrName(StringBuffer & outXPath, const RtlFieldInfo * field) const
     {
-        const char * xpath = NULL;
+        outXPath.clear();
 
         if (field->xpath)
         {
             if (field->xpath[0] == xpathCompoundSeparatorChar)
             {
-                xpath = field->xpath + 1;
+                outXPath.append(field->xpath + 1);
             }
             else
             {
-                xpath = field->xpath;
+                const char * sep = strchr(field->xpath, xpathCompoundSeparatorChar);
+
+                if (!sep)
+                {
+                    outXPath.append(field->xpath);
+                }
+                else
+                {
+                    outXPath.append(field->xpath, 0, static_cast<size32_t>(sep - field->xpath));
+                }
             }
         }
         else
         {
-            xpath = str(field->name);
+            outXPath.append(str(field->name));
         }
-
-        return xpath;
     }
 
     void CouchbaseRowBuilder::constructNewXPath(StringBuffer& outXPath, const char * nextNode) const
     {
-        for (std::vector<PathTracker>::const_iterator iter = m_pathStack.begin(); iter != m_pathStack.end(); iter++)
+        bool nextNodeIsFromRoot = (nextNode && *nextNode == '/');
+
+        outXPath.clear();
+
+        if (!nextNodeIsFromRoot)
         {
-            if (strncmp(iter->nodeName, "<row>", 5) != 0)
+            // Build up full parent xpath using our previous components
+            for (std::vector<PathTracker>::const_iterator iter = m_pathStack.begin(); iter != m_pathStack.end(); iter++)
             {
-                if (!outXPath.isEmpty())
+                if (strncmp(iter->nodeName, "<row>", 5) != 0)
                 {
-                    outXPath.append("/");
-                }
-                outXPath.append(iter->nodeName);
-                if (iter->nodeType == CPNTDataset || iter->nodeType == CPNTSet)
-                {
-                    outXPath.appendf("[%d]", iter->currentChildIndex);
+                    if (!outXPath.isEmpty())
+                    {
+                        outXPath.append("/");
+                    }
+                    outXPath.append(iter->nodeName);
+                    if (iter->nodeType == CPNTDataset || iter->nodeType == CPNTSet)
+                    {
+                        outXPath.appendf("[%d]", iter->currentChildIndex);
+                    }
                 }
             }
         }

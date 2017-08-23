@@ -128,7 +128,17 @@ IPropertyTree * fetchESDLBindingFromDali(const char *process, const char *bindin
         //There shouldn't be multiple entries here, but if so, we'll use the first one
         VStringBuffer xpath("%s[@id='%s.%s'][1]", ESDL_BINDING_ENTRY, process, bindingName);
 
-        return esdlBindings->getPropTree(xpath);
+        if (conn->queryRoot()->hasProp(xpath))
+            return createPTreeFromIPT(conn->queryRoot()->queryPropTree(xpath));
+        else
+            return nullptr;
+
+    }
+    catch (IException *E)
+    {
+        VStringBuffer message("ESDL Binding: Error fetching ESDL Binding %s[@EspProcess='%s'][@EspBinding='%s'][1] from Dali.", ESDL_BINDING_ENTRY, process, bindingName);
+        EXCLOG(E, message);
+        E->Release();
     }
     catch(...)
     {

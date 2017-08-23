@@ -21,7 +21,10 @@
   <chapter id="ECL_Playgd">
     <title><emphasis role="bold">Using the ECL Playground</emphasis></title>
 
-    <sect1 id="ECL_Playground" role="nobrk">
+    <para>The ECL Playground Module. The following module is included in the
+    ECL Playground doc, as well as the ECL Watch Manual.</para>
+
+    <sect1 id="ECL_Playground">
       <title>Using the ECL Playground</title>
 
       <para>ECL Playground is a tool hosted on an ESP server. A page runs in

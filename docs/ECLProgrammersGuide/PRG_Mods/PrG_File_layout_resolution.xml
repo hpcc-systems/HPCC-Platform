@@ -59,7 +59,7 @@
     </listitem>
   </itemizedlist>
 
-  <sect2>
+  <sect2 id="Using_LOOKUP_on_DATASET">
     <title>Using LOOKUP on a DATASET</title>
 
     <para>Adding the LOOKUP attribute to a DATASET declaration indicates that
@@ -113,7 +113,7 @@ f := PROJECT(actualfile, TRANSFORM(myrecord, SELF := LEFT; SELF := []));
     datasets.</para>
   </sect2>
 
-  <sect2>
+  <sect2 id="Using_LOOKUP_in_RECORDOF">
     <title>Using LOOKUP in a RECORDOF function</title>
 
     <para>Using a LOOKUP attribute in a RECORDOF function is useful when
@@ -153,7 +153,7 @@ filtered := myfile(id=‘123’);
 OUTPUT(filtered,,’myfilteredfile’);</programlisting></para>
   </sect2>
 
-  <sect2>
+  <sect2 id="LOOKUP-Additional_Details">
     <title>Additional Details</title>
 
     <itemizedlist>

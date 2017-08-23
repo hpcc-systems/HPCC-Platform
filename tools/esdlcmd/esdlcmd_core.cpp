@@ -30,7 +30,7 @@
 class Esdl2XSDCmd : public EsdlHelperConvertCmd
 {
 public:
-    Esdl2XSDCmd() : optVersion(0), optAllAnnot(false), optNoAnnot(false),
+    Esdl2XSDCmd() : optInterfaceVersion(0), optAllAnnot(false), optNoAnnot(false),
                     optEnforceOptional(true), optRawOutput(false), optXformTimes(1), optFlags(DEPFLAG_COLLAPSE|DEPFLAG_ARRAYOF),
                     outfileext(".xsd")
     {}
@@ -85,7 +85,7 @@ public:
 
     virtual bool parseCommandLineOption(ArgvIterator &iter)
     {
-        if (iter.matchOption(optVersionStr, ESDLOPT_VERSION))
+        if (iter.matchOption(optInterfaceVersionStr, ESDLOPT_INTERFACE_VERSION) || iter.matchOption(optInterfaceVersionStr, ESDLOPT_INTERFACE_VERSION_S))
             return true;
         if (iter.matchOption(optService, ESDLOPT_SERVICE))
             return true;
@@ -135,10 +135,10 @@ public:
             throw( MakeStringException(0, "A service name must be provided") );
         }
 
-        if (!optVersionStr.isEmpty())
+        if (!optInterfaceVersionStr.isEmpty())
         {
-            optVersion = atof( optVersionStr.get() );
-            if( optVersion <= 0 )
+            optInterfaceVersion = atof( optInterfaceVersionStr.get() );
+            if ( optInterfaceVersion <= 0 )
             {
                 throw MakeStringException( 0, "Version option must be followed by a real number > 0" );
             }
@@ -197,7 +197,7 @@ public:
     virtual void doTransform(IEsdlDefObjectIterator& objs, StringBuffer &target, double version=0, IProperties *opts=NULL, const char *ns=NULL, unsigned flags=0 )
     {
         TimeSection ts("transforming via XSLT");
-        cmdHelper.defHelper->toXSD( objs, target, EsdlXslToXsd, optVersion, opts, NULL, optFlags );
+        cmdHelper.defHelper->toXSD( objs, target, EsdlXslToXsd, optInterfaceVersion, opts, NULL, optFlags );
     }
 
     virtual void loadTransform( StringBuffer &xsltpath, IProperties *params)
@@ -216,7 +216,7 @@ public:
         loadServiceDef();
         createOptionals();
 
-        Owned<IEsdlDefObjectIterator> structs = cmdHelper.esdlDef->getDependencies( optService.get(), optMethod.get(), ESDLOPTLIST_DELIMITER, optVersion, opts.get(), optFlags );
+        Owned<IEsdlDefObjectIterator> structs = cmdHelper.esdlDef->getDependencies( optService.get(), optMethod.get(), ESDLOPTLIST_DELIMITER, optInterfaceVersion, opts.get(), optFlags );
 
         if( optRawOutput )
         {
@@ -231,7 +231,7 @@ public:
 
             for( unsigned i=0; i < optXformTimes; i++ )
             {
-                doTransform( *structs, outputBuffer, optVersion, opts.get(), NULL, optFlags );
+                doTransform( *structs, outputBuffer, optInterfaceVersion, opts.get(), NULL, optFlags );
             }
 
             outputToFile();
@@ -249,7 +249,7 @@ public:
     void printOptions()
     {
         puts("Options:");
-        puts("  --version <version number> : Constrain to interface version");
+        puts("  -iv,--interface-version <version number> : Constrain to interface version");
         puts("  --method <method name>[;<method name>]* : Constrain to list of specific method(s)" );
         puts("  --xslt <xslt file path> : Path to '/xslt/esxdl2xsd.xslt' file to transform EsdlDef to XSD" );
         puts("  --preprocess-output <raw output directory> : Output pre-processed xml file to specified directory before applying XSLT transform" );
@@ -293,7 +293,7 @@ public:
             StringBuffer empty;
 
             xmlOut.appendf( "<esxdl name=\"%s\">", optService.get());
-            cmdHelper.defHelper->toXML( obj, xmlOut, optVersion, opts.get(), optFlags );
+            cmdHelper.defHelper->toXML( obj, xmlOut, optInterfaceVersion, opts.get(), optFlags );
             xmlOut.append("</esxdl>");
 
             saveAsFile( optPreprocessOutputDir.get(), empty, xmlOut.str(), NULL );
@@ -414,8 +414,8 @@ public:
            ns.append('(').append(ns_optionals.str()).append(')');
         */
 
-       if (optVersion > 0)
-        ns.append("@ver=").appendf("%g", optVersion);
+       if (optInterfaceVersion > 0)
+        ns.append("@ver=").appendf("%g", optInterfaceVersion);
        return ns.toLowerCase();
     }
 
@@ -472,8 +472,8 @@ public:
     StringAttr optTargetNamespace;
     StringAttr optPreprocessOutputDir;
     bool optRawOutput;
-    StringAttr optVersionStr;
-    double optVersion;
+    StringAttr optInterfaceVersionStr;
+    double optInterfaceVersion;
     unsigned int optXformTimes;
     unsigned optFlags;
     bool optNoCollapse;
@@ -523,7 +523,7 @@ public:
     virtual void doTransform(IEsdlDefObjectIterator& objs, StringBuffer &target, double version=0, IProperties *opts=NULL, const char *ns=NULL, unsigned flags=0 )
     {
         TimeSection ts("transforming via XSLT");
-        cmdHelper.defHelper->toWSDL(objs, target, EsdlXslToWsdl, optVersion, opts, NULL, optFlags);
+        cmdHelper.defHelper->toWSDL(objs, target, EsdlXslToWsdl, optInterfaceVersion, opts, NULL, optFlags);
     }
 
     virtual void loadTransform( StringBuffer &xsltpath, IProperties *params)
@@ -542,7 +542,7 @@ public:
         loadServiceDef();
         createOptionals();
 
-        Owned<IEsdlDefObjectIterator> structs = cmdHelper.esdlDef->getDependencies( optService.get(), optMethod.get(), ESDLOPTLIST_DELIMITER, optVersion, opts.get(), optFlags );
+        Owned<IEsdlDefObjectIterator> structs = cmdHelper.esdlDef->getDependencies( optService.get(), optMethod.get(), ESDLOPTLIST_DELIMITER, optInterfaceVersion, opts.get(), optFlags );
 
         if( optRawOutput )
         {
@@ -556,7 +556,7 @@ public:
 
             for( unsigned i=0; i < optXformTimes; i++ )
             {
-                doTransform( *structs, outputBuffer, optVersion, opts.get(), NULL, optFlags );
+                doTransform( *structs, outputBuffer, optInterfaceVersion, opts.get(), NULL, optFlags );
             }
 
             outputToFile();
@@ -616,7 +616,7 @@ public:
 class Esdl2JavaCmd : public EsdlHelperConvertCmd
 {
 public:
-    Esdl2JavaCmd() : optVersion(0), optFlags(0)
+    Esdl2JavaCmd() : optFlags(0)
     {}
 
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
@@ -668,8 +668,6 @@ public:
 
     virtual bool parseCommandLineOption(ArgvIterator &iter)
     {
-        if (iter.matchOption(optVersionStr, ESDLOPT_VERSION))
-            return true;
         if (iter.matchOption(optService, ESDLOPT_SERVICE))
             return true;
         if (iter.matchOption(optMethod, ESDLOPT_METHOD))
@@ -703,13 +701,6 @@ public:
             throw( MakeStringException(0, "A service name must be provided") );
         }
 
-        if (!optVersionStr.isEmpty())
-        {
-            optVersion = atof( optVersionStr.get() );
-            if( optVersion <= 0 )
-                throw MakeStringException( 0, "Version option must be followed by a real number > 0" );
-        }
-
         if (!optXsltPath.length())
         {
             StringBuffer binXsltPath;
@@ -738,8 +729,8 @@ public:
 
     virtual int processCMD()
     {
-        cmdHelper.loadDefinition(optSource, optService, optVersion);
-        Owned<IEsdlDefObjectIterator> structs = cmdHelper.esdlDef->getDependencies( optService, optMethod, ESDLOPTLIST_DELIMITER, optVersion, NULL, optFlags );
+        cmdHelper.loadDefinition(optSource, optService, 0);
+        Owned<IEsdlDefObjectIterator> structs = cmdHelper.esdlDef->getDependencies( optService, optMethod, ESDLOPTLIST_DELIMITER, 0, NULL, optFlags );
 
         if(!optPreprocessOutputDir.isEmpty())
         {
@@ -768,7 +759,6 @@ public:
     void printOptions()
     {
         puts("Options:");
-        puts("  --version <version number> : Constrain to interface version");
         puts("  --method <method name>[;<method name>]* : Constrain to list of specific method(s)" );
         puts("  --xslt <xslt file path> : Path to xslt files used to transform EsdlDef to Java code" );
         puts("  --preprocess-output <raw output directory> : Output pre-processed xml file to specified directory before applying XSLT transform" );
@@ -798,7 +788,7 @@ public:
         StringBuffer xml;
 
         xml.appendf( "<esxdl name='%s'>", optService.get());
-        cmdHelper.defHelper->toXML( obj, xml, optVersion, NULL, optFlags );
+        cmdHelper.defHelper->toXML( obj, xml, 0, NULL, optFlags );
         xml.append("</esxdl>");
         saveAsFile(optPreprocessOutputDir, NULL, xml, NULL );
     }
@@ -836,8 +826,6 @@ public:
     StringAttr optXsltPath;
     StringAttr optMethod;
     StringAttr optPreprocessOutputDir;
-    StringAttr optVersionStr;
-    double optVersion;
     unsigned optFlags;
 
 protected:

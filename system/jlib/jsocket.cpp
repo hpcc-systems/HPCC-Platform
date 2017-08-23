@@ -2615,15 +2615,25 @@ bool CSocket::isSecure() const
 
 CSocket::~CSocket()
 {
-  if (owned) 
-    close();
-  free(hostname);
-  hostname = NULL;
+    if (owned)
+    {
+        try
+        {
+            close();
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e,"~CSocket close()");
+            e->Release();
+        }
+    }
+    free(hostname);
+    hostname = NULL;
 #ifdef _TRACE
-  free(tracename);
-  tracename = NULL;
+    free(tracename);
+    tracename = NULL;
 #endif
-  delete mcastreq;
+    delete mcastreq;
 }
 
 CSocket::CSocket(const SocketEndpoint &ep,SOCKETMODE smode,const char *name)
@@ -3071,7 +3081,7 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr)
     // if IP4only or using MS V6 can only resolve IPv4 using 
     static bool recursioncheck = false; // needed to stop error message recursing
     unsigned retry=10;
-#if defined(__linux__) || defined(getaddrinfo)
+#if defined(__linux__) || defined (__APPLE__) ||defined(getaddrinfo)
     if (IP4only) {
 #else
     {
@@ -3116,7 +3126,7 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr)
         }
         return false;
     }
-#if defined(__linux__) || defined(getaddrinfo)
+#if defined(__linux__) || defined (__APPLE__) || defined(getaddrinfo)
     struct addrinfo hints;
     memset(&hints,0,sizeof(hints));
     struct addrinfo  *addrInfo = NULL;
@@ -4053,11 +4063,16 @@ class CSocketSelectThread: public CSocketBaseThread
             T_SOCKET sock = popfds(s);
             if (!sock)
                 break;
-            if (sock!=dummysock) {
-                SelectItem si = findhash(sock); // nb copies
-                if (!si.del) {
-                    si.mode = mode;
-                    tonotify.append(si);
+            if (sock!=dummysock)
+            {
+                SelectItem &si = findhash(sock);
+                if (!si.del)
+                {
+                    tonotify.append(si); // nb copies
+                    SelectItem &itm = tonotify.element(tonotify.length()-1);
+                    itm.nfy->Link();
+                    itm.sock->Link();
+                    itm.mode = mode;
                 }
             }
         }   
@@ -4088,10 +4103,11 @@ public:
     {
         closedummy();
         ForEachItemIn(i,items) {
+            // Release/dtors should not throw but leaving try/catch here until all paths checked
             try {
                 SelectItem &si = items.element(i);
-                si.sock->Release();
                 si.nfy->Release();
+                si.sock->Release();
             }
             catch (IException *e) {
                 EXCLOG(e,"~CSocketSelectThread");
@@ -4112,11 +4128,12 @@ public:
         for (unsigned i=0;i<n;) {
             SelectItem &si = items.element(i);
             if (si.del) {
-                si.nfy->Release();
+                // Release/dtors should not throw but leaving try/catch here until all paths checked
                 try {
 #ifdef SOCKTRACE
                     PROGLOG("CSocketSelectThread::updateItems release %d",si.handle);
 #endif
+                    si.nfy->Release();
                     si.sock->Release();
                 }
                 catch (IException *e) {
@@ -4289,7 +4306,8 @@ public:
 
     int run()
     {
-        try {
+        try
+        {
             T_FD_SET rdfds;
             T_FD_SET wrfds;
             T_FD_SET exfds;
@@ -4305,14 +4323,16 @@ public:
             unsigned totnum = 0;
             unsigned total = 0;
 
-
-            while (!terminating) {
+            while (!terminating)
+            {
                 selecttimeout.tv_sec = SELECT_TIMEOUT_SECS;         // linux modifies so initialize inside loop
                 selecttimeout.tv_usec = 0;
-                if (selectvarschange) {
+                if (selectvarschange)
+                {
                     updateSelectVars(rdfds,wrfds,exfds,isrd,iswr,isex,ni,maxsockid);
                 }
-                if (ni==0) {
+                if (ni==0)
+                {
                     validateerrcount = 0;
                     tickwait++;
                     if(!selectvarschange&&!terminating) 
@@ -4330,11 +4350,14 @@ public:
                 int n = ::select(maxsockid,(fd_set *)rsp,(fd_set *)wsp,(fd_set *)esp,&selecttimeout); // first parameter needed for posix
                 if (terminating)
                     break;
-                if (n < 0) {
+                if (n < 0)
+                {
                     CriticalBlock block(sect);
                     int err = ERRNO();
-                    if (err != JSE_INTR) {
-                        if (dummysockopen) {
+                    if (err != JSE_INTR)
+                    {
+                        if (dummysockopen)
+                        {
                             LOGERR(err,12,"CSocketSelectThread select error"); // should cache error ?
                             validateselecterror = err;
 #ifndef _USE_PIPE_FOR_SELECT_TRIGGER
@@ -4346,14 +4369,15 @@ public:
                     }
                     n = 0;
                 }
-                else if (n>0) { 
+                else if (n>0)
+                {
                     validateerrcount = 0;
                     numto = 0;
                     lastnumto = 0;
                     total += n;
                     totnum++;
                     SelectItemArray tonotify;
-                    { 
+                    {
                         CriticalBlock block(sect);
 #ifdef _WIN32
                         if (isrd) 
@@ -4370,32 +4394,40 @@ public:
                         bool w = iswr;
                         bool e = isex;
 #ifdef _USE_PIPE_FOR_SELECT_TRIGGER
-                        if (r&&dummysockopen&&findfds(rs,dummysock[0],r)) {
+                        if (r&&dummysockopen&&findfds(rs,dummysock[0],r))
+                        {
                             resettrigger();
                             --n;
                         }           
 #endif
-                        for (i=0;(n>0)&&(i<ni);i++) {
-                            if (r&&findfds(rs,si->handle,r)) {
-                                if (!si->del) {
-                                    tonotify.append(*si);
-                                    tonotify.element(tonotify.length()-1).mode = SELECTMODE_READ;
-                                }
+                        for (i=0;(n>0)&&(i<ni);i++)
+                        {
+                            unsigned addMode = 0;
+                            if (r&&findfds(rs,si->handle,r))
+                            {
+                                if (!si->del)
+                                    addMode = SELECTMODE_READ;
                                 --n;
                             }
-                            if (w&&findfds(ws,si->handle,w)) {
-                                if (!si->del) {
-                                    tonotify.append(*si);
-                                    tonotify.element(tonotify.length()-1).mode = SELECTMODE_WRITE;
-                                }
+                            if (w&&findfds(ws,si->handle,w))
+                            {
+                                if (!si->del)
+                                    addMode = SELECTMODE_WRITE;
                                 --n;
                             }
-                            if (e&&findfds(es,si->handle,e)) {
-                                if (!si->del) {
-                                    tonotify.append(*si);
-                                    tonotify.element(tonotify.length()-1).mode = SELECTMODE_EXCEPT;
-                                }
+                            if (e&&findfds(es,si->handle,e))
+                            {
+                                if (!si->del)
+                                    addMode = SELECTMODE_EXCEPT;
                                 --n;
+                            }
+                            if (addMode)
+                            {
+                                tonotify.append(*si);
+                                SelectItem &itm = tonotify.element(tonotify.length()-1);
+                                itm.nfy->Link();
+                                itm.sock->Link();
+                                itm.mode = addMode;
                             }
                             si++;
                             if (si==sie)
@@ -4403,26 +4435,44 @@ public:
                         }
 #endif
                     }
-                    ForEachItemIn(j,tonotify) {
+                    ForEachItemIn(j,tonotify)
+                    {
                         const SelectItem &si = tonotify.item(j);
-                        try {
+                        try
+                        {
                             si.nfy->notifySelected(si.sock,si.mode); // ignore return
                         }
-                        catch (IException *e) { // should be acted upon by notifySelected
+                        catch (IException *e)
+                        {   // should be acted upon by notifySelected
+                            // could also not throw until after handling all events ...
                             EXCLOG(e,"CSocketSelectThread notifySelected");
                             throw ;
                         }
+                        // Release/dtors should not throw but leaving try/catch here until all paths checked
+                        try
+                        {
+                            si.nfy->Release();
+                            si.sock->Release();
+                        }
+                        catch (IException *e)
+                        {
+                            EXCLOG(e,"CSocketSelectThread nfy/sock Release");
+                            e->Release();
+                        }
                     }
                 }
-                else  {
+                else
+                {
                     validateerrcount = 0;
-                    if ((++numto>=lastnumto*2)) {
+                    if ((++numto>=lastnumto*2))
+                    {
                         lastnumto = numto;
                         if (selecttrace&&(numto>4))
                             PROGLOG("%s: Select Idle(%d), %d,%d,%0.2f",selecttrace,numto,totnum,total,totnum?((double)total/(double)totnum):0.0);
                     }   
 /*
-                    if (numto&&(numto%100)) {
+                    if (numto&&(numto%100))
+                    {
                         CriticalBlock block(sect);
                         if (!selectvarschange) 
                             selectvarschange = checkSocks();
@@ -4431,18 +4481,20 @@ public:
                 }
                 if (++offset>=ni)
                     offset = 0;
-
             }
         }
-        catch (IException *e) {
+        catch (IException *e)
+        {
             EXCLOG(e,"CSocketSelectThread");
             termexcept.setown(e);
         }
         CriticalBlock block(sect);
-        try {
+        try
+        {
             updateItems();
         }
-        catch (IException *e) {
+        catch (IException *e)
+        {
             EXCLOG(e,"CSocketSelectThread(2)");
             if (!termexcept)
                 termexcept.setown(e);
@@ -4678,20 +4730,20 @@ public:
         closedummy();
         ForEachItemIn(i,items)
         {
+            SelectItem *si = items.element(i);
+            epoll_op(epfd, EPOLL_CTL_DEL, si, 0);
+            // Release/dtors should not throw but leaving try/catch here until all paths checked
             try
             {
-                SelectItem *si = items.element(i);
-                epoll_op(epfd, EPOLL_CTL_DEL, si, 0);
                 si->nfy->Release();
                 si->sock->Release();
-                delete si;
-                si = nullptr;
             }
             catch (IException *e)
             {
                 EXCLOG(e,"~CSocketEpollThread");
                 e->Release();
             }
+            delete si;
         }
         if (epfd >= 0)
         {
@@ -4716,12 +4768,13 @@ public:
             if (si->del)
             {
                 epoll_op(epfd, EPOLL_CTL_DEL, si, 0);
-                si->nfy->Release();
+                // Release/dtors should not throw but leaving try/catch here until all paths checked
                 try
                 {
 #ifdef SOCKTRACE
                     PROGLOG("CSocketEpollThread::updateItems release %d",si->handle);
 #endif
+                    si->nfy->Release();
                     si->sock->Release();
                 }
                 catch (IException *e)
@@ -4965,14 +5018,17 @@ public:
                                         if (ep_mode != 0)
                                         {
                                             tonotify.append(*epsi);
+                                            SelectItem &itm = tonotify.element(tonotify.length()-1);
+                                            itm.nfy->Link();
+                                            itm.sock->Link();
 #ifdef _TRACELINKCLOSED
                                             // temporary, to help diagnose spurious socket closes (hpcc-15043)
                                             // currently no implementation of notifySelected() uses the mode
                                             // argument so we can pass in the epoll events mask and log that
                                             // if there is no data and the socket gets closed
-                                            tonotify.element(tonotify.length()-1).mode = epevents[j].events;
+                                            itm.mode = epevents[j].events;
 #else
-                                            tonotify.element(tonotify.length()-1).mode = ep_mode;
+                                            itm.mode = ep_mode;
 #endif
                                         }
                                     }
@@ -4988,9 +5044,21 @@ public:
                             si.nfy->notifySelected(si.sock,si.mode); // ignore return
                         }
                         catch (IException *e)
-                        { // should be acted upon by notifySelected
+                        {   // should be acted upon by notifySelected
+                            // could also not throw until after handling all events ...
                             EXCLOG(e,"CSocketEpollThread notifySelected");
                             throw ;
+                        }
+                        // Release/dtors should not throw but leaving try/catch here until all paths checked
+                        try
+                        {
+                            si.nfy->Release();
+                            si.sock->Release();
+                        }
+                        catch (IException *e)
+                        {
+                            EXCLOG(e,"CSocketEpollThread nfy/sock Release");
+                            e->Release();
                         }
                     }
                 }

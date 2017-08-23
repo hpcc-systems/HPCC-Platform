@@ -175,8 +175,6 @@ namespace couchbaseembed
         virtual const void* nextRow();
         virtual void stop();
     private:
-        Couchbase::Query *              m_CouchBaseQuery;   //!< pointer to couchbase query (holds results and metadata)
-
         Linked<IEngineRowAllocator>     m_resultAllocator;  //!< Pointer to allocator used when building result rows
         bool                            m_shouldRead;       //!< If true, we should continue trying to read more messages
         StringArray                     m_Rows;             //!< Local copy of result rows
@@ -190,12 +188,16 @@ namespace couchbaseembed
         inline CouchbaseConnection(bool useSSL, const char * host, unsigned port, const char * bucketname, const char * user, const char * password, const char * connOptions)
         {
             m_connectionString.setf("couchbase%s://%s:%d/%s%s", useSSL ? "s" : "", host, port, bucketname, connOptions);
-            m_pCouchbaseClient = new Couchbase::Client(m_connectionString.str());//USER/PASS still needed
-            m_pQuery = nullptr;
+            m_pCouchbaseClient = new Couchbase::Client(m_connectionString.str(), password);
         }
 
-        inline ~CouchbaseConnection()
+        virtual ~CouchbaseConnection()
         {
+            if (m_pCouchbaseClient)
+            {
+                delete m_pCouchbaseClient;
+                m_pCouchbaseClient = nullptr;
+            }
         }
 
         inline void connect()
@@ -211,7 +213,6 @@ namespace couchbaseembed
         StringBuffer m_connectionString;
         Couchbase::Client * m_pCouchbaseClient;
         Couchbase::Status  m_connectionStatus;
-        Couchbase::Query  * m_pQuery;
 
         CouchbaseConnection(const CouchbaseConnection &);
     };
@@ -249,6 +250,7 @@ namespace couchbaseembed
             m_oResultRow.set(resultrow);
             if (!m_oResultRow)
                 failx("Missing result row data");
+            m_pathStack.reserve(10);
         }
 
         virtual bool getBooleanResult(const RtlFieldInfo *field);
@@ -271,7 +273,7 @@ namespace couchbaseembed
 
     protected:
         const char * nextField(const RtlFieldInfo * field);
-        const char * xpathOrName(const RtlFieldInfo * field) const;
+        void xpathOrName(StringBuffer & outXPath, const RtlFieldInfo * field) const;
         void constructNewXPath(StringBuffer& outXPath, const char * nextNode) const;
     private:
         TokenDeserializer m_tokenDeserializer;
@@ -361,14 +363,14 @@ namespace couchbaseembed
         {
             while (bindNext())
             {
-                auto m_pQuery = conn->query(m_pQcmd);
+                std::unique_ptr<Couchbase::Query> query(conn->query(m_pQcmd));
 
-                if (m_pQuery->meta().status().errcode() != LCB_SUCCESS )//rows.length() == 0)
-                    failx("Query execution error: %s", m_pQuery->meta().body().to_string().c_str());
+                if (query->meta().status().errcode() != LCB_SUCCESS )//rows.length() == 0)
+                    failx("Query execution error: %s", query->meta().body().to_string().c_str());
 
                 //consider parsing json result
-                if (strstr(m_pQuery->meta().body().data(), "\"status\": \"errors\""))
-                    failx("Err: %s", m_pQuery->meta().body().data());
+                if (strstr(query->meta().body().data(), "\"status\": \"errors\""))
+                    failx("Err: %s", query->meta().body().data());
             }
         }
 
@@ -380,6 +382,7 @@ namespace couchbaseembed
     {
        public:
            CouchbaseEmbedFunctionContext(const IContextLogger &_logctx, const char *options, unsigned _flags);
+           virtual ~CouchbaseEmbedFunctionContext();
            IPropertyTree * nextResultRowTree();
            IPropertyTreeIterator * nextResultRowIterator();
            const char * nextResultScalar();
@@ -443,14 +446,13 @@ namespace couchbaseembed
 
            const IContextLogger &logctx;
            Owned<CouchbaseConnection>    m_oCBConnection;
-           Couchbase::Client           * m_pCouchbaseClient;
            Couchbase::Query            * m_pQuery;
            Couchbase::QueryCommand     * m_pQcmd;
+           Owned<IPropertyTreeIterator>  m_resultrow;
 
            StringArray m_Rows;
            int m_NextRow;
            Owned<CouchbaseDatasetBinder> m_oInputStream;
-           Couchbase::Internal::RowIterator<Couchbase::QueryRow> * cbQueryIterator;
            TokenDeserializer m_tokenDeserializer;
            TokenSerializer m_tokenSerializer;
            unsigned m_nextParam;
