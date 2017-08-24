@@ -2,7 +2,8 @@
     "Regress":{
         "roxieTestSocket": ":9876",
         "espIp" : "127.0.0.1",
-        "espSocket": ":8010",
+        "espSocket": "8010",
+        "useSsl" : "False",
         "username": "regress",
         "password": "regress",
         "suiteDir": "",

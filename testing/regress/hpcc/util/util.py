@@ -22,6 +22,8 @@ import platform
 import logging
 import os
 import subprocess
+import urllib2
+import base64
 
 from ..common.error import Error
 from ..common.shell import Shell
@@ -33,7 +35,6 @@ def isPositiveIntNum(string):
     return True
 
 def checkPqParam(string):
-    param = str(string)
     if isPositiveIntNum(string) or (string == '-1'):
         value = int(string)
     else:
@@ -83,9 +84,6 @@ def convertPath(osPath):
 
     return hpccPath
 
-import json
-import urllib2
-
 gConfig = None
 
 def setConfig(config):
@@ -95,6 +93,15 @@ def setConfig(config):
 def getConfig():
     return gConfig
 
+def addCommonEclArgs(args):
+    args.append('--server=' + gConfig.espIp)
+    args.append('--username=' + gConfig.username)
+    args.append('--password=' + gConfig.password)
+    args.append('--port=' + gConfig.espSocket)
+    if gConfig.useSsl.lower() == 'true':
+        args.append('--ssl')
+
+
 def queryWuid(jobname,  taskId):
     shell = Shell()
     cmd = 'ecl'
@@ -103,9 +110,8 @@ def queryWuid(jobname,  taskId):
     args.append('status')
     args.append('-v')
     args.append('-n=' + jobname)
-    args.append('--server=' + gConfig.espIp)
-    args.append('--username=' + gConfig.username)
-    args.append('--password=' + gConfig.password)
+    addCommonEclArgs(args)
+
     res, stderr = shell.command(cmd, *defaults)(*args)
     logging.debug("%3d. queryWuid(%s, cmd :'%s') result is: '%s'",  taskId,  jobname, cmd,  res)
     wuid = "Not found"
@@ -131,21 +137,29 @@ def abortWorkunit(wuid):
     args = []
     args.append('abort')
     args.append('-wu=' + wuid)
-    args.append('--server=' + gConfig.espIp)
-    args.append('--username=' + gConfig.username)
-    args.append('--password=' + gConfig.password)
+    addCommonEclArgs(args)
+
     state=shell.command(cmd, *defaults)(*args)
     return state
 
 def createZAP(wuid,  taskId):
     retVal = 'Error in create ZAP'
+    if gConfig.useSsl.lower() == 'true':
+        retVal = 'Currently ZAP file generation not supported with SSL connection.'
+        return retVal
+
     # http://localhost:8010/WsWorkunits/WUCreateZAPInfo?Wuid=<wuid>&ProblemDescription=<problem_description>&IncludeThorSlaveLog="on"
-    host = "http://"+gConfig.espIp+gConfig.espSocket+"/WsWorkunits/WUCreateZAPInfo?Wuid="+wuid+"&ProblemDescription=\"Failed+in+OBT\"&IncludeThorSlaveLog=on"
+    host = "http://" + gConfig.espIp + ":" + gConfig.espSocket + "/WsWorkunits/WUCreateZAPInfo?Wuid="+wuid+"&ProblemDescription=\"Failed+in+OBT\"&IncludeThorSlaveLog=on"
     logging.debug("%3d. createZAP(%s, host :'%s')",  taskId,  wuid, host)
 
     state = 'OK'
     try:
-        response_stream = urllib2.urlopen(host)
+        # Add authentication by default it works w/wo LDAP
+        request = urllib2.Request(host)
+        base64string = base64.encodestring('%s:%s' % (gConfig.username, gConfig.password)).replace('\n', '')
+        request.add_header("Authorization", "Basic %s" % base64string)
+        response_stream = urllib2.urlopen(request)
+
         respHeaders=str(response_stream.info()).replace('\r','').split('\n')
         response = response_stream.read()
         logging.debug("%3d. createZAP(%s) -> headers: '%s', response: '%s'\n",  taskId,  wuid, respHeaders,  response)
@@ -173,6 +187,7 @@ def createZAP(wuid,  taskId):
 
     except urllib2.HTTPError as ex:
         state = "HTTP Error: "+ str(ex.reason)
+        state += '\n' + ex.headers
 
     except urllib2.URLError as ex:
         state = "URL Error: "+ str(ex.reason)
@@ -184,8 +199,6 @@ def createZAP(wuid,  taskId):
         logging.debug("%3d. %s in createZAP(%s)",  taskId,  state,  wuid)
 
     return retVal
-
-import subprocess
 
 def getRealIPAddress():
     ipAddress = '127.0.0.1'
@@ -240,7 +253,6 @@ def isLocalIP(ip):
 def checkHpccStatus():
     # Check HPCC Systems status on local/remote target
     isLocal = False
-    isLocalChecked = False
     isIpChecked={}
     config = getConfig()
     ip = config.espIp
@@ -263,7 +275,10 @@ def checkHpccStatus():
             # Maybe use SSH to run  "ecl --version" on a remote node
             pass
 
-        myProc = subprocess.Popen("ecl getname --wuid 'W*' --limit=5 --server="+ip,  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
+        args = []
+        addCommonEclArgs(args)
+
+        myProc = subprocess.Popen("ecl getname --wuid 'W*' --limit=5 " + " ".join(args),  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
         result  = myProc.stdout.read() + myProc.stderr.read()
         results = result.split('\n')
         for line in results:
@@ -283,9 +298,6 @@ def checkHpccStatus():
                 logging.error("%s. %s:'%s'" % (1,  err,  line))
                 raise (err)
                 break
-
-        if isLocal:
-            isLocalChecked = True
 
         isIpChecked[ip] = True
 
