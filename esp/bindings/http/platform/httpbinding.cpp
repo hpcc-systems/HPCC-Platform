@@ -349,13 +349,21 @@ void EspHttpBinding::readAuthDomainCfg(IPropertyTree* procCfg)
             return;
         }
 
-        int sessionTimeoutMinutes = authDomainTree->getPropInt("@sessionTimeoutMinutes", 0);
-        if (sessionTimeoutMinutes == 0)
-            sessionTimeoutSeconds = ESP_SESSION_TIMEOUT;
-        else if (sessionTimeoutMinutes < 0)
-            sessionTimeoutSeconds = -1;
+        int clientSessionTimeoutMinutes = authDomainTree->getPropInt("@clientSessionTimeoutMinutes", ESP_SESSION_TIMEOUT);
+        if (clientSessionTimeoutMinutes < 0)
+            clientSessionTimeoutSeconds = ESP_SESSION_NEVER_TIMEOUT;
         else
-            sessionTimeoutSeconds = sessionTimeoutMinutes * 60;
+            clientSessionTimeoutSeconds = clientSessionTimeoutMinutes * 60;
+
+        //The serverSessionTimeoutMinutes is used to clean the sessions by ESP server after the sessions have been timed out on ESP clients.
+        //Considering possible network delay, serverSessionTimeoutMinutes should be greater than clientSessionTimeoutMinutes.
+        int serverSessionTimeoutMinutes = authDomainTree->getPropInt("@serverSessionTimeoutMinutes", 0);
+        if ((serverSessionTimeoutMinutes < 0) || (clientSessionTimeoutMinutes < 0))
+            serverSessionTimeoutMinutes = ESP_SESSION_NEVER_TIMEOUT;
+        else
+            serverSessionTimeoutMinutes = serverSessionTimeoutMinutes * 60;
+        if (serverSessionTimeoutMinutes < clientSessionTimeoutSeconds)
+            serverSessionTimeoutMinutes = 2 * clientSessionTimeoutSeconds;
 
         //The @unrestrictedResources contains URLs which may be used before a user is authenticated.
         //For example, an icon file on the login page.

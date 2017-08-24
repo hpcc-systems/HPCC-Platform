@@ -32,12 +32,14 @@
 #include "esphttp.hpp"
 
 #define SESSION_SDS_LOCK_TIMEOUT (30*1000) // 30 seconds
-#define ESP_SESSION_TIMEOUT (120*60) // 120 Mins
+#define ESP_SESSION_TIMEOUT (120) // 120 Mins
+#define ESP_SESSION_NEVER_TIMEOUT   -1
 #define ESP_CHECK_SESSION_TIMEOUT (30) // 30 seconds
 
 static const char* const USER_NAME_COOKIE = "ESPUserName";
 static const char* const SESSION_ID_COOKIE = "ESPSessionID";
 static const char* const SESSION_START_URL_COOKIE = "ESPAuthURL";
+static const char* const SESSION_TIMEOUT_COOKIE = "ESPSessionTimeoutSeconds";
 static const char* const SESSION_ID_TEMP_COOKIE = "ESPAuthIDTemp";
 static const char* const DEFAULT_LOGIN_URL = "/esp/files/eclwatch/templates/Login.html";
 static const char* const DEFAULT_UNRESTRICTED_RESOURCES = "/favicon.ico,/esp/files/*,/esp/xslt/*";
