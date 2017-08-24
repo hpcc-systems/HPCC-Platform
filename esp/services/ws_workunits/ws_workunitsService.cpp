@@ -4277,10 +4277,10 @@ void writeSharedObject(const char *srcpath, const MemoryBuffer &obj, const char 
             }
             buildFullDllPath(dllpath.clear(), dllname.clear(), dir, name.str(), ext.str(), ++copy);
         }
+        if (!tempDllName.length())
+            writeTempSharedObject(obj, dir, tempDllName);
         try
         {
-            if (!tempDllName.length())
-                writeTempSharedObject(obj, dir, tempDllName);
             renameFile(dllpath, tempDllName, false);
             return;
         }
