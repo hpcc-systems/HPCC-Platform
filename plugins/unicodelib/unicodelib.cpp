@@ -85,6 +85,7 @@ static const char * EclDefinition =
 "  unicode UnicodeLocaleExcludeNthWord(const unicode text, unsigned4 n, const varstring localename) :c,pure,entrypoint='ulUnicodeLocaleExcludeNthWord';\n"
 "  unicode UnicodeLocaleExcludeLastWord(const unicode text, const varstring localename) : c,pure,entrypoint='ulUnicodeLocaleExcludeLastWord';\n"
 "  unicode UnicodeLocaleTranslate(const unicode text, unicode sear, unicode repl) :c,pure,entrypoint='ulUnicodeLocaleTranslate';\n"
+"  boolean UnicodeLocaleStartsWith(const unicode src, unicode pref, string form) :c,pure,entrypoint='ulUnicodeLocaleStartsWith';\n"
 "END;\n";
 
 static const char * compatibleVersions[] = {
@@ -719,6 +720,45 @@ unsigned unicodeEditDistanceV4(UnicodeString & left, UnicodeString & right, unsi
     }
 
     return da[mask(leftLen-1)][rightLen-1];
+}
+
+void normalizationFormCheck(UnicodeString & source, const char * form)
+{
+    UErrorCode errorCode = U_ZERO_ERROR;
+    if (form[2] == 'C')
+    {
+        const Normalizer2 * no = Normalizer2::getInstance(NULL, "nfc", UNormalization2Mode::UNORM2_COMPOSE, errorCode);
+        source = no->normalize(source, errorCode);
+    }
+    else if (form[2] == 'D')
+    {
+        const Normalizer2 * no = Normalizer2::getInstance(NULL, "nfc", UNormalization2Mode::UNORM2_DECOMPOSE, errorCode);
+        source = no->normalize(source, errorCode);
+    }
+    else if (form[3] == 'C')
+    {
+        const Normalizer2 * no = Normalizer2::getInstance(NULL, "nfkc", UNormalization2Mode::UNORM2_COMPOSE, errorCode);
+        source = no->normalize(source, errorCode);
+    }
+    else if (form[3] == 'D')
+    {
+        const Normalizer2 * no = Normalizer2::getInstance(NULL, "nfkc", UNormalization2Mode::UNORM2_DECOMPOSE, errorCode);
+        source = no->normalize(source, errorCode);
+    }
+}
+
+bool startsWith(UnicodeString & processed, UnicodeString & prefix)
+{
+    if (processed.isEmpty() || prefix.isEmpty())
+    {
+        return false;
+    }
+    prefix.trim();
+    if (processed.compareCodePointOrder(0, prefix.length(), prefix) != 0)
+    {
+        return false;
+    }
+    return true;
 }
 
 void translate(UnicodeString & toProcess, UChar const * sear, unsigned searLen, UChar const * repl, unsigned replLen)
@@ -1578,7 +1618,7 @@ UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleTranslate(unsigned & tgtLen, 
 {
     UnicodeString processed(text, textLen);
     translate(processed, sear, searLen, repl, replLen);
-    if (processed.length()>0)
+    if (processed.length() > 0)
     {
         tgtLen = processed.length();
         tgt = (UChar *)CTXMALLOC(parentCtx, tgtLen * 2);
@@ -1589,4 +1629,17 @@ UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleTranslate(unsigned & tgtLen, 
         tgtLen = 0;
         tgt = 0;
     }
+}
+
+UNICODELIB_API bool UNICODELIB_CALL ulUnicodeLocaleStartsWith(unsigned srcLen, UChar const * src, unsigned prefLen, UChar const * pref, unsigned formLen, char const * form)
+{
+    UErrorCode errorCode = U_ZERO_ERROR;
+    UnicodeString pro(src, srcLen);
+    UnicodeString pre(pref, prefLen);
+    if (formLen == 3 || formLen == 4)
+    {
+        normalizationFormCheck(pro, form);
+        normalizationFormCheck(pre, form);
+    }
+    return startsWith(pro, pre);
 }
