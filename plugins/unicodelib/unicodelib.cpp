@@ -725,6 +725,7 @@ unsigned unicodeEditDistanceV4(UnicodeString & left, UnicodeString & right, unsi
 
 void normalizationFormCheck(UnicodeString & source, const char * form)
 {
+#if U_ICU_VERSION_MAJOR_NUM >= 44
     UErrorCode errorCode = U_ZERO_ERROR;
     if (form[2] == 'C')
     {
@@ -746,6 +747,30 @@ void normalizationFormCheck(UnicodeString & source, const char * form)
         const Normalizer2 * no = Normalizer2::getInstance(NULL, "nfkc", UNormalization2Mode::UNORM2_DECOMPOSE, errorCode);
         source = no->normalize(source, errorCode);
     }
+#else
+    UErrorCode errorCode = U_ZERO_ERROR;
+    UnicodeString result;
+    if (form[2] == 'C')
+    {
+        Normalizer::normalize(source, UNORM_NFC, 0, result, errorCode);
+    }
+    else if (form[2] == 'D')
+    {
+        Normalizer::normalize(source, UNORM_NFD, 0, result, errorCode);
+    }
+    else if (form[3] == 'C')
+    {
+        Normalizer::normalize(source, UNORM_NFKC, 0, result, errorCode);
+    }
+    else if (form[3] == 'D')
+    {
+        Normalizer::normalize(source, UNORM_NFKD, 0, result, errorCode);
+    }
+    else
+        return;
+
+    source = result;
+#endif
 }
 
 static bool endsWith(UnicodeString const & processed, UnicodeString const & suffix)
