@@ -86,6 +86,7 @@ static const char * EclDefinition =
 "  unicode UnicodeLocaleExcludeLastWord(const unicode text, const varstring localename) : c,pure,entrypoint='ulUnicodeLocaleExcludeLastWord';\n"
 "  unicode UnicodeLocaleTranslate(const unicode text, unicode sear, unicode repl) :c,pure,entrypoint='ulUnicodeLocaleTranslate';\n"
 "  boolean UnicodeLocaleStartsWith(const unicode src, unicode pref, string form) :c,pure,entrypoint='ulUnicodeLocaleStartsWith';\n"
+"  boolean UnicodeLocaleEndsWith(const unicode src, const unicode suff, const string form) :c,pure,entrypoint='ulUnicodeLocaleEndsWith';\n"
 "END;\n";
 
 static const char * compatibleVersions[] = {
@@ -747,7 +748,20 @@ void normalizationFormCheck(UnicodeString & source, const char * form)
     }
 }
 
-bool startsWith(UnicodeString & processed, UnicodeString & prefix)
+static bool endsWith(UnicodeString const & processed, UnicodeString const & suffix)
+{
+    if (processed.isEmpty() || suffix.isEmpty())
+    {
+        return false;
+    }
+    if (!processed.endsWith(suffix))
+    {
+        return false;
+    }
+    return true;
+}
+
+static bool startsWith(UnicodeString & processed, UnicodeString & prefix)
 {
     if (processed.isEmpty() || prefix.isEmpty())
     {
@@ -1642,4 +1656,17 @@ UNICODELIB_API bool UNICODELIB_CALL ulUnicodeLocaleStartsWith(unsigned srcLen, U
         normalizationFormCheck(pre, form);
     }
     return startsWith(pro, pre);
+}
+
+UNICODELIB_API bool UNICODELIB_CALL ulUnicodeLocaleEndsWith(unsigned srcLen, UChar const * src, unsigned suffLen, UChar const * suff, unsigned formLen, char const * form)
+{
+    UnicodeString pro(src, srcLen);
+    UnicodeString suf(suff, suffLen);
+    suf.trim();
+    if (formLen == 3 || formLen == 4)
+    {
+        normalizationFormCheck(pro, form);
+        normalizationFormCheck(suf, form);
+    }
+    return endsWith(pro, suf);
 }

@@ -449,4 +449,17 @@ EXPORT Translate(unicode text, unicode sear, unicode repl) :=
 EXPORT BOOLEAN StartsWith(unicode src, unicode pref, string form) :=
 	lib_unicodelib.UnicodeLib.UnicodeLocaleStartsWith(src, pref, form);
 
+/**
+ * Returns true if the suffix string matches the trailing characters in the source string.  Trailing and Leading spaces
+ * are stripped from the suffix before matching. Unless specified, normalization will not occur. Unless initiated as hex and
+ * then converted to Unicode using TRANSFER, ecl will perform its own normalization on your declared Unicode string.
+ *
+ * @param src           The string being searched in.
+ * @param suff          The suffix to search for.
+ * @param form          The type of Normalization to be employed.
+ */
+
+EXPORT BOOLEAN EndsWith(unicode src, unicode suff, string form) :=
+	lib_unicodelib.UnicodeLib.UnicodeLocaleEndsWith(src, suff, form);
+
 END;
