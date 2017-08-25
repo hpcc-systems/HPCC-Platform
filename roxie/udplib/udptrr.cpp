@@ -868,9 +868,14 @@ public:
     virtual void detachCollator(const IMessageCollator *msgColl) 
     {
         ruid_t ruid = msgColl->queryRUID();
-        if (udpTraceLevel >= 2) DBGLOG("UdpReceiver: detach %p %u", msgColl, ruid);
-        SpinBlock b(collatorsLock);
-        collators.erase(ruid); 
+        if (udpTraceLevel >= 2)
+            DBGLOG("UdpReceiver: detach %p %u", msgColl, ruid);
+
+        {
+            SpinBlock b(collatorsLock);
+            collators.erase(ruid);
+        }
+        //Call the destructor outside the SpinLock - it may take a while.
         msgColl->Release();
     }
 
@@ -901,6 +906,7 @@ public:
                 pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->length, pktHdr->nodeIndex);
 
         Linked <IMessageCollator> msgColl;
+        bool usedDefault = false;
         {
             SpinBlock b(collatorsLock);
             try
@@ -908,8 +914,7 @@ public:
                 msgColl.set(collators[pktHdr->ruid]);
                 if (!msgColl)
                 {
-                    if (udpTraceLevel)
-                        DBGLOG("UdpReceiver: CPacketCollator NO msg collator found - using default - ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X node=%u", pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->nodeIndex);
+                    usedDefault = true;
                     msgColl.set(defaultMessageCollator); // MORE - if we get a header, we can send an abort.
                 }
             }
@@ -925,6 +930,10 @@ public:
                 E->Release();
             }
         }
+
+        if (usedDefault && udpTraceLevel)
+            DBGLOG("UdpReceiver: CPacketCollator NO msg collator found - using default - ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X node=%u", pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->nodeIndex);
+
         if (msgColl) 
         {
             if (msgColl->add_package(dataBuff)) 
@@ -950,9 +959,10 @@ public:
     {
         IMessageCollator *msgColl = createCMessageCollator(rowManager, ruid);
         if (udpTraceLevel >= 2) DBGLOG("UdpReceiver: createMessageCollator %p %u", msgColl, ruid);
+
+        msgColl->Link();
         SpinBlock b(collatorsLock);
         collators[ruid] = msgColl;
-        msgColl->Link();
         return msgColl;
     }
 };
