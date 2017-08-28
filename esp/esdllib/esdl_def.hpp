@@ -175,6 +175,7 @@ interface IEsdlDefService : extends IEsdlDefObject
     virtual IEsdlDefMethod *queryMethodByName(const char *name)=0;
     virtual IEsdlDefMethod *queryMethodByRequest(const char *reqname)=0;
     virtual void methodsNamesToXML(StringBuffer& xml, const char* ver, IProperties* opts)=0;
+    virtual const char * queryStaticNamespace()=0;
 };
 
 interface IEsdlDefFile : extends IInterface

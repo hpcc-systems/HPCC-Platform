@@ -1321,6 +1321,8 @@ void EsdlBindingImpl::initEsdlServiceInfo(IEsdlDefService &srvdef)
             m_defaultSvcVersion.set(verstr);
     }
 
+    m_staticNamespace.set(srvdef.queryStaticNamespace());
+
     //superclass binding sets up wsdladdress
     //setWsdlAddress(bndcfg->queryProp("@wsdlServiceAddress"));
 
@@ -1418,6 +1420,7 @@ int EsdlBindingImpl::onGetInstantQuery(IEspContext &context,
 
                     StringBuffer ns, schemaLocation;
                     generateNamespace(context, request, srvdef->queryName(), mthdef->queryName(), ns);
+
                     getSchemaLocation(context, request, schemaLocation);
                     m_pESDLService->handleServiceRequest(context, *srvdef, *mthdef, tgtcfg, tgtctx, ns.str(), schemaLocation.str(), req_pt.get(), out, logdata, 0);
 
@@ -1724,6 +1727,9 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
 
 StringBuffer & EsdlBindingImpl::generateNamespace(IEspContext &context, CHttpRequest* request, const char *serv, const char * method, StringBuffer & ns)
 {
+    if (!m_staticNamespace.isEmpty())
+        return ns.set(m_staticNamespace);
+
     if (m_pESDLService->m_serviceNameSpaceBase.length()>0)
     {
         ns.appendf("%s%c%s", m_pESDLService->m_serviceNameSpaceBase.str(), m_pESDLService->m_usesURLNameSpace ? '/' : ':', serv);

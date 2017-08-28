@@ -1124,6 +1124,7 @@ public:
     EsdlDefObjectArray children;
     AddedObjs methodsByName;
     AddedObjs methodsByReqname;
+    StringBuffer m_nameSpace;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -1142,6 +1143,11 @@ public:
             if (edo)
                 edo->Release(); //ForceRelease();
         }
+    }
+
+    const char * queryStaticNamespace()
+    {
+        return props->queryProp("staticnamespace");
     }
 
     virtual EsdlDefTypeId getEsdlType(){return EsdlTypeService;}
