@@ -539,6 +539,24 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
     const char *mthName = mthdef.queryName();
     context.addTraceSummaryValue(LogMin, "method", mthName);
 
+    MapStringTo<SecAccessFlags>  methaccessmap = mthdef.queryAccessMap();
+    if (methaccessmap.ordinality() > 0)
+    {
+        if (!context.validateFeaturesAccess(methaccessmap, false))
+        {
+            StringBuffer features;
+            HashIterator iter(methaccessmap);
+            int index = 0;
+            ForEach(iter)
+            {
+                IMapping &cur = iter.query();
+                const char * key = (const char *)cur.getKey();
+                features.appendf("%s%s:%s", (index++ == 0 ? "" : ", "), key, getSecAccessFlagName(*methaccessmap.getValue(key)));
+            }
+            throw MakeStringException(-1, "%s::%s access denied - Required features: %s.", srvdef.queryName(), mthName, features.str());
+        }
+    }
+
     StringBuffer trxid;
     if (!m_bGenerateLocalTrxId)
     {
@@ -2200,11 +2218,6 @@ void EsdlBindingImpl::handleJSONPost(CHttpRequest *request, CHttpResponse *respo
 
     try
     {
-        //RODRIGO... is there any feature level check to be done here?
-        //maybe a dynamic feature level string based on servicename?
-        //if (!ctx->validateFeatureAccess("WSECL_ACCESS", SecAccess_Full, false))
-        //    throw MakeStringException(-1, "WsEcl access permission denied.");
-
         const char * methodName = request->queryServiceMethod();
         const char * serviceName = request->queryServiceName();
 
