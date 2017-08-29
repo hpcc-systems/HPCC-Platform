@@ -10,15 +10,15 @@
       <primary>File.Copy</primary>
     </indexterm><indexterm>
       <primary>Copy</primary>
-    </indexterm>(</emphasis> <emphasis> logicalname,
+    </indexterm>(</emphasis> <emphasis> sourceLogicalName,
   destinationGroup</emphasis> <emphasis role="bold">, </emphasis>
-  <emphasis>destinationLogicalname, </emphasis> <emphasis role="bold">
+  <emphasis>destinationLogicalName, </emphasis> <emphasis role="bold">
   [</emphasis> <emphasis>,sourceDali</emphasis> <emphasis role="bold">]
-  [</emphasis> <emphasis>,timeout</emphasis> <emphasis role="bold">]
-  [</emphasis> <emphasis>,espserverIPport </emphasis> <emphasis
+  [</emphasis> <emphasis>,timeOut</emphasis> <emphasis role="bold">]
+  [</emphasis> <emphasis>,espServerIPPort </emphasis> <emphasis
   role="bold">]</emphasis> <emphasis role="bold"> [</emphasis>
   <emphasis>,maxConnections</emphasis> <emphasis role="bold">] [</emphasis>
-  <emphasis>,allowoverwrite</emphasis> <emphasis role="bold">]</emphasis>
+  <emphasis>,allowOverwrite</emphasis> <emphasis role="bold">]</emphasis>
   <emphasis role="bold"> [</emphasis> <emphasis>,replicate</emphasis>
   <emphasis role="bold">] [</emphasis> <emphasis>,asSuperfile</emphasis>
   <emphasis role="bold">] [</emphasis> <emphasis>,compress</emphasis>
@@ -35,15 +35,15 @@
       <primary>File.fCopy</primary>
     </indexterm><indexterm>
       <primary>fCopy</primary>
-    </indexterm>(</emphasis> <emphasis> logicalname,
+    </indexterm>(</emphasis> <emphasis> sourceLogicalName,
   destinationGroup</emphasis> <emphasis role="bold">,</emphasis> <emphasis
-  role="bold"> </emphasis> <emphasis>destinationLogicalname, </emphasis>
+  role="bold"> </emphasis> <emphasis>destinationLogicalName, </emphasis>
   <emphasis role="bold"> [</emphasis> <emphasis>,sourceDali</emphasis>
-  <emphasis role="bold">] [</emphasis> <emphasis>,timeout</emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>,espserverIPport </emphasis> <emphasis
+  <emphasis role="bold">] [</emphasis> <emphasis>,timeOut</emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>,espServerIPPort </emphasis> <emphasis
   role="bold">]</emphasis> <emphasis role="bold"> [</emphasis>
   <emphasis>,maxConnections</emphasis> <emphasis role="bold">] [</emphasis>
-  <emphasis>,allowoverwrite</emphasis> <emphasis role="bold">]</emphasis>
+  <emphasis>,allowOverwrite</emphasis> <emphasis role="bold">]</emphasis>
   <emphasis role="bold"> [</emphasis> <emphasis>,replicate</emphasis>
   <emphasis role="bold">] [</emphasis> <emphasis>,asSuperfile</emphasis>
   <emphasis role="bold">] [</emphasis> <emphasis>,compress</emphasis>
@@ -61,7 +61,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>logicalname</emphasis></entry>
+          <entry><emphasis>sourceLogicalName</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           file.</entry>
@@ -75,7 +75,7 @@
         </row>
 
         <row>
-          <entry><emphasis>destinationLogicalname</emphasis></entry>
+          <entry><emphasis>destinationLogicalName</emphasis></entry>
 
           <entry>A null-terminated string containing the new logical name of
           the file.</entry>
@@ -90,7 +90,7 @@
         </row>
 
         <row>
-          <entry><emphasis>timeout</emphasis></entry>
+          <entry><emphasis>timeOut</emphasis></entry>
 
           <entry>Optional. An integer value indicating the timeout setting. If
           omitted, the default is -1. If set to zero (0), execution control
@@ -99,7 +99,7 @@
         </row>
 
         <row>
-          <entry><emphasis>espserverIPport</emphasis></entry>
+          <entry><emphasis>espServerIPPort</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing the protocol,
           IP, port, and directory, or the DNS equivalent, of the ESP server
@@ -116,7 +116,7 @@
         </row>
 
         <row>
-          <entry><emphasis>allowoverwrite</emphasis></entry>
+          <entry><emphasis>allowOverwrite</emphasis></entry>
 
           <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
           allow the new file to overwrite an existing file of the same name.
