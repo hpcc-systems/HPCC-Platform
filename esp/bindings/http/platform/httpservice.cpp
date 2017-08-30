@@ -1306,7 +1306,7 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
         }
     }
 
-    VStringBuffer xpath("%s[@port=\"%d\"]/%s[%s='%u']", PathSessionApplication, authReq.authBinding->getPort(), PathSessionSession, PropSessionID, sessionID);
+    VStringBuffer xpath("%s[@port=\"%d\"]/%s%u", PathSessionApplication, authReq.authBinding->getPort(), PathSessionSession, sessionID);
     IPropertyTree* sessionTree = espSessions->queryBranch(xpath.str());
     if (!authReq.serviceName.isEmpty() && !authReq.methodName.isEmpty() && strieq(authReq.serviceName.str(), "esp"))
     {
@@ -1378,7 +1378,7 @@ void CEspHttpServer::logoutSession(EspAuthRequest& authReq, unsigned sessionID, 
     if (sessionTree)
     {
         ICopyArrayOf<IPropertyTree> toRemove;
-        path.setf("%s[%s='%d']", PathSessionSession, PropSessionID, sessionID);
+        path.setf("%s%u", PathSessionSession, sessionID);
         Owned<IPropertyTreeIterator> it = sessionTree->getElements(path.str());
         ForEach(*it)
             toRemove.append(it->query());
@@ -1453,15 +1453,15 @@ unsigned CEspHttpServer::createHTTPSession(EspHttpBinding* authBinding, const ch
     now.setNow();
     time_t createTime = now.getSimple();
 
-    StringBuffer peer, sessionIDStr;
+    StringBuffer peer, sessionIDStr, sessionTag;
     VStringBuffer idStr("%s_%ld", m_request->getPeer(peer).str(), createTime);
     unsigned sessionID = hashc((unsigned char *)idStr.str(), idStr.length(), 0);
     sessionIDStr.append(sessionID);
 
-    VStringBuffer xpath("%s[%s='%u']", PathSessionSession, PropSessionID, sessionID);
+    sessionTag.appendf("%s%u", PathSessionSession, sessionID);
     Owned<IRemoteConnection> conn = getSDSConnection(authBinding->querySessionSDSPath(), RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT);
     IPropertyTree* domainSessions = conn->queryRoot();
-    IPropertyTree* sessionTree = domainSessions->queryBranch(xpath.str());
+    IPropertyTree* sessionTree = domainSessions->queryBranch(sessionTag.str());
     if (sessionTree)
     {
         sessionTree->setPropInt64(PropSessionLastAccessed, createTime);
@@ -1471,7 +1471,7 @@ unsigned CEspHttpServer::createHTTPSession(EspHttpBinding* authBinding, const ch
     }
     ESPLOG(LogMax, "New sessionID <%d> at <%ld> in createHTTPSession()", sessionID, createTime);
 
-    IPropertyTree* ptree = domainSessions->addPropTree(PathSessionSession);
+    IPropertyTree* ptree = domainSessions->addPropTree(sessionTag.str());
     ptree->setProp(PropSessionNetworkAddress, peer.str());
     ptree->setPropInt64(PropSessionID, sessionID);
     ptree->setPropInt64(PropSessionExternalID, hashc((unsigned char *)sessionIDStr.str(), sessionIDStr.length(), 0));
@@ -1490,11 +1490,12 @@ void CEspHttpServer::timeoutESPSessions(EspHttpBinding* authBinding, IPropertyTr
     now.setNow();
     time_t timeNow = now.getSimple();
 
+    VStringBuffer xpath("%s*", PathSessionSession);
     Owned<IPropertyTreeIterator> iter1 = espSessions->getElements(PathSessionApplication);
     ForEach(*iter1)
     {
         ICopyArrayOf<IPropertyTree> toRemove;
-        Owned<IPropertyTreeIterator> iter2 = iter1->query().getElements(PathSessionSession);
+        Owned<IPropertyTreeIterator> iter2 = iter1->query().getElements(xpath.str());
         ForEach(*iter2)
         {
             IPropertyTree& item = iter2->query();

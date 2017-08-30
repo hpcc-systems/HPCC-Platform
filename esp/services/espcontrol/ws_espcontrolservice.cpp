@@ -176,7 +176,7 @@ bool CWSESPControlEx::onSessionInfo(IEspContext& context, IEspSessionInfoRequest
             port = req.getPort();
 
         Owned<IRemoteConnection> globalLock;
-        VStringBuffer xpath("/%s/%s[@name='%s']/%s[@port='%d']/%s[%s='%s']", PathSessionRoot, PathSessionProcess, espProcess.get(),
+        VStringBuffer xpath("/%s/%s[@name='%s']/%s[@port='%d']/%s*[%s='%s']", PathSessionRoot, PathSessionProcess, espProcess.get(),
             PathSessionApplication, port, PathSessionSession, PropSessionExternalID, id.str());
         try
         {
@@ -288,11 +288,11 @@ const char* CWSESPControlEx::setSessionXPath(bool allSessions, const char* id, c
     }
 
     if (!isEmptyString(userID))
-        xPath.setf("%s[%s='%s']", PathSessionSession, PropSessionUserID, userID);
+        xPath.setf("%s*[%s='%s']", PathSessionSession, PropSessionUserID, userID);
     else if (!isEmptyString(fromIP))
-        xPath.setf("%s[%s='%s']", PathSessionSession, PropSessionNetworkAddress, fromIP);
+        xPath.setf("%s*[%s='%s']", PathSessionSession, PropSessionNetworkAddress, fromIP);
     else if (!isEmptyString(id))
-        xPath.setf("%s[%s='%s']", PathSessionSession, PropSessionExternalID, id);
+        xPath.setf("%s*[%s='%s']", PathSessionSession, PropSessionExternalID, id);
     else
         xPath.set("*");
     return xPath.str();
