@@ -56,6 +56,14 @@ ws_fileio:
     FileIOAccess:
         Write - Access to files in dropzone... CreateFile, ReadFileData, WriteFileData
 
+ws_packageprocess:
+    PackageMapAccess:
+        Read  - ListPackage, ListPackages, GetPackage, GetPackageMapById, ValidatePackage,
+                  GetQueryFileMapping, GetPackageMapSelectOptions, GetPartFromPackageMap
+        Write - AddPackage, CopyPackageMap, ActivatePackage, DeActivatePackage,
+                  AddPartToPackageMap, RemovePartFromPackageMap
+        Full  - DeletePackage
+
 ws_topology:
     ClusterTopologyAccess: 
         Read - TpLogFile, TpClusterQuery, TpLogicalClusterQuery, TpGroupQuery,

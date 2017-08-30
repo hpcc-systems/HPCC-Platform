@@ -1404,6 +1404,32 @@
               </row>
 
               <row>
+                <entry>PackageMapAccess</entry>
+
+                <entry>Access to ListPackage, ListPackages, GetPackage, GetPackageMapById, ValidatePackage,
+                GetQueryFileMapping, GetPackageMapSelectOptions, GetPartFromPackageMap</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Access to AddPackage, CopyPackageMap, ActivatePackage,
+                DeActivatePackage, AddPartToPackageMap, RemovePartFromPackageMap</entry>
+
+                <entry>Write</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>DeletePackage</entry>
+
+                <entry>Full</entry>
+              </row>
+
+              <row>
                 <entry>FileScopeAccess</entry>
 
                 <entry>Allows access to query, set, modify, and delete File

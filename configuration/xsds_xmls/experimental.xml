@@ -167,6 +167,10 @@
                           path="FileIOAccess"
                           resource="FileIOAccess"
                           service="ws_fileio"/>
+     <AuthenticateFeature description="Access to package map"
+                          path="PackageMapAccess"
+                          resource="PackageMapAccess"
+                          service="ws_packageprocess"/>
      <AuthenticateFeature description="Access to permissions for file scopes"
                           path="FileScopeAccess"
                           resource="FileScopeAccess"
@@ -541,6 +545,11 @@
                          resource="FileIOAccess"
                          service="ws_fileio"/>
     <AuthenticateFeature authenticate="Yes"
+                         description="Access to package map"
+                         path="PackageMapAccess"
+                         resource="PackageMapAccess"
+                         service="ws_packageprocess"/>
+    <AuthenticateFeature authenticate="Yes"
                          description="Access to permissions for file scopes"
                          path="FileScopeAccess"
                          resource="FileScopeAccess"
@@ -707,6 +716,10 @@
                          path="FileIOAccess"
                          resource="FileIOAccess"
                          service="ws_fileio"/>
+    <AuthenticateFeature description="Access to package map"
+                         path="PackageMapAccess"
+                         resource="PackageMapAccess"
+                         service="ws_packageprocess"/>
     <AuthenticateFeature description="Access to permissions for file scopes"
                          path="FileScopeAccess"
                          resource="FileScopeAccess"
