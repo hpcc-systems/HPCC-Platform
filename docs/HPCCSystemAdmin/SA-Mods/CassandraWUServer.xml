@@ -278,8 +278,7 @@
                             xpointer="xpointer(//*[@id='daliplugoptionstable'])"
                             xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-                <para>
-                  <variablelist>
+                <para><variablelist>
                     <varlistentry>
                       <term>Note:</term>
 
@@ -289,8 +288,7 @@
                         credentials.</para>
                       </listitem>
                     </varlistentry>
-                  </variablelist>
-                </para>
+                  </variablelist></para>
               </listitem>
 
               <listitem>
@@ -340,7 +338,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
           all nodes. A sample script is provided with HPCC. The following
           command copies the XML files out to all nodes as required:</para>
 
-          <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh &lt;sourcefile&gt; &lt;destinationfile&gt;
+          <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh -s &lt;sourcefile&gt; -t &lt;destinationfile&gt;
 </programlisting></para>
         </listitem>
 

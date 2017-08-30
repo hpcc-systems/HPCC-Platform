@@ -310,7 +310,7 @@
               <para>If it is running stop the HPCC system (on every node),
               using a command such as this:</para>
 
-              <para><programlisting>sudo /sbin/service hpcc-init stop</programlisting></para>
+              <para><programlisting>sudo /etc/init.d/hpcc-init stop</programlisting></para>
 
               <variablelist>
                 <varlistentry>
@@ -434,7 +434,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <para>If it is running, stop the HPCC system using this command on
           every node:</para>
 
-          <para><programlisting>sudo /sbin/service hpcc-init stop</programlisting></para>
+          <para><programlisting>sudo /etc/init.d/hpcc-init stop</programlisting></para>
 
           <variablelist>
             <varlistentry>
@@ -464,7 +464,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     fileref="images/OSSgr3.png" /></entry>
 
                     <entry>You can use this command to confirm HPCC processes
-                    are stopped: <para><programlisting>sudo /sbin/service hpcc-init status</programlisting></para></entry>
+                    are stopped: <para><programlisting>sudo /etc/init.d/hpcc-init status</programlisting></para></entry>
                   </row>
                 </tbody>
               </tgroup>
