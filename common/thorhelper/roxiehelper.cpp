@@ -2051,9 +2051,16 @@ void FlushingStringBuffer::addPayload(StringBuffer &s, unsigned int reserve)
         s.ensureCapacity(reserve);
 }
 
-void FlushingStringBuffer::flushXML(StringBuffer &current, bool isClosing)
+void FlushingStringBuffer::flushXML(StringBuffer &current, bool isClosing, const char *delim)
 {
     CriticalBlock b(crit);
+    if (isClosing && delim && current.length())
+    {
+        if (!first)
+            s.append(delim);
+        else
+            first = false;
+    }
     if (isHttp) // we don't do any chunking for non-HTTP yet
     {
         if (isClosing || current.length() > HTTP_SPLIT_THRESHOLD)
@@ -2311,7 +2318,9 @@ void FlushingJsonBuffer::startDataset(const char *elementName, const char *resul
             if (!resultName || !*resultName)
                 resultName = seqName.appendf("result_%d", sequence+1).str();
             appendJSONName(s, resultName).append('{');
-            tail.set("}");
+            if (!adaptive)
+                appendJSONName(s, "Row").append('[');
+            tail.set(adaptive ? "}" : "]}");
         }
         isEmpty = false;
     }

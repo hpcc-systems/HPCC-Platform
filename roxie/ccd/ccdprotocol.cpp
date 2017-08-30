@@ -408,7 +408,7 @@ protected:
 
 };
 
-enum class AdaptiveRoot {NamedArray, RootArray, FirstRow};
+enum class AdaptiveRoot {NamedArray, RootArray, ExtendArray, FirstRow};
 
 class AdaptiveRESTJsonWriter : public CommonJsonWriter
 {
@@ -432,7 +432,7 @@ public:
     {
         arrays.pop();
         checkFormat(false, true, -1);
-        if (arrays.length() || model != AdaptiveRoot::FirstRow)
+        if (arrays.length() || (model != AdaptiveRoot::FirstRow && model != AdaptiveRoot::ExtendArray))
             out.append(']');
         const char * sep = (fieldname) ? strchr(fieldname, '/') : NULL;
         while (sep)
@@ -543,7 +543,7 @@ public:
     inline void setTagName(const char *tag){tagName.set(tag);}
     inline void setOnlyUseFirstRow(){onlyUseFirstRow = true;}
     inline void setResultFilter(const char *_resultFilter){resultFilter.set(_resultFilter);}
-    virtual FlushingStringBuffer *queryResult(unsigned sequence)
+    virtual FlushingStringBuffer *queryResult(unsigned sequence, bool extend=false)
     {
         CriticalBlock procedure(resultsCrit);
         while (!resultMap.isItem(sequence))
@@ -552,7 +552,7 @@ public:
         if (!result)
         {
             if (mlFmt==MarkupFmt_JSON)
-                result = new FlushingJsonBuffer(client, isBlocked, isHTTP, logctx);
+                result = new FlushingJsonBuffer(client, isBlocked, isHTTP, logctx, extend);
             else
                 result = new FlushingStringBuffer(client, isBlocked, mlFmt, isRaw, isHTTP, logctx);
             result->isSoap = isHTTP;
@@ -576,7 +576,7 @@ public:
     }
     virtual IXmlWriter *addDataset(const char *name, unsigned sequence, const char *elementName, bool &appendRawData, unsigned writeFlags, bool _extend, const IProperties *xmlns)
     {
-        FlushingStringBuffer *response = queryResult(sequence);
+        FlushingStringBuffer *response = queryResult(sequence, _extend);
         if (response)
         {
             appendRawData = response->isRaw;
@@ -592,7 +592,7 @@ public:
             {
                 if (response->mlFmt==MarkupFmt_JSON)
                     writeFlags |= XWFnoindent;
-                AdaptiveRoot rootType = AdaptiveRoot::NamedArray;
+                AdaptiveRoot rootType = AdaptiveRoot::ExtendArray;
                 if (adaptive)
                 {
                     if (onlyUseFirstRow)
