@@ -20,6 +20,7 @@
 
 #include "jliball.hpp"
 #include "jqueue.tpp"
+#include "seclib.hpp"
 
 #ifdef ESDLLIB_EXPORTS
  #define esdl_decl DECL_EXPORT
@@ -157,6 +158,7 @@ interface IEsdlDefMethod : extends IEsdlDefObject
     virtual const char *queryMbsiProductAssociations()=0;
     virtual int queryVariableLengthRecordProcessing()=0;
     virtual int queryAllowMultipleEntryPerUnitNumber()=0;
+    virtual const MapStringTo<SecAccessFlags> & queryAccessMap()=0;
 };
 
 interface IEsdlDefMethodIterator : extends IInterface

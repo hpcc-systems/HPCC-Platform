@@ -959,7 +959,68 @@ void EsdlDefStruct::load(EsdlDefinition *esdl, XmlPullParser *xpp, StartTag &str
     }
 }
 
+static SecAccessFlags translateAuthLevel(const char* flag)
+{
+    if (!flag || !*flag)
+        return SecAccess_Full;
+    if (!stricmp(flag,"None") || !stricmp(flag,"Deferred"))
+        return SecAccess_None;
+    if (!stricmp(flag,"Access"))
+        return SecAccess_Access;
+    if (!stricmp(flag,"Read"))
+        return SecAccess_Read;
+    if (!stricmp(flag,"Write"))
+        return SecAccess_Write;
+    if (!stricmp(flag,"Full"))
+        return SecAccess_Full;
 
+    DBGLOG("Unknown access level: %s", flag);
+    return SecAccess_Full;
+}
+
+static void parseAccessList(const char * rawServiceAccessList, MapStringTo<SecAccessFlags> & accessmap, const char * defaultaccessname)
+{
+    if (rawServiceAccessList && *rawServiceAccessList)
+    {
+        StringBuffer currAccessName;
+        StringBuffer currAccessLevel;
+
+        StringArray accessList;
+        accessList.appendList(rawServiceAccessList, ",");
+        ForEachItemIn(idx, accessList)
+        {
+            currAccessName.clear();
+            currAccessLevel.clear();
+            const char * accessEntry = accessList.item(idx);
+            int entrylen = strlen(accessEntry);
+            int currIndex = 0;
+
+            for (;currIndex <= entrylen && accessEntry[currIndex] != ':'; currIndex++ )
+            {
+                if (!isspace(accessEntry[currIndex]))
+                    currAccessName.append(accessEntry[currIndex]);
+            }
+
+            if (accessEntry[currIndex] == ':')
+            {
+                currIndex++;
+                if (currAccessName.isEmpty())
+                    currAccessName.setf("%sAccess",  defaultaccessname);
+            }
+
+            for (;currIndex <= entrylen; currIndex++ )
+            {
+                if (!isspace(accessEntry[currIndex]))
+                    currAccessLevel.append(accessEntry[currIndex]);
+            }
+
+            if (strieq(currAccessName, "NONE") || strieq(currAccessName, "DEFERRED"))
+                continue;
+
+            accessmap.setValue(currAccessName.str(), translateAuthLevel(currAccessLevel.str()));
+        }
+    }
+}
 
 class EsdlDefMethod : public EsdlDefObject, implements IEsdlDefMethod
 {
@@ -967,8 +1028,10 @@ public:
     IMPLEMENT_IINTERFACE;
     IMPLEMENT_ESDL_DEFOBJ;
 
+    MapStringTo<SecAccessFlags> m_accessmap;
+    const MapStringTo<SecAccessFlags> & queryAccessMap(){return m_accessmap;}
 
-    EsdlDefMethod(StartTag &tag, EsdlDefinition *esdl) : EsdlDefObject(tag, esdl)
+    EsdlDefMethod(StartTag &tag, EsdlDefinition *esdl, IEsdlDefService * parentservice = nullptr) : EsdlDefObject(tag, esdl)
     {
         const char *product = queryProp("productAssociation");
         if (product && *product)
@@ -986,7 +1049,18 @@ public:
                 props->setProp("product_", product);
         }
 
+        StringBuffer allfeatures;
+        if (parentservice)
+        {
+            allfeatures.set(parentservice->queryProp("auth_feature"));
+            if (!allfeatures.isEmpty())
+                allfeatures.append(',');
+        }
+
+        allfeatures.append(queryMetaData("auth_feature"));
+        parseAccessList(allfeatures.str(), m_accessmap, parentservice ? parentservice->queryName() :  queryProp("name"));
     }
+
     virtual EsdlDefTypeId getEsdlType(){return EsdlTypeMethod;}
 
     void load(XmlPullParser *xpp, StartTag &struct_tag)
@@ -1076,7 +1150,7 @@ public:
 
     void loadMethod(EsdlDefinition *esdl, XmlPullParser *xpp, StartTag &tag)
     {
-        EsdlDefMethod *mt = new EsdlDefMethod(tag, esdl);
+        EsdlDefMethod *mt = new EsdlDefMethod(tag, esdl, this);
         children.append(*dynamic_cast<IEsdlDefObject*>(mt));
         mt->load(xpp, tag);
 
