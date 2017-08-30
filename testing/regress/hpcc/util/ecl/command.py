@@ -24,7 +24,7 @@ import inspect
 
 from ...common.shell import Shell
 from ...common.error import Error
-from ...util.util import queryWuid
+from ...util.util import queryWuid, getConfig
 
 import xml.etree.ElementTree as ET
 
@@ -32,6 +32,7 @@ class ECLcmd(Shell):
     def __init__(self):
         self.defaults = []
         self.cmd = 'ecl'
+        self.config = getConfig()
 
     def __ECLcmd(self):
         return self.command(self.cmd, *self.defaults)
@@ -43,6 +44,9 @@ class ECLcmd(Shell):
         args.append('-fpickBestEngine=false')
         args.append('--target=' + cluster)
         args.append('--cluster=' + cluster)
+        args.append('--port=' + self.config.espSocket)
+        if self.config.useSsl.lower() == 'true':
+            args.append('--ssl')
         
         retryCount = int(kwargs.pop('retryCount',  1))
         args.append('--wait='+str(retryCount * eclfile.getTimeout() * 1000))  # ms
