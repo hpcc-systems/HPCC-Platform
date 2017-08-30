@@ -911,7 +911,6 @@ EspAuthState CEspHttpServer::checkUserAuth()
     //The preCheckAuth() does not return authUnknown when:
     //No authentication is required for the ESP binding;
     //Or no authentication is required for certain situations of not rootAuthRequired();
-    //Or a user is trying to access some resources for displaying login/logout pages;
     //Or this is a user request for updating password.
     EspAuthState authState = preCheckAuth(authReq);
     if (authState != authUnknown)
@@ -1041,9 +1040,6 @@ EspAuthState CEspHttpServer::preCheckAuth(EspAuthRequest& authReq)
     }
 #endif
 
-    if ((authReq.authBinding->getDomainAuthType() != AuthPerRequestOnly) && authReq.authBinding->isDomainAuthResources(authReq.httpPath.str()))
-        return authSucceeded;//Give the permission to send out some pages used for login or logout.
-
     return authUnknown;
 }
 
@@ -1104,6 +1100,9 @@ EspAuthState CEspHttpServer::checkUserAuthPerSession(EspAuthRequest& authReq)
     unsigned sessionID = readCookie(authReq.authBinding->querySessionIDCookieName());
     if (sessionID > 0)
         return authExistingSession(authReq, sessionID);//Check session based authentication using this session ID.
+
+    if ((authReq.authBinding->getDomainAuthType() != AuthPerRequestOnly) && authReq.authBinding->isDomainAuthResources(authReq.httpPath.str()))
+        return authSucceeded;//Give the permission to send out some pages used for login or logout.
 
     StringBuffer urlCookie;
     readCookie(SESSION_START_URL_COOKIE, urlCookie);
@@ -1292,6 +1291,14 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
 {
     ESPLOG(LogMax, "authExistingSession: %s<%u>", PropSessionID, sessionID);
 
+    bool getLoginPage = false;
+    if (authReq.authBinding->isDomainAuthResources(authReq.httpPath.str()))
+    {
+        if (!strieq(authReq.httpPath.str(), authReq.authBinding->queryLoginURL()))
+            return authSucceeded;//Give the permission to send out some unrestricted resource pages.
+        getLoginPage = true;
+    }
+
     Owned<IRemoteConnection> conn = getSDSConnection(authReq.authBinding->queryESPSessionSDSPath(), RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT);
     IPropertyTree* espSessions = conn->queryRoot();
     if (authReq.authBinding->getSessionTimeoutSeconds() >= 0)
@@ -1365,6 +1372,8 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
         ///authReq.ctx->setAuthorized(true);
         VStringBuffer sessionIDStr("%u", sessionID);
         addCookie(authReq.authBinding->querySessionIDCookieName(), sessionIDStr.str(), authReq.authBinding->getSessionTimeoutSeconds());
+        if (getLoginPage)
+            m_response->redirect(*m_request, "/");
     }
 
     return authSucceeded;
