@@ -22,7 +22,7 @@
 .cm-s-default span.cm-string { color: #808080; }
 .cm-s-default span.cm-number, .cm-s-default span.cm-atom { color: #000000; }
 .cm-s-default span.cm-meta {color: #004080;}
-.ErrorLine {background: #cc0000 !important;}
+.ErrorLine {background: #cc0000 !important;color:white!important;}
 .WarningLine {background: #ffff99 !important;}
 .highlightline { background: #e8f2ff !important; }
 
