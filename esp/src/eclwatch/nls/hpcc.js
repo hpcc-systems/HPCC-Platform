@@ -157,6 +157,7 @@ define({root:
     Distance: "Distance",
     DistanceTooltip: "Maximum Activity Neighbourhood Distance",
     Dll: "Dll",
+    Documentation: "Documentation",
     DOT: "DOT",
     DOTAttributes: "DOT Attributes",
     Down: "Down",
