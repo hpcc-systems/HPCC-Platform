@@ -12189,7 +12189,7 @@ IDFProtectedIterator *CDistributedFileDirectory::lookupProtectedFiles(const char
 
 const char* DFUQResultFieldNames[] = { "@name", "@description", "@group", "@kind", "@modified", "@job", "@owner",
     "@DFUSFrecordCount", "@recordCount", "@recordSize", "@DFUSFsize", "@size", "@workunit", "@DFUSFcluster", "@numsubfiles",
-    "@accessed", "@numparts", "@compressedSize", "@directory", "@partmask", "@superowners", "@persistent", "@protect", "@isCompressedFile" };
+    "@accessed", "@numparts", "@compressedSize", "@directory", "@partmask", "@superowners", "@persistent", "@protect", "@compressed" };
 
 extern da_decl const char* getDFUQResultFieldName(DFUQResultField feild)
 {
@@ -12254,14 +12254,7 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned nu
 
         void setIsCompressed(IPropertyTree* file)
         {
-            if (isCompressed(*file))
-            {
-                file->setPropBool(getDFUQResultFieldName(DFUQRFiscompressed), true);
-                return;
-            }
-
-            const char * kind = file->queryProp(getDFUQResultFieldName(DFUQRFkind));
-            if (!isEmptyString(kind) && strieq(kind, "key"))
+            if (isCompressed(*file) || isFileKey(*file))
                 file->setPropBool(getDFUQResultFieldName(DFUQRFiscompressed), true);
         }
 
