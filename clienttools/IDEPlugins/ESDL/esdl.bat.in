@@ -32,11 +32,8 @@ echo New Input file:  %newinput% >> %TMP%\log.txt
 echo New Ouput file:  %newoutput% >> %TMP%\log.txt
 copy /Y %3 %newinput%
 
-set "clienttoolsdir=@ORIG_PREFIX@\@DIR_NAME@\@version@\clienttools"
-set "clienttoolsbindir=%clienttoolsdir%\bin"
-set "clienttoolscompdir=%clienttoolsdir%\componentfiles"
-
-echo clienttoolsdir: %clienttoolsdir% >> %TMP%\log.txt
+set "clienttoolsbindir=.\..\bin"
+set "clienttoolscompdir=.\..\componentfiles"
 
 :begin
 if %action%==CalcIncludes goto eof
