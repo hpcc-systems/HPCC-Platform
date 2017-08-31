@@ -295,7 +295,11 @@ define([
         },
 
         _onOpenResources: function (evt) {
-            this._openNewTab("http://hpccsystems.com/download");
+            this._openNewTab("https://hpccsystems.com/download");
+        },
+
+        _onOpenDocuments: function (evt) {
+            this._openNewTab("https://hpccsystems.com/training/documentation");
         },
 
         _onOpenJira: function (evt) {
@@ -311,7 +315,7 @@ define([
         },
 
         _onOpenReleaseNotes: function (evt) {
-            this._openNewTab("http://hpccsystems.com/download/free-community-edition-known-limitations#" + this.build.version);
+            this._openNewTab("https://hpccsystems.com/download/release-notes");
         },
 
         _onOpenTransitionGuide: function(evt) {

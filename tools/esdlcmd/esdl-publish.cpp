@@ -122,7 +122,7 @@ public:
         Owned<IClientPublishESDLDefinitionRequest> request = esdlConfigClient->createPublishESDLDefinitionRequest();
 
         StringBuffer esxml;
-        esdlHelper->getServiceESXDL(optSource.get(), optESDLService.get(), esxml, 0);
+        esdlHelper->getServiceESXDL(optSource.get(), optESDLService.get(), esxml, 0, NULL, (DEPFLAG_INCLUDE_TYPES & ~DEPFLAG_INCLUDE_METHOD));
 
         if (esxml.length()==0)
         {

@@ -243,6 +243,12 @@ define([
         isBlocked: function () {
             return this.StateID === 8;
         },
+        isAbleToDeschedule: function () {
+            return this.EventSchedule === 2;
+        },
+        isAbleToReschedule: function () {
+            return this.EventSchedule === 1;
+        },
         monitor: function (callback) {
             if (callback) {
                 callback(this);

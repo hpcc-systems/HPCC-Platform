@@ -147,7 +147,7 @@ define([
                                     context.widget._Binding.set("disabled", true);
                                     context.params.Owner._onRefresh({});
                                     context.params.Owner.grid.deselect(context.params.__hpcc_id);
-                                    context.params.Owner.grid.select(context.params.__hpcc_id);
+                                    context.params.Owner.grid.select(context.params.__hpcc_parentName);
                                 }
                             }
                         });
@@ -177,7 +177,7 @@ define([
                                     Config: "<Methods><Method name='" + response.GetESDLDefinitionResponse.Methods.Method[0].Name + "'/></Methods>"
                                 }
                             }).then(function (publishresponse) {
-                                if (lang.exists("PublishESDLBindingResponse.status.Code", response)) {
+                                if (lang.exists("PublishESDLBindingResponse.status.Code", publishresponse)) {
                                     if (publishresponse.PublishESDLBindingResponse.status.Code === 0) {
                                         context.deleteBindingButton.set("disabled", false);
                                         context.addBindingButton.set("disabled", true);
@@ -202,7 +202,7 @@ define([
                                         }
                                         context.params.Owner._onRefresh({});
                                         context.params.Owner.grid.deselect(context.params.__hpcc_id);
-                                        context.params.Owner.grid.select(context.params.__hpcc_id);
+                                        context.params.Owner.grid.select(context.params.__hpcc_parentName);
                                     }
                                 }
                             });

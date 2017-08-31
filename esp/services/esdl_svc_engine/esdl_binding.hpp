@@ -303,6 +303,8 @@ private:
     Owned<CESDLDefinitionSubscription>      m_pDefinitionSubscription;
     CriticalSection                         configurationLoadCritSec;
     StringBuffer                            m_esdlStateFilesLocation;
+    MapStringTo<SecAccessFlags>             m_accessmap;
+    StringBuffer                            m_staticNamespace;
 
     virtual void clearDESDLState()
     {

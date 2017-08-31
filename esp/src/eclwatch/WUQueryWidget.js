@@ -366,15 +366,6 @@ define([
                 onClick: function () { context._onUnprotect(); }
             });
             pMenu.addChild(new MenuSeparator());
-            this.menuReschedule = this.addMenuItem(pMenu, {
-                label: this.i18n.Reschedule,
-                onClick: function () { context._onReschedule(); }
-            });
-            this.menuDeschedule = this.addMenuItem(pMenu, {
-                label: this.i18n.Deschedule,
-                onClick: function () { context._onDeschedule(); }
-            });
-            pMenu.addChild(new MenuSeparator());
             {
                 var pSubMenu = new Menu();
                 this.menuFilterOwner = this.addMenuItem(pSubMenu, {
@@ -516,8 +507,7 @@ define([
             var hasNotFailed = false;
             var hasCompleted = false;
             var hasNotCompleted = false;
-            var isScheduled = false;
-            var isNotScheduled = false;
+
             for (var i = 0; i < selection.length; ++i) {
                 hasSelection = true;
                 if (selection[i] && selection[i].Protected !== null) {
@@ -539,11 +529,6 @@ define([
                         hasNotCompleted = true;
                     }
                 }
-                if (selection[i].EventSchedule === 2) {
-                    isScheduled = true;
-                } else if (selection[i].EventSchedule === 1) {
-                    isNotScheduled = true;
-                }
             }
 
             registry.byId(this.id + "Open").set("disabled", !hasSelection);
@@ -552,8 +537,6 @@ define([
             registry.byId(this.id + "SetToFailed").set("disabled", !hasNotProtected);
             registry.byId(this.id + "Protect").set("disabled", !hasNotProtected);
             registry.byId(this.id + "Unprotect").set("disabled", !hasProtected);
-            registry.byId(this.id + "Reschedule").set("disabled", !isNotScheduled);
-            registry.byId(this.id + "Deschedule").set("disabled", !isScheduled);
 
             this.menuProtect.set("disabled", !hasNotProtected);
             this.menuUnprotect.set("disabled", !hasProtected);

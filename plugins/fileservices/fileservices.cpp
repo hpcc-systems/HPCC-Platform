@@ -279,8 +279,9 @@ static const char *getAccessibleEspServerURL(const char *param, IConstWorkUnit *
             StringBuffer wsFSUrl;
             StringBuffer espInstanceComputerName;
             StringBuffer bindingProtocol;
-            StringBuffer instanceAddressXPath;
+            StringBuffer xpath;
             StringBuffer instanceAddress;
+            StringBuffer espServiceType;
 
             Owned<IPropertyTreeIterator> espProcessIter = env->getElements("Software/EspProcess");
             ForEach(*espProcessIter)
@@ -289,25 +290,30 @@ static const char *getAccessibleEspServerURL(const char *param, IConstWorkUnit *
                 ForEach(*espBindingIter)
                 {
                     espBindingIter->query().getProp("@service",wsFSUrl.clear());
-                    if (wsFSUrl.length() && (stricmp(wsFSUrl.str(),"EclWatch")==0 || stricmp(wsFSUrl.str(),"ws_fs")==0))
+                    xpath.setf("Software/EspService[@name=\"%s\"]/Properties/@type", wsFSUrl.str());
+
+                    if(env->getProp(xpath.str(), espServiceType.clear()))
                     {
-                        if (espBindingIter->query().getProp("@protocol",bindingProtocol.clear()))
+                        if (!espServiceType.isEmpty() && (strieq(espServiceType.str(),"WsSMC")|| strieq(espServiceType.str(),"FileSpray_Serv")))
                         {
-                            Owned<IPropertyTreeIterator> espInstanceIter = espProcessIter->query().getElements("Instance");
-                            ForEach(*espInstanceIter)
+                            if (espBindingIter->query().getProp("@protocol",bindingProtocol.clear()))
                             {
-                                if (espInstanceIter->query().getProp("@computer",espInstanceComputerName.clear()))
+                                Owned<IPropertyTreeIterator> espInstanceIter = espProcessIter->query().getElements("Instance");
+                                ForEach(*espInstanceIter)
                                 {
-                                    instanceAddressXPath.setf("Hardware/Computer[@name=\"%s\"]/@netAddress",espInstanceComputerName.str());
-                                    if (env->getProp(instanceAddressXPath.str(),instanceAddress.clear()))
+                                    if (espInstanceIter->query().getProp("@computer",espInstanceComputerName.clear()))
                                     {
-                                        wsFSUrl.setf("%s://%s:%d/FileSpray", bindingProtocol.str(), instanceAddress.str(), espBindingIter->query().getPropInt("@port",8010)); // FileSpray seems to be fixed
-                                        addConfiguredWsFSUrl(wsFSUrl.str());
+                                        xpath.setf("Hardware/Computer[@name=\"%s\"]/@netAddress",espInstanceComputerName.str());
+                                        if (env->getProp(xpath.str(),instanceAddress.clear()))
+                                        {
+                                            wsFSUrl.setf("%s://%s:%d/FileSpray", bindingProtocol.str(), instanceAddress.str(), espBindingIter->query().getPropInt("@port",8010)); // FileSpray seems to be fixed
+                                            addConfiguredWsFSUrl(wsFSUrl.str());
+                                        }
                                     }
                                 }
                             }
-                        }
-                    }//EclWatch || ws_fs binding
+                        }//EclWatch || ws_fs binding
+                    }
                 }//ESPBinding
             }//ESPProcess
         }

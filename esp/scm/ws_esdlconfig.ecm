@@ -58,6 +58,8 @@ ESPStruct ESDLBindingContents
 ESPrequest [nil_remove] GetESDLDefinitionRequest
 {
     string Id;
+    [min_ver("1.3")] string Name;
+    [min_ver("1.3")] int Seq;
     [min_ver("1.2")] boolean ReportMethodsAvailable;
 };
 
@@ -241,7 +243,7 @@ ESPresponse [exceptions_inline] ListESDLBindingsResponse
     ESParray<ESPstruct ESDLBinding, Binding> Bindings;
 };
 
-ESPservice [auth_feature("ESDLConfigAccess:ACCESS"), version("1.2"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsESDLConfig
+ESPservice [auth_feature("ESDLConfigAccess:ACCESS"), version("1.3"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsESDLConfig
 {
     ESPmethod Echo(EchoRequest, EchoResponse);
     ESPmethod [auth_feature("ESDLConfigAccess:WRITE")] PublishESDLDefinition(PublishESDLDefinitionRequest, PublishESDLDefinitionResponse);

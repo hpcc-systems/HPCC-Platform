@@ -348,6 +348,14 @@ public:
                     return row.getClear();
                 }
             }
+            if (isFastThrough(input)) // i.e. no readahead
+            {
+                if (RCUNBOUND == maxres)
+                {
+                    maxres = getDataLinkCount();
+                    sendCount();
+                }
+            }
             stopInput(0); // NB: really whatever is pulling, should stop asap.
         }
         return NULL;

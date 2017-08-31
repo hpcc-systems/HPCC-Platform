@@ -171,7 +171,8 @@
 
         <listitem>
           <para>Press the <emphasis role="bold">Reschedule</emphasis> button
-          to change a selected scheduled workunit.</para>
+          to reschedule selected workunit(s) which have been
+          descheduled.</para>
         </listitem>
 
         <listitem>
@@ -383,6 +384,16 @@
           <listitem>
             <para><emphasis role="bold">Restore</emphasis> - Restores an
             archived workunit. (Workunits are archived by Sasha).</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Reschedule</emphasis> - Reschedules a
+            workunit which has been descheduled.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Deschedule</emphasis> - Stops the
+            scheduled workunit from running.</para>
           </listitem>
 
           <listitem>

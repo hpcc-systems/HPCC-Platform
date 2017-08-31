@@ -539,6 +539,8 @@ define([
                 this.refreshActionState();
             } else if (name === "ActionEx") {
                 this.refreshActionState();
+            } else if (name === "EventSchedule") {
+                this.refreshActionState();
             } else if (name === "hasCompleted") {
                 this.checkIfComplete();
             } else if (name === "Scope" && newValue) {
@@ -569,8 +571,8 @@ define([
             registry.byId(this.id + "Recover").set("disabled", isArchived || !this.wu.isComplete() || this.wu.isDeleted());
             registry.byId(this.id + "Publish").set("disabled", isArchived || !this.wu.isComplete() || this.wu.isDeleted());
             registry.byId(this.id + "ZapReport").set("disabled", this.wu.isDeleted());
-            registry.byId(this.id + "Reschedule").set("disabled", !this.wu.isComplete() || this.wu.isFailed());
-            registry.byId(this.id + "Deschedule").set("disabled", this.wu.isComplete() || this.wu.isFailed());
+            registry.byId(this.id + "Reschedule").set("disabled", !this.wu.isAbleToReschedule());
+            registry.byId(this.id + "Deschedule").set("disabled", !this.wu.isAbleToDeschedule());
 
             registry.byId(this.id + "Jobname").set("readOnly", !this.wu.isComplete() || this.wu.isDeleted());
             registry.byId(this.id + "Description").set("readOnly", !this.wu.isComplete() || this.wu.isDeleted());

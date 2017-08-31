@@ -2832,7 +2832,7 @@ public:
 
     void reportLeaks(unsigned &leaked) const
     {
-        NonReentrantSpinBlock c1(heapletLock);
+        CriticalBlock c1(heapletLock);
         Heaplet * start = heaplets;
         if (start)
         {
@@ -2850,7 +2850,7 @@ public:
 
     void checkHeap()
     {
-        NonReentrantSpinBlock c1(heapletLock);
+        CriticalBlock c1(heapletLock);
         Heaplet * start = heaplets;
         if (start)
         {
@@ -2866,7 +2866,7 @@ public:
     unsigned allocated()
     {
         unsigned total = 0;
-        NonReentrantSpinBlock c1(heapletLock);
+        CriticalBlock c1(heapletLock);
         Heaplet * start = heaplets;
         if (start)
         {
@@ -2923,7 +2923,7 @@ public:
             return 0;
 
         unsigned total = 0;
-        NonReentrantSpinBlock c1(heapletLock);
+        CriticalBlock c1(heapletLock);
         //Check again in case other thread has also called this function and no other pages have been released.
         if (!possibleEmptyPages.load(std::memory_order_acquire) && !(flags & RHFdelayrelease))
             return 0;
@@ -3019,7 +3019,7 @@ public:
         unsigned numPages = 0;
         memsize_t numAllocs = 0;
         {
-            NonReentrantSpinBlock c1(heapletLock);
+            CriticalBlock c1(heapletLock);
             Heaplet * start = heaplets;
             if (start)
             {
@@ -3122,7 +3122,7 @@ protected:
     CChunkingRowManager * rowManager;
     const IRowAllocatorCache *allocatorCache;
     const IContextLogger & logctx;
-    mutable NonReentrantSpinLock heapletLock;
+    mutable CriticalSection heapletLock;
     std::atomic_uint headMaybeSpace{BLOCKLIST_NULL};  // The head of the list of heaplets which potentially have some space.  When adding must use mo_release, when removing must use mo_acquire
     std::atomic_uint possibleEmptyPages{false};  // Are there any pages with 0 records.  Primarily here to avoid walking long page chains.
     HeapletStats stats;
@@ -4637,9 +4637,17 @@ public:
         }
 
         void *ret = allocate(newsize, activityId, maxSpillCost);
-        memcpy(ret, original, copysize);
         memsize_t newCapacity = HeapletBase::capacity(ret);
-        callback.atomicUpdate(newCapacity, ret);
+
+        //Copying data must lock for the duration (otherwise another thread modifying the data may leave it out of sync)
+        callback.lock();
+
+        memcpy(ret, original, copysize);
+
+        //previously locked => update the pointer and then unlock
+        callback.update(newCapacity, ret);
+        callback.unlock();
+
         HeapletBase::release(original);
     }
 
@@ -5575,7 +5583,7 @@ void * CHugeHeap::doAllocate(memsize_t _size, unsigned allocatorId, unsigned max
             (unsigned __int64) _size, (unsigned __int64) (numPages*HEAP_ALIGNMENT_SIZE), head, numPages, rowManager->getPageLimit(), rowManager->peakPages, this);
     }
 
-    NonReentrantSpinBlock b(heapletLock);
+    CriticalBlock b(heapletLock);
     insertHeaplet(head);
     return head->allocateHuge(_size);
 }
@@ -5629,7 +5637,7 @@ void CHugeHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcap
             {
                 // Remove the old block from the chain
                 {
-                    NonReentrantSpinBlock b(heapletLock);
+                    CriticalBlock b(heapletLock);
                     removeHeaplet(oldhead);
                 }
 
@@ -5647,7 +5655,7 @@ void CHugeHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcap
                 callback.unlock();
 
                 {
-                    NonReentrantSpinBlock b(heapletLock);
+                    CriticalBlock b(heapletLock);
                     insertHeaplet(head);
                 }
 
@@ -5681,7 +5689,7 @@ void CChunkedHeap::gatherStats(CRuntimeStatisticCollection & result)
     HeapletStats merged;
     {
         //Copy the stats when a lock is held to ensure num and distance are consistent.
-        NonReentrantSpinBlock b(heapletLock);
+        CriticalBlock b(heapletLock);
         merged = stats;
     }
 
@@ -5694,15 +5702,16 @@ void CChunkedHeap::gatherStats(CRuntimeStatisticCollection & result)
 
 void * CChunkedHeap::doAllocateRow(unsigned allocatorId, unsigned maxSpillCost)
 {
-    //Only hold the spinblock while walking the list - so subsequent calls to checkLimit don't deadlock.
+    //Only hold the lock while walking the list - so subsequent calls to checkLimit don't deadlock.
     //NB: The allocation is split into two - finger->allocateChunk, and finger->initializeChunk().
-    //The latter is done outside the spinblock, to reduce the window for contention.
+    //The latter is done outside the lock, to reduce the window for contention.
     ChunkedHeaplet * donorHeaplet;
     char * chunk;
     for (;;)
     {
         {
-            NonReentrantSpinBlock b(heapletLock);
+            CriticalBlock block(heapletLock);
+
             if (likely(activeHeaplet))
             {
                 //This cast is safe because we are within a member of CChunkedHeap
@@ -5738,6 +5747,8 @@ void * CChunkedHeap::doAllocateRow(unsigned allocatorId, unsigned maxSpillCost)
         }
 
         //NB: At this point activeHeaplet = NULL;
+        //This code needs to be outside the critical section, otherwise it may deadlock with another thread trying
+        //to dispose of any free pages.
         try
         {
             rowManager->checkLimit(1, maxSpillCost);
@@ -5758,17 +5769,17 @@ void * CChunkedHeap::doAllocateRow(unsigned allocatorId, unsigned maxSpillCost)
         rowManager->restoreLimit(1);
 
         //Could check if activeHeaplet was now set (and therefore allocated by another thread), and if so restart
-        //the function, but grabbing the spin lock would be inefficient.
+        //the function, but unlikley to be worthwhile
         if (!rowManager->releaseCallbackMemory(maxSpillCost, true))
             throwHeapExhausted(allocatorId, 1);
     }
 
-    if (memTraceLevel >= 5 || (memTraceLevel >= 3 && chunkSize > 32000))
+    if (memTraceLevel >= 3 && (memTraceLevel >= 5 || chunkSize > 32000))
         logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::allocate(size %u) allocated new FixedSizeHeaplet size %u - addr=%p pageLimit=%u peakPages=%u rowMgr=%p",
                 chunkSize, chunkSize, donorHeaplet, rowManager->getPageLimit(), rowManager->peakPages, this);
 
     {
-        NonReentrantSpinBlock b(heapletLock);
+        CriticalBlock block(heapletLock);
         insertHeaplet(donorHeaplet);
 
         //While this thread was allocating a block, another thread may have also done the same.
@@ -5790,7 +5801,6 @@ void * CChunkedHeap::doAllocateRow(unsigned allocatorId, unsigned maxSpillCost)
                 addToSpaceList(active);
                 activeHeaplet = donorHeaplet;
             }
-
         }
         else
             activeHeaplet = donorHeaplet;
@@ -5798,9 +5808,11 @@ void * CChunkedHeap::doAllocateRow(unsigned allocatorId, unsigned maxSpillCost)
         //If no protecting lock there would be a race e.g., if another thread allocates all the rows!
         if (!chunk)
             chunk = donorHeaplet->allocateChunk();
+        dbgassertex(chunk);
     }
     
 gotChunk:
+
     //since a chunk has been allocated from donorHeaplet it cannot be released at this point.
     return donorHeaplet->initChunk(chunk, allocatorId);
 }
@@ -5816,7 +5828,7 @@ unsigned CChunkedHeap::doAllocateRowBlock(unsigned allocatorId, unsigned maxSpil
     for (;;)
     {
         {
-            NonReentrantSpinBlock b(heapletLock);
+            CriticalBlock b(heapletLock);
             if (activeHeaplet)
             {
                 //This cast is safe because we are within a member of CChunkedHeap
@@ -5882,7 +5894,7 @@ unsigned CChunkedHeap::doAllocateRowBlock(unsigned allocatorId, unsigned maxSpil
                 chunkSize, chunkSize, donorHeaplet, rowManager->getPageLimit(), rowManager->peakPages, this);
 
     {
-        NonReentrantSpinBlock b(heapletLock);
+        CriticalBlock b(heapletLock);
         insertHeaplet(donorHeaplet);
 
         //While this thread was allocating a block, another thread also did the same.  Ensure that other block is
@@ -5975,7 +5987,7 @@ void CChunkedHeap::checkScans(unsigned allocatorId)
     HeapletStats merged;
     {
         //Copy the stats when a lock is held to ensure num and distance are consistent.
-        NonReentrantSpinBlock b(heapletLock);
+        CriticalBlock b(heapletLock);
         merged = stats;
     }
 
@@ -6678,6 +6690,7 @@ class RoxieMemTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testAll);
         CPPUNIT_TEST(testRecursiveCallbacks);
         CPPUNIT_TEST(testResize);
+        CPPUNIT_TEST(testResizeLock);
         //MORE: The following currently leak pages, so should go last
         CPPUNIT_TEST(testDatamanager);
         CPPUNIT_TEST(testCleanup);
@@ -8273,6 +8286,99 @@ protected:
 
         CPPUNIT_ASSERT_EQUAL(rowManager->numPagesAfterCleanup(true), 0U);
     }
+    class ResizeCallback : public IRowResizeCallback
+    {
+    public:
+        virtual void lock() { cs.enter(); }
+        virtual void unlock() { cs.leave(); }
+        virtual void update(memsize_t capacity, void * ptr) { max = capacity; rows = (const void * *)ptr; }
+        virtual void atomicUpdate(memsize_t capacity, void * ptr) { lock(); update(capacity, ptr); unlock(); }
+
+        bool failed = false;
+        memsize_t max = 0;
+        std::atomic<memsize_t> count = {0};
+        const void * * rows = nullptr;
+        CriticalSection cs;
+    };
+    const static unsigned maxAlloc = 1000;
+    const static unsigned step = 10;
+
+    class ResizeThread : public Thread
+    {
+    public:
+        ResizeThread(ResizeCallback & _callback, IRowManager * _rm) : Thread("resizeThread"), callback(_callback), rm(_rm)
+        {
+        }
+
+        int run()
+        {
+            for (unsigned i=0; i < maxAlloc; i++)
+            {
+                if (i % step == 0)
+                    rm->resizeRow(callback.rows, i * sizeof(void *), (i+step)*sizeof(void*), 0, 0, callback);
+
+                callback.rows[i] = rm->allocate(20, 0);
+                callback.count = i+1;
+            }
+            return 0;
+        }
+    protected:
+        ResizeCallback & callback;
+        IRowManager * rm;
+    };
+
+    class ReleaseThread : public Thread
+    {
+    public:
+        ReleaseThread(ResizeCallback & _callback, IRowManager * _rm) : Thread("releaseThread"), callback(_callback), rm(_rm)
+        {
+        }
+
+        int run()
+        {
+            try
+            {
+                for (;;)
+                {
+                    unsigned limit = callback.count;
+                    callback.lock();
+                    for (unsigned i=0; i < limit; i++)
+                    {
+                        if (callback.rows[i])
+                            ReleaseClearRoxieRow(callback.rows[i]);
+                    }
+                    callback.unlock();
+                    if (limit == maxAlloc)
+                        return 0;
+                }
+            }
+            catch (IException * e)
+            {
+                DBGLOG(e);
+                callback.unlock();
+                callback.failed = true;
+                return 0;
+            }
+        }
+    protected:
+        ResizeCallback & callback;
+        IRowManager * rm;
+    };
+
+    void testResizeLock()
+    {
+        ResizeCallback callback;
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+        callback.rows = (const void * *)rowManager->allocate(1, 0);
+        Owned<ReleaseThread> releaser = new ReleaseThread(callback, rowManager);
+        Owned<ResizeThread> resizer = new ResizeThread(callback, rowManager);
+        releaser->start();
+        resizer->start();
+        resizer->join();
+        releaser->join();
+        CPPUNIT_ASSERT(!callback.failed);
+    }
+
 };
 
 class CSimpleRowResizeCallback : public CVariableRowResizeCallback

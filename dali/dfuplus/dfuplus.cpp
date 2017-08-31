@@ -116,10 +116,7 @@ bool CDfuPlusHelper::runLocalDaFileSvr(SocketEndpoint &listenep,bool requireauth
     if (!thr->ok())
         return false;
 
-    unsigned port = listenep.port;
-    if (!port)
-        port = securitySettings.queryDaliServixPort();
-
+    unsigned port = securitySettings.queryDaliServixPort();
     unsigned sslport = securitySettings.queryDaliServixSSLPort();
 
     DAFSConnectCfg connectMethod = securitySettings.queryDAFSConnectCfg();
@@ -129,14 +126,14 @@ bool CDfuPlusHelper::runLocalDaFileSvr(SocketEndpoint &listenep,bool requireauth
     if (printep.isNull())
     {
         if (connectMethod == SSLNone)
-            addlPort.appendf("%u", port);
+            addlPort.appendf("port %u", port);
         else if (connectMethod == SSLOnly)
-            addlPort.appendf("%u", sslport);
+            addlPort.appendf("port %u", sslport);
         else if (connectMethod == SSLFirst)
-            addlPort.appendf("%u:%u", sslport, port);
+            addlPort.appendf("ports %u:%u", sslport, port);
         else
-            addlPort.appendf("%u:%u", port, sslport);
-        progress("Started local Dali file server on port %s\n", addlPort.str());
+            addlPort.appendf("ports %u:%u", port, sslport);
+        progress("Started local Dali file server on %s\n", addlPort.str());
     }
     else
     {
@@ -178,17 +175,50 @@ bool CDfuPlusHelper::runLocalDaFileSvr(SocketEndpoint &listenep,bool requireauth
 
 bool CDfuPlusHelper::checkLocalDaFileSvr(const char *eps,SocketEndpoint &epout)
 {
+    unsigned port = securitySettings.queryDaliServixPort();
+    unsigned sslport = securitySettings.queryDaliServixSSLPort();
+
+    DAFSConnectCfg connectMethod = securitySettings.queryDAFSConnectCfg();
+
+    unsigned dafsPort;
+    StringBuffer addlPort;
+    if (connectMethod == SSLNone)
+    {
+        dafsPort = port;
+        addlPort.appendf("port %u", port);
+    }
+    else if (connectMethod == SSLOnly)
+    {
+        dafsPort = sslport;
+        addlPort.appendf("port %u", sslport);
+    }
+    else if (connectMethod == SSLFirst)
+    {
+        dafsPort = sslport;
+        addlPort.appendf("ports %u:%u", sslport, port);
+    }
+    else
+    {
+        dafsPort = port;
+        addlPort.appendf("ports %u:%u", port, sslport);
+    }
     if (!eps||!*eps)
-        epout.setLocalHost(securitySettings.queryDaliServixPort());
+        epout.setLocalHost(dafsPort);
     else {
-        epout.set(eps,securitySettings.queryDaliServixPort());
+        epout.set(eps,dafsPort);
         if (!epout.isLocal())
             return false;
     }
-    progress("Checking for local Dali File Server\n");
-    if (!testDaliServixPresent(epout)) // only lookup local
-        runLocalDaFileSvr(epout,false,0);
-    return true;
+    progress("Checking for local Dali File Server on %s\n", addlPort.str());
+
+    unsigned short nPort = getActiveDaliServixPort(epout);
+    if (nPort)
+    {
+        epout.port = nPort;
+        return true;
+    }
+
+    return runLocalDaFileSvr(epout,false,0);
 }
 
 #else

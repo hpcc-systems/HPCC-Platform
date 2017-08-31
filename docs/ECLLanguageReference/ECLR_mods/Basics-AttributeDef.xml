@@ -74,14 +74,20 @@ My First Definition := 5;  // INVALID name, spaces not allowed</programlisting>
         <primary>Reserved Words</primary>
       </indexterm>, but they are generally reserved only in the context within
     which they are valid for use. Even in that context, you may use reserved
-    words as field or attribute names, provided you explicitly disambiguate
+    words as field or definition names, provided you explicitly disambiguate
     them, as in this example:</para>
 
     <programlisting>ds2 := DEDUP(ds, ds.all, ALL); //ds.all is the 'all' field in the
                                //ds dataset - not DEDUP’s ALL option</programlisting>
 
     <para>However, it is still a good idea to avoid using ECL keywords as
-    attribute or field names.</para>
+    definition or field names. </para>
+
+    <para>Definition or field names cannot begin with <emphasis
+    role="bold">UNICODE_</emphasis> , <emphasis role="bold">UTF8_</emphasis>,
+    or <emphasis role="bold">VARUNICODE_</emphasis>. Labels beginning with
+    those prefixes are treated as type names, and should be regarded as
+    reserved.</para>
   </sect2>
 
   <sect2 id="Attribute_Naming">
