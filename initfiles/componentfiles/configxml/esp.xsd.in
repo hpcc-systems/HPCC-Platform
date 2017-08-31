@@ -415,20 +415,29 @@
 	                </xs:appinfo>
 	              </xs:annotation>
 	            </xs:attribute>
-	            <xs:attribute name="sessionTimeoutMinutes" use="optional" default="120">
+	            <xs:attribute name="clientSessionTimeoutMinutes" use="optional" default="120">
 	              <xs:annotation>
 	                <xs:appinfo>
-	                  <tooltip>Inactive session duration, in minutes. Specify 0 for default timeout, -1 for never time out.</tooltip>
+	                  <tooltip>Inactive session duration, in minutes, that is used to timeout a session on ESP client. Specify 0 for default timeout, -1 for never time out.</tooltip>
 	                  <colIndex>5</colIndex>
 	                </xs:appinfo>
 	              </xs:annotation>
 	            </xs:attribute>
+                <xs:attribute name="serverSessionTimeoutMinutes" use="optional" default="240">
+                  <xs:annotation>
+                    <xs:appinfo>
+                      <tooltip>Considering network delay, serverSessionTimeoutMinutes should be greater than clientSessionTimeoutMinutes.
+                      If serverSessionTimeoutMinutes < clientSessionTimeoutMinutes, serverSessionTimeoutMinutes = 2 * clientSessionTimeoutMinutes. -1 for never time out.</tooltip>
+                      <colIndex>6</colIndex>
+                    </xs:appinfo>
+                  </xs:annotation>
+                </xs:attribute>
 	            <xs:attribute name="unrestrictedResources" type="xs:string" use="optional" default="/favicon.ico,/esp/files/*,/esp/xslt/*">
 	              <xs:annotation>
 	                <xs:appinfo>
 	                  <width>50</width>
 	                  <tooltip>unrestricted resources for user authentication</tooltip>
-	                  <colIndex>6</colIndex>
+	                  <colIndex>7</colIndex>
 	                </xs:appinfo>
 	              </xs:annotation>
 	            </xs:attribute>

@@ -542,8 +542,10 @@ int CEspHttpServer::onUpdatePassword(CHttpRequest* request, CHttpResponse* respo
                 readCookie(SESSION_START_URL_COOKIE, urlCookie);
                 unsigned sessionID = createHTTPSession(binding, request->getParameters()->queryProp("username"), urlCookie.isEmpty() ? "/" : urlCookie.str());
                 m_request->queryContext()->setSessionToken(sessionID);
-                VStringBuffer sessionIDStr("%u", sessionID);
-                addCookie(binding->querySessionIDCookieName(), sessionIDStr.str(), binding->getSessionTimeoutSeconds());
+                VStringBuffer cookieStr("%u", sessionID);
+                addCookie(binding->querySessionIDCookieName(), cookieStr.str(), 0);
+                cookieStr.setf("%u", binding->getClientSessionTimeoutSeconds());
+                addCookie(SESSION_TIMEOUT_COOKIE, cookieStr.str(), 0);
                 clearCookie(SESSION_START_URL_COOKIE);
             }
         }
@@ -1184,8 +1186,10 @@ EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char*
 
     ESPLOG(LogMax, "Authenticated for %s@%s", _userName, peer.str());
 
-    VStringBuffer sessionIDStr("%u", sessionID);
-    addCookie(authReq.authBinding->querySessionIDCookieName(), sessionIDStr.str(), authReq.authBinding->getSessionTimeoutSeconds());
+    VStringBuffer cookieStr("%u", sessionID);
+    addCookie(authReq.authBinding->querySessionIDCookieName(), cookieStr.str(), 0);
+    cookieStr.setf("%u", authReq.authBinding->getClientSessionTimeoutSeconds());
+    addCookie(SESSION_TIMEOUT_COOKIE, cookieStr.str(), 0);
     clearCookie(SESSION_START_URL_COOKIE);
     m_response->redirect(*m_request, sessionStartURL);
 
@@ -1194,7 +1198,7 @@ EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char*
 
 void CEspHttpServer::createGetSessionTimeoutResponse(StringBuffer& resp, ESPSerializationFormat format, IPropertyTree* sessionTree)
 {
-    //The timeoutAt is a time stamp for when the session should be timed out.
+    //The timeoutAt is a time stamp for when the session should be timed out on ESP server.
     //The 0 is used to indicate that the session is already timed out.
     __int64 timeoutAt = sessionTree ? sessionTree->getPropInt64(PropSessionTimeoutAt, 0) : 0;
     bool timeoutByAdmin = sessionTree ? sessionTree->getPropBool(PropSessionTimeoutByAdmin, false) : false;
@@ -1243,7 +1247,7 @@ void CEspHttpServer::resetSessionTimeout(EspAuthRequest& authReq, unsigned sessi
     {
         unsigned timeoutSeconds = 60 * authReq.requestParams->getPropInt("_timeout");
         if (timeoutSeconds == 0)
-            timeoutSeconds = authReq.authBinding->getSessionTimeoutSeconds();
+            timeoutSeconds = authReq.authBinding->getServerSessionTimeoutSeconds();
 
         CDateTime now;
         now.setNow();
@@ -1253,7 +1257,7 @@ void CEspHttpServer::resetSessionTimeout(EspAuthRequest& authReq, unsigned sessi
         sessionTree->setPropInt64(PropSessionTimeoutAt, timeoutAt);
 
         VStringBuffer sessionIDStr("%u", sessionID);
-        addCookie(authReq.authBinding->querySessionIDCookieName(), sessionIDStr.str(), timeoutSeconds);
+        addCookie(authReq.authBinding->querySessionIDCookieName(), sessionIDStr.str(), 0);
 
         if (getEspLogLevel()>=LogMax)
         {
@@ -1301,7 +1305,7 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
 
     Owned<IRemoteConnection> conn = getSDSConnection(authReq.authBinding->queryESPSessionSDSPath(), RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT);
     IPropertyTree* espSessions = conn->queryRoot();
-    if (authReq.authBinding->getSessionTimeoutSeconds() >= 0)
+    if (authReq.authBinding->getServerSessionTimeoutSeconds() >= 0)
     {
         CDateTime now;
         now.setNow();
@@ -1364,14 +1368,14 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
         sessionTree->setPropInt64(PropSessionLastAccessed, createTime);
         if (!sessionTree->getPropBool(PropSessionTimeoutByAdmin, false) && (autoRefresh.isEmpty() || strieq(autoRefresh.str(), "0")))
         {
-            time_t timeoutAt = createTime + authReq.authBinding->getSessionTimeoutSeconds();
+            time_t timeoutAt = createTime + authReq.authBinding->getServerSessionTimeoutSeconds();
             sessionTree->setPropInt64(PropSessionTimeoutAt, timeoutAt);
             ESPLOG(LogMin, "Updated %s for (/%s/%s) : %ld", PropSessionTimeoutAt, authReq.serviceName.isEmpty() ? "" : authReq.serviceName.str(),
                 authReq.methodName.isEmpty() ? "" : authReq.methodName.str(), timeoutAt);
         }
         ///authReq.ctx->setAuthorized(true);
         VStringBuffer sessionIDStr("%u", sessionID);
-        addCookie(authReq.authBinding->querySessionIDCookieName(), sessionIDStr.str(), authReq.authBinding->getSessionTimeoutSeconds());
+        addCookie(authReq.authBinding->querySessionIDCookieName(), sessionIDStr.str(), 0);
         if (getLoginPage)
             m_response->redirect(*m_request, "/");
     }
@@ -1400,6 +1404,7 @@ void CEspHttpServer::logoutSession(EspAuthRequest& authReq, unsigned sessionID, 
     ///authReq.ctx->setAuthorized(true);
 
     clearCookie(authReq.authBinding->querySessionIDCookieName());
+    clearCookie(SESSION_TIMEOUT_COOKIE);
     const char* logoutURL = authReq.authBinding->queryLogoutURL();
     if (!isEmptyString(logoutURL))
         m_response->redirect(*m_request, authReq.authBinding->queryLogoutURL());
@@ -1475,7 +1480,7 @@ unsigned CEspHttpServer::createHTTPSession(EspHttpBinding* authBinding, const ch
     {
         sessionTree->setPropInt64(PropSessionLastAccessed, createTime);
         if (!sessionTree->getPropBool(PropSessionTimeoutByAdmin, false))
-            sessionTree->setPropInt64(PropSessionTimeoutAt, createTime + authBinding->getSessionTimeoutSeconds());
+            sessionTree->setPropInt64(PropSessionTimeoutAt, createTime + authBinding->getServerSessionTimeoutSeconds());
         return sessionID;
     }
     ESPLOG(LogMax, "New sessionID <%d> at <%ld> in createHTTPSession()", sessionID, createTime);
@@ -1487,7 +1492,7 @@ unsigned CEspHttpServer::createHTTPSession(EspHttpBinding* authBinding, const ch
     ptree->setProp(PropSessionUserID, userID);
     ptree->setPropInt64(PropSessionCreateTime, createTime);
     ptree->setPropInt64(PropSessionLastAccessed, createTime);
-    ptree->setPropInt64(PropSessionTimeoutAt, createTime + authBinding->getSessionTimeoutSeconds());
+    ptree->setPropInt64(PropSessionTimeoutAt, createTime + authBinding->getServerSessionTimeoutSeconds());
     ptree->setProp(PropSessionLoginURL, sessionStartURL);
     return sessionID;
 }

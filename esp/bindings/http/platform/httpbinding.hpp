@@ -164,8 +164,9 @@ private:
 
     StringAttr              loginURL;
     StringAttr              logoutURL;
-    int                     sessionTimeoutSeconds = ESP_SESSION_TIMEOUT; //-1: never
-    int                     checkSessionTimeoutSeconds = ESP_CHECK_SESSION_TIMEOUT;
+    int                     clientSessionTimeoutSeconds = 60 * ESP_SESSION_TIMEOUT;
+    int                     serverSessionTimeoutSeconds = 120 * ESP_SESSION_TIMEOUT;
+    int                     checkSessionTimeoutSeconds = ESP_CHECK_SESSION_TIMEOUT; //the duration to clean timed out sesssions
     BoolHash                domainAuthResources;
     StringArray             domainAuthResourcesWildMatch;
 
@@ -342,7 +343,8 @@ public:
     AuthType getDomainAuthType() const { return domainAuthType; }
     const char* queryLoginURL() const { return loginURL.get(); }
     const char* queryLogoutURL() const { return logoutURL.get(); }
-    int getSessionTimeoutSeconds() const { return sessionTimeoutSeconds; }
+    int getClientSessionTimeoutSeconds() const { return clientSessionTimeoutSeconds; }
+    int getServerSessionTimeoutSeconds() const { return serverSessionTimeoutSeconds; }
     int getCheckSessionTimeoutSeconds() const { return checkSessionTimeoutSeconds; }
     bool isDomainAuthResources(const char* resource)
     {
