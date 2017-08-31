@@ -467,6 +467,7 @@ public:
         lock.clear();
         conn = NULL;
     }
+    void commit() { if (conn) conn->commit(); }
     IPropertyTree *queryRoot() const
     {
         return lock.get() ? lock->queryRoot() : NULL;
@@ -563,6 +564,7 @@ public:
         return CFileSubLock::init(logicalName, mode, "Attr", conn, timeout, msg);
     }
     IPropertyTree *queryRoot() const { return CFileSubLock::queryRoot(); }
+    void commit() { CFileSubLock::commit(); }
 };
 
 class CFileLockCompound : protected CFileLockBase
@@ -4586,8 +4588,18 @@ public:
         else
         {
             CFileAttrLock attrLock;
-            if (0 == proplockcount && conn)
-                verifyex(attrLock.init(logicalName, DXB_File, RTM_LOCK_WRITE, conn, defaultTimeout, "CDistributedFile::setAccessedTime"));
+            if (conn)
+            {
+                if (!attrLock.init(logicalName, DXB_File, RTM_LOCK_WRITE, conn, defaultTimeout, "CDistributedFile::setAccessedTime"))
+                {
+                    // In unlikely event File/Attr doesn't exist, must ensure created, commited and root connection is reloaded.
+                    verifyex(attrLock.init(logicalName, DXB_File, RTM_LOCK_WRITE|RTM_CREATE_QUERY, conn, defaultTimeout, "CDistributedFile::setAccessedTime"));
+                    attrLock.commit();
+                    conn->commit();
+                    conn->reload();
+                    root.setown(conn->getRoot());
+                }
+            }
             if (dt.isNull())
                 queryAttributes().removeProp("@accessed");
             else
