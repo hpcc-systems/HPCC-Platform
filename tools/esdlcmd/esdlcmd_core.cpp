@@ -109,6 +109,9 @@ public:
             return true;
         if (iter.matchFlag(optNoArrayOf, ESDLOPT_NO_ARRAYOF))
             return true;
+        StringAttr oneOption;
+        if (iter.matchOption(oneOption, ESDLOPT_INCLUDE_PATH) || iter.matchOption(oneOption, ESDLOPT_INCLUDE_PATH_S))
+            return false;  //Return false to negate allowing the include path options from parent class
 
         if (EsdlConvertCmd::parseCommandLineOption(iter))
             return true;
@@ -689,6 +692,8 @@ public:
 
     virtual bool finalizeOptions(IProperties *globals)
     {
+        extractEsdlCmdOption(optIncludePath, globals, ESDLOPT_INCLUDE_PATH_ENV, ESDLOPT_INCLUDE_PATH_INI, NULL, NULL);
+
         if (optSource.isEmpty())
         {
             usage();
@@ -729,7 +734,7 @@ public:
 
     virtual int processCMD()
     {
-        cmdHelper.loadDefinition(optSource, optService, 0);
+        cmdHelper.loadDefinition(optSource, optService, 0, optIncludePath);
         Owned<IEsdlDefObjectIterator> structs = cmdHelper.esdlDef->getDependencies( optService, optMethod, ESDLOPTLIST_DELIMITER, 0, NULL, optFlags );
 
         if(!optPreprocessOutputDir.isEmpty())
@@ -765,6 +770,7 @@ public:
         puts("  --show-inheritance : Turns off the collapse feature. Collapsing optimizes the XML output to strip out structures" );
         puts("                        only used for inheritance, and collapses their elements into their child. That simplifies the" );
         puts("                        stylesheet. By default this option is on.");
+        puts(ESDLOPT_INCLUDE_PATH_USAGE);
     }
 
     virtual void usage()

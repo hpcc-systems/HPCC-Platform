@@ -26,6 +26,7 @@ project( esdl-xml )
 
 set ( SRCS
          ${CMAKE_CURRENT_SOURCE_DIR}/esdl2xml.cpp
+         ${CMAKE_CURRENT_SOURCE_DIR}/../esdlcmd/esdlcmdutils.cpp
     )
 
 include_directories (
@@ -33,6 +34,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/include
          ${HPCC_SOURCE_DIR}/system/jlib
          ${HPCC_SOURCE_DIR}/tools/esdlcomp
+         ${HPCC_SOURCE_DIR}/tools/esdlcmd
          ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
