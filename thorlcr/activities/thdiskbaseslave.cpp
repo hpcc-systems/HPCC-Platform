@@ -254,7 +254,7 @@ void CDiskReadSlaveActivityBase::start()
     helper->getEncryptKey(encryptedKeyLen, encryptedKey);
     if (0 != encryptedKeyLen)
     {
-        bool dfsEncrypted = partDescs.item(0).queryOwner().queryProperties().getPropBool("@encrypted");
+        bool dfsEncrypted = partDescs.ordinality() && partDescs.item(0).queryOwner().queryProperties().getPropBool("@encrypted");
         if (dfsEncrypted) // otherwise ignore (warning issued by master)
             eexp.setown(createAESExpander256(encryptedKeyLen, encryptedKey));
         memset(encryptedKey, 0, encryptedKeyLen);
