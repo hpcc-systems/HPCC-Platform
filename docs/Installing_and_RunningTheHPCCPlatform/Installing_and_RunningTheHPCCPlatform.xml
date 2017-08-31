@@ -40,15 +40,18 @@
       <para></para>
     </legalnotice>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -123,7 +126,7 @@
           <para>Install HPCC.</para>
 
           <para>Download the installation package from <ulink
-          url="http://hpccsystems.com/download/free-community-edition">http://hpccsystems.com/download/free-community-edition</ulink>
+          url="http://hpccsystems.com/download/free-community-edition">http://hpccsystems.com/download</ulink>
           and install.</para>
 
           <para>On CentOS/Red Hat:</para>
@@ -131,23 +134,16 @@
           <para><programlisting> sudo yum install hpccsystems-platform&lt;rpm_file_name&gt;</programlisting>On
           Ubuntu/Debian:</para>
 
-          <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
+          <programlisting> sudo dpkg -i &amp;&amp; sudo apt-get install -f  &lt;deb filename&gt;</programlisting>
         </listitem>
 
         <listitem>
           <para>Start your HPCC System.</para>
 
-          <para>On CentOS/Red Hat:</para>
-
-          <para><programlisting>sudo service hpcc-init start</programlisting></para>
-
-          <para>Ubuntu:</para>
-
-          <programlisting>sudo service hpcc-init start</programlisting>
-
-          <para>Debian 6 (Squeeze or some Ubuntu versions):</para>
-
-          <para><programlisting>sudo /etc/init.d/hpcc-init start</programlisting></para>
+          <para><programlisting> sudo /etc/init.d/hpcc-init start</programlisting><emphasis
+          role="bold">NOTE</emphasis>: We provide sample scripts (see <link
+          linkend="Example-Scripts">Appendix:Example Scripts</link>) to make
+          starting larger multi-node systems easier.</para>
         </listitem>
 
         <listitem>
@@ -302,12 +298,9 @@
           <para>There are several optional plugins that you could choose to
           add to your installation.</para>
 
-          <para>For RPM based systems, you could install using yum.</para>
+          <para>For RPM based systems, you can install using yum.</para>
 
-          <para><programlisting>sudo yum install &lt;hpccsystems plugin plugin_name&gt;  </programlisting>Optionally,
-          you could also choose to add optional plugins using rpm:</para>
-
-          <programlisting>sudo rpm -Uvh &lt;hpccsystems plugin plugin_name&gt; </programlisting>
+          <para><programlisting>sudo yum install &lt;hpccsystems plugin plugin_name&gt;  </programlisting></para>
 
           <para>To install the optional plug ins for a Ubuntu/Debian package,
           use:</para>
@@ -364,8 +357,8 @@
               </tgroup>
             </informaltable></para>
 
-          <para>Although Cassandra support (cassandraembed) is a plugin, it is
-          not optional and is installed with the platform.</para>
+          <para>Some other technologies, such as Cassandra support are
+          included in the platform package.</para>
         </sect3>
       </sect2>
 
@@ -405,11 +398,13 @@
                 </tgroup>
               </informaltable></para>
 
-            <para><emphasis role="bold">Note:</emphasis> On many systems the
-            "service" command can still work, however on some versions of
-            Ubuntu it does not provide any logging.</para>
-
-            <programlisting>sudo service hpcc-init start</programlisting>
+            <para><emphasis role="bold">Note:</emphasis> Many of our supported
+            distributions of Linux are switching from system V to systemd. If
+            your distribution is still using a system V init system, you may
+            continue to use some system V commands such as, `<emphasis>service
+            hpcc-init</emphasis>'. However on distributions utilizing systemd
+            that output may not display in the same manner. We suggest calling
+            hpcc-init directly instead of using a 'service' call.</para>
           </listitem>
         </orderedlist>
       </sect2>
@@ -580,12 +575,6 @@
           <para>To submit a job using the ecl CLI, make sure the HPCC has been
           started and use the following syntax: <programlisting>ecl run  hello.ecl --target=hthor --server=&lt;IP Address of the ESP node&gt;:8010</programlisting></para>
 
-          <para>or</para>
-
-          <para><programlisting>ecl run hello.ecl --target=hthor --server=.</programlisting></para>
-
-          <para>Where "." indicates the IP of the current box.</para>
-
           <para>The workunit<footnote>
               <para>A Workunit is a record of a task submitted to an HPCC. It
               contains an identifier--workunit ID, the ECL code, results, and
@@ -608,7 +597,7 @@
           use the eclcc compiler locally to create an archive to be sent to
           the eclccServer:</para>
 
-          <para><programlisting>eclcc hello.ecl -E | ecl run - --target=thor --server=&lt;IP Address of the ESP&gt;:8010</programlisting></para>
+          <para><programlisting>eclcc hello.ecl hello2.ecl helloN.ecl -E | ecl run - --target=thor --server=&lt;IP Address of the ESP&gt;:8010</programlisting></para>
 
           <para>The target parameter must name a valid target cluster name as
           listed in your environment's topology section.</para>
@@ -809,17 +798,7 @@
             <para>If it is running, stop the HPCC system, using this
             command:</para>
 
-            <para><emphasis role="bold">Centos/Red
-            Hat</emphasis><programlisting>sudo /sbin/service hpcc-init stop</programlisting></para>
-
-            <para><emphasis role="bold">Ubuntu</emphasis></para>
-
-            <para><programlisting>sudo service hpcc-init stop</programlisting></para>
-
-            <para><emphasis role="bold">Debian 6 (Squeeze and some Ubuntu
-            versions)</emphasis></para>
-
-            <programlisting>sudo /etc/init.d/hpcc-init stop</programlisting>
+            <para><programlisting>sudo /etc/init.d/hpcc-init stop</programlisting></para>
 
             <para><informaltable colsep="1" frame="all" rowsep="1">
                 <?dbfo keep-together="always"?>
@@ -835,11 +814,7 @@
                       fileref="images/OSSgr3.png" /></entry>
 
                       <entry>You can use this command to confirm HPCC
-                      processes are stopped (on Centos/Red
-                      Hat):<para><programlisting>sudo /sbin/service hpcc-init status</programlisting><phrase>For
-                      Ubuntu</phrase><programlisting>sudo service hpcc-init status
-</programlisting><phrase>For Debian 6 (Squeeze and some Ubuntu
-                      versions)</phrase><programlisting>sudo /etc/init.d/hpcc-init status</programlisting></para></entry>
+                      processes are stopped:<para><programlisting>sudo /etc/init.d/hpcc-init status</programlisting></para></entry>
                     </row>
                   </tbody>
                 </tgroup>
@@ -847,8 +822,7 @@
           </listitem>
 
           <listitem>
-            <para>Start the Configuration Manager service.<emphasis
-            role="bold"></emphasis><programlisting>sudo /opt/HPCCSystems/sbin/configmgr
+            <para>Start the Configuration Manager service.<programlisting>sudo /opt/HPCCSystems/sbin/configmgr
 </programlisting></para>
 
             <para><graphic
@@ -1134,9 +1108,12 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
             all nodes. A sample script is provided with HPCC. The following
             command copies the XML files out to all nodes as required:</para>
 
-            <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh &lt;sourcefile&gt; &lt;destinationfile&gt;
-</programlisting>See the appendix for more information on using this
-            script.</para>
+            <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh -s &lt;sourcefile&gt; -t &lt;destinationfile&gt;
+</programlisting>Where the &lt;sourcefile&gt; is the absolute path to the file
+            you want to copy, and the &lt;destinationfile&gt; is the absolute
+            path to the file you want written out. See the appendix (<link
+            linkend="Example-Scripts">Appendix:Example Scripts</link>) for
+            more information on using this script.</para>
           </listitem>
         </orderedlist>
 
@@ -1147,16 +1124,6 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
             <para>Restart the HPCC system on <emphasis
             role="bold">every</emphasis> node. The following command starts
             the HPCC system on an individual node:</para>
-
-            <para><emphasis role="bold">Centos/Red
-            Hat</emphasis><programlisting>sudo /sbin/service hpcc-init start</programlisting></para>
-
-            <para><emphasis role="bold">Ubuntu</emphasis></para>
-
-            <para><programlisting>sudo service hpcc-init start</programlisting></para>
-
-            <para><emphasis role="bold">Debian 6 (Squeeze and some Ubuntu
-            versions)</emphasis></para>
 
             <programlisting>sudo /etc/init.d/hpcc-init start</programlisting>
 
@@ -1173,7 +1140,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
                     <entry><inlinegraphic
                     fileref="images/OSSgr3.png" /></entry>
 
-                    <entry><para>You may want to create a script to push this
+                    <entry><para>You may want to use a script to push this
                     command out to every node. A sample script is provided
                     with HPCC. Use the following command to start HPCC on all
                     nodes:</para><para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start</programlisting></para></entry>
@@ -1183,8 +1150,9 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
             </informaltable>
 
             <para>This script can also be used to stop HPCC on all nodes and
-            to stop and start individual components on all nodes. See the
-            appendix for more details.</para>
+            to start and stop individual components on all nodes. See the
+            appendix (<link linkend="Example-Scripts">Appendix:Example
+            Scripts</link>) for more details.</para>
           </listitem>
         </orderedlist>
       </sect2>
@@ -1205,31 +1173,11 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
         <sect3 id="StartStop_ToStartSystem">
           <title>To start the system:</title>
 
-          <para><emphasis role="bold">Centos/Red
-          Hat</emphasis><programlisting>sudo /sbin/service hpcc-init start</programlisting></para>
-
-          <para><emphasis role="bold">Ubuntu</emphasis></para>
-
-          <para><programlisting>sudo service hpcc-init start</programlisting></para>
-
-          <para><emphasis role="bold">Debian 6 (Squeeze and some Ubuntu
-          versions)</emphasis></para>
-
           <programlisting>sudo /etc/init.d/hpcc-init start</programlisting>
         </sect3>
 
         <sect3 id="StartStop_StopTheSystem">
           <title>To stop the system:</title>
-
-          <para><emphasis role="bold">Centos/Red
-          Hat</emphasis><programlisting>sudo /sbin/service hpcc-init stop</programlisting></para>
-
-          <para><emphasis role="bold">Ubuntu</emphasis></para>
-
-          <para><programlisting>sudo service hpcc-init stop</programlisting></para>
-
-          <para><emphasis role="bold">Debian 6 (Squeeze and some Ubuntu
-          versions)</emphasis></para>
 
           <programlisting>sudo /etc/init.d/hpcc-init stop</programlisting>
 
@@ -1247,9 +1195,9 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
                     fileref="images/OSSgr3.png" /></entry>
 
                     <entry>You can use a script to start or stop multiple
-                    nodes in the system. See <emphasis>Example
-                    Scripts</emphasis> in the Appendix section for
-                    samples.</entry>
+                    nodes in the system. See <emphasis><link
+                    linkend="Example-Scripts">Example Scripts</link>
+                    </emphasis>in the Appendix section.</entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -1261,16 +1209,6 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
 
           <para>To start or stop a single component, you can use the -c flag
           in the init system as follows.</para>
-
-          <para><emphasis role="bold">Centos/Red
-          Hat</emphasis><programlisting>sudo /sbin/service hpcc-init -c &lt;component name&gt; &lt;command&gt;</programlisting></para>
-
-          <para><emphasis role="bold">Ubuntu</emphasis></para>
-
-          <para><programlisting>sudo service hpcc-init -c &lt;component name&gt; &lt;command&gt;</programlisting></para>
-
-          <para><emphasis role="bold">Debian 6 (Squeeze and some Ubuntu
-          versions)</emphasis></para>
 
           <programlisting>sudo /etc/init.d/hpcc-init -c &lt;component name&gt; &lt;command&gt;</programlisting>
 
@@ -1294,6 +1232,20 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
                 </tbody>
               </tgroup>
             </informaltable></para>
+
+          <para><variablelist>
+              <varlistentry>
+                <term>NOTE:</term>
+
+                <listitem>
+                  <para>Some system V init system 'service hpcc-init' calls
+                  may still work and you can continue to use those. However,
+                  most Linux distributions are deprecating the service calls.
+                  We suggest calling hpcc-init directly instead of using a
+                  'service' call.</para>
+                </listitem>
+              </varlistentry>
+            </variablelist></para>
         </sect3>
       </sect2>
 
@@ -1308,16 +1260,6 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
           <listitem>
             <para>If the system is running, stop the HPCC system, using this
             command on <emphasis role="bold">every</emphasis> node:</para>
-
-            <para><emphasis role="bold">Centos/Red
-            Hat</emphasis><programlisting>sudo /sbin/service hpcc-init stop</programlisting></para>
-
-            <para><emphasis role="bold">Ubuntu</emphasis></para>
-
-            <para><programlisting>sudo service hpcc-init stop</programlisting></para>
-
-            <para><emphasis role="bold">Debian 6 (Squeeze and some Ubuntu
-            versions)</emphasis></para>
 
             <programlisting>sudo /etc/init.d/hpcc-init stop
 </programlisting>
@@ -1352,11 +1294,14 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
     <!-- <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/ssl-esp.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />   -->
-                
-  <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/ssl-esp.xml" xpointer="xpointer(//*[@id='ssl4esp'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />  
-  <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/ssl-esp.xml" xpointer="xpointer(//*[@id='ssl4Roxie'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />  
+
+    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/ssl-esp.xml"
+                xpointer="xpointer(//*[@id='ssl4esp'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/ssl-esp.xml"
+                xpointer="xpointer(//*[@id='ssl4Roxie'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
   <chapter id="Installing_MoreECLExamples">
@@ -3412,23 +3357,23 @@ SUM(NOFOLD(s1b + s2b), a);
           </listitem>
         </orderedlist>
 
-        <para> </para>
+        <para></para>
 
         <sect3 id="R_DataTypes">
           <title>Mapping Datatypes</title>
 
-          <para>Some additional considerations for mapping data types in R.
-          </para>
+          <para>Some additional considerations for mapping data types in
+          R.</para>
 
           <para>In HPCC the ECL <emphasis role="bold">RECORD</emphasis> maps
-          to an R <emphasis>list</emphasis>. </para>
+          to an R <emphasis>list</emphasis>.</para>
 
           <para>An ECL <emphasis role="bold">DATASET</emphasis> including a
-          nested dataset is mapped to an R <emphasis>dataframe</emphasis>.
-          </para>
+          nested dataset is mapped to an R
+          <emphasis>dataframe</emphasis>.</para>
 
           <para>An ECL <emphasis role="bold">SET</emphasis> is mapped to an R
-          <emphasis>vector</emphasis>. </para>
+          <emphasis>vector</emphasis>.</para>
 
           <para>These principals apply to passing data from HPCC to R or data
           returning to HPCC from R. There are usage examples of these concepts
@@ -3437,7 +3382,7 @@ SUM(NOFOLD(s1b + s2b), a);
           <para><ulink
           url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/regress/embedR2.ecl">https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/regress/ecl/embedR2.ecl</ulink></para>
 
-          <para> </para>
+          <para></para>
         </sect3>
 
         <sect3>
