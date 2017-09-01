@@ -40,6 +40,7 @@ if(JAVAEMBED)
             ./../../rtl/nbcd
             ./../../common/deftype
             ./../../system/jlib
+            ./../../system/security/shared
             ./../../roxie/roxiemem
             ${HPCC_SOURCE_DIR}/esp/esdllib
             ${HPCC_SOURCE_DIR}/common/thorhelper
