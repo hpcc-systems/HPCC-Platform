@@ -270,7 +270,8 @@ enum DFUQResultField
     DFUQRFsuperowners = 20,
     DFUQRFpersistent = 21,
     DFUQRFprotect = 22,
-    DFUQRFterm = 23,
+    DFUQRFiscompressed = 23,
+    DFUQRFterm = 24,
     DFUQRFreverse = 256,
     DFUQRFnocase = 512,
     DFUQRFnumeric = 1024

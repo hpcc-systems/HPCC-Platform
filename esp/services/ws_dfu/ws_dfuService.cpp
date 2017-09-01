@@ -3214,6 +3214,8 @@ void CWsDfuEx::setDFUQuerySortOrder(IEspDFUQueryRequest& req, StringBuffer& sort
     const char* sortByPtr = sortBy.str();
     if (strieq(sortByPtr, "FileSize"))
         sortOrder[0] = (DFUQResultField) (DFUQRFsize | DFUQRFnumeric);
+    else if (strieq(sortByPtr, "IsCompressed"))
+        sortOrder[0] = (DFUQResultField) (DFUQRFiscompressed | DFUQRFnumeric);
     else if (strieq(sortByPtr, "CompressedSize"))
         sortOrder[0] = (DFUQResultField) (DFUQRFcompressedsize | DFUQRFnumeric);
     else if (strieq(sortByPtr, "Parts"))
@@ -3337,10 +3339,9 @@ bool CWsDfuEx::addToLogicalFileList(IPropertyTree& file, const char* nodeGroup, 
                     lFile->setIsKeyFile(isKeyFile);
             }
         }
-        bool isFileCompressed = false;
-        if (isKeyFile || isCompressed(file))
+        bool isFileCompressed = file.getPropBool(getDFUQResultFieldName(DFUQRFiscompressed));
+        if (isFileCompressed)
         {
-            isFileCompressed = true;
             if (version >= 1.22)
             {
                 if (file.hasProp(getDFUQResultFieldName(DFUQRFcompressedsize)))
