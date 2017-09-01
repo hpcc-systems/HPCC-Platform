@@ -6405,9 +6405,9 @@ void EspServInfo::write_esp_client_ipp()
     outs("\tStringBuffer m_url;\n");
     //dom
     
-    outs("\tStringBuffer m_userid;\n");
-    outs("\tStringBuffer m_password;\n");
-    outs("\tStringBuffer m_realm;\n");
+    outs("\tStringBuffer m_requestuserid;\n");
+    outs("\tStringBuffer m_requestpassword;\n");
+    outs("\tStringBuffer m_requestrealm;\n");
     outs("\tStringBuffer m_action;\n");
     outs("\tlong m_reqId = 0;\n");
     outs("\tMapStringTo<SecAccessFlags> m_accessmap;\n");
@@ -6427,7 +6427,7 @@ void EspServInfo::write_esp_client_ipp()
     outs("\tvirtual void addServiceUrl(const char *url)\n\t{\n\t\tm_url.set(url);\n\t}\n");
     outs("\tvirtual void removeServiceUrl(const char *url)\n\t{\n\t}\n");
     //domsetUsernameToken
-    outs("\tvirtual void setUsernameToken(const char *userid,const char *password,const char *realm)\n\t{\n\t\tm_userid.set(userid);\n\t\tm_password.set(password);\n\t\tm_realm.set(realm);\n\t}\n");
+    outs("\tvirtual void setUsernameToken(const char *userid,const char *password,const char *realm)\n\t{\n\t\tm_requestuserid.set(userid);\n\t\tm_requestpassword.set(password);\n\t\tm_requestrealm.set(realm);\n\t}\n");
     outs("\tvirtual void setSoapAction(const char *action)\n\t{\n\t\tm_action.set(action);\n\t}\n");
     
     EspMethodInfo *mthi;
@@ -6483,9 +6483,9 @@ void EspServInfo::write_esp_client()
         outf("\tC%s* espresponse = new C%s(\"%s\");\n\n", mthi->getResp(), mthi->getResp(), name_);
         outs("\tespresponse->setReqId(m_reqId++);\n");
         //dom
-        outs("\tesprequest->setUserId(m_userid.str());\n");
-        outs("\tesprequest->setPassword(m_password.str());\n");
-        outs("\tesprequest->setRealm(m_realm.str());\n");
+        outs("\tesprequest->setRequestUserId(m_requestuserid.str());\n");
+        outs("\tesprequest->setRequestPassword(m_requestpassword.str());\n");
+        outs("\tesprequest->setRequestRealm(m_requestrealm.str());\n");
         outs("\tconst char *soapaction=(m_action.length()) ? m_action.str() : NULL;\n");
         outs("\tesprequest->post(m_proxy.str(), m_url.str(), *espresponse, soapaction);\n");
         outs("\treturn espresponse;\n");
@@ -6500,9 +6500,9 @@ void EspServInfo::write_esp_client()
         outs("\tesprequest->setEventSink(events);\n");
         outs("\tesprequest->setState(state);\n");
 
-        outs("\tesprequest->setUserId(m_userid.str());\n");
-        outs("\tesprequest->setPassword(m_password.str());\n");
-        outs("\tesprequest->setRealm(m_realm.str());\n");
+        outs("\tesprequest->setRequestUserId(m_requestuserid.str());\n");
+        outs("\tesprequest->setRequestPassword(m_requestpassword.str());\n");
+        outs("\tesprequest->setRequestRealm(m_requestrealm.str());\n");
 
         outs("#ifdef USE_CLIENT_THREAD\n");
         outs("\tesprequest->setThunkHandle(GetThunkingHandle());\n");
