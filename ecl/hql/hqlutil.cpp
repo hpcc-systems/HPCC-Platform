@@ -4265,6 +4265,19 @@ bool castPreservesValueAndOrder(IHqlExpression * expr)
     IHqlExpression * uncast = expr->queryChild(0);
     ITypeInfo * castType = expr->queryType();
     ITypeInfo * uncastType = uncast->queryType();
+    if (!preservesValue(castType, uncastType))
+        return false;
+    if (!preservesOrder(castType, uncastType))
+        return false;
+    return true;
+}
+
+bool castPreservesInformationAndOrder(IHqlExpression * expr)
+{
+    assertex(isCast(expr));
+    IHqlExpression * uncast = expr->queryChild(0);
+    ITypeInfo * castType = expr->queryType();
+    ITypeInfo * uncastType = uncast->queryType();
     if (castLosesInformation(castType, uncastType))
         return false;
     if (!preservesOrder(castType, uncastType))

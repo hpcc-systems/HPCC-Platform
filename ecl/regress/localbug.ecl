@@ -474,7 +474,6 @@ END;
 
 DG_MemFile := DATASET(DG_MemFileName,DG_MemFileRec,FLAT);
 
-#line(0)
 //UseStandardFiles
 //tidyoutput
 //nothor

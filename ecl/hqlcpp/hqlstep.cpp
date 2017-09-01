@@ -212,7 +212,7 @@ IHqlExpression * SteppingCondition::simplifyArgument(IHqlExpression * expr, Shar
         {
         case no_cast:
         case no_implicitcast:
-            if (!castPreservesValueAndOrder(expr))
+            if (!castPreservesInformationAndOrder(expr))
                 return expr;
             expr = expr->queryChild(0);
             break;
