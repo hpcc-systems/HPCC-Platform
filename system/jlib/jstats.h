@@ -20,6 +20,7 @@
 #define JSTATS_H
 
 #include "jlib.hpp"
+#include "jmutex.hpp"
 
 #include "jstatcodes.h"
 
@@ -407,7 +408,9 @@ public:
 
 
 protected:
-    virtual CNestedRuntimeStatisticMap & ensureNested();
+    virtual CNestedRuntimeStatisticMap *createNested() const;
+    CNestedRuntimeStatisticMap & ensureNested();
+    CNestedRuntimeStatisticMap *queryNested() const;
     void reportIgnoredStats() const;
     void mergeStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction)
     {
@@ -418,7 +421,8 @@ protected:
 protected:
     const StatisticsMapping & mapping;
     CRuntimeStatistic * values;
-    CNestedRuntimeStatisticMap * nested = nullptr;
+    std::atomic<CNestedRuntimeStatisticMap *> nested {nullptr};
+    static CriticalSection nestlock;
 };
 
 //NB: Serialize and deserialize are not currently implemented.
@@ -449,7 +453,7 @@ protected:
     };
 
 protected:
-    virtual CNestedRuntimeStatisticMap & ensureNested() override;
+    virtual CNestedRuntimeStatisticMap *createNested() const override;
 
 protected:
     DerivedStats * derived;
@@ -506,6 +510,7 @@ protected:
 
 protected:
     CIArrayOf<CNestedRuntimeStatisticCollection> map;
+    mutable ReadWriteLock lock;
 };
 
 class CNestedSummaryRuntimeStatisticMap : public CNestedRuntimeStatisticMap

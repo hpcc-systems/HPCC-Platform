@@ -86,7 +86,7 @@ public:
         return qname;
     }
 
-    void loadFile(const char *srcpath, const char *srcfile, const char *srcext="", IProperties *versions=NULL, bool loadincludes=false, bool isIncludedESDL=false, bool rollUp=false)
+    void loadFile(const char *srcpath, const char *srcfile, const char *srcext="", IProperties *versions=NULL, bool loadincludes=false, bool isIncludedESDL=false, bool rollUp=false, const char* includePath=NULL)
     {
         if (!srcfile || !*srcfile)
             throw MakeStringException(-1, "EsdlInclude no file name");
@@ -104,7 +104,7 @@ public:
             {
                 fileName.append(srcext);
                 StringBuffer esxml;
-                EsdlCmdHelper::convertECMtoESXDL(fileName.str(), srcfile, esxml, loadincludes && rollUp, true, true, isIncludedESDL);
+                EsdlCmdHelper::convertECMtoESXDL(fileName.str(), srcfile, esxml, loadincludes && rollUp, true, true, isIncludedESDL, includePath);
                 src = createPTreeFromXMLString(esxml, 0);
             }
             else if (!srcext || !*srcext || stricmp(srcext, XML_FILE_EXTENSION)==0)
@@ -176,7 +176,7 @@ public:
                 ForEachItemIn(idx, add_includes)
                 {
                     const char *file=add_includes.item(idx);
-                    loadFile(srcpath, file, srcext, versions, loadincludes, true, false);
+                    loadFile(srcpath, file, srcext, versions, loadincludes, true, false, includePath);
                 }
             }
         }
@@ -244,6 +244,14 @@ public:
                 continue;
             if (iter.matchOption(optECLHeaderBlock, ESDL_OPTION_ECL_HEADER_BLOCK))
                 continue;
+            StringAttr oneOption;
+            if (iter.matchOption(oneOption, ESDLOPT_INCLUDE_PATH) || iter.matchOption(oneOption, ESDLOPT_INCLUDE_PATH_S))
+            {
+                if(optIncludePath.length() > 0)
+                    optIncludePath.append(ENVSEPSTR);
+                optIncludePath.append(oneOption.get());
+                continue;
+            }
             if (matchCommandLineOption(iter, true)!=EsdlCmdOptionMatch)
                 return false;
         }
@@ -292,7 +300,7 @@ public:
 
         unsigned start = msTick();
         EsdlIndexedPropertyTrees trees;
-        trees.loadFile(srcPath.str(), srcName.str(), srcExt.str(), NULL, optProcessIncludes, false, optRollUpEclToSingleFile);
+        trees.loadFile(srcPath.str(), srcName.str(), srcExt.str(), NULL, optProcessIncludes, false, optRollUpEclToSingleFile, optIncludePath.str());
         DBGLOG("Time taken to load ESDL files %u", msTick() - start);
 
         StringBuffer idxxml("<types><type name=\"StringArrayItem\" src=\"share\"/>");
@@ -381,6 +389,7 @@ public:
                 "      --ecl-imports         Comma-delimited import list to be attached to output ECL\n"
                 "                            each entry generates a corresponding import *.<entry>\n"
                 "      --ecl-header          Text included in target header (must be valid ECL) \n"
+                "   " ESDLOPT_INCLUDE_PATH_USAGE
                 ,stdout);
     }
 

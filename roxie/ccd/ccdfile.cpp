@@ -2469,6 +2469,7 @@ public:
 
     virtual void releaseAll() override
     {
+        CriticalBlock b(crit);
         files.kill();
     }
 };

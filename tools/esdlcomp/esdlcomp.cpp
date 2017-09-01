@@ -1093,7 +1093,7 @@ char* getTargetBase(const char* outDir, const char* src)
         return strdup(src);
 }
 
-ESDLcompiler::ESDLcompiler(const char * sourceFile, bool generatefile, const char *outDir, bool outputIncludes_, bool isIncludedEsdl)
+ESDLcompiler::ESDLcompiler(const char * sourceFile, bool generatefile, const char *outDir, bool outputIncludes_, bool isIncludedEsdl, const char* includePath_)
 {
     outputIncludes = outputIncludes_;
     modules = NULL;
@@ -1109,6 +1109,9 @@ ESDLcompiler::ESDLcompiler(const char * sourceFile, bool generatefile, const cha
     StringBuffer prot;
     splitFilename(sourceFile, &prot, &srcDir, &name, &ext);
 
+    if (includePath_ && *includePath_)
+        includeDirs.appendList(includePath_, ENVSEPSTR);
+
     filename = strdup(sourceFile);
 
     yyin = fopen(sourceFile, "rt");
@@ -1116,15 +1119,10 @@ ESDLcompiler::ESDLcompiler(const char * sourceFile, bool generatefile, const cha
     {
         if (isIncludedEsdl)
         {
-            StringBuffer alternateExtFilename;
-            alternateExtFilename.setf("%s%s%s", (prot.length()>0) ? prot.str() : "", srcDir.str(), name.str());
-
-            if (stricmp(ext.str(), ESDL_FILE_EXTENSION)==0)
-                alternateExtFilename.append(LEGACY_FILE_EXTENSION);
-            else
-                alternateExtFilename.append(ESDL_FILE_EXTENSION);
-
-            yyin = fopen(alternateExtFilename.str(), "rt");
+            StringBuffer locatedFilePath;
+            bool located = locateIncludedFile(locatedFilePath, prot.str(), srcDir.str(), name.str(), ext.str());
+            if( located)
+                yyin = fopen(locatedFilePath.str(), "rt");
             if (!yyin)
             {
                 fprintf(stderr, "Fatal Error: Could not load included ESDL grammar %s\n", filename);
@@ -1153,6 +1151,57 @@ ESDLcompiler::ESDLcompiler(const char * sourceFile, bool generatefile, const cha
         free(targetBase);
     }
 }
+
+bool ESDLcompiler::locateIncludedFile(StringBuffer& filepath, const char* prot, const char* srcDir, const char* fname, const char* ext)
+{
+    StringBuffer alternateExtFilename;
+    alternateExtFilename.setf("%s%s%s", (prot && *prot) ? prot : "", srcDir, fname);
+
+    const char* alt_ext;
+    if (stricmp(ext, LEGACY_FILE_EXTENSION)==0)
+        alt_ext = ESDL_FILE_EXTENSION;
+    else
+        alt_ext = LEGACY_FILE_EXTENSION;
+    alternateExtFilename.append(alt_ext);
+
+    OwnedIFile fileInSrcDir = createIFile(alternateExtFilename.str());
+    if (fileInSrcDir->exists())
+    {
+        filepath.set(alternateExtFilename.str());
+        return true;
+    }
+
+    ForEachItemIn(x, includeDirs)
+    {
+        const char* dir = includeDirs.item(x);
+        if (dir && *dir)
+        {
+            StringBuffer pathInInclude(dir);
+            pathInInclude.trim();
+            if (pathInInclude.charAt(pathInInclude.length() - 1) != PATHSEPCHAR)
+                pathInInclude.append(PATHSEPCHAR);
+            pathInInclude.append(fname);
+            VStringBuffer pathInIncludeFull("%s%s", pathInInclude.str(), ext);
+            OwnedIFile fileInInclude = createIFile(pathInIncludeFull.str());
+            if (fileInInclude->exists())
+            {
+                filepath.set(pathInIncludeFull.str());
+                return true;
+            }
+            pathInIncludeFull.setf("%s%s", pathInInclude.str(), alt_ext);
+            OwnedIFile altFileInInclude = createIFile(pathInIncludeFull.str());
+            if (altFileInInclude->exists())
+            {
+                filepath.set(pathInIncludeFull.str());
+                return true;
+            }
+        }
+    }
+
+    filepath.clear();
+    return false;
+}
+
 
 ESDLcompiler::~ESDLcompiler()
 {

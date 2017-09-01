@@ -57,7 +57,7 @@ public:
             //prevent recursive adding of this same content
             added.setValue(source, true);
 
-            ESDLcompiler hc(source, out==NULL, outdir, outputIncludes, includedESDL);
+            ESDLcompiler hc(source, out==NULL, outdir, outputIncludes, includedESDL, includePath);
             hc.Process();
 
             if (optRecursive && hc.includes)
@@ -68,8 +68,8 @@ public:
                 IncludeInfo * ii;
                 for (ii=hc.includes;ii;ii=ii->next)
                 {
-                   subfile.setf("%s%s%s", srcDir.str(), ii->pathstr.str(), ESDL_FILE_EXTENSION);
-                   transform(subfile, outdir, out, outputIncludes, true);
+                    subfile.setf("%s%s%s", srcDir.str(), ii->pathstr.str(), ESDL_FILE_EXTENSION);
+                    transform(subfile, outdir, out, outputIncludes, true);
                 }
             }
 
@@ -83,9 +83,17 @@ public:
             fprintf(stdout, "ESDL definition: %s has already been loaded!\n", source);
     }
 
+    void setIncluePath(const char* path)
+    {
+        if (path && *path)
+            includePath.set(path);
+    }
+
 protected:
     bool      optRecursive;
     bool      optVerbose;
+
+    StringAttr includePath;
 
     AddedHash added;
 };

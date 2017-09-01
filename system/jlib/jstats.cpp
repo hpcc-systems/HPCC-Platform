@@ -1863,14 +1863,22 @@ void CRuntimeStatistic::merge(unsigned __int64 otherValue, StatsMergeAction merg
 CRuntimeStatisticCollection::~CRuntimeStatisticCollection()
 {
     delete [] values;
-    delete nested;
+    delete queryNested();
+}
+
+CNestedRuntimeStatisticMap * CRuntimeStatisticCollection::queryNested() const
+{
+    return nested.load(std::memory_order_relaxed);
+}
+
+CNestedRuntimeStatisticMap * CRuntimeStatisticCollection::createNested() const
+{
+    return new CNestedRuntimeStatisticMap;
 }
 
 CNestedRuntimeStatisticMap & CRuntimeStatisticCollection::ensureNested()
 {
-    if (!nested)
-        nested = new CNestedRuntimeStatisticMap;
-    return *nested;
+    return *querySingleton(nested, nestlock, [this]{ return this->createNested(); });
 }
 
 unsigned __int64 CRuntimeStatisticCollection::getSerialStatisticValue(StatisticKind kind) const
@@ -1996,8 +2004,9 @@ void CRuntimeStatisticCollection::recordStatistics(IStatisticGatherer & target) 
         }
     }
     reportIgnoredStats();
-    if (nested)
-        nested->recordStatistics(target);
+    CNestedRuntimeStatisticMap *qn = queryNested();
+    if (qn)
+        qn->recordStatistics(target);
 }
 
 void CRuntimeStatisticCollection::reportIgnoredStats() const
@@ -2018,8 +2027,9 @@ StringBuffer & CRuntimeStatisticCollection::toXML(StringBuffer &str) const
             str.appendf("<%s>%" I64F "d</%s>", name, value, name);
         }
     }
-    if (nested)
-        nested->toXML(str);
+    CNestedRuntimeStatisticMap *qn = queryNested();
+    if (qn)
+        qn->toXML(str);
     return str;
 }
 
@@ -2036,8 +2046,9 @@ StringBuffer & CRuntimeStatisticCollection::toStr(StringBuffer &str) const
             formatStatistic(str, value, kind);
         }
     }
-    if (nested)
-        nested->toStr(str);
+    CNestedRuntimeStatisticMap *qn = queryNested();
+    if (qn)
+        qn->toStr(str);
     return str;
 }
 
@@ -2114,10 +2125,11 @@ bool CRuntimeStatisticCollection::serialize(MemoryBuffer& out) const
     }
 
     bool nonEmpty = (numValid != 0);
-    out.append(nested != nullptr);
-    if (nested)
+    CNestedRuntimeStatisticMap *qn = queryNested();
+    out.append(qn != nullptr);
+    if (qn)
     {
-        if (nested->serialize(out))
+        if (qn->serialize(out))
             nonEmpty = true;
     }
     return nonEmpty;
@@ -2163,11 +2175,9 @@ CRuntimeSummaryStatisticCollection::~CRuntimeSummaryStatisticCollection()
     delete[] derived;
 }
 
-CNestedRuntimeStatisticMap & CRuntimeSummaryStatisticCollection::ensureNested()
+CNestedRuntimeStatisticMap * CRuntimeSummaryStatisticCollection::createNested() const
 {
-    if (!nested)
-        nested = new CNestedSummaryRuntimeStatisticMap;
-    return *nested;
+    return new CNestedSummaryRuntimeStatisticMap;
 }
 
 void CRuntimeSummaryStatisticCollection::mergeStatistic(StatisticKind kind, unsigned __int64 value)
@@ -2306,17 +2316,33 @@ void CNestedRuntimeStatisticCollection::updateDelta(CNestedRuntimeStatisticColle
 
 CNestedRuntimeStatisticCollection & CNestedRuntimeStatisticMap::addNested(const StatsScopeId & scope, const StatisticsMapping & mapping)
 {
-    ForEachItemIn(i, map)
+    unsigned mapSize;
+    unsigned entry;
     {
-        CNestedRuntimeStatisticCollection & cur = map.item(i);
-        if (cur.matches(scope))
-            return cur;
+        ReadLockBlock b(lock);
+        mapSize = map.length();
+        for (entry = 0; entry < mapSize; entry++)
+        {
+            CNestedRuntimeStatisticCollection & cur = map.item(entry);
+            if (cur.matches(scope))
+                return cur;
+        }
     }
-    CNestedRuntimeStatisticCollection * stats = new CNestedRuntimeStatisticCollection(scope, createStats(mapping));
-    map.append(*stats);
-    return *stats;
+    {
+        WriteLockBlock b(lock);
+        // Check no-one added anything between the read and write locks
+        mapSize = map.length();
+        for (; entry < mapSize; entry++)
+        {
+            CNestedRuntimeStatisticCollection & cur = map.item(entry);
+            if (cur.matches(scope))
+                return cur;
+        }
+        CNestedRuntimeStatisticCollection * stats = new CNestedRuntimeStatisticCollection(scope, createStats(mapping));
+        map.append(*stats);
+        return *stats;
+    }
 }
-
 
 void CNestedRuntimeStatisticMap::deserialize(MemoryBuffer& in)
 {
@@ -2350,6 +2376,7 @@ void CNestedRuntimeStatisticMap::deserializeMerge(MemoryBuffer& in)
 
 void CNestedRuntimeStatisticMap::merge(const CNestedRuntimeStatisticMap & other)
 {
+    ReadLockBlock b(other.lock);
     ForEachItemIn(i, other.map)
     {
         CNestedRuntimeStatisticCollection & cur = other.map.item(i);
@@ -2360,6 +2387,7 @@ void CNestedRuntimeStatisticMap::merge(const CNestedRuntimeStatisticMap & other)
 
 void CNestedRuntimeStatisticMap::updateDelta(CNestedRuntimeStatisticMap & target, const CNestedRuntimeStatisticMap & source)
 {
+    ReadLockBlock b(source.lock);
     ForEachItemIn(i, source.map)
     {
         CNestedRuntimeStatisticCollection & curSource = source.map.item(i);
@@ -2371,6 +2399,7 @@ void CNestedRuntimeStatisticMap::updateDelta(CNestedRuntimeStatisticMap & target
 
 bool CNestedRuntimeStatisticMap::serialize(MemoryBuffer& out) const
 {
+    ReadLockBlock b(lock);
     out.appendPacked(map.ordinality());
     bool nonEmpty = false;
     ForEachItemIn(i, map)
@@ -2383,12 +2412,14 @@ bool CNestedRuntimeStatisticMap::serialize(MemoryBuffer& out) const
 
 void CNestedRuntimeStatisticMap::recordStatistics(IStatisticGatherer & target) const
 {
+    ReadLockBlock b(lock);
     ForEachItemIn(i, map)
         map.item(i).recordStatistics(target);
 }
 
 StringBuffer & CNestedRuntimeStatisticMap::toStr(StringBuffer &str) const
 {
+    ReadLockBlock b(lock);
     ForEachItemIn(i, map)
         map.item(i).toStr(str);
     return str;
@@ -2396,6 +2427,7 @@ StringBuffer & CNestedRuntimeStatisticMap::toStr(StringBuffer &str) const
 
 StringBuffer & CNestedRuntimeStatisticMap::toXML(StringBuffer &str) const
 {
+    ReadLockBlock b(lock);
     ForEachItemIn(i, map)
         map.item(i).toXML(str);
     return str;

@@ -166,4 +166,3 @@ int es_createFile(const char* src, const char* tail, const char* ext)
     free(path);
     return h;
 }
-

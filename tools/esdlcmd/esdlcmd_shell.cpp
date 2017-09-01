@@ -186,6 +186,7 @@ void EsdlCMDShell::usage()
            "   ecl               Generate ECL from ESDL definition.\n"
            "   xsd               Generate XSD from ESDL definition.\n"
            "   wsdl              Generate WSDL from ESDL definition.\n"
+           "   java              Generate Java code from ESDL definition.\n"
            "   publish           Publish ESDL Definition for ESP use.\n"
            "   list-definitions  List all ESDL definitions.\n"
            "   get-definition    Get ESDL definition.\n"
