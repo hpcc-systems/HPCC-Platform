@@ -1881,6 +1881,8 @@ CNestedRuntimeStatisticMap & CRuntimeStatisticCollection::ensureNested()
     return *querySingleton(nested, nestlock, [this]{ return this->createNested(); });
 }
 
+CriticalSection CRuntimeStatisticCollection::nestlock;
+
 unsigned __int64 CRuntimeStatisticCollection::getSerialStatisticValue(StatisticKind kind) const
 {
     unsigned __int64 value = getStatisticValue(kind);
