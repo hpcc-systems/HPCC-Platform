@@ -230,7 +230,7 @@ void CSoapRequestBinding::post(const char *proxy, const char* url, IRpcResponseB
     if (readTimeoutSecs_)
         soapclient.setReadTimeoutSecs(readTimeoutSecs_);
 
-    soapclient.setUsernameToken(getUserId(), getPassword(), getRealm());
+    soapclient.setUsernameToken(getRequestUserId(), getRequestPassword(), getRequestRealm());
 
     int result = soapclient.postRequest(soapaction, rpccall, rpcresponse);
 

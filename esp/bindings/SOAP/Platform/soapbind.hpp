@@ -163,14 +163,14 @@ public:
     void setProxyAddress(const char *proxy){proxy_.clear().append(proxy);}  
     const char * getProxyAddress(){return proxy_.str();}
 
-    void setUserId(const char *userid){userid_.clear().append(userid);} 
-    const char * getUserId(){return userid_.str();}
+    void setRequestUserId(const char *userid){userid_.clear().append(userid);}
+    const char * getRequestUserId(){return userid_.str();}
 
-    void setPassword(const char *password){password_.clear().append(password);} 
-    const char * getPassword(){return password_.str();}
+    void setRequestPassword(const char *password){password_.clear().append(password);}
+    const char * getRequestPassword(){return password_.str();}
 
-    void setRealm(const char *realm){realm_.clear().append(realm);} 
-    const char * getRealm(){return realm_.str();}
+    void setRequestRealm(const char *realm){realm_.clear().append(realm);}
+    const char * getRequestRealm(){return realm_.str();}
 
     void post(const char *proxy, const char* url, IRpcResponseBinding& response, const char *action=NULL);
 
