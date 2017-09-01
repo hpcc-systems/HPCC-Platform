@@ -42,6 +42,7 @@
 #include "rtlds_imp.hpp"
 #include "rtlfield.hpp"
 #include "roxiemem.hpp"
+#include <time.h>
 
 #include <vector>
 
@@ -185,10 +186,17 @@ namespace couchbaseembed
     class CouchbaseConnection : public CInterface
     {
     public:
-        inline CouchbaseConnection(bool useSSL, const char * host, unsigned port, const char * bucketname, const char * user, const char * password, const char * connOptions)
+        CouchbaseConnection(bool useSSL, const char * host, unsigned port, const char * bucketname, const char * password, const char * connOptions)
         {
-            m_connectionString.setf("couchbase%s://%s:%d/%s%s", useSSL ? "s" : "", host, port, bucketname, connOptions);
-            m_pCouchbaseClient = new Couchbase::Client(m_connectionString.str(), password);
+            StringBuffer connectionString;
+            
+            makeConnectionString(useSSL, host, port, bucketname, connOptions, connectionString);
+            m_pCouchbaseClient = new Couchbase::Client(connectionString.str(), password);
+        }
+
+        CouchbaseConnection(const StringBuffer& connectionString, const char * password)
+        {
+            m_pCouchbaseClient = new Couchbase::Client(connectionString.str(), password);
         }
 
         virtual ~CouchbaseConnection()
@@ -200,21 +208,25 @@ namespace couchbaseembed
             }
         }
 
-        inline void connect()
+        static void makeConnectionString(bool useSSL, const char * host, unsigned port, const char * bucketname, const char * connOptions, StringBuffer& out)
         {
-            m_connectionStatus = m_pCouchbaseClient->connect();
-            if (!m_connectionStatus.success())
-                failx("Failed to connect to couchbase instance: %s Reason: %s", m_connectionString.str(), m_connectionStatus.description());
+            out.setf("couchbase%s://%s:%d/%s%s", useSSL ? "s" : "", host, port, bucketname, connOptions);
         }
 
         Couchbase::Query * query(Couchbase::QueryCommand * qcommand);
 
+        inline void connect() { m_connectionStatus = m_pCouchbaseClient->connect(); }
+        inline const Couchbase::Status& getConnectionStatus() const { return m_connectionStatus; }
+        inline time_t getTimeTouched() const { return timeLastUsed; }
+        inline void updateTimeTouched() {timeLastUsed = time(NULL); }
+
     private:
-        StringBuffer m_connectionString;
         Couchbase::Client * m_pCouchbaseClient;
         Couchbase::Status  m_connectionStatus;
 
         CouchbaseConnection(const CouchbaseConnection &);
+
+        time_t timeLastUsed;
     };
 
     enum PathNodeType {CPNTScalar, CPNTDataset, CPNTSet};
@@ -445,7 +457,7 @@ namespace couchbaseembed
            unsigned checkNextParam(const char *name);
 
            const IContextLogger &logctx;
-           Owned<CouchbaseConnection>    m_oCBConnection;
+           CouchbaseConnection         * m_oCBConnection;
            Couchbase::Query            * m_pQuery;
            Couchbase::QueryCommand     * m_pQcmd;
            Owned<IPropertyTreeIterator>  m_resultrow;

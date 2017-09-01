@@ -494,6 +494,8 @@ void CEspBinding::getNavigationData(IEspContext &context, IPropertyTree & data)
         if (params.length())
             params.setCharAt(0,'&'); //the entire params string will follow the initial param: "?form"
 
+        folder->addPropBool("@isDynamicBinding", isDynamicBinding());
+
         MethodInfoArray methods;
         wsdl->getQualifiedNames(context, methods);
         ForEachItemIn(idx, methods)

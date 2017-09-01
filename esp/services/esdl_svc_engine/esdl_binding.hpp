@@ -377,6 +377,7 @@ public:
 
     bool usesESDLDefinition(const char * name, int version);
     bool usesESDLDefinition(const char * id);
+    virtual bool isDynamicBinding() const override { return true; }
     virtual unsigned getCacheMethodCount(){return 0;}
 
 private:

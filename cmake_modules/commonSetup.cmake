@@ -108,6 +108,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   else()
       option(USE_TBB "Enable Threading Building Block support" ON)
       option(USE_TBBMALLOC "Enable Threading Building Block scalable allocator proxy support" ON)
+      option(USE_TBBMALLOC_ROXIE "Enable Threading Building Block scalable allocator proxy support in Roxie" OFF)
   endif()
   option(LOGGING_SERVICE "Configure use of logging service" ON)
 
