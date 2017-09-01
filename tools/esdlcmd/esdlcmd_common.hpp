@@ -103,7 +103,11 @@ typedef IEsdlCommand *(*EsdlCommandFactory)(const char *cmdname);
 #define ESDL_OPTION_ECL_INCLUDE_LIST    "--ecl-imports"
 #define ESDL_OPTION_ECL_HEADER_BLOCK    "--ecl-header"
 
-
+#define ESDLOPT_INCLUDE_PATH            "--include-path"
+#define ESDLOPT_INCLUDE_PATH_S          "-I"
+#define ESDLOPT_INCLUDE_PATH_ENV        "ESDL_INCLUDE_PATH"
+#define ESDLOPT_INCLUDE_PATH_INI        "esdlIncludePath"
+#define ESDLOPT_INCLUDE_PATH_USAGE      "   -I, --include-path <include path>    Locations to look for included esdl files\n"
 bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNamedValue> &values);
 
 enum esdlCmdOptionMatchIndicator
@@ -155,7 +159,7 @@ public:
         return new EsdlCmdHelper();
     }
 
-    void loadDefinition(const char * sourceFileName, const char * serviceName, double version)
+    void loadDefinition(const char * sourceFileName, const char * serviceName, double version, const char* includePath)
     {
         if (!esdlDef.get())
             esdlDef.set(createEsdlDefinition());
@@ -168,7 +172,7 @@ public:
             if (stricmp(extension.str(),LEGACY_FILE_EXTENSION)==0 || stricmp(extension.str(),ESDL_FILE_EXTENSION)==0)
             {
                 StringBuffer esxml;
-                EsdlCmdHelper::convertECMtoESXDL(sourceFileName, filename.str(), esxml, true, verbose, false, true);
+                EsdlCmdHelper::convertECMtoESXDL(sourceFileName, filename.str(), esxml, true, verbose, false, true, includePath);
                 if (!serviceName || !*serviceName)
                 {
                     Owned<IPropertyTree> esdldeftree = createPTreeFromXMLString(esxml);
@@ -195,9 +199,9 @@ public:
         }
     }
 
-    void getServiceESXDL(const char * sourceFileName, const char * serviceName, StringBuffer & xmlOut, double version, IProperties *opts=NULL, unsigned flags=0)
+    void getServiceESXDL(const char * sourceFileName, const char * serviceName, StringBuffer & xmlOut, double version, IProperties *opts=NULL, unsigned flags=0, const char* includePath=NULL)
     {
-        loadDefinition(sourceFileName, serviceName, version);
+        loadDefinition(sourceFileName, serviceName, version, includePath);
 
         if (esdlDef)
         {
@@ -214,12 +218,13 @@ public:
         }
     }
 
-    static void convertECMtoESXDL(const char * filepath, const char * esxdlname, StringBuffer & esxml, bool recursive, bool verbose, bool outputincludes, bool isIncludedESDL)
+    static void convertECMtoESXDL(const char * filepath, const char * esxdlname, StringBuffer & esxml, bool recursive, bool verbose, bool outputincludes, bool isIncludedESDL, const char* includePath)
     {
         if (verbose)
             fprintf(stdout,"Converting ESDL file %s to XML\n", filepath);
 
         Owned<Esdl2Esxdl> cmd = new Esdl2Esxdl(recursive, verbose);
+        cmd->setIncluePath(includePath);
         esxml.setf( "<esxdl name=\"%s\">", esxdlname);
         cmd->transform(filepath, "", &esxml, outputincludes, isIncludedESDL); //output to buffer
         esxml.append("</esxdl>");
@@ -310,6 +315,7 @@ public:
 public:
     StringAttr optSource;
     StringAttr optOutDirPath;
+    StringBuffer optIncludePath;
 };
 
 class EsdlHelperConvertCmd : public EsdlConvertCmd

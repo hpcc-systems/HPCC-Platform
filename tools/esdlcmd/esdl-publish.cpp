@@ -21,7 +21,7 @@
 
 #include "esdlcmd_core.hpp"
 #include "build-config.h"
-
+#include "esdlcmdutils.hpp"
 
 class EsdlPublishCmdCommon : public EsdlCmdCommon
 {
@@ -122,8 +122,7 @@ public:
         Owned<IClientPublishESDLDefinitionRequest> request = esdlConfigClient->createPublishESDLDefinitionRequest();
 
         StringBuffer esxml;
-        esdlHelper->getServiceESXDL(optSource.get(), optESDLService.get(), esxml, 0, NULL, (DEPFLAG_INCLUDE_TYPES & ~DEPFLAG_INCLUDE_METHOD));
-
+        esdlHelper->getServiceESXDL(optSource.get(), optESDLService.get(), esxml, 0, NULL, (DEPFLAG_INCLUDE_TYPES & ~DEPFLAG_INCLUDE_METHOD), optIncludePath.str());
         if (esxml.length()==0)
         {
             fprintf(stderr,"\nESDL Definition for service %s could not be loaded from: %s\n", optESDLService.get(), optSource.get());
@@ -160,6 +159,7 @@ public:
                 "   <servicename>               The ESDL defined ESP service to publish, optional if ESDL definition contains a single service definition\n"
                 "Options (use option flag followed by appropriate value):\n"
                 "   --overwrite                 Overwrite the latest version of this ESDL Definition\n"
+                ESDLOPT_INCLUDE_PATH_USAGE
                 );
 
         EsdlPublishCmdCommon::usage();
@@ -222,13 +222,35 @@ public:
        return true;
     }
 
+    bool parseCommandLineOption(ArgvIterator &iter)
+    {
+        StringAttr oneOption;
+        if (iter.matchOption(oneOption, ESDLOPT_INCLUDE_PATH) || iter.matchOption(oneOption, ESDLOPT_INCLUDE_PATH_S))
+        {
+            if(optIncludePath.length() > 0)
+                optIncludePath.append(ENVSEPSTR);
+            optIncludePath.append(oneOption.get());
+            return true;
+        }
+
+        if (EsdlPublishCmdCommon::parseCommandLineOption(iter))
+            return true;
+
+        return false;
+    }
+
     bool finalizeOptions(IProperties *globals)
     {
+        extractEsdlCmdOption(optIncludePath, globals, ESDLOPT_INCLUDE_PATH_ENV, ESDLOPT_INCLUDE_PATH_INI, NULL, NULL);
+
         if (optSource.isEmpty())
             throw MakeStringException( 0, "Source ESDL definition file (ecm|esdl|xml) must be provided" );
 
         return EsdlPublishCmdCommon::finalizeOptions(globals);
     }
+
+private:
+    StringBuffer optIncludePath;
 };
 
 class EsdlBindServiceCmd : public EsdlPublishCmdCommon
