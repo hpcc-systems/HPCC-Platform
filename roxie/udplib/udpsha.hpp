@@ -28,8 +28,11 @@ extern roxiemem::IDataBufferManager *bufferManager;
 typedef bool (*PKT_CMP_FUN) (void *pkData, void *key);
 
 #define UDP_SEQUENCE_COMPLETE 0x80000000
-#define UDP_SEQUENCE_MORE 0x40000000
-#define UDP_SEQUENCE_BITS (UDP_SEQUENCE_COMPLETE|UDP_SEQUENCE_MORE)
+
+// Flag bits in pktSeq field
+#define UDP_PACKET_COMPLETE           0x80000000  // Packet completes a single slave request
+#define UDP_PACKET_RESERVED           0x40000000  // Not used - could move UDP_SEQUENCE_COMPLETE here?
+#define UDP_PACKET_SEQUENCE_MASK      0x3fffffff
 
 struct UdpPacketHeader 
 {
@@ -38,7 +41,7 @@ struct UdpPacketHeader
     unsigned       nodeIndex;   // Node this message came from
     unsigned       msgSeq;      // sequence number of messages ever sent from given node, used with ruid to tell which packets are from same message
     unsigned       pktSeq;      // sequence number of this packet within the message (top bit signifies final packet)
-    unsigned       udpSequence; // packet sequence from this slave to this server - used to detect lost packets and resend (independent of how formed into messages). Top bits used for flow control info
+    unsigned       udpSequence; // Top bits used for flow control info
     // information below is duplicated in the Roxie packet header - we could remove? However, would make aborts harder, and at least ruid is needed at receive end
     ruid_t         ruid;        // The uid allocated by the server to this slave transaction
     unsigned       msgId;       // sub-id allocated by the server to this request within the transaction
@@ -173,64 +176,45 @@ public:
 #define HANDLE_PRAGMA_PACK_PUSH_POP
 #endif
 
-#define MAX_RESEND_TABLE_SIZE 256 
-
 #pragma pack(push,1)
 struct UdpPermitToSendMsg
 {
     // New static fields must be included inside this block, so that
     // size calculations work correctly
-    struct MsgHeader {
-        unsigned short  length;
-        unsigned short  cmd;
-        unsigned short  destNodeIndex;
-        unsigned short  max_data;
-        unsigned        lastSequenceSeen;
-        unsigned        missingCount;
+    unsigned short  length;
+    unsigned short  cmd;
+    unsigned short  destNodeIndex;
+    unsigned short  max_data;
 #ifdef CRC_MESSAGES
-        unsigned        crc;
+    unsigned        crc;
 #endif
-    } hdr;
-    // WARNING: Do not add any field below this line, if it must be included in the message
-    unsigned        missingSequences[MAX_RESEND_TABLE_SIZE]; // only [missingCount] actually sent
-
-    StringBuffer &toString(StringBuffer &str) const
-    {
-        str.appendf("lastSeen=%u missingCount=%u", hdr.lastSequenceSeen, hdr.missingCount);
-        if (hdr.missingCount)
-        {
-            str.append(" missing=");
-            for (unsigned j = 0; j < hdr.missingCount; j++)
-                str.appendf(j?",%u":"%u", missingSequences[j]);
-        }
-        return str;
-    }
 
 #ifdef CRC_MESSAGES
     unsigned calcCRC()
     {
-        size_t len = sizeof(MsgHeader) - sizeof(hdr.crc);
+        size_t len = sizeof(UdpPermitToSendMsg) - sizeof(crc);
         unsigned expectedCRC = crc32((const char *) this, len, 0);
-        if (missingCount)
-            expectedCRC = crc32((const char *) &missingSequences, missingCount * sizeof(missingSequences[0]), expectedCRC); 
         return expectedCRC;
     }
 #endif
 
     UdpPermitToSendMsg()
     {
-        hdr.length = hdr.cmd = hdr.destNodeIndex = hdr.max_data = 0;
-        hdr.lastSequenceSeen = 0;
-        hdr.missingCount = 0;
+        length = cmd = destNodeIndex = max_data = 0;
 #ifdef CRC_MESSAGES
-        hdr.crc = calcCRC();
+        crc = calcCRC();
 #endif
     }
 
     UdpPermitToSendMsg(const UdpPermitToSendMsg &from)
     {
-        hdr = from.hdr;
-        memcpy(missingSequences, from.missingSequences, from.hdr.missingCount * sizeof(missingSequences[0]));
+        length = from.length;
+        cmd = from.cmd;
+        destNodeIndex = from.destNodeIndex;
+        max_data = from.max_data;
+#ifdef CRC_MESSAGES
+        crc = from.crc;
+#endif
     }
 };
 
