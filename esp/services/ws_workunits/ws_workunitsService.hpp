@@ -206,6 +206,7 @@ public:
     bool onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEspWUInfoResponse &resp);
     bool onWUInfoDetails(IEspContext &context, IEspWUInfoRequest &req, IEspWUInfoResponse &resp);
     bool onWUFile(IEspContext &context,IEspWULogFileRequest &req, IEspWULogFileResponse &resp);
+    bool onWUDownloadFiles(IEspContext &context,IEspWUDownloadFilesRequest &req, IEspWUDownloadFilesResponse &resp);
     bool onWUResult(IEspContext &context,IEspWUResultRequest &req, IEspWUResultResponse &resp);
     bool onWUFullResult(IEspContext &context, IEspWUFullResultRequest &req, IEspWUFullResultResponse &resp);
     bool onWUResultView(IEspContext &context, IEspWUResultViewRequest &req, IEspWUResultViewResponse &resp);
@@ -283,6 +284,9 @@ private:
     IPropertyTree* getWorkunitArchive(IEspContext &context, WsWuInfo& winfo, const char* wuid, unsigned cacheMinutes);
     void readSuperFiles(IEspContext &context, IReferencedFile* rf, const char* fileName, IReferencedFileList* wufiles, IArrayOf<IEspQuerySuperFile>* files);
     IReferencedFile* getReferencedFileByName(const char* name, IReferencedFileList* wufiles);
+    void readWUFile(const char *wuid, WsWuInfo &winfo, IConstWUFileOption &item, bool forDownload, MemoryBuffer &mb, StringBuffer &fileName, StringBuffer &fileMimeType);
+    void zipAFolderToMB(const char *folderToZIP, const char *zipFileName, bool gzip, MemoryBuffer &mb);
+    void setAttachmentFileName(IEspContext &context, const char *fileName);
 
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;

@@ -355,6 +355,41 @@ ESPStruct [nil_remove] ResubmittedWU
     string ParentWUID;
 };
 
+ESPenum WUFileType : string
+{
+    XML("XML"),
+    CPP("cpp"),
+    DLL("dll"),
+    Res("res"),
+    WUECL("WUECL"),
+    ThorLog("ThorLog"),
+    ThorSlaveLog("ThorSlaveLog"),
+    EclAgentLog("EclAgentLog"),
+    ArchiveQuery("ArchiveQuery"),
+};
+
+ESPStruct WUFileOption
+{
+    ESPenum WUFileType FileType;
+    string Name; //CPP, ThorLog, and EclAgentLog: required; XML: optional
+    string IPAddress; //CPP/XML: required; ThorSlaveLog: required for legacy WU 
+    string Description; //CPP/XML: required
+    string Process; //EclAgentLog and ThorSlaveLog: optional
+    string LogDate; //ThorSlaveLog: required
+    string ClusterGroup; //ThorSlaveLog: not required for legacy WU
+    string PlainText; //XML: optional
+    int SlaveNumber(1); //ThorSlaveLog: optional
+    int64 SizeLimit(0);
+};
+
+ESPenum WUFileDownloadOption : int
+{
+    OriginalText(0, "OriginalText"),
+    Attachment(1,   "Attachment"),
+    ZIP(2,          "ZIP"),
+    GZIP(3,         "GZIP")
+};
+
 ESPrequest [nil_remove] WUCreateRequest
 {
 };
@@ -752,6 +787,26 @@ ESPresponse [exceptions_inline] WULogFileResponse
     [min_ver("1.36")] string QueryId;
     [min_ver("1.36")] string FileName;
     [min_ver("1.38")] string DaliServer;
+    [http_content("application/octet-stream")] binary thefile;
+};
+
+ESPrequest WUDownloadFilesRequest
+{
+    string Wuid;
+    string QuerySet;
+    string Query;
+    ESPenum WUFileDownloadOption DownloadOption;
+    ESParray<ESPstruct WUFileOption> WUFileOptions;
+};
+
+ESPresponse [exceptions_inline] WUDownloadFilesResponse
+{
+    string Wuid;
+    string QuerySet;
+    string QueryName;
+    string QueryId;
+    string FileName; //For DLL
+    string DaliServer; //For DLL
     [http_content("application/octet-stream")] binary thefile;
 };
 
@@ -1875,6 +1930,7 @@ ESPservice [
     
     //ESPmethod WUAction(WUActionRequest, WUActionResponse); 
     ESPmethod [cache_seconds(60)]WUFile(WULogFileRequest, WULogFileResponse);
+    ESPmethod [cache_seconds(60)]WUDownloadFiles(WUDownloadFilesRequest, WUDownloadFilesResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/graphStats.xslt")] WUProcessGraph(WUProcessGraphRequest, WUProcessGraphResponse); 
     ESPmethod [cache_seconds(30), min_ver("1.57")] WUGetGraphNameAndTypes(WUGetGraphNameAndTypesRequest, WUGetGraphNameAndTypesResponse);
     ESPmethod [cache_seconds(30)] WUGetGraph(WUGetGraphRequest, WUGetGraphResponse);
