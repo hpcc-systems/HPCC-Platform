@@ -5945,30 +5945,10 @@ bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, HqlQueryContext & query
     return true;
 }
 
-class WuTimingUpdater : implements ITimeReportInfo
-{
-public:
-    WuTimingUpdater(IWorkUnit * _wu) { wu = _wu; }
-
-    virtual void report(const char * scope, const char * description, const __int64 totaltime, const __int64 maxtime, const unsigned count)
-    {
-        StatisticScopeType scopeType = SSTcompilestage;
-        StatisticKind kind = StTimeTotalExecute;
-        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, description, totaltime, count, maxtime, StatsMergeReplace);
-    }
-
-protected:
-    IWorkUnit * wu;
-};
-
-
 void HqlCppTranslator::ensureWorkUnitUpdated()
 {
     if (timeReporter)
-    {
-        WuTimingUpdater updater(wu());
-        timeReporter->report(updater);
-    }
+        updateWorkunitTimings(wu(), SSTcompilestage, StTimeTotalExecute, timeReporter);
 }
 
 double HqlCppTranslator::getComplexity(IHqlExpression * expr, ClusterType cluster)

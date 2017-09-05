@@ -123,7 +123,7 @@ public:
 
 interface ITimeReportInfo
 {
-    virtual void report(const char * scope, const char * description, const __int64 totaltime, const __int64 maxtime, const unsigned count) = 0;
+    virtual void report(const char * scope, const __int64 totaltime, const __int64 maxtime, const unsigned count) = 0;
 };
 class StringBuffer;
 class MemoryBuffer;
@@ -131,20 +131,12 @@ struct ITimeReporter : public IInterface
 {
   virtual void addTiming(const char * scope, cycle_t cycles) = 0;
   virtual void mergeTiming(const char * scope, cycle_t totalcycles, cycle_t maxcycles, const unsigned count) = 0;
-  virtual unsigned numSections() = 0;
-  virtual __int64 getTime(unsigned idx) = 0;
-  virtual __int64 getMaxTime(unsigned idx) = 0;
-  virtual unsigned getCount(unsigned idx) = 0;
-  virtual StatisticKind getTimerType(unsigned idx) = 0;
-  virtual StatisticScopeType getScopeType(unsigned idx) = 0;
-  virtual StringBuffer &getScope(unsigned idx, StringBuffer &s) = 0;
   virtual StringBuffer &getTimings(StringBuffer &s) = 0;
   virtual void printTimings() = 0;
   virtual void reset() = 0;
-  virtual void mergeInto(ITimeReporter &other) = 0;
+  virtual void mergeInto(ITimeReporter &other) = 0; // Used internally
   virtual void merge(ITimeReporter &other)= 0;
   virtual void report(ITimeReportInfo &cb) = 0;
-  virtual void serialize(MemoryBuffer &mb) = 0;
 };
 
 extern jlib_decl cycle_t oneSecInCycles;
@@ -202,11 +194,10 @@ protected:
 #if defined(TIMING)
 extern jlib_decl ITimeReporter * queryActiveTimer();
 extern jlib_decl ITimeReporter *createStdTimeReporter();
-extern jlib_decl ITimeReporter *createStdTimeReporter(MemoryBuffer &mb);
 #define TIME_SECTION(title)   TimeSection   glue(_timer,__LINE__)(title);
 #define MTIME_SECTION(master,title)  MTimeSection   glue(mtimer,__LINE__)(master, title);
 #else
-#define TIME_SECTION(title)   
+#define TIME_SECTION(title)
 #define MTIME_SECTION(master,title)
 #endif
 

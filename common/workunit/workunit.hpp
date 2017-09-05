@@ -1554,6 +1554,7 @@ extern WORKUNIT_API void associateLocalFile(IWUQuery * query, WUFileType type, c
 interface ITimeReporter;
 extern WORKUNIT_API void updateWorkunitTimeStat(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * description, unsigned __int64 value);
 extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, ITimeReporter *timer);
+extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, StatisticScopeType scopeType, StatisticKind kind, ITimeReporter *timer);
 extern WORKUNIT_API void getWorkunitTotalTime(IConstWorkUnit* workunit, const char* creator, unsigned __int64 & totalTimeNs, unsigned __int64 & totalThisTimeNs);
 extern WORKUNIT_API IConstWUStatistic * getStatistic(IConstWorkUnit * wu, const IStatisticsFilter & filter);
 

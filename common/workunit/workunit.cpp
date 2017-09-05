@@ -11786,17 +11786,37 @@ extern WORKUNIT_API void updateWorkunitTimeStat(IWorkUnit * wu, StatisticScopeTy
     wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, description, value, 1, 0, StatsMergeReplace);
 }
 
+class WuTimingUpdater : implements ITimeReportInfo
+{
+public:
+    WuTimingUpdater(IWorkUnit * _wu, StatisticScopeType _scopeType, StatisticKind _kind)
+    : wu(_wu), scopeType(_scopeType), kind(_kind)
+    { }
+
+    virtual void report(const char * scope, const __int64 totaltime, const __int64 maxtime, const unsigned count)
+    {
+        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, nullptr, totaltime, count, maxtime, StatsMergeReplace);
+    }
+
+protected:
+    IWorkUnit * wu;
+    StatisticScopeType scopeType;
+    StatisticKind kind;
+};
+
+
 extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, ITimeReporter *timer)
 {
-    StringBuffer scope;
-    for (unsigned i = 0; i < timer->numSections(); i++)
-    {
-        StatisticScopeType scopeType= timer->getScopeType(i);
-        timer->getScope(i, scope.clear());
-        StatisticKind kind = timer->getTimerType(i);
-        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, NULL, timer->getTime(i), timer->getCount(i), timer->getMaxTime(i), StatsMergeReplace);
-    }
+    WuTimingUpdater target(wu, SSTsection, StTimeTotalExecute);
+    timer->report(target);
 }
+
+extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, StatisticScopeType scopeType, StatisticKind kind, ITimeReporter *timer)
+{
+    WuTimingUpdater target(wu, scopeType, kind);
+    timer->report(target);
+}
+
 
 extern WORKUNIT_API void getWorkunitTotalTime(IConstWorkUnit* workunit, const char* creator, unsigned __int64 & totalTimeNs, unsigned __int64 & totalThisTimeNs)
 {
