@@ -90,9 +90,9 @@
               <xsl:value-of disable-output-escaping="yes" select="$indent" />
               <xsl:value-of disable-output-escaping="yes" select="$indent" />
               <xsl:value-of disable-output-escaping="yes" select="$indent" />
-              <xsl:if test="AuthDomains/AuthDomain[1]">
+              <xsl:if test="AuthDomain[1]">
                 <AuthDomains>
-                  <xsl:for-each select="AuthDomains/AuthDomain">
+                  <xsl:for-each select="AuthDomain">
                     <xsl:value-of disable-output-escaping="yes" select="$break" />
                     <xsl:value-of disable-output-escaping="yes" select="$indent" />
                     <xsl:value-of disable-output-escaping="yes" select="$indent" />
@@ -352,7 +352,7 @@
     <xsl:template match="@buildSet|@maxRequestEntityLength"/>
 
     <!--don't produce in output -->
-    <xsl:template match="EspProcess/AuthDomains"/>
+    <xsl:template match="EspProcess/AuthDomain"/>
 
     <!--don't produce in output -->
     <xsl:template match="EspProcess/EspControlBinding"/>

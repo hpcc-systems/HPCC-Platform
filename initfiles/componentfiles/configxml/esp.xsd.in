@@ -375,7 +375,7 @@
 	            </xs:appinfo>
 	          </xs:annotation>
 	          <xs:complexType>
-	            <xs:attribute name="domainName" type="xs:string" use="optional" default="">
+	            <xs:attribute name="domainName" type="xs:string" use="required" default="default">
 	              <xs:annotation>
 	                <xs:appinfo>
 	                  <tooltip>Unique string to identify an auth domain in case > 1 domains in an esp</tooltip>
@@ -426,8 +426,7 @@
                 <xs:attribute name="serverSessionTimeoutMinutes" use="optional" default="240">
                   <xs:annotation>
                     <xs:appinfo>
-                      <tooltip>Considering network delay, serverSessionTimeoutMinutes should be greater than clientSessionTimeoutMinutes.
-                      If serverSessionTimeoutMinutes < clientSessionTimeoutMinutes, serverSessionTimeoutMinutes = 2 * clientSessionTimeoutMinutes. -1 for never time out.</tooltip>
+                      <tooltip>Considering network delay, serverSessionTimeoutMinutes should be greater than clientSessionTimeoutMinutes.\nIf serverSessionTimeoutMinutes is less than clientSessionTimeoutMinutes, serverSessionTimeoutMinutes = 2 * clientSessionTimeoutMinutes. -1 for never time out.</tooltip>
                       <colIndex>6</colIndex>
                     </xs:appinfo>
                   </xs:annotation>
