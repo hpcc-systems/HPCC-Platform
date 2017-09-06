@@ -41,8 +41,6 @@ using roxiemem::IRowManager;
  #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
 #endif
 
-bool streamingSupported = false;
-
 atomic_t unwantedDiscarded;
 atomic_t packetsRetried;
 atomic_t packetsAbandoned;
@@ -73,7 +71,6 @@ class PackageSequencer : public CInterface, implements IInterface
 
     MemoryBuffer metadata;
     InterruptableSemaphore dataAvailable; // MORE - need to work out when to interrupt it!
-    SpinLock streamLock; // Needed if streaming is supported since data can be read as blocks are being written. MORE - not 100% sure it is needed as semaphore probably protects adequately.
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -104,15 +101,12 @@ public:
     
     DataBuffer *next(DataBuffer *after)
     {
-        dataAvailable.wait(); // MORE - when do I interrupt? Should I time out? Will potentially block indefinately if sender restarts (leading to an abandoned packet) or stalls.
+        dataAvailable.wait(); // MORE - when do I interrupt? Should I time out? Will potentially block indefinitely if sender restarts (leading to an abandoned packet) or stalls.
         DataBuffer *ret;
-        {
-            SpinBlock b(streamLock);
-            if (after)
-                ret = after->msgNext; 
-            else
-                ret = firstPacket;
-        }
+        if (after)
+            ret = after->msgNext;
+        else
+            ret = firstPacket;
         if (checkTraceLevel(TRACE_MSGPACK, 5))
         {
             if (ret)
@@ -141,7 +135,6 @@ public:
 
         DataBuffer *finger;
         DataBuffer *prev;
-        SpinBlock b(streamLock);
         if (lastContiguousPacket)
         {
             UdpPacketHeader *oldHdr = (UdpPacketHeader*) lastContiguousPacket->data;
@@ -529,26 +522,23 @@ public:
         // MORE - I think we leak a PackageSequencer for messages that we only receive parts of - maybe only an issue for "catchall" case
         CriticalBlock b(mapCrit);
         PackageSequencer *pkSqncr = mapping.getValue(puid);
-        bool isNew = false;
         bool isComplete = false;
         if (!pkSqncr) 
         {
             pkSqncr = new PackageSequencer;
             mapping.setValue(puid, pkSqncr);
             pkSqncr->Release();
-            isNew = true;
         }
         isComplete = pkSqncr->insert(dataBuff);
-        if (streamingSupported ? isNew : isComplete)
+        if (isComplete)
         {
             queueCrit.enter();
             pkSqncr->Link();
             queue.push(pkSqncr);
             sem.signal();
             queueCrit.leave();
-        }
-        if (isComplete)
             mapping.remove(puid);
+        }
         return(true);
     }
 
