@@ -1306,6 +1306,7 @@ const char *getOpString(node_operator op)
     case no_left: return "LEFT";
     case no_right: return "RIGHT";
     case no_outofline: return "OUTOFLINE";
+    case no_inline: return "INLINE";
     case no_dedup: return "DEDUP";
     case no_enth: return "ENTH";
     case no_sample: return "SAMPLE";
@@ -1756,7 +1757,7 @@ const char *getOpString(node_operator op)
 
     case no_unused6:
     case no_unused13: case no_unused14: case no_unused15:
-    case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
+    case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
     case no_unused50: case no_unused52:
     case no_unused80:
@@ -2233,6 +2234,7 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_thisnode:
     case no_sectioninput:
     case no_outofline:
+    case no_inline:
         if (expr->isDataset())
             return childdataset_dataset_noscope;
         return childdataset_none;
@@ -2570,6 +2572,7 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_thisnode:
     case no_sectioninput:
     case no_outofline:
+    case no_inline:
         if (dataset->isDataset())
             return 1;
         return 0;
@@ -2740,6 +2743,7 @@ bool definesColumnList(IHqlExpression * dataset)
     case no_sectioninput:
     case no_related:
     case no_outofline:
+    case no_inline:
     case no_fieldmap:
     case no_owned_ds:
         return false;
@@ -4996,6 +5000,7 @@ IHqlExpression *CHqlExpressionWithType::clone(HqlExprArray &newkids)
     switch (op)
     {
     case no_outofline:
+    case no_inline:
         return createWrapper(op, newkids);
     case no_embedbody:
         {
@@ -9339,6 +9344,7 @@ bool canBeDelayed(IHqlExpression * expr)
     case no_newkeyindex:
     case no_forwardscope:
     case no_type:
+    case no_inline:
         return false;
     case no_remotescope:
     case no_scope:
@@ -11531,8 +11537,10 @@ struct CallExpansionContext
             {
             case no_outofline:
                 return forceOutOfLineExpansion;
+            case no_inline:
+                return true;
             }
-            return true;
+            return expandNestedCalls;
         }
         return false;
     }
@@ -11701,7 +11709,7 @@ protected:
         }
 
         OwnedHqlExpr transformed = QuickHqlTransformer::createTransformedBody(expr);
-        if ((op == no_call) && ctx.expandNestedCalls)
+        if (op == no_call)
         {
             if (ctx.expandFunctionCall(transformed))
                 return expandFunctionCall(ctx, transformed);
@@ -11772,6 +11780,9 @@ IHqlExpression * ParameterBindTransformer::createBoundBody(IHqlExpression *funcd
                 newFuncdef.setown(completeTransform(funcdef, args));
                 break;
             }
+        case no_inline:
+            body = body->queryChild(0);
+            //fall through
         default:
             //No arguments to the function => transforming will do nothing
             if (actuals.ordinality() == 0)
