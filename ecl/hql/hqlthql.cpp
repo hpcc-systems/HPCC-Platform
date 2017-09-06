@@ -2626,6 +2626,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
         case no_alias:
         case no_activerow:
         case no_outofline:
+        case no_inline:
             if (expandProcessed)
                 defaultToECL(expr, s, inType);
             else

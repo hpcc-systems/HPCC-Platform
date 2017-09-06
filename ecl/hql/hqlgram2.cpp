@@ -900,6 +900,16 @@ IHqlExpression * HqlGram::convertToOutOfLineFunction(const ECLlocation & errpos,
     return LINK(expr);
 }
 
+IHqlExpression * HqlGram::convertToInlineFunction(const ECLlocation & errpos, IHqlExpression  * expr)
+{
+    if (expr->getOperator() != no_inline)
+    {
+        if (queryParametered())
+            return createWrapper(no_inline, LINK(expr));
+    }
+    return LINK(expr);
+}
+
 IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpression * embedText, IHqlExpression * language, IHqlExpression *attribs)
 {
     HqlExprArray args;
@@ -1748,7 +1758,8 @@ IHqlExpression * HqlGram::forceEnsureExprType(IHqlExpression * expr, ITypeInfo *
 {
     //Ensure the no_outofline remains the top most node.  I suspect this casting should occur much earlier
     //or the out of line node should be added much later.
-    if (expr->getOperator() == no_outofline)
+    node_operator op = expr->getOperator();
+    if ((op == no_outofline) || (op == no_inline))
     {
         HqlExprArray args;
         args.append(*forceEnsureExprType(expr->queryChild(0), type));
@@ -7581,6 +7592,21 @@ static void unwindExtraFields(HqlExprArray & fields, IHqlExpression * expr)
     }
 }
 
+
+void HqlGram::checkConcreteRecord(attribute & cur)
+{
+    IHqlExpression * record = cur.queryExpr();
+    if (record->getOperator() != no_record)
+    {
+        OwnedHqlExpr bad = cur.getExpr();
+        if (!bad->isFullyBound())
+            reportError(ERR_CONCRETE_RECORD, cur, "Record cannot contain unresolved function calls");
+        else
+            reportError(ERR_CONCRETE_RECORD, cur, "Expected a concrete record");
+
+        cur.setExpr(LINK(bad->queryRecord()));
+    }
+}
 
 IHqlExpression * HqlGram::createRecordUnion(IHqlExpression * left, IHqlExpression * right, const attribute & errpos)
 {

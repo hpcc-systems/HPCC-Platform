@@ -528,6 +528,7 @@ unsigned getOperatorMetaFlags(node_operator op)
 //Multiple types
     case no_outofline:
     case no_create_initializer:
+    case no_inline:
 
 //Actions
     case no_buildindex:
@@ -632,7 +633,7 @@ unsigned getOperatorMetaFlags(node_operator op)
 
     case no_unused6:
     case no_unused13: case no_unused14: case no_unused15:
-    case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
+    case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
     case no_unused50: case no_unused52:
     case no_unused80:
@@ -2572,6 +2573,7 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
     case no_spill:
     case no_spillgraphresult:
     case no_outofline:
+    case no_inline:
     case no_globalscope:
     case no_throughaggregate:
     case no_alias_scope:

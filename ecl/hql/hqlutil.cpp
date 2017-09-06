@@ -5057,7 +5057,7 @@ void getStoredDescription(StringBuffer & text, IHqlExpression * sequence, IHqlEx
             break;
         case ResultSequenceInternal:
             text.append("Internal");
-            if (includeInternalName)
+            if (includeInternalName && name)
                 name->toString(text.append("(")).append(")");
             break;
         default:

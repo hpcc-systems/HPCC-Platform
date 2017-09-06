@@ -512,6 +512,7 @@ public:
     bool isSingleValuedExpressionList(const attribute & attr);
     bool convertAllToAttribute(attribute &atr);
     IHqlExpression * convertToOutOfLineFunction(const ECLlocation & errpos, IHqlExpression  * expr);
+    IHqlExpression * convertToInlineFunction(const ECLlocation & errpos, IHqlExpression  * expr);
 
     void ensureBoolean(attribute &a);
     void ensureDataset(attribute & attr);
@@ -805,6 +806,7 @@ protected:
     void normalizeStoredNameExpression(attribute & a);
     void checkPatternFailure(attribute & attr);
     void checkDistributer(const ECLlocation & errPos, HqlExprArray & args);
+    void checkConcreteRecord(attribute & cur);
     IHqlExpression * createScopedSequenceExpr();
     IHqlExpression * createPatternOr(HqlExprArray & args, const attribute & errpos);
     IHqlExpression * mapAlienArg(IHqlSimpleScope * scope, IHqlExpression * expr);
