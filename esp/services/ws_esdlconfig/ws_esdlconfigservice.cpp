@@ -514,7 +514,7 @@ bool CWsESDLConfigEx::onPublishESDLDefinition(IEspContext &context, IEspPublishE
         }
 
         msg.appendf("Successfully published %s", newqueryid.str());
-        ESPLOG(LogMin, "ESDL Definition '%s' published by user='%s'", newqueryid.str(), user);
+        ESPLOG(LogMin, "ESDL Definition '%s' published by user='%s'", newqueryid.str(), (user && *user) ? user : "Anonymous");
 
         double ver = context.getClientVersion();
         if (ver >= 1.2)
@@ -730,7 +730,7 @@ int CWsESDLConfigEx::publishESDLBinding(const char * bindingName,
     conn->close(false);
     message.setf("Successfully configured Service '%s', associated with ESDL definition '%s', on ESP '%s' and binding '%s'", esdlServiceName, newId.str(), espProcName, bindingName);
 
-    ESPLOG(LogMin, "ESDL Binding '%s' published by user='%s' overwrite flag: %s", newId.str(), user, overwrite ? "TRUE" : "FALSE");
+    ESPLOG(LogMin, "ESDL Binding '%s' published by user='%s' overwrite flag: %s", newId.str(), (user && *user) ? user : "Anonymous", overwrite ? "TRUE" : "FALSE");
     return 0;
 }
 
@@ -1220,7 +1220,7 @@ bool CWsESDLConfigEx::onConfigureESDLBindingMethod(IEspContext &context, IEspCon
                     {
                         double ver = context.getClientVersion();
 
-                        ESPLOG(LogMin, "ESDL Binding '%s.%d' configured method '%s' by user='%s' overwrite flag: %s", esdlDefinitionName.str(), esdlver, username.str(), methodName, override ? "TRUE" : "FALSE");
+                        ESPLOG(LogMin, "ESDL Binding '%s.%d' configured method '%s' by user='%s' overwrite flag: %s", esdlDefinitionName.str(), esdlver, username.isEmpty() ? "Anonymous" : username.str(), methodName, override ? "TRUE" : "FALSE");
 
                         if (ver >= 1.2)
                         {
@@ -1649,7 +1649,7 @@ bool CWsESDLConfigEx::onDeleteESDLDefinition(IEspContext &context, IEspDeleteESD
 
         StringBuffer username;
         context.getUserID(username);
-        ESPLOG(LogMin, "ESDL Definition '%s' Deleted by user='%s'", esdlDefinitionId.str(), username.str());
+        ESPLOG(LogMin, "ESDL Definition '%s' Deleted by user='%s'", esdlDefinitionId.str(), username.isEmpty() ? "Anonymous" : username.str());
         resp.setDeletedTree(thexml.str());
         resp.updateStatus().setCode(0);
         resp.updateStatus().setDescription("Deleted ESDL Definition");
@@ -1701,7 +1701,7 @@ bool CWsESDLConfigEx::onDeleteESDLBinding(IEspContext &context, IEspDeleteESDLBi
         toXML(oldEnvironment.get(), thexml,0,0);
         StringBuffer username;
         context.getUserID(username);
-        ESPLOG(LogMin, "ESDL Definition '%s' Deleted by user='%s'", espBindingId.str(), username.str());
+        ESPLOG(LogMin, "ESDL Definition '%s' Deleted by user='%s'", espBindingId.str(), username.isEmpty() ? "Anonymous" : username.str());
 
         resp.setDeletedTree(thexml.str());
         resp.updateStatus().setCode(0);
