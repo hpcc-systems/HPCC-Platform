@@ -751,7 +751,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         udpSnifferEnabled = topology->getPropBool("@udpSnifferEnabled", true);
         udpInlineCollation = topology->getPropBool("@udpInlineCollation", false);
         udpInlineCollationPacketLimit = topology->getPropInt("@udpInlineCollationPacketLimit", 50);
-        udpSendCompletedInData = topology->getPropBool("@udpSendCompletedInData", false);
+        udpSendCompletedInData = !topology->getPropBool("@udpSendCompletedPackets", false);
         udpRetryBusySenders = topology->getPropInt("@udpRetryBusySenders", 0);
 
         // Historically, this was specified in seconds. Assume any value <= 10 is a legacy value specified in seconds!

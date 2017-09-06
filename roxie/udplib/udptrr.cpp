@@ -559,8 +559,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     b = bufferManager->allocate();
                     receive_socket->read(b->data, 1, DATA_PAYLOAD, res, 5);
                     UdpPacketHeader &hdr = *(UdpPacketHeader *) b->data;
-                    unsigned flowBits = hdr.udpSequence;
-                    if (flowBits & UDP_SEQUENCE_COMPLETE)
+                    if (hdr.pktSeq & UDP_PACKET_ENDBURST)
                     {
                         parent.manager->completed(hdr.nodeIndex);
                     }

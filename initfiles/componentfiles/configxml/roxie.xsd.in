@@ -1111,10 +1111,10 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="udpSendCompletedInData" type="xs:boolean" use="optional" default="false">
+    <xs:attribute name="udpSendCompletedPackets" type="xs:boolean" use="optional" default="false">
       <xs:annotation>
         <xs:appinfo>
-          <tooltip>Controls whether UDP completion packets are sent in data packets if possible</tooltip>
+          <tooltip>Controls whether UDP completion packets are sent in separate data packets.</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
