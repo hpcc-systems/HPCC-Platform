@@ -1205,6 +1205,7 @@ bool ESDLcompiler::locateIncludedFile(StringBuffer& filepath, const char* prot, 
 
 ESDLcompiler::~ESDLcompiler()
 {
+    close(esxdlo);
     free(packagename);
     free(filename);
 
