@@ -1689,10 +1689,11 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
         resp.setIsLibrary(query->getPropBool("@isLibrary"));
         SCMStringBuffer s;
         resp.setWUSnapShot(cw->getSnapshot(s).str()); //Label
-        Owned<IConstWUStatistic> whenCompiled = cw->getStatistic(NULL, NULL, StWhenCompiled);
-        if (whenCompiled)
+
+        stat_type whenCompiled;
+        if (cw->getStatistic(whenCompiled, "", StWhenCompiled))
         {
-            whenCompiled->getFormattedValue(s);
+            formatStatistic(s.s.clear(), whenCompiled, StWhenCompiled);
             resp.setCompileTime(s.str());
         }
 

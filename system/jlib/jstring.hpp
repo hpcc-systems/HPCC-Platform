@@ -134,6 +134,7 @@ public:
         return clear().append(value.str());
     }
     StringBuffer& operator=(StringBuffer&& value);
+    explicit operator bool() const { return (length() != 0); }
 
     StringBuffer &  appendlong(long value);
     StringBuffer &  appendulong(unsigned long value);

@@ -359,8 +359,10 @@ static void createDefaultDescription(StringBuffer & description, StatisticKind k
             unsigned subId = atoi(subgraph + strlen(SubGraphScopePrefix));
 
             formatGraphTimerLabel(description, graphname, 0, subId);
+            return;
         }
     }
+    describeScope(description, scope);
 }
 
 /* Represents a single statistic */
@@ -1968,6 +1970,8 @@ protected:
 class StatisticAggregator : public CInterfaceOf<IWuScopeVisitor>
 {
 public:
+    StatisticAggregator(StatisticKind _search) : filter(_search) {}
+
     virtual void noteAttribute(WuAttr attr, const char * value) override { throwUnexpected(); }
     virtual void noteHint(const char * kind, const char * value) override { throwUnexpected(); }
 protected:
@@ -1977,6 +1981,8 @@ protected:
 class SimpleAggregator : public StatisticAggregator
 {
 public:
+    SimpleAggregator(StatisticKind _search) : StatisticAggregator(_search) {}
+
     virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & extra) override
     {
         if (filter.matches(kind, value, extra))
@@ -1987,6 +1993,24 @@ public:
     //with a noteAggregate(value, variant, value, grouping)?
 protected:
     StatsAggregation summary;
+};
+
+
+class SimpleReferenceAggregator : public StatisticAggregator
+{
+public:
+    SimpleReferenceAggregator(StatisticKind _search, StatsAggregation & _summary) : StatisticAggregator(_search), summary(_summary) {}
+
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & extra) override
+    {
+        if (filter.matches(kind, value, extra))
+            summary.noteValue(value);
+    }
+
+    //How should these be reported?  Should there be a playAggregates(IWuAggregatedScopeVisitor)
+    //with a noteAggregate(value, variant, value, grouping)?
+protected:
+    StatsAggregation & summary;
 };
 
 
@@ -2378,10 +2402,10 @@ WuScopeFilter::WuScopeFilter(const char * filter)
     finishedFilter();
 }
 
-void WuScopeFilter::addFilter(const char * filter)
+WuScopeFilter & WuScopeFilter::addFilter(const char * filter)
 {
     if (!filter)
-        return;
+        return *this;
 
     StringAttr option;
     StringAttr arg;
@@ -2414,7 +2438,7 @@ void WuScopeFilter::addFilter(const char * filter)
             break;
         }
         case FOsource:
-            setSource(arg);
+            addSource(arg);
             break;
         case FOwhere: // where[stat<op>value]
             addRequiredStat(arg);
@@ -2429,7 +2453,7 @@ void WuScopeFilter::addFilter(const char * filter)
             setIncludeScopeType(arg);
             break;
         case FOproperties:
-            addOutputProperties(arg);
+            addOutputProperties((WuPropertyTypes)getEnum(arg, propertyMappings));
             break;
         case FOstatistic:
             addOutputStatistic(arg);
@@ -2441,8 +2465,7 @@ void WuScopeFilter::addFilter(const char * filter)
             addOutputHint(arg);
             break;
         case FOmeasure:
-            desiredMeasure = queryMeasure(arg);
-            properties |= PTstatistics;
+            setMeasure(arg);
             break;
         case FOversion:
             minVersion = atoi64(arg);
@@ -2451,24 +2474,28 @@ void WuScopeFilter::addFilter(const char * filter)
             throw makeStringExceptionV(0, "Unrecognised filter option: %s", option.str());
         }
     }
+    return *this;
 }
 
-void WuScopeFilter::addScope(const char * scope)
+WuScopeFilter & WuScopeFilter::addScope(const char * scope)
 {
     scopeFilter.addScope(scope);
+    return *this;
 }
 
-void WuScopeFilter::addScopeType(const char * scopeType)
+WuScopeFilter & WuScopeFilter::addScopeType(const char * scopeType)
 {
     scopeFilter.addScopeType(queryScopeType(scopeType));
+    return *this;
 }
 
-void WuScopeFilter::addId(const char * id)
+WuScopeFilter & WuScopeFilter::addId(const char * id)
 {
     scopeFilter.addId(id);
+    return *this;
 }
 
-void WuScopeFilter::addOutput(const char * prop)
+WuScopeFilter & WuScopeFilter::addOutput(const char * prop)
 {
     if (queryStatisticKind(prop) != StKindNone)
         addOutputStatistic(prop);
@@ -2476,11 +2503,16 @@ void WuScopeFilter::addOutput(const char * prop)
         addOutputAttribute(prop);
     else
         addOutputHint(prop);
+    return *this;
 }
 
-void WuScopeFilter::addOutputStatistic(const char * prop)
+WuScopeFilter & WuScopeFilter::addOutputStatistic(const char * prop)
 {
-    StatisticKind stat = queryStatisticKind(prop);
+    return addOutputStatistic(queryStatisticKind(prop));
+}
+
+WuScopeFilter & WuScopeFilter::addOutputStatistic(StatisticKind stat)
+{
     if (stat != StKindNone)
     {
         if (stat != StKindAll)
@@ -2491,11 +2523,16 @@ void WuScopeFilter::addOutputStatistic(const char * prop)
     }
     else
         properties &= ~PTstatistics;
+    return *this;
 }
 
-void WuScopeFilter::addOutputAttribute(const char * prop)
+WuScopeFilter & WuScopeFilter::addOutputAttribute(const char * prop)
 {
-    WuAttr attr = queryWuAttribute(prop);
+    return addOutputAttribute(queryWuAttribute(prop));
+}
+
+WuScopeFilter & WuScopeFilter::addOutputAttribute(WuAttr attr)
+{
     if (attr != WANone)
     {
         if (attr != WAAll)
@@ -2506,10 +2543,11 @@ void WuScopeFilter::addOutputAttribute(const char * prop)
     }
     else
         properties &= ~PTattributes;
+    return *this;
 }
 
 
-void WuScopeFilter::addOutputHint(const char * prop)
+WuScopeFilter & WuScopeFilter::addOutputHint(const char * prop)
 {
     if (strieq(prop, "none"))
     {
@@ -2524,30 +2562,53 @@ void WuScopeFilter::addOutputHint(const char * prop)
             desiredHints.kill();
         properties |= PThints;
     }
+    return *this;
 }
 
-void WuScopeFilter::setIncludeMatch(bool value)
+WuScopeFilter & WuScopeFilter::setIncludeMatch(bool value)
 {
     include.matchedScope = value;
+    return *this;
 }
 
-void WuScopeFilter::setIncludeNesting(unsigned depth)
+WuScopeFilter & WuScopeFilter::setIncludeNesting(unsigned depth)
 {
     include.nestedDepth = depth;
+    return *this;
 }
 
-void WuScopeFilter::setIncludeScopeType(const char * scopeType)
+WuScopeFilter & WuScopeFilter::setIncludeScopeType(const char * scopeType)
 {
     include.scopeTypes.append(queryScopeType(scopeType));
+    return *this;
 }
 
-void WuScopeFilter::addOutputProperties(const char * prop)
+WuScopeFilter & WuScopeFilter::setMeasure(const char * measure)
 {
-    WuPropertyTypes mask = (WuPropertyTypes)getEnum(prop, propertyMappings);
+    desiredMeasure = queryMeasure(measure);
+    properties |= PTstatistics;
+    return *this;
+}
+
+WuScopeFilter & WuScopeFilter::addOutputProperties(WuPropertyTypes mask)
+{
     if (properties == PTnone)
         properties = mask;
     else
         properties |= mask;
+    return *this;
+}
+
+WuScopeFilter & WuScopeFilter::addRequiredStat(StatisticKind statKind, stat_type lowValue, stat_type highValue)
+{
+    requiredStats.emplace_back(statKind, lowValue, highValue);
+    return *this;
+}
+
+WuScopeFilter & WuScopeFilter::addRequiredStat(StatisticKind statKind)
+{
+    requiredStats.emplace_back(statKind, 0, MaxStatisticValue);
+    return *this;
 }
 
 //This does not strictly validate - invalid filters may be accepted
@@ -2609,18 +2670,20 @@ void WuScopeFilter::addRequiredStat(const char * filter)
     requiredStats.emplace_back(statKind, lowValue, highValue);
 }
 
-void WuScopeFilter::setSource(const char * source)
+WuScopeFilter & WuScopeFilter::addSource(const char * source)
 {
     WuScopeSourceFlags mask = (WuScopeSourceFlags)getEnum(source, sourceMappings);
     if (!mask)
         sourceFlags = mask;
     else
         sourceFlags |= mask;
+    return *this;
 }
 
-void WuScopeFilter::setDepth(unsigned low, unsigned high)
+WuScopeFilter & WuScopeFilter::setDepth(unsigned low, unsigned high)
 {
     scopeFilter.setDepth(low, high);
+    return *this;
 }
 
 bool WuScopeFilter::matchOnly(StatisticScopeType scopeType) const
@@ -2646,6 +2709,8 @@ void WuScopeFilter::finishedFilter()
     optimized = true;
 
     preFilterScope = include.matchedScope && (include.nestedDepth == 0);
+    if (scopeFilter.canAlwaysPreFilter())
+        preFilterScope = true;
 
     //If the source flags have not been explicitly set then calculate which sources will provide the results
     if (!sourceFlags)
@@ -3399,10 +3464,12 @@ public:
             { return c->getRunningGraph(graphName, subId); }
     virtual IConstWUStatisticIterator & getStatistics(const IStatisticsFilter * filter) const
             { return c->getStatistics(filter); }
-    virtual IConstWUStatistic * getStatistic(const char * creator, const char * scope, StatisticKind kind) const
-            { return c->getStatistic(creator, scope, kind); }
+    virtual IConstWUStatistic * getStatistic(const char * scope, StatisticKind kind) const
+            { return c->getStatistic(scope, kind); }
     virtual IConstWUScopeIterator & getScopeIterator(const WuScopeFilter & filter) const override
             { return c->getScopeIterator(filter); }
+    virtual bool getStatistic(stat_type & value, const char * scope, StatisticKind kind) const override
+            { return c->getStatistic(value, scope, kind); }
     virtual IStringVal & getSnapshot(IStringVal & str) const
             { return c->getSnapshot(str); } 
     virtual const char *queryUser() const
@@ -4831,6 +4898,7 @@ public:
         conn = sdsManager->connect(wuRoot.str(), session, RTM_LOCK_WRITE|RTM_CREATE_UNIQUE, SDS_LOCK_TIMEOUT);
         conn->queryRoot()->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
         conn->queryRoot()->setPropInt("@wuidVersion", WUID_VERSION);
+        conn->queryRoot()->setProp("@totalThorTime", "");
         return new CDaliWorkUnit(conn, secmgr, secuser);
     }
 
@@ -7516,6 +7584,7 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool a
     p->setProp("@codeVersion", fromP->queryProp("@codeVersion"));
     p->setProp("@buildVersion", fromP->queryProp("@buildVersion"));
     p->setProp("@eclVersion", fromP->queryProp("@eclVersion"));
+    p->setProp("@totalThorTime", fromP->queryProp("@totalThorTime"));
     p->setProp("@hash", fromP->queryProp("@hash"));
     p->setPropBool("@cloneable", true);
     p->setPropBool("@isClone", true);
@@ -7986,10 +8055,20 @@ void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char *
         else
             statTree->removeProp("@max");
     }
-    if (creatorType==SCTsummary && kind==StTimeElapsed && isGlobalScope(scope))
+
+    //Whenever a graph time is updated recalculate the total time spent in thor, and save it
+    if ((scopeType == SSTgraph) && (kind == StTimeElapsed))
     {
+        _loadStatistics();
+        stat_type totalTime = 0;
+        ForEachItemIn(i, statistics)
+        {
+            IConstWUStatistic & cur = statistics.item(i);
+            if ((cur.getScopeType() == SSTgraph) && (cur.getKind() == StTimeElapsed))
+                totalTime += cur.getValue();
+        }
         StringBuffer t;
-        formatTimeCollatable(t, value, false);
+        formatTimeCollatable(t, totalTime, false);
         p->setProp("@totalThorTime", t);
     }
 }
@@ -8012,17 +8091,37 @@ IConstWUStatisticIterator& CLocalWorkUnit::getStatistics(const IStatisticsFilter
     return * new CCompoundIteratorOf<IConstWUStatisticIterator, IConstWUStatistic>(localStats, graphStats);
 }
 
-IConstWUStatistic * CLocalWorkUnit::getStatistic(const char * creator, const char * scope, StatisticKind kind) const
+IConstWUStatistic * CLocalWorkUnit::getStatistic(const char * scope, StatisticKind kind) const
 {
+#if 0
+    //MORE: Optimize this....
+    WuScopeFilter filter;
+    filter.addScope(scope).setIncludeNesting(0).finishedFilter();
+    Owned<IConstWUScopeIterator> stats = &getScopeIterator(&filter);
+    if (stats->first())
+        return stats->getStat(kind, value);
+    return NULL;
+#else
     //MORE: Optimize this....
     StatisticsFilter filter;
-    filter.setCreator(creator);
     filter.setScope(scope);
     filter.setKind(kind);
     Owned<IConstWUStatisticIterator> stats = &getStatistics(&filter);
     if (stats->first())
         return LINK(&stats->query());
     return NULL;
+#endif
+}
+
+bool CLocalWorkUnit::getStatistic(stat_type & value, const char * scope, StatisticKind kind) const
+{
+    //MORE: Optimize this....
+    WuScopeFilter filter;
+    filter.addScope(scope).setIncludeNesting(0).addRequiredStat(kind).addOutputStatistic(kind).finishedFilter();
+    Owned<IConstWUScopeIterator> stats = &getScopeIterator(filter);
+    if (stats->first())
+        return stats->getStat(kind, value);
+    return false;
 }
 
 IConstWUScopeIterator & CLocalWorkUnit::getScopeIterator(const WuScopeFilter & filter) const
@@ -11016,7 +11115,10 @@ StatisticKind CLocalWUStatistic::getKind() const
 
 const char * CLocalWUStatistic::queryScope() const
 {
-    return p->queryProp("@scope");
+    const char * scope = p->queryProp("@scope");
+    if (scope && streq(scope, LEGACY_GLOBAL_SCOPE))
+        scope = GLOBAL_SCOPE;
+    return scope;
 }
 
 StatisticMeasure CLocalWUStatistic::getMeasure() const
@@ -12790,42 +12892,18 @@ extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, StatisticScopeTyp
 }
 
 
-extern WORKUNIT_API void getWorkunitTotalTime(IConstWorkUnit* workunit, const char* creator, unsigned __int64 & totalTimeNs, unsigned __int64 & totalThisTimeNs)
-{
-    StatisticsFilter summaryTimeFilter(SCTsummary, creator, SSTglobal, GLOBAL_SCOPE, SMeasureTimeNs, StTimeElapsed);
-    Owned<IConstWUStatistic> totalThorTime = getStatistic(workunit, summaryTimeFilter);
-    if (!totalThorTime)
-    {
-        StatisticsFilter legacySummaryTimeFilter(SCTsummary, creator, SSTglobal, LEGACY_GLOBAL_SCOPE, SMeasureTimeNs, StTimeElapsed);
-        totalThorTime.setown(getStatistic(workunit, legacySummaryTimeFilter));
-    }
-
-    Owned<IConstWUStatistic> totalThisThorTime = workunit->getStatistic(queryStatisticsComponentName(), GLOBAL_SCOPE, StTimeElapsed);
-    if (!totalThisThorTime)
-        totalThisThorTime.setown(workunit->getStatistic(queryStatisticsComponentName(), LEGACY_GLOBAL_SCOPE, StTimeElapsed));
-
-    if (totalThorTime)
-        totalTimeNs = totalThorTime->getValue();
-    else
-        totalTimeNs = 0;
-    if (totalThisThorTime)
-        totalThisTimeNs = totalThisThorTime->getValue();
-    else
-        totalThisTimeNs = 0;
-}
-
 extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind)
 {
     wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
 }
 
 
-IConstWUStatistic * getStatistic(IConstWorkUnit * wu, const IStatisticsFilter & filter)
+void aggregateStatistic(StatsAggregation & result, IConstWorkUnit * wu, const WuScopeFilter & filter, StatisticKind search)
 {
-    Owned<IConstWUStatisticIterator> iter = &wu->getStatistics(&filter);
-    if (iter->first())
-        return &OLINK(iter->query());
-    return NULL;
+    SimpleReferenceAggregator aggregator(search, result);
+    Owned<IConstWUScopeIterator> it = &wu->getScopeIterator(filter);
+    ForEach(*it)
+        it->playProperties(PTstatistics, aggregator);
 }
 
 

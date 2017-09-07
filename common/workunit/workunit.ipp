@@ -112,6 +112,7 @@ template <typename T, typename IT> struct CachedTags
 
     operator IArrayOf<IT>&() { return tags; }
     unsigned ordinality() const { return tags.ordinality(); }
+    IT & item(unsigned i) const { return tags.item(i); }
 
     void kill()
     {
@@ -302,8 +303,9 @@ public:
     virtual IConstWUResult * getTemporaryByName(const char * name) const;
     virtual IConstWUResultIterator & getTemporaries() const;
     virtual IConstWUStatisticIterator & getStatistics(const IStatisticsFilter * filter) const;
-    virtual IConstWUStatistic * getStatistic(const char * creator, const char * scope, StatisticKind kind) const;
+    virtual IConstWUStatistic * getStatistic(const char * scope, StatisticKind kind) const;
     virtual IConstWUScopeIterator & getScopeIterator(const WuScopeFilter & filter) const override;
+    virtual bool getStatistic(stat_type & value, const char * scope, StatisticKind kind) const override;
     virtual IConstWUWebServicesInfo * getWebServicesInfo() const;
     virtual IStringVal & getXmlParams(IStringVal & params, bool hidePasswords) const;
     virtual const IPropertyTree *getXmlParams() const;

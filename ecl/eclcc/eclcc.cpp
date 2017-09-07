@@ -1979,6 +1979,26 @@ void EclCompileInstance::checkEclVersionCompatible()
     ::checkEclVersionCompatible(errorProcessor, eclVersion);
 }
 
+class StatsLogger : public WuScopeVisitorBase
+{
+public:
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & cur) override
+    {
+        const char * scope = cur.queryScope();
+        OwnedPTree tree = createPTree("stat", ipt_fast);
+        tree->setProp("@kind", queryStatisticName(cur.getKind()));
+        tree->setProp("@scope", scope);
+        tree->setPropInt("@scopeType", (unsigned)cur.getScopeType());
+        tree->setPropInt64("@value", cur.getValue());
+        tree->setPropInt64("@max", cur.getMax());
+        tree->setPropInt64("@count", cur.getCount());
+
+        StringBuffer msg;
+        toXML(tree, msg, 0, XML_Embed);
+        fprintf(stderr, "%s\n", msg.str());
+    }
+};
+
 void EclCompileInstance::logStats(bool logTimings)
 {
     if (wu && wu->getDebugValueBool("logCompileStats", false))
@@ -1996,23 +2016,11 @@ void EclCompileInstance::logStats(bool logTimings)
 
     if (logTimings)
     {
-        Owned<IConstWUStatisticIterator> stats = &wu->getStatistics(nullptr);
-        ForEach(*stats)
-        {
-            IConstWUStatistic & cur = stats->query();
-            const char * scope = cur.queryScope();
-            OwnedPTree tree = createPTree("stat", ipt_fast);
-            tree->setProp("@kind", queryStatisticName(cur.getKind()));
-            tree->setProp("@scope", scope);
-            tree->setPropInt("@scopeType", (unsigned)cur.getScopeType());
-            tree->setPropInt64("@value", cur.getValue());
-            tree->setPropInt64("@max", cur.getMax());
-            tree->setPropInt64("@count", cur.getCount());
-
-            StringBuffer msg;
-            toXML(tree, msg, 0, XML_Embed);
-            fprintf(stderr, "%s\n", msg.str());
-        }
+        const WuScopeFilter filter("prop[stat]");
+        StatsLogger logger;
+        Owned<IConstWUScopeIterator> scopes = &wu->getScopeIterator(filter);
+        ForEach(*scopes)
+            scopes->playProperties(PTall, logger);
     }
 }
 

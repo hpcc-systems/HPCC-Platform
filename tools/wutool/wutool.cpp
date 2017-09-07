@@ -540,7 +540,7 @@ protected:
             wu->setClusterName(clusterName);
             if (i % 3)
                 wu->setJobName(jobName);
-            wu->setStatistic(SCTsummary, "thor", SSTglobal, GLOBAL_SCOPE, StTimeElapsed, "Total thor time", ((i+2)/2) * 1000000, 1, 0, StatsMergeReplace);
+            wu->setStatistic(SCTthor, "thor", SSTgraph, "graph1", StTimeElapsed, "Total thor time", ((i+2)/2) * 1000000, 1, 0, StatsMergeReplace);
             wu->setApplicationValue("appname", "userId", userId.str(), true);
             wu->setApplicationValue("appname2", "clusterName", clusterName.str(), true);
             wuids.append(wu->queryWuid());
@@ -598,6 +598,7 @@ protected:
                 "         eclVersion='6.0.0'"
                 "         hash='2796091347'"
                 "         state='completed'"
+                "         totalThorTime=''"
                 "         xmlns:xsi='http://www.w3.org/1999/XMLSchema-instance'>"
                 " <Debug>"
                 "  <debugquery>1</debugquery>"

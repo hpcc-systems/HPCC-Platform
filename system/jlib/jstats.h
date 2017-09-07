@@ -58,6 +58,7 @@ public:
     unsigned getHash() const;
     bool matches(const StatsScopeId & other) const;
     unsigned queryActivity() const;
+    void describe(StringBuffer & description) const;
 
     void deserialize(MemoryBuffer & in, unsigned version);
     void serialize(MemoryBuffer & out) const;
@@ -305,6 +306,7 @@ public:
 
     int compareDepth(unsigned depth) const; // -1 too shallow, 0 a match, +1 too deep
     bool hasSingleMatch() const;
+    bool canAlwaysPreFilter() const;
     const StringArray & queryScopes() const { return scopes; }
     bool matchOnly(StatisticScopeType scopeType) const;
 
@@ -675,8 +677,8 @@ class IpAddress;
 
 extern jlib_decl unsigned __int64 getTimeStampNowValue();
 extern jlib_decl unsigned __int64 getIPV4StatsValue(const IpAddress & ip);
-extern jlib_decl void formatStatistic(StringBuffer & out, unsigned __int64 value, StatisticMeasure measure);
-extern jlib_decl void formatStatistic(StringBuffer & out, unsigned __int64 value, StatisticKind kind);
+extern jlib_decl StringBuffer & formatStatistic(StringBuffer & out, unsigned __int64 value, StatisticMeasure measure);
+extern jlib_decl StringBuffer & formatStatistic(StringBuffer & out, unsigned __int64 value, StatisticKind kind);
 extern jlib_decl void formatTimeStampAsLocalTime(StringBuffer & out, unsigned __int64 value);
 extern jlib_decl stat_type readStatisticValue(const char * cur, const char * * end, StatisticMeasure measure);
 
@@ -723,6 +725,7 @@ extern jlib_decl int compareScopeName(const char * left, const char * right);
 extern jlib_decl unsigned queryScopeDepth(const char * text);
 extern jlib_decl const char * queryScopeTail(const char * scope);
 extern jlib_decl bool getParentScope(StringBuffer & parent, const char * scope);
+extern jlib_decl void describeScope(StringBuffer & description, const char * scope);
 
 //This interface is primarily here to reduce the dependency between the different components.
 interface IStatisticTarget

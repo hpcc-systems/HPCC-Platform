@@ -3259,6 +3259,7 @@ public:
                 Owned<IPTree> wuXML = createPTree(useWuid);
                 wuXML->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
                 wuXML->setPropInt("@wuidVersion", WUID_VERSION);  // we implement the latest version.
+                wuXML->setProp("@totalThorTime", ""); // must be non null, otherwise sorting by thor time excludes the values
                 Owned<IRemoteConnection> daliLock;
                 lockWuid(daliLock, useWuid);
                 Owned<CLocalWorkUnit> wu = new CCassandraWorkUnit(this, wuXML.getClear(), secmgr, secuser, daliLock.getClear(), false);
