@@ -469,8 +469,6 @@ CRoxieMetricsManager::CRoxieMetricsManager()
     addMetric(preloadCacheHits, 0);
     addMetric(preloadCacheAdds, 0);
     addMetric(unwantedDiscarded, 1000);
-    addMetric(packetsRetried, 1000);
-    addMetric(packetsAbandoned, 1000);
 
     addMetric(getHeapAllocated, 0);
     addMetric(getHeapPercentAllocated, 0);

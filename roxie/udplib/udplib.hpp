@@ -103,7 +103,7 @@ interface ISendManager : extends IInterface
 };
 
 extern UDPLIB_API IReceiveManager *createReceiveManager(int server_flow_port, int data_port, int client_flow_port, int sniffer_port, const IpAddress &sniffer_multicast_ip, int queue_size, unsigned maxSlotsPerSender, unsigned myNodeIndex);
-extern UDPLIB_API ISendManager *createSendManager(int server_flow_port, int data_port, int client_flow_port, int sniffer_port, const IpAddress &sniffer_multicast_ip, int queue_size_pr_server, int queues_pr_server, unsigned maxRetryData, TokenBucket *rateLimiter, unsigned myNodeIndex);
+extern UDPLIB_API ISendManager *createSendManager(int server_flow_port, int data_port, int client_flow_port, int sniffer_port, const IpAddress &sniffer_multicast_ip, int queue_size_pr_server, int queues_pr_server, TokenBucket *rateLimiter, unsigned myNodeIndex);
 extern UDPLIB_API IMessagePacker *createMessagePacker(ruid_t ruid, unsigned msgId, const void *messageHeader, unsigned headerSize, ISendManager &_parent, unsigned _destNode, unsigned _sourceNode, unsigned _msgSeq, unsigned _queue);
 
 extern UDPLIB_API const IpAddress &getNodeAddress(unsigned index);
@@ -111,8 +111,6 @@ extern UDPLIB_API unsigned addRoxieNode(const char *ipString);
 extern UDPLIB_API unsigned getNumNodes();
 
 extern UDPLIB_API atomic_t unwantedDiscarded;
-extern UDPLIB_API atomic_t packetsRetried;
-extern UDPLIB_API atomic_t packetsAbandoned;
 
 extern UDPLIB_API unsigned udpTraceLevel;
 extern UDPLIB_API unsigned udpTraceCategories;

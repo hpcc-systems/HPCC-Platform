@@ -42,8 +42,6 @@ using roxiemem::IRowManager;
 #endif
 
 atomic_t unwantedDiscarded;
-atomic_t packetsRetried;
-atomic_t packetsAbandoned;
 
 // PackageSequencer ====================================================================================
 //
@@ -188,7 +186,7 @@ public:
             unsigned prevseq;
             if (lastContiguousPacket)
             {
-                prevseq = ((UdpPacketHeader*) lastContiguousPacket->data)->pktSeq & 0x3fffffff;
+                prevseq = ((UdpPacketHeader*) lastContiguousPacket->data)->pktSeq & UDP_PACKET_SEQUENCE_MASK;
                 finger = lastContiguousPacket->msgNext;
             }
             else
@@ -199,12 +197,12 @@ public:
             while (finger)
             {
                 UdpPacketHeader *fingerHdr  = (UdpPacketHeader*) finger->data;
-                unsigned pktseq = fingerHdr->pktSeq & 0x3fffffff;
+                unsigned pktseq = fingerHdr->pktSeq & UDP_PACKET_SEQUENCE_MASK;
                 if (pktseq == prevseq+1)
                 {
                     unsigned packetDataSize = fingerHdr->length - fingerHdr->metalength - sizeof(UdpPacketHeader);
                     assert(packetDataSize < roxiemem::DATA_ALIGNMENT_SIZE);
-                    if ((fingerHdr->pktSeq & ~0x80000000) == 0)
+                    if (pktseq == 0)
                     {
                         // MORE - Is this safe - header lifetime is somewhat unpredictable without a copy of it...
                         // Client header is at the start of packet 0
@@ -221,7 +219,7 @@ public:
 
                     lastContiguousPacket = finger;
                     dataAvailable.signal();
-                    if (fingerHdr->pktSeq >= 0x80000000)
+                    if (fingerHdr->pktSeq & UDP_PACKET_COMPLETE)
                     {
                         res = true;
                         dataAvailable.signal(); // allowing us to read the NULL that signifies end of message. May prefer to use the flag to stop?

@@ -259,11 +259,6 @@ public:
                     received[i] = 0;
                 }
                 receivedTotal = 0;
-                unsigned retried = atomic_read(&packetsRetried);
-                atomic_set(&packetsRetried, 0);
-                unsigned abandoned = atomic_read(&packetsAbandoned);
-                atomic_set(&packetsAbandoned, 0);
-                DBGLOG("%u packets resent %u packets abandoned", retried, abandoned);
             }
         }
         {
@@ -282,7 +277,7 @@ void testNxN()
 {
     if (maxPacketsPerSender > udpQueueSize)
         maxPacketsPerSender = udpQueueSize;
-    Owned <ISendManager> sendMgr = createSendManager(7000, 7001, 7002, 7003, multicastIP, 100, udpNumQs, maxPacketsPerSender, NULL, myIndex);
+    Owned <ISendManager> sendMgr = createSendManager(7000, 7001, 7002, 7003, multicastIP, 100, udpNumQs, NULL, myIndex);
     Receiver receiver;
 
     IMessagePacker **packers = new IMessagePacker *[numNodes];
