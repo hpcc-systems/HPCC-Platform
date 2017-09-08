@@ -60,12 +60,6 @@ class CReceiveManager : implements IReceiveManager, public CInterface
 
         class UdpSenderEntry  // one per node in the system
         {
-            SpinLock resendInfoLock;
-            unsigned lastSeen;      // Highest sequence ever seen
-            unsigned missingCount;  // Number of values in missing table
-            unsigned missingIndex;  // Pointer to start of values in missing circular buffer
-            unsigned missingTableSize;
-            unsigned *missing;
             unsigned destNodeIndex;
             unsigned myNodeIndex;
             ISocket *flowSocket;
@@ -77,11 +71,6 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             {
                 nextIndex = (unsigned) -1;
                 flowSocket = NULL;
-                lastSeen = 0;
-                missingCount = 0;
-                missingIndex = 0;
-                missingTableSize = 0;
-                missing = NULL;
                 destNodeIndex = (unsigned) -1;
                 myNodeIndex = (unsigned) -1;
             }
@@ -93,134 +82,15 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     flowSocket->close();
                     flowSocket->Release();
                 }
-                delete [] missing;
             }
 
-            void init(unsigned _destNodeIndex, unsigned _myNodeIndex, unsigned port, unsigned _missingTableSize)
+            void init(unsigned _destNodeIndex, unsigned _myNodeIndex, unsigned port)
             {
                 assert(!flowSocket);
                 destNodeIndex = _destNodeIndex;
                 myNodeIndex = _myNodeIndex;
                 SocketEndpoint ep(port, getNodeAddress(destNodeIndex));
                 flowSocket = ISocket::udp_connect(ep);
-                missingTableSize = _missingTableSize;
-                missing = new unsigned[_missingTableSize];
-            }
-
-            void noteRequest(const UdpRequestToSendMsg &msg)
-            {
-                // MORE - if we never go idle, we never get to see these in udpSendCompletedInData mode. Is that a big deal?
-                SpinBlock b(resendInfoLock);
-                if (msg.lastSequenceAvailable < lastSeen)
-                {
-                    // must have wrapped or restarted. Reinitialize my view of sender missing packets.
-                    // MORE - if a restart (rather than a wrap) should also clear out any collators still hanging on for a reply
-                    // Should I on a wrap too? 
-                    if (checkTraceLevel(TRACE_RETRY_DATA, 1))
-                        DBGLOG("Resetting missing list as sender %u seems to have restarted or wrapped", msg.sourceNodeIndex); 
-                    lastSeen = 0;
-                    missingCount = 0;
-                    missingIndex = 0;
-                }
-                else
-                {
-                    // abandon hope of receiving any that sender says they no longer have
-                    while (missingCount && missing[missingIndex] < msg.firstSequenceAvailable)
-                    {
-                        if (checkTraceLevel(TRACE_RETRY_DATA, 1))
-                            DBGLOG("Abandoning missing message %u from sender %u - sender no longer has it", missing[missingIndex], msg.sourceNodeIndex); 
-                        atomic_inc(&packetsAbandoned);
-                        missingCount--;
-                        missingIndex++;
-                        if (missingIndex == missingTableSize)
-                            missingIndex = 0;
-                    }
-                }
-            }
-
-            void noteReceived(const UdpPacketHeader &msg)
-            {
-                // MORE - what happens when we wrap?
-                // MORE - what happens when a sender restarts? Probably similar to wrap...
-                // Receiver restart is ok
-                SpinBlock b(resendInfoLock);
-                unsigned thisSequence = msg.udpSequence;
-                if (thisSequence > lastSeen)
-                {
-                    lastSeen++;
-                    if (lastSeen != thisSequence)
-                    {
-                        // Everything between lastSeen and just received needs adding to missing table.
-                        if (thisSequence - lastSeen > missingTableSize)
-                        {
-                            if (lastSeen==1)
-                            {
-                                // assume it's receiver restart and just ignore the missing values
-                                DBGLOG("Assuming receiver restart (lastseen==%u, thisSequence==%u, index==%u)", lastSeen, thisSequence, msg.nodeIndex); 
-                                lastSeen = thisSequence;
-                                return;
-                            }
-                            if (checkTraceLevel(TRACE_RETRY_DATA, 1))
-                                DBGLOG("Big gap in UDP packet sequence (%u-%u) from node %u - some ignored!", lastSeen, thisSequence-1, msg.nodeIndex); 
-                            lastSeen = thisSequence - missingTableSize; // avoids wasting CPU cycles writing more values than will fit after long interruption, receiver restart, or on corrupt packet
-                        }
-                        while (lastSeen < thisSequence)
-                        {
-                            if (checkTraceLevel(TRACE_RETRY_DATA, 3))
-                                DBGLOG("Adding packet sequence %u to missing list for node %u", lastSeen, msg.nodeIndex); 
-                            missing[(missingIndex + missingCount) % missingTableSize] = lastSeen;
-                            if (missingCount < missingTableSize)
-                                missingCount++;
-                            else
-                            {
-                                if (checkTraceLevel(TRACE_RETRY_DATA, 1))
-                                    DBGLOG("missing table overflow - packets will be lost"); 
-                            }
-                            lastSeen++;
-                        }
-                    }
-                }
-                else 
-                {
-                    if (checkTraceLevel(TRACE_RETRY_DATA, 2))
-                        DBGLOG("Out-of-sequence packet received %u", thisSequence); 
-                    // Hopefully filling in a missing value, and USUALLY in sequence so no point binchopping
-                    for (unsigned i = 0; i < missingCount; i++)
-                    {
-                        unsigned idx = (missingIndex + i) % missingTableSize;
-                        if (missing[idx] == thisSequence)
-                        {
-                            if (checkTraceLevel(TRACE_RETRY_DATA, 2))
-                                DBGLOG("Formerly missing packet sequence received %u", thisSequence); 
-                            while (i)
-                            {
-                                // copy up ones that are still missing
-                                unsigned idx2 = idx ? idx-1 : missingTableSize-1;
-                                missing[idx] = missing[idx2];
-                                idx = idx2;
-                                i--;
-                            }
-                            missingIndex++;
-                            missingCount--;
-                            break;
-                        }
-                        else if (missing[idx] < thisSequence)
-                        {
-                            if (checkTraceLevel(TRACE_RETRY_DATA, 1))
-                                DBGLOG("Unexpected packet sequence received %u - ignored", thisSequence); 
-                            break;
-                        }
-                        else // (missing[idx] > thisSequence)
-                        {
-                            if (!i)
-                            {
-                                if (checkTraceLevel(TRACE_RETRY_DATA, 1))
-                                    DBGLOG("Unrequested missing packet received %u - ignored", thisSequence); 
-                                break;
-                            }
-                        }
-                    }
-                }
             }
 
             void requestToSend(unsigned maxTransfer)
@@ -228,32 +98,15 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 try
                 {
                     UdpPermitToSendMsg msg;
-                    {
-                        SpinBlock block(resendInfoLock);
-                        msg.hdr.length = sizeof(UdpPermitToSendMsg::MsgHeader) + missingCount*sizeof(msg.missingSequences[0]);
-                        msg.hdr.cmd = flow_t::ok_to_send;
+                    msg.length = sizeof(UdpPermitToSendMsg);
+                    msg.cmd = flow_t::ok_to_send;
 
-                        msg.hdr.destNodeIndex = myNodeIndex;
-                        msg.hdr.max_data = maxTransfer;
-                        msg.hdr.lastSequenceSeen = lastSeen;
-                        msg.hdr.missingCount = missingCount;
-                        for (unsigned i = 0; i < missingCount; i++)
-                        {
-                            unsigned idx = (missingIndex + i) % missingTableSize;
-                            msg.missingSequences[i] = missing[idx];
-                            if (checkTraceLevel(TRACE_RETRY_DATA, 1))
-                                DBGLOG("Requesting resend of packet %d", missing[idx]);
-                        }
+                    msg.destNodeIndex = myNodeIndex;
+                    msg.max_data = maxTransfer;
 #ifdef CRC_MESSAGES
-                        msg.hdr.crc = msg.calcCRC();
+                    msg.crc = msg.calcCRC();
 #endif
-                    }
-                    if (checkTraceLevel(TRACE_RETRY_DATA, 5))
-                    {
-                        StringBuffer s;
-                        DBGLOG("requestToSend %s", msg.toString(s).str());
-                    }
-                    flowSocket->write(&msg, msg.hdr.length);
+                    flowSocket->write(&msg, msg.length);
                 }
                 catch(IException *e) 
                 {
@@ -288,12 +141,9 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             maxSenders = _maxSenders;
             maxSlotsPerSender = _maxSlotsPerSender;
             sendersTable = new UdpSenderEntry[maxSenders];
-            unsigned missingTableSize = maxSlotsPerSender;
-            if (missingTableSize > MAX_RESEND_TABLE_SIZE)
-                missingTableSize = MAX_RESEND_TABLE_SIZE;
             for (unsigned i = 0; i < maxSenders; i++)
             {
-                sendersTable[i].init(i, parent.myNodeIndex, parent.send_flow_port, missingTableSize);
+                sendersTable[i].init(i, parent.myNodeIndex, parent.send_flow_port);
             }
         }
 
@@ -397,28 +247,6 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     firstRequest = index;
                 lastRequest = index;
             }   
-            sender.noteRequest(msg);
-            requestPending.signal();
-        }
-
-        void requestMore(unsigned index) // simpler version of request since we don't get the extra info
-        {
-            assertex(index < maxSenders);
-            UdpSenderEntry &sender = sendersTable[index];
-            {
-                SpinBlock b(receiveFlowLock);
-                if ((lastRequest == index) || (sender.nextIndex != (unsigned) -1))
-                {
-                    DBGLOG("UdpReceiver: received duplicate request_to_send msg from node=%d", index);
-                    return;
-                }
-                // Chain it onto list
-                if (firstRequest != (unsigned) -1) 
-                    sendersTable[lastRequest].nextIndex = index;
-                else 
-                    firstRequest = index;
-                lastRequest = index;
-            }   
             requestPending.signal();
         }
 
@@ -434,11 +262,6 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 transferComplete.signal();
             else 
                 DBGLOG("UdpReceiver: completed msg from node %u is not for current transfer (%u) ", index, currentTransfer);
-        }
-
-        inline void noteReceived(const UdpPacketHeader &msg)
-        {
-            sendersTable[msg.nodeIndex].noteReceived(msg);
         }
 
         virtual void start()
@@ -736,15 +559,10 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     b = bufferManager->allocate();
                     receive_socket->read(b->data, 1, DATA_PAYLOAD, res, 5);
                     UdpPacketHeader &hdr = *(UdpPacketHeader *) b->data;
-                    unsigned flowBits = hdr.udpSequence & UDP_SEQUENCE_BITS;
-                    hdr.udpSequence &= ~UDP_SEQUENCE_BITS;
+                    unsigned flowBits = hdr.udpSequence;
                     if (flowBits & UDP_SEQUENCE_COMPLETE)
                     {
                         parent.manager->completed(hdr.nodeIndex);
-                    }
-                    if (flowBits & UDP_SEQUENCE_MORE)
-                    {
-                        parent.manager->requestMore(hdr.nodeIndex); // MORE - what about the rest of request info?
                     }
                     if (udpTraceLevel > 5) // don't want to interrupt this thread if we can help it
                         DBGLOG("UdpReceiver: %u bytes received, node=%u", res, hdr.nodeIndex);
@@ -894,7 +712,6 @@ public:
     void collatePacket(DataBuffer *dataBuff)
     {
         const UdpPacketHeader *pktHdr = (UdpPacketHeader*) dataBuff->data;
-        manager->noteReceived(*pktHdr);
 
         if (udpTraceLevel >= 4) 
             DBGLOG("UdpReceiver: CPacketCollator - unQed packet - ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X len=%d node=%u",
