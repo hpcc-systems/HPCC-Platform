@@ -2063,6 +2063,7 @@ CHqlMetaProperty * querySimpleDatasetMeta(IHqlExpression * expr)
     case no_related:
     case no_executewhen:
     case no_outofline:
+    case no_inline:
     case no_fieldmap:
     case no_owned_ds:
     case no_dataset_alias:
@@ -2177,6 +2178,7 @@ void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
     case no_related:
     case no_executewhen:
     case no_outofline:
+    case no_inline:
     case no_fieldmap:
     case no_owned_ds:
     case no_dataset_alias:
@@ -3373,6 +3375,7 @@ ITypeInfo * calculateDatasetType(node_operator op, const HqlExprArray & parms)
     case no_related:
     case no_executewhen:
     case no_outofline:
+    case no_inline:
     case no_fieldmap:
     case no_owned_ds:
     case no_dataset_alias:
