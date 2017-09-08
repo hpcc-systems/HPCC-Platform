@@ -1917,9 +1917,10 @@ void CRuntimeStatisticCollection::merge(const CRuntimeStatisticCollection & othe
                 mergeStatistic(kind, value);
         }
     }
-    if (other.nested)
+    CNestedRuntimeStatisticMap *otherNested = other.queryNested();
+    if (otherNested)
     {
-        ensureNested().merge(*other.nested);
+        ensureNested().merge(*otherNested);
     }
 }
 
@@ -1944,9 +1945,10 @@ void CRuntimeStatisticCollection::updateDelta(CRuntimeStatisticCollection & targ
                 target.mergeStatistic(kind, sourceValue);
         }
     }
-    if (source.nested)
+    CNestedRuntimeStatisticMap *sourceNested = source.queryNested();
+    if (sourceNested)
     {
-        ensureNested().updateDelta(target.ensureNested(), *source.nested);
+        ensureNested().updateDelta(target.ensureNested(), *sourceNested);
     }
 }
 
