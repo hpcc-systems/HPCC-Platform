@@ -163,14 +163,32 @@ public:
                 else
                     tmp.append(suffix);
                 tmp.clip().toLowerCase();
-                Owned<IDFAttributesIterator> iter=queryDistributedFileDirectory().getDFAttributesIterator(tmp.str(),_udesc,false,true,NULL);
+                CDfsLogicalFileName sub;
+                sub.setAllowWild(true);
+                sub.set(tmp);
+                Owned<IDFAttributesIterator> iter;
+                SocketEndpoint foreignEp;
+                if (sub.isForeign(&foreignEp))
+                {
+                    sub.get(tmp.clear(), true);
+                    Owned<INode> foreignNode = createINode(foreignEp);
+                    iter.setown(queryDistributedFileDirectory().getDFAttributesIterator(tmp.str(),_udesc,false,true,foreignNode));
+                }
+                else
+                    iter.setown(queryDistributedFileDirectory().getDFAttributesIterator(tmp.str(),_udesc,false,true,nullptr));
                 ForEach(*iter)
                 {
                     IPropertyTree &attr = iter->query();
                     const char *name = attr.queryProp("@name");
                     if (!name||!*name)
                         continue;
-                    tmp.clear().append('~').append(name); // need leading ~ otherwise will get two prefixes
+                    tmp.clear().append('~'); // need leading ~ otherwise will get two prefixes
+                    if (sub.isForeign())
+                    {
+                        tmp.append(FOREIGN_SCOPE "::");
+                        foreignEp.getUrlStr(tmp).append("::");
+                    }
+                    tmp.append(name);
                     lfnExpanded.append(tmp.str());
                 }
             }
@@ -272,6 +290,7 @@ void CDfsLogicalFileName::set(const CDfsLogicalFileName &other)
     lfn.set(other.lfn);
     tailpos = other.tailpos;
     localpos = other.localpos;
+    foreignep = other.foreignep;
     cluster.set(other.cluster);
     external = other.external;
     delete multi;
@@ -281,16 +300,20 @@ void CDfsLogicalFileName::set(const CDfsLogicalFileName &other)
         multi = NULL;
 }
 
-bool CDfsLogicalFileName::isForeign() const
+bool CDfsLogicalFileName::isForeign(SocketEndpoint *ep) const
 {
-    if (localpos!=0)
+    if (localpos!=0) // NB: localpos is position of logical filename following a foreign::<nodeip>:: qualifier.
+    {
+        if (ep)
+            *ep = foreignep;
         return true;
+    }
     if (multi)
     {
         if (!multi->isExpanded())
             throw MakeStringException(-1, "Must call CDfsLogicalFileName::expand() before calling CDfsLogicalFileName::isForeign(), wildcards are specified");
         ForEachItemIn(i1,*multi)
-            if (multi->item(i1).isForeign())        // if any are say all are
+            if (multi->item(i1).isForeign(ep))        // if any are say all are
                 return true;
     }
     return false;
@@ -450,11 +473,10 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
                 const char *ns1 = strstr(s1,"::");
                 if (ns1)
                 {
-                    SocketEndpoint ep;
-                    normalizeNodeName(s1, ns1-s1, ep, strict);
-                    if (!ep.isNull())
+                    normalizeNodeName(s1, ns1-s1, foreignep, strict);
+                    if (!foreignep.isNull())
                     {
-                        ep.getUrlStr(str.append("::"));
+                        foreignep.getUrlStr(str.append("::"));
                         s = ns1;
                         localpos = str.length()+2;
                     }
