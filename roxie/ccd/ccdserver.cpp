@@ -1011,7 +1011,7 @@ public:
         }
     }
 
-    virtual void updateFactoryStatistics() override
+    virtual void updateFactoryStatistics() const override
     {
         CRuntimeStatisticCollection mergedStats(stats.queryMapping());
         gatherStats(mergedStats);
@@ -1028,6 +1028,9 @@ public:
                 ctx->noteProcessed(factory->querySubgraphId(), activityId, 0, processed, 0);
             ctx->mergeActivityStats(mergedStats, factory->querySubgraphId(), activityId);
         }
+
+        ForEachItemIn(i, childGraphs)
+            childGraphs.item(i).updateFactoryStatistics();
     }
 
     virtual const IRoxieContextLogger &queryLogCtx()const
@@ -15776,6 +15779,10 @@ public:
         resultInput = NULL;
         resultStream = NULL;
         resultJunction.clear();
+
+        ForEachItemIn(i, iterationGraphs)
+            iterationGraphs.item(i).updateFactoryStatistics();
+
         outputs.kill();
         iterationGraphs.kill(); // must be done after all activities killed
         if (probeManager)
@@ -16181,6 +16188,13 @@ public:
         assertex(!outputUsed[idx]);
         outputUsed[idx] = true;
         return &outputAdaptors[idx];
+    }
+
+    virtual void updateFactoryStatistics() const override
+    {
+        if (libraryGraph)
+            libraryGraph->updateFactoryStatistics();
+        CRoxieServerActivity::updateFactoryStatistics();
     }
 };
 
@@ -27116,8 +27130,6 @@ public:
 
     ~CActivityGraph()
     {
-        ForEachItemIn(i, activities)
-            activities.item(i).updateFactoryStatistics();
         if (probeManager)
             probeManager->deleteGraph((IArrayOf<IActivityBase>*)&activities, (IArrayOf<IInputBase>*)&probes);
     }
@@ -27342,6 +27354,12 @@ public:
         return results.getClear();
     }
 
+    virtual void updateFactoryStatistics() const override
+    {
+        ForEachItemIn(i, activities)
+            activities.item(i).updateFactoryStatistics();
+    }
+
     //interface IRoxieServerChildGraph
     virtual void beforeExecute()
     {
@@ -27494,24 +27512,28 @@ public:
         : ctx(_ctx), graphName(_graphName), id(_id), graphDefinition(_graphDefinition), logctx(_logctx), numParallel(_numParallel)
     {
     }
-    virtual void abort() { throwUnexpected(); }
-    virtual void reset() { throwUnexpected(); }
-    virtual void execute() { throwUnexpected(); }
-    virtual void getProbeResponse(IPropertyTree *query) { throwUnexpected(); }
-    virtual void onCreate(IHThorArg *_colocalArg)
+    virtual void abort() override { throwUnexpected(); }
+    virtual void reset() override { throwUnexpected(); }
+    virtual void execute() override { throwUnexpected(); }
+    virtual void getProbeResponse(IPropertyTree *query) override { throwUnexpected(); }
+    virtual void onCreate(IHThorArg *_colocalArg) override
     {
         colocalArg = _colocalArg;
     }
-    virtual void noteException(IException *E) { throwUnexpected(); }
-    virtual void checkAbort() { throwUnexpected(); }
-    virtual IThorChildGraph * queryChildGraph() { return this; }
-    virtual IEclGraphResults * queryLocalGraph() { throwUnexpected(); }
-    virtual IRoxieServerChildGraph * queryLoopGraph() { throwUnexpected(); }
-    virtual IRoxieServerChildGraph * createGraphLoopInstance(IRoxieSlaveContext *ctx, unsigned loopCounter, unsigned parentExtractSize, const byte * parentExtract, const IRoxieContextLogger &logctx) { throwUnexpected(); }
-    virtual const char *queryName() const { throwUnexpected(); }
-    virtual IRoxieServerActivity *queryActivity(unsigned _activityId) { return nullptr; } // MORE - may need something here!?
-
-    virtual IEclGraphResults * evaluate(unsigned parentExtractSize, const byte * parentExtract)
+    virtual void noteException(IException *E) override { throwUnexpected(); }
+    virtual void checkAbort() override { throwUnexpected(); }
+    virtual IThorChildGraph * queryChildGraph() override { return this; }
+    virtual IEclGraphResults * queryLocalGraph() override { throwUnexpected(); }
+    virtual IRoxieServerChildGraph * queryLoopGraph() override { throwUnexpected(); }
+    virtual IRoxieServerChildGraph * createGraphLoopInstance(IRoxieSlaveContext *ctx, unsigned loopCounter, unsigned parentExtractSize, const byte * parentExtract, const IRoxieContextLogger &logctx) override { throwUnexpected(); }
+    virtual const char *queryName() const override { throwUnexpected(); }
+    virtual void updateFactoryStatistics() const override
+    {
+        CriticalBlock b(graphCrit);
+        ForEachItemIn(i, stack)
+            stack.item(i).updateFactoryStatistics();
+    }
+    virtual IEclGraphResults * evaluate(unsigned parentExtractSize, const byte * parentExtract) override
     {
         Owned<CActivityGraph> realGraph;
         {
@@ -27541,7 +27563,7 @@ protected:
     const IRoxieContextLogger &logctx;
     unsigned numParallel;
     IHThorArg *colocalArg = nullptr;
-    CriticalSection graphCrit;
+    mutable CriticalSection graphCrit;
     CIArrayOf<CActivityGraph> stack;
 };
 
@@ -27722,24 +27744,23 @@ public:
         colocalParent = NULL;
     }
 
-    virtual const char *queryName() const { return graphName.get(); }
-    virtual void abort() { throwUnexpected(); }
-    virtual void reset() { }
-    virtual void execute() { throwUnexpected(); }
-    virtual void getProbeResponse(IPropertyTree *query) { throwUnexpected(); }
-    virtual void noteException(IException *E) { throwUnexpected(); }
-    virtual void checkAbort() { throwUnexpected(); }
-    virtual IThorChildGraph * queryChildGraph() { throwUnexpected(); }
-    virtual IEclGraphResults * queryLocalGraph() { throwUnexpected(); }
-    virtual IRoxieServerChildGraph * queryLoopGraph() { throwUnexpected(); }
-    virtual IRoxieServerActivity *queryActivity(unsigned _activityId) { return nullptr; } // MORE - may need something here!?
-
-    virtual void onCreate(IHThorArg *_colocalParent)
+    virtual const char *queryName() const override { return graphName.get(); }
+    virtual void abort() override { throwUnexpected(); }
+    virtual void reset() override { }
+    virtual void execute() override { throwUnexpected(); }
+    virtual void getProbeResponse(IPropertyTree *query) override { throwUnexpected(); }
+    virtual void noteException(IException *E) override { throwUnexpected(); }
+    virtual void checkAbort() override { throwUnexpected(); }
+    virtual IThorChildGraph * queryChildGraph() override { throwUnexpected(); }
+    virtual IEclGraphResults * queryLocalGraph() override { throwUnexpected(); }
+    virtual IRoxieServerChildGraph * queryLoopGraph() override { throwUnexpected(); }
+    virtual void updateFactoryStatistics() const override { }
+    virtual void onCreate(IHThorArg *_colocalParent) override
     { 
         colocalParent = _colocalParent;
     }
 
-    virtual IRoxieServerChildGraph * createGraphLoopInstance(IRoxieSlaveContext *ctx, unsigned loopCounter, unsigned parentExtractSize, const byte * parentExtract, const IRoxieContextLogger &logctx)
+    virtual IRoxieServerChildGraph * createGraphLoopInstance(IRoxieSlaveContext *ctx, unsigned loopCounter, unsigned parentExtractSize, const byte * parentExtract, const IRoxieContextLogger &logctx) override
     {
         Owned<CIterationActivityGraph> ret = new CIterationActivityGraph(graphName, id, graphDefinition, probeManager, loopCounter, ctx, colocalParent, parentExtractSize, parentExtract, logctx);
         ret->createIterationGraph(ctx);

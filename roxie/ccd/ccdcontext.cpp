@@ -1481,6 +1481,16 @@ public:
 
     void cleanupGraphs()
     {
+        if (graph)
+            graph->updateFactoryStatistics();
+
+        SuperHashIteratorOf<decltype(childGraphs)::ELEMENT> iter(childGraphs);
+        ForEach(iter)
+        {
+            IActivityGraph * curChildGraph = static_cast<IActivityGraph *>(iter.query().getValue());
+            curChildGraph->updateFactoryStatistics();
+        }
+
         graph.clear();
         childGraphs.kill();
     }
