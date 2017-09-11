@@ -315,8 +315,9 @@ struct DynamicScopeCtx
 {
     DynamicScopeCtx();
     ~DynamicScopeCtx();
-    void setSoContext(SoContext _soCtx) { soCtx = _soCtx; }
-    SoContext soCtx;
+
+    void processInitialization(SoContext soCtx);
+
     InitTable initTable;
 };
 
