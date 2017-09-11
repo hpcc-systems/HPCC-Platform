@@ -546,7 +546,8 @@ namespace couchbaseembed
                     // use a small loop to retry connections if necessary
                     unsigned int connectAttempt = 0;
                     unsigned int MAX_ATTEMPTS = 10;
-                    useconds_t SLEEP_TIME = 100 + (rand() % 200);
+                    // coverity[DC.WEAK_CRYPTO]
+                    useconds_t SLEEP_TIME = 100 + (rand() % 200); // Add jitter to sleep time
 
                     while (true)
                     {
@@ -609,11 +610,6 @@ namespace couchbaseembed
                             failx("Failed to connect to couchbase instance: %s Reason: '%s'", connectionString.str(), reason.c_str());
                         }
                     }
-                }
-
-                if (!connectionObjPtr)
-                {
-                    failx("Couchbase: Unable to create connection: %s", connectionString.str());
                 }
 
                 return connectionObjPtr;
