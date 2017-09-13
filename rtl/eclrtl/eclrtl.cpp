@@ -796,9 +796,12 @@ char * rtlInt8ToVStrX(__int64 val)
 
 //---------------------------------------------------------------------------
 
+static const unsigned largeAllocaThreshold = 1024*10;
+#define CONDSTACKALLOC(MA, SZ) ((SZ>largeAllocaThreshold) ? MA.allocate(SZ) : alloca(SZ))
 double rtlStrToReal(size32_t l, const char * t)
 {
-    char * temp = (char *)alloca(l+1);
+    MemoryAttr heapMem;
+    char * temp = (char *)CONDSTACKALLOC(heapMem, l+1);
     memcpy(temp, t, l);
     temp[l] = 0;
     return rtlVStrToReal(temp);
@@ -806,10 +809,9 @@ double rtlStrToReal(size32_t l, const char * t)
 
 double rtlEStrToReal(size32_t l, const char * t)
 {
-    char * astr = (char*)alloca(l);
-    rtlEStrToStr(l,astr,l,t);
-    char * temp = (char *)alloca(l+1);
-    memcpy(temp, astr, l);
+    MemoryAttr heapMem;
+    char * temp = (char *)CONDSTACKALLOC(heapMem, l+1);
+    rtlEStrToStr(l,temp,l,t);
     temp[l] = 0;
     return rtlVStrToReal(temp);
 }
@@ -822,11 +824,7 @@ double rtlVStrToReal(const char * t)
 
 double rtl_ex2f(const char * t)
 {
-    unsigned len = strlen(t);
-    char * astr = (char*)alloca(len+1);
-    rtlEStrToStr(len,astr,len,t);
-    astr[len] = 0;
-    return rtlVStrToReal(astr);
+    return rtlEStrToReal(strlen(t), t);
 }
 
 double rtlUnicodeToReal(size32_t l, UChar const * t)
@@ -1095,35 +1093,40 @@ bool rtlCsvStrToBool(size32_t l, const char * t)
 
 unsigned rtlEStrToUInt4(size32_t l, const char * t)
 {
-    char * astr = (char*)alloca(l);
+    MemoryAttr heapMem;
+    char * astr = (char *)CONDSTACKALLOC(heapMem, l);
     rtlEStrToStr(l,astr,l,t);
     return rtlStrToUInt4(l,astr);
 }
 
 unsigned __int64 rtlEStrToUInt8(size32_t l, const char * t)
 {
-    char * astr = (char*)alloca(l);
+    MemoryAttr heapMem;
+    char * astr = (char *)CONDSTACKALLOC(heapMem, l);
     rtlEStrToStr(l,astr,l,t);
     return rtlStrToUInt8(l,astr);
 }
 
 int rtlEStrToInt4(size32_t l, const char * t)
 {
-    char * astr = (char*)alloca(l);
+    MemoryAttr heapMem;
+    char * astr = (char *)CONDSTACKALLOC(heapMem, l);
     rtlEStrToStr(l,astr,l,t);
     return rtlStrToInt4(l,astr);
 }
 
 __int64 rtlEStrToInt8(size32_t l, const char * t)
 {
-    char * astr = (char*)alloca(l);
+    MemoryAttr heapMem;
+    char * astr = (char *)CONDSTACKALLOC(heapMem, l);
     rtlEStrToStr(l,astr,l,t);
     return rtlStrToInt8(l,astr);
 }
 
 bool rtl_en2b(size32_t l, const char * t)
 {
-    char * astr = (char*)alloca(l);
+    MemoryAttr heapMem;
+    char * astr = (char *)CONDSTACKALLOC(heapMem, l);
     rtlEStrToStr(l,astr,l,t);
     return rtlStrToBool(l,astr);
 }
@@ -3521,7 +3524,8 @@ char * rtlStrToVStrX(unsigned slen, const void * src)
 
 char * rtlEStrToVStrX(unsigned slen, const char * src)
 {
-    char * astr = (char*)alloca(slen);
+    MemoryAttr heapMem;
+    char * astr = (char *)CONDSTACKALLOC(heapMem, slen);
     rtlEStrToStr(slen,astr,slen,src);
     return rtlStrToVStrX(slen, astr);
 }
