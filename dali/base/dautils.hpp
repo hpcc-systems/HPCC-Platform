@@ -60,6 +60,7 @@ class da_decl CDfsLogicalFileName
     bool external;
     bool allowospath;
     bool allowWild;
+    SocketEndpoint foreignep;
 
 public:
     CDfsLogicalFileName();
@@ -80,7 +81,7 @@ public:
      */
     void setForeign(const SocketEndpoint &daliip,bool checklocal);
     void clearForeign();
-    bool isForeign() const;
+    bool isForeign(SocketEndpoint *ep=nullptr) const;
     /*
      * External files are non-distributed files. Most of the time
      * they refer to an input source, like files on a drop-zone
