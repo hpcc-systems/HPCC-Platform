@@ -196,7 +196,7 @@ void HqlCppTranslator::buildJoinMatchFunction(BuildCtx & ctx, const char * name,
     if (match)
     {
         StringBuffer proto;
-        proto.append("virtual bool ").append(name).append("(const void * _left, const void * _right)" OPTIMIZE_FUNCTION_ATTRIBUTE);
+        proto.append("virtual bool ").append(name).append("(const void * _left, const void * _right) override" OPTIMIZE_FUNCTION_ATTRIBUTE);
 
         MemberFunction matchFunc(*this, ctx, proto, MFdynamicproto);
 
@@ -427,7 +427,7 @@ void KeyedJoinInfo::buildClearRightFunction(BuildCtx & classctx)
     {
         //Need to initialize the record with the zero logical values, not zero key values
         //which differs for biased integers etc.
-        MemberFunction func(translator, classctx, "virtual size32_t createDefaultRight(ARowBuilder & crSelf)");
+        MemberFunction func(translator, classctx, "virtual size32_t createDefaultRight(ARowBuilder & crSelf) override");
         translator.ensureRowAllocated(func.ctx, "crSelf");
         
         BoundRow * selfCursor = translator.bindSelf(func.ctx, rawKey, "crSelf");
@@ -447,7 +447,7 @@ void KeyedJoinInfo::buildExtractFetchFields(BuildCtx & ctx)
     //virtual size32_t extractFetchFields(ARowBuilder & crSelf, const void * _left) = 0;
     if (fileAccessDataset)
     {
-        MemberFunction func(translator, ctx, "virtual size32_t extractFetchFields(ARowBuilder & crSelf, const void * _left)");
+        MemberFunction func(translator, ctx, "virtual size32_t extractFetchFields(ARowBuilder & crSelf, const void * _left) override");
         translator.ensureRowAllocated(func.ctx, "crSelf");
         if (fileAccessTransform)
         {
@@ -467,7 +467,7 @@ void KeyedJoinInfo::buildExtractFetchFields(BuildCtx & ctx)
 void KeyedJoinInfo::buildExtractIndexReadFields(BuildCtx & ctx)
 {
     //virtual size32_t extractIndexReadFields(ARowBuilder & crSelf, const void * _left) = 0;
-    MemberFunction func(translator, ctx, "virtual size32_t extractIndexReadFields(ARowBuilder & crSelf, const void * _left)");
+    MemberFunction func(translator, ctx, "virtual size32_t extractIndexReadFields(ARowBuilder & crSelf, const void * _left) override");
     translator.ensureRowAllocated(func.ctx, "crSelf");
     if (keyAccessTransform)
     {
@@ -486,7 +486,7 @@ void KeyedJoinInfo::buildExtractIndexReadFields(BuildCtx & ctx)
 void KeyedJoinInfo::buildExtractJoinFields(ActivityInstance & instance)
 {
     //virtual size32_t extractJoinFields(void *dest, const void *diskRow, IBlobProvider * blobs) = 0;
-    MemberFunction func(translator, instance.startctx, "virtual size32_t extractJoinFields(ARowBuilder & crSelf, const void *_left, unsigned __int64 _filepos, IBlobProvider * blobs)");
+    MemberFunction func(translator, instance.startctx, "virtual size32_t extractJoinFields(ARowBuilder & crSelf, const void *_left, unsigned __int64 _filepos, IBlobProvider * blobs) override");
     translator.ensureRowAllocated(func.ctx, "crSelf");
     if (needToExtractJoinFields())
     {
@@ -528,7 +528,7 @@ void KeyedJoinInfo::buildIndexReadMatch(BuildCtx & ctx)
 
     if (matchExpr)
     {
-        MemberFunction func(translator, ctx, "virtual bool indexReadMatch(const void * _left, const void * _right, unsigned __int64 _filepos, IBlobProvider * blobs)");
+        MemberFunction func(translator, ctx, "virtual bool indexReadMatch(const void * _left, const void * _right, unsigned __int64 _filepos, IBlobProvider * blobs) override");
 
         func.ctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
         func.ctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
@@ -554,7 +554,7 @@ void KeyedJoinInfo::buildLeftOnly(BuildCtx & ctx)
 {
     if (leftOnlyMatch)
     {
-        MemberFunction func(translator, ctx, "virtual bool leftCanMatch(const void * _left)");
+        MemberFunction func(translator, ctx, "virtual bool leftCanMatch(const void * _left) override");
         func.ctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *)_left;");
         translator.bindTableCursor(func.ctx, expr->queryChild(0), "left", no_left, joinSeq);
         translator.buildReturn(func.ctx, leftOnlyMatch);
@@ -567,7 +567,7 @@ void KeyedJoinInfo::buildMonitors(BuildCtx & ctx)
     monitors->optimizeSegments(keyAccessDataset->queryRecord());
 
     //---- virtual void createSegmentMonitors(struct IIndexReadContext *) { ... } ----
-    MemberFunction func(translator, ctx, "virtual void createSegmentMonitors(IIndexReadContext *irc, const void * _left)");
+    MemberFunction func(translator, ctx, "virtual void createSegmentMonitors(IIndexReadContext *irc, const void * _left) override");
     func.ctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
     translator.bindTableCursor(func.ctx, keyAccessDataset, "left", no_left, joinSeq);
     monitors->buildSegments(func.ctx, "irc", false);
@@ -582,13 +582,13 @@ void KeyedJoinInfo::buildTransform(BuildCtx & ctx)
     case no_join:
     case no_denormalize:
         {
-            func.start("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, const void * _right, unsigned __int64 _filepos, unsigned counter)");
+            func.start("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, const void * _right, unsigned __int64 _filepos, unsigned counter) override");
             translator.associateCounter(func.ctx, counter, "counter");
             break;
         }
     case no_denormalizegroup:
         {
-            func.start("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, const void * _right, unsigned numRows, const void * * _rows)");
+            func.start("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, const void * _right, unsigned numRows, const void * * _rows) override");
             func.ctx.addQuotedLiteral("const byte * * rows = (const byte * *) _rows;");
             break;
         }
@@ -749,7 +749,7 @@ void KeyedJoinInfo::buildTransformBody(BuildCtx & ctx, IHqlExpression * transfor
 
 void KeyedJoinInfo::buildFailureTransform(BuildCtx & ctx, IHqlExpression * onFailTransform)
 {
-    MemberFunction func(translator, ctx, "virtual size32_t onFailTransform(ARowBuilder & crSelf, const void * _left, const void * _right, unsigned __int64 _filepos, IException * except)");
+    MemberFunction func(translator, ctx, "virtual size32_t onFailTransform(ARowBuilder & crSelf, const void * _left, const void * _right, unsigned __int64 _filepos, IException * except) override");
     translator.associateLocalFailure(func.ctx, "except");
     translator.ensureRowAllocated(func.ctx, "crSelf");
 
@@ -1249,7 +1249,7 @@ void HqlCppTranslator::buildKeyedJoinExtra(ActivityInstance & instance, IHqlExpr
     {
         IHqlExpression * index = info->queryKey();
         IHqlExpression * indexRecord = index->queryRecord();
-        MemberFunction func(*this, instance.startctx, "virtual unsigned __int64 extractPosition(const void * _right)");
+        MemberFunction func(*this, instance.startctx, "virtual unsigned __int64 extractPosition(const void * _right) override");
         func.ctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
         bindTableCursor(func.ctx, index, "right");
         OwnedHqlExpr fileposExpr = createSelectExpr(LINK(index), LINK(indexRecord->queryChild(indexRecord->numChildren()-1)));
@@ -1279,7 +1279,7 @@ void HqlCppTranslator::buildKeyedJoinExtra(ActivityInstance & instance, IHqlExpr
     {
         if (limit->hasAttribute(skipAtom))
         {
-            MemberFunction func(*this, instance.startctx, "virtual unsigned __int64 getSkipLimit()");
+            MemberFunction func(*this, instance.startctx, "virtual unsigned __int64 getSkipLimit() override");
             buildReturn(func.ctx, limit->queryChild(0));
         }
         else

@@ -1470,7 +1470,7 @@ void CtxCollection::createFunctionStructure(HqlCppTranslator & translator, Build
         //virtual void serializeCreateContext(MemoryBuffer & out)
         serializectx.setown(new BuildCtx(declarectx));
         StringBuffer s;
-        s.append("virtual void ").append(serializeFunc).append("(MemoryBuffer & out)");
+        s.append("virtual void ").append(serializeFunc).append("(MemoryBuffer & out) override");
         serializectx->addQuotedCompoundOpt(s.str());
     } else if (canEvaluate)
     {

@@ -542,7 +542,7 @@ IHqlExpression * SteppingFieldSelection::generateSteppingMeta(HqlCppTranslator &
     classctx.addQuotedCompound(s.clear().append("struct C").append(memberName).append(" : public ISteppingMeta"), s2.append(" ").append(memberName).append(";").str());
     translator.doBuildUnsignedFunction(classctx, "getNumFields", lenOffsets/2);
 
-    classctx.addQuoted(s.clear().append("virtual const CFieldOffsetSize * queryFields() { return ").append(offsetName).append("; }"));
+    classctx.addQuoted(s.clear().append("virtual const CFieldOffsetSize * queryFields() override { return ").append(offsetName).append("; }"));
 
     //compare function.
     {
@@ -556,7 +556,7 @@ IHqlExpression * SteppingFieldSelection::generateSteppingMeta(HqlCppTranslator &
         translator.doBuildUnsignedFunction(comparectx, "maxFields", lenOffsets/2);
 
         {
-            MemberFunction func(translator, comparectx, "virtual int docompare(const void * _left,const void * _right, unsigned numFields) const");
+            MemberFunction func(translator, comparectx, "virtual int docompare(const void * _left,const void * _right, unsigned numFields) const override");
             func.ctx.addQuotedLiteral("const byte * left = (const byte *)_left;");
             func.ctx.addQuotedLiteral("const byte * right = (const byte *)_right;");
             func.ctx.addQuotedLiteral("int ret;");
@@ -578,7 +578,7 @@ IHqlExpression * SteppingFieldSelection::generateSteppingMeta(HqlCppTranslator &
             func.ctx.addReturn(result);
         }
     
-        classctx.addQuoted(s.clear().append("virtual IRangeCompare * queryCompare() { return &").append(compareName).append("; }"));
+        classctx.addQuoted(s.clear().append("virtual IRangeCompare * queryCompare() override { return &").append(compareName).append("; }"));
     }
 
     //distance function - very similar to compare
@@ -592,7 +592,7 @@ IHqlExpression * SteppingFieldSelection::generateSteppingMeta(HqlCppTranslator &
         distancectx.addQuotedCompoundLiteral("class Distance : public IDistanceCalculator", s2.clear().append(" ").append(distanceName).append(";"));
 
         {
-            MemberFunction func(translator, distancectx, "virtual unsigned getDistance(unsigned __int64 & distance, const void * _before, const void * _after, unsigned numFields) const");
+            MemberFunction func(translator, distancectx, "virtual unsigned getDistance(unsigned __int64 & distance, const void * _before, const void * _after, unsigned numFields) const override");
             func.ctx.addQuotedLiteral("const byte * before = (const byte *)_before;");
             func.ctx.addQuotedLiteral("const byte * after = (const byte *)_after;");
 
@@ -623,7 +623,7 @@ IHqlExpression * SteppingFieldSelection::generateSteppingMeta(HqlCppTranslator &
             func.ctx.addQuotedLiteral("return DISTANCE_EXACT_MATCH;");
         }
     
-        classctx.addQuoted(s.clear().append("virtual IDistanceCalculator * queryDistance() { return &").append(distanceName).append("; }"));
+        classctx.addQuoted(s.clear().append("virtual IDistanceCalculator * queryDistance() override { return &").append(distanceName).append("; }"));
     }
 
     StringBuffer resultText;
@@ -645,7 +645,7 @@ void SteppingFieldSelection::generateSteppingMetaMember(HqlCppTranslator & trans
     IHqlExpression * func = generateSteppingMeta(translator);
 
     StringBuffer s;
-    s.clear().append("virtual ISteppingMeta * query").append(name).append("() { return &");
+    s.clear().append("virtual ISteppingMeta * query").append(name).append("() override { return & ");
     translator.generateExprCpp(s, func);
     s.append(";}");
     ctx.addQuoted(s);
@@ -761,7 +761,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityRowsetRange(BuildCtx & ctx, IH
     OwnedHqlExpr normalized = normalizeListCasts(castList);
 
     {
-        MemberFunction func(*this, instance->startctx, "virtual void getInputSelection(bool & __isAllResult, size32_t & __lenResult, void * & __result)");
+        MemberFunction func(*this, instance->startctx, "virtual void getInputSelection(bool & __isAllResult, size32_t & __lenResult, void * & __result) override");
         doBuildFunctionReturn(func.ctx, castType, normalized);
     }
 
@@ -959,7 +959,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
         buildMetaInfo(inputmeta);
 
         StringBuffer s;
-        s.append("virtual IOutputMetaData * queryInputMeta() { return &").append(inputmeta.queryInstanceObject()).append("; }");
+        s.append("virtual IOutputMetaData * queryInputMeta() override { return &").append(inputmeta.queryInstanceObject()).append("; }");
         instance->classctx.addQuoted(s);
     }
 
@@ -972,7 +972,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
         BuildCtx funcctx(instance->startctx);
         OwnedHqlExpr func = getClearRecordFunction(dataset->queryRecord(), -1);
         StringBuffer s;
-        generateExprCpp(s.append("virtual size32_t createLowInputRow(ARowBuilder & crSelf) { return "), func).append("(crSelf, ctx); }");
+        generateExprCpp(s.append("virtual size32_t createLowInputRow(ARowBuilder & crSelf) override { return "), func).append("(crSelf, ctx); }");
         funcctx.addQuoted(s);
     }
 
@@ -993,7 +993,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
 
         //virtual unsigned __int64 extractRangeValue(const void * input);               // distance is assumed to be unsigned, code generator must bias if not true.
         {
-            MemberFunction func(*this, instance->startctx, "unsigned __int64 extractRangeValue(const void * _left)");
+            MemberFunction func(*this, instance->startctx, "virtual unsigned __int64 extractRangeValue(const void * _left) override");
             func.ctx.addQuotedLiteral("const byte * left = (const byte *)_left;");
             bindTableCursor(func.ctx, dataset, "left", no_left, selSeq);
             buildReturn(func.ctx, rangeValue);
@@ -1001,7 +1001,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
 
         //virtual void adjustRangeValue(void * self, const void * input, __int64 delta);        // implementation must ensure field doesn't go -ve.
         {
-            MemberFunction func(*this, instance->startctx, "void adjustRangeValue(ARowBuilder & crSelf, const void * _left, __int64 delta)");
+            MemberFunction func(*this, instance->startctx, "virtual void adjustRangeValue(ARowBuilder & crSelf, const void * _left, __int64 delta) override");
             ensureRowAllocated(func.ctx, "crSelf");
             func.ctx.addQuotedLiteral("const byte * left = (const byte *)_left;");
 
@@ -1030,14 +1030,14 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
 
         //virtual __int64 maxRightBeforeLeft()
         {
-            MemberFunction func(*this, instance->startctx, "virtual __int64 maxRightBeforeLeft()");
+            MemberFunction func(*this, instance->startctx, "virtual __int64 maxRightBeforeLeft() override");
             OwnedHqlExpr mrbl = stepCondition.getMaxRightBeforeLeft();
             buildReturn(func.ctx, mrbl);
         }
 
         //virtual __int64 maxLeftBeforeRight()
         {
-            MemberFunction func(*this, instance->startctx, "virtual __int64 maxLeftBeforeRight()");
+            MemberFunction func(*this, instance->startctx, "virtual __int64 maxLeftBeforeRight() override");
             OwnedHqlExpr mlbr = stepCondition.getMaxLeftBeforeRight();
             buildReturn(func.ctx, mlbr);
         }
@@ -1056,7 +1056,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
     //virtual size32_t transform(ARowBuilder & crSelf, unsigned _num, const void * * _rows)
     if (transform)
     {
-        MemberFunction func(*this, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf, unsigned numRows, const void * * _rows)");
+        MemberFunction func(*this, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf, unsigned numRows, const void * * _rows) override");
         ensureRowAllocated(func.ctx, "crSelf");
         func.ctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _rows[0];");
         func.ctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _rows[1];");
@@ -1085,7 +1085,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
         IHqlExpression * lastJoinField = equalityList->queryChild(numEqualFields-1);
         if (lastJoinField->queryType()->isInteger())
         {
-            MemberFunction func(*this, instance->startctx, "virtual bool createNextJoinValue(ARowBuilder & crSelf, const void * _value)");
+            MemberFunction func(*this, instance->startctx, "virtual bool createNextJoinValue(ARowBuilder & crSelf, const void * _value) override");
             ensureRowAllocated(func.ctx, "crSelf");
             func.ctx.addQuotedLiteral("const byte * value = (const byte *)_value;");
 

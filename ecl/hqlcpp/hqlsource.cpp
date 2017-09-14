@@ -642,7 +642,7 @@ public:
             {
                 outputStepping.generateSteppingMetaMember(translator, ctx, "ProjectedSteppingMeta");
 
-                MemberFunction func(translator, ctx, "virtual void mapOutputToInput(ARowBuilder & crSelf, const void * _projected, unsigned numFields)");
+                MemberFunction func(translator, ctx, "virtual void mapOutputToInput(ARowBuilder & crSelf, const void * _projected, unsigned numFields) override");
                 translator.ensureRowAllocated(func.ctx, "crSelf");
                 func.ctx.addQuotedLiteral("const byte * pr = (const byte *)_projected;");
 
@@ -663,7 +663,7 @@ public:
         else
         {
             OwnedHqlExpr fail = createValue(no_fail, makeVoidType(), createConstant("Cannot step output of index read"));
-            MemberFunction func(translator, ctx, "virtual void mapOutputToInput(void * _original, const void * _projected, unsigned numFields)");
+            MemberFunction func(translator, ctx, "virtual void mapOutputToInput(ARowBuilder & crSelf, const void * _projected, unsigned numFields) override");
             translator.buildStmt(func.ctx, fail);
         }
     }
@@ -1151,12 +1151,11 @@ void SourceBuilder::buildFilenameMember()
 void SourceBuilder::buildReadMembers(IHqlExpression * expr)
 {
     buildFilenameMember();
-    
     //---- virtual bool needTransform() { return <bool>; } ----
     if (needToCallTransform || transformCanFilter)
         translator.doBuildBoolFunction(instance->classctx, "needTransform", true);
 
-    //---- virtual bool needTransform() { return <bool>; } ----
+    //---- virtual bool transformMayFilter() { return <bool>; } ----
     if (transformCanFilter)
         translator.doBuildBoolFunction(instance->classctx, "transformMayFilter", true);
 }
@@ -1168,7 +1167,7 @@ void SourceBuilder::buildLimits(BuildCtx & classctx, IHqlExpression * expr, uniq
 
     if (choosenValue)
     {
-        MemberFunction func(translator, classctx, "virtual unsigned __int64 getChooseNLimit()");
+        MemberFunction func(translator, classctx, "virtual unsigned __int64 getChooseNLimit() override");
         OwnedHqlExpr newLimit = ensurePositiveOrZeroInt64(choosenValue);
         translator.buildReturn(func.ctx, newLimit);
     }
@@ -1657,13 +1656,13 @@ void SourceBuilder::doBuildNormalizeIterators(BuildCtx & ctx, IHqlExpression * e
     if (isChildIterator)
     {
         assertex(!root);
-        firstFunc.start("virtual bool first()");
+        firstFunc.start("virtual bool first() override");
     }
     else
     {
         assertex(root);
 
-        firstFunc.start("virtual bool first(const void * _src)");
+        firstFunc.start("virtual bool first(const void * _src) override");
         bool isProjected = (root->queryNormalizedSelector() != tableExpr->queryNormalizedSelector());
         if (!isProjected)
         {
@@ -1703,7 +1702,7 @@ void SourceBuilder::doBuildNormalizeIterators(BuildCtx & ctx, IHqlExpression * e
 
         {
             BuildCtx nextctx(instance->startctx);
-            nextctx.addQuotedFunction("virtual bool next()");
+            nextctx.addQuotedFunction("virtual bool next() override");
             nextctx.addQuoted(s.clear().append("return (").append(cursorName).append(" = (byte *)").append(iterName).append(".next()) != 0;"));
         }
     }
@@ -1715,7 +1714,7 @@ void SourceBuilder::doBuildNormalizeIterators(BuildCtx & ctx, IHqlExpression * e
 
         {
             BuildCtx nextctx(instance->startctx);
-            nextctx.addQuotedFunction("virtual bool next()");
+            nextctx.addQuotedFunction("virtual bool next() override");
             nextctx.addQuotedLiteral("return iter.next();");
         }
     }
@@ -1999,7 +1998,7 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
         buildTransform(expr);
         buildFlagsMember(expr);
 
-        if (tableExpr)
+        if (tableExpr && (activityKind < TAKchildread || activityKind > TAKchildthroughnormalize))
         {
             if (fieldInfo.hasVirtualsOrDeserialize())
             {
@@ -2074,7 +2073,7 @@ void SourceBuilder::buildKeyedLimitHelper(IHqlExpression * self)
     {
         IHqlExpression * limitValue = keyedLimitExpr->queryChild(1);
         {
-            MemberFunction func(translator, instance->startctx, "virtual unsigned __int64 getKeyedLimit()");
+            MemberFunction func(translator, instance->startctx, "virtual unsigned __int64 getKeyedLimit() override");
             translator.buildReturn(func.ctx, limitValue);
             if (isZero(limitValue))
                 translator.WARNING(CategoryUnusual, HQLWRN_KeyedLimitIsZero);
@@ -2085,14 +2084,14 @@ void SourceBuilder::buildKeyedLimitHelper(IHqlExpression * self)
             fail.setown(translator.createFailAction("Keyed limit exceeded", limitValue, NULL, instance->activityId));
 
         {
-            MemberFunction func(translator, instance->startctx, "virtual void onKeyedLimitExceeded()");
+            MemberFunction func(translator, instance->startctx, "virtual void onKeyedLimitExceeded() override");
             translator.buildStmt(func.ctx, fail);
         }
 
         IHqlExpression * transform = queryAttributeChild(keyedLimitExpr, onFailAtom, 0);
         if (transform)
         {
-            MemberFunction func(translator, instance->startctx, "virtual size32_t transformOnKeyedLimitExceeded(ARowBuilder & crSelf)");
+            MemberFunction func(translator, instance->startctx, "virtual size32_t transformOnKeyedLimitExceeded(ARowBuilder & crSelf) override");
             translator.ensureRowAllocated(func.ctx, "crSelf");
             translator.buildTransformBody(func.ctx, transform, NULL, NULL, self, NULL);
         }
@@ -2149,13 +2148,13 @@ void SourceBuilder::assignLocalExtract(BuildCtx & ctx, ParentExtract * extractBu
 
 void SourceBuilder::buildGroupAggregateHashHelper(ParentExtract * extractBuilder, IHqlExpression * dataset, IHqlExpression * fields)
 {
-    instance->classctx.addQuotedLiteral("virtual IHash * queryHash() { return &hash; }");
+    instance->classctx.addQuotedLiteral("virtual IHash * queryHash() override { return &hash; }");
 
     BuildCtx classctx(instance->nestedctx);
     IHqlStmt * classStmt = translator.beginNestedClass(classctx, "hash", "IHash", NULL, extractBuilder);
 
     {
-        MemberFunction func(translator, classctx, "virtual unsigned hash(const void * _self)");
+        MemberFunction func(translator, classctx, "virtual unsigned hash(const void * _self) override");
         assignLocalExtract(func.ctx, extractBuilder, dataset, "_self");
 
         OwnedHqlExpr hash = createValue(no_hash32, LINK(unsignedType), LINK(fields), createAttribute(internalAtom));
@@ -2213,13 +2212,13 @@ void SourceBuilder::buildGroupAggregateCompareHelper(ParentExtract * extractBuil
     OwnedHqlExpr order = createValue(no_order, makeIntType(sizeof(signed), true), LINK(leftList), LINK(rightResolved));
 
     //Now generate the nested class
-    instance->classctx.addQuotedLiteral("virtual ICompare * queryCompareRowElement() { return &compareRowElement; }");
+    instance->classctx.addQuotedLiteral("virtual ICompare * queryCompareRowElement() override { return &compareRowElement; }");
 
     BuildCtx classctx(instance->nestedctx);
     IHqlStmt * classStmt = translator.beginNestedClass(classctx, "compareRowElement", "ICompare", NULL, extractBuilder);
 
     {
-        MemberFunction func(translator, classctx, "virtual int docompare(const void * _left, const void * _right) const");
+        MemberFunction func(translator, classctx, "virtual int docompare(const void * _left, const void * _right) const override");
         assignLocalExtract(func.ctx, extractBuilder, aggregate->queryChild(0), "_left");
         func.ctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
         func.ctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
@@ -2239,7 +2238,7 @@ void SourceBuilder::buildGroupAggregateProcessHelper(ParentExtract * extractBuil
     IHqlExpression * tgtRecord = aggregate->queryChild(1);
     OwnedHqlExpr resultDataset = createDataset(no_anon, LINK(tgtRecord));
 
-    proto.append("virtual size32_t ").append(name).append("(ARowBuilder & crSelf, const void * _src)");
+    proto.append("virtual size32_t ").append(name).append("(ARowBuilder & crSelf, const void * _src) override");
     MemberFunction validateFunc(translator, instance->nestedctx, proto, MFdynamicproto);
 
     translator.ensureRowAllocated(validateFunc.ctx, "crSelf");
@@ -2350,13 +2349,13 @@ void SourceBuilder::buildGlobalGroupAggregateHelpers(IHqlExpression * expr)
     //virtual void processRow(void * self, const void * src) = 0;
     {
         BuildCtx rowctx(instance->startctx);
-        rowctx.addQuotedFunction("virtual void processRow(const void * src, IHThorGroupAggregateCallback * callback)");
+        rowctx.addQuotedFunction("virtual void processRow(const void * src, IHThorGroupAggregateCallback * callback) override");
         rowctx.addQuotedLiteral("doProcessRow((byte *)src, callback);");
     }
 
     //virtual void processRows(void * self, size32_t srcLen, const void * src) = 0;
     {
-        MemberFunction func(translator, instance->startctx, "virtual void processRows(size32_t srcLen, const void * _left, IHThorGroupAggregateCallback * callback)");
+        MemberFunction func(translator, instance->startctx, "virtual void processRows(size32_t srcLen, const void * _left, IHThorGroupAggregateCallback * callback) override");
         func.ctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
         OwnedHqlExpr ds = createVariable("left", makeReferenceModifier(tableExpr->getType()));
         OwnedHqlExpr len = createVariable("srcLen", LINK(sizetType));
@@ -2381,7 +2380,7 @@ void SourceBuilder::buildGroupingMonitors(IHqlExpression * expr, MonitorExtracto
     IHqlExpression * grouping = aggregate->queryChild(3);
 
     //virtual void createGroupSegmentMonitors(IIndexReadContext *ctx) = 0;
-    MemberFunction func(translator, instance->startctx, "virtual bool createGroupSegmentMonitors(IIndexReadContext * irc)");
+    MemberFunction func(translator, instance->startctx, "virtual bool createGroupSegmentMonitors(IIndexReadContext * irc) override");
 
     monitorsForGrouping = true;
     if (op == no_newaggregate)
@@ -2449,13 +2448,13 @@ void SourceBuilder::buildCountHelpers(IHqlExpression * expr, bool allowMultiple)
             //virtual size32_t numValid(const void * src) = 0;
             {
                 BuildCtx rowctx(instance->startctx);
-                rowctx.addQuotedFunction("virtual size32_t numValid(const void * src)");
+                rowctx.addQuotedFunction("virtual size32_t numValid(const void * src) override");
                 rowctx.addQuotedLiteral("return valid((byte *)src);");
             }
 
             //virtual size32_t numValid(size32_t srcLen, const void * src);
             {
-                MemberFunction func(translator, instance->startctx, "virtual size32_t numValid(size32_t srcLen, const void * _src)");
+                MemberFunction func(translator, instance->startctx, "virtual size32_t numValid(size32_t srcLen, const void * _src) override");
                 func.ctx.addQuotedLiteral("unsigned char * src = (unsigned char *)_src;");
                 OwnedHqlExpr ds = createVariable("src", makeReferenceModifier(tableExpr->getType()));
                 OwnedHqlExpr len = createVariable("srcLen", LINK(sizetType));
@@ -2488,7 +2487,7 @@ void SourceBuilder::buildCountHelpers(IHqlExpression * expr, bool allowMultiple)
         else
         {
             //virtual size32_t numValid(size32_t srcLen, const void * src);
-            MemberFunction func(translator, instance->startctx, "virtual size32_t numValid(size32_t srcLen, const void * _src)");
+            MemberFunction func(translator, instance->startctx, "virtual size32_t numValid(size32_t srcLen, const void * _src) override");
             if (isExists)
                 func.ctx.addReturn(one);
             else
@@ -2662,7 +2661,7 @@ public:
         logicalFilenameMarker.setown(getFileLogicalName(tableExpr));
         mode = tableExpr->queryChild(2);
         modeOp = mode->getOperator();
-        includeFormatCrc = (modeOp != no_csv);
+        includeFormatCrc = (modeOp != no_csv && modeOp != no_pipe);
     }
 
     virtual void buildMembers(IHqlExpression * expr);
@@ -2688,7 +2687,7 @@ void DiskReadBuilderBase::buildMembers(IHqlExpression * expr)
     //Process any KEYED() information
     if (monitors.isFiltered())
     {
-        MemberFunction func(translator, instance->startctx, "virtual void createSegmentMonitors(IIndexReadContext *irc)");
+        MemberFunction func(translator, instance->startctx, "virtual void createSegmentMonitors(IIndexReadContext *irc) override");
         monitors.buildSegments(func.ctx, "irc", true);
     }
     instance->addAttributeBool("_isKeyed", monitors.isFiltered());
@@ -2723,11 +2722,9 @@ void DiskReadBuilderBase::buildMembers(IHqlExpression * expr)
 
     translator.buildEncryptHelper(instance->startctx, tableExpr->queryAttribute(encryptAtom));
 
-    //---- virtual size32_t getPreloadSize() { return <value>; } ----
+    //---- preloadSize is passed via the xgmml, not via a member
     if (preloadSize)
     {
-        MemberFunction func(translator, instance->classctx, "virtual size32_t getPreloadSize()");
-        translator.buildReturn(func.ctx, preloadSize, sizetType);
         instance->addAttributeInt("_preloadSize", preloadSize->queryValue()->getIntValue());
     }
 
@@ -2845,7 +2842,10 @@ public:
 
 void DiskReadBuilder::buildMembers(IHqlExpression * expr)
 {
-    buildReadMembers(expr);
+    if (modeOp == no_csv)
+        buildFilenameMember();
+    else if (modeOp != no_pipe)
+        buildReadMembers(expr);
     DiskReadBuilderBase::buildMembers(expr);
 
     //---- virtual const char * getPipeProgram() { return "grep"; } ----
@@ -2855,7 +2855,7 @@ void DiskReadBuilder::buildMembers(IHqlExpression * expr)
             throwError(HQLERR_PipeNotAllowed);
 
         {
-            MemberFunction func(translator, instance->startctx, "virtual const char * getPipeProgram()");
+            MemberFunction func(translator, instance->startctx, "virtual const char * getPipeProgram() override");
             translator.buildReturn(func.ctx, mode->queryChild(0), unknownVarStringType);
         }
 
@@ -2870,7 +2870,7 @@ void DiskReadBuilder::buildMembers(IHqlExpression * expr)
                 translator.buildCsvReadTransformer(tableExpr, csvInstanceName, csvFromPipe);
 
                 StringBuffer s;
-                s.append("virtual ICsvToRowTransformer * queryCsvTransformer() { return &").append(csvInstanceName).append("; }");
+                s.append("virtual ICsvToRowTransformer * queryCsvTransformer() override { return &").append(csvInstanceName).append("; }");
                 instance->classctx.addQuoted(s);
             }
             else
@@ -2916,7 +2916,7 @@ void DiskReadBuilder::buildTransform(IHqlExpression * expr)
         translator.buildCsvParameters(instance->nestedctx, mode, NULL, true);
 
         {
-            MemberFunction func(translator, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf, unsigned * lenSrc, const char * * dataSrc)");
+            MemberFunction func(translator, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf, unsigned * lenSrc, const char * * dataSrc) override");
             translator.ensureRowAllocated(func.ctx, "crSelf");
 
             //associateVirtualCallbacks(*this, func.ctx, tableExpr);
@@ -2933,9 +2933,9 @@ void DiskReadBuilder::buildTransform(IHqlExpression * expr)
 
     MemberFunction func(translator, instance->startctx);
     if (instance->kind == TAKdiskread)
-        func.start("virtual size32_t transform(ARowBuilder & crSelf, const void * _left)");
+        func.start("virtual size32_t transform(ARowBuilder & crSelf, const void * _left) override");
     else
-        func.start("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, IFilePositionProvider * fpp)");
+        func.start("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, IFilePositionProvider * fpp) override");
     translator.ensureRowAllocated(func.ctx, "crSelf");
     func.ctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
     buildTransformBody(func.ctx, expr, true, false, true);
@@ -3031,7 +3031,7 @@ void DiskNormalizeBuilder::buildTransform(IHqlExpression * expr)
     globaliterctx.setown(new BuildCtx(instance->startctx));
     globaliterctx->addGroup();
 
-    MemberFunction func(translator, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf)");
+    MemberFunction func(translator, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf) override");
     translator.ensureRowAllocated(func.ctx, "crSelf");
     buildTransformBody(func.ctx, expr, true, false, false);
 }
@@ -3100,13 +3100,13 @@ void DiskAggregateBuilder::buildMembers(IHqlExpression * expr)
     //virtual void processRow(void * self, const void * src) = 0;
     {
         BuildCtx rowctx(instance->startctx);
-        rowctx.addQuotedFunction("virtual void processRow(ARowBuilder & crSelf, const void * src)");
+        rowctx.addQuotedFunction("virtual void processRow(ARowBuilder & crSelf, const void * src) override");
         rowctx.addQuotedLiteral("doProcessRow(crSelf, (const byte *)src);");
     }
 
     //virtual void processRows(void * self, size32_t srcLen, const void * src) = 0;
     {
-        MemberFunction func(translator, instance->startctx, "virtual void processRows(ARowBuilder & crSelf, size32_t srcLen, const void * _left)");
+        MemberFunction func(translator, instance->startctx, "virtual void processRows(ARowBuilder & crSelf, size32_t srcLen, const void * _left) override");
         func.ctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
         OwnedHqlExpr ds = createVariable("left", makeReferenceModifier(tableExpr->getType()));
         OwnedHqlExpr len = createVariable("srcLen", LINK(sizetType));
@@ -3354,7 +3354,7 @@ void ChildNormalizeBuilder::buildTransform(IHqlExpression * expr)
     globaliterctx.setown(new BuildCtx(instance->startctx));
     globaliterctx->addGroup();
 
-    MemberFunction func(translator, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf)");
+    MemberFunction func(translator, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf) override");
     translator.ensureRowAllocated(func.ctx, "crSelf");
     buildTransformBody(func.ctx, expr, true, false, false);
 }
@@ -3409,7 +3409,7 @@ void ChildAggregateBuilder::buildMembers(IHqlExpression * expr)
 
 void ChildAggregateBuilder::buildTransform(IHqlExpression * expr)
 {
-    MemberFunction func(translator, instance->startctx, "virtual void processRows(ARowBuilder & crSelf)");
+    MemberFunction func(translator, instance->startctx, "virtual void processRows(ARowBuilder & crSelf) override");
     translator.ensureRowAllocated(func.ctx, "crSelf");
     buildTransformBody(func.ctx, expr, false, false, false);
 }
@@ -3467,7 +3467,7 @@ void ChildGroupAggregateBuilder::buildMembers(IHqlExpression * expr)
     translator.doBuildAggregateClearFunc(instance->startctx, aggregate);
 
     //virtual size32_t mergeAggregate(ARowBuilder & crSelf, const void * src) - never actually called.
-    instance->startctx.addQuotedLiteral("virtual size32_t mergeAggregate(ARowBuilder & crSelf, const void * src) { return 0; }");
+    instance->startctx.addQuotedLiteral("virtual size32_t mergeAggregate(ARowBuilder & crSelf, const void * src) override { return 0; }");
 }
 
 void ChildGroupAggregateBuilder::buildTransform(IHqlExpression * expr)
@@ -3532,7 +3532,7 @@ void ChildThroughNormalizeBuilder::buildTransform(IHqlExpression * expr)
     globaliterctx.setown(new BuildCtx(instance->startctx));
     globaliterctx->addGroup();
 
-    MemberFunction func(translator, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf)");
+    MemberFunction func(translator, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf) override");
     translator.ensureRowAllocated(func.ctx, "crSelf");
     buildTransformBody(func.ctx, expr, true, false, false);
 }
@@ -4540,13 +4540,13 @@ void MonitorExtractor::generateFormatWrapping(StringBuffer & createMonitorText, 
     s.clear().append("struct ").append(className).append(" : public RtlCInterface, public IKeySegmentFormatTranslator");
     suffix.append(instanceName).append(";");
     classctx.addQuotedCompound(s, suffix);
-    classctx.addQuotedLiteral("virtual void Link() const { RtlCInterface::Link(); }");
-    classctx.addQuotedLiteral("virtual bool Release() const { return RtlCInterface::Release(); }");
-    classctx.addQuoted(s.clear().append("virtual const char * queryFactoryName() const { return \"").append(factoryName).append("\"; }"));
-    classctx.addQuoted(s.clear().append("virtual unsigned queryHashCode() const { return ").append(getExpressionCRC(selector)).append("; }"));
+    classctx.addQuotedLiteral("virtual void Link() const override { RtlCInterface::Link(); }");
+    classctx.addQuotedLiteral("virtual bool Release() const override { return RtlCInterface::Release(); }");
+    classctx.addQuoted(s.clear().append("virtual const char * queryFactoryName() const override { return \"").append(factoryName).append("\"; }"));
+    classctx.addQuoted(s.clear().append("virtual unsigned queryHashCode() const override { return ").append(getExpressionCRC(selector)).append("; }"));
 
     {
-        MemberFunction func(translator, classctx, "virtual void extractField(void * _target, const void * _row) const");
+        MemberFunction func(translator, classctx, "virtual void extractField(void * _target, const void * _row) const override");
         classctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
         func.ctx.addQuotedLiteral("const byte * row = (const byte *)_row;");
         func.ctx.addQuotedLiteral("byte * target = (byte *)_target;");
@@ -6280,7 +6280,7 @@ void IndexReadBuilderBase::buildMembers(IHqlExpression * expr)
 {
     //---- virtual void createSegmentMonitors(struct IIndexReadContext *) { ... } ----
     {
-        MemberFunction func(translator, instance->startctx, "virtual void createSegmentMonitors(IIndexReadContext *irc)");
+        MemberFunction func(translator, instance->startctx, "virtual void createSegmentMonitors(IIndexReadContext *irc) override");
         monitors.buildSegments(func.ctx, "irc", false);
     }
 
@@ -6463,7 +6463,7 @@ void NewIndexReadBuilder::buildTransform(IHqlExpression * expr)
 {
     if (true)
     {
-        MemberFunction func(translator, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf, const void * _left)");
+        MemberFunction func(translator, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf, const void * _left) override");
         translator.ensureRowAllocated(func.ctx, "crSelf");
         func.ctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
         translator.associateBlobHelper(func.ctx, tableExpr, "fpp");
@@ -6472,7 +6472,7 @@ void NewIndexReadBuilder::buildTransform(IHqlExpression * expr)
 
     if (generateUnfilteredTransform)
     {
-        MemberFunction func(translator, instance->startctx, "virtual size32_t unfilteredTransform(ARowBuilder & crSelf, const void * _left)");
+        MemberFunction func(translator, instance->startctx, "virtual size32_t unfilteredTransform(ARowBuilder & crSelf, const void * _left) override");
         translator.ensureRowAllocated(func.ctx, "crSelf");
         func.ctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
         translator.associateBlobHelper(func.ctx, tableExpr, "fpp");
@@ -6545,7 +6545,7 @@ void IndexNormalizeBuilder::buildTransform(IHqlExpression * expr)
     globaliterctx.setown(new BuildCtx(instance->startctx));
     globaliterctx->addGroup();
 
-    MemberFunction func(translator, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf)");
+    MemberFunction func(translator, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf) override");
     translator.ensureRowAllocated(func.ctx, "crSelf");
 
     //Because this transform creates iterator classes for the child iterators the expression tree needs to be modified
@@ -6614,12 +6614,12 @@ void IndexAggregateBuilder::buildMembers(IHqlExpression * expr)
     //virtual void processRow(void * self, const void * src) = 0;
     {
         BuildCtx rowctx(instance->startctx);
-        rowctx.addQuotedFunction("virtual void processRow(ARowBuilder & crSelf, const void * src)");
+        rowctx.addQuotedFunction("virtual void processRow(ARowBuilder & crSelf, const void * src) override");
         rowctx.addQuotedLiteral("doProcessRow(crSelf, (const byte *)src);");
     }
 
     {
-        MemberFunction func(translator, instance->startctx, "virtual void processRows(ARowBuilder & crSelf, size32_t srcLen, const void * _left)");
+        MemberFunction func(translator, instance->startctx, "virtual void processRows(ARowBuilder & crSelf, size32_t srcLen, const void * _left) override");
         func.ctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
         OwnedHqlExpr ds = createVariable("left", makeReferenceModifier(tableExpr->getType()));
         OwnedHqlExpr len = createVariable("srcLen", LINK(sizetType));
@@ -6707,7 +6707,7 @@ void IndexCountBuilder::buildTransform(IHqlExpression * expr)
 {
     if (transformCanFilter||isNormalize)
     {
-        MemberFunction func(translator, instance->startctx, "virtual size32_t numValid(const void * _left)");
+        MemberFunction func(translator, instance->startctx, "virtual size32_t numValid(const void * _left) override");
         func.ctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
         translator.associateBlobHelper(func.ctx, tableExpr, "fpp");
         OwnedHqlExpr cnt;
@@ -6824,7 +6824,7 @@ void IndexGroupAggregateBuilder::doBuildProcessCountMembers(BuildCtx & ctx, IHql
     OwnedHqlExpr resultDataset = createDataset(no_anon, LINK(tgtRecord));
 
     {
-        MemberFunction func(translator, ctx, "virtual size32_t initialiseCountGrouping(ARowBuilder & crSelf, const void * _src)");
+        MemberFunction func(translator, ctx, "virtual size32_t initialiseCountGrouping(ARowBuilder & crSelf, const void * _src) override");
         translator.ensureRowAllocated(func.ctx, "crSelf");
         func.ctx.addQuotedLiteral("unsigned char * src = (unsigned char *) _src;");
         translator.associateBlobHelper(func.ctx, tableExpr, "fpp");
@@ -6843,7 +6843,7 @@ void IndexGroupAggregateBuilder::doBuildProcessCountMembers(BuildCtx & ctx, IHql
     }
 
     {
-        MemberFunction func(translator, ctx, "virtual size32_t processCountGrouping(ARowBuilder & crSelf, unsigned __int64 count)");
+        MemberFunction func(translator, ctx, "virtual size32_t processCountGrouping(ARowBuilder & crSelf, unsigned __int64 count) override");
         translator.ensureRowAllocated(func.ctx, "crSelf");
         BoundRow * selfCursor = translator.bindSelf(func.ctx, resultDataset, "crSelf");
 
@@ -6953,7 +6953,7 @@ void HqlCppTranslator::buildXmlReadTransform(IHqlExpression * dataset, StringBuf
     classctx.addQuoted(s);
 
     {
-        MemberFunction func(*this, classctx, "virtual size32_t transform(ARowBuilder & crSelf, IColumnProvider * row, IThorDiskCallback * fpp)");
+        MemberFunction func(*this, classctx, "virtual size32_t transform(ARowBuilder & crSelf, IColumnProvider * row, IThorDiskCallback * fpp) override");
         ensureRowAllocated(func.ctx, "crSelf");
 
         xmlUsesContents = false;
@@ -6990,9 +6990,9 @@ unsigned HqlCppTranslator::buildCsvReadTransform(BuildCtx & subctx, IHqlExpressi
     MemberFunction func(*this, subctx);
 
     if (newInterface)
-        func.start("virtual size32_t transform(ARowBuilder & crSelf, unsigned * lenSrc, const char * * dataSrc)");
+        func.start("virtual size32_t transform(ARowBuilder & crSelf, unsigned * lenSrc, const char * * dataSrc) override");
     else
-        func.start("virtual size32_t transform(ARowBuilder & crSelf, unsigned * lenSrc, const char * * dataSrc, unsigned __int64 _fpos)");
+        func.start("virtual size32_t transform(ARowBuilder & crSelf, unsigned * lenSrc, const char * * dataSrc, unsigned __int64 _fpos) override");
 
     //MORE: If this becomes a compound activity
     BoundRow * rootSelfRow = bindSelf(func.ctx, dataset, "crSelf");
@@ -7046,8 +7046,8 @@ void HqlCppTranslator::buildCsvReadTransformer(IHqlExpression * dataset, StringB
     transformClass->setIncomplete(true);
     transformClass->setIncluded(false);         // if can't generate csv for this record, then don't generate an invalid class.
 
-    classctx.addQuotedLiteral("virtual void Link() const { RtlCInterface::Link(); }");
-    classctx.addQuotedLiteral("virtual bool Release() const { return RtlCInterface::Release(); }");
+    classctx.addQuotedLiteral("virtual void Link() const override { RtlCInterface::Link(); }");
+    classctx.addQuotedLiteral("virtual bool Release() const override { return RtlCInterface::Release(); }");
 
     unsigned maxColumns = buildCsvReadTransform(classctx, dataset, false, optCsvAttr);
     doBuildUnsignedFunction(classctx, "getMaxColumns", maxColumns);
@@ -7179,11 +7179,11 @@ protected:
 
 void FetchBuilder::buildMembers(IHqlExpression * expr)
 {
-    buildReadMembers(expr);
+    buildFilenameMember();
 
     IHqlExpression * fetch = queryFetch(expr);
     {
-        MemberFunction func(translator, instance->startctx, "virtual unsigned __int64 extractPosition(const void * _right)");
+        MemberFunction func(translator, instance->startctx, "virtual unsigned __int64 extractPosition(const void * _right) override");
         func.ctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
         translator.bindTableCursor(func.ctx, fetch->queryChild(1), "right", no_right, selSeq);
         translator.buildReturn(func.ctx, fetch->queryChild(2));
@@ -7215,17 +7215,13 @@ void FetchBuilder::buildMembers(IHqlExpression * expr)
             translator.buildCsvParameters(instance->nestedctx, tableExpr->queryChild(2), NULL, true);
             unsigned maxColumns = getFieldCount(tableExpr->queryRecord());
             StringBuffer s;
-            s.clear().append("virtual unsigned getMaxColumns() { return ").append(maxColumns).append("; }");
+            s.clear().append("virtual unsigned getMaxColumns() override { return ").append(maxColumns).append("; }");
             instance->classctx.addQuoted(s);
             break;
         }
     case no_xml:
     case no_json:
-        {
-            // virtual const char * getXmlIteratorPath()
-            translator.doBuildVarStringFunction(instance->classctx, "getXmlIteratorPath", queryRealChild(tableExpr->queryChild(2), 0));
-            break;
-        }
+        break;
     default:
         translator.buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", physicalRecord, NULL, 0);
         break;
@@ -7234,10 +7230,10 @@ void FetchBuilder::buildMembers(IHqlExpression * expr)
     if (!containsOnlyLeft(fetch->queryChild(3), true))
     {
         //MORE: Need to change following if we optimize it to only extract the relevant fields.
-        instance->classctx.addQuotedLiteral("virtual bool extractAllJoinFields() { return true; }");
+        instance->classctx.addQuotedLiteral("virtual bool extractAllJoinFields() override { return true; }");
 
         {
-            MemberFunction func(translator, instance->startctx, "virtual size32_t extractJoinFields(ARowBuilder & crSelf, const void * _left)");
+            MemberFunction func(translator, instance->startctx, "virtual size32_t extractJoinFields(ARowBuilder & crSelf, const void * _left) override");
             translator.ensureRowAllocated(func.ctx, "crSelf");
             translator.buildRecordSerializeExtract(func.ctx, memoryRhsRecord);
         }
@@ -7245,7 +7241,7 @@ void FetchBuilder::buildMembers(IHqlExpression * expr)
         StringBuffer s;
         MetaInstance meta(translator, serializedRhsRecord, false);
         translator.buildMetaInfo(meta);
-        instance->classctx.addQuoted(s.clear().append("virtual IOutputMetaData * queryExtractedSize() { return &").append(meta.queryInstanceObject()).append("; }"));
+        instance->classctx.addQuoted(s.clear().append("virtual IOutputMetaData * queryExtractedSize() override { return &").append(meta.queryInstanceObject()).append("; }"));
     }
 }
 
@@ -7258,16 +7254,16 @@ void FetchBuilder::buildTransform(IHqlExpression * expr)
     switch (getDatasetKind(tableExpr))
     {
     case no_csv:
-        func.start("virtual size32_t transform(ARowBuilder & crSelf, unsigned * lenLeft, const char * * dataLeft, const void * _right, unsigned __int64 _fpos)");
+        func.start("virtual size32_t transform(ARowBuilder & crSelf, unsigned * lenLeft, const char * * dataLeft, const void * _right, unsigned __int64 _fpos) override");
         func.ctx.addQuotedLiteral("unsigned char * right = (unsigned char *)_right;");
         break;
     case no_xml:
     case no_json:
-        func.start("virtual size32_t transform(ARowBuilder & crSelf, IColumnProvider * xmlLeft, const void * _right, unsigned __int64 _fpos)");
+        func.start("virtual size32_t transform(ARowBuilder & crSelf, IColumnProvider * xmlLeft, const void * _right, unsigned __int64 _fpos) override");
         func.ctx.addQuotedLiteral("unsigned char * right = (unsigned char *)_right;");
         break;
     default:
-        func.start("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, const void * _right, unsigned __int64 _fpos)");
+        func.start("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, const void * _right, unsigned __int64 _fpos) override");
         func.ctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
         func.ctx.addQuotedLiteral("unsigned char * right = (unsigned char *)_right;");
         break;
@@ -7277,7 +7273,7 @@ void FetchBuilder::buildTransform(IHqlExpression * expr)
     buildTransformBody(func.ctx, expr, true, false, true);
 
     if (translator.xmlUsesContents)
-        instance->classctx.addQuotedLiteral("virtual bool requiresContents() { return true; }");
+        instance->classctx.addQuotedLiteral("virtual bool requiresContents() override { return true; }");
 }
 
 

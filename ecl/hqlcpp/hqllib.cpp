@@ -479,7 +479,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLibrarySelect(BuildCtx & ctx, 
 
 void HqlCppTranslator::buildLibraryInstanceExtract(BuildCtx & ctx, HqlCppLibraryInstance * libraryInstance)
 {
-    MemberFunction func(*this, ctx, "virtual void createParentExtract(rtlRowBuilder & builder)");
+    MemberFunction func(*this, ctx, "virtual void createParentExtract(rtlRowBuilder & builder) override");
 
     BuildCtx beforeBuilderCtx(func.ctx);
     beforeBuilderCtx.addGroup();
@@ -583,7 +583,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLibraryInstance(BuildCtx & ctx
 
     StringBuffer s;
     BuildCtx metactx(instance->classctx);
-    metactx.addQuotedFunction("virtual IOutputMetaData * queryOutputMeta(unsigned whichOutput)");
+    metactx.addQuotedFunction("virtual IOutputMetaData * queryOutputMeta(unsigned whichOutput) override");
     BuildCtx switchctx(metactx);
     switchctx.addQuotedCompoundLiteral("switch (whichOutput)");
 
@@ -602,7 +602,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLibraryInstance(BuildCtx & ctx
 
     {
         //Library Name must be onCreate invariant
-        MemberFunction func(*this, instance->createctx, "virtual char * getLibraryName()");
+        MemberFunction func(*this, instance->createctx, "virtual char * getLibraryName() override");
         buildReturn(func.ctx, name, unknownVarStringType);
     }
 

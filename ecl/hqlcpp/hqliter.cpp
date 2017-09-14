@@ -280,10 +280,10 @@ void CompoundIteratorBuilder::createSingleIterator(StringBuffer & iterName, IHql
     IHqlExpression * root = queryRoot(expr);
     if (expr->queryBody() == root)
     {
-        MemberFunction firstfunc(translator, classctx, "virtual const byte * first()");
+        MemberFunction firstfunc(translator, classctx, "virtual const byte * first() override");
         createRawFirstFunc(firstfunc.ctx, expr, cursors);
 
-        MemberFunction nextfunc(translator, classctx, "virtual const byte * next()");
+        MemberFunction nextfunc(translator, classctx, "virtual const byte * next() override");
         createRawNextFunc(nextfunc.ctx, expr, cursors);
     }
     else
@@ -291,7 +291,7 @@ void CompoundIteratorBuilder::createSingleIterator(StringBuffer & iterName, IHql
         MemberFunction rawfirstfunc(translator, classctx, "inline const byte * rawFirst()");
         createRawFirstFunc(rawfirstfunc.ctx, root, cursors);
 
-        MemberFunction rawnextfunc(translator, classctx, "virtual const byte * rawNext()");
+        MemberFunction rawnextfunc(translator, classctx, "inline const byte * rawNext()");
         createRawNextFunc(rawnextfunc.ctx, root, cursors);
 
         OwnedHqlExpr failValue = createTranslatedOwned(createValue(no_nullptr, makeVoidType()));
@@ -309,14 +309,14 @@ void CompoundIteratorBuilder::createSingleIterator(StringBuffer & iterName, IHql
         checkfunc.ctx.addReturn(row);
 
         BuildCtx firstctx(classctx);
-        firstctx.addQuotedFunction("virtual const byte * first()");
+        firstctx.addQuotedFunction("virtual const byte * first() override");
         firstctx.addQuotedLiteral("if (!rawFirst()) return NULL;");
         firstctx.addQuotedCompoundLiteral("for (;;)");
         firstctx.addQuotedLiteral("const byte * valid = checkValid(); if (valid) return valid;");
         firstctx.addQuotedLiteral("if (!rawNext()) return NULL;");
 
         BuildCtx nextctx(classctx);
-        nextctx.addQuotedFunction("virtual const byte * next()");
+        nextctx.addQuotedFunction("virtual const byte * next() override");
         nextctx.addQuotedCompoundLiteral("for (;;)");
         nextctx.addQuotedLiteral("if (!rawNext()) return NULL;");
         nextctx.addQuotedLiteral("const byte * valid = checkValid(); if (valid) return valid;");

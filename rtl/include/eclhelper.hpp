@@ -1415,6 +1415,7 @@ struct IHThorCombineGroupArg : public IHThorArg
 
 struct IHThorRollupGroupArg : public IHThorArg
 {
+    virtual bool canFilter()                                { return false; }
     virtual size32_t transform(ARowBuilder & rowBuilder, unsigned _num, const void * * _rows) = 0;
 };
 
@@ -1771,6 +1772,8 @@ struct IHThorAnyJoinBaseArg : public IHThorArg
     virtual size32_t createDefaultRight(ARowBuilder & rowBuilder) = 0;
     virtual unsigned getJoinFlags() = 0;
     virtual unsigned getKeepLimit() = 0;
+    virtual unsigned getMatchAbortLimit() = 0;
+    virtual void onMatchAbortLimitExceeded() = 0;
 
 //Join:
 //Denormalize
@@ -1796,8 +1799,6 @@ struct IHThorJoinBaseArg : public IHThorAnyJoinBaseArg
     virtual double getSkew() = 0;
     virtual unsigned getJoinLimit() = 0;                                        // if a key joins more than this limit no records are output (0 = no limit)
     virtual double getTargetSkew() = 0;
-    virtual unsigned getMatchAbortLimit() = 0;
-    virtual void onMatchAbortLimitExceeded() = 0;
     virtual ICompare * queryCompareLeftRightLower() = 0;
     virtual ICompare * queryCompareLeftRightUpper() = 0;
     virtual ICompare * queryPrefixCompare() = 0;
@@ -2678,7 +2679,6 @@ struct IHThorChildGroupAggregateArg : extends IHThorChildGroupAggregateBaseArg, 
 };
 
 
-//Normalize - not yet implemented...
 struct IHThorChildThroughNormalizeBaseArg : public IHThorArg
 {
 };
