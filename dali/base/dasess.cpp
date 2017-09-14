@@ -893,6 +893,8 @@ public:
             securitydisabled = true;
             return SecAccess_Unavailable;
         }
+        if (!udesc)
+            return SecAccess_Unknown;
         CMessageBuffer mb;
         mb.append((int)MSR_LOOKUP_LDAP_PERMISSIONS);
         mb.append(key).append(obj);
