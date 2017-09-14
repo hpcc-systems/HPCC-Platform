@@ -2106,6 +2106,36 @@ bool Cws_accessEx::onResourceDelete(IEspContext &context, IEspResourceDeleteRequ
     return true;
 }
 
+void Cws_accessEx::addResourcePermission(const char *name, int type, int allows, int denies, IArrayOf<IEspResourcePermission> &permissions)
+{
+    if (isEmptyString(name))
+        return;
+
+    StringBuffer nameIn = name;
+    Owned<IEspResourcePermission> permission = createResourcePermission();
+    permission->setAccount_name(name);
+    permission->setEscaped_account_name(nameIn.replaceString("\'", "\\\'").str());
+    permission->setAccount_type(type);
+    if((allows & NewSecAccess_Access) == NewSecAccess_Access)
+        permission->setAllow_access(true);
+    if((allows & NewSecAccess_Read) == NewSecAccess_Read)
+        permission->setAllow_read(true);
+    if((allows & NewSecAccess_Write) == NewSecAccess_Write)
+        permission->setAllow_write(true);
+    if((allows & NewSecAccess_Full) == NewSecAccess_Full)
+        permission->setAllow_full(true);
+    if((denies & NewSecAccess_Access) == NewSecAccess_Access)
+        permission->setDeny_access(true);
+    if((denies & NewSecAccess_Read) == NewSecAccess_Read)
+        permission->setDeny_read(true);
+    if((denies & NewSecAccess_Write) == NewSecAccess_Write)
+        permission->setDeny_write(true);
+    if((denies & NewSecAccess_Full) == NewSecAccess_Full)
+        permission->setDeny_full(true);
+
+    permissions.append(*permission.getClear());
+}
+
 bool Cws_accessEx::onResourcePermissions(IEspContext &context, IEspResourcePermissionsRequest &req, IEspResourcePermissionsResponse &resp)
 {
     try
@@ -2135,46 +2165,7 @@ bool Cws_accessEx::onResourcePermissions(IEspContext &context, IEspResourcePermi
         ForEachItemIn(x, permissions)
         {
             CPermission& perm = permissions.item(x);
-
-            Owned<IEspResourcePermission> onepermission = createResourcePermission();
-            const char* actname = perm.getAccount_name();
-            if(actname != NULL && *actname != '\0')
-            {
-                StringBuffer escapedname;
-                int i = 0;
-                char c;
-                while((c = actname[i++]) != '\0')
-                {
-                    if(c == '\'')
-                        escapedname.append('\\').append('\'');
-                    else
-                        escapedname.append(c);
-                }
-                onepermission->setAccount_name(actname);
-                onepermission->setEscaped_account_name(escapedname.str());
-            }
-            onepermission->setAccount_type(perm.getAccount_type());
-
-            int allows = perm.getAllows();
-            int denies = perm.getDenies();
-            if((allows & NewSecAccess_Access) == NewSecAccess_Access)
-                onepermission->setAllow_access(true);
-            if((allows & NewSecAccess_Read) == NewSecAccess_Read)
-                onepermission->setAllow_read(true);
-            if((allows & NewSecAccess_Write) == NewSecAccess_Write)
-                onepermission->setAllow_write(true);
-            if((allows & NewSecAccess_Full) == NewSecAccess_Full)
-                onepermission->setAllow_full(true);
-            if((denies & NewSecAccess_Access) == NewSecAccess_Access)
-                onepermission->setDeny_access(true);
-            if((denies & NewSecAccess_Read) == NewSecAccess_Read)
-                onepermission->setDeny_read(true);
-            if((denies & NewSecAccess_Write) == NewSecAccess_Write)
-                onepermission->setDeny_write(true);
-            if((denies & NewSecAccess_Full) == NewSecAccess_Full)
-                onepermission->setDeny_full(true);
-
-            parray.append(*onepermission.getLink());
+            addResourcePermission(perm.getAccount_name(), perm.getAccount_type(), perm.getAllows(), perm.getDenies(), parray);
         }
 
         resp.setBasedn(req.getBasedn());
@@ -2183,6 +2174,69 @@ bool Cws_accessEx::onResourcePermissions(IEspContext &context, IEspResourcePermi
         resp.setName(req.getName());
         resp.setPrefix(req.getPrefix());
         resp.setPermissions(parray);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+
+    return true;
+}
+
+bool Cws_accessEx::onResourcePermissionQuery(IEspContext &context, IEspResourcePermissionQueryRequest &req, IEspResourcePermissionQueryResponse &resp)
+{
+    try
+    {
+        CLdapSecManager* ldapSecMgr = queryLDAPSecurityManager(context);
+        if(!ldapSecMgr)
+        {
+            resp.setNoSecMngr(true);
+            return true;
+        }
+
+        checkUser(context, req.getRtype(), req.getRtitle(), SecAccess_Read);
+
+        __int64 pageStartFrom = 0;
+        unsigned pageSize = 100;
+        if (!req.getPageSize_isNull())
+            pageSize = req.getPageSize();
+        if (!req.getPageStartFrom_isNull())
+            pageStartFrom = req.getPageStartFrom();
+
+        ResourcePermissionField sortOrder[2] = {RPFName, RPFterm};
+        if (req.getSortBy() == CResourcePermissionSortBy_Type)
+            sortOrder[0] = RPFType;
+
+        sortOrder[0] = (ResourcePermissionField) (sortOrder[0] | RPFnocase);
+        bool descending = req.getDescending();
+        if (descending)
+            sortOrder[0] = (ResourcePermissionField) (sortOrder[0] | RPFreverse);
+
+        ACCOUNT_TYPE_REQ accountTypeReq = REQ_ANY_ACT;
+        CAccountTypeReq accountType = req.getAccountType();
+        switch(accountType)
+        {
+        case CAccountTypeReq_User:
+            accountTypeReq = REQ_USER_ACT;
+            break;
+        case CAccountTypeReq_Group:
+            accountTypeReq = REQ_GROUP_ACT;
+            break;
+        }
+        unsigned total;
+        __int64 cacheHint;
+        IArrayOf<IEspResourcePermission> permissions;
+        Owned<ISecItemIterator> it = ldapSecMgr->getResourcePermissionsSorted(req.getName(), accountTypeReq, req.getBasedn(),
+            req.getRtype(), req.getPrefix(), sortOrder, (const __int64) pageStartFrom, (const unsigned) pageSize, &total, &cacheHint);
+        ForEach(*it)
+        {
+            IPropertyTree& r = it->query();
+            addResourcePermission(r.queryProp(getResourcePermissionFieldNames(RPFName)), r.getPropInt(getResourcePermissionFieldNames(RPFType)),
+                r.getPropInt(getResourcePermissionFieldNames(RPFAllow)), r.getPropInt(getResourcePermissionFieldNames(RPFDeny)), permissions);
+        }
+        resp.setPermissions(permissions);
+        resp.setTotalResourcePermissions(total);
+        resp.setCacheHint(cacheHint);
     }
     catch(IException* e)
     {
