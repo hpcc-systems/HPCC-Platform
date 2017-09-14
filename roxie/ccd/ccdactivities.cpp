@@ -1600,28 +1600,8 @@ public:
         csvSplitter.init(helper->getMaxColumns(), csvInfo, quotes, separators, terminators, escapes);
         while (!aborted)
         {
-            // MORE - there are rumours of a  csvSplitter that operates on a stream... if/when it exists, this should use it
-            if (reader->eos())
-            {
-                break;
-            }
-            size32_t rowSize = 4096; // MORE - make configurable
-            size32_t thisLineLength;
-            for (;;)
-            {
-                size32_t avail;
-                const void *peek = reader->peek(rowSize, avail);
-                thisLineLength = csvSplitter.splitLine(avail, (const byte *)peek);
-                if (thisLineLength < rowSize || avail < rowSize)
-                    break;
-                if (rowSize == maxRowSize)
-                    throw MakeStringException(0, "File contained a line of length greater than %d bytes.", maxRowSize);
-                if (rowSize >= maxRowSize/2)
-                    rowSize = maxRowSize;
-                else
-                    rowSize += rowSize;
-            }
-            if (!thisLineLength)
+            size32_t thisLineLength = csvSplitter.splitLine(reader, maxRowSize);
+            if (0 == thisLineLength)
                 break;
             if (headerLines)
             {

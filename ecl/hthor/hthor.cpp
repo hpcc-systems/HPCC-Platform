@@ -9002,28 +9002,9 @@ const void *CHThorCsvReadActivity::nextRow()
         checkOpenNext();
         if (eofseen)
             break;
-        if (!inputstream->eos())
+        size32_t thisLineLength = csvSplitter.splitLine(inputstream, maxRowSize);
+        if (thisLineLength)
         {
-            size32_t rowSize = 4096; // MORE - make configurable
-            size32_t thisLineLength;
-            for (;;)
-            {
-                size32_t avail;
-                const void *peek = inputstream->peek(rowSize, avail);
-                thisLineLength = csvSplitter.splitLine(avail, (const byte *)peek);
-                if (thisLineLength < rowSize || avail < rowSize)
-                    break;
-                if (rowSize == maxRowSize)
-                {
-                    OwnedRoxieString fileName(helper.getFileName());
-                    throw MakeStringException(99, "File %s contained a line of length greater than %d bytes.", fileName.get(), rowSize);
-                }
-                if (rowSize >= maxRowSize/2)
-                    rowSize = maxRowSize;
-                else
-                    rowSize += rowSize;
-            }
-
             RtlDynamicRowBuilder rowBuilder(rowAllocator);
             unsigned thisSize;
             try

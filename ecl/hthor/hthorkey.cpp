@@ -2501,28 +2501,15 @@ public:
     {
         rawStream->reset(pos);
         CriticalBlock procedure(transformCrit);
-        size32_t rowSize = 4096; // MORE - make configurable
         size32_t maxRowSize = 10*1024*1024; // MORE - make configurable
-        for (;;)
-        {
-            size32_t avail;
-            const void *peek = rawStream->peek(rowSize, avail);
-            if (csvSplitter.splitLine(avail, (const byte *)peek) < rowSize || avail < rowSize)
-                break;
-            if (rowSize == maxRowSize)
-                throw MakeStringException(0, "Row too big");
-            if (rowSize >= maxRowSize/2)
-                rowSize = maxRowSize;
-            else
-                rowSize += rowSize;
-        }
-
-        size32_t thisSize;
+        unsigned thisLineLength = csvSplitter.splitLine(rawStream, maxRowSize);
+        if (!thisLineLength)
+            return;
         try
         {
             RtlDynamicRowBuilder rowBuilder(rowAllocator);
-            thisSize = helper.transform(rowBuilder, csvSplitter.queryLengths(), (const char * *)csvSplitter.queryData(), fetch->left, fetch->pos);
-            if(thisSize)
+            size32_t thisSize = helper.transform(rowBuilder, csvSplitter.queryLengths(), (const char * *)csvSplitter.queryData(), fetch->left, fetch->pos);
+            if (thisSize)
             {
                 setRow(rowBuilder.finalizeRowClear(thisSize), fetch->seq);
             }

@@ -171,26 +171,10 @@ public:
 
     virtual const void * next()
     {
-        if (!pipeStream->eos())
+        size32_t maxRowSize = 10*1024*1024; // MORE - make configurable
+        unsigned thisLineLength = csvSplitter.splitLine(pipeStream, maxRowSize);
+        if (thisLineLength)
         {
-            size32_t rowSize = 4096; // MORE - make configurable
-            size32_t maxRowSize = 10*1024*1024; // MORE - make configurable
-            size32_t thisLineLength;
-            for (;;)
-            {
-                size32_t avail;
-                const void *peek = pipeStream->peek(rowSize, avail);
-                thisLineLength = csvSplitter.splitLine(avail, (const byte *)peek);
-                if (thisLineLength < rowSize || avail < rowSize)
-                    break;
-                if (rowSize == maxRowSize)
-                    throw MakeStringException(99, "CSV file contained a line of length greater than %d bytes.", rowSize);
-                if (rowSize >= maxRowSize/2)
-                    rowSize = maxRowSize;
-                else
-                    rowSize += rowSize;
-            }
-
             RtlDynamicRowBuilder rowBuilder(rowAllocator);
             unsigned thisSize;
             unsigned __int64 fpos=0;
@@ -199,7 +183,7 @@ public:
             if (thisSize)
                 return rowBuilder.finalizeRowClear(thisSize);
         }
-        return NULL;
+        return nullptr;
     }
 
 private:

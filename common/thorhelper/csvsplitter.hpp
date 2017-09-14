@@ -56,6 +56,8 @@
  * Also, many CSV producers (including commercial databases) use slash (\) as escaping
  * char, while the RFC mentions re-using quotes (""). We implement both.
  */
+
+interface ISerialStream;
 class THORHELPER_API CSVSplitter
 {
 public:
@@ -70,6 +72,7 @@ public:
     void init(unsigned maxColumns, ICsvParameters * csvInfo, const char * dfsQuotes, const char * dfsSeparators, const char * dfsTerminators, const char * dfsEscapes);
     void reset();
     size32_t splitLine(size32_t maxLen, const byte * start);
+    size32_t splitLine(ISerialStream *stream, size32_t maxRowSize);
 
     inline unsigned * queryLengths() { return lengths; }
     inline const byte * * queryData() { return data; }
