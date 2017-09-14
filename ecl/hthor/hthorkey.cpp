@@ -404,7 +404,7 @@ CHThorIndexReadActivityBase::CHThorIndexReadActivityBase(IAgentContext &_agent, 
     seeks = 0;
     scans = 0;
     helper.setCallback(&callback);
-    limitTransformExtra = static_cast<IHThorSourceLimitTransformExtra *>(helper.selectInterface(TAIsourcelimittransformextra_1));
+    limitTransformExtra = nullptr;
     gotLayoutTrans = false;
 }
 
@@ -803,7 +803,8 @@ protected:
 CHThorIndexReadActivity::CHThorIndexReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexReadArg &_arg, ThorActivityKind _kind, IDistributedFile * _df) 
     : CHThorIndexReadActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _df), helper(_arg)
 {
-    steppedExtra = static_cast<IHThorSteppedSourceExtra *>(helper.selectInterface(TAIsteppedsourceextra_1));
+    limitTransformExtra = &helper;
+    steppedExtra = helper.querySteppingExtra();
     needTransform = helper.needTransform();
     keyedLimit = (unsigned __int64)-1;
     rowLimit = (unsigned __int64)-1;
@@ -1122,6 +1123,7 @@ protected:
 
 CHThorIndexNormalizeActivity::CHThorIndexNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexNormalizeArg &_arg, ThorActivityKind _kind, IDistributedFile * _df) : CHThorIndexReadActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _df), helper(_arg), outBuilder(NULL)
 {
+    limitTransformExtra = &helper;
     keyedLimit = (unsigned __int64)-1;
     skipLimitReached = false;
     keyedProcessed = 0;

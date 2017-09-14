@@ -734,8 +734,7 @@ public:
 
         rowProvider = _rowProvider;
         helper = rowProvider->queryActionHelper();
-        callHelper = rowProvider->queryCallHelper();  //MORE: This should not be done this way!! Should use extra as below.
-        helperExtra = static_cast<IHThorSoapCallExtra*>(helper->selectInterface(TAIsoapcallextra_1));
+        callHelper = rowProvider->queryCallHelper();
         flags = helper->getFlags();
         OwnedRoxieString s;
 
@@ -982,7 +981,7 @@ public:
         {
             size32_t lenText;
             rtlDataAttr text;
-            helperExtra->getLogText(lenText, text.refstr(), row);
+            helper->getLogText(lenText, text.refstr(), row);
             logctx.CTXLOG("%s: %.*s", wscCallTypeText(), lenText, text.getstr());
         }
     }
@@ -1036,7 +1035,6 @@ protected:
     IWSCRowProvider * rowProvider;
     IHThorWebServiceCallActionArg * helper;
     IHThorWebServiceCallArg *   callHelper;
-    IHThorWebServiceCallExtra * helperExtra;
     Linked<IEngineRowAllocator> outputAllocator;
     Owned<IException> error;
     UrlArray urlArray;

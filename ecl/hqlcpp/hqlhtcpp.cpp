@@ -63,10 +63,7 @@
 #include "eclrtl_imp.hpp"
 #include "rtlfield.hpp"
 #include "rtlds_imp.hpp"
-namespace hqlhtcpp
-{  // Make sure we can't clash with generated versions or version check mechanism fails (if this dll was ever in the future linked in runtime)
 #include "eclhelper_base.hpp"
-}
 
 #include "ctfile.hpp"   // for KEYBUILD_MAXLENGTH
 
@@ -15674,10 +15671,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLimit(BuildCtx & ctx, IHqlExpr
     ThorActivityKind kind = TAKlimit;
     const char * helper = "Limit";
     if (transform)
-    {
         kind = TAKcreaterowlimit;
-        helper = "CreateRowLimit";
-    }
     else if (expr->hasAttribute(skipAtom))
         kind = TAKskiplimit;
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, kind, expr, helper);

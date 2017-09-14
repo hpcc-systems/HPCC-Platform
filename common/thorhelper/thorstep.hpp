@@ -22,7 +22,7 @@
 
 //---------------------------------------------------------------------------
 
-//Can be extended, since it is only every implemented within the engines
+//Can be extended, since it is only ever implemented within the engines
 interface IInputSteppingMeta : public ISteppingMeta
 {
 //??virtual ISteppingMeta * querySteppingMeta() const = 0

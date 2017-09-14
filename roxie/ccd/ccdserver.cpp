@@ -48,10 +48,7 @@
 #include "dautils.hpp"
 #include "ftbase.ipp"
 
-namespace ccdserver_hqlhelper
-{  // Make sure we can't clash with generated versions or version check mechanism fails.
 #include "eclhelper_base.hpp"
-}
 
 #include "ccd.hpp"
 #include "ccdserver.hpp"
@@ -8254,8 +8251,7 @@ public:
             if (sortAlgorithm == unknownSortAlgorithm)
             {
                 sorter.clear();
-                IHThorAlgorithm *sortMethod = static_cast<IHThorAlgorithm *>(helper.selectInterface(TAIalgorithm_1));
-                OwnedRoxieString algorithmName(sortMethod->getAlgorithm());
+                OwnedRoxieString algorithmName(helper.getAlgorithm());
                 sortAlgorithm = useAlgorithm(algorithmName, sortFlags);
                 sorter.setown(createSortAlgorithm(sortAlgorithm, compare, ctx->queryRowManager(), meta, ctx->queryCodeContext(), tempDirectory, activityId));
             }
@@ -8285,15 +8281,9 @@ public:
     {
         Owned<IHThorSortArg> sortHelper = (IHThorSortArg *) helperFactory();
         const char *algorithmName = NULL;
-        IHThorAlgorithm *sortMethod = static_cast<IHThorAlgorithm *>(sortHelper->selectInterface(TAIalgorithm_1));
-        if (sortMethod)
-        {
-            sortFlags = sortMethod->getAlgorithmFlags();
-            if (sortFlags & TAFconstant)
-                algorithmName = sortMethod->getAlgorithm();
-        }
-        else
-            sortFlags = TAFstable|TAFconstant;
+        sortFlags = sortHelper->getAlgorithmFlags();
+        if (sortFlags & TAFconstant)
+            algorithmName = sortHelper->getAlgorithm();
         bool forceSpill = _queryFactory.queryOptions().allSortsMaySpill || _graphNode.getPropBool("hint[@name='spill']/@value", false);
         if (forceSpill)
             sortFlags |= TAFspill;
@@ -15617,7 +15607,7 @@ public:
 
 //=================================================================================
 
-struct GraphOutputSplitterArg : public ccdserver_hqlhelper::CThorSplitArg 
+struct GraphOutputSplitterArg : public CThorSplitArg
 {
 public:
     virtual unsigned numBranches()
@@ -19625,19 +19615,17 @@ IRoxieServerActivityFactory *createRoxieServerLimitActivityFactory(unsigned _id,
 class CRoxieServerSkipLimitActivity : public CRoxieServerLimitActivity
 {
     ConstPointerArray buff;
-    bool started;
-    unsigned index;
-    IHThorLimitTransformExtra * transformExtra;
+    bool started = false;
+    unsigned index = 0;
+    bool isFail = false;
 
 public:
     CRoxieServerSkipLimitActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _onFail)
         : CRoxieServerLimitActivity(_ctx, _factory, _probeManager)
     {
-        transformExtra = NULL;
         started = false;
         index = 0;
-        if (_onFail)
-            transformExtra = static_cast<IHThorLimitTransformExtra *>(helper.selectInterface(TAIlimittransformextra_1));
+        isFail = _onFail;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -19692,11 +19680,11 @@ protected:
                 ReleaseRoxieRows(buff);
                 if (ctx->queryDebugContext())
                     ctx->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
-                if (transformExtra)
+                if (isFail)
                 {
                     ensureRowAllocator();
                     RtlDynamicRowBuilder rowBuilder(rowAllocator);
-                    size32_t outSize = transformExtra->transformOnLimitExceeded(rowBuilder);
+                    size32_t outSize = helper.transformOnLimitExceeded(rowBuilder);
                     if (outSize)
                         buff.append(rowBuilder.finalizeRowClear(outSize));
                 }
@@ -21422,6 +21410,7 @@ class CRoxieServerDiskReadBaseActivity : public CRoxieServerActivity, implements
 {
 protected:
     IHThorDiskReadBaseArg &helper;
+    IHThorSourceLimitTransformExtra * limitTransformExtra = nullptr;
     IHThorCompoundExtra * compoundHelper;
     RemoteActivityId remoteId;              // Note we copy it rather than reference
     Owned<CSkippableRemoteResultAdaptor> remote;
@@ -21665,7 +21654,6 @@ public:
     virtual const void * createLimitFailRow(bool isKeyed)
     {
         RtlDynamicRowBuilder rowBuilder(rowAllocator);
-        IHThorSourceLimitTransformExtra *limitTransformExtra = static_cast<IHThorSourceLimitTransformExtra *>(helper.selectInterface(TAIsourcelimittransformextra_1));
         assertex(limitTransformExtra);
         size32_t outSize = isKeyed ? limitTransformExtra->transformOnKeyedLimitExceeded(rowBuilder) : limitTransformExtra->transformOnLimitExceeded(rowBuilder);
         if (outSize)
@@ -21683,7 +21671,7 @@ public:
 
 class CRoxieServerDiskReadActivity : public CRoxieServerDiskReadBaseActivity
 {
-    IHThorCompoundReadExtra * readHelper;
+    IHThorDiskReadArg * readHelper;
     ConstPointerArray readrows;
     bool readAheadDone;
     bool eogPending;
@@ -21696,6 +21684,7 @@ public:
     {
         compoundHelper = (IHThorDiskReadArg *)&helper;
         readHelper = (IHThorDiskReadArg *)&helper;
+        limitTransformExtra = readHelper;
         readAheadDone = false;
         readIndex = 0;
         eogPending = false;
@@ -22146,6 +22135,7 @@ public:
     {
         compoundHelper = (IHThorDiskNormalizeArg *)&helper;
         normalizeHelper = (IHThorDiskNormalizeArg *)&helper;
+        limitTransformExtra = normalizeHelper;
         firstPending = true;
     }
 
@@ -22262,7 +22252,6 @@ class CRoxieServerDiskCountActivity : public CRoxieServerDiskAggregateBaseActivi
 {
     IHThorDiskCountArg & countHelper;
     unsigned __int64 choosenLimit;
-    IHThorSourceCountLimit *limitHelper;
 
     unsigned __int64 getSkippedCount()
     {
@@ -22273,10 +22262,9 @@ class CRoxieServerDiskCountActivity : public CRoxieServerDiskAggregateBaseActivi
             return 1;
         else
         {
-            assertex(limitHelper);
             if (traceLevel > 4)
                 DBGLOG("activityid = %d  isKeyed = %d  line = %d", activityId, isKeyed, __LINE__);
-            limitHelper->onLimitExceeded(); 
+            countHelper.onLimitExceeded();
             throwUnexpected(); // onLimitExceeded should always throw exception
         }
     }
@@ -22286,18 +22274,14 @@ public:
         : CRoxieServerDiskAggregateBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, _manager),
           countHelper((IHThorDiskCountArg &)basehelper)
     {
-        limitHelper = static_cast<IHThorSourceCountLimit *>(basehelper.selectInterface(TAIsourcecountlimit_1));
         choosenLimit = 0;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         choosenLimit = countHelper.getChooseNLimit();
-        if (limitHelper)
-        {
-            rowLimit = limitHelper->getRowLimit();
-//          keyedLimit = limitHelper->getKeyedLimit(); // more - should there be one?
-        }
+        rowLimit = countHelper.getRowLimit();
+//      keyedLimit = countHelper->getKeyedLimit(); // more - should there be one?
         CRoxieServerDiskAggregateBaseActivity::start(parentExtractSize, parentExtract, paused);
     }
 
@@ -22707,7 +22691,7 @@ class CRoxieServerIndexActivity : public CRoxieServerActivity, implements IRoxie
 {
 protected:
     IHThorIndexReadBaseArg &indexHelper;
-    IHThorSteppedSourceExtra * steppedExtra;
+    IHThorSteppedSourceExtra *steppedExtra;
     Linked<IKeyArray> keySet;
     Linked<TranslatorArray> translators;
     CSkippableRemoteResultAdaptor remote;
@@ -22752,7 +22736,7 @@ public:
           isLocal(_isLocal) 
     {
         indexHelper.setCallback(&callback);
-        steppedExtra = static_cast<IHThorSteppedSourceExtra *>(indexHelper.selectInterface(TAIsteppedsourceextra_1));
+        steppedExtra = indexHelper.querySteppingExtra();
         variableFileName = allFilesDynamic || factory->queryQueryFactory().isDynamic() || ((indexHelper.getFlags() & (TIRvarfilename|TIRdynamicfilename)) != 0);
         variableInfoPending = false;
         isOpt = (indexHelper.getFlags() & TIRoptional) != 0;
@@ -22951,13 +22935,13 @@ public:
 
 class CRoxieServerIndexReadBaseActivity : public CRoxieServerIndexActivity
 {
-    IHThorSourceLimitTransformExtra * limitTransformExtra;
+protected:
+    IHThorSourceLimitTransformExtra * limitTransformExtra = nullptr;
 public:
     CRoxieServerIndexReadBaseActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
         IKeyArray * _keySet, TranslatorArray *_translators, bool _sorted, bool _isLocal, bool _maySkip)
         : CRoxieServerIndexActivity(_ctx, _factory, _probeManager, _remoteId, _keySet, _translators, _sorted, _isLocal, _maySkip)
     {
-        limitTransformExtra = static_cast<IHThorSourceLimitTransformExtra *>(indexHelper.selectInterface(TAIsourcelimittransformextra_1));
     }
 
     virtual void reset()
@@ -22987,6 +22971,7 @@ protected:
     {
         ensureRowAllocator();
         RtlDynamicRowBuilder rowBuilder(rowAllocator);
+        assertex(limitTransformExtra);
         size32_t outSize = isKeyed ? limitTransformExtra->transformOnKeyedLimitExceeded(rowBuilder) : limitTransformExtra->transformOnLimitExceeded(rowBuilder);
         if (outSize)
             return rowBuilder.finalizeRowClear(outSize);
@@ -22998,7 +22983,7 @@ protected:
 class CRoxieServerIndexReadActivity : public CRoxieServerIndexReadBaseActivity, implements IIndexReadActivityInfo 
 {
 protected:
-    IHThorCompoundReadExtra & readHelper;
+    IHThorIndexReadArg & readHelper;
     ISteppingMeta *rawMeta = nullptr;
     CSteppingMeta steppingMeta;
     unsigned * seekSizes = nullptr;
@@ -23012,6 +22997,7 @@ public:
         : CRoxieServerIndexReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _keySet, _translators, _sorted, _isLocal, _maySkip),
           readHelper((IHThorIndexReadArg &)basehelper)
     {
+        limitTransformExtra = &readHelper;
         rawMeta = readHelper.queryRawSteppingMeta();
         unsigned flags = indexHelper.getFlags();
         optimizeSteppedPostFilter = (flags & TIRunfilteredtransform) != 0;
@@ -23314,9 +23300,7 @@ public:
 
 class CRoxieServerSimpleIndexReadActivity : public CRoxieServerActivity, implements IIndexReadActivityInfo 
 {
-    IHThorCompoundReadExtra & readHelper;
-    IHThorIndexReadBaseArg & indexHelper;
-    IHThorSourceLimitTransformExtra * limitTransformExtra;
+    IHThorIndexReadArg & indexHelper;
     IHThorSteppedSourceExtra * steppedExtra;
     bool eof;
     Linked<IKeyArray>keySet;
@@ -23391,7 +23375,6 @@ public:
     CRoxieServerSimpleIndexReadActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
             IKeyArray *_keyArray, TranslatorArray *_translatorArray, bool _isLocal)
         : CRoxieServerActivity(_ctx, _factory, _probeManager),
-          readHelper((IHThorIndexReadArg &)basehelper), 
           indexHelper((IHThorIndexReadArg &)basehelper), 
           translators(_translatorArray),
           keySet(_keyArray),
@@ -23402,8 +23385,7 @@ public:
         keyedLimit = 0;
         chooseNLimit = 0;
         indexHelper.setCallback(&callback);
-        steppedExtra = static_cast<IHThorSteppedSourceExtra *>(indexHelper.selectInterface(TAIsteppedsourceextra_1));
-        limitTransformExtra = static_cast<IHThorSourceLimitTransformExtra *>(indexHelper.selectInterface(TAIsourcelimittransformextra_1));
+        steppedExtra = indexHelper.querySteppingExtra();
         unsigned flags = indexHelper.getFlags();
         variableFileName = allFilesDynamic || factory->queryQueryFactory().isDynamic() || ((flags & (TIRvarfilename|TIRdynamicfilename)) != 0);
         variableInfoPending = false;
@@ -23414,8 +23396,8 @@ public:
         rejected = 0;
         keyedCount = 0;
         eof = false;
-        rawMeta = readHelper.queryRawSteppingMeta();
-        projectedMeta = readHelper.queryProjectedSteppingMeta();
+        rawMeta = indexHelper.queryRawSteppingMeta();
+        projectedMeta = indexHelper.queryProjectedSteppingMeta();
         seekGEOffset = 0;
         seekSizes = NULL;
         if (rawMeta)
@@ -23428,7 +23410,7 @@ public:
             seekSizes[0] = fields[0].size;
             for (unsigned i=1; i < maxFields; i++)
                 seekSizes[i] = seekSizes[i-1] + fields[i].size;
-            bool hasPostFilter = readHelper.transformMayFilter() && optimizeSteppedPostFilter;
+            bool hasPostFilter = indexHelper.transformMayFilter() && optimizeSteppedPostFilter;
             if (projectedMeta)
                 steppingMeta.init(projectedMeta, hasPostFilter);
             else
@@ -23529,8 +23511,8 @@ public:
             if (variableInfoPending)
                 setVariableFileInfo();
 
-            rowLimit = (unsigned) readHelper.getRowLimit();
-            chooseNLimit = (unsigned) readHelper.getChooseNLimit();
+            rowLimit = (unsigned) indexHelper.getRowLimit();
+            chooseNLimit = (unsigned) indexHelper.getChooseNLimit();
 
             unsigned numParts = keyIndexSet->numParts();
             if (!numParts)
@@ -23561,7 +23543,7 @@ public:
             tlk->reset();
             callback.setManager(tlk);
 
-            keyedLimit = readHelper.getKeyedLimit();
+            keyedLimit = indexHelper.getKeyedLimit();
             if (keyedLimit != (unsigned __int64) -1)
             {
                 if ((indexHelper.getFlags() & TIRcountkeyedlimit) != 0)
@@ -23570,7 +23552,7 @@ public:
                     if (count > keyedLimit)
                     {
                         if ((indexHelper.getFlags() & (TIRkeyedlimitskips|TIRkeyedlimitcreates)) == 0)
-                            readHelper.onKeyedLimitExceeded(); 
+                            indexHelper.onKeyedLimitExceeded();
 
                         const void * ret = NULL;
                         if (indexHelper.getFlags() & TIRkeyedlimitcreates)
@@ -23600,7 +23582,7 @@ public:
             {
                 byte *temp = (byte *) alloca(seekSize);
                 RtlStaticRowBuilder rawBuilder(temp-seekGEOffset, seekGEOffset+seekSize);
-                readHelper.mapOutputToInput(rawBuilder, seek, numFields);// NOTE - weird interface to mapOutputToInput means that it STARTS writing at seekGEOffset...
+                indexHelper.mapOutputToInput(rawBuilder, seek, numFields);// NOTE - weird interface to mapOutputToInput means that it STARTS writing at seekGEOffset...
                 rawSeek = (byte *)temp;
             }
 #ifdef _DEBUG
@@ -23620,7 +23602,7 @@ public:
             keyedCount++;
             if (keyedCount > keyedLimit)
             {
-                readHelper.onKeyedLimitExceeded(); 
+                indexHelper.onKeyedLimitExceeded();
                 break;
             }
 
@@ -23640,14 +23622,14 @@ public:
             rowBuilder.ensureRow();
             try
             {
-                transformedSize = readHelper.transform(rowBuilder, keyRow);
+                transformedSize =indexHelper.transform(rowBuilder, keyRow);
                 //if the post filter causes a mismatch, and the stepping condition no longer matches
                 //then return a mismatch record - so the join code can start seeking on the other input.
                 if (transformedSize == 0 && optimizeSteppedPostFilter && stepExtra.returnMismatches())
                 {
                     if (memcmp(keyRow + seekGEOffset, originalRawSeek, seekSize) != 0)
                     {
-                        transformedSize = readHelper.unfilteredTransform(rowBuilder, keyRow);
+                        transformedSize = indexHelper.unfilteredTransform(rowBuilder, keyRow);
                         if (transformedSize != 0)
                             wasCompleteMatch = false;
                     }
@@ -23669,7 +23651,7 @@ public:
                     }
                     if (traceLevel > 4)
                         DBGLOG("activityid = %d  line = %d", activityId, __LINE__);
-                    readHelper.onLimitExceeded();
+                    indexHelper.onLimitExceeded();
                     break;
                 }
                 processed++;
@@ -23721,7 +23703,7 @@ protected:
     const void * createKeyedLimitOnFailRow()
     {
         RtlDynamicRowBuilder rowBuilder(rowAllocator);
-        size32_t outSize = limitTransformExtra->transformOnKeyedLimitExceeded(rowBuilder);
+        size32_t outSize = indexHelper.transformOnKeyedLimitExceeded(rowBuilder);
         if (outSize)
             return rowBuilder.finalizeRowClear(outSize);
         return NULL;
@@ -23898,8 +23880,7 @@ public:
 
 class CRoxieServerIndexCountActivity : public CRoxieServerIndexActivity
 {
-    IHThorCompoundCountExtra & countHelper;
-    IHThorSourceCountLimit * limitHelper;
+    IHThorIndexCountArg & countHelper;
     bool done;
 
 public:
@@ -23908,7 +23889,6 @@ public:
           countHelper((IHThorIndexCountArg &)basehelper),
           done(false)
     {
-        limitHelper = static_cast<IHThorSourceCountLimit *>(basehelper.selectInterface(TAIsourcecountlimit_1));
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -23918,11 +23898,8 @@ public:
         done = false;
         CRoxieServerIndexActivity::start(parentExtractSize, parentExtract, paused);
         choosenLimit = countHelper.getChooseNLimit();
-        if (limitHelper)
-        {
-            rowLimit = limitHelper->getRowLimit();
-            keyedLimit = limitHelper->getKeyedLimit();
-        }
+        rowLimit = countHelper.getRowLimit();
+        keyedLimit = countHelper.getKeyedLimit();
         if (!paused)
             processAllKeys();
     }
@@ -23990,8 +23967,7 @@ public:
             }
             else
             {
-                assertex(limitHelper); // Should not be able to generate exception if there was not one...
-                limitHelper->onKeyedLimitExceeded();
+                countHelper.onKeyedLimitExceeded();
             }
         }
         else
@@ -24004,8 +23980,7 @@ public:
             }
             else
             {
-                assertex(limitHelper);
-                limitHelper->onLimitExceeded();
+                countHelper.onLimitExceeded();
             }
         }
     }
@@ -24046,10 +24021,7 @@ public:
                 else if (flags & TIRlimitcreates)
                     totalCount = 1;
                 else
-                {
-                    assertex(limitHelper);
-                    limitHelper->onLimitExceeded(); 
-                }
+                    countHelper.onLimitExceeded();
             }
             else if (totalCount > choosenLimit)
                 totalCount = choosenLimit;
@@ -24473,7 +24445,7 @@ IRoxieServerActivityFactory *createRoxieServerIndexGroupAggregateActivityFactory
 
 class CRoxieServerIndexNormalizeActivity : public CRoxieServerIndexReadBaseActivity
 {
-    IHThorCompoundNormalizeExtra & readHelper;
+    IHThorIndexNormalizeArg & readHelper;
 
 public:
     CRoxieServerIndexNormalizeActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
@@ -24481,6 +24453,7 @@ public:
         : CRoxieServerIndexReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _keySet, _translators, _sorted, _isLocal, false),
           readHelper((IHThorIndexNormalizeArg &)basehelper)
     {
+        limitTransformExtra = &readHelper;
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -24608,7 +24581,6 @@ IRoxieServerActivityFactory *createRoxieServerIndexNormalizeActivityFactory(unsi
 class CRoxieServerFetchActivity : public CRoxieServerActivity, implements IRecordPullerCallback, implements IRoxieServerErrorHandler
 {
     IHThorFetchBaseArg &helper;
-    IHThorFetchContext * fetchContext;
     Linked<IFilePartMap> map;
     CRemoteResultAdaptor remote;
     RecordPullerThread puller;
@@ -24621,10 +24593,9 @@ public:
     CRoxieServerFetchActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, IFilePartMap *_map)
         : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorFetchBaseArg &)basehelper), map(_map), remote(_ctx, this, _remoteId, meta.queryOriginal(), helper, *this, true, true), puller(false)
     {
-        fetchContext = static_cast<IHThorFetchContext *>(helper.selectInterface(TAIfetchcontext_1));
         needsRHS = helper.transformNeedsRhs();
-        variableFileName = allFilesDynamic || factory->queryQueryFactory().isDynamic() || ((fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0);
-        isOpt = (fetchContext->getFetchFlags() & FFdatafileoptional) != 0;
+        variableFileName = allFilesDynamic || factory->queryQueryFactory().isDynamic() || ((helper.getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0);
+        isOpt = (helper.getFetchFlags() & FFdatafileoptional) != 0;
     }
 
     virtual const IResolvedFile *queryVarFileInfo() const
@@ -24672,7 +24643,7 @@ public:
         remote.setLimits(helper.getRowLimit(), (unsigned __int64) -1, I64C(0x7FFFFFFFFFFFFFFF));
         if (variableFileName)
         {
-            OwnedRoxieString fname(fetchContext->getFileName());
+            OwnedRoxieString fname(helper.getFileName());
             varFileInfo.setown(resolveLFN(fname, isOpt));
             if (varFileInfo)
                 map.setown(varFileInfo->getFileMap());
@@ -24710,7 +24681,7 @@ public:
     virtual void processRow(const void *row)
     {
         // called from puller thread
-        offset_t rp = fetchContext->extractPosition(row);
+        offset_t rp = helper.extractPosition(row);
         unsigned partNo;
         if (isLocalFpos(rp))
             partNo = getLocalFposPart(rp) + 1;
@@ -24789,13 +24760,12 @@ public:
         : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), remoteId(_remoteId)
     {
         Owned<IHThorFetchBaseArg> helper = (IHThorFetchBaseArg *) helperFactory();
-        IHThorFetchContext *fetchContext = static_cast<IHThorFetchContext *>(helper->selectInterface(TAIfetchcontext_1));
-        variableFileName = allFilesDynamic || _queryFactory.isDynamic() || ((fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0);
+        variableFileName = allFilesDynamic || _queryFactory.isDynamic() || ((helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0);
         if (!variableFileName)
         {
-            OwnedRoxieString fname(fetchContext->getFileName());
+            OwnedRoxieString fname(helper->getFileName());
             datafile.setown(_queryFactory.queryPackage().lookupFileName(fname,
-                                                                        (fetchContext->getFetchFlags() & FFdatafileoptional) != 0,
+                                                                        (helper->getFetchFlags() & FFdatafileoptional) != 0,
                                                                         true, true,
                                                                         _queryFactory.queryWorkUnit(), true));
             if (datafile)
@@ -24816,10 +24786,9 @@ public:
         {
             // Temporarily resolve the file
             Owned<IHThorFetchBaseArg> helper = (IHThorFetchBaseArg *) helperFactory();
-            IHThorFetchContext *fetchContext = static_cast<IHThorFetchContext *>(helper->selectInterface(TAIfetchcontext_1));
-            if ((fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) == 0)
+            if ((helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) == 0)
             {
-                OwnedRoxieString fileName(fetchContext->getFileName());
+                OwnedRoxieString fileName(helper->getFileName());
                 Owned<const IResolvedFile> temp = queryFactory.queryPackage().lookupFileName(fileName, true, true, false, queryFactory.queryWorkUnit(), true);
                 if (temp)
                     addXrefFileInfo(reply, temp);
@@ -26970,12 +26939,8 @@ public:
 
 //===================================================================================================================
 
-class CPseudoArg : implements IHThorArg, public CInterface
+class CPseudoArg : implements CThorSinkArgOf<IHThorArg>
 {
-public:
-    IMPLEMENT_IINTERFACE
-
-    virtual IOutputMetaData * queryOutputMeta() { return NULL; }
 };
 
 class CPseudoActivity : public CRoxieServerActivity
@@ -27947,7 +27912,7 @@ public:
 
 };
 
-struct SortActivityTest : public ccdserver_hqlhelper::CThorSortArg {
+struct SortActivityTest : public CThorSortArg {
 public:
     struct CompareClass : public ICompare {
         virtual int docompare(const void * _left, const void * _right) const {
@@ -27964,7 +27929,7 @@ public:
 };
 extern "C" IHThorArg * sortActivityTestFactory() { return new SortActivityTest; }
 
-struct MergeActivityTest : public ccdserver_hqlhelper::CThorMergeArg {
+struct MergeActivityTest : public CThorMergeArg {
     static bool isDedup;
 public:
     struct CompareClass : public ICompare {
@@ -27982,7 +27947,7 @@ public:
 bool MergeActivityTest::isDedup = false;
 extern "C" IHThorArg * mergeActivityTestFactory() { return new MergeActivityTest; }
 
-struct SplitActivityTest : public ccdserver_hqlhelper::CThorSplitArg {
+struct SplitActivityTest : public CThorSplitArg {
 public:
     virtual unsigned numBranches() { return 2; }
     virtual IOutputMetaData * queryOutputMeta()

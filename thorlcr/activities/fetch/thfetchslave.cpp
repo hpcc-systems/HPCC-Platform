@@ -286,7 +286,6 @@ protected:
     Owned<IThorRowInterfaces> fetchDiskRowIf;
     IFetchStream *fetchStream = nullptr;
     IHThorFetchBaseArg *fetchBaseHelper;
-    IHThorFetchContext *fetchContext;
     unsigned files = 0;
     CPartDescriptorArray parts;
     IRowStream *keyIn = nullptr;
@@ -299,8 +298,7 @@ public:
     CFetchSlaveBase(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         fetchBaseHelper = (IHThorFetchBaseArg *)queryHelper();
-        fetchContext = static_cast<IHThorFetchContext *>(fetchBaseHelper->selectInterface(TAIfetchcontext_1));
-        reInit = 0 != (fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename));
+        reInit = 0 != (fetchBaseHelper->getFetchFlags() & (FFvarfilename|FFdynamicfilename));
         appendOutputLinked(this);
     }
     ~CFetchSlaveBase()
@@ -333,7 +331,7 @@ public:
 
         unsigned encryptedKeyLen;
         void *encryptedKey;
-        fetchContext->getFileEncryptKey(encryptedKeyLen,encryptedKey);
+        fetchBaseHelper->getFileEncryptKey(encryptedKeyLen,encryptedKey);
         if (0 != encryptedKeyLen)
         {
             bool dfsEncrypted = files?parts.item(0).queryOwner().queryProperties().getPropBool("@encrypted"):false;
@@ -342,7 +340,7 @@ public:
             memset(encryptedKey, 0, encryptedKeyLen);
             free(encryptedKey);
         }
-        fetchDiskRowIf.setown(createRowInterfaces(fetchContext->queryDiskRecordSize()));
+        fetchDiskRowIf.setown(createRowInterfaces(fetchBaseHelper->queryDiskRecordSize()));
     }
 
     virtual void initializeFileParts()
@@ -374,12 +372,11 @@ public:
             IRowStream &in;
             unsigned maxInSize;
             IHThorFetchBaseArg &fetchBaseHelper;
-            IHThorFetchContext &fetchContext;
 
         public:
             IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-            CKeyFieldExtractBase(CFetchSlaveBase *_activity, IRowStream &_in, IHThorFetchBaseArg &_fetchBaseHelper, IHThorFetchContext & _fetchContext) : activity(_activity), in(_in), fetchBaseHelper(_fetchBaseHelper), fetchContext(_fetchContext)
+            CKeyFieldExtractBase(CFetchSlaveBase *_activity, IRowStream &_in, IHThorFetchBaseArg &_fetchBaseHelper) : activity(_activity), in(_in), fetchBaseHelper(_fetchBaseHelper)
             {
             }
             virtual ~CKeyFieldExtractBase() {}
@@ -395,8 +392,8 @@ public:
             class CKeyFieldExtract : public CKeyFieldExtractBase
             {
             public:
-                CKeyFieldExtract(CFetchSlaveBase *activity, IRowStream &in, IHThorFetchBaseArg &fetchBaseHelper, IHThorFetchContext & fetchContext)
-                    : CKeyFieldExtractBase(activity, in, fetchBaseHelper, fetchContext)
+                CKeyFieldExtract(CFetchSlaveBase *activity, IRowStream &in, IHThorFetchBaseArg &fetchBaseHelper)
+                    : CKeyFieldExtractBase(activity, in, fetchBaseHelper)
                 {
                 }
                 virtual ~CKeyFieldExtract() {}
@@ -421,7 +418,7 @@ public:
             }
             else
             {
-                keyIn = new CKeyFieldExtract(this, *inputStream, *fetchBaseHelper, *fetchContext);
+                keyIn = new CKeyFieldExtract(this, *inputStream, *fetchBaseHelper);
                 keyInMeta.set(QUERYINTERFACE(fetchBaseHelper->queryExtractedSize(), IOutputMetaData));
             }
             keyInIf.setown(createRowInterfaces(keyInMeta));
@@ -432,8 +429,8 @@ public:
             {
                 Linked<IThorRowInterfaces> rowif;
             public:
-                CKeyFPosExtract(IThorRowInterfaces *_rowif, CFetchSlaveBase *activity, IRowStream &in, IHThorFetchBaseArg &fetchBaseHelper, IHThorFetchContext & fetchContext)
-                    : CKeyFieldExtractBase(activity, in, fetchBaseHelper, fetchContext), rowif(_rowif)
+                CKeyFPosExtract(IThorRowInterfaces *_rowif, CFetchSlaveBase *activity, IRowStream &in, IHThorFetchBaseArg &fetchBaseHelper)
+                    : CKeyFieldExtractBase(activity, in, fetchBaseHelper), rowif(_rowif)
                 {
                 }
             
@@ -445,7 +442,7 @@ public:
                     if (inRow)
                     {
                         OwnedConstThorRow row;
-                        unsigned __int64 fpos = fetchContext.extractPosition(inRow.get());
+                        unsigned __int64 fpos = fetchBaseHelper.extractPosition(inRow.get());
                         row.deserialize(rowif, sizeof(fpos), &fpos);
                         return row.getClear();
                     }
@@ -454,11 +451,11 @@ public:
             };
             Owned<IOutputMetaData> fmeta = createFixedSizeMetaData(sizeof(offset_t)); // should be provided by Gavin?
             keyInIf.setown(createRowInterfaces(fmeta));
-            keyIn = new CKeyFPosExtract(keyInIf, this, *inputStream, *fetchBaseHelper, *fetchContext);
+            keyIn = new CKeyFPosExtract(keyInIf, this, *inputStream, *fetchBaseHelper);
         }
 
         Owned<IThorRowInterfaces> rowIf = createRowInterfaces(queryRowMetaData());
-        fetchStream = createFetchStream(*this, keyInIf, rowIf, abortSoon, fetchContext->getFileName(), parts, offsetCount, offsetMapSz, offsetMapBytes.toByteArray(), this, mptag, eexp);
+        fetchStream = createFetchStream(*this, keyInIf, rowIf, abortSoon, fetchBaseHelper->getFileName(), parts, offsetCount, offsetMapSz, offsetMapBytes.toByteArray(), this, mptag, eexp);
         fetchStreamOut = fetchStream->queryOutput();
         fetchStream->start(keyIn);
         initializeFileParts();
@@ -503,7 +500,7 @@ public:
     virtual offset_t extractFpos(const void *key)
     {
         if (indexRowExtractNeeded)
-            return fetchContext->extractPosition(key);
+            return fetchBaseHelper->extractPosition(key);
         else
         {
             offset_t fpos;

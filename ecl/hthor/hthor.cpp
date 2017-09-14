@@ -3106,8 +3106,6 @@ const void * CHThorSkipCatchActivity::nextRow()
 
 CHThorOnFailLimitActivity::CHThorOnFailLimitActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLimitArg &_arg, ThorActivityKind _kind) : CHThorSkipLimitActivity(_agent, _activityId, _subgraphId, _arg, _kind)
 {
-    transformExtra = static_cast<IHThorLimitTransformExtra *>(helper.selectInterface(TAIlimittransformextra_1));
-    assertex(transformExtra);
 }
 
 void CHThorOnFailLimitActivity::onLimitExceeded() 
@@ -3115,7 +3113,7 @@ void CHThorOnFailLimitActivity::onLimitExceeded()
     buffer->clear(); 
 
     RtlDynamicRowBuilder rowBuilder(rowAllocator);
-    size32_t newSize = transformExtra->transformOnLimitExceeded(rowBuilder);
+    size32_t newSize = helper.transformOnLimitExceeded(rowBuilder);
     if (newSize)
         buffer->insert(rowBuilder.finalizeRowClear(newSize));
 }
@@ -3854,15 +3852,9 @@ const void *CHThorGroupSortActivity::nextRow()
 
 void CHThorGroupSortActivity::createSorter()
 {
-    IHThorAlgorithm * algo = static_cast<IHThorAlgorithm *>(helper.selectInterface(TAIalgorithm_1));
-    if(!algo)
-    {
-        sorter.setown(new CHeapSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
-        return;
-    }
-    unsigned flags = algo->getAlgorithmFlags();
+    unsigned flags = helper.getAlgorithmFlags();
     sorterIsConst = ((flags & TAFconstant) != 0);
-    OwnedRoxieString algoname(algo->getAlgorithm());
+    OwnedRoxieString algoname(helper.getAlgorithm());
     if(!algoname)
     {
         if((flags & TAFunstable) != 0)

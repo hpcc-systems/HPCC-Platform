@@ -26,6 +26,7 @@
 project( eclrtl ) 
 
 set (    SRCS 
+         eclhelper_base.cpp
          eclrtl.cpp 
          eclregex.cpp
          rtlbcd.cpp 

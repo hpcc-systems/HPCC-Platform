@@ -60,9 +60,8 @@ public:
     {
         CSortBaseActivityMaster::init();
         IHThorSortArg *helper = (IHThorSortArg *)queryHelper();
-        IHThorAlgorithm *algo = static_cast<IHThorAlgorithm *>(helper->selectInterface(TAIalgorithm_1));
-        OwnedRoxieString algoname = algo->getAlgorithm();
-        unsigned flags = algo->getAlgorithmFlags();
+        OwnedRoxieString algoname = helper->getAlgorithm();
+        unsigned flags = helper->getAlgorithmFlags();
         if (algoname && (0 != stricmp(algoname, "quicksort")))
         {
             Owned<IException> e = MakeActivityException(this, 0, "Ignoring, unsupported sort order algorithm '%s'", algoname.get());
@@ -97,9 +96,8 @@ protected:
     {
         CSortBaseActivityMaster::init();
         IHThorSortArg *helper = (IHThorSortArg *)queryHelper();
-        IHThorAlgorithm *algo = static_cast<IHThorAlgorithm *>(helper->selectInterface(TAIalgorithm_1));
-        OwnedRoxieString algoname(algo->getAlgorithm());
-        unsigned flags = algo->getAlgorithmFlags();
+        OwnedRoxieString algoname(helper->getAlgorithm());
+        unsigned flags = helper->getAlgorithmFlags();
         if (algoname && (0 != stricmp(algoname, "quicksort")))
         {
             Owned<IException> e = MakeActivityException(this, 0, "Ignoring, unsupported sort order algorithm '%s'", algoname.get());

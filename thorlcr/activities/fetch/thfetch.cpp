@@ -33,7 +33,6 @@ class CFetchActivityMaster : public CMasterActivity
 
 protected:
     IHThorFetchArg *helper;
-    IHThorFetchContext *fetchContext;
 
 public:
     CFetchActivityMaster(CMasterGraphElement *info) : CMasterActivity(info)
@@ -42,8 +41,7 @@ public:
         if (!container.queryLocalOrGrouped())
             mpTag = container.queryJob().allocateMPTag();
         helper = (IHThorFetchArg *)queryHelper();
-        fetchContext = static_cast<IHThorFetchContext *>(helper->selectInterface(TAIfetchcontext_1));
-        reInit = 0 != (fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename));
+        reInit = 0 != (helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename));
     }
     ~CFetchActivityMaster()
     {
