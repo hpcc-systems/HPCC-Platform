@@ -191,7 +191,7 @@ interface IRoxieServerActivity : extends IActivityBase
     virtual void mergeStats(MemoryBuffer &stats) = 0;
     virtual ISectionTimer * registerTimer(unsigned activityId, const char * name) = 0;
     virtual IEngineRowAllocator * createRowAllocator(IOutputMetaData * metadata) = 0;
-    virtual void updateFactoryStatistics() = 0;
+    virtual void updateFactoryStatistics() const = 0;
 };
 
 interface IRoxieServerActivityFactory : extends IActivityFactory
@@ -267,6 +267,7 @@ interface IRoxieServerChildGraph : public IInterface
     virtual CGraphIterationInfo * selectGraphLoopOutput() = 0;
     virtual void gatherIterationUsage(IRoxieServerLoopResultProcessor & processor) = 0;
     virtual void associateIterationOutputs(IRoxieServerLoopResultProcessor & processor) = 0;
+    virtual void updateFactoryStatistics() const = 0;
 };
 
 interface IQueryFactory;
