@@ -539,7 +539,7 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
     const char *mthName = mthdef.queryName();
     context.addTraceSummaryValue(LogMin, "method", mthName);
 
-    MapStringTo<SecAccessFlags>  methaccessmap = mthdef.queryAccessMap();
+    MapStringTo<SecAccessFlags>&  methaccessmap = const_cast<MapStringTo<SecAccessFlags>&>(mthdef.queryAccessMap());
     if (methaccessmap.ordinality() > 0)
     {
         if (!context.validateFeaturesAccess(methaccessmap, false))
