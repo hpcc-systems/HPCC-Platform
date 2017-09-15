@@ -2045,9 +2045,13 @@ StringBuffer & CRuntimeStatisticCollection::toStr(StringBuffer &str) const
         if (value)
         {
             StatisticKind kind = getKind(iStat);
-            const char * name = queryStatisticName(kind);
+            StatisticKind serialKind = querySerializedKind(kind);
+            if (kind != serialKind)
+                value = convertMeasure(kind, serialKind, value);
+
+            const char * name = queryStatisticName(serialKind);
             str.append(' ').append(name).append("=");
-            formatStatistic(str, value, kind);
+            formatStatistic(str, value, serialKind);
         }
     }
     CNestedRuntimeStatisticMap *qn = queryNested();
