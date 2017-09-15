@@ -66,7 +66,7 @@
 #define MAX_SIMPLE_VAR_SIZE             99999
 #define MAX_STATIC_ROW_SIZE             10000
 #define MAX_LOCAL_ROW_SIZE              32
-#define DEFAULT_NLP_DETAIL              1
+#define DEFAULT_NLP_DETAIL              0
 #define DEFAULT_EXPIRY_PERIOD               7
 #define DEFAULT_PERSIST_EXPIRY_PERIOD       0           // Persists that expire by default have a period defined in sasha
 

@@ -110,7 +110,7 @@ void BaseDatasetCursor::buildIterateMembers(BuildCtx & declarectx, BuildCtx & in
     //row = iter.first()
     {
         BuildCtx firstctx(declarectx);
-        firstctx.addQuotedFunction("virtual bool first()");
+        firstctx.addQuotedFunction("virtual bool first() override");
         s.clear().append(rowName).append(" = (byte *)").append(iterName).append(".first();");
         firstctx.addQuoted(s);
         s.clear().append("return ").append(rowName).append(" != NULL;");
@@ -120,7 +120,7 @@ void BaseDatasetCursor::buildIterateMembers(BuildCtx & declarectx, BuildCtx & in
     //row = iter.first()
     {
         BuildCtx nextctx(declarectx);
-        nextctx.addQuotedFunction("virtual bool next()");
+        nextctx.addQuotedFunction("virtual bool next() override");
         s.clear().append(rowName).append(" = (byte *)").append(iterName).append(".next();");
         nextctx.addQuoted(s);
         s.clear().append("return ").append(rowName).append(" != NULL;");

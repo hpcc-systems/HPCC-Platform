@@ -1555,6 +1555,8 @@ class CThorAllJoinArg : implements IHThorAllJoinArg, public CThorArg
     virtual bool match(const void * _left, const void * _right) { return true; }
     virtual unsigned getKeepLimit()                     { return 0; }
     virtual unsigned getJoinFlags()                     { return 0; }
+    virtual unsigned getMatchAbortLimit()               { return 0; }
+    virtual void onMatchAbortLimitExceeded()            { }
 
 //Join:
 //Denormalize
