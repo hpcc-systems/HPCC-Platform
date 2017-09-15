@@ -377,7 +377,7 @@ bool CWsESDLConfigEx::existsESDLMethodDef(const char * esdlDefinitionName, unsig
                 IPropertyTree* pCurrService = &it->query();
                 if ((servicesCount == 1 && !esdlServiceName.length()) || stricmp(pCurrService->queryProp("@name"), esdlServiceName.str())==0)
                 {
-                    Owned<IPropertyTreeIterator> it2 = esxdl->getElements("EsdlMethod");
+                    Owned<IPropertyTreeIterator> it2 = pCurrService->getElements("EsdlMethod");
                     ForEach(*it2)
                     {
                         IPropertyTree* pChildNode = &it2->query();
