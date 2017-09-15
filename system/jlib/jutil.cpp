@@ -475,7 +475,6 @@ HINSTANCE LoadSharedObject(const char *name, bool isGlobal, bool raiseOnError)
     }
 
 #endif
-    scope.setSoContext(h);
 
 #if defined(_WIN32)
     SetErrorMode(oldMode);
@@ -483,6 +482,7 @@ HINSTANCE LoadSharedObject(const char *name, bool isGlobal, bool raiseOnError)
     // don't think anything to do here.
 #endif
 
+    scope.processInitialization(h);
     return h;
 }
 
