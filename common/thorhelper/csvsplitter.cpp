@@ -20,6 +20,7 @@
 #include "jlib.hpp"
 #include "jexcept.hpp"
 #include "junicode.hpp"
+#include "jfile.hpp"
 #include "eclhelper.hpp"
 
 #ifdef _USE_ICU
@@ -269,6 +270,32 @@ void CSVSplitter::setFieldRange(const byte * start, const byte * end, unsigned c
     memcpy(internalBuffer + internalOffset, lastCopied, cur-lastCopied);
     internalOffset += (cur-lastCopied);
     lengths[curColumn] = (size32_t)(internalBuffer + internalOffset - data[curColumn]);
+}
+
+unsigned CSVSplitter::splitLine(ISerialStream *stream, size32_t maxRowSize)
+{
+    if (stream->eos())
+        return 0;
+    size32_t minRequired = 4096; // MORE - make configurable
+    size32_t thisLineLength;
+    for (;;)
+    {
+        size32_t avail;
+        const void *peek = stream->peek(minRequired, avail);
+        thisLineLength = splitLine(avail, (const byte *)peek);
+        if (thisLineLength < avail || avail < minRequired)
+            break;
+
+        if (minRequired == maxRowSize)
+            throw MakeStringException(99, "Stream contained a line of length greater than %u bytes.", maxRowSize);
+        if (avail > minRequired*2)
+            minRequired = avail+minRequired;
+        else
+            minRequired += minRequired;
+        if (minRequired >= maxRowSize/2)
+            minRequired = maxRowSize;
+    }
+    return thisLineLength;
 }
 
 size32_t CSVSplitter::splitLine(size32_t maxLength, const byte * start)

@@ -562,23 +562,8 @@ public:
         Owned<ISerialStream> inputStream = createFileSerialStream(partIO, localFpos);
         if (inputStream->eos())
             return 0;
-        size32_t minRequired = 4096; // MORE - make configurable
         size32_t maxRowSize = 10*1024*1024; // MORE - make configurable
-        size32_t thisLineLength;
-        for (;;)
-        {
-            size32_t avail;
-            const void *peek = inputStream->peek(minRequired, avail);
-            thisLineLength = csvSplitter.splitLine(avail, (const byte *)peek);
-            if (thisLineLength < minRequired || avail < minRequired)
-                break;
-            if (minRequired == maxRowSize)
-                throw MakeActivityException(this, 0, "CSV fetch line of length greater than %d bytes.", minRequired);
-            if (minRequired >= maxRowSize/2)
-                minRequired = maxRowSize;
-            else
-                minRequired += minRequired;
-        }
+        size32_t thisLineLength = csvSplitter.splitLine(inputStream, maxRowSize);
         return ((IHThorCsvFetchArg *)fetchBaseHelper)->transform(rowBuilder, csvSplitter.queryLengths(), (const char * *)csvSplitter.queryData(), keyRow, localFpos);
     }
     virtual void onLimitExceeded()
