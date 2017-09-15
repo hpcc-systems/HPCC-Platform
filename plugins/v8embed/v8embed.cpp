@@ -649,7 +649,7 @@ public:
         }
         context->Global()->Set(v8::String::New(name), array);
     }
-    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *val)
+    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, const byte *val) override
     {
         v8::HandleScope handle_scope;
         const RtlTypeInfo *typeInfo = metaVal.queryTypeInfo();

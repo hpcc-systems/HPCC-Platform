@@ -1475,7 +1475,7 @@ public:
             typeError("row", NULL);  // Check that a single row was returned
         return ret;
     }
-    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *val)
+    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, const byte *val) override
     {
         MySQLRecordBinder binder(metaVal.queryTypeInfo(), stmtInfo->queryInputBindings(), nextParam);
         binder.processRow(val);

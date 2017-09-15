@@ -158,7 +158,7 @@ public:
     virtual byte * next()                                   { return (byte *)iter.next(); }
     virtual void init(const void * parentRecord) = 0;
 
-    inline void setDataset(unsigned _numRows, byte * * _rows) { iter.setDataset(_numRows, _rows); }
+    inline void setDataset(unsigned _numRows, const byte * * _rows) { iter.setDataset(_numRows, _rows); }
 
 protected:
     RtlSafeLinkedDatasetCursor  iter;

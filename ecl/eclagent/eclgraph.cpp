@@ -1039,13 +1039,13 @@ IHThorGraphResult * EclSubGraph::createGraphLoopResult(IEngineRowAllocator * own
     return graphLoopResults->createResult(ownedRowsetAllocator);
 }
 
-void EclSubGraph::getLinkedResult(unsigned & count, byte * * & ret, unsigned id)
+void EclSubGraph::getLinkedResult(unsigned & count, const byte * * & ret, unsigned id)
 {
     localResults->queryResult(id)->getLinkedResult(count, ret);
 }
 
 
-void EclSubGraph::getDictionaryResult(unsigned & count, byte * * & ret, unsigned id)
+void EclSubGraph::getDictionaryResult(unsigned & count, const byte * * & ret, unsigned id)
 {
     localResults->queryResult(id)->getLinkedResult(count, ret);
 }
@@ -1295,7 +1295,7 @@ const void * UninitializedGraphResult::queryRow(unsigned whichRow)
     throw MakeStringException(99, "Graph Result %d accessed before it is created", id);
 }
 
-void UninitializedGraphResult::getLinkedResult(unsigned & count, byte * * & ret)
+void UninitializedGraphResult::getLinkedResult(unsigned & count, const byte * * & ret)
 {
     throw MakeStringException(99, "Graph Result %d accessed before it is created", id);
 }
@@ -1329,16 +1329,16 @@ const void * GraphResult::queryRow(unsigned whichRow)
     return NULL;
 }
 
-void GraphResult::getLinkedResult(unsigned & count, byte * * & ret)
+void GraphResult::getLinkedResult(unsigned & count, const byte * * & ret)
 {
     unsigned max = rows.ordinality();
-    byte * * rowset = rowsetAllocator->createRowset(max);
+    const byte * * rowset = rowsetAllocator->createRowset(max);
     unsigned i;
     for (i = 0; i < max; i++)
     {
         const void * next = rows.item(i);
         if (next) LinkRoxieRow(next);
-        rowset[i] = (byte *)next;
+        rowset[i] = (const byte *)next;
     }
 
     count = max;

@@ -615,7 +615,7 @@ BoundRow * InlineLinkedDatasetCursor::doBuildIterateLoop(BuildCtx & ctx, bool ne
     //row = ds;
     OwnedHqlExpr address = getPointer(boundDs.expr);            // ensure no longer a wrapped item
 
-    s.clear().append("byte * * ").append(cursorName).append(" = ");
+    s.clear().append("const byte * * ").append(cursorName).append(" = ");
     translator.generateExprCpp(s, address).append(";");
     ctx.addQuoted(s);
 
@@ -1787,7 +1787,7 @@ InlineDatasetBuilder::InlineDatasetBuilder(HqlCppTranslator & _translator, IHqlE
     StringBuffer cursorName;
     getUniqueId(cursorName.append("p"));
 
-    ITypeInfo * rowType = makeRowReferenceType(record);
+    ITypeInfo * rowType = makeNonConstantModifier(makeRowReferenceType(record));
     cursorVar.setown(createVariable(cursorName.str(), rowType));
     dataset.setown(createDataset(no_anon, LINK(record), getSelfAttr()));
     size.set(_size);

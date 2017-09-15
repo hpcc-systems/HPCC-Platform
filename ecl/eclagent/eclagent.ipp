@@ -473,8 +473,8 @@ public:
     virtual unsigned getResultHash(const char * name, unsigned sequence);
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer);
     virtual unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence);
-    virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer);
-    virtual void getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher);
+    virtual void getResultRowset(size32_t & tcount, const byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) override;
+    virtual void getResultDictionary(size32_t & tcount, const byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) override;
     virtual char *getJobName();
     virtual char *getJobOwner();
     virtual char *getClusterName();
@@ -797,11 +797,11 @@ public:
     UninitializedGraphResult(unsigned _id) { id = _id; }
     IMPLEMENT_IINTERFACE
 
-    virtual void addRowOwn(const void * row);
-    virtual const void * queryRow(unsigned whichRow);
-    virtual void getLinkedResult(unsigned & count, byte * * & ret);
-    virtual const void * getOwnRow(unsigned whichRow);
-    virtual const void * getLinkedRowResult();
+    virtual void addRowOwn(const void * row) override;
+    virtual const void * queryRow(unsigned whichRow) override;
+    virtual void getLinkedResult(unsigned & count, const byte * * & ret) override;
+    virtual const void * getOwnRow(unsigned whichRow) override;
+    virtual const void * getLinkedRowResult() override;
 
 protected:
     unsigned id;
@@ -814,11 +814,11 @@ public:
     IMPLEMENT_IINTERFACE
 
 
-    virtual void addRowOwn(const void * row);
-    virtual const void * queryRow(unsigned whichRow);
-    virtual void getLinkedResult(unsigned & count, byte * * & ret);
-    virtual const void * getOwnRow(unsigned whichRow);
-    virtual const void * getLinkedRowResult();
+    virtual void addRowOwn(const void * row) override;
+    virtual const void * queryRow(unsigned whichRow) override;
+    virtual void getLinkedResult(unsigned & count, const byte * * & ret) override;
+    virtual const void * getOwnRow(unsigned whichRow) override;
+    virtual const void * getLinkedRowResult() override;
 
 protected:
     Owned<IEngineRowAllocator> rowsetAllocator;
@@ -837,24 +837,24 @@ public:
     void init(unsigned _maxResults);
 
     virtual void clear();
-    virtual IHThorGraphResult * queryResult(unsigned id);
-    virtual IHThorGraphResult * queryGraphLoopResult(unsigned id);
-    virtual IHThorGraphResult * createResult(unsigned id, IEngineRowAllocator * ownedRowsetAllocator);
-    virtual IHThorGraphResult * createResult(IEngineRowAllocator * ownedRowsetAllocator);
-    virtual IHThorGraphResult * createGraphLoopResult(IEngineRowAllocator * ownedRowsetAllocator) { throwUnexpected(); }
+    virtual IHThorGraphResult * queryResult(unsigned id) override;
+    virtual IHThorGraphResult * queryGraphLoopResult(unsigned id) override;
+    virtual IHThorGraphResult * createResult(unsigned id, IEngineRowAllocator * ownedRowsetAllocator) override;
+    virtual IHThorGraphResult * createResult(IEngineRowAllocator * ownedRowsetAllocator) override;
+    virtual IHThorGraphResult * createGraphLoopResult(IEngineRowAllocator * ownedRowsetAllocator) override { throwUnexpected(); }
 
-    virtual void setResult(unsigned id, IHThorGraphResult * result);
+    virtual void setResult(unsigned id, IHThorGraphResult * result) override;
 
 //interface IEclGraphResults
-    virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id)
+    virtual void getLinkedResult(unsigned & count, const byte * * & ret, unsigned id) override
     {
         queryResult(id)->getLinkedResult(count, ret);
     }
-    virtual void getDictionaryResult(unsigned & count, byte * * & ret, unsigned id)
+    virtual void getDictionaryResult(unsigned & count, const byte * * & ret, unsigned id) override
     {
         queryResult(id)->getLinkedResult(count, ret);
     }
-    virtual const void * getLinkedRowResult(unsigned id)
+    virtual const void * getLinkedRowResult(unsigned id) override
     {
         return queryResult(id)->getLinkedRowResult();
     }
@@ -1027,8 +1027,8 @@ public:
     virtual IHThorGraphResult * createGraphLoopResult(IEngineRowAllocator * ownedRowsetAllocator);
     virtual IEclGraphResults * evaluate(unsigned parentExtractSize, const byte * parentExtract);
 
-    virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id);
-    virtual void getDictionaryResult(size32_t & tcount, byte * * & tgt, unsigned id);
+    virtual void getLinkedResult(unsigned & count, const byte * * & ret, unsigned id) override;
+    virtual void getDictionaryResult(size32_t & tcount, const byte * * & tgt, unsigned id) override;
     virtual const void * getLinkedRowResult(unsigned id);
     inline unsigned __int64 queryId() const
     {

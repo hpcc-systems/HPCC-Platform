@@ -229,7 +229,7 @@ interface IRoxieServerActivityFactory : extends IActivityFactory
 };
 interface IGraphResult : public IInterface
 {
-    virtual void getLinkedResult(unsigned & countResult, byte * * & result) = 0;
+    virtual void getLinkedResult(unsigned & countResult, const byte * * & result) = 0;
     virtual IEngineRowStream * createIterator() = 0;
     virtual const void * getLinkedRowResult() = 0;
 };

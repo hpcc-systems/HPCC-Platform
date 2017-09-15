@@ -2999,37 +2999,37 @@ bool HqlCppTranslator::doBuildConstantDatasetInlineTable(IHqlExpression * expr, 
 class EclccEngineRowAllocator : public CInterfaceOf<IEngineRowAllocator>
 {
 public:
-    virtual byte * * createRowset(unsigned _numItems) { return (byte * *)malloc(_numItems * sizeof(byte *)); }
-    virtual byte * * linkRowset(byte * * rowset) { throwUnexpected(); }
-    virtual void releaseRowset(unsigned count, byte * * rowset) { free(rowset); }
-    virtual byte * * appendRowOwn(byte * * rowset, unsigned newRowCount, void * row)
+    virtual const byte * * createRowset(unsigned _numItems) override { return (const byte * *)malloc(_numItems * sizeof(byte *)); }
+    virtual const byte * * linkRowset(const byte * * rowset) override { throwUnexpected(); }
+    virtual void releaseRowset(unsigned count, const byte * * rowset) override { free(rowset); }
+    virtual const byte * * appendRowOwn(const byte * * rowset, unsigned newRowCount, void * row) override
     {
-        byte * * expanded = reallocRows(rowset, newRowCount-1, newRowCount);
-        expanded[newRowCount-1] = (byte *)row;
+        const byte * * expanded = reallocRows(rowset, newRowCount-1, newRowCount);
+        expanded[newRowCount-1] = (const byte *)row;
         return expanded;
     }
-    virtual byte * * reallocRows(byte * * rowset, unsigned oldRowCount, unsigned newRowCount)
+    virtual const byte * * reallocRows(const byte * * rowset, unsigned oldRowCount, unsigned newRowCount) override
     {
-        return (byte * *)realloc(rowset, newRowCount * sizeof(byte *));
+        return (const byte * *)realloc(rowset, newRowCount * sizeof(byte *));
     }
 
-    virtual void * createRow() { throwUnexpected(); }
-    virtual void releaseRow(const void * row) {  } // can occur if a row is removed from a dictionary.
-    virtual void * linkRow(const void * row) { return const_cast<void *>(row); }  // can occur if a dictionary is resized.
+    virtual void * createRow() override { throwUnexpected(); }
+    virtual void releaseRow(const void * row) override {  } // can occur if a row is removed from a dictionary.
+    virtual void * linkRow(const void * row) override { return const_cast<void *>(row); }  // can occur if a dictionary is resized.
 
 //Used for dynamically sizing rows.
-    virtual void * createRow(size32_t & allocatedSize) { throwUnexpected(); }
-    virtual void * resizeRow(size32_t newSize, void * row, size32_t & size) { throwUnexpected(); }
-    virtual void * finalizeRow(size32_t newSize, void * row, size32_t oldSize) { throwUnexpected(); }
+    virtual void * createRow(size32_t & allocatedSize) override { throwUnexpected(); }
+    virtual void * resizeRow(size32_t newSize, void * row, size32_t & size) override { throwUnexpected(); }
+    virtual void * finalizeRow(size32_t newSize, void * row, size32_t oldSize) override { throwUnexpected(); }
 
-    virtual IOutputMetaData * queryOutputMeta() { return NULL; }
-    virtual unsigned queryActivityId() const { return 0; }
-    virtual StringBuffer &getId(StringBuffer & out) { return out; }
-    virtual IOutputRowSerializer *createDiskSerializer(ICodeContext *ctx = NULL) { throwUnexpected(); }
-    virtual IOutputRowDeserializer *createDiskDeserializer(ICodeContext *ctx) { throwUnexpected(); }
-    virtual IOutputRowSerializer *createInternalSerializer(ICodeContext *ctx = NULL) { throwUnexpected(); }
-    virtual IOutputRowDeserializer *createInternalDeserializer(ICodeContext *ctx) { throwUnexpected(); }
-    virtual IEngineRowAllocator *createChildRowAllocator(const RtlTypeInfo *type) { throwUnexpected(); }
+    virtual IOutputMetaData * queryOutputMeta() override { return NULL; }
+    virtual unsigned queryActivityId() const override { return 0; }
+    virtual StringBuffer &getId(StringBuffer & out) override { return out; }
+    virtual IOutputRowSerializer *createDiskSerializer(ICodeContext *ctx = NULL) override { throwUnexpected(); }
+    virtual IOutputRowDeserializer *createDiskDeserializer(ICodeContext *ctx) override { throwUnexpected(); }
+    virtual IOutputRowSerializer *createInternalSerializer(ICodeContext *ctx = NULL) override { throwUnexpected(); }
+    virtual IOutputRowDeserializer *createInternalDeserializer(ICodeContext *ctx) override { throwUnexpected(); }
+    virtual IEngineRowAllocator *createChildRowAllocator(const RtlTypeInfo *type) override { throwUnexpected(); }
     virtual void gatherStats(CRuntimeStatisticCollection & stats) override {}
 };
 
@@ -3119,7 +3119,7 @@ void HqlCppTranslator::createInlineDictionaryRows(HqlExprArray & args, ConstantR
         builder.appendOwn(&boundRows.item(i));
 
     unsigned size = builder.getcount();
-    ConstantRow * * rows = reinterpret_cast<ConstantRow * *>(builder.queryrows());
+    const ConstantRow * * rows = reinterpret_cast<const ConstantRow * *>(builder.queryrows());
     for (unsigned i=0; i < size; i++)
     {
         if (rows[i])

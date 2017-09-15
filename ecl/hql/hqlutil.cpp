@@ -8833,7 +8833,7 @@ bool ConstantRowCreator::processFieldValue(IHqlExpression * optLhs, ITypeInfo * 
                     if (rhsOp == no_null)
                     {
                         rtlWriteSize32t(out.reserve(sizeof(size32_t)), 0);
-                        memset(out.reserve(sizeof(byte * *)), 0, sizeof(byte * *));
+                        memset(out.reserve(sizeof(const byte * *)), 0, sizeof(const byte * *));
                         return true;
                     }
                 }

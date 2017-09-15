@@ -251,7 +251,7 @@ void CompoundIteratorBuilder::createSingleLevelIterator(StringBuffer & iterName,
     createSingleIterator(iterName, cur, cursors);
 
     translator.getUniqueId(cursorName.append("row"));
-    OwnedHqlExpr row = createVariable(cursorName, makeRowReferenceType(cur));
+    OwnedHqlExpr row = createVariable(cursorName, makeConstantModifier(makeRowReferenceType(cur)));
     declarectx.addDeclare(row);
     cursors.append(*translator.createTableCursor(cur, row, false, no_none, NULL));
 }
@@ -268,13 +268,13 @@ void CompoundIteratorBuilder::createSingleIterator(StringBuffer & iterName, IHql
 
     if (isArrayRowset(expr->queryType()))
     {
-        classctx.addQuotedLiteral("byte * * end;");
-        classctx.addQuotedLiteral("byte * * cur;");
+        classctx.addQuotedLiteral("const byte * * end;");
+        classctx.addQuotedLiteral("const byte * * cur;");
     }
     else
     {
-        classctx.addQuotedLiteral("byte * end;");
-        classctx.addQuotedLiteral("byte * cur;");
+        classctx.addQuotedLiteral("const byte * end;");
+        classctx.addQuotedLiteral("const byte * cur;");
     }
 
     IHqlExpression * root = queryRoot(expr);

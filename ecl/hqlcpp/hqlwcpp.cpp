@@ -339,6 +339,10 @@ class TypeNameBuilder
 public:
     TypeNameBuilder(const char * name) { typeOnLeft = false; str.append(name); }
 
+    void addConst()
+    {
+        isConst = true;
+    }
     void addPrefix(const char * text)
     {
         if (str.length())
@@ -362,11 +366,17 @@ public:
         return addSuffix().append("[").append(length ? length : 1).append("]");
     }
     
-    void get(StringBuffer & out) { out.append(str); }
+    void get(StringBuffer & out)
+    {
+        if (isConst)
+            out.append("const ");
+        out.append(str);
+    }
 
 protected:
     StringBuffer str;
     bool typeOnLeft;
+    bool isConst = false;
 };
 
 void HqlCppWriter::generateType(StringBuffer & result, ITypeInfo * type, const char * name)
@@ -391,7 +401,7 @@ void HqlCppWriter::generateType(ITypeInfo * type, const char * name)
             switch (tmod)
             {
             case typemod_const:
-//              result.addPrefix("const");
+                result.addConst();
                 break;
             case typemod_outofline:
                 outOfLine = false;
@@ -454,7 +464,7 @@ void HqlCppWriter::generateType(ITypeInfo * type, const char * name)
                     if (isPointer)
                         prefix = "void";
                     else
-                        prefix = "char";
+                        prefix = "byte";
                 }
                 else
                     prefix = "char";
@@ -478,6 +488,8 @@ void HqlCppWriter::generateType(ITypeInfo * type, const char * name)
         case type_sortlist:
             if (hasLinkCountedModifier(fullType))
                 isPointer = true;
+            if (!hasNonconstModifier(fullType))
+                result.addConst();
             prefix = "byte";
             next = NULL;
             break;
@@ -879,7 +891,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
         out.append(",");
         break;
     case type_row:
-        isConst = true;
+        isConst = false; // bit of a hack - we forced it on in generateType above, and this avoids duplicates.
         break;
     }
     
@@ -896,8 +908,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
             out.append("IRowStream *");
         else if (hasOutOfLineModifier(paramType) || hasLinkCountedModifier(paramType))
         {
-            //At some point in the future this should change to "const byte * const *"
-            out.append("byte * *");
+            out.append("const byte * *");  // Arguably should be const byte * const *
         }
         else
         {
@@ -926,7 +937,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
             if(isStringType(childType)) {
                 // process stringn and varstringn specially.
                 if(childType->getSize() > 0) {
-                    out.append("char ");
+                    out.append("const char ");
                     if(paramName) {
                         out.append(paramNameText);
                         nameappended = true;
@@ -938,7 +949,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
                 }
                 // Process string and varstring specially
                 else {
-                    out.append("char *");
+                    out.append("const char *");
                     if(paramName) {
                         out.append(paramNameText);
                         nameappended = true;
@@ -948,7 +959,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
             }
             else
             {
-                OwnedITypeInfo pointerType = makePointerType(LINK(childType));
+                OwnedITypeInfo pointerType = makeConstantModifier(makePointerType(LINK(childType)));
                 generateType(pointerType, NULL);
             }
             break;
@@ -1033,7 +1044,7 @@ void HqlCppWriter::generateFunctionReturnType(StringBuffer & params, ITypeInfo *
             params.append("size32_t & __countResult,");
     //      if (hasConstModifier(retType))
     //          params.append("const ");
-            params.append("byte * * & __result");
+            params.append("const byte * * & __result");
             if (hasNonNullRecord(retType) && getBoolAttribute(attrs, allocatorAtom, true))
                 params.append(", IEngineRowAllocator * _resultAllocator");
         }

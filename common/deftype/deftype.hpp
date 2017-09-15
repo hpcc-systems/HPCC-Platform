@@ -61,6 +61,7 @@ enum typemod_t
     typemod_attr        = 9,
     typemod_indirect    = 10,       // type definition needs to go via an ecl definition
     typemod_mutable     = 11,
+    typemod_nonconst    = 12,
     typemod_max
 };
 
@@ -195,6 +196,7 @@ extern DEFTYPE_API ITypeInfo * makePointerType(ITypeInfo * basetype);
 extern DEFTYPE_API ITypeInfo * makeArrayType(ITypeInfo * basetype, unsigned size=0);
 extern DEFTYPE_API ITypeInfo * makeClassType(const char * className);
 extern DEFTYPE_API ITypeInfo * makeConstantModifier(ITypeInfo * basetype);
+extern DEFTYPE_API ITypeInfo * makeNonConstantModifier(ITypeInfo * basetype);
 extern DEFTYPE_API ITypeInfo * makeReferenceModifier(ITypeInfo * basetype);
 extern DEFTYPE_API ITypeInfo * makeWrapperModifier(ITypeInfo * basetype);
 extern DEFTYPE_API ITypeInfo * makeModifier(ITypeInfo * basetype, typemod_t modifier, IInterface * extra=NULL);
@@ -286,6 +288,7 @@ extern DEFTYPE_API ITypeInfo * getTruncType(ITypeInfo * type);
 inline bool hasConstModifier(ITypeInfo * t)      { return hasModifier(t, typemod_const); }
 inline bool hasReferenceModifier(ITypeInfo * t)  { return hasModifier(t, typemod_ref); }
 inline bool hasWrapperModifier(ITypeInfo * t)    { return hasModifier(t, typemod_wrapper); }
+inline bool hasNonconstModifier(ITypeInfo * t)   { return hasModifier(t, typemod_nonconst); }
 inline bool hasOutOfLineModifier(ITypeInfo * t)  { return hasModifier(t, typemod_outofline); }
 inline bool sameUnqualifiedType(ITypeInfo * t1, ITypeInfo * t2)  { return queryUnqualifiedType(t1) == queryUnqualifiedType(t2); }
 inline ITypeInfo * stripFunctionType(ITypeInfo * type)

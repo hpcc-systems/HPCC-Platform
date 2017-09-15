@@ -458,7 +458,7 @@ public:
         RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
         return typeInfo->build(rowBuilder, 0, &dummyField, sqliteRowBuilder);
     }
-    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *val)
+    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, const byte *val) override
     {
         UNSUPPORTED("Row parameters");  // Probably SHOULD support - see MySQL plugin
     }

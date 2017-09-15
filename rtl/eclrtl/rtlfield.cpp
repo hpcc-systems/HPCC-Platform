@@ -1981,7 +1981,7 @@ size32_t RtlDatasetTypeInfo::build(ARowBuilder &builder, size32_t offset, const 
         builder.ensureCapacity(offset+sizeInBytes, field->name);
         size32_t numRows = 0;
         Owned<IEngineRowAllocator> childAllocator = builder.queryAllocator()->createChildRowAllocator(child);
-        byte **childRows = NULL;
+        const byte **childRows = NULL;
         RtlFieldStrInfo dummyField("<nested row>", NULL, child);
         while (source.processNextRow(field))
         {

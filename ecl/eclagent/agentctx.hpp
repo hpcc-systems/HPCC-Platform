@@ -38,7 +38,7 @@ struct IHThorGraphResult : extends IInterface
 {
     virtual void addRowOwn(const void * row) = 0;
     virtual const void * queryRow(unsigned whichRow) = 0;
-    virtual void getLinkedResult(unsigned & count, byte * * & ret) = 0;
+    virtual void getLinkedResult(unsigned & count, const byte * * & ret) = 0;
     virtual const void * getOwnRow(unsigned whichRow) = 0;      // used internally, removes row from result
     virtual const void * getLinkedRowResult() = 0;
 };

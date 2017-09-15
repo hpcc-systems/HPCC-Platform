@@ -1521,7 +1521,7 @@ public:
         RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
         return typeInfo->build(rowBuilder, 0, &dummyField, cassandraRowBuilder);
     }
-    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *val)
+    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, const byte *val) override
     {
         CassandraRecordBinder binder(logctx, metaVal.queryTypeInfo(), stmtInfo, nextParam);
         binder.processRow(val);

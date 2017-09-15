@@ -868,10 +868,10 @@ public:
                 case match_link:
                 {
                     // a 32-bit record count, and a (linked) pointer to an array of record pointers
-                    byte *dest = builder.ensureCapacity(offset+sizeof(size32_t)+sizeof(byte **), field->name)+offset;
+                    byte *dest = builder.ensureCapacity(offset+sizeof(size32_t)+sizeof(const byte **), field->name)+offset;
                     *(size32_t *)dest = *(size32_t *)source;
-                    *(byte ***)(dest + sizeof(size32_t)) = rtlLinkRowset(*(byte ***)(source + sizeof(size32_t)));
-                    offset += sizeof(size32_t)+sizeof(byte **);
+                    *(const byte ***)(dest + sizeof(size32_t)) = rtlLinkRowset(*(const byte ***)(source + sizeof(size32_t)));
+                    offset += sizeof(size32_t)+sizeof(const byte **);
                     break;
                 }
                 case match_recurse:
@@ -886,7 +886,7 @@ public:
                         size32_t sizeInBytes = sizeof(size32_t) + sizeof(void *);
                         builder.ensureCapacity(offset+sizeInBytes, field->name);
                         size32_t numRows = 0;
-                        byte **childRows = nullptr;
+                        const byte **childRows = nullptr;
                         if (sourceType->isLinkCounted())
                         {
                             // a 32-bit count, then a pointer to the source rows
