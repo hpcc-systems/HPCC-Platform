@@ -5045,3 +5045,442 @@ bool CWsWorkunitsEx::onWUGetArchiveFile(IEspContext &context, IEspWUGetArchiveFi
     }
     return true;
 }
+
+//Copy from eclcmd_common.cpp
+bool CWsWorkunitsEx::isValidPriorityValue(const char *value)
+{
+    if (isEmptyString(value))
+        return false;
+    if (strieq("SLA", value) || strieq("LOW", value) || strieq("HIGH", value) || strieq("NONE", value))
+        return true;
+    return false;
+}
+
+//Copy from eclcmd_common.cpp
+bool CWsWorkunitsEx::isValidMemoryValue(const char *value)
+{
+    if (isEmptyString(value) || !isdigit(*value))
+        return false;
+    while (isdigit(*++value));
+
+    if (!*value)
+        return true;
+
+    switch (toupper(*value++))
+    {
+        case 'E':
+        case 'P':
+        case 'T':
+        case 'G':
+        case 'M':
+        case 'K':
+            if (!*value || strieq("B", value))
+                return true;
+            break;
+        case 'B':
+            if (!*value)
+                return true;
+            break;
+    }
+    return false;
+}
+
+const char *CWsWorkunitsEx::readQueryFileCopyErrors(IArrayOf<IConstLogicalFileError> &errors, StringBuffer &errorMsg)
+{
+    if (!errors.ordinality())
+        return errorMsg.str();
+
+    errorMsg.append("Query File Copy Error(s):");
+    ForEachItemIn(i, errors)
+    {
+        IConstLogicalFileError &error = errors.item(i);
+        errorMsg.append(" ").append(error.getLogicalName()).append(": ");
+        errorMsg.append(error.getError()).append(";");
+    }
+    return errorMsg.str();
+}
+
+const char *CWsWorkunitsEx::readExceptionMessage(const IMultiException &me, StringBuffer &exceptionMsg)
+{
+    exceptionMsg.append("Exception(s):");
+    aindex_t count = me.ordinality();
+    for (aindex_t i=0; i<count; i++)
+    {
+        IException& e = me.item(i);
+        StringBuffer errMsg;
+        exceptionMsg.append(" ").append(e.errorCode()).append(": ");
+        exceptionMsg.append(e.errorMessage(errMsg).str()).append(";");
+    }
+    return exceptionMsg.str();
+}
+
+const char *CWsWorkunitsEx::readWUException(IConstWUExceptionIterator &it, StringBuffer &exceptionMsg)
+{
+    unsigned numErr = 0, numWRN = 0, numInf = 0, numAlert = 0;
+    ForEach(it)
+    {
+        IConstWUException & cur = it.query();
+        SCMStringBuffer src, msg, file;
+        exceptionMsg.append(" Exception: Code: ").append(cur.getExceptionCode());
+        exceptionMsg.append(" Source: ").append(cur.getExceptionSource(src).str());
+        exceptionMsg.append(" Message: ").append(cur.getExceptionMessage(msg).str());
+        exceptionMsg.append(" FileName: ").append(cur.getExceptionFileName(file).str());
+        exceptionMsg.append(" LineNo: ").append(cur.getExceptionLineNo());
+        exceptionMsg.append(" Colum: ").append(cur.getExceptionColumn());
+        if (cur.getActivityId())
+            exceptionMsg.append(" ActivityId: ").append(cur.getActivityId());
+        if (cur.getPriority())
+            exceptionMsg.append(" Priority: ").append(cur.getPriority());
+        exceptionMsg.append(" Scope: ").append(cur.queryScope());
+
+        const char * label = "";
+        switch (cur.getSeverity())
+        {
+            default:
+            case SeverityError: label = "Error"; numErr++; break;
+            case SeverityWarning: label = "Warning"; numWRN++; break;
+            case SeverityInformation: label = "Info"; numInf++; break;
+            case SeverityAlert: label = "Alert"; numAlert++; break;
+        }
+        exceptionMsg.append(" Severity: ").append(label);
+    }
+    exceptionMsg.append(" Total error: ").append(numErr);
+    exceptionMsg.append(" warning: ").append(numWRN);
+    exceptionMsg.append(" info: ").append(numInf);
+    exceptionMsg.append(" alert: ").append(numAlert);
+    return exceptionMsg.str();
+}
+
+const char *CWsWorkunitsEx::readECLException(IArrayOf<IConstECLException> &exceptions, StringBuffer &exceptionMsg)
+{
+    unsigned errorCount = 0, warningCount = 0;
+    ForEachItemIn(i, exceptions)
+    {
+        IConstECLException &e = exceptions.item(i);
+        if (strieq(e.getSeverity(), "warning"))
+        {
+            warningCount++;
+            exceptionMsg.append(" Warning: ");
+        }
+        else if (strieq(e.getSeverity(), "error"))
+        {
+            errorCount++;
+            exceptionMsg.append(" Error: ");
+        }
+
+        if (e.getSource())
+            exceptionMsg.append(e.getSource()).append(": ");
+        if (e.getFileName())
+            exceptionMsg.append(e.getFileName());
+        if (!e.getLineNo_isNull() && !e.getColumn_isNull())
+            exceptionMsg.appendf("(%d,%d): ", e.getLineNo(), e.getColumn());
+
+        exceptionMsg.appendf("%s C%d: %s;", e.getSeverity(), e.getCode(), e.getMessage());
+    }
+    exceptionMsg.append(" Total error: ").append(errorCount);
+    exceptionMsg.append(" warning: ").append(warningCount);
+    return exceptionMsg.str();
+}
+
+bool CWsWorkunitsEx::readDeployWUResponse(CWUDeployWorkunitResponse* deployResponse, StringBuffer &wuid, StringBuffer &result)
+{
+    const IMultiException &me = deployResponse->getExceptions();
+    if (me.ordinality())
+        readExceptionMessage(me, result);
+
+    const char *w = deployResponse->getWorkunit().getWuid();
+    if (isEmptyString(w))
+    {
+        result.appendf("Error: no workunit ID!");
+        return false;
+    }
+
+    wuid.set(w);
+    const char *state = deployResponse->getWorkunit().getState();
+    bool isCompiled = (strieq(state, "compiled") || strieq(state, "completed"));
+    if (!isCompiled)
+        result.appendf("state: %s;", state);
+
+    readECLException(deployResponse->getWorkunit().getExceptions(), result);
+
+    return isCompiled;
+}
+
+void CWsWorkunitsEx::addECLQueryActionResult(const char *query, const char *result, const char* strAction, bool logResult, IArrayOf<IConstWUECLQueryActionResult> &results)
+{
+    Owned<IEspWUECLQueryActionResult> res = createWUECLQueryActionResult();
+    if (!isEmptyString(query))
+        res->setQueryName(query);
+    res->setAction(strAction);
+    res->setResult(result);
+    results.append(*res.getClear());
+    if (logResult)
+        PROGLOG("%s", result);
+}
+
+void CWsWorkunitsEx::doECLQuerySyntaxCheck(IEspContext &context, const char *target, const char *query, IEspWUECLQueryActionRequest &req, IArrayOf<IConstWUECLQueryActionResult> &results)
+{
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+    NewWsWorkunit wu(factory, context);
+    wu->setAction(WUActionCheck);
+
+    MemoryBuffer mb;
+    fastLZCompressToBuffer(mb, 0, "");
+    StringBuffer text(mb.length(), mb.toByteArray());
+    wu.setQueryText(text.str());
+    wu.setQueryMain(query);
+
+    StringAttr wuid(wu->queryWuid());  // NB queryWuid() not valid after workunit.clear()
+    wu->commit();
+    wu.clear();
+
+    WsWuHelpers::submitWsWorkunit(context, wuid.str(), target, NULL, 0, true, false, false);
+    waitForWorkUnitToComplete(wuid.str(), req.getTimeToWait());
+
+    Owned<IConstWorkUnit> cw(factory->openWorkUnit(wuid.str()));
+    WUState st = cw->getState();
+    bool wuTimeout = (st != WUStateAborted) && (st != WUStateCompleted) && (st != WUStateFailed);
+    VStringBuffer result(" WUSyntaxCheckECL for %s:", query);
+    if (wuTimeout)
+        result.append(" timed out.");
+
+    readWUException(cw->getExceptions(), result);
+    addECLQueryActionResult(query, result.str(), "SyntaxCheck", true, results);
+    cw.clear();
+
+    if (wuTimeout)
+        abortWorkUnit(wuid.str(), context.querySecManager(), context.queryUser());
+    if (!factory->deleteWorkUnit(wuid.str()))
+    {
+        result.setf(" Workunit %s cannot be deleted now. You may delete it when its status changes.", wuid.str());
+        addECLQueryActionResult(query, result.str(), "SyntaxCheck", true, results);
+    }
+}
+
+bool CWsWorkunitsEx::deployECLQuery(IEspContext &context, const char *target, const char *name, StringBuffer &wuid, StringBuffer &result)
+{
+    Owned<CWUDeployWorkunitRequest> deployReq = new CWUDeployWorkunitRequest("WsWorkunits");
+    deployReq->setName(name);
+    deployReq->setQueryMainDefinition(name);
+    deployReq->setCluster(target);
+    deployReq->setFileName("");
+
+    MemoryBuffer mb;
+    fastLZCompressToBuffer(mb, 0, "");
+    deployReq->setObject(mb);
+    deployReq->setObjType("compressed_ecl_text");
+
+    Owned<CWUDeployWorkunitResponse> deployResponse = new CWUDeployWorkunitResponse("WsWorkunits");
+    onWUDeployWorkunit(context, *deployReq, *deployResponse);
+    return readDeployWUResponse(deployResponse, wuid, result);
+}
+
+void CWsWorkunitsEx::doECLQueryDeployment(IEspContext &context, const char *target,  const char *query, IArrayOf<IConstWUECLQueryActionResult> &results)
+{
+    StringBuffer wuid, finalResult;
+    deployECLQuery(context, target, query, wuid, finalResult);
+    addECLQueryActionResult(query, finalResult.str(), "Deploy", true, results);
+}
+
+void CWsWorkunitsEx::doECLQueryPublish(IEspContext &context, const char *target,  const char *query, IEspWUECLQueryActionRequest &req, IArrayOf<IConstWUECLQueryActionResult> &results)
+{
+    StringBuffer priorityReq = req.getPriority();
+    if (priorityReq.trim().length() && !isValidPriorityValue(priorityReq))
+    {
+        VStringBuffer msg("invalid --priority value of %s.", priorityReq.str());
+        addECLQueryActionResult(query, msg.str(), "Publish", true, results);
+        return;
+    }
+
+    StringBuffer memoryLimitReq = req.getMemoryLimit();
+    if (memoryLimitReq.trim().length() && !isValidMemoryValue(memoryLimitReq))
+    {
+        VStringBuffer msg("invalid --memoryLimit value of %s.", memoryLimitReq.str());
+        addECLQueryActionResult(query, msg.str(), "Publish", true, results);
+        return;
+    }
+
+    //Do deploy first
+    StringBuffer wuid, finalResult;
+    if (!deployECLQuery(context, target, query, wuid, finalResult))
+    {
+        addECLQueryActionResult(query, finalResult.str(), "deployECLQuery", true, results);
+        return;
+    }
+
+    //Do publish now
+    StringBuffer comment = req.getComment();
+    StringBuffer remoteDali = req.getRemoteDali();
+    StringBuffer sourceProcess = req.getSourceProcess();
+    int timeLimit = req.getTimeLimit();
+    int warnTimeLimit = req.getWarnTimeLimit();
+
+    Owned<CWUPublishWorkunitRequest> publishReq = new CWUPublishWorkunitRequest("WsWorkunits");
+    publishReq->setWuid(wuid.str());
+    publishReq->setCluster(target);
+    publishReq->setJobName(query);
+
+    if (!remoteDali.trim().isEmpty())
+        publishReq->setRemoteDali(remoteDali.str());
+    if (!sourceProcess.trim().isEmpty())
+        publishReq->setSourceProcess(sourceProcess.str());
+    if (!priorityReq.isEmpty())
+        publishReq->setPriority(priorityReq.str());
+    if (comment.str()) //allow empty
+        publishReq->setComment(comment.str());
+
+    if (req.getDeletePrevious())
+        publishReq->setActivate(CWUQueryActivationMode_ActivateDeletePrevious);
+    else if (req.getSuspendPrevious())
+        publishReq->setActivate(CWUQueryActivationMode_ActivateSuspendPrevious);
+    else
+        publishReq->setActivate(req.getNoActivate() ? CWUQueryActivationMode_NoActivate : CWUQueryActivationMode_Activate);
+
+    publishReq->setWait(req.getMsToWait());
+    publishReq->setNoReload(req.getNoReload());
+    publishReq->setDontCopyFiles(req.getDontCopyFiles());
+    publishReq->setAllowForeignFiles(req.getAllowForeign());
+    publishReq->setUpdateDfs(req.getUpdateDfs());
+    publishReq->setUpdateSuperFiles(req.getUpdateSuperfiles());
+    publishReq->setUpdateCloneFrom(req.getUpdateCloneFrom());
+    publishReq->setAppendCluster(!req.getDontAppendCluster());
+    publishReq->setIncludeFileErrors(true);
+
+    if (timeLimit != -1)
+        publishReq->setTimeLimit(timeLimit);
+    if (warnTimeLimit != (unsigned) -1)
+        publishReq->setWarnTimeLimit(warnTimeLimit);
+    if (!memoryLimitReq.isEmpty())
+        publishReq->setMemoryLimit(memoryLimitReq.str());
+
+    Owned<CWUPublishWorkunitResponse> publishResponse = new CWUPublishWorkunitResponse("WsWorkunits");
+    onWUPublishWorkunit(context, *publishReq, *publishResponse);
+
+    const char *id = publishResponse->getQueryId();
+    if (!isEmptyString(id))
+    {
+        const char *qs = publishResponse->getQuerySet();
+        finalResult.append("   ").append(qs ? qs : "").append('/').append(id).append(" published. ");
+    }
+    if (publishResponse->getReloadFailed())
+        finalResult.append(" Added to Queryset, but request to reload queries on cluster failed.");
+
+    const IMultiException &me = publishResponse->getExceptions();
+    if (me.ordinality())
+        readExceptionMessage(me, finalResult);
+
+    readQueryFileCopyErrors(publishResponse->getFileErrors(), finalResult);
+    addECLQueryActionResult(query, finalResult.str(), "Publish", true, results);
+}
+
+void CWsWorkunitsEx::doECLQueryUnpublish(IEspContext &context, const char *target, IEspWUECLQueryActionRequest &req, IArrayOf<IConstWUECLQueryActionResult> &results)
+{
+    Owned<CWUQuerySetQueryActionRequest> actionReq = new CWUQuerySetQueryActionRequest("WsWorkunits");
+    actionReq->setQuerySetName(target);
+    actionReq->setAction("Delete");
+
+    IArrayOf<IEspQuerySetQueryActionItem> queries;
+    StringArray &queryNames = req.getQueryNames();
+    for (aindex_t i = 0; i < queryNames.length(); i++)
+    {
+        StringBuffer queryStr = queryNames.item(i);
+        if (queryStr.trim().isEmpty())
+        {
+            addECLQueryActionResult(nullptr, "Empty ECL query name in Unpublish request", "Unpublish", true, results);
+            continue;
+        }
+        Owned<IEspQuerySetQueryActionItem> item = createQuerySetQueryActionItem();
+        item->setQueryId(queryStr.str());
+        queries.append(*item.getClear());
+    }
+    actionReq->setQueries(queries);
+
+    Owned<CWUQuerySetQueryActionResponse> actionResponse = new CWUQuerySetQueryActionResponse("WsWorkunits");
+    onWUQuerysetQueryAction(context, *actionReq, *actionResponse);
+
+    const IMultiException &me = actionResponse->getExceptions();
+    if (me.ordinality())
+    {
+        StringBuffer errMsg;
+        addECLQueryActionResult(nullptr, readExceptionMessage(me, errMsg), "Unpublish", true, results);
+        return;
+    }
+
+    IArrayOf<IConstQuerySetQueryActionResult> &actionResults = actionResponse->getResults();
+    if (actionResults.empty())
+        addECLQueryActionResult(nullptr, "Empty Result!", "Unpublish", true, results);
+    else
+    {
+        StringBuffer outMsg;
+        ForEachItemIn(i, actionResults)
+        {
+            IConstQuerySetQueryActionResult &item = actionResults.item(i);
+            const char *id = item.getQueryId();
+            if (item.getSuccess())
+                outMsg.appendf(" Query %s/%s success;", target, id ? id : "");
+            else if (item.getCode()|| item.getMessage())
+            {
+                const char *msg = item.getMessage();
+                outMsg.appendf(" Query %s/%s Error (%d) %s;", target, id ? id : "", item.getCode(), msg ? msg : "");
+            }
+            else
+                outMsg.appendf(" Query %s/%s failed;", target, id ? id : "");
+        }
+        addECLQueryActionResult(nullptr, outMsg.str(), "Unpublish", true, results);
+    }
+}
+
+bool CWsWorkunitsEx::onWUECLQueryAction(IEspContext &context, IEspWUECLQueryActionRequest &req, IEspWUECLQueryActionResponse &resp)
+{
+    try
+    {
+        if (!context.validateFeatureAccess(OWN_WU_ACCESS, SecAccess_Write, false))
+            throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to do WUECLQueryAction. Permission denied.");
+
+        CECLQueryActions action = req.getActionType();
+        if (action == ECLQueryActions_Undefined)
+            throw MakeStringException(ECLWATCH_INVALID_INPUT,"Action not defined in onWUECLQueryAction.");
+
+        StringBuffer target = req.getTarget();
+        if (target.trim().isEmpty())
+            throw MakeStringException(ECLWATCH_INVALID_INPUT,"Target not defined in onWUECLQueryAction.");
+
+        IArrayOf<IConstWUECLQueryActionResult> results;
+        switch (action)
+        {
+            case CECLQueryActions_SyntaxCheck:
+            case CECLQueryActions_Deploy:
+            case CECLQueryActions_Publish:
+            {
+                StringArray& queries = req.getQueryNames();
+                for (aindex_t i = 0; i < queries.length(); i++)
+                {
+                    StringBuffer queryStr = queries.item(i);
+                    if (queryStr.trim().isEmpty())
+                        WARNLOG("Empty ECL query name in WUECLQueryAction request");
+                    else if (action == CECLQueryActions_SyntaxCheck)
+                        doECLQuerySyntaxCheck(context, target.str(), queryStr.str(), req, results);
+                    else if (action == CECLQueryActions_Deploy)
+                        doECLQueryDeployment(context, target.str(), queryStr.str(), results);
+                    else
+                        doECLQueryPublish(context, target.str(), queryStr.str(), req, results);
+                }
+                break;
+            }
+            case CECLQueryActions_Unpublish:
+            {
+                doECLQueryUnpublish(context, target.str(), req, results);
+                break;
+            }
+            default:
+                break;
+        }
+
+        resp.setActionResults(results);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+   return true;
+}

@@ -36,6 +36,15 @@ ESPenum ECLWUActions : string
     SetToFailed("SetToFailed"),
 };
 
+//The ESPenum ECLQueryActions has to be matched by the ECLQueryActions[] in ws_workunitsService.cpp.
+ESPenum ECLQueryActions : string
+{
+    SyntaxCheck("SyntaxCheck"),
+    Deploy("Deploy"),
+    Publish("Publish"),
+    Unpublish("Unpublish")
+};
+
 ESPStruct [nil_remove] ECLException
 {
     string Source;
@@ -1826,9 +1835,48 @@ ESPresponse [exceptions_inline, nil_remove] WUGetNumFileToCopyResponse
     [min_ver("1.69")] int64 Total;
 };
 
+ESPStruct [nil_remove] WUECLQueryActionResult
+{
+    string QueryName;
+    string Action;
+    string Result;
+};
+
+ESPrequest [nil_remove] WUECLQueryActionRequest
+{
+    ESParray<string> QueryNames;
+    ESPenum ECLQueryActions ActionType;
+    string Target;
+
+    string RemoteDali; //Publish
+    string SourceProcess; //Publish
+    string Priority; //Publish
+    string Comment; //Publish
+    string MemoryLimit; //Publish - 123M
+    bool DeletePrevious(false); //Publish
+    bool SuspendPrevious(false); //Publish
+    bool NoActivate(false); //Publish
+    bool NoReload(false); //Publish
+    bool DontCopyFiles(false); //Publish
+    bool AllowForeign(false); //Publish
+    bool UpdateDfs(false); //Publish
+    bool UpdateSuperfiles(false); //Publish
+    bool UpdateCloneFrom(false); //Publish
+    bool DontAppendCluster(false); //Publish
+    int MsToWait(10000); //Publish
+    int TimeLimit(-1); //Publish
+    int WarnTimeLimit(-1); //Publish
+    int TimeToWait(60000); //SyntaxCheck
+};
+
+ESPresponse [exceptions_inline] WUECLQueryActionResponse
+{
+    ESParray<ESPstruct WUECLQueryActionResult> ActionResults;
+};
+
 ESPservice [
     auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
-    version("1.69"), default_client_version("1.69"),
+    version("1.70"), default_client_version("1.70"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
@@ -1907,6 +1955,7 @@ ESPservice [
     ESPmethod [cache_seconds(60), min_ver("1.57")] WUListArchiveFiles(WUListArchiveFilesRequest, WUListArchiveFilesResponse);
     ESPmethod [cache_seconds(60), min_ver("1.57")] WUGetArchiveFile(WUGetArchiveFileRequest, WUGetArchiveFileResponse);
     ESPmethod [cache_seconds(60), min_ver("1.61")] WUGetNumFileToCopy(WUGetNumFileToCopyRequest, WUGetNumFileToCopyResponse);
+    ESPmethod [min_ver("1.70")] WUECLQueryAction(WUECLQueryActionRequest, WUECLQueryActionResponse);
 };
 
 

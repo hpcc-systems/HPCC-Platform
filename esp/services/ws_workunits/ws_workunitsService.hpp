@@ -267,6 +267,7 @@ public:
 
     bool onWUListArchiveFiles(IEspContext &context, IEspWUListArchiveFilesRequest &req, IEspWUListArchiveFilesResponse &resp);
     bool onWUGetArchiveFile(IEspContext &context, IEspWUGetArchiveFileRequest &req, IEspWUGetArchiveFileResponse &resp);
+    bool onWUECLQueryAction(IEspContext &context, IEspWUECLQueryActionRequest &req, IEspWUECLQueryActionResponse &resp);
 private:
     void addProcessLogfile(Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, const char* path);
     void addThorSlaveLogfile(Owned<IConstWorkUnit> &cwu,WsWuInfo& winfo, const char* path);
@@ -283,6 +284,19 @@ private:
     IPropertyTree* getWorkunitArchive(IEspContext &context, WsWuInfo& winfo, const char* wuid, unsigned cacheMinutes);
     void readSuperFiles(IEspContext &context, IReferencedFile* rf, const char* fileName, IReferencedFileList* wufiles, IArrayOf<IEspQuerySuperFile>* files);
     IReferencedFile* getReferencedFileByName(const char* name, IReferencedFileList* wufiles);
+    void doECLQuerySyntaxCheck(IEspContext &context, const char *target, const char *query, IEspWUECLQueryActionRequest &req, IArrayOf<IConstWUECLQueryActionResult> &results);
+    void doECLQueryDeployment(IEspContext &context, const char *target, const char *query, IArrayOf<IConstWUECLQueryActionResult> &results);
+    void doECLQueryPublish(IEspContext &context, const char *target, const char* query, IEspWUECLQueryActionRequest &req, IArrayOf<IConstWUECLQueryActionResult> &results);
+    void doECLQueryUnpublish(IEspContext &context, const char *target, IEspWUECLQueryActionRequest &req, IArrayOf<IConstWUECLQueryActionResult> &results);
+    bool deployECLQuery(IEspContext &context, const char *target, const char *name, StringBuffer &wuid, StringBuffer &result);
+    bool isValidPriorityValue(const char *value);
+    bool isValidMemoryValue(const char *value);
+    const char* readQueryFileCopyErrors(IArrayOf<IConstLogicalFileError> &errors, StringBuffer &msg);
+    bool readDeployWUResponse(CWUDeployWorkunitResponse* deployResponse, StringBuffer &wuid, StringBuffer &result);
+    const char* readExceptionMessage(const IMultiException &me, StringBuffer &exceptionMsg);
+    const char* readWUException(IConstWUExceptionIterator &it, StringBuffer &exceptionMsg);
+    const char* readECLException(IArrayOf<IConstECLException> &exceptions, StringBuffer &exceptionMsg);
+    void addECLQueryActionResult(const char *query, const char *result, const char* strAction, bool logResult, IArrayOf<IConstWUECLQueryActionResult> &results);
 
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;
