@@ -1119,6 +1119,12 @@ ISecItemIterator* CLdapSecManager::getResourcesSorted(SecResourceType rtype, con
     return m_ldap_client->getResourcesSorted(rtype, basedn, resourceName, extraNameFilter, sortOrder, pageStartFrom, pageSize, total, cachehint);
 }
 
+ISecItemIterator* CLdapSecManager::getResourcePermissionsSorted(const char* name, enum ACCOUNT_TYPE_REQ accountType, const char* baseDN, const char* rtype, const char* prefix,
+    ResourcePermissionField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned *total, __int64 *cachehint)
+{
+    return m_ldap_client->getResourcePermissionsSorted(name, accountType, baseDN, rtype, prefix, sortOrder, pageStartFrom, pageSize, total, cachehint);
+}
+
 void CLdapSecManager::setExtraParam(const char * name, const char * value)
 {
     if(name == NULL || name[0] == '\0')

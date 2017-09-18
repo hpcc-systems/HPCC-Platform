@@ -81,6 +81,7 @@ class Cws_accessEx : public Cws_access
         int accountType, StringArray& basednNames);
     int enableDisableScopeScans(IEspContext &context, bool doEnable, StringBuffer &retMsg);
     CLdapSecManager* queryLDAPSecurityManager(IEspContext &context);
+    void addResourcePermission(const char *name, int type, int allows, int denies, IArrayOf<IEspResourcePermission> &permissions);
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -101,6 +102,7 @@ public:
     virtual bool onResourceAdd(IEspContext &context, IEspResourceAddRequest &req, IEspResourceAddResponse &resp);
     virtual bool onResourceAddInput(IEspContext &context, IEspResourceAddInputRequest &req, IEspResourceAddInputResponse &resp);
     virtual bool onResourcePermissions(IEspContext &context, IEspResourcePermissionsRequest &req, IEspResourcePermissionsResponse &resp);
+    virtual bool onResourcePermissionQuery(IEspContext &context, IEspResourcePermissionQueryRequest &req, IEspResourcePermissionQueryResponse &resp);
 
     virtual bool onQueryViews(IEspContext &context, IEspQueryViewsRequest &req, IEspQueryViewsResponse &resp);
     virtual bool onAddView(IEspContext &context, IEspAddViewRequest &req, IEspAddViewResponse &resp);

@@ -87,6 +87,15 @@ const char* getResourceFieldNames(ResourceField field)
     return NULL;
 }
 
+const char* ResourcePermissionFieldNames[] = { "@name", "@type", "@allow", "@deny" };
+
+const char* getResourcePermissionFieldNames(ResourcePermissionField field)
+{
+    if (field < RPFterm)
+        return ResourcePermissionFieldNames[field];
+    return NULL;
+}
+
 class CSecItemIterator: public CInterfaceOf<ISecItemIterator>
 {
     IArrayOf<IPropertyTree> attrs;
@@ -3616,6 +3625,109 @@ public:
         m_pp->getPermissionsArray(sd.get(), permissions);
 
         return true;
+    }
+
+    SecResourceType str2RType(const char* rtstr)
+    {
+        if(isEmptyString(rtstr))
+            return RT_DEFAULT;
+        else if(strieq(rtstr, "module"))
+            return RT_MODULE;
+        else if(strieq(rtstr, "service"))
+            return RT_SERVICE;
+        else if(strieq(rtstr, "file"))
+            return RT_FILE_SCOPE;
+        else if(strieq(rtstr, "workunit"))
+            return RT_WORKUNIT_SCOPE;
+        else
+            return RT_DEFAULT;
+    }
+
+    void addPermissionTree(CPermission& permission, enum ACCOUNT_TYPE_REQ accountType, IPropertyTree* permissionTree)
+    {
+        const char* accountName = permission.getAccount_name();
+        if(isEmptyString(accountName))
+            return;
+
+        ACT_TYPE type = permission.getAccount_type();
+        if ((accountType != REQ_ANY_ACT) && (type != (ACT_TYPE) accountType))
+            return;
+
+        Owned<IPTree> permissionNode = createPTree();
+        permissionNode->setProp(getResourcePermissionFieldNames(RPFName), accountName);
+        permissionNode->setPropInt(getResourcePermissionFieldNames(RPFType), type);
+        permissionNode->setPropInt(getResourcePermissionFieldNames(RPFAllow), permission.getAllows());
+        permissionNode->setPropInt(getResourcePermissionFieldNames(RPFDeny), permission.getDenies());
+        permissionTree->addPropTree("Permission", permissionNode.getClear());
+    }
+
+    virtual IPropertyTreeIterator* getResourcePermissionIterator(const char* name, enum ACCOUNT_TYPE_REQ accountType, const char* baseDN,
+        const char* rtype, const char* prefix)
+    {
+        StringBuffer namebuf(name);
+        SecResourceType type = str2RType(rtype);
+        if((type == RT_MODULE) && !strieq(name, "repository") && (strnicmp(name, "repository.", 11) != 0))
+            namebuf.insert(0, "repository.");
+
+        if(prefix && *prefix)
+            namebuf.insert(0, prefix);
+
+        IArrayOf<CPermission> permissions;
+        getPermissionsArray(baseDN, type, namebuf.str(), permissions);
+
+        Owned<IPropertyTree> permissionTree = createPTree("Permissions");
+        ForEachItemIn(i, permissions)
+            addPermissionTree(permissions.item(i), accountType, permissionTree);
+        return permissionTree->getElements("*");
+    }
+
+    ISecItemIterator* getResourcePermissionsSorted(const char* name, enum ACCOUNT_TYPE_REQ accountType, const char* baseDN, const char* rtype,
+        const char* prefix, ResourcePermissionField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize,
+        unsigned* total, __int64* cacheHint)
+    {
+        class CElementsPager : public CSimpleInterface, implements IElementsPager
+        {
+            ILdapClient* ldapClient;
+            StringAttr sortOrder, name, baseDN, rtype, prefix;
+            enum ACCOUNT_TYPE_REQ accountType;
+
+        public:
+            IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+            CElementsPager(ILdapClient* _ldapClient, const char* _name, enum ACCOUNT_TYPE_REQ _accountType, const char* _baseDN,
+                const char* _rtype, const char* _prefix, const char*_sortOrder) : ldapClient(_ldapClient), name(_name),
+                accountType(_accountType), baseDN(_baseDN), rtype(_rtype), prefix(_prefix), sortOrder(_sortOrder) { };
+            virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree>& elements)
+            {
+                StringArray unknownAttributes;
+                Owned<IPropertyTreeIterator> iter = ldapClient->getResourcePermissionIterator(name.get(), accountType, baseDN.get(), rtype.get(), prefix.get());
+                sortElements(iter, sortOrder.get(), NULL, NULL, unknownAttributes, elements);
+                return NULL;
+            }
+            virtual bool allMatchingElementsReceived() { return true; }//For now, ldap always returns all of matched users.
+        };
+
+        StringBuffer so;
+        if (sortOrder)
+        {
+            for (unsigned i=0; sortOrder[i]!=RPFterm; i++)
+            {
+                if (so.length())
+                    so.append(',');
+                int fmt = sortOrder[i];
+                if (fmt&RPFreverse)
+                    so.append('-');
+                if (fmt&RPFnocase)
+                    so.append('?');
+                if (fmt&RPFnumeric)
+                    so.append('#');
+                so.append(getResourcePermissionFieldNames((ResourcePermissionField) (fmt&0xff)));
+            }
+        }
+        IArrayOf<IPropertyTree> results;
+        Owned<IElementsPager> elementsPager = new CElementsPager(this, name, accountType, baseDN, rtype, prefix, so.length()?so.str():NULL);
+        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager, pageStartFrom, pageSize, NULL, "", cacheHint, results, total, NULL, false);
+        return new CSecItemIterator(results);
     }
 
     virtual void getAllGroups(StringArray & groups, StringArray & managedBy, StringArray & descriptions, const char * baseDN=nullptr)
