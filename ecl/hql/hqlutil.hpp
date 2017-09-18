@@ -513,6 +513,8 @@ interface IDefRecordElement;
 extern HQL_API IDefRecordElement * createMetaRecord(IHqlExpression * record, IMaxSizeCallback * callback);
 
 extern HQL_API bool castPreservesValueAndOrder(IHqlExpression * expr);
+extern HQL_API bool castPreservesInformationAndOrder(IHqlExpression * expr); // Similar to castPreservesValueAndOrder, but allows signed->unsigned differences
+
 extern HQL_API void expandRowSelectors(HqlExprArray & target, HqlExprArray const & source);
 extern HQL_API IHqlExpression * extractCppBodyAttrs(unsigned len, const char * value);
 extern HQL_API unsigned cleanupEmbeddedCpp(unsigned len, char * buffer);
