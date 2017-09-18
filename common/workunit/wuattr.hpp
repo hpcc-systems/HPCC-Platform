@@ -28,9 +28,10 @@
 #endif
 
 //The wuattribute values start from a high value - so that they do not overlap with StXXX
-enum WuAttr
+enum WuAttr : unsigned
 {
     WANone = 0x80000000,
+    WAAll,
     WAKind,
     WASource,
     WATarget,

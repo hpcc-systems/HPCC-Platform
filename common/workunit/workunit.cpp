@@ -513,21 +513,60 @@ static int compareEdgeNode(IInterface * const *ll, IInterface * const *rr)
 class CConstGraphProgressScopeIterator : public CInterfaceOf<IConstWUScopeIterator>
 {
 public:
-    CConstGraphProgressScopeIterator(const char * wuid, const IStatisticsFilter * _filter) : filter(_filter)
+    CConstGraphProgressScopeIterator(const char * wuid, const ScopeFilter & _filter, __uint64 _minVersion) : filter(_filter), minVersion(_minVersion)
     {
-        if (filter)
-            scopes.appendList(filter->queryScope(), ":");
-        const char * searchGraph = "*";
-        if (scopes.ordinality())
-            searchGraph = scopes.item(0);
+        //Examine the filter, and determine if we only need to look at a single graph/subgraph
+        StringAttr singleGraph;
+        const StringArray & scopesToMatch = filter.queryScopes();
+        if (scopesToMatch)
+        {
+            bool seenGraph = false;
+            bool seenSubGraph = false;
+            ForEachItemIn(iScope, scopesToMatch)
+            {
+                StringArray ids;
+                ids.appendList(scopesToMatch.item(iScope), ":");
+
+                ForEachItemIn(i, ids)
+                {
+                    const char * curId = ids.item(i);
+                    StatsScopeId id(curId);
+                    switch (id.queryScopeType())
+                    {
+                    case SSTgraph:
+                        if (seenGraph)
+                        {
+                            if (singleGraph && !streq(singleGraph, curId))
+                                singleGraph.clear();
+                        }
+                        else
+                        {
+                            if (!id.isWildcard())
+                                singleGraph.set(curId);
+                            seenGraph = true;
+                        }
+                        break;
+                    case SSTsubgraph:
+                        if (seenSubGraph)
+                        {
+                            if (singleSubGraph && !streq(singleSubGraph, curId))
+                                singleSubGraph.clear();
+                        }
+                        else
+                        {
+                            if (!id.isWildcard())
+                                singleSubGraph.set(curId);
+                            seenSubGraph = true;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
 
         rootPath.append("/GraphProgress/").append(wuid).append('/');
-        bool singleGraph = false;
-        if (!containsWildcard(searchGraph))
-        {
-            rootPath.append(searchGraph).append("/");
-            singleGraph = true;
-        }
+        if (singleGraph)
+            rootPath.append(singleGraph).append("/");
 
         //Don't lock the statistics while we iterate - any partial updates must not cause problems
         if (daliClientActive())
@@ -579,6 +618,34 @@ public:
         return true;
     }
 
+    virtual bool nextSibling() override
+    {
+        if (collections.ordinality() == 0)
+            return false;
+
+        assertex(childIterators.ordinality() < collections.ordinality());
+        collections.pop();
+        //next will call childIterator.next() - walking the next sibling
+        return next();
+    }
+
+    virtual bool nextParent() override
+    {
+        if (collections.ordinality() == 0)
+            return false;
+
+        assertex(childIterators.ordinality() < collections.ordinality());
+        collections.pop();
+
+        if (collections.ordinality() == 0)
+            return false;
+
+        //Finish with this node - so next will move onto the sibling of the parent node.
+        finishCollection();
+
+        return next();
+    }
+
     virtual bool isValid()
     {
         return valid;
@@ -590,19 +657,18 @@ protected:
         IPropertyTree & graphNode = graphIter ? graphIter->query() : *conn->queryRoot();
         const char * xpath = "sg*";
         StringBuffer childXpath;
-        if (scopes.isItem(1))
+        if (singleSubGraph)
         {
-            const char * scope1 = scopes.item(1);
-            if (strnicmp(scope1, "sg", 2) == 0)
-            {
-                childXpath.append(scope1);
-                xpath = childXpath.str();
-            }
+            childXpath.append(singleSubGraph);
+            xpath = childXpath.str();
         }
 
         subgraphIter.setown(graphNode.getElements(xpath));
         if (subgraphIter)
-            subgraphIter.setown(createSortedIterator(*subgraphIter, compareSubGraphStatsNode));
+        {
+            if (!singleSubGraph)
+                subgraphIter.setown(createSortedIterator(*subgraphIter, compareSubGraphStatsNode));
+        }
         else
             subgraphIter.setown(graphNode.getElements("sg0"));
 
@@ -654,9 +720,11 @@ protected:
         statsIterator.timeStamp = collection->queryWhenCreated();
         if (!beginCollection(*collection))
             return false;
+
         //The root element of a collection is a graph - but it is only there to nest the subgraphs in.
         //Do not iterate it as a separate element - unless it has some stats.
-        if ((collection->queryScopeType() != SSTgraph) || (collection->getNumStatistics() != 0))
+        IStatisticCollection & curCollection = collections.tos();
+        if ((curCollection.queryScopeType() != SSTgraph) || (curCollection.getNumStatistics() != 0))
             return true;
         return next();
     }
@@ -664,8 +732,18 @@ protected:
     bool beginCollection(IStatisticCollection & collection)
     {
         collections.append(OLINK(collection));
-        if (checkScope())
+        curScopeType = collection.queryScopeType();
+        collection.getFullScope(curScopeName.clear());
+
+        ScopeCompare result = filter.compare(curScopeName);
+        if (result & SCequal)
             return true;
+
+        //If this scope cannot be the parent of a match then discard it.
+        if (!(result & SCparent))
+            collections.pop();
+
+        //walk the next element
         return nextChildScope();
     }
 
@@ -679,7 +757,10 @@ protected:
             IStatisticCollection * curCollection = &collections.tos();
             if (childIterators.ordinality() < collections.ordinality())
             {
-                if (!filter || filter->recurseChildScopes(curScopeType, curScopeName))
+                ScopeCompare result = filter.compare(curScopeName);
+
+                //Do not walk children scopes if it is unrelated
+                if (result & SCparent)
                 {
                     //Start iterating the children for the current collection
                     childIterators.append(curCollection->getScopes(NULL, true));
@@ -715,47 +796,42 @@ protected:
 
     bool checkSubGraph()
     {
-        if (!filter)
-            return true;
         IPropertyTree & curSubGraph = subgraphIter->query();
 
         StatisticCreatorType creatorType = queryCreatorType(curSubGraph.queryProp("@c"));
         const char * creator = curSubGraph.queryProp("@creator");
-        if (!filter->matches(creatorType, creator, SSTall, NULL, SMeasureAll, StKindAll, AnyStatisticValue))
-            return false;
+
+        //MORE: Check minVersion and allow early filtering
+
+        //MORE: Potentially filter by creator type??
+//        if (!filter->matches(creatorType, creator, SSTall, NULL, SMeasureAll, StKindAll, AnyStatisticValue))
+//            return false;
 
         statsIterator.creatorType = creatorType;
         statsIterator.creator.set(creator);
         return true;
     }
 
-    bool checkScope()
+    virtual void playProperties(WuPropertyTypes whichProperties, IWuScopeVisitor & visitor) override
     {
-        if (!filter)
-            return true;
-        IStatisticCollection * collection = &collections.tos();
-        curScopeType = collection->queryScopeType();
-        collection->getFullScope(curScopeName.clear());
-        return filter->matches(SCTall, NULL, curScopeType, curScopeName, SMeasureAll, StKindAll, AnyStatisticValue);
-    }
-
-    virtual void playProperties(IWuScopeVisitor & visitor) override
-    {
-        /*
-        MORE: Code from the statsIterator class should be inlined here - code will be much simpler
-        but it currently needs an implementation of the IConstWUStatistic 3rd parameter
-        IStatisticCollection & collection = collections.tos();
-        ForEachItemIn(i, collection)
+        if ((whichProperties & PTstatistics))
         {
-            StatisticKind kind;
-            unsigned __int64 value;
-            collection->getStatistic(kind, value, i);
-            visitor.noteStatistic(kind, value, *this);
+            /*
+            MORE: Code from the statsIterator class should be inlined here - code will be much simpler
+            but it currently needs an implementation of the IConstWUStatistic 3rd parameter
+            IStatisticCollection & collection = collections.tos();
+            ForEachItemIn(i, collection)
+            {
+                StatisticKind kind;
+                unsigned __int64 value;
+                collection->getStatistic(kind, value, i);
+                visitor.noteStatistic(kind, value, *this);
+            }
+            */
+            statsIterator.reset(curScopeName, curScopeType, collections.tos());
+            ForEach(statsIterator)
+                statsIterator.play(visitor);
         }
-        */
-        statsIterator.reset(curScopeName, curScopeType, collections.tos());
-        ForEach(statsIterator)
-            statsIterator.play(visitor);
     }
 
     virtual bool getStat(StatisticKind kind, unsigned __int64 & value) const
@@ -920,13 +996,14 @@ private:
     Owned<IRemoteConnection> conn;
     StringBuffer curScopeName;
     StatisticScopeType curScopeType = SSTnone;
-    const IStatisticsFilter * filter;
-    StringArray scopes;
+    __uint64 minVersion;
+    const ScopeFilter & filter;
     StringBuffer rootPath;
+    StringAttr singleSubGraph;
     Owned<IPropertyTreeIterator> graphIter;
     Owned<IPropertyTreeIterator> subgraphIter;
     IArrayOf<IStatisticCollection> collections;
-    IArrayOf<IStatisticCollectionIterator> childIterators;
+    IArrayOf<IStatisticCollectionIterator> childIterators; // Iterator(n) through collections(n) - created once iterating children
     MemoryBuffer compressed;
     MemoryBuffer serialized;
     bool valid;
@@ -949,12 +1026,12 @@ int compareStatisticScopes(IInterface * const * left, IInterface * const * right
 class WorkUnitStatisticsScopeIterator : public CInterfaceOf<IConstWUScopeIterator>
 {
 public:
-    WorkUnitStatisticsScopeIterator(const IArrayOf<IConstWUStatistic> & _statistics, const IStatisticsFilter * _filter)
+    WorkUnitStatisticsScopeIterator(const IArrayOf<IConstWUStatistic> & _statistics, const ScopeFilter & _filter)
     {
         ForEachItemIn(i, _statistics)
         {
             IConstWUStatistic & cur = _statistics.item(i);
-            if (cur.matches(_filter))
+            if (_filter.compare(cur.queryScope()) & SCequal)
                 statistics.append(OLINK(cur));
         }
         statistics.sort(compareStatisticScopes);
@@ -972,6 +1049,42 @@ public:
         return initScope();
     }
 
+    virtual bool nextSibling() override
+    {
+        //Search until the current scope is not a child of the previous scope
+        StringBuffer savedScope(queryScope());
+        for (;;)
+        {
+            if (!next())
+                return false;
+
+            if (compareScopes(queryScope(), savedScope) != SCchild)
+                return true;
+        }
+    }
+
+    virtual bool nextParent() override
+    {
+        //Search until the current scope is not a child of the previous parent scope
+        StringBuffer parentScope;
+        if (getParentScope(parentScope, queryScope()))
+        {
+            for (;;)
+            {
+                if (!next())
+                    return false;
+
+                if (compareScopes(queryScope(), parentScope) != SCchild)
+                    return true;
+            }
+        }
+        else
+        {
+            finish();
+            return false;
+        }
+    }
+
     virtual bool isValid() override
     {
         return statistics.isItem(curIndex);
@@ -987,12 +1100,15 @@ public:
         return statistics.item(curIndex).getScopeType();
     }
 
-    virtual void playProperties(IWuScopeVisitor & visitor) override
+    virtual void playProperties(WuPropertyTypes whichProperties, IWuScopeVisitor & visitor) override
     {
-        for (unsigned i=0; i < numStatistics; i++)
+        if (whichProperties & PTstatistics)
         {
-            IConstWUStatistic & cur = statistics.item(curIndex + i);
-            visitor.noteStatistic(cur.getKind(), cur.getValue(), cur);
+            for (unsigned i=0; i < numStatistics; i++)
+            {
+                IConstWUStatistic & cur = statistics.item(curIndex + i);
+                visitor.noteStatistic(cur.getKind(), cur.getValue(), cur);
+            }
         }
     }
 
@@ -1028,6 +1144,9 @@ protected:
 
     bool initScope()
     {
+        if (!statistics.isItem(curIndex))
+            return false;
+
         unsigned next = curIndex+1;
         while (next < statistics.ordinality())
         {
@@ -1036,7 +1155,12 @@ protected:
             next++;
         }
         numStatistics = (next - curIndex);
-        return statistics.isItem(curIndex);
+        return true;
+    }
+
+    void finish()
+    {
+        curIndex = statistics.ordinality();
     }
 
 protected:
@@ -1044,6 +1168,7 @@ protected:
     unsigned curIndex = 0;
     unsigned numStatistics = 1;
 };
+
 
 
 /*
@@ -1055,40 +1180,65 @@ private:
     //This uses a state machine - this enumeration contains the different states.
     enum State
     {
-        SGraphBegin,
+        //Following are the states which represent valid scopes
+        SGraph,
+        SChildGraph,
+        SSubGraph,
+        SEdge,
+        SActivity,
+        //The following are internal states.
         SGraphFirstEdge,
         SGraphFirstSubGraph,
+        SGraphFirst,
         SGraphEnd,
         SGraphNext,
-        SSubGraphBegin,
         SSubGraphFirstEdge,
         SSubGraphFirstActivity,
         SSubGraphFirstSubGraph,
         SSubGraphEnd,
         SSubGraphNext,
-        SEdgeBegin,
         SEdgeNext,
-        SActivityBegin,
+        SEdgeEnd,
         SActivityFirstSubGraph,
         SActivityNext,
+        SActivityEnd,
         SDone
-    } state = SDone;
+    };
+    State state = SDone;
+    State nextState = SDone;
 
 public:
-    GraphScopeIterator(const IConstWorkUnit * wu, const IStatisticsFilter * _filter) : graphIter(&wu->getGraphs(GraphTypeAny))
+    GraphScopeIterator(const IConstWorkUnit * wu, const ScopeFilter & _filter) : graphIter(&wu->getGraphs(GraphTypeAny)), filter(_filter)
     {
     }
 
     virtual bool first() override
     {
-        if (!graphIter->first())
-            return false;
-        state = SGraphBegin;
+        state = SGraphFirst;
         return nextScope();
     }
 
     virtual bool next() override
     {
+        if (!selectNext())
+            return false;
+
+        return nextScope();
+    }
+
+    virtual bool nextSibling() override
+    {
+        if (!selectNextSibling())
+            return false;
+
+        return nextScope();
+    }
+
+    virtual bool nextParent() override
+    {
+        if (!selectNextParent())
+            return false;
+
         return nextScope();
     }
 
@@ -1107,7 +1257,7 @@ public:
         return scopeType;
     }
 
-    virtual void playProperties(IWuScopeVisitor & visitor) override
+    virtual void playProperties(WuPropertyTypes whichProperties, IWuScopeVisitor & visitor) override
     {
         switch (scopeType)
         {
@@ -1124,32 +1274,41 @@ public:
             break;
         case SSTactivity:
         {
-            playAttribute(visitor, WALabel);
-            Owned<IPropertyTreeIterator> attrs = cur.getElements("att");
-            ForEach(*attrs)
+            if (whichProperties & PTattributes)
             {
-                IPropertyTree & cur = attrs->query();
-                WuAttr attr = queryGraphChildAttToWuAttr(cur.queryProp("@name"));
-                if (attr != WANone)
-                    visitor.noteAttribute(attr, cur.queryProp("@value"));
+                playAttribute(visitor, WALabel);
+                Owned<IPropertyTreeIterator> attrs = cur.getElements("att");
+                ForEach(*attrs)
+                {
+                    IPropertyTree & cur = attrs->query();
+                    WuAttr attr = queryGraphChildAttToWuAttr(cur.queryProp("@name"));
+                    if (attr != WANone)
+                        visitor.noteAttribute(attr, cur.queryProp("@value"));
+                }
             }
-            Owned<IPropertyTreeIterator> hints = cur.getElements("hint");
-            ForEach(*hints)
+            if (whichProperties & PThints)
             {
-                IPropertyTree & cur = hints->query();
-                visitor.noteHint(cur.queryProp("@name"), cur.queryProp("@value"));
+                Owned<IPropertyTreeIterator> hints = cur.getElements("hint");
+                ForEach(*hints)
+                {
+                    IPropertyTree & cur = hints->query();
+                    visitor.noteHint(cur.queryProp("@name"), cur.queryProp("@value"));
+                }
             }
             break;
         }
         case SSTedge:
-            //MORE This will eventually need to walk the attributes and map the names.
-            //Need to be careful if they need to be mapped differently depending on the context.
-            playAttribute(visitor, WALabel);
-            playAttribute(visitor, WASource);
-            playAttribute(visitor, WATarget);
-            playAttribute(visitor, WASourceIndex);
-            playAttribute(visitor, WATargetIndex);
-            playAttribute(visitor, WAIsDependency);
+            if (whichProperties & PTattributes)
+            {
+                //MORE This will eventually need to walk the attributes and map the names.
+                //Need to be careful if they need to be mapped differently depending on the context.
+                playAttribute(visitor, WALabel);
+                playAttribute(visitor, WASource);
+                playAttribute(visitor, WATarget);
+                playAttribute(visitor, WASourceIndex);
+                playAttribute(visitor, WATargetIndex);
+                playAttribute(visitor, WAIsDependency);
+            }
             break;
         }
     }
@@ -1204,17 +1363,48 @@ private:
         curScopeName.setLength(scopeLengths.popGet());
     }
 
-    bool nextScope()
+    bool doNextScope()
     {
         for(;;)
         {
             switch (state)
             {
-            case SGraphBegin:
+            case SGraph:
                 graphIter->query().getName(StringBufferAdaptor(curScopeName.clear()));
                 scopeType = SSTgraph;
-                state = SGraphFirstEdge;
                 return true;
+            case SSubGraph:
+                scopeId.set(SubGraphScopePrefix).append(treeIters.tos().query().getPropInt("@id"));
+                pushScope(scopeId);
+                scopeType = SSTsubgraph;
+                return true;
+            case SEdge:
+                scopeId.set(EdgeScopePrefix).append(treeIters.tos().query().queryProp("@id"));
+                pushScope(scopeId);
+                scopeType = SSTedge;
+                return true;
+            case SActivity:
+                scopeId.set(ActivityScopePrefix).append(treeIters.tos().query().getPropInt("@id"));
+                pushScope(scopeId);
+                scopeType = SSTactivity;
+                return true;
+            //Graph iteration
+            case SGraphFirst:
+                if (!graphIter->first())
+                    state = SDone;
+                else
+                    state = SGraph;
+                break;
+            case SGraphEnd:
+                state = SGraphNext;
+                break;
+            case SGraphNext:
+                if (!graphIter->next())
+                    state = SDone;
+                else
+                    state = SGraph;
+                break;
+            //Edge iteration
             case SGraphFirstEdge:
             {
                 //Walk dependencies - should possibly have a different SST e.g., SSTdependency since they do not
@@ -1226,12 +1416,23 @@ private:
                     treeIter.setown(createSortedIterator(*treeIter, compareEdgeNode));
                     treeIter->first();
                     pushIterator(treeIter, SGraphFirstSubGraph);
-                    state = SEdgeBegin;
+                    state = SEdge;
                 }
                 else
                     state = SGraphFirstSubGraph;
                 break;
             }
+            case SEdgeEnd:
+                popScope();
+                state = SEdgeNext;
+                break;
+            case SEdgeNext:
+                if (treeIters.tos().next())
+                    state = SEdge;
+                else
+                    state = popIterator();
+                break;
+            //Subgraph iteration
             case SGraphFirstSubGraph:
             {
                 Owned<IPropertyTreeIterator> treeIter = curGraph->getElements("node");
@@ -1240,23 +1441,12 @@ private:
                     treeIter.setown(createSortedIterator(*treeIter, compareSubGraphNode));
                     treeIter->first();
                     pushIterator(treeIter, SGraphNext);
-                    state = SSubGraphBegin;
+                    state = SSubGraph;
                 }
                 else
                     state = SGraphNext;
                 break;
             }
-            case SGraphNext:
-                if (!graphIter->next())
-                    return false;
-                state = SGraphBegin;
-                break;
-            case SSubGraphBegin:
-                scopeId.set(SubGraphScopePrefix).append(treeIters.tos().query().getPropInt("@id"));
-                pushScope(scopeId);
-                state = SSubGraphFirstEdge;
-                scopeType = SSTsubgraph;
-                return true;
             case SSubGraphFirstEdge:
             {
                 Owned<IPropertyTreeIterator> treeIter = treeIters.tos().query().getElements("att/graph/edge");
@@ -1264,7 +1454,7 @@ private:
                 {
                     treeIter.setown(createSortedIterator(*treeIter, compareEdgeNode));
                     pushIterator(treeIter, SSubGraphFirstActivity);
-                    state = SEdgeBegin;
+                    state = SEdge;
                 }
                 else
                     state = SSubGraphFirstActivity;
@@ -1277,7 +1467,7 @@ private:
                 {
                     treeIter.setown(createSortedIterator(*treeIter, compareActivityNode));
                     pushIterator(treeIter, SSubGraphEnd);
-                    state = SActivityBegin;
+                    state = SActivity;
                 }
                 else
                     state = SSubGraphEnd;
@@ -1289,33 +1479,17 @@ private:
                 break;
             case SSubGraphNext:
                 if (treeIters.tos().next())
-                    state = SSubGraphBegin;
+                    state = SSubGraph;
                 else
                     state = popIterator();
                 break;
-            case SEdgeBegin:
-                scopeId.set(EdgeScopePrefix).append(treeIters.tos().query().queryProp("@id"));
-                pushScope(scopeId);
-                state = SEdgeNext;
-                scopeType = SSTedge;
-                return true;
-            case SEdgeNext:
+            case SActivityEnd:
                 popScope();
-                if (treeIters.tos().next())
-                    state = SEdgeBegin;
-                else
-                    state = popIterator();
+                state = SActivityNext;
                 break;
-            case SActivityBegin:
-                scopeId.set(ActivityScopePrefix).append(treeIters.tos().query().getPropInt("@id"));
-                pushScope(scopeId);
-                state = SActivityFirstSubGraph;
-                scopeType = SSTactivity;
-                return true;
             case SActivityNext:
-                popScope();
                 if (treeIters.tos().next())
-                    state = SActivityBegin;
+                    state = SActivity;
                 else
                     state = popIterator();
                 break;
@@ -1326,23 +1500,114 @@ private:
                 {
                     treeIter.setown(createSortedIterator(*treeIter, compareSubGraphNode));
                     pushIterator(treeIter, SActivityNext);
-                    state = SSubGraphBegin;
+                    state = SSubGraph;
                 }
                 else
-                    state = SActivityNext;
+                    state = SActivityEnd;
                 break;
             }
+            case SDone:
+                return false;
+            default:
+                throwUnexpected();
             }
         }
-
-        //edge - next sibling
-        //activity - child subgraph; next sibling
-        //subgraph - child edges; child activities; other children? next sibling
-
-        //Check for a) edge b) activity c
-        //Either next edge
     }
+
+    bool nextScope()
+    {
+        for(;;)
+        {
+            if (!doNextScope())
+                return false;
+
+            ScopeCompare cmp = filter.compare(curScopeName);
+            if (cmp & SCequal)
+                return true;
+
+            //MORE: Optimize next based on result of compare
+            if (!selectNext())
+                return false;
+        }
+    }
+
+    bool selectNext()
+    {
+        switch (state)
+        {
+        case SGraph:
+            state = SGraphFirstEdge;
+            break;
+        case SChildGraph:
+        case SSubGraph:
+            state = SSubGraphFirstEdge;
+            break;
+        case SEdge:
+            state = SEdgeEnd;
+            break;
+        case SActivity:
+            state = SActivityFirstSubGraph;
+            break;
+        case SDone:
+            return false;
+        default:
+            throwUnexpected();
+        }
+
+        return true;
+    }
+
+    bool selectNextSibling()
+    {
+        switch (state)
+        {
+        case SGraph:
+            state = SGraphEnd;
+            break;
+        case SChildGraph:
+            throwUnexpected(); // MORE!
+        case SSubGraph:
+            state = SSubGraphEnd;
+            break;
+        case SEdge:
+            state = SEdgeEnd;
+            break;
+        case SActivity:
+            state = SActivityEnd;
+            break;
+        case SDone:
+            return false;
+        default:
+            throwUnexpected();
+        }
+
+        return true;
+    }
+
+    bool selectNextParent()
+    {
+        switch (state)
+        {
+        case SGraph:
+            state = SDone;
+            break;
+        case SChildGraph:
+        case SSubGraph:
+        case SEdge:
+        case SActivity:
+            popScope();
+            state = popIterator();
+            break;
+        case SDone:
+            return false;
+        default:
+            throwUnexpected();
+        }
+        return true;
+    }
+
 protected:
+    const ScopeFilter & filter;
     Owned<IConstWUGraphIterator> graphIter;
     Owned<IPropertyTree> curGraph;
     IArrayOf<IPropertyTreeIterator> treeIters;
@@ -1359,8 +1624,38 @@ protected:
  */
 class CompoundStatisticsScopeIterator : public CInterfaceOf<IConstWUScopeIterator>
 {
+    class VisitorMapper : implements IWuScopeVisitor
+    {
+    public:
+        VisitorMapper(const WuScopeFilter & _filter, IWuScopeVisitor & _visitor) :
+            filter(_filter), visitor(_visitor)
+        {}
+
+        virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & extra) override
+        {
+            if (filter.includeStatistic(kind))
+                visitor.noteStatistic(kind, value, extra);
+        }
+
+        virtual void noteAttribute(WuAttr attr, const char * value) override
+        {
+            if (filter.includeAttribute(attr))
+                visitor.noteAttribute(attr, value);
+        }
+
+        virtual void noteHint(const char * kind, const char * value) override
+        {
+            if (filter.includeHint(kind))
+                visitor.noteHint(kind, value);
+        }
+
+    protected:
+        const WuScopeFilter & filter;
+        IWuScopeVisitor & visitor;
+    };
+
 public:
-    CompoundStatisticsScopeIterator()
+    CompoundStatisticsScopeIterator(const WuScopeFilter & _filter) : filter(_filter)
     {
     }
     void addIter(IConstWUScopeIterator * iter)
@@ -1386,30 +1681,19 @@ public:
 
     virtual bool next() override
     {
+        selectNext();
+        return findNextScope();
+    }
 
-        ForEachItemIn(i, iters)
-        {
-            if (iterMatchesCurrentScope(i))
-            {
-#ifdef _DEBUG
-                StringBuffer prevScope;
-                prevScope.append(iters.item(i).queryScope());
-#endif
+    virtual bool nextSibling() override
+    {
+        selectNextSibling();
+        return findNextScope();
+    }
 
-                if (!iters.item(i).next())
-                    activeIterMask &= ~(1U << i);
-#ifdef _DEBUG
-                if (activeIterMask & (1U << i))
-                {
-                    const char * curScope = iters.item(i).queryScope();
-                    int compare = compareScopeName(prevScope, curScope);
-                    if (compare >= 0)
-                        throw MakeStringException(0, "Out of order scopes %s,%s = %d", prevScope.str(), curScope, compare);
-                }
-#endif
-            }
-        }
-
+    virtual bool nextParent() override
+    {
+        selectNextParent();
         return findNextScope();
     }
 
@@ -1428,16 +1712,18 @@ public:
         return iters.item(firstMatchIter).getScopeType();
     }
 
-    virtual void playProperties(IWuScopeVisitor & visitor) override
+    virtual void playProperties(WuPropertyTypes whichProperties, IWuScopeVisitor & visitor) override
     {
+        VisitorMapper mappedVisitor(filter, visitor);
+        whichProperties &= filter.properties;
         ForEachItemIn(i, iters)
         {
             if (iterMatchesCurrentScope(i))
-                iters.item(i).playProperties(visitor);
+                iters.item(i).playProperties(whichProperties, mappedVisitor);
         }
     }
 
-    virtual bool getStat(StatisticKind kind, unsigned __int64 & value) const
+    virtual bool getStat(StatisticKind kind, unsigned __int64 & value) const override
     {
         ForEachItemIn(i, iters)
         {
@@ -1450,7 +1736,7 @@ public:
         return false;
     }
 
-    virtual const char * queryAttribute(WuAttr attr) const
+    virtual const char * queryAttribute(WuAttr attr) const override
     {
         ForEachItemIn(i, iters)
         {
@@ -1464,7 +1750,7 @@ public:
         return nullptr;
     }
 
-    virtual const char * queryHint(const char * kind) const
+    virtual const char * queryHint(const char * kind) const override
     {
         ForEachItemIn(i, iters)
         {
@@ -1485,48 +1771,262 @@ protected:
     //Calculate which iterators contain the scope that should come next
     bool findNextScope()
     {
-        if (activeIterMask == 0)
-            return false;
-
-        unsigned mask = 0;
-        const char * scope = nullptr;
-        ForEachItemIn(i, iters)
+        for(;;)
         {
-            if (isAlive(i))
+            if (activeIterMask == 0)
+                return false;
+
+            unsigned mask = 0;
+            const char * scope = nullptr;
+            ForEachItemIn(i, iters)
             {
-                if (mask)
+                if (isAlive(i))
                 {
-                    int compare = compareScopeName(scope, iters.item(i).queryScope());
-                    if (compare == 0)
+                    const char * iterScope = iters.item(i).queryScope();
+                    if (mask)
                     {
-                        mask |= (1U << i);
+                        int compare = compareScopeName(scope, iterScope);
+                        if (compare == 0)
+                        {
+                            mask |= (1U << i);
+                        }
+                        else if (compare > 0)
+                        {
+                            scope = iterScope;
+                            mask = (1U << i);
+                            firstMatchIter = i;
+                        }
                     }
-                    else if (compare > 0)
+                    else
                     {
-                        scope = iters.item(i).queryScope();
+                        scope = iterScope;
                         mask = (1U << i);
                         firstMatchIter = i;
                     }
                 }
-                else
+            }
+            matchIterMask = mask;
+
+            while (activeScopes)
+            {
+                const char * activeScope = activeScopes.tos();
+                //If the next scope if not a child of one of the active scopes then that active scope will no longer match.
+                if (compareScopes(scope, activeScope) & SCchild)
+                    break;
+                activeScopes.pop();
+            }
+
+            //The top most scope will be the deepest.  Check if the current scope is close enough to return as a match.
+            bool include = false;
+            if (activeScopes)
+            {
+                const char * activeScope = activeScopes.tos();
+
+                //code above has ensured that this scope must be a child of (and therefore deeper) than activeScope
+                unsigned nesting = queryScopeDepth(scope) - queryScopeDepth(activeScope);
+                if (nesting <= filter.include.nestedDepth)
+                    include = true;
+            }
+
+            //Check to see if this is a new match
+            if (filter.compareMatchScopes(scope) & SCequal)
+            {
+                if (!include)
+                    include = filter.include.matchedScope;
+
+                //Only add it to the list of active scopes if it can match child elements
+                if (filter.include.nestedDepth != 0)
+                    activeScopes.append(scope);
+            }
+
+            if (include)
+            {
+                if (!filter.includeScope(scope))
+                    include = false;
+                else if (filter.requiredStats.size())
                 {
-                    scope = iters.item(i).queryScope();
-                    mask = (1U << i);
-                    firstMatchIter = i;
+                    //MORE: This would be cleaner as a member of filter - but it needs access to the stats.
+                    for (unsigned iReq=0; iReq < filter.requiredStats.size(); iReq++)
+                    {
+                        const StatisticValueFilter & cur = filter.requiredStats[iReq];
+                        unsigned __int64 value;
+                        if (getStat(cur.queryKind(), value))
+                        {
+                            if (!cur.matches(value))
+                                include = false;
+                        }
+                        else
+                            include = false;
+                    }
                 }
             }
+
+            if (include)
+                return true;
+
+            //MORE: Optimize based on filter.compareScope()
+            selectNext();
         }
-        matchIterMask = mask;
-        return true;
+    }
+
+    void checkScopeOrder(unsigned input, const char * prevScope)
+    {
+        if (isAlive(input))
+        {
+            const char * curScope = iters.item(input).queryScope();
+            int compare = compareScopeName(prevScope, curScope);
+            if (compare >= 0)
+                throw MakeStringException(0, "Out of order (%u) scopes %s,%s = %d", input, prevScope, curScope, compare);
+        }
+    }
+
+    void selectNext()
+    {
+        ForEachItemIn(i, iters)
+        {
+            if (iterMatchesCurrentScope(i))
+            {
+#ifdef _DEBUG
+                StringBuffer prevScope(iters.item(i).queryScope());
+#endif
+
+                if (!iters.item(i).next())
+                    activeIterMask &= ~(1U << i);
+#ifdef _DEBUG
+                checkScopeOrder(i, prevScope);
+#endif
+            }
+        }
+    }
+
+    void selectNextSibling()
+    {
+
+        ForEachItemIn(i, iters)
+        {
+            if (iterMatchesCurrentScope(i))
+            {
+#ifdef _DEBUG
+                StringBuffer prevScope(iters.item(i).queryScope());
+#endif
+
+                if (!iters.item(i).nextSibling())
+                    activeIterMask &= ~(1U << i);
+#ifdef _DEBUG
+                checkScopeOrder(i, prevScope);
+#endif
+            }
+        }
+    }
+
+    void selectNextParent()
+    {
+        ForEachItemIn(i, iters)
+        {
+            if (iterMatchesCurrentScope(i))
+            {
+#ifdef _DEBUG
+                StringBuffer prevScope(iters.item(i).queryScope());
+#endif
+
+                if (!iters.item(i).nextParent())
+                    activeIterMask &= ~(1U << i);
+#ifdef _DEBUG
+                checkScopeOrder(i, prevScope);
+#endif
+            }
+        }
     }
 
 protected:
+    const WuScopeFilter & filter;
     IArrayOf<IConstWUScopeIterator> iters;
     unsigned curIter = 0;
     unsigned firstMatchIter = 0;
     unsigned matchIterMask = 0; // bit set of iterators which have a valid entry for the current scope
     unsigned activeIterMask = 0; // bit set of iterators which are still active
+    StringArray activeScopes;
 };
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class AggregateFilter
+{
+public:
+    AggregateFilter(StatisticKind _search) : search(_search) {}
+
+    inline bool matches(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & extra) const
+    {
+        return (kind == search);
+    }
+
+protected:
+    StatisticKind search;
+    //MORE: Allow filtering by scope?
+};
+
+class StatisticAggregator : public CInterfaceOf<IWuScopeVisitor>
+{
+public:
+    virtual void noteAttribute(WuAttr attr, const char * value) override { throwUnexpected(); }
+    virtual void noteHint(const char * kind, const char * value) override { throwUnexpected(); }
+protected:
+    AggregateFilter filter;
+};
+
+class SimpleAggregator : public StatisticAggregator
+{
+public:
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & extra) override
+    {
+        if (filter.matches(kind, value, extra))
+            summary.noteValue(value);
+    }
+
+    //How should these be reported?  Should there be a playAggregates(IWuAggregatedScopeVisitor)
+    //with a noteAggregate(value, variant, value, grouping)?
+protected:
+    StatsAggregation summary;
+};
+
+
+class GroupedAggregator : public StatisticAggregator
+{
+public:
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & extra) override
+    {
+        if (filter.matches(kind, value, extra))
+        {
+            StatsAggregation & match = summary; // look up in hash table.
+            match.noteValue(value);
+        }
+    }
+
+protected:
+    //HashTable of (possible groupings->summary)
+    StatsAggregation summary;
+};
+
+
+class CompoundAggregator : implements StatisticAggregator
+{
+public:
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & extra)
+    {
+        ForEachItemIn(i, aggregators)
+            aggregators.item(i).noteStatistic(kind, value, extra);
+    }
+
+protected:
+    IArrayOf<StatisticAggregator> aggregators;
+};
+
+
+//To calculate aggregates, create a scope iterator, and an instance of a StatisticAggregator, and play the attributes through the interface
+
+//---------------------------------------------------------------------------------------------------------------------
+
+// The following code is deprecated and will be deleted once the ScopeIterator is fully functional
 
 
 class CConstGraphProgressStatisticsIterator : public CInterfaceOf<IConstWUStatisticIterator>
@@ -1803,6 +2303,480 @@ private:
     unsigned curStatIndex;
     bool valid;
 };
+
+//Extract an argument of the format abc[def[ghi...,]],... as (abc,def[...])
+static bool extractOption(const char * & finger, StringAttr & option, StringAttr & arg)
+{
+    const char * start = finger;
+    if (!*start)
+        return false;
+
+    const char * cur = start;
+    const char * bra = nullptr;
+    const char * end = nullptr;
+    unsigned braDepth = 0;
+    char next;
+    arg.clear();
+    for (;;)
+    {
+        next = *cur;
+        if (!next || ((next == ',') && (braDepth == 0)))
+            break;
+
+        switch (next)
+        {
+        case '[':
+            if (braDepth == 0)
+            {
+                if (bra)
+                    throw makeStringExceptionV(0, "Multiple [ in filter : %s", bra);
+                bra = cur;
+            }
+            braDepth++;
+            break;
+        case ']':
+            if (braDepth > 0)
+            {
+                if (--braDepth == 0)
+                {
+                    end = cur;
+                    arg.set(bra+1, cur - (bra+1));
+                }
+            }
+            break;
+        }
+
+        cur++;
+    }
+
+    if (braDepth != 0)
+        throw makeStringExceptionV(0, "Mismatched ] in filter : %s", start);
+
+    if (bra)
+    {
+        if (cur != end+1)
+            throw makeStringExceptionV(0, "Text follows closing bracket: %s", end);
+        option.set(start, bra-start);
+    }
+    else
+        option.set(start, cur-start);
+
+    if (next)
+        finger = cur+1;
+    else
+        finger = cur;
+    return true;
+}
+
+enum { FOscope, FOstype, FOid, FOdepth, FOsource, FOwhere, FOmatched, FOnested, FOinclude, FOproperties, FOstatistic, FOattribute, FOhint, FOmeasure, FOversion }; // Enum to clarify the swicth statement below
+static constexpr const char * filterOptions[] = { "scope", "stype", "id", "depth", "source", "where", "matched", "nested", "include", "prop", "stat", "attr", "hint", "measure", "version", nullptr };
+static constexpr EnumMapping sourceMappings[] = { { SSFsearchGlobalStats, "global" }, { SSFsearchGraphStats, "stats" }, { SSFsearchGraph, "graph" }, { SSFsearchExceptions, "exception" }, { (int)SSFsearchAll, "all" }, { 0, nullptr } };
+static constexpr EnumMapping propertyMappings[] = { { PTnone, "none" }, { PTstatistics, "stat" }, { PTattributes, "attr" }, { PThints, "hint" }, { PTscope, "scope" }, { PTall, "all" }, { 0, nullptr } };
+WuScopeFilter::WuScopeFilter(const char * filter)
+{
+    addFilter(filter);
+    finishedFilter();
+}
+
+void WuScopeFilter::addFilter(const char * filter)
+{
+    if (!filter)
+        return;
+
+    StringAttr option;
+    StringAttr arg;
+    while (extractOption(filter, option, arg))
+    {
+        switch (matchString(option, filterOptions))
+        {
+        case FOscope:
+            addScope(arg);
+            break;
+        case FOstype:
+            addScopeType(arg);
+            break;
+        case FOid:
+            addId(arg);
+            break;
+        case FOdepth:
+        {
+            const char * comma = strchr(arg, ',');
+            if (comma)
+            {
+                unsigned low = atoi(arg); // note: =0 if number omitted
+                if (comma[1])
+                    scopeFilter.setDepth(low, atoi(comma+1));
+                else
+                    scopeFilter.setDepth(low, UINT_MAX);
+            }
+            else
+                scopeFilter.setDepth(atoi(arg));
+            break;
+        }
+        case FOsource:
+            setSource(arg);
+            break;
+        case FOwhere: // where[stat<op>value]
+            addRequiredStat(arg);
+            break;
+        case FOmatched:
+            setIncludeMatch(strToBool(arg));
+            break;
+        case FOnested:
+            setIncludeNesting(atoi(arg));
+            break;
+        case FOinclude:
+            setIncludeScopeType(arg);
+            break;
+        case FOproperties:
+            addOutputProperties(arg);
+            break;
+        case FOstatistic:
+            addOutputStatistic(arg);
+            break;
+        case FOattribute:
+            addOutputAttribute(arg);
+            break;
+        case FOhint:
+            addOutputHint(arg);
+            break;
+        case FOmeasure:
+            desiredMeasure = queryMeasure(arg);
+            properties |= PTstatistics;
+            break;
+        case FOversion:
+            minVersion = atoi64(arg);
+            break;
+        default:
+            throw makeStringExceptionV(0, "Unrecognised filter option: %s", option.str());
+        }
+    }
+}
+
+void WuScopeFilter::addScope(const char * scope)
+{
+    scopeFilter.addScope(scope);
+}
+
+void WuScopeFilter::addScopeType(const char * scopeType)
+{
+    scopeFilter.addScopeType(queryScopeType(scopeType));
+}
+
+void WuScopeFilter::addId(const char * id)
+{
+    scopeFilter.addId(id);
+}
+
+void WuScopeFilter::addOutput(const char * prop)
+{
+    if (queryStatisticKind(prop) != StKindNone)
+        addOutputStatistic(prop);
+    else if (queryWuAttribute(prop) != WANone)
+        addOutputAttribute(prop);
+    else
+        addOutputHint(prop);
+}
+
+void WuScopeFilter::addOutputStatistic(const char * prop)
+{
+    StatisticKind stat = queryStatisticKind(prop);
+    if (stat != StKindNone)
+    {
+        if (stat != StKindAll)
+            desiredStats.append(stat);
+        else
+            desiredStats.kill();
+        properties |= PTstatistics;
+    }
+    else
+        properties &= ~PTstatistics;
+}
+
+void WuScopeFilter::addOutputAttribute(const char * prop)
+{
+    WuAttr attr = queryWuAttribute(prop);
+    if (attr != WANone)
+    {
+        if (attr != WAAll)
+            desiredAttrs.append(attr);
+        else
+            desiredAttrs.kill();
+        properties |= PTattributes;
+    }
+    else
+        properties &= ~PTattributes;
+}
+
+
+void WuScopeFilter::addOutputHint(const char * prop)
+{
+    if (strieq(prop, "none"))
+    {
+        desiredHints.kill();
+        properties &= ~PThints;
+    }
+    else
+    {
+        if (!strieq(prop, "all"))
+            desiredHints.append(prop);
+        else
+            desiredHints.kill();
+        properties |= PThints;
+    }
+}
+
+void WuScopeFilter::setIncludeMatch(bool value)
+{
+    include.matchedScope = value;
+}
+
+void WuScopeFilter::setIncludeNesting(unsigned depth)
+{
+    include.nestedDepth = depth;
+}
+
+void WuScopeFilter::setIncludeScopeType(const char * scopeType)
+{
+    include.scopeTypes.append(queryScopeType(scopeType));
+}
+
+void WuScopeFilter::addOutputProperties(const char * prop)
+{
+    WuPropertyTypes mask = (WuPropertyTypes)getEnum(prop, propertyMappings);
+    if (properties == PTnone)
+        properties = mask;
+    else
+        properties |= mask;
+}
+
+//This does not strictly validate - invalid filters may be accepted
+//process a filter of the form <statistic-name> [=|<|<=|>|>= <value>] or <statistic-name>=[<low>],[<high>]
+
+void WuScopeFilter::addRequiredStat(const char * filter)
+{
+    const char * stat = filter;
+    const char * cur = stat;
+    while (isalpha(*cur))
+        cur++;
+
+    StringBuffer statisticName(cur-stat, stat);
+    StatisticKind statKind = queryStatisticKind(statisticName);
+    if (statKind == StKindNone)
+        throw makeStringExceptionV(0, "Unknown statistic name '%s'", statisticName.str());
+
+    const char * op = cur;
+    while (*cur && !isdigit(*cur))
+        cur++;
+
+    const char * next;
+    stat_type value = readStatisticValue(cur, &next, queryMeasure(statKind));
+    stat_type lowValue = 0;
+    stat_type highValue = MaxStatisticValue;
+    switch (op[0])
+    {
+    case ']':
+        break;
+    case '=':
+    {
+        if (next[0] == ',')
+        {
+            lowValue = value;
+            if (next[1] != '\0')
+                highValue = readStatisticValue(next+1, nullptr, queryMeasure(statKind));
+        }
+        else
+        {
+            lowValue = value;
+            highValue = value;
+        }
+        break;
+    }
+    case '<':
+        if (op[1] == '=')
+            highValue = value;
+        else
+            highValue = value-1;
+        break;
+    case '>':
+        if (op[1] == '=')
+            lowValue = value;
+        else
+            lowValue = value+1;
+        break;
+    }
+
+    requiredStats.emplace_back(statKind, lowValue, highValue);
+}
+
+void WuScopeFilter::setSource(const char * source)
+{
+    WuScopeSourceFlags mask = (WuScopeSourceFlags)getEnum(source, sourceMappings);
+    if (!mask)
+        sourceFlags = mask;
+    else
+        sourceFlags |= mask;
+}
+
+void WuScopeFilter::setDepth(unsigned low, unsigned high)
+{
+    scopeFilter.setDepth(low, high);
+}
+
+bool WuScopeFilter::matchOnly(StatisticScopeType scopeType) const
+{
+    //If there is a post filter on the scopeType, then check if it matches
+    if (include.scopeTypes.ordinality() == 1)
+        return (include.scopeTypes.item(0) == scopeType);
+
+    //If filter doesn't match nested items, then check if the scope filter matches.
+    if (include.nestedDepth == 0)
+    {
+        if (scopeFilter.matchOnly(scopeType))
+            return true;
+    }
+    return false;
+}
+
+
+//Called once the filter has been updated to optimize the filter
+void WuScopeFilter::finishedFilter()
+{
+    assertex(!optimized);
+    optimized = true;
+
+    preFilterScope = include.matchedScope && (include.nestedDepth == 0);
+
+    //If the source flags have not been explicitly set then calculate which sources will provide the results
+    if (!sourceFlags)
+    {
+        sourceFlags = SSFsearchAll;
+
+        //Use the other options to reduce the number of elements that are searched.
+        //If not interested in scopes on their own then...
+        if (!(properties & PTscope))
+        {
+            //Global stats and graph stats only contain stats => remove if not interested in them
+            if (!(properties & PTstatistics))
+                sourceFlags &= ~(SSFsearchGlobalStats|SSFsearchGraphStats);
+
+            //graph only contains attributes and hints => remove if not interested
+            if (!(properties & (PTattributes|PThints)))
+                sourceFlags &= ~(SSFsearchGraph);
+        }
+    }
+
+    //Optimize sources if they haven't been explicitly specified
+    //Most of the following are dependent on internal knowledge of the way that information is represented
+    if (matchOnly(SSTworkflow))
+    {
+        //Workflow is not nested within a graph
+        sourceFlags &= ~(SSFsearchGraph|SSFsearchGraphStats);
+        setDepth(1, 1);
+    }
+    else if (matchOnly(SSTgraph))
+    {
+        //Graph starts are stored globally, not in the graph stats.
+        sourceFlags &= ~(SSFsearchGraphStats);
+
+        if (!(properties & (PTattributes|PThints)))
+            sourceFlags &= ~(SSFsearchGraph);
+
+        setDepth(1, 1);    // MORE - will become 2 once scopes are modified to include the workflow id.
+    }
+    else if (matchOnly(SSTsubgraph))
+    {
+        //subgraph timings are stored globally - otherwise need to look in the graph stats.
+        if (!(properties & (PTattributes|PThints)))
+        {
+            if (desiredStats.ordinality() == 1)
+            {
+                StatisticKind stat = (StatisticKind)desiredStats.item(0);
+                if (stat == StTimeElapsed || stat == StWhenStarted)
+                    sourceFlags &= ~(SSFsearchGraphStats|SSFsearchGraph);
+            }
+        }
+    }
+    else if (matchOnly(SSTcompilestage))
+    {
+        //compile stages are not stored in the graph
+        sourceFlags &= ~(SSFsearchGraphStats|SSFsearchGraph);
+    }
+    else if (matchOnly(SSTactivity))
+    {
+        //information about activities is not stored globally
+        sourceFlags &= ~(SSFsearchGlobalStats);
+    }
+
+    // Everything stored in the graphs stats has a depth of 2 or more - so ignore if there are not matches in that depth
+    if ((include.nestedDepth == 0) && (scopeFilter.compareDepth(2) > 0))
+    {
+        sourceFlags &= ~(SSFsearchGraphStats);
+    }
+
+    //The xml graph is never updated, so do not check it if minVersion != 0
+    if (minVersion != 0)
+    {
+        sourceFlags &= ~SSFsearchGraph;
+    }
+}
+
+
+bool WuScopeFilter::includeStatistic(StatisticKind kind) const
+{
+    if (!(properties & PTstatistics))
+        return false;
+    if ((desiredMeasure != SMeasureAll) && (queryMeasure(kind) != desiredMeasure))
+        return false;
+    if (desiredStats.empty())
+        return true;
+    return desiredStats.contains(kind);
+}
+
+bool WuScopeFilter::includeAttribute(WuAttr attr) const
+{
+    if (!(properties & PTattributes))
+        return false;
+    if (desiredAttrs.empty())
+        return true;
+    return desiredAttrs.contains(attr);
+}
+
+bool WuScopeFilter::includeHint(const char * kind) const
+{
+    if (!(properties & PThints))
+        return false;
+    if (desiredHints.empty())
+        return true;
+    return desiredHints.contains(kind);
+}
+
+bool WuScopeFilter::includeScope(const char * scope) const
+{
+    if (include.scopeTypes)
+    {
+        const char * tail = queryScopeTail(scope);
+        StatsScopeId id(tail);
+        if (!include.scopeTypes.contains(id.queryScopeType()))
+            return false;
+    }
+    return true;
+}
+
+const static ScopeFilter nullScopeFilter;
+const ScopeFilter & WuScopeFilter::queryIterFilter() const
+{
+    if (preFilterScope)
+        return scopeFilter;
+    else
+        return nullScopeFilter;
+}
+
+ScopeCompare WuScopeFilter::compareMatchScopes(const char * scope) const
+{
+    return scopeFilter.compare(scope);
+}
+
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -2427,7 +3401,7 @@ public:
             { return c->getStatistics(filter); }
     virtual IConstWUStatistic * getStatistic(const char * creator, const char * scope, StatisticKind kind) const
             { return c->getStatistic(creator, scope, kind); }
-    virtual IConstWUScopeIterator & getScopeIterator(const IStatisticsFilter * filter) const override
+    virtual IConstWUScopeIterator & getScopeIterator(const WuScopeFilter & filter) const override
             { return c->getScopeIterator(filter); }
     virtual IStringVal & getSnapshot(IStringVal & str) const
             { return c->getSnapshot(str); } 
@@ -7051,35 +8025,33 @@ IConstWUStatistic * CLocalWorkUnit::getStatistic(const char * creator, const cha
     return NULL;
 }
 
-IConstWUScopeIterator & CLocalWorkUnit::getScopeIterator(const IStatisticsFilter * filter) const
+IConstWUScopeIterator & CLocalWorkUnit::getScopeIterator(const WuScopeFilter & filter) const
 {
-    {
-        CriticalBlock block(crit);
-        statistics.loadBranch(p,"Statistics");
-    }
+    assertex(filter.isOptimized());
+    WuScopeSourceFlags sources = filter.sourceFlags;
 
-    Owned<CompoundStatisticsScopeIterator> compoundIter = new CompoundStatisticsScopeIterator;
-
-    //MORE: These will need to be configurable in the filter.  Can temporarily change to test the different elements
-    const bool includeGlobalStats = true;
-    const bool includeGraphStats = true;
-    const bool includeStaticGraph = true;
-    if (includeGlobalStats)
+    Owned<CompoundStatisticsScopeIterator> compoundIter = new CompoundStatisticsScopeIterator(filter);
+    if (sources & SSFsearchGlobalStats)
     {
-        Owned<IConstWUScopeIterator> localStats(new WorkUnitStatisticsScopeIterator(statistics, filter));
+        {
+            CriticalBlock block(crit);
+            statistics.loadBranch(p,"Statistics");
+        }
+
+        Owned<IConstWUScopeIterator> localStats(new WorkUnitStatisticsScopeIterator(statistics, filter.queryIterFilter()));
         compoundIter->addIter(localStats);
     }
 
-    if (includeGraphStats && filter->recurseChildScopes(SSTgraph, nullptr))
+    if (sources & SSFsearchGraphStats)
     {
         const char * wuid = p->queryName();
-        Owned<IConstWUScopeIterator> scopeIter(new CConstGraphProgressScopeIterator(wuid, filter));
+        Owned<IConstWUScopeIterator> scopeIter(new CConstGraphProgressScopeIterator(wuid, filter.queryIterFilter(), filter.minVersion));
         compoundIter->addIter(scopeIter);
     }
 
-    if (includeStaticGraph)
+    if (sources & SSFsearchGraph)
     {
-        Owned<IConstWUScopeIterator> graphIter(new GraphScopeIterator(this, filter));
+        Owned<IConstWUScopeIterator> graphIter(new GraphScopeIterator(this, filter.queryIterFilter()));
         compoundIter->addIter(graphIter);
     }
 

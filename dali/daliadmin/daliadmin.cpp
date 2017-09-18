@@ -2729,7 +2729,9 @@ public:
     virtual void noteAttribute(WuAttr attr, const char * value)
     {
         StringBuffer xml;
-        xml.appendf("<attr kind='%s' value='%s'/>", queryWuAttributeName(attr), value);
+        xml.appendf("<attr kind='%s' value='", queryWuAttributeName(attr));
+        encodeXML(value, xml, ENCODE_NEWLINES, (unsigned)-1, true);
+        xml.append("'/>");
         printf(" %s\n", xml.str());
     }
     virtual void noteHint(const char * kind, const char * value)
@@ -2740,28 +2742,26 @@ public:
     }
 };
 
-static void dumpWorkunitAttr(IConstWorkUnit * workunit, const StatisticsFilter & filter)
+static void dumpWorkunitAttr(IConstWorkUnit * workunit, const WuScopeFilter & filter)
 {
     ScopeDumper dumper;
 
     printf("<Workunit wuid=\"%s\">\n", workunit->queryWuid());
 
-    Owned<IConstWUScopeIterator> iter = &workunit->getScopeIterator(&filter);
+    Owned<IConstWUScopeIterator> iter = &workunit->getScopeIterator(filter);
     ForEach(*iter)
     {
         printf("<scope scope='%s' type='%s'>\n", iter->queryScope(), queryScopeTypeName(iter->getScopeType()));
-        iter->playProperties(dumper);
+        iter->playProperties(PTall, dumper);
         printf("</scope>\n");
     }
 
     printf("</Workunit>\n");
 }
 
-static void dumpWorkunitAttr(const char *wuid, const char * creatorTypeText, const char * creator, const char * scopeTypeText, const char * scope, const char * kindText, const char * userFilter)
+static void dumpWorkunitAttr(const char *wuid, const char * userFilter)
 {
-    StatisticsFilter filter(checkDash(creatorTypeText), checkDash(creator), checkDash(scopeTypeText), checkDash(scope), NULL, checkDash(kindText));
-    if (userFilter)
-        filter.setFilter(userFilter);
+    WuScopeFilter filter(userFilter);
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
     const char * star = strchr(wuid, '*');
@@ -3663,17 +3663,11 @@ int main(int argc, char* argv[])
                         migrateFiles(srcGroup, dstGroup, filemask, options);
                     }
                     else if (stricmp(cmd, "wuattr") == 0) {
-                        CHECKPARAMS(1, 6);
-                        if ((params.ordinality() >= 3) && (strchr(params.item(2), '[')))
-                        {
-                            dumpWorkunitAttr(params.item(1), "-", "-", "-", "-", "-", params.item(2));
-                        }
+                        CHECKPARAMS(1, 2);
+                        if (params.ordinality() > 2)
+                            dumpWorkunitAttr(params.item(1), params.item(2));
                         else
-                        {
-                            while (params.ordinality() < 7)
-                                params.append("*");
-                            dumpWorkunitAttr(params.item(1), params.item(2), params.item(3), params.item(4), params.item(5), params.item(6), nullptr);
-                        }
+                            dumpWorkunitAttr(params.item(1), nullptr);
                     }
                     else
                         ERRLOG("Unknown command %s",cmd);

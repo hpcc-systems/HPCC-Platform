@@ -1986,8 +1986,8 @@ protected:
 
     void testWuDetails(IConstWorkUnit * wu)
     {
-        const StatisticsFilter filter;
-        Owned<IConstWUScopeIterator> iter = &wu->getScopeIterator(&filter);
+        const WuScopeFilter filter;
+        Owned<IConstWUScopeIterator> iter = &wu->getScopeIterator(filter);
         DBGLOG("%s %s", wu->queryWuid(), wu->queryClusterName());
         AttributeScopeVisitor visitor;
         StringBuffer prevScope;
@@ -2000,12 +2000,23 @@ protected:
                 ASSERT(compareScopeName(prevScope.str(), scope) < 0);
             prevScope.set(scope);
 
-            iter->playProperties(visitor);
+            iter->playProperties(PTall, visitor);
         }
     }
 
     void testWuDetails()
     {
+        /*
+         * The following are the tests that need to be done on the filters
+         * o Source
+         * o Scope type
+         * o Set of scope types (activity, edges)
+         * o Depth
+         * o Single scope
+         * o Set of scopes
+         * o Set of ids
+         * They should all be selectable via a text filter.
+         */
 #if 0
         WUSortField filterByJob[] = { WUSFjob, WUSFterm };
         CCycleTimer timer;

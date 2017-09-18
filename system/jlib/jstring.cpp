@@ -2463,7 +2463,7 @@ bool endsWithIgnoreCase(const char* src, const char* dst)
     return false;
 }
 
-unsigned matchString(const char * search, const char * * strings)
+unsigned matchString(const char * search, const char * const * strings)
 {
     for (unsigned i=0;;i++)
     {

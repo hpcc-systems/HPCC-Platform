@@ -37,6 +37,7 @@ public:
 
 const static WuAttrInfo attrInfo[] = {
     { WANone, SMeasureNone, "none", nullptr, nullptr, nullptr },
+    { WAAll, SMeasureNone, "all", nullptr, nullptr, nullptr },
     CHILD(Kind, SMeasureEnum, "_kind"),
     ATTR(Source, SMeasureText, "@source"),
     ATTR(Target, SMeasureText, "@target"),

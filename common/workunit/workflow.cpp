@@ -63,33 +63,17 @@ EnumMapping wfstates[] =
 
 static void setEnum(IPropertyTree *p, const char *propname, int value, EnumMapping *map)
 {
-    const char *defval = map->str;
-    while (map->str)
-    {
-        if (value==map->val)
-        {
-            p->setProp(propname, map->str);
-            return;
-        }
-        map++;
-    }
-    assertex(!"Unexpected value in setEnum");
-    p->setProp(propname, defval);
+    const char * mapped = getEnumText(value, map, nullptr);
+    if (!mapped)
+        assertex(!"Unexpected value in setEnum");
+    p->setProp(propname, mapped);
 }
 
 static int getEnum(IPropertyTree *p, const char *propname, EnumMapping *map)
 {
     const char *v = p->queryProp(propname);
     if (v)
-    {
-        while (map->str)
-        {
-            if (stricmp(v, map->str)==0)
-                return map->val;
-            map++;
-        }
-        assertex(!"Unexpected value in getEnum");
-    }
+        return getEnum(v, map);
     return 0;
 }
 
