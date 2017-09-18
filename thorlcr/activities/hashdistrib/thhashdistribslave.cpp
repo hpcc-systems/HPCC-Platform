@@ -4363,7 +4363,7 @@ public:
         info.canStall = true;
         // maybe more?
     }
-// IHThorRowAggregator impl. - JCSMORE more until aggregator allows selectInterface to return.
+// IHThorRowAggregator impl
     virtual size32_t clearAggregate(ARowBuilder & rowBuilder) override { return helper->clearAggregate(rowBuilder); }
     virtual size32_t processFirst(ARowBuilder & rowBuilder, const void * src) override { return helper->processFirst(rowBuilder, src); }
     virtual size32_t processNext(ARowBuilder & rowBuilder, const void * src) override { return helper->processNext(rowBuilder, src); }

@@ -820,9 +820,6 @@ public:
     
     virtual bool needsAllocator() const { return true; }    
     virtual void onLimitExceeded();
-
-private:
-    IHThorLimitTransformExtra * transformExtra;
 };
 
 class CHThorCatchActivity : public CHThorSteppableActivityBase

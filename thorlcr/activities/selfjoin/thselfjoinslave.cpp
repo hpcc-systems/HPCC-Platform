@@ -54,8 +54,7 @@ private:
     bool isUnstable()
     {
         // actually don't think currently supported by join but maybe will be sometime
-        IHThorAlgorithm * algo = helper?(static_cast<IHThorAlgorithm *>(helper->selectInterface(TAIalgorithm_1))):NULL;
-        return (algo&&algo->getAlgorithmFlags()&TAFunstable);
+        return false;
     }
 
     

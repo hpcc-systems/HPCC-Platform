@@ -165,7 +165,7 @@ public:
         : CSlaveActivity(container)
     {
         helper = (IHThorIndexReadBaseArg *)container->queryHelper();
-        limitTransformExtra = static_cast<IHThorSourceLimitTransformExtra *>(helper->selectInterface(TAIsourcelimittransformextra_1));
+        limitTransformExtra = nullptr;
         fixedDiskRecordSize = helper->queryDiskRecordSize()->querySerializedDiskMeta()->getFixedSize(); // 0 if variable and unused
         reInit = 0 != (helper->getFlags() & (TIRvarfilename|TIRdynamicfilename));
     }
@@ -458,9 +458,10 @@ public:
     CIndexReadSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container)
     {
         helper = (IHThorIndexReadArg *)queryContainer().queryHelper();
+        limitTransformExtra = helper;
         rawMeta = helper->queryRawSteppingMeta();
         projectedMeta = helper->queryProjectedSteppingMeta();
-        steppedExtra = static_cast<IHThorSteppedSourceExtra *>(helper->selectInterface(TAIsteppedsourceextra_1));
+        steppedExtra = helper->querySteppingExtra();
         optimizeSteppedPostFilter = (helper->getFlags() & TIRunfilteredtransform) != 0;
         steppingEnabled = 0 != container.queryJob().getWorkUnitValueInt("steppingEnabled", 0);
         if (rawMeta)
@@ -921,6 +922,7 @@ public:
     CIndexNormalizeSlaveActivity(CGraphElementBase *_container) : CIndexReadSlaveBase(_container)
     {
         helper = (IHThorIndexNormalizeArg *)container.queryHelper();
+        limitTransformExtra = helper;
         appendOutputLinked(this);
     }
 

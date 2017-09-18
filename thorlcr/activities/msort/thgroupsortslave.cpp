@@ -48,8 +48,7 @@ public:
     {
         helper = (IHThorSortArg *)queryHelper();
         iCompare = helper->queryCompare();
-        IHThorAlgorithm * algo = helper?(static_cast<IHThorAlgorithm *>(helper->selectInterface(TAIalgorithm_1))):NULL;
-        unstable = (algo&&(algo->getAlgorithmFlags()&TAFunstable));
+        unstable = helper->getAlgorithmFlags()&TAFunstable;
         setRequireInitData(false);
         appendOutputLinked(this);
     }

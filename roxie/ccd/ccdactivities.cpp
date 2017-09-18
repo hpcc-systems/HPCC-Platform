@@ -3887,8 +3887,7 @@ ISlaveActivityFactory *createRoxieIndexNormalizeActivityFactory(IPropertyTree &_
 class CRoxieIndexCountActivity : public CRoxieIndexActivity
 {
 protected:
-    IHThorCompoundCountExtra * countHelper;
-    IHThorSourceCountLimit * limitHelper;
+    IHThorIndexCountArg * countHelper;
     unsigned __int64 choosenLimit;
     unsigned __int64 rowLimit;
     unsigned __int64 keyedLimit;
@@ -3899,16 +3898,10 @@ public:
     {
         onCreate();
         countHelper = (IHThorIndexCountArg *) basehelper;
-        limitHelper = static_cast<IHThorSourceCountLimit *>(basehelper->selectInterface(TAIsourcecountlimit_1));
         assertex(!resent);
         choosenLimit = countHelper->getChooseNLimit();
-        if (limitHelper)
-        {
-            rowLimit = limitHelper->getRowLimit();
-            keyedLimit = limitHelper->getKeyedLimit();
-        }
-        else
-            rowLimit = keyedLimit = (unsigned __int64) -1;
+        rowLimit = countHelper->getRowLimit();
+        keyedLimit = countHelper->getKeyedLimit();
     }
 
     virtual StringBuffer &toString(StringBuffer &ret) const
@@ -4299,12 +4292,11 @@ public:
         : CSlaveActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
     {
         Owned<IHThorFetchBaseArg> helper = (IHThorFetchBaseArg *) helperFactory();
-        IHThorFetchContext * fetchContext = static_cast<IHThorFetchContext *>(helper->selectInterface(TAIfetchcontext_1));
-        bool variableFileName = allFilesDynamic || queryFactory.isDynamic() || ((fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0);
+        bool variableFileName = allFilesDynamic || queryFactory.isDynamic() || ((helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0);
         if (!variableFileName)
         {
-            bool isOpt = (fetchContext->getFetchFlags() & FFdatafileoptional) != 0;
-            OwnedRoxieString fname(fetchContext->getFileName());
+            bool isOpt = (helper->getFetchFlags() & FFdatafileoptional) != 0;
+            OwnedRoxieString fname(helper->getFileName());
             datafile.setown(_queryFactory.queryPackage().lookupFileName(fname, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
             if (datafile)
                 fileArray.setown(datafile->getIFileIOArray(isOpt, queryFactory.queryChannel()));
@@ -4328,7 +4320,6 @@ class CRoxieFetchActivityBase : public CRoxieSlaveActivity
 {
 protected:
     IHThorFetchBaseArg *helper;
-    IHThorFetchContext * fetchContext;
     const CRoxieFetchActivityFactory *factory;
     Owned<IFileIO> rawFile;
     Owned<ISerialStream> rawStream;
@@ -4346,10 +4337,9 @@ public:
         : CRoxieSlaveActivity(_logctx, _packet, _hFactory, _aFactory), factory(_aFactory)
     {
         helper = (IHThorFetchBaseArg *) basehelper;
-        fetchContext = static_cast<IHThorFetchContext *>(helper->selectInterface(TAIfetchcontext_1));
         base = 0;
-        variableFileName = allFilesDynamic || basefactory->queryQueryFactory().isDynamic() || ((fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0);
-        isOpt = (fetchContext->getFetchFlags() & FFdatafileoptional) != 0;
+        variableFileName = allFilesDynamic || basefactory->queryQueryFactory().isDynamic() || ((helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0);
+        isOpt = (helper->getFetchFlags() & FFdatafileoptional) != 0;
         onCreate();
         inputData = (char *) serializedCreate.readDirect(0);
         inputLimit = inputData + (serializedCreate.length() - serializedCreate.getPos());
@@ -4358,7 +4348,7 @@ public:
 
     virtual const char *queryDynamicFileName() const
     {
-        return fetchContext->getFileName();
+        return helper->getFileName();
     }
 
     virtual void setVariableFileInfo()
@@ -4440,8 +4430,7 @@ public:
     CRoxieFetchActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieFetchActivityFactory *_aFactory)
         : CRoxieFetchActivityBase(_logctx, _packet, _hFactory, _aFactory)
     {
-        IHThorFetchContext * fetchContext = static_cast<IHThorFetchContext *>(helper->selectInterface(TAIfetchcontext_1));
-        IOutputMetaData *diskMeta = fetchContext->queryDiskRecordSize();
+        IOutputMetaData *diskMeta = helper->queryDiskRecordSize();
         diskAllocator.setown(getRowAllocator(diskMeta, basefactory->queryId()));
         rowDeserializer.setown(diskMeta->createDiskDeserializer(queryContext->queryCodeContext(), basefactory->queryId()));
     }
