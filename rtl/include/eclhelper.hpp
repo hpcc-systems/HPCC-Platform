@@ -44,7 +44,7 @@ typedef unsigned short UChar;
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      165
+#define ACTIVITY_INTERFACE_VERSION      166
 #define MIN_ACTIVITY_INTERFACE_VERSION  165             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
@@ -183,6 +183,7 @@ public:
     virtual void outputEndArray(const char *fieldname) = 0;
     virtual void outputInlineXml(const char *text) = 0; //for appending raw xml content
     virtual void outputXmlns(const char *name, const char *uri) = 0;
+    virtual void outputInline(unsigned len, const char *field, const char *fieldname) = 0; //for appending raw content. name can be null
     inline void outputCString(const char *field, const char *fieldname) { outputString((size32_t)strlen(field), field, fieldname); }
 };
 
@@ -335,6 +336,8 @@ enum RtlFieldTypeMask
     RFTMalien               = 0x00000800,                   // this is the physical format of a user defined type, if unknown size we can't calculate it
     RFTMcontainsifblock     = 0x00000800,                   // contains an if block - if set on a record then it contains ifblocks, so can't work out field offsets.
     RFTMhasnonscalarxpath   = 0x00001000,                   // field xpath contains multiple node, and is not therefore usable for naming scalar fields
+    RFTMhascontentxpath     = 0x00002000,                   // field xpath contains '<>' and writeInlineContent is enabled
+    RFTMnamedcontentxpath   = 0x00004000,
 
     // These flags are used in the serialized info only
     RFTMserializerFlags     = 0x01f00000,                   // Mask to remove from saved values
@@ -394,6 +397,7 @@ struct RtlTypeInfo : public RtlITypeInfo
     inline bool isFixedSize() const { return (fieldType & RFTMunknownsize) == 0; }
     inline bool isLinkCounted() const { return (fieldType & RFTMlinkcounted) != 0; }
     inline bool isUnsigned() const { return (fieldType & RFTMunsigned) != 0; }
+    inline bool hasNonScalarXpath() const { return (fieldType & RFTMhasnonscalarxpath) != 0; }
     inline unsigned getDecimalDigits() const { return (length & 0xffff); }
     inline unsigned getDecimalPrecision() const { return (length >> 16); }
     inline unsigned getBitfieldIntSize() const { return (length & 0xff); }
@@ -424,6 +428,8 @@ struct RtlFieldInfo
     unsigned flags;
 
     inline bool hasNonScalarXpath() const { return (flags & RFTMhasnonscalarxpath) != 0; }
+    inline bool hasInlineContentXpath() const { return (flags & RFTMhascontentxpath) != 0; }
+    inline bool hasNamedContentXpath() const { return (flags & RFTMnamedcontentxpath) != 0; }
 
     inline bool isFixedSize() const 
     { 

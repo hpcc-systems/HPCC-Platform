@@ -164,7 +164,7 @@ void Esdl2LocalContext::handleDataFor(IXmlWriterExt & writer)
             {
                 IMapping& et = it.query();
                 auto val = m_dataFor->mapToValue(&et)->get();
-                writer.outputInline(val);
+                writer.outputInline(0, nullptr, val);
             }
         }
     }

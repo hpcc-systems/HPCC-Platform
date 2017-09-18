@@ -699,7 +699,7 @@ void ViewERdiagramVisitor::visit(ViewRelation * relation)
 }
 
 
-void ViewERdiagramVisitor::addField(const char * name, ITypeInfo & type, bool keyed)
+void ViewERdiagramVisitor::addField(const char * name, ITypeInfo & type, bool keyed, byte contentFlags)
 {
     StringBuffer eclTypeName;
     noteNextField();
@@ -710,9 +710,9 @@ void ViewERdiagramVisitor::addField(const char * name, ITypeInfo & type, bool ke
         builder.noteField(activeFieldId.str(), name, eclTypeName);
 }
 
-void ViewERdiagramVisitor::addSetField(const char * name, const char * itemname, ITypeInfo & type)
+void ViewERdiagramVisitor::addSetField(const char * name, const char * itemname, ITypeInfo & type, byte contentFlags)
 {
-    addField(name, type, false);
+    addField(name, type, false, 0);
 }
 
 void ViewERdiagramVisitor::beginIfBlock()

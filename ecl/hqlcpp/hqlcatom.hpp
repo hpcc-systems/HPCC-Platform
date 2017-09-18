@@ -478,6 +478,7 @@ extern IIdAtom * outputXmlStringId;
 extern IIdAtom * outputXmlUIntId;
 extern IIdAtom * outputXmlUnicodeId;
 extern IIdAtom * outputXmlUtf8Id;
+extern IIdAtom * outputXmlInlineId;
 extern IIdAtom * powerId;
 extern IIdAtom * prefixDiffStrId;
 extern IIdAtom * prefixDiffUnicodeId;

@@ -49,7 +49,7 @@ CResultSetMetaData * nullMeta;
 ITypeInfo * filePositionType;
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
-    nullMeta = new CResultSetMetaData(NULL, false);
+    nullMeta = new CResultSetMetaData(NULL, false, false);
     filePositionType = makeIntType(8, false);
     return true;
 }
@@ -269,11 +269,12 @@ static __int64 getIntFromSwapInt(ITypeInfo & type, const void * cur, bool isMapp
 
 //---------------------------------------------------------------------------
 
-CResultSetMetaData::CResultSetMetaData(IFvDataSourceMetaData * _meta, bool _useXPath) 
+CResultSetMetaData::CResultSetMetaData(IFvDataSourceMetaData * _meta, bool _useXPath, bool _allowInlineContent)
 { 
     meta = _meta; 
     fixedSize = true;
     alwaysUseXPath = _useXPath;
+    allowInlineContent = _allowInlineContent;
     unsigned max = meta ? meta->numColumns() : 0;
     for (unsigned idx = 0; idx < max; idx++)
     {
@@ -304,7 +305,7 @@ CResultSetMetaData::CResultSetMetaData(IFvDataSourceMetaData * _meta, bool _useX
         case type_set:
         case type_table:
         case type_groupedtable:
-            column->childMeta.setown(new CResultSetMetaData(meta->queryChildMeta(idx), _useXPath));
+            column->childMeta.setown(new CResultSetMetaData(meta->queryChildMeta(idx), _useXPath, _allowInlineContent));
             break;
         default:
             UNIMPLEMENTED;
@@ -318,6 +319,7 @@ CResultSetMetaData::CResultSetMetaData(const CResultSetMetaData & _other)
 {
     meta = _other.meta;
     alwaysUseXPath = _other.alwaysUseXPath;
+    allowInlineContent = _other.allowInlineContent;
     ForEachItemIn(i, _other.columns)
         columns.append(OLINK(_other.columns.item(i)));
     fixedSize = _other.fixedSize;
@@ -649,7 +651,8 @@ void CResultSetMetaData::getXmlSchema(ISchemaBuilder & builder, bool useXPath) c
                 if (!singleFieldType || !builder.addSingleFieldDataset(name, childname, *singleFieldType))
                 {
                     const CResultSetMetaData *childMeta = static_cast<const CResultSetMetaData *>(column.childMeta.get());
-                    if (builder.beginDataset(name, childname, childMeta->meta->mixedContent(), NULL))
+                    bool hasMixedContent = childMeta->meta->mixedContent() || (allowInlineContent && (childMeta->meta->getContentFlags() & XSBLD_contentMixed));
+                    if (builder.beginDataset(name, childname, hasMixedContent, NULL))
                     {
                         childMeta->getXmlSchema(builder, useXPath);
                     }
@@ -662,24 +665,37 @@ void CResultSetMetaData::getXmlSchema(ISchemaBuilder & builder, bool useXPath) c
                 Owned<ITypeInfo> stringType = makeStringType(UNKNOWN_LENGTH, NULL, NULL);
                 if (useXPath)
                     fvSplitXPath(meta->queryXPath(idx), xname, name);
-                builder.addField(name, *stringType, idx < keyedCount);
+                builder.addField(name, *stringType, idx < keyedCount, 0);
             }
             break;
         default:
             {
+                byte contentFlags = 0;
                 ITypeInfo & type = *column.type;
                 if (type.getTypeCode() == type_set)
                 {
                     childname = "Item";
                     if (useXPath)
+                    {
+                        if (allowInlineContent)
+                        {
+                            IFvDataSourceMetaData *record = meta->queryChildMeta(0);
+                            if (record)
+                                contentFlags = record->getContentFlags();
+                        }
                         fvSplitXPath(meta->queryXPath(idx), xname, name, &childname);
-                    builder.addSetField(name, childname, type);
+                    }
+                    builder.addSetField(name, childname, type, contentFlags);
                 }
                 else
                 {
                     if (useXPath)
+                    {
+                        if (allowInlineContent)
+                            contentFlags = meta->getContentFlags(idx);
                         fvSplitXPath(meta->queryXPath(idx), xname, name);
-                    builder.addField(name, type, idx < keyedCount);
+                    }
+                    builder.addField(name, type, idx < keyedCount, contentFlags);
                 }
                 break;
             }
@@ -748,7 +764,7 @@ CResultSetCursor * CResultSetBase::doCreateCursor()
 
 //---------------------------------------------------------------------------
 
-CResultSet::CResultSet(IFvDataSource * _dataSource, bool _useXPath) : meta(_dataSource->queryMetaData(), _useXPath) 
+CResultSet::CResultSet(IFvDataSource * _dataSource, bool _useXPath, bool _allowInlineContent) : meta(_dataSource->queryMetaData(), _useXPath, _allowInlineContent)
 { 
     dataSource.set(_dataSource); 
     if (dataSource->isIndex())
@@ -759,7 +775,7 @@ IExtendedNewResultSet * CResultSet::cloneForFilter()
 { 
     Owned<IFvDataSource> clonedDataSource = dataSource->cloneForFilter(); 
     if (clonedDataSource)
-        return new CResultSet(clonedDataSource, meta.alwaysUseXPath);
+        return new CResultSet(clonedDataSource, meta.alwaysUseXPath, meta.allowInlineContent);
     return NULL;
 }
 
@@ -1075,7 +1091,7 @@ IResultSetCursor * CResultSetCursor::getChildren(int columnIndex) const
     unsigned len = *(unsigned *)cur;
     const byte * data = cur + sizeof(unsigned);
     Owned<IFvDataSource> childData = meta.meta->createChildDataSource(columnIndex, len, data);
-    Owned<CResultSet> nestedResult = new CResultSet(childData, meta.alwaysUseXPath);
+    Owned<CResultSet> nestedResult = new CResultSet(childData, meta.alwaysUseXPath, meta.allowInlineContent);
     return nestedResult->createCursor();
 }
 
@@ -1523,10 +1539,15 @@ IStringVal & CResultSetCursor::getDisplayText(IStringVal &ret, int columnIndex)
 
 void CResultSetCursor::writeXmlText(IXmlWriter &writer, int columnIndex, const char *tag)
 {
+    writeXmlText(writer, columnIndex, tag, meta.meta->getContentFlags(columnIndex));
+}
+
+void CResultSetCursor::writeXmlText(IXmlWriter &writer, int columnIndex, const char *tag, byte contentFlags)
+{
     if (!isValid())
         return;
 
-    const char * name = (tag) ? tag : meta.meta->queryXmlTag(columnIndex);
+    const char * name = (tag) ? tag : meta.meta->queryXmlTag(columnIndex, meta.allowInlineContent);
     CResultSetColumnInfo & column = meta.columns.item(columnIndex);
     unsigned flags = column.flag;
     switch (flags)
@@ -1607,7 +1628,10 @@ void CResultSetCursor::writeXmlText(IXmlWriter &writer, int columnIndex, const c
     case type_qstring:
         len = getLength(type, cur);
         rtlQStrToStrX(resultLen, resultStr, len, (const char *)cur);
-        writer.outputString(resultLen, resultStr, name);
+        if (meta.allowInlineContent && (contentFlags & XSBLD_contentInline))
+            writer.outputInline(resultLen, resultStr, (contentFlags & XSBLD_contentNamed) ? name : nullptr);
+        else
+            writer.outputString(resultLen, resultStr, name);
         break;
     case type_data:
         len = getLength(type, cur);
@@ -1618,30 +1642,51 @@ void CResultSetCursor::writeXmlText(IXmlWriter &writer, int columnIndex, const c
         if (meta.isEBCDIC(columnIndex))
         {
             rtlEStrToStrX(resultLen, resultStr, len, (const char *)cur);
-            writer.outputString(resultLen, resultStr, name);
+            if (meta.allowInlineContent && (contentFlags & XSBLD_contentInline))
+                writer.outputInline(resultLen, resultStr, (contentFlags & XSBLD_contentNamed) ? name : nullptr);
+            else
+                writer.outputString(resultLen, resultStr, name);
         }
         else
-            writer.outputString(len, (const char *)cur, name);
+        {
+            if (meta.allowInlineContent && (contentFlags & XSBLD_contentInline))
+                writer.outputInline(len, (const char *)cur, (contentFlags & XSBLD_contentNamed) ? name : nullptr);
+            else
+                writer.outputString(len, (const char *)cur, name);
+        }
         break;
     case type_unicode:
         len = getLength(type, cur);
         writer.outputUnicode(len, (UChar const *)cur, name);
+        //tbd
         break;
     case type_varstring:
         if (meta.isEBCDIC(columnIndex))
         {
             rtlStrToEStrX(resultLen, resultStr, strlen((const char *)cur), (const char *)cur);
-            writer.outputString(resultLen, resultStr, name);
+            if (meta.allowInlineContent && (contentFlags & XSBLD_contentInline))
+                writer.outputInline(resultLen, resultStr, (contentFlags & XSBLD_contentNamed) ? name : nullptr);
+            else
+                writer.outputString(resultLen, resultStr, name);
         }
         else
-            writer.outputString(strlen((const char *)cur), (const char *)cur, name);
+        {
+            if (meta.allowInlineContent && (contentFlags & XSBLD_contentInline))
+                writer.outputInline(strlen((const char *)cur), (const char *)cur, (contentFlags & XSBLD_contentNamed) ? name : nullptr);
+            else
+                writer.outputString(strlen((const char *)cur), (const char *)cur, name);
+        }
         break;
     case type_varunicode:
         writer.outputUnicode(rtlUnicodeStrlen((UChar const *)cur), (UChar const *)cur, name);
+        //tbd
         break;
     case type_utf8:
-        len = getLength(type, cur);
-        writer.outputUtf8(len, (const char *)cur, name);
+        len = getLength(type, cur); //bytes or chars?
+        if (meta.allowInlineContent && (contentFlags & XSBLD_contentInline))
+            writer.outputInline(len, (const char *)cur, (contentFlags & XSBLD_contentNamed) ? name : nullptr);
+        else
+            writer.outputUtf8(len, (const char *)cur, name);
         break;
     case type_table:
     case type_groupedtable:
@@ -1695,7 +1740,7 @@ IStringVal & CResultSetCursor::getXmlItem(IStringVal & ret)
 
 void CResultSetCursor::writeXmlItem(IXmlWriter &writer)
 {
-    writeXmlText(writer, 0, meta.meta->queryXmlTag());
+    writeXmlText(writer, 0, meta.meta->queryXmlTag(), meta.meta->getContentFlags());
 }
 
 IStringVal & CResultSetCursor::getXmlRow(IStringVal &ret)
@@ -1736,7 +1781,7 @@ void CResultSetCursor::writeXmlRow(IXmlWriter &writer)
     for (unsigned col = 0; col < numColumns; col++)
     {
         unsigned flags = meta.columns.item(col).flag;
-        const char *tag = meta.meta->queryXmlTag(col);
+        const char *tag = meta.meta->queryXmlTag(col, meta.allowInlineContent);
         if (tag && *tag=='@')
             continue;
         switch (flags)
@@ -2984,11 +3029,11 @@ IDistributedFile * CResultSetFactory::lookupLogicalName(const char * logicalName
 }
 
 
-INewResultSet * CResultSetFactory::createNewResultSet(IConstWUResult * wuResult, const char * wuid)
+INewResultSet * CResultSetFactory::createNewResultSet(IConstWUResult * wuResult, const char * wuid, bool allowInlineContent)
 {
     Owned<IFvDataSource> ds = createDataSource(wuResult, wuid, username, password);
     if (ds)
-        return createResultSet(ds, (wuResult->getResultFormat() == ResultFormatXml));
+        return createResultSet(ds, (wuResult->getResultFormat() == ResultFormatXml), allowInlineContent);
     return NULL;
 }
 
@@ -2998,7 +3043,7 @@ INewResultSet * CResultSetFactory::createNewFileResultSet(const char * logicalNa
     Owned<IFvDataSource> ds = createFileDataSource(df, logicalName, cluster, username, password);
     if (ds)
     {
-        Owned<CResultSet> result = createResultSet(ds, false);
+        Owned<CResultSet> result = createResultSet(ds, false, false);
         result->setColumnMapping(df);
         return result.getClear();
     }
@@ -3007,8 +3052,11 @@ INewResultSet * CResultSetFactory::createNewFileResultSet(const char * logicalNa
 
 INewResultSet * CResultSetFactory::createNewResultSet(const char * wuid, unsigned sequence, const char * name)
 {
-    Owned<IConstWUResult> wuResult = (secMgr) ? secResolveResult(*secMgr, *secUser, wuid, sequence, name) : resolveResult(wuid, sequence, name);
-    return (wuResult) ? createNewResultSet(wuResult, wuid) : NULL;
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+    Owned<IConstWorkUnit> wu = (secMgr) ? factory->openWorkUnit(wuid, secMgr, secUser) : factory->openWorkUnit(wuid);
+    Owned<IConstWUResult> wuResult = (wu) ? getWorkUnitResult(wu, name, sequence) : nullptr;
+
+    return (wuResult) ? createNewResultSet(wuResult, wuid, wu->getDebugValueBool("writeInlineXml", false)) : NULL;
 }
 
 INewResultSet * CResultSetFactory::createNewFileResultSet(const char * logicalFile)
@@ -3016,21 +3064,21 @@ INewResultSet * CResultSetFactory::createNewFileResultSet(const char * logicalFi
     return createNewFileResultSet(logicalFile, NULL);
 }
 
-CResultSet * CResultSetFactory::createResultSet(IFvDataSource * ds, bool _useXPath)
+CResultSet * CResultSetFactory::createResultSet(IFvDataSource * ds, bool _useXPath, bool _allowInlineContent)
 {
     //MORE: Save in a hash table, which times out after a certain period...
-    return new CResultSet(ds, _useXPath);
+    return new CResultSet(ds, _useXPath, _allowInlineContent);
 }
 
-IResultSetMetaData * CResultSetFactory::createResultSetMeta(IConstWUResult * wuResult)
+IResultSetMetaData * CResultSetFactory::createResultSetMeta(IConstWUResult * wuResult, bool allowInlineContent)
 {
-    return new CResultSetMetaData(createMetaData(wuResult), false);
+    return new CResultSetMetaData(createMetaData(wuResult), false, allowInlineContent);
 }
 
 IResultSetMetaData * CResultSetFactory::createResultSetMeta(const char * wuid, unsigned sequence, const char * name)
 {
     Owned<IConstWUResult> wuResult = (secMgr) ? secResolveResult(*secMgr, *secUser, wuid, sequence, name) : resolveResult(wuid, sequence, name);
-    return (wuResult) ? createResultSetMeta(wuResult) : NULL;
+    return (wuResult) ? createResultSetMeta(wuResult, false) : NULL;
 }
 
 
@@ -3046,13 +3094,13 @@ CRemoteResultSetFactory::CRemoteResultSetFactory(const char * remoteServer, ISec
     serverEP.set(remoteServer);
 }
 
-INewResultSet * CRemoteResultSetFactory::createNewResultSet(IConstWUResult * wuResult, const char * wuid)
+INewResultSet * CRemoteResultSetFactory::createNewResultSet(IConstWUResult * wuResult, const char * wuid, bool allowInlineContent /*ignored*/)
 {
     SCMStringBuffer name;
     wuResult->getResultName(name);
     Owned<IFvDataSource> ds = createRemoteDataSource(serverEP, username, password, wuid, wuResult->getResultSequence(), name.length() ? name.str() : NULL);
     if (ds)
-        return new CResultSet(ds, false);
+        return new CResultSet(ds, false, false);
     return NULL;
 }
 
@@ -3060,7 +3108,7 @@ INewResultSet * CRemoteResultSetFactory::createNewFileResultSet(const char * log
 {
     Owned<IFvDataSource> ds = createRemoteFileDataSource(serverEP, username, password, logicalName);
     if (ds)
-        return new CResultSet(ds, false);
+        return new CResultSet(ds, false, false);
     return NULL;
 }
 
@@ -3068,7 +3116,7 @@ INewResultSet* CRemoteResultSetFactory::createNewResultSet(const char * wuid, un
 {
     Owned<IFvDataSource> ds = createRemoteDataSource(serverEP, username, password, wuid, sequence, name);
     if (ds)
-        return new CResultSet(ds, false);
+        return new CResultSet(ds, false, false);
     return NULL;
 }
 
@@ -3076,11 +3124,11 @@ INewResultSet* CRemoteResultSetFactory::createNewFileResultSet(const char * logi
 {
     Owned<IFvDataSource> ds = createRemoteFileDataSource(serverEP, username, password, logicalName);
     if (ds)
-        return new CResultSet(ds, false);
+        return new CResultSet(ds, false, false);
     return NULL;
 }
 
-IResultSetMetaData * CRemoteResultSetFactory::createResultSetMeta(IConstWUResult * wuResult)
+IResultSetMetaData * CRemoteResultSetFactory::createResultSetMeta(IConstWUResult * wuResult, bool allowInlineContent)
 {
     UNIMPLEMENTED;
 }
@@ -3092,11 +3140,11 @@ IResultSetMetaData * CRemoteResultSetFactory::createResultSetMeta(const char * w
 
 //---------------------------------------------------------------------------
 
-INewResultSet* createNewResultSet(IResultSetFactory & factory, IStringVal & error, IConstWUResult * wuResult, const char * wuid)
+INewResultSet* createNewResultSet(IResultSetFactory & factory, IStringVal & error, IConstWUResult * wuResult, const char * wuid, bool allowInlineContent)
 {
     try
     {
-        return factory.createNewResultSet(wuResult, wuid);
+        return factory.createNewResultSet(wuResult, wuid, allowInlineContent);
     }
     catch (IException * e)
     {
@@ -3339,7 +3387,7 @@ extern FILEVIEW_API void writeFullWorkUnitResults(const char *username, const ch
                 {
                     SCMStringBuffer name;
                     ds.getResultName(name);
-                    Owned<INewResultSet> nr = factory->createNewResultSet(&ds, cw->queryWuid());
+                    Owned<INewResultSet> nr = factory->createNewResultSet(&ds, cw->queryWuid(), cw->getDebugValueBool("writeInlineContent", false));
                     const IProperties *xmlns = ds.queryResultXmlns();
                     writeResultXml(writer, nr.get(), name.str(), 0, 0, (flags & WorkUnitXML_InclSchema) ? name.str() : NULL, xmlns);
                 }

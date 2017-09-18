@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#OPTION('writeInlineContent', true);
+
 import lib_stringlib;
 import std.str;
 import std.system.thorlib;
@@ -88,4 +90,12 @@ SEQUENTIAL(
  )
 );
 
+inlineHouseRecord := RECORD
+    UNSIGNED id;
+    STRING names {XPATH('names/<>')};
+END;
 
+inline1 := DATASET([{1,'<Row><name>Gavin</name></Row><Row><name>John</name></Row>'},{2,'<Row><name>Steve</name></Row><Row><name>Steve</name></Row>'},{3,''}], inlineHouseRecord);
+
+pin1 := PIPE(inline1, 'cat', houseRecord, xml(noroot), output(xml(noroot)));
+OUTPUT(pin1, NAMED('inlineXML'));

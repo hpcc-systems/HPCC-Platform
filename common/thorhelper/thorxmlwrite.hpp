@@ -42,7 +42,6 @@ interface IXmlWriterExt : extends IXmlWriter
     virtual void rewindTo(IInterface *location) = 0;
     virtual void cutFrom(IInterface *location, StringBuffer& databuf) = 0;
     virtual void outputNumericString(const char *field, const char *fieldname) = 0;
-    virtual void outputInline(const char* text) = 0;
 };
 
 class thorhelper_decl CommonXmlPosition : public CInterface, implements IInterface
@@ -73,7 +72,7 @@ public:
     void outputEndNested(const char *fieldname, bool doIndent);
 
     virtual void outputInlineXml(const char *text){closeTag(); out.append(text); flush(false);} //for appending raw xml content
-    virtual void outputInline(const char* text) { outputInlineXml(text); }
+    virtual void outputInline(unsigned len, const char *field, const char *fieldname); //for appending raw content. name can be null
     virtual void outputQuoted(const char *text);
     virtual void outputQString(unsigned len, const char *field, const char *fieldname);
     virtual void outputString(unsigned len, const char *field, const char *fieldname);
@@ -163,7 +162,7 @@ public:
         if (text && *text)
             outputUtf8(strlen(text), text, "xml");
     }
-    virtual void outputInline(const char* text) { out.append(text); }
+    virtual void outputInline(unsigned len, const char *field, const char *fieldname);
     virtual void outputQuoted(const char *text);
     virtual void outputQString(unsigned len, const char *field, const char *fieldname);
     virtual void outputString(unsigned len, const char *field, const char *fieldname);
@@ -315,6 +314,7 @@ public:
     virtual void outputEndArray(const char *fieldname){}
     virtual void outputSetAll();
     virtual void outputInlineXml(const char *text){} //for appending raw xml content
+    virtual void outputInline(unsigned len, const char *field, const char *fieldname){}
     virtual void outputXmlns(const char *name, const char *uri){}
 
     virtual void outputInt(__int64 field, unsigned size, const char *fieldname);
@@ -563,7 +563,7 @@ public:
         //if (text && *text)
           //outputUtf8(strlen(text), text, "xml");
     };
-    virtual void outputInline(const char* text) { out.append(text); }
+    virtual void outputInline(unsigned len, const char* field, const char* fieldName){} //skip, like outputInlineXml above
 
     //IXmlWriterExt
     virtual void outputNumericString(const char* field, const char* fieldName);

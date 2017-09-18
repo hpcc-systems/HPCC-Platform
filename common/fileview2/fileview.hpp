@@ -160,17 +160,17 @@ interface INewResultSet : extends IInterface
 
 interface IResultSetFactory : extends IInterface
 {
-    virtual INewResultSet * createNewResultSet(IConstWUResult * wuResult, const char * wuid) = 0;
+    virtual INewResultSet * createNewResultSet(IConstWUResult * wuResult, const char * wuid, bool allowInlineContent) = 0;
     virtual INewResultSet * createNewFileResultSet(const char * logicalFile, const char * cluster) = 0;
     virtual INewResultSet * createNewResultSet(const char * wuid, unsigned sequence, const char * name) = 0;
     virtual INewResultSet * createNewFileResultSet(const char * logicalFile) = 0;
-    virtual IResultSetMetaData * createResultSetMeta(IConstWUResult * wuResult) = 0;
+    virtual IResultSetMetaData * createResultSetMeta(IConstWUResult * wuResult, bool allowInlineContent) = 0;
     virtual IResultSetMetaData * createResultSetMeta(const char * wuid, unsigned sequence, const char * name) = 0;
 };
 
 
 //provided to wrap the exceptions for clarion....
-extern FILEVIEW_API INewResultSet* createNewResultSet(IResultSetFactory & factory, IStringVal & error, IConstWUResult * wuResult, const char * wuid);
+extern FILEVIEW_API INewResultSet* createNewResultSet(IResultSetFactory & factory, IStringVal & error, IConstWUResult * wuResult, const char * wuid, bool allowInlineContent);
 extern FILEVIEW_API INewResultSet* createNewFileResultSet(IResultSetFactory & factory, IStringVal & error, const char * logicalFile, const char * queue, const char * cluster);
 extern FILEVIEW_API INewResultSet* createNewResultSetSeqName(IResultSetFactory & factory, IStringVal & error, const char * wuid, unsigned sequence, const char * name);
 

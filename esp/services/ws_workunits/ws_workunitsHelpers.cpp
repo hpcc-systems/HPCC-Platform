@@ -331,7 +331,7 @@ void WsWuInfo::getVariables(IEspECLWorkunit &info, unsigned long flags)
         IArrayOf<IEspECLResult> results;
         Owned<IConstWUResultIterator> vars = &cw->getVariables();
         ForEach(*vars)
-            getResult(vars->query(), results, flags);
+            getResult(vars->query(), results, flags, cw->getDebugValueBool("writeInlineContent", false));
         info.setVariables(results);
         results.kill();
     }
@@ -1406,7 +1406,7 @@ bool WsWuInfo::getResultEclSchemas(IConstWUResult &r, IArrayOf<IEspECLSchemaItem
     return true;
 }
 
-void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, unsigned long flags)
+void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, unsigned long flags, bool allowInlineContent)
 {
     SCMStringBuffer name;
     r.getResultName(name);
@@ -1438,7 +1438,7 @@ void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, un
             {
                 Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), context.queryUser(), context.queryUserId(), context.queryPassword());
                 Owned<INewResultSet> result;
-                result.setown(resultSetFactory->createNewResultSet(&r, wuid.str()));
+                result.setown(resultSetFactory->createNewResultSet(&r, wuid.str(), false));
                 Owned<IResultSetCursor> cursor(result->createCursor());
                 cursor->first();
 
@@ -1491,7 +1491,7 @@ void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, un
     if (flags & WUINFO_IncludeXmlSchema)
     {
         Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), context.queryUser(), context.queryUserId(), context.queryPassword());
-        Owned<INewResultSet> rs = resultSetFactory->createNewResultSet(&r, wuid.str());
+        Owned<INewResultSet> rs = resultSetFactory->createNewResultSet(&r, wuid.str(), allowInlineContent);
         Owned<IResultSetCursor> cursor(rs->createCursor());
 
         SCMStringBuffer xsd;
@@ -1526,7 +1526,7 @@ void WsWuInfo::getResults(IEspECLWorkunit &info, unsigned long flags)
         {
             IConstWUResult &r = it->query();
             if(r.getResultSequence()>=0)
-                getResult(r, results, flags);
+                getResult(r, results, flags, cw->getDebugValueBool("writeInlineContent", false));
         }
 
         if (results.length())

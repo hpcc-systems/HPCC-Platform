@@ -2972,7 +2972,7 @@ static bool anyXmlGeneratedForPass(IHqlExpression * expr, unsigned pass)
     case no_field:
         {
             OwnedHqlExpr name;
-            extractXmlName(name, NULL, NULL, expr, NULL, false);
+            extractXmlName(name, NULL, NULL, expr, NULL, false, nullptr);
 
             ITypeInfo * type = expr->queryType()->queryPromotedType();
             switch (type->getTypeCode())
@@ -3669,22 +3669,29 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer & instanceName, IHqlExpres
         }
 
         StringBuffer xpathName, xpathItem;
+        byte contentFlags = 0;
         switch (fieldType->getTypeCode())
         {
         case type_set:
-            extractXmlName(xpathName, &xpathItem, NULL, field, "Item", false);
+            extractXmlName(xpathName, &xpathItem, NULL, field, "Item", false, options.writeInlineContent ? &contentFlags : nullptr);
             break;
         case type_dictionary:
         case type_table:
         case type_groupedtable:
-            extractXmlName(xpathName, &xpathItem, NULL, field, "Row", false);
+            extractXmlName(xpathName, &xpathItem, NULL, field, "Row", false, nullptr);
             //Following should be in the type processing, and the type should include the information
             if (field->hasAttribute(sizeAtom) || field->hasAttribute(countAtom))
                 fieldFlags |= RFTMinvalidxml;
             break;
         default:
-            extractXmlName(xpathName, NULL, NULL, field, NULL, false);
+            extractXmlName(xpathName, NULL, NULL, field, NULL, false, options.writeInlineContent ? &contentFlags : nullptr);
             break;
+        }
+        if (contentFlags & XPathContentInline)
+        {
+            fieldFlags |= RFTMhascontentxpath;
+            if (contentFlags & XPathContentNamed)
+                fieldFlags |= RFTMnamedcontentxpath;
         }
 
         if (xpathName.length())
@@ -5045,7 +5052,7 @@ void gatherXpathPrefixes(StringArray &prefixes, IHqlExpression * record)
         {
             //don't need to be too picky about xpath field types, worst case if an xpath is too long, we end up with an extra prefix
             StringBuffer xpathName, xpathItem;
-            extractXmlName(xpathName, &xpathItem, NULL, cur, NULL, false);
+            extractXmlName(xpathName, &xpathItem, NULL, cur, NULL, false, nullptr);
             checkAppendXpathNamePrefix(prefixes, xpathName);
             checkAppendXpathNamePrefix(prefixes, xpathItem);
 
@@ -5314,7 +5321,7 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
                 StringBuffer xml;
                 {
                     XmlSchemaBuilder xmlbuilder(false);
-                    xmlbuilder.addField(fieldName, *schemaType, false);
+                    xmlbuilder.addField(fieldName, *schemaType, false, 0);
                     xmlbuilder.getXml(xml);
                 }
                 addSchemaResource(sequence, resultName.str(), xml.length()+1, xml.str());
@@ -10800,7 +10807,7 @@ void HqlCppTranslator::addSchemaFields(IHqlExpression * record, MemoryBuffer &sc
 void HqlCppTranslator::addSchemaResource(int seq, const char * name, IHqlExpression * record, unsigned keyedCount)
 {
     StringBuffer xml;
-    getRecordXmlSchema(xml, record, true, keyedCount);
+    getRecordXmlSchema(xml, record, true, keyedCount, options.writeInlineContent);
     addSchemaResource(seq, name, xml.length()+1, xml.str());
 }
 
@@ -10906,7 +10913,7 @@ void HqlCppTranslator::buildXmlSerializeSetValues(BuildCtx & ctx, IHqlExpression
         CHqlBoundExpr boundCurElement;
         cursor->buildIterateLoop(loopctx, boundCurElement, false);
         OwnedHqlExpr curElement = boundCurElement.getTranslatedExpr();
-        buildXmlSerializeScalar(loopctx, curElement, itemName);
+        buildXmlSerializeScalar(loopctx, curElement, itemName, false);
     }
     buildXmlSerializeEndArray(subctx, itemName);
 }
@@ -10959,7 +10966,7 @@ void HqlCppTranslator::buildXmlSerializeEndArray(BuildCtx & ctx, IHqlExpression 
 void HqlCppTranslator::buildXmlSerializeSet(BuildCtx & ctx, IHqlExpression * field, IHqlExpression * value)
 {
     OwnedHqlExpr name, itemName;
-    extractXmlName(name, &itemName, NULL, field, "Item", false);
+    extractXmlName(name, &itemName, NULL, field, "Item", false, nullptr);
 
     HqlExprArray args;
     buildXmlSerializeBeginNested(ctx, name, false);
@@ -10970,7 +10977,7 @@ void HqlCppTranslator::buildXmlSerializeSet(BuildCtx & ctx, IHqlExpression * fie
 void HqlCppTranslator::buildXmlSerializeDataset(BuildCtx & ctx, IHqlExpression * field, IHqlExpression * value, HqlExprArray * assigns)
 {
     OwnedHqlExpr name, rowName;
-    extractXmlName(name, &rowName, NULL, field, "Row", false);
+    extractXmlName(name, &rowName, NULL, field, "Row", false, nullptr);
 
     HqlExprArray args;
     buildXmlSerializeBeginNested(ctx, name, false);
@@ -10991,7 +10998,7 @@ void HqlCppTranslator::buildXmlSerializeDataset(BuildCtx & ctx, IHqlExpression *
     buildXmlSerializeEndNested(ctx, name);
 }
 
-void HqlCppTranslator::buildXmlSerializeScalar(BuildCtx & ctx, IHqlExpression * selected, IHqlExpression * name)
+void HqlCppTranslator::buildXmlSerializeScalar(BuildCtx & ctx, IHqlExpression * selected, IHqlExpression * name, unsigned contentFlags)
 {
     ITypeInfo * type = selected->queryType()->queryPromotedType();
     LinkedHqlExpr value = selected;
@@ -11004,7 +11011,7 @@ void HqlCppTranslator::buildXmlSerializeScalar(BuildCtx & ctx, IHqlExpression * 
         break;
     case type_string:
     case type_varstring:
-        func = outputXmlStringId;
+        func = (contentFlags & XPathContentInline) ? outputXmlInlineId : outputXmlStringId;
         break;
     case type_qstring:
         func = outputXmlQStringId;
@@ -11014,10 +11021,10 @@ void HqlCppTranslator::buildXmlSerializeScalar(BuildCtx & ctx, IHqlExpression * 
         break;
     case type_unicode:
     case type_varunicode:
-        func = outputXmlUnicodeId;
+        func = (contentFlags & XPathContentInline) ? outputXmlInlineId : outputXmlUnicodeId;
         break;
     case type_utf8:
-        func = outputXmlUtf8Id;
+        func = (contentFlags & XPathContentInline) ? outputXmlInlineId : outputXmlUtf8Id;
         break;
     case type_real:
         func = outputXmlRealId;
@@ -11045,7 +11052,7 @@ void HqlCppTranslator::buildXmlSerializeScalar(BuildCtx & ctx, IHqlExpression * 
     args.append(*value.getLink());
     if (size)
         args.append(*LINK(size));
-    if (name)
+    if (name && (contentFlags==0 || (contentFlags & XPathContentNamed)!=0))
         args.append(*LINK(name));
     else
         args.append(*getNullStringPointer(true));
@@ -11062,7 +11069,8 @@ void HqlCppTranslator::buildXmlSerialize(BuildCtx & subctx, IHqlExpression * exp
         case no_field:
             {
                 OwnedHqlExpr name;
-                extractXmlName(name, NULL, NULL, expr, NULL, false);
+                byte contentFlags = 0;
+                extractXmlName(name, NULL, NULL, expr, NULL, false, options.writeInlineContent ? &contentFlags : nullptr);
 
                 LinkedHqlExpr value;
                 OwnedHqlExpr selected;
@@ -11134,7 +11142,7 @@ void HqlCppTranslator::buildXmlSerialize(BuildCtx & subctx, IHqlExpression * exp
                     buildXmlSerializeDataset(subctx, expr, value, assigns);
                     break;
                 default:
-                    buildXmlSerializeScalar(subctx, value, name);
+                    buildXmlSerializeScalar(subctx, value, name, contentFlags);
                     break;
                 }
             }

@@ -29,3 +29,8 @@
  <Row><id>2</id><names><Row><name>Steve</name></Row><Row><name>Steve</name></Row><Row><name>Steve</name></Row></names></Row>
  <Row><id>3</id><names></names></Row>
 </Dataset>
+<Dataset name='inlineXML'>
+ <Row><id>1</id><names><Row><name>Gavin</name></Row><Row><name>John</name></Row></names></Row>
+ <Row><id>2</id><names><Row><name>Steve</name></Row><Row><name>Steve</name></Row></names></Row>
+ <Row><id>3</id><names></names></Row>
+</Dataset>

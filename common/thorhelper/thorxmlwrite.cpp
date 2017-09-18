@@ -117,6 +117,26 @@ void CommonXmlWriter::outputString(unsigned len, const char *field, const char *
     }
 }
 
+void CommonXmlWriter::outputInline(unsigned len, const char *field, const char *fieldname)
+{
+    closeTag();
+    if ((flags & XWFopt) && (len == 0))
+        return;
+    assertex(!checkForAttribute(fieldname));
+    if (fieldname && *fieldname)
+    {
+        if (!nestLimit)
+            out.pad(indent);
+        out.append('<').append(fieldname).append('>');
+    }
+    out.append(len, field);
+    if (fieldname && *fieldname)
+    {
+        if (!nestLimit)
+            out.newline();
+        out.append("</").append(fieldname).append('>');
+    }
+}
 
 void CommonXmlWriter::outputQString(unsigned len, const char *field, const char *fieldname)
 {
@@ -484,6 +504,14 @@ void CommonJsonWriter::outputString(unsigned len, const char *field, const char 
         return;
     checkDelimit();
     appendJSONStringValue(out, checkItemName(fieldname), len, field, true);
+}
+
+void CommonJsonWriter::outputInline(unsigned len, const char *field, const char *fieldname)
+{
+    if ((flags & XWFopt) && (len == 0))
+        return;
+    appendJSONNameOrDelimit(out, fieldname ? checkItemName(fieldname) : nullptr);
+    out.append(len, field);
 }
 
 void CommonJsonWriter::outputQString(unsigned len, const char *field, const char *fieldname)

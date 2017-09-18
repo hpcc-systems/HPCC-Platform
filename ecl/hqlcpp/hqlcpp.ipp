@@ -791,6 +791,7 @@ struct HqlCppOptions
     bool                translateDFSlayouts;
     bool                timeTransforms;
     bool                useGlobalCompareClass;
+    bool                writeInlineContent;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
@@ -1742,7 +1743,7 @@ public:
     void buildXmlSerialize(BuildCtx & subctx, IHqlExpression * expr, IHqlExpression * selector, HqlExprArray * assigns, unsigned pass, unsigned & expectedIndex);
     void buildXmlSerialize(BuildCtx & subctx, IHqlExpression * expr, IHqlExpression * selector, HqlExprArray * assigns);
     void buildXmlSerialize(BuildCtx & ctx, IHqlExpression * dataset, const char * funcname, bool isMeta);
-    void buildXmlSerializeScalar(BuildCtx & ctx, IHqlExpression * selected, IHqlExpression * name);
+    void buildXmlSerializeScalar(BuildCtx & ctx, IHqlExpression * selected, IHqlExpression * name, unsigned contentFlags);
     void buildXmlSerializeSet(BuildCtx & ctx, IHqlExpression * field, IHqlExpression * value);
     void buildXmlSerializeSetValues(BuildCtx & ctx, IHqlExpression * value, IHqlExpression * itemName, bool includeAll);
     void buildXmlSerializeDataset(BuildCtx & ctx, IHqlExpression * field, IHqlExpression * value, HqlExprArray * assigns);

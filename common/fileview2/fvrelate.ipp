@@ -337,8 +337,8 @@ public:
     virtual void visit(ViewRelation * relation);
 
 // ISchemaBuilder
-    virtual void addField(const char * name, ITypeInfo & type, bool keyed);
-    virtual void addSetField(const char * name, const char * itemname, ITypeInfo & type);
+    virtual void addField(const char * name, ITypeInfo & type, bool keyed, byte contentFlags);
+    virtual void addSetField(const char * name, const char * itemname, ITypeInfo & type, byte contentFlags);
     virtual void beginIfBlock();
     virtual bool beginDataset(const char * name, const char * childname, bool mixedContent, unsigned *updateMixed);
     virtual void beginRecord(const char * name, bool mixedContent, unsigned *updateMixed);

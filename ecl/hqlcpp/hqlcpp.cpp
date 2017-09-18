@@ -1807,6 +1807,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.timeTransforms,"timeTransforms", false),
         DebugOption(options.reportDFSinfo,"reportDFSinfo", 0),
         DebugOption(options.useGlobalCompareClass,"useGlobalCompareClass", false),
+        DebugOption(options.writeInlineContent,"writeInlineContent", false),
     };
 
     //get options values from workunit
