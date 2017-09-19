@@ -543,9 +543,9 @@ int CEspHttpServer::onUpdatePassword(CHttpRequest* request, CHttpResponse* respo
                 unsigned sessionID = createHTTPSession(binding, request->getParameters()->queryProp("username"), urlCookie.isEmpty() ? "/" : urlCookie.str());
                 m_request->queryContext()->setSessionToken(sessionID);
                 VStringBuffer cookieStr("%u", sessionID);
-                addCookie(binding->querySessionIDCookieName(), cookieStr.str(), 0);
+                addCookie(binding->querySessionIDCookieName(), cookieStr.str(), 0, true);
                 cookieStr.setf("%u", binding->getClientSessionTimeoutSeconds());
-                addCookie(SESSION_TIMEOUT_COOKIE, cookieStr.str(), 0);
+                addCookie(SESSION_TIMEOUT_COOKIE, cookieStr.str(), 0, false);
                 clearCookie(SESSION_START_URL_COOKIE);
             }
         }
@@ -1067,7 +1067,7 @@ void CEspHttpServer::handleUserNameOnlyMode(EspAuthRequest& authReq)
     }
 
     //We just got the user name. Let's add it into cookie for future use.
-    addCookie(USER_NAME_COOKIE, userNameIn, 0);
+    addCookie(USER_NAME_COOKIE, userNameIn, 0, true);
 
     StringBuffer urlCookie;
     readCookie(SESSION_START_URL_COOKIE, urlCookie);
@@ -1111,7 +1111,7 @@ EspAuthState CEspHttpServer::checkUserAuthPerSession(EspAuthRequest& authReq)
     if (strieq(authReq.httpPath.str(), authReq.authBinding->queryLoginURL()))
     {//This is a request to ask for a login page.
         if (urlCookie.isEmpty())
-            addCookie(SESSION_START_URL_COOKIE, "/", 0); //Will be redirected to / after authenticated.
+            addCookie(SESSION_START_URL_COOKIE, "/", 0, true); //Will be redirected to / after authenticated.
         return authSucceeded;
     }
 
@@ -1187,9 +1187,9 @@ EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char*
     ESPLOG(LogMax, "Authenticated for %s@%s", _userName, peer.str());
 
     VStringBuffer cookieStr("%u", sessionID);
-    addCookie(authReq.authBinding->querySessionIDCookieName(), cookieStr.str(), 0);
+    addCookie(authReq.authBinding->querySessionIDCookieName(), cookieStr.str(), 0, true);
     cookieStr.setf("%u", authReq.authBinding->getClientSessionTimeoutSeconds());
-    addCookie(SESSION_TIMEOUT_COOKIE, cookieStr.str(), 0);
+    addCookie(SESSION_TIMEOUT_COOKIE, cookieStr.str(), 0, false);
     clearCookie(SESSION_START_URL_COOKIE);
     m_response->redirect(*m_request, sessionStartURL);
 
@@ -1257,7 +1257,7 @@ void CEspHttpServer::resetSessionTimeout(EspAuthRequest& authReq, unsigned sessi
         sessionTree->setPropInt64(PropSessionTimeoutAt, timeoutAt);
 
         VStringBuffer sessionIDStr("%u", sessionID);
-        addCookie(authReq.authBinding->querySessionIDCookieName(), sessionIDStr.str(), 0);
+        addCookie(authReq.authBinding->querySessionIDCookieName(), sessionIDStr.str(), 0, true);
 
         if (getEspLogLevel()>=LogMax)
         {
@@ -1375,7 +1375,7 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
         }
         ///authReq.ctx->setAuthorized(true);
         VStringBuffer sessionIDStr("%u", sessionID);
-        addCookie(authReq.authBinding->querySessionIDCookieName(), sessionIDStr.str(), 0);
+        addCookie(authReq.authBinding->querySessionIDCookieName(), sessionIDStr.str(), 0, true);
         if (getLoginPage)
             m_response->redirect(*m_request, "/");
     }
@@ -1419,7 +1419,7 @@ EspAuthState CEspHttpServer::handleAuthFailed(bool sessionAuth, EspAuthRequest& 
     {
         ESPLOG(LogMin, "ESP password expired for %s. Asking update ...", authReq.ctx->queryUserId());
         if (sessionAuth) //For session auth, store the userid to cookie for the updatepasswordinput form.
-            addCookie(SESSION_ID_TEMP_COOKIE, authReq.ctx->queryUserId(), 0);
+            addCookie(SESSION_ID_TEMP_COOKIE, authReq.ctx->queryUserId(), 0, true);
         m_response->redirect(*m_request.get(), "/esp/updatepasswordinput");
         return authSucceeded;
     }
@@ -1456,7 +1456,7 @@ void CEspHttpServer::askUserLogin(EspAuthRequest& authReq)
         if (strieq(loginURL, sessionStartURL))
             sessionStartURL.set("/");
 
-        addCookie(SESSION_START_URL_COOKIE, sessionStartURL.str(), 0); //time out when browser is closed
+        addCookie(SESSION_START_URL_COOKIE, sessionStartURL.str(), 0, true); //time out when browser is closed
     }
     m_response->redirect(*m_request, authReq.authBinding->queryLoginURL());
 }
@@ -1537,7 +1537,7 @@ IRemoteConnection* CEspHttpServer::getSDSConnection(const char* xpath, unsigned 
     return globalLock.getClear();
 }
 
-void CEspHttpServer::addCookie(const char* cookieName, const char *cookieValue, int maxAgeSec)
+void CEspHttpServer::addCookie(const char* cookieName, const char *cookieValue, int maxAgeSec, bool httpOnly)
 {
     CEspCookie* cookie = new CEspCookie(cookieName, cookieValue);
     if (maxAgeSec > 0)
@@ -1558,7 +1558,8 @@ void CEspHttpServer::addCookie(const char* cookieName, const char *cookieValue, 
 
         cookie->setExpires(expiresTime);
     }
-    cookie->setHTTPOnly(true);
+    if (httpOnly)
+        cookie->setHTTPOnly(true);
     cookie->setSameSite("Lax");
     m_response->addCookie(cookie);
 }
