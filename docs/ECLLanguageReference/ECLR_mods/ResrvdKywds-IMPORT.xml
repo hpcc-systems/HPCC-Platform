@@ -99,35 +99,34 @@
   <emphasis>folder</emphasis>) available for use in the current ECL
   code.</para>
 
-  <para></para>
+  <para><?hard-pagebreak ?>Examples:</para>
 
-  <para>Examples:</para>
+  <programlisting>IMPORT $;                      //makes all definitions from the same folder available
 
-  <programlisting>IMPORT $;                               //makes all definitions from the same folder available
+IMPORT $, Std;                 //makes the standard library functions available, also
 
-IMPORT $, Std;                          //makes the standard library functions available, also
+IMPORT MyModule;               //makes available the definitions from MyModule folder
 
-IMPORT MyModule;                        //makes available the definitions from MyModule folder
+IMPORT $.^.MyOtherModule       //makes available the definitions from MyOtherModule folder,
+                               //located in the same container as the current folder
 
-IMPORT $.^.MyOtherModule                //makes available the definitions from MyOtherModule folder,
-                                        //which is located in the same container as the current folder
+IMPORT $.^.^.SomeOtherModule   //makes available the definitions from SomeOtherModule folder,
+                               //which is located in the grandparent folder of current folder
 
-IMPORT $.^.^.SomeOtherModule            //makes available the definitions from SomeOtherModule folder,
-                                        //which is located in the grandparent folder of current folder
-
-IMPORT SomeFolder.SomeFile;             //make the specific file available
+IMPORT SomeFolder.SomeFile;    //make the specific file available
 
 IMPORT SomeReallyLongFolderName AS SN;  //alias the long name as "SN"
 
-IMPORT ^ as root;                       //allows access to non-modules defined in the root of the repository
+IMPORT ^ as root;              //allows access to non-modules defined 
+                               //in the root of the repository
 
-IMPORT Def1,Def2 FROM Fred;             //makes Def1 and Def2 from Fred folder available, unqualified
+IMPORT Def1,Def2 FROM Fred;    //makes Def1 and Def2 from Fred folder available, unqualified
 
-IMPORT * FROM Fred;                     //makes everything from Fred available, unqualified
+IMPORT * FROM Fred;            //makes everything from Fred available, unqualified
 
-IMPORT Dev.Me.Project1;                 //makes the Dev/Me/Project1 folder available 
+IMPORT Dev.Me.Project1;        //makes the Dev/Me/Project1 folder available 
 
-IMPORT Python;                          //makes Python language code embeddable
+IMPORT Python;                 //makes Python language code embeddable
 </programlisting>
 
   <para>See Also: <link linkend="EXPORT">EXPORT</link>, <link

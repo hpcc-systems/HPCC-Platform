@@ -178,22 +178,29 @@
 
 //FORMAT options for WsECL form
   
-  Password :='' := STORED('Password',FORMAT(SEQUENCE(1),PASSWORD));//password entry box on form
+  Password :='' := STORED('Password',FORMAT(SEQUENCE(1),PASSWORD));
+                                      //password entry box on form
   Field1 := 1 : STORED('Field1',FORMAT(SEQUENCE(10)));
   Field2 := 2 : STORED('Field2',FORMAT(SEQUENCE(20)));
-  AddThem := TRUE :STORED ('AddThem',FORMAT(SEQUENCE(15))); // places field in between Field1 and Field2
+  AddThem := TRUE :STORED ('AddThem',FORMAT(SEQUENCE(15))); 
+                                      // places field in between Field1 and Field2
   HiddenValue := 12 :STORED ('HiddenValue',FORMAT(NOINPUT)); // not on form
   TextField1 :='Fill in description' :Stored('Description',
                                       FORMAT(FIELDWIDTH(25),FIELDHEIGHT(2),
-                                      SEQUENCE(5))); //Creates 25 character wide, 2 row high input box
+                                      SEQUENCE(5))); 
+                                       //Creates 25 char wide, 2 row high input box
 
 //SELECT options
 
-  UNSIGNED8 u8 := 0   : STORED('u8', FORMAT(fieldwidth(8), SEQUENCE(18), SELECT('one=1,two=2,three=3,*four=4')));
-  STRING ch1 := 'ban' : STORED('ch1', FORMAT(SELECT('apple=app,pear,*banana=ban,orange=or'))); //banana is default
-  STRING ch2 := ''    : STORED('ch2', FORMAT(SELECT(',apple=app,pear,banana=ban,orange=or'))); //starts empty, no specified default
-  STRING ch3 := ''    : STORED('ch3', FORMAT(SELECT('apple=app,pear,*,banana=ban,orange')));   //empty in middle, empty is default
-
+  UNSIGNED8 u8 := 0   : STORED('u8', FORMAT(fieldwidth(8), 
+                                     SEQUENCE(18), 
+                                     SELECT('one=1,two=2,three=3,*four=4')));
+  STRING ch1 := 'ban' : STORED('ch1', FORMAT(SELECT('apple=app,pear,*banana=ban'))); 
+                                                   //banana is default
+  STRING ch2 := ''    : STORED('ch2', FORMAT(SELECT(',apple=app,pear,banana=ban'))); 
+                                                   //starts empty, no specified default
+  STRING ch3 := ''    : STORED('ch3', FORMAT(SELECT('apple=app,pear,*,banana=ban')));
+                                                   //empty in middle, empty is default
 </programlisting>
 
   <para>See Also: <link linkend="STORED">STORED function</link>, <link

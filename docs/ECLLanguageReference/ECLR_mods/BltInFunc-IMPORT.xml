@@ -78,8 +78,9 @@ INTEGER addthree(INTEGER p) := IMPORT(Python, 'python_mod_name.addThree');
 
 //Java Example setting the classpath
 IMPORT java;
-STRING jcat(STRING a, STRING b) := IMPORT(java, 'JavaCat.cat:(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;'
-                                          : classpath('/opt/HPCCSystems/classes/'));
+STRING jcat(STRING a, STRING b) := 
+        IMPORT(java, 'JavaCat.cat:(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;'
+        : classpath('/opt/HPCCSystems/classes/'));
 jcat('I',' concatenate');</programlisting>
 
   <para>See Also: <link linkend="IMPORT">IMPORT</link>, <link
