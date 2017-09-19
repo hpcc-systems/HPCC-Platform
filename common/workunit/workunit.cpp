@@ -2763,7 +2763,7 @@ bool WuScopeFilter::includeScope(const char * scope) const
     return true;
 }
 
-const static ScopeFilter nullScopeFilter;
+const static ScopeFilter nullScopeFilter {};
 const ScopeFilter & WuScopeFilter::queryIterFilter() const
 {
     if (preFilterScope)

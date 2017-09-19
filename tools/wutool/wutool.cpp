@@ -1986,7 +1986,7 @@ protected:
 
     void testWuDetails(IConstWorkUnit * wu)
     {
-        const WuScopeFilter filter;
+        const WuScopeFilter filter{};
         Owned<IConstWUScopeIterator> iter = &wu->getScopeIterator(filter);
         DBGLOG("%s %s", wu->queryWuid(), wu->queryClusterName());
         AttributeScopeVisitor visitor;
