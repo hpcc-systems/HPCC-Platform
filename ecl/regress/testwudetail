@@ -19,12 +19,8 @@ function daliadmin {
     echo
 }
 
-function xdaliadmin {
-    daliadmin $1
-    donothing=x
-}
-
 daliadmincmd=/home/gavin/buildr/RelWithDebInfo/bin/daliadmin
+# daliadmincmd=/home/gavin/build/Debug/bin/daliadmin
 #The following should be TimeLocalExecute, but thor needs to start publishing it.
 timeattr=TimeMaxLocalExecute
 
@@ -32,89 +28,124 @@ searchsg='graph1:sg1'
 searchid='sg1'
 searchsg2='graph1:sg30'
 
+### The Tests #####################################
+# Check invalid filters
+daliadmin magic[true]
+daliadmin source[blah]
+daliadmin source[global,stats]      # lists not yet supported - possibly in the future
+daliadmin scope[rubbish:xyz]
+daliadmin scope[graph1:xyz]
+daliadmin id[xyz]
+daliadmin stype[graph1]
+daliadmin depth[]
+daliadmin depth[x]
+daliadmin depth[x..]
+daliadmin depth[..x]
+daliadmin depth[100..1]
+
+daliadmin where[]
+daliadmin where[rubbish]
+daliadmin where[NumStarts!=3]
+daliadmin where[numstarts=x]
+
+daliadmin matched[maybe]            # not caught
+daliadmin nested[allofit]
+daliadmin include[supergraph]
+daliadmin includetype[graph1]
+
+daliadmin properties[magic]
+daliadmin STAT[fish]
+daliadmin attribute[fish]
+
+daliadmin measure[quantum]
+daliadmin measure[]
+daliadmin version[]
+
+#Check various legal queries
 #Only the scope lists - filter by the different sources
-xdaliadmin prop[scope],source[all]
-xdaliadmin prop[scope],source[global]
-xdaliadmin prop[scope],source[stats]
-xdaliadmin prop[scope],source[graph]
-xdaliadmin prop[scope],source[exception]
+daliadmin props[scope],source[all]
+daliadmin props[scope],source[global]
+daliadmin props[scope],source[stats]
+daliadmin props[scope],source[graph]
+daliadmin props[scope],source[exception]
 
 #Filter which attributes are returned
 #All attributes
-xdaliadmin stat[all]
+daliadmin stat[all]
 #Only elapsed time attributes
-xdaliadmin stat[TimeElapsed]
+daliadmin stat[TimeElapsed]
 #Only hints
-xdaliadmin hint[all]
+daliadmin hint[all]
 #Only attributes
-xdaliadmin attr[all]
+daliadmin attr[all]
 
 # Provide a list of top level scopes/activities
-xdaliadmin depth[1],nested[0],source[global]
+daliadmin depth[1],source[global]
 
 
 # check extracting attributes at a fixed depth
-xdaliadmin depth[2],nested[0],source[global]
-xdaliadmin depth[2],nested[0],source[stats]
-xdaliadmin depth[2],nested[0],source[graph]
+daliadmin depth[2],source[global]
+daliadmin depth[2],source[stats]
+daliadmin depth[2],source[graph]
 
 # provide the values for [TimeLocalExecute] for all top level scopes { Top level heat map }
-xdaliadmin depth[1],nested[0],stat[$timeattr]
+daliadmin depth[1],stat[$timeattr]
 
 # Single root global scope (blank)
-xdaliadmin depth[0],nested[0],prop[scope]
+daliadmin depth[0],props[scope]
 
 # first level of scopes - both forms should be equivalent, but implemented differently
-xdaliadmin depth[1],nested[0],prop[scope]
-xdaliadmin depth[0],nested[1],matched[false],prop[scope]
+daliadmin depth[1],props[scope]
+daliadmin depth[0],nested[1],matched[false],props[scope]
 
 # second level of scopes - both forms should be equivalent, but implemented differently
-xdaliadmin depth[2],nested[0],prop[scope]
-xdaliadmin depth[1],nested[1],matched[false],prop[scope]
+daliadmin depth[2],props[scope]
+daliadmin depth[1],nested[1],matched[false],props[scope]
 
 # Provide all the children of element [n] in the global element [n] { Expand subgraphs within a graph }
-xdaliadmin scope[$searchsg],matched[false],nested[1],prop[scope]
+daliadmin scope[$searchsg],matched[false],nested[1],props[scope]
 
 # Provide the scope information for a particular activity { To map errors to graph locations }
-xdaliadmin id[$searchid],nested[0],prop[scope]
+daliadmin id[$searchid],props[scope]
 
 # Provide an entire heirarchy starting from a particular subgraph. { quick sub-graph view }
-xdaliadmin scope[$searchsg],prop[scope]
+daliadmin scope[$searchsg],nested[all],props[scope]
 
 # For all activities that read data, return the $timeattr. { A filtered heat map }
-xdaliadmin where[NumMinDiskReads],nested[0],stat[$timeattr],stat[NumMinDiskReads]
+daliadmin where[NumMinDiskReads],stat[$timeattr],stat[NumMinDiskReads]
 
 # Return children for 2 items - which nest inside each other
-xdaliadmin id[sg30],id[sg33],nested[1],matched[false],prop[scope]
+daliadmin id[sg30],id[sg33],nested[1],matched[false],props[scope]
 
 # For all activities in a particular subgraph return all time attributes { A multiple series bar chart }
-xdaliadmin id[sg1],include[activity],matched[false],measure[Time]
-xdaliadmin id[sg30],include[activity],measure[Time]
+daliadmin id[sg1],include[activity],matched[false],measure[Time],nested[all]
+daliadmin id[sg30],include[activity],measure[Time],nested[all]
 
 #Check matches within a range of depths.
-daliadmin include[activity],depth[5,7],nested[0],prop[scope]
+daliadmin include[activity],depth[5..7],props[scope]
 
 # All attributes for all activities within a subgraph (but not within a child subgraph) { a table of attributes for the current subgraph }
-xdaliadmin scope[$searchsg],nested[1],include[activity],matched[false],prop[all]
+daliadmin scope[$searchsg],nested[1],include[activity],matched[false],props[all]
 
 # For all activities return WhenFirstRow and TimeElapsed { gantt chart of activities within a subgraph }
-xdaliadmin scope[$searchsg],nested[1],include[activity],matched[false],stat[WhenMinFirstRow],stat[TimeMaxLocalExecute]
+daliadmin scope[$searchsg],nested[1],include[activity],matched[false],stat[WhenMinFirstRow],stat[TimeMaxLocalExecute]
 
 #MORE: Does the filter apply to the match criteria or the child values?  May also need having?
-xdaliadmin scope[$searchsg2],include[activity],matched[false],where[WhenMinFirstRow],measure[When],stat[WhenMinFirstRow],stat[TimeMaxLocalExecute]
+daliadmin scope[$searchsg2],include[activity],matched[false],where[WhenMinFirstRow],measure[When],stat[WhenMinFirstRow],stat[TimeMaxLocalExecute],nested[all]
 
 # Update all properties for a subgraph { e.g., for updating graph progress }.  version[1] implies no static values
-xdaliadmin scope[$searchsg],version[1],prop[all]
+daliadmin scope[$searchsg],version[1],props[all],nested[all]
 
 # Full dump of all statistics - to provide raw material for tables/client side analysis { stats tab, user xml output }
-xdaliadmin prop[stat],version[1]
+daliadmin props[stat],version[1],nested[all]
 
 # Find all activities which spent more than 100us processing.
-xdaliadmin stype[activity],nested[0],where[$timeattr],stat[$timeattr]
-xdaliadmin "stype[activity],nested[0],where[$timeattr>=1000000],stat[$timeattr]"
-xdaliadmin stype[activity],nested[0],where[$timeattr=1000000,],stat[$timeattr]
-xdaliadmin stype[activity],nested[0],where[$timeattr=1000000,2000000],stat[$timeattr]
-xdaliadmin stype[activity],nested[0],where[$timeattr=1000us,2ms],stat[$timeattr]
+daliadmin stype[activity],where[$timeattr],stat[$timeattr]
+daliadmin "stype[activity],where[$timeattr>=1000000],stat[$timeattr]"
+daliadmin stype[activity],where[$timeattr=1000000..],stat[$timeattr]
+daliadmin stype[activity],where[$timeattr=1000000..2000000],stat[$timeattr]
+daliadmin stype[activity],where[$timeattr=..2000000],stat[$timeattr]
+daliadmin stype[activity],where[$timeattr=1000us,2ms],stat[$timeattr]
 
 # Find all activities which spent more than 1 minute sorting { anomaly detection }
-xdaliadmin "stype[activity],nested[0],where[TimeSortElapsed>=60s],prop[scope]"
+daliadmin "stype[activity],where[TimeSortElapsed>=60s],props[scope]"

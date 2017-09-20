@@ -71,7 +71,7 @@ const char * queryWuAttributeName(WuAttr kind)
     return nullptr;
 }
 
-WuAttr queryWuAttribute(const char * kind)
+WuAttr queryWuAttribute(const char * kind, WuAttr dft)
 {
     //MORE: This needs to use a hash table
     for (unsigned i=WANone; i < WAMax; i++)
@@ -79,7 +79,7 @@ WuAttr queryWuAttribute(const char * kind)
         if (strieq(kind, attrInfo[i-WANone].name))
             return (WuAttr)i;
     }
-    return WANone;
+    return dft;
 }
 
 extern WORKUNIT_API const char * queryAttributeValue(IPropertyTree & src, WuAttr kind)

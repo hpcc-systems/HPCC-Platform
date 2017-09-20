@@ -23,6 +23,7 @@
 #include "jlog.hpp"
 #include "jregexp.hpp"
 #include "jfile.hpp"
+#include "jerror.hpp"
 #include <math.h>
 
 #ifdef _WIN32
@@ -69,10 +70,10 @@ static constexpr const char * const measureNames[] = { "", "all", "ns", "ts", "c
 static constexpr const char * const creatorTypeNames[]= { "", "all", "unknown", "hthor", "roxie", "roxie:s", "thor", "thor:m", "thor:s", "eclcc", "esp", "summary", NULL };
 static constexpr const char * const scopeTypeNames[] = { "", "all", "global", "graph", "subgraph", "activity", "allocator", "section", "compile", "dfu", "edge", "function", "workflow", "child", "unknown", nullptr };
 
-static unsigned matchString(const char * const * names, const char * search)
+static unsigned matchString(const char * const * names, const char * search, unsigned dft)
 {
     if (!search)
-        return 0;
+        return dft;
 
     if (streq(search, "*"))
         search = "all";
@@ -82,7 +83,7 @@ static unsigned matchString(const char * const * names, const char * search)
     {
         const char * next = names[i];
         if (!next)
-            return 0;
+            return dft;
         if (strieq(next, search))
             return i;
         i++;
@@ -487,6 +488,31 @@ stat_type readStatisticValue(const char * cur, const char * * end, StatisticMeas
     return value;
 }
 
+
+void validateScopeId(const char * idText)
+{
+    StatsScopeId id;
+    if (!id.setScopeText(idText))
+        throw makeStringExceptionV(JLIBERR_UnexpectedValue, "'%s' does not appear to be a valid scope id", idText);
+}
+
+
+void validateScope(const char * scopeText)
+{
+    StatsScopeId id;
+    const char * cur = scopeText;
+    for(;;)
+    {
+        if (!id.setScopeText(cur, &cur))
+            throw makeStringExceptionV(JLIBERR_UnexpectedValue, "'%s' does not appear to be a valid scope id", cur);
+        cur = strchr(cur, ':');
+        if (!cur)
+            return;
+        cur++;
+    }
+}
+
+
 //--------------------------------------------------------------------------------------------------------------------
 
 unsigned queryScopeDepth(const char * text)
@@ -576,28 +602,25 @@ const char * queryMeasureName(StatisticMeasure measure)
     return measureNames[measure];
 }
 
-StatisticMeasure queryMeasure(const char * measure)
+StatisticMeasure queryMeasure(const char * measure, StatisticMeasure dft)
 {
     //MORE: Use a hash table??
-    StatisticMeasure ret = (StatisticMeasure)matchString(measureNames, measure);
+    StatisticMeasure ret = (StatisticMeasure)matchString(measureNames, measure, SMeasureMax);
+    if (ret != SMeasureMax)
+        return ret;
+
     //Legacy support for an unusual statistic - pretend the sizes are in bytes instead of kb.
-    if ((ret == SMeasureNone) && measure)
+    if (streq(measure, "kb"))
+        return SMeasureSize;
+
+    for (unsigned i1=SMeasureAll+1; i1 < SMeasureMax; i1++)
     {
-        if (streq(measure, "kb"))
-        {
-            ret = SMeasureSize;
-        }
-        else
-        {
-            for (unsigned i1=SMeasureAll+1; i1 < SMeasureMax; i1++)
-            {
-                const char * prefix = queryMeasurePrefix((StatisticMeasure)i1);
-                if (strieq(measure, prefix))
-                    return (StatisticMeasure)i1;
-            }
-        }
+        const char * prefix = queryMeasurePrefix((StatisticMeasure)i1);
+        if (strieq(measure, prefix))
+            return (StatisticMeasure)i1;
     }
-    return ret;
+
+    return dft;
 }
 
 StatsMergeAction queryMergeMode(StatisticMeasure measure)
@@ -939,10 +962,10 @@ const char * queryTreeTag(StatisticKind kind)
 
 //--------------------------------------------------------------------------------------------------------------------
 
-StatisticKind queryStatisticKind(const char * search)
+StatisticKind queryStatisticKind(const char * search, StatisticKind dft)
 {
     if (!search)
-        return StKindNone;
+        return dft;
     if (streq(search, "*"))
         return StKindAll;
 
@@ -957,7 +980,7 @@ StatisticKind queryStatisticKind(const char * search)
                 return kind;
         }
     }
-    return StKindNone;
+    return dft;
 }
 
 //--------------------------------------------------------------------------------------------------------------------
@@ -967,10 +990,10 @@ const char * queryCreatorTypeName(StatisticCreatorType sct)
     return creatorTypeNames[sct];
 }
 
-StatisticCreatorType queryCreatorType(const char * sct)
+StatisticCreatorType queryCreatorType(const char * sct, StatisticCreatorType dft)
 {
     //MORE: Use a hash table??
-    return (StatisticCreatorType)matchString(creatorTypeNames, sct);
+    return (StatisticCreatorType)matchString(creatorTypeNames, sct, dft);
 }
 
 //--------------------------------------------------------------------------------------------------------------------
@@ -980,10 +1003,10 @@ const char * queryScopeTypeName(StatisticScopeType sst)
     return scopeTypeNames[sst];
 }
 
-extern jlib_decl StatisticScopeType queryScopeType(const char * sst)
+extern jlib_decl StatisticScopeType queryScopeType(const char * sst, StatisticScopeType dft)
 {
     //MORE: Use a hash table??
-    return (StatisticScopeType)matchString(scopeTypeNames, sst);
+    return (StatisticScopeType)matchString(scopeTypeNames, sst, dft);
 }
 
 //--------------------------------------------------------------------------------------------------------------------
@@ -1342,8 +1365,9 @@ void StatsScopeId::setId(StatisticScopeType _scopeType, unsigned _id, unsigned _
     extra = _extra;
 }
 
-bool StatsScopeId::setScopeText(const char * text, char * * next)
+bool StatsScopeId::setScopeText(const char * text, const char * * _next)
 {
+    char * * next = (char * *)_next;
     switch (*text)
     {
     case ActivityScopePrefix[0]:
@@ -1416,25 +1440,26 @@ bool StatsScopeId::setScopeText(const char * text, char * * next)
     return false;
 }
 
-void StatsScopeId::extractScopeText(const char * text, const char * * next)
+bool StatsScopeId::extractScopeText(const char * text, const char * * next)
 {
-    if (!setScopeText(text, (char * *)next))
+    if (setScopeText(text, next))
+        return true;
+
+    scopeType = SSTunknown;
+    const char * end = strchr(text, ':');
+    if (end)
     {
-        scopeType = SSTunknown;
-        const char * end = strchr(text, ':');
-        if (end)
-        {
-            name.set(text, end-text);
-            if (next)
-                *next = end;
-        }
-        else
-        {
-            name.set(text);
-            if (next)
-                *next = text + strlen(text);
-        }
+        name.set(text, end-text);
+        if (next)
+            *next = end;
     }
+    else
+    {
+        name.set(text);
+        if (next)
+            *next = text + strlen(text);
+    }
+    return false;
 }
 
 
@@ -2720,6 +2745,9 @@ void ScopeFilter::addId(const char * id)
 
 void ScopeFilter::setDepth(unsigned low, unsigned high)
 {
+    if (low > high)
+        throw makeStringExceptionV(0, "Depth parameters in wrong order %u..%u", low, high);
+
     minDepth = low;
     maxDepth = high;
 }
@@ -3013,8 +3041,8 @@ bool StatisticsFilter::recurseChildScopes(StatisticScopeType curScopeType, const
 
 void StatisticsFilter::set(const char * creatorTypeText, const char * scopeTypeText, const char * kindText)
 {
-    StatisticCreatorType creatorType = queryCreatorType(creatorTypeText);
-    StatisticScopeType scopeType = queryScopeType(scopeTypeText);
+    StatisticCreatorType creatorType = queryCreatorType(creatorTypeText, SCTnone);
+    StatisticScopeType scopeType = queryScopeType(scopeTypeText, SSTnone);
 
     if (creatorType != SCTnone)
         setCreatorType(creatorType);
@@ -3025,7 +3053,7 @@ void StatisticsFilter::set(const char * creatorTypeText, const char * scopeTypeT
 
 void StatisticsFilter::set(const char * _creatorTypeText, const char * _creator, const char * _scopeTypeText, const char * _scope, const char * _measureText, const char * _kindText)
 {
-    StatisticMeasure newMeasure = queryMeasure(_measureText);
+    StatisticMeasure newMeasure = queryMeasure(_measureText, SMeasureNone);
     if (newMeasure != SMeasureNone)
         setMeasure(newMeasure);
     set(_creatorTypeText, _scopeTypeText, _kindText);
@@ -3063,7 +3091,7 @@ void StatisticsFilter::addFilter(const char * filter)
     if (hasPrefix(filter, "creator[", false))
         setCreator(value);
     else if (hasPrefix(filter, "creatortype[", false))
-        setCreatorType(queryCreatorType(value));
+        setCreatorType(queryCreatorType(value, SCTall));
     else if (hasPrefix(filter, "depth[", false))
     {
         const char * comma = strchr(value, ',');
@@ -3075,11 +3103,11 @@ void StatisticsFilter::addFilter(const char * filter)
     else if (hasPrefix(filter, "kind[", false))
         setKind(value);
     else if (hasPrefix(filter, "measure[", false))
-        setMeasure(queryMeasure(value));
+        setMeasure(queryMeasure(value, SMeasureAll));
     else if (hasPrefix(filter, "scope[", false))
         setScope(value);
     else if (hasPrefix(filter, "scopetype[", false))
-        setScopeType(queryScopeType(value));
+        setScopeType(queryScopeType(value, SSTall));
     else if (hasPrefix(filter, "value[", false))
     {
         //value[exact|low..high] where low and high are optional
@@ -3206,7 +3234,7 @@ void StatisticsFilter::setKind(const char * _kind)
     }
 
     //Other wildcards not currently supported
-    kind = queryStatisticKind(_kind);
+    kind = queryStatisticKind(_kind, StKindAll);
 }
 
 
@@ -3302,20 +3330,20 @@ void verifyStatisticFunctions()
     {
         const char * prefix __attribute__((unused)) = queryMeasurePrefix((StatisticMeasure)i1);
         const char * name = queryMeasureName((StatisticMeasure)i1);
-        assertex(queryMeasure(name) == i1);
+        assertex(queryMeasure(name, SMeasureMax) == i1);
     }
 
     for (StatisticScopeType sst = SSTnone; sst < SSTmax; sst = (StatisticScopeType)(sst+1))
     {
         const char * name = queryScopeTypeName(sst);
-        assertex(queryScopeType(name) == sst);
+        assertex(queryScopeType(name, SSTmax) == sst);
 
     }
 
     for (StatisticCreatorType sct = SCTnone; sct < SCTmax; sct = (StatisticCreatorType)(sct+1))
     {
         const char * name = queryCreatorTypeName(sct);
-        assertex(queryCreatorType(name) == sct);
+        assertex(queryCreatorType(name, SCTmax) == sct);
     }
 
     for (unsigned i2=StKindAll+1; i2 < StMax; i2++)
