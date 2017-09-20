@@ -354,7 +354,7 @@ enum node_operator : unsigned short {
         no_critical,
         no_likely,
         no_unlikely,
-    no_unused32,
+        no_inline,
     no_unused33,
     no_unused34,
     no_unused35,
