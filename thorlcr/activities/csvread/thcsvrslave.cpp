@@ -392,21 +392,24 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities);
-        OwnedConstThorRow row = out->nextRow();
-        if (row)
+        if (out)
         {
-            rowcount_t c = getDataLinkCount();
-            if (0 == stopAfter || (c < stopAfter)) // NB: only slave limiter, global performed in chained choosen activity
+            OwnedConstThorRow row = out->nextRow();
+            if (row)
             {
-                if (c < limit) // NB: only slave limiter, global performed in chained limit activity
+                rowcount_t c = getDataLinkCount();
+                if (0 == stopAfter || (c < stopAfter)) // NB: only slave limiter, global performed in chained choosen activity
                 {
-                    dataLinkIncrement();
-                    return row.getClear();
+                    if (c < limit) // NB: only slave limiter, global performed in chained limit activity
+                    {
+                        dataLinkIncrement();
+                        return row.getClear();
+                    }
+                    helper->onLimitExceeded();
                 }
-                helper->onLimitExceeded();
             }
+            sendRemainingHeaderLines();
         }
-        sendRemainingHeaderLines();
         return NULL;
     }
     virtual void start()
