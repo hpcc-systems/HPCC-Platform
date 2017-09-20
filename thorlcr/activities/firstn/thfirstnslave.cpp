@@ -41,6 +41,11 @@ public:
         helper = (IHThorFirstNArg *)container.queryHelper();
         appendOutputLinked(this);
     }
+    void doStopInput()
+    {
+        stopInput(0);
+        abortSoon = true;
+    }
     virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
@@ -100,7 +105,7 @@ public:
                     OwnedConstThorRow row = inputStream->ungroupedNextRow();
                     if (!row)
                     {
-                        stopInput(0);
+                        doStopInput();
                         return NULL;
                     }
                     skipped++;
@@ -115,7 +120,7 @@ public:
                     return row.getClear();
                 }
             }
-            stopInput(0); // NB: really whatever is pulling, should stop asap.
+            doStopInput(); // NB: really whatever is pulling, should stop asap.
         }
         return NULL;
     }
@@ -160,7 +165,7 @@ public:
                         {
                             if (0 == skipped)
                             {
-                                stopInput(0);
+                                doStopInput();
                                 return NULL;
                             }
                             skipped = 0; // reset, skip group
@@ -179,7 +184,7 @@ public:
                     }
                     else if (0 == countThisGroup && 0==skipCount)
                     {
-                        stopInput(0);
+                        doStopInput();
                         return NULL;
                     }
                 }
@@ -333,7 +338,7 @@ public:
                     OwnedConstThorRow row = inputStream->ungroupedNextRow();
                     if (!row)
                     {
-                        stopInput(0);
+                        doStopInput();
                         return NULL;
                     }
                     skipped++;
@@ -356,7 +361,7 @@ public:
                     sendCount();
                 }
             }
-            stopInput(0); // NB: really whatever is pulling, should stop asap.
+            doStopInput(); // NB: really whatever is pulling, should stop asap.
         }
         return NULL;
     }
