@@ -5805,9 +5805,10 @@ void EspServInfo::write_esp_binding()
     EspStructInfo *sti=NULL;
     for (sti=structs;sti!=NULL;sti=sti->next)
     {
+        outf("C%s::getMapInfo(context.queryMapInfo());\n", sti->getName());
         outf("\tC%s::getXsdDefinition(context, request, content, added);\n", sti->getName());
     }
-    
+
     indentReset(1);
     outf(1, "bool fullservice = (!Utils::strcasecmp(service, \"%s\"));\n", name_);
     indentOuts("bool allMethods = (method==NULL || *method==0);\n");
