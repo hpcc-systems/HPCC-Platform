@@ -278,7 +278,9 @@ public:
             "   --snapshot,-sn=<label> Snapshot label to use from legacy ECL repository\n"
             "   --ecl-only             Send ECL query to HPCC as text rather than as a generated archive\n"
             "   --limit=<limit>        Sets the result limit for the query, defaults to 100\n"
-            "   -f<option>[=value]     Set an ECL option (equivalent to #option)\n"
+            "   -f<option>[=value]     Set an ECL language option (equivalent to #option)\n"
+            "   -f-<option>[=value]    Set an eclcc command line option (single '-')\n"
+            "   -f--<option>[=value]   Set an eclcc command line option (double '-')\n"
             "   -Dname=value           Override the definition of a global attribute 'name'\n"
             " eclcc options (everything following):\n"
         );
