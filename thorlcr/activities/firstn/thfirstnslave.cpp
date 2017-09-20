@@ -217,6 +217,22 @@ class CFirstNSlaveGlobal : public CFirstNSlaveBase, implements ILookAheadStopNot
     ThorDataLinkMetaInfo inputMeta;
     Owned<IEngineRowStream> originalInputStream;
 
+    void ensureSendCount()
+    {
+        if (isFastThrough(input)) // i.e. no readahead
+        {
+            if (RCUNBOUND == maxres)
+            {
+                maxres = getDataLinkCount();
+                sendCount();
+            }
+        }
+    }
+    void doStopInput()
+    {
+        ensureSendCount();
+        PARENT::doStopInput();
+    }
 public:
     CFirstNSlaveGlobal(CGraphElementBase *container) : CFirstNSlaveBase(container)
     {
@@ -248,6 +264,7 @@ public:
     }
     virtual void stop() override
     {
+        ensureSendCount();
         PARENT::stop();
         if (originalInputStream)
         {
@@ -351,14 +368,6 @@ public:
                 {
                     dataLinkIncrement();
                     return row.getClear();
-                }
-            }
-            if (isFastThrough(input)) // i.e. no readahead
-            {
-                if (RCUNBOUND == maxres)
-                {
-                    maxres = getDataLinkCount();
-                    sendCount();
                 }
             }
             doStopInput(); // NB: really whatever is pulling, should stop asap.
