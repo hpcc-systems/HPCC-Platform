@@ -272,7 +272,7 @@
               <para>If it is running stop the HPCC system (on every node),
               using a command such as this:</para>
 
-              <para><programlisting>sudo /sbin/service hpcc-init stop</programlisting></para>
+              <para><programlisting>sudo /etc/init.d/hpcc-init stop</programlisting></para>
 
               <variablelist>
                 <varlistentry>
