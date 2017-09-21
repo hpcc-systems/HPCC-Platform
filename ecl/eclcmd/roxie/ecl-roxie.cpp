@@ -190,7 +190,7 @@ public:
         Owned<IClientRoxieControlCmdRequest> req = client->createRoxieControlCmdRequest();
         req->setWait(optMsToWait);
         req->setProcessCluster(optProcess);
-        req->setCommand(attach ? CRoxieControlCmd_ATTACH : CRoxieControlCmd_DETACH);
+        req->setCommand(attach ? CRoxieControlCmdType_ATTACH : CRoxieControlCmdType_DETACH);
 
         Owned<IClientRoxieControlCmdResponse> resp = client->RoxieControlCmd(req);
         int ret = outputMultiExceptionsEx(resp->getExceptions());
@@ -299,11 +299,11 @@ public:
         req->setWait(optMsToWait);
         req->setProcessCluster(optProcess);
         if (!reload)
-            req->setCommand(CRoxieControlCmd_STATE);
+            req->setCommand(CRoxieControlCmdType_STATE);
         else if (optRetry)
-            req->setCommand(CRoxieControlCmd_RELOAD_RETRY);
+            req->setCommand(CRoxieControlCmdType_RELOAD_RETRY);
         else
-            req->setCommand(CRoxieControlCmd_RELOAD);
+            req->setCommand(CRoxieControlCmdType_RELOAD);
 
         Owned<IClientRoxieControlCmdResponse> resp = client->RoxieControlCmd(req);
         int ret = outputMultiExceptionsEx(resp->getExceptions());

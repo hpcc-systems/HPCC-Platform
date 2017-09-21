@@ -308,7 +308,7 @@ BrowseResourcesResponse
     ESParray<ESPstruct HPCCResourceRepository> HPCCResourceRepositories;
 };
 
-ESPenum RoxieControlCmd : string
+ESPenum RoxieControlCmdType : string
 {
     ATTACH("Attach"),
     DETACH("Detach"),
@@ -320,7 +320,7 @@ ESPenum RoxieControlCmd : string
 ESPrequest RoxieControlCmdRequest
 {
     string ProcessCluster;
-    ESPenum RoxieControlCmd Command("Attach");
+    ESPenum RoxieControlCmdType Command;
     int Wait;
 };
 
