@@ -40,37 +40,142 @@
 
 static unsigned testSize = 1000;
 
-void usage()
+void usage(const char * action = nullptr)
 {
-    printf("Usage: wutool action [WUID=xxx] [DALISERVER=ip] [CASSANDRASERVER=ip] [option=value]...\n\n"
-           "Actions supported are:\n"
-           "   list <workunits>    - List workunits\n"
-           "   dump <workunits>    - Dump xml for specified workunits\n"
-           "   delete <workunits>  - Delete workunits\n"
-           "   results <workunits> - Dump results from specified workunits\n"
-           "\n"
-           "   archive <workunits> - Archive to xml files [TO=<directory>] [DEL=1] [DELETERESULTS=1] [INCLUDEFILES=1]\n"
-           "   restore <filenames> - Restore from xml files [INCLUDEFILES=1]\n"
-            "\n"
-           "   orphans             - Delete orphaned information from store\n"
-           "   cleanup [days=NN]   - Delete workunits older than NN days\n"
-           "   validate [fix=1]    - Check contents of workunit repository for errors\n"
-           "   clear               - Delete entire workunit repository (requires entire=1 repository=1)\n"
-           "   initialize          - Initialize new workunit repository\n"
-           "\n"
-           "If CASSANDRASERVER is specified, you can specify some connection options including:\n"
-           "   CASSANDRA_KEYSPACE   - default is hpcc\n"
-           "   CASSANDRA_USER\n"
-           "   CASSANDRA_PASSWORD\n"
-           "   CASSANDRA_PARTITIONS - used if creating a new repository\n"
-           "   CASSANDRA_PREFIXSIZE - used if creating a new repository\n"
-           "   TRACELEVEL\n"
-           "<workunits> can be specified on commandline, or can be specified using a filter owner=XXXX. If omitted,\n"
-           "all workunits will be selected.\n"
-            );
+    if (action && strieq(action, "info"))
+    {
+        printf("Usage: wutool info <workunits> <filter>\n"
+               "The filter can include the following elements (those followed by * can be repeated):\n"
+               "  Which scopes are matched:\n"
+               "    scope[<scope-id>]*   - scope to match\n"
+               "    stype[<scope-type>]* - scope type to match\n"
+               "    id[<id>]*            - id of a scope to to match\n"
+               "      scope, stype and id cannot be specified in the same filter\n"
+               "\n"
+               "    depth[n | low..high] - range of depths to search for a match\n"
+               "    source[global|stats|graph|all]*\n"
+               "                         - which sources within the workunit to search\n"
+               "                           defaults to the optimal sources for the rest of the filter\n"
+               "    where[<statistickind> | <statistickind> (=|<|<=|>|>=) value | <statistickind>=low..high]\n"
+               "                         - filter by statistic existence or value range\n"
+               "\n"
+               "  Which scopes are include in the results:\n"
+               "    matched[true|false]  - are the matched scopes returned?\n"
+               "    nested[<depth>|all]  - what nesting of scopes within a matched scope are in the results\n"
+               "                           (defaults to '0' if matched[true] and 'all' if matched[false])\n"
+               "    includetype[<scope-type>]*\n"
+               "                         - which scope types should be included?\n"
+               "\n"
+               "  Which information about a scope is reported:\n"
+               "    properties[statistics|hints|attributes|scope|all]*\n"
+               "    statistic[<statistic-kind>|none|all]*\n"
+               "    attribute[<attribute-name>|none|all]*\n"
+               "    hint[<hint-name>]*\n"
+               "    property[<statistic-kind>|<attribute-name>|<hint-name>]*\n"
+               "                         - include property (category is deduced)\n"
+               "    measure[<measure>]   - all statistics with a particular measure\n"
+               "    version[<version>]   - minimum version to return\n"
+               );
+    }
+    else
+    {
+        printf("Usage: wutool action [DALISERVER=ip] [CASSANDRASERVER=ip] [option=value]...\n\n"
+               "Actions supported are:\n"
+               "   list <workunits>    - List workunits\n"
+               "   dump <workunits>    - Dump xml for specified workunits\n"
+               "   delete <workunits>  - Delete workunits\n"
+               "   results <workunits> - Dump results from specified workunits\n"
+               "   info <workunits> <filter>\n"
+               "                       - Display information from a workunit\n"
+               "\n"
+               "   archive <workunits> - Archive to xml files [TO=<directory>] [DEL=1] [DELETERESULTS=1] [INCLUDEFILES=1]\n"
+               "   restore <filenames> - Restore from xml files [INCLUDEFILES=1]\n"
+                "\n"
+               "   orphans             - Delete orphaned information from store\n"
+               "   cleanup [days=NN]   - Delete workunits older than NN days\n"
+               "   validate [fix=1]    - Check contents of workunit repository for errors\n"
+               "   clear               - Delete entire workunit repository (requires entire=1 repository=1)\n"
+               "   initialize          - Initialize new workunit repository\n"
+               "\n"
+               "   help <command>      - More help on a command\n"
+               "\n"
+               "If CASSANDRASERVER is specified, you can specify some connection options including:\n"
+               "   CASSANDRA_KEYSPACE   - default is hpcc\n"
+               "   CASSANDRA_USER\n"
+               "   CASSANDRA_PASSWORD\n"
+               "   CASSANDRA_PARTITIONS - used if creating a new repository\n"
+               "   CASSANDRA_PREFIXSIZE - used if creating a new repository\n"
+               "   TRACELEVEL\n"
+               "<workunits> can be specified on commandline, or can be specified using a filter owner=XXXX. If omitted,\n"
+               "all workunits will be selected.\n"
+                );
+    }
 }
 
-void process(IConstWorkUnit &w, IProperties *globals)
+/* Callback used to output the different scope properties as xml */
+class ScopeDumper : public IWuScopeVisitor
+{
+public:
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & cur) override
+    {
+        StringBuffer xml;
+        SCMStringBuffer curCreator;
+        SCMStringBuffer curDescription;
+        SCMStringBuffer curFormattedValue;
+
+        StatisticCreatorType curCreatorType = cur.getCreatorType();
+        StatisticScopeType curScopeType = cur.getScopeType();
+        StatisticMeasure curMeasure = cur.getMeasure();
+        unsigned __int64 count = cur.getCount();
+        unsigned __int64 max = cur.getMax();
+        unsigned __int64 ts = cur.getTimestamp();
+        const char * curScope = cur.queryScope();
+        cur.getCreator(curCreator);
+        cur.getDescription(curDescription, false);
+        cur.getFormattedValue(curFormattedValue);
+
+        if (kind != StKindNone)
+            xml.append(" kind='").append(queryStatisticName(kind)).append("'");
+        xml.append(" value='").append(value).append("'");
+        xml.append(" formatted='").append(curFormattedValue).append("'");
+        if (curMeasure != SMeasureNone)
+            xml.append(" unit='").append(queryMeasureName(curMeasure)).append("'");
+        if (curCreatorType != SCTnone)
+            xml.append(" ctype='").append(queryCreatorTypeName(curCreatorType)).append("'");
+        if (curCreator.length())
+            xml.append(" creator='").append(curCreator.str()).append("'");
+        if (count != 1)
+            xml.append(" count='").append(count).append("'");
+        if (max)
+            xml.append(" max='").append(value).append("'");
+        if (ts)
+        {
+            xml.append(" ts='");
+            formatStatistic(xml, ts, SMeasureTimestampUs);
+            xml.append("'");
+        }
+        if (curDescription.length())
+            xml.append(" desc='").append(curDescription.str()).append("'");
+        printf(" <attr%s/>\n", xml.str());
+    }
+    virtual void noteAttribute(WuAttr attr, const char * value)
+    {
+        StringBuffer xml;
+        xml.appendf("<attr kind='%s' value='", queryWuAttributeName(attr));
+        encodeXML(value, xml, ENCODE_NEWLINES, (unsigned)-1, true);
+        xml.append("'/>");
+        printf(" %s\n", xml.str());
+    }
+    virtual void noteHint(const char * kind, const char * value)
+    {
+        StringBuffer xml;
+        xml.appendf("<attr kind='hint:%s' value='%s'/>", kind, value);
+        printf(" %s\n", xml.str());
+    }
+};
+
+
+static void process(IConstWorkUnit &w, IProperties *globals, const StringArray & args)
 {
     const char *action = globals->queryProp("#action");
     if (!action || stricmp(action, "list")==0)
@@ -119,10 +224,47 @@ void process(IConstWorkUnit &w, IProperties *globals)
         else
             printf("archive of %s failed\n", wuid.str());
     }
+    else if (stricmp(action, "info")==0)
+    {
+        ScopeDumper dumper;
+        WuScopeFilter filter(args.item(0));
+
+        printf("<Workunit wuid=\"%s\">\n", w.queryWuid());
+        Owned<IConstWUScopeIterator> iter = &w.getScopeIterator(filter);
+        ForEach(*iter)
+        {
+            if (!filter.onlyIncludeScopes())
+            {
+                printf("<scope scope='%s' type='%s'>\n", iter->queryScope(), queryScopeTypeName(iter->getScopeType()));
+                iter->playProperties(PTall, dumper);
+                printf("</scope>\n");
+            }
+            else
+                printf("<scope scope='%s' type='%s'/>\n", iter->queryScope(), queryScopeTypeName(iter->getScopeType()));
+        }
+
+        printf("</Workunit>\n");
+    }
+    else
+        throwUnexpected();
 }
 
 
 Owned<IProperties> globals;
+
+bool looksLikeWuid(const char * arg)
+{
+    //Looks like a filename
+    if (strchr(arg,'.') || strchr(arg,PATHSEPCHAR))
+        return false;
+
+    if (arg[0]!='W' && arg[0]!='w')
+        return false;
+
+    if (isdigit(arg[1]) || (arg[1] == '*'))
+        return true;
+    return false;
+}
 
 int main(int argc, const char *argv[])
 {
@@ -132,19 +274,17 @@ int main(int argc, const char *argv[])
     globals.setown(createProperties("wutool.ini", true));
     const char *action = NULL;
     StringArray wuids;
-    StringArray files;
+    StringArray args;
     for (int i = 1; i < argc; i++)
     {
-        if (strchr(argv[i],'='))
-            globals->loadProp(argv[i]);
-        else if (strchr(argv[i],'.') || strchr(argv[i],PATHSEPCHAR))
-            files.append(argv[i]);
-        else if (argv[i][0]=='W' || argv[i][0]=='w')
-            wuids.append(argv[i]);
+        const char * arg = argv[i];
+        if (strchr(arg,'=') && !strchr(arg, '['))
+            globals->loadProp(arg);
+        else if (looksLikeWuid(arg))
+            wuids.append(arg);
         else if (action)
         {
-            usage();
-            _exit(4);
+            args.append(arg);
         }
         else
         {
@@ -154,7 +294,15 @@ int main(int argc, const char *argv[])
     }
     if (!action)
     {
-        usage();
+        usage(nullptr);
+        _exit(4);
+    }
+    if (strieq(action, "help"))
+    {
+        if (args.empty())
+            usage(nullptr);
+        else
+            usage(args.item(0));
         _exit(4);
     }
     try
@@ -393,15 +541,15 @@ int main(int argc, const char *argv[])
                 usage();
                 exit(4);
             }
-            if (!files.length())
+            if (!args.length())
             {
                 printf("One or more workunit files must be specified\n");
                 exit(4);
             }
-            ForEachItemIn(idx, files)
+            ForEachItemIn(idx, args)
             {
                 StringBuffer base, wuid, ext;
-                splitFilename(files.item(idx), &base, &base, &wuid, &ext, true);
+                splitFilename(args.item(idx), &base, &base, &wuid, &ext, true);
                 if (streq(ext, ".xml"))
                 {
                     if (base.length()==0)
@@ -412,21 +560,46 @@ int main(int argc, const char *argv[])
                         printf("failed to restore %s\n", wuid.str());
                 }
                 else
-                    printf("Ignoring file %s - extension is not '.xml'\n", files.item(idx));
+                    printf("Ignoring file %s - extension is not '.xml'\n", args.item(idx));
             }
         }
         else if (strieq(action, "help"))
         {
             usage();
         }
-        else if (strieq(action, "list") || strieq(action, "dump") || strieq(action, "results") || strieq(action, "delete") || strieq(action, "archive"))
+        else if (strieq(action, "list") || strieq(action, "dump") || strieq(action, "results") || strieq(action, "delete") || strieq(action, "archive") || strieq(action, "info"))
         {
+            if (strieq(action, "info") && args.empty())
+                args.append("source[all],properties[all]");
+
             if (wuids.length())
             {
                 ForEachItemIn(idx, wuids)
                 {
-                    Owned<IConstWorkUnit> w = factory->openWorkUnit(wuids.item(idx));
-                    process(*w, globals);
+                    const char * wuid = wuids.item(idx);
+                    const char * star = strchr(wuid, '*');
+                    if (star)
+                    {
+                        WUSortField filters[2];
+                        MemoryBuffer filterbuf;
+                        filters[0] = WUSFwildwuid;
+                        filterbuf.append(wuid);
+                        filters[1] = WUSFterm;
+                        Owned<IConstWorkUnitIterator> iter = factory->getWorkUnitsSorted((WUSortField) (WUSFwuid), filters, filterbuf.bufferBase(), 0, INT_MAX, NULL, NULL);
+
+                        ForEach(*iter)
+                        {
+                            Owned<IConstWorkUnit> workunit = factory->openWorkUnit(iter->query().queryWuid());
+                            if (workunit)
+                                process(*workunit, globals, args);
+                        }
+                    }
+                    else
+                    {
+                        Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
+                        if (workunit)
+                            process(*workunit, globals, args);
+                    }
                 }
             }
             else
@@ -444,7 +617,7 @@ int main(int argc, const char *argv[])
                     Owned<IConstWorkUnit> w = factory->openWorkUnit(wi.queryWuid());
                     if (w)
                     {
-                        process(*w, globals);
+                        process(*w, globals, args);
                         ret = 0; // There was at least one match
                     }
                 }

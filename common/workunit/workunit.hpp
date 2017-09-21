@@ -1079,6 +1079,7 @@ public:
     ScopeCompare compareMatchScopes(const char * scope) const;
     const ScopeFilter & queryIterFilter() const;
     bool isOptimized() const { return optimized; }
+    bool onlyIncludeScopes() const { return (properties & ~PTscope) == 0; }
 
 protected:
     void addRequiredStat(const char * filter);
