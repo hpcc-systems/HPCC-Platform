@@ -49,10 +49,30 @@ A bundle can specify dependencies on zero or more other modules, using the Depen
 After the name of the bundle, a version or version range can be specified to indicate that a particular
 version of the bundle is required.
 
+Enabling a Self-Test in a Bundle
+=================================
+To enable automatic testing by the regression suite and the smoketest process, follow these steps:
+
+1. Create a top-level "ecl" folder in the bundle.
+2. Add one or more ECL attributes to execute
+3. Create a top level "key" folder.
+4. Add ECL file(s) to the ecl folder and corresponding XML files to the key folder. Each XML file should contain the expected result of the corresponding ECL file's output.
+
+For example, if the "ecl" folder has MyTest1.ecl and MyTest2.ecl attribute definitions, the "key" folder should have MyTest1.xml and MyTest2.xml files.
+The XML files contain the result dataset(s) from running the same named attribute.
+The test is declared successful if the contents of the XML file exactly match the contents of the workunit output(s).
+
+**To generate a key file, use this command:**
+
+   ``ecl run --target <target> <path_to_your_ecl_file>``
+
+
+then remove the **<Result>** and **</Result>** tags and save as XML.
+
 Installing a bundle
 ===================
 To install a bundle to your development machine, use the ecl command line tool: 
 
-   ecl bundle install <bundlefile>.ecl 
+   ``ecl bundle install <bundlefile>.ecl`` 
 
 For complete details, see the Client Tools Manual, available in the download section of hpccsystems.com .
