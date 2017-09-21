@@ -113,6 +113,7 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
         ~CWriter() { stop(); }
         virtual void main()
         {
+            // NB: This thread will not get started if there was a failure during prepareInput()
             Semaphore writeBlockSem;
             while (!stopped && !parent.eofHit)
                 current = parent.writeahead(current, stopped, writeBlockSem, UINT_MAX);
@@ -177,6 +178,7 @@ public:
         stoppedOutputs = 0;
         eofHit = false;
         inputPrepared = false;
+        writeAheadException.clear();
         recsReady = 0;
         writeBlocked = false;
         stalledWriters.kill();
@@ -194,55 +196,63 @@ public:
         if (!inputPrepared)
         {
             inputPrepared = true;
-            assertex(((unsigned)-1) != connectedOutputCount);
-            activeOutputCount = connectedOutputCount;
-            PARENT::start();
-            ForEachItemIn(o, outputs)
+            try
             {
-                CSplitterOutput *output = (CSplitterOutput *)outputs.item(o);
-                if (output->isStopped())
-                    --activeOutputCount;
-            }
-            assertex(activeOutputCount); // must be >=1, as this output (outIdx) has invoked prepareInput
-            if (1 == activeOutputCount)
-                return false;
-            if (smartBuf)
-                smartBuf->reset();
-            else
-            {
-                if (spill)
-                {
-                    StringBuffer tempname;
-                    GetTempName(tempname, "nsplit", true); // use alt temp dir
-                    smartBuf.setown(createSharedSmartDiskBuffer(this, tempname.str(), numOutputs, queryRowInterfaces(input), &container.queryJob().queryIDiskUsage()));
-                    ActPrintLog("Using temp spill file: %s", tempname.str());
-                }
-                else
-                {
-                    ActPrintLog("Spill is 'balanced'");
-                    smartBuf.setown(createSharedSmartMemBuffer(this, numOutputs, queryRowInterfaces(input), NSPLITTER_SPILL_BUFFER_SIZE));
-                }
-                // mark any outputs already stopped
+                assertex(((unsigned)-1) != connectedOutputCount);
+                activeOutputCount = connectedOutputCount;
+                PARENT::start();
                 ForEachItemIn(o, outputs)
                 {
                     CSplitterOutput *output = (CSplitterOutput *)outputs.item(o);
-                    if (output->isStopped() || !connectedOutputSet->test(o))
-                        smartBuf->queryOutput(o)->stop();
+                    if (output->isStopped())
+                        --activeOutputCount;
                 }
+                assertex(activeOutputCount); // must be >=1, as this output (outIdx) has invoked prepareInput
+                if (1 == activeOutputCount)
+                    return false;
+                if (smartBuf)
+                    smartBuf->reset();
+                else
+                {
+                    if (spill)
+                    {
+                        StringBuffer tempname;
+                        GetTempName(tempname, "nsplit", true); // use alt temp dir
+                        smartBuf.setown(createSharedSmartDiskBuffer(this, tempname.str(), numOutputs, queryRowInterfaces(input), &container.queryJob().queryIDiskUsage()));
+                        ActPrintLog("Using temp spill file: %s", tempname.str());
+                    }
+                    else
+                    {
+                        ActPrintLog("Spill is 'balanced'");
+                        smartBuf.setown(createSharedSmartMemBuffer(this, numOutputs, queryRowInterfaces(input), NSPLITTER_SPILL_BUFFER_SIZE));
+                    }
+                    // mark any outputs already stopped
+                    ForEachItemIn(o, outputs)
+                    {
+                        CSplitterOutput *output = (CSplitterOutput *)outputs.item(o);
+                        if (output->isStopped() || !connectedOutputSet->test(o))
+                            smartBuf->queryOutput(o)->stop();
+                    }
+                }
+                if (!spill)
+                    writer.start(); // writer keeps writing ahead as much as possible, the readahead impl. will block when has too much
             }
-            if (!spill)
-                writer.start(); // writer keeps writing ahead as much as possible, the readahead impl. will block when has too much
+            catch (IException *e)
+            {
+                eofHit = true;
+                writeAheadException.setown(e);
+                return false;
+            }
         }
         return true;
     }
-    inline const void *nextRow(unsigned outIdx)
+    inline const void *nextRow(unsigned outIdx, rowcount_t current)
     {
         if (1 == activeOutputCount) // will be true, if only 1 input connected, or only 1 input was active (others stopped) when it started reading
             return inputStream->nextRow();
-        OwnedConstThorRow row = smartBuf->queryOutput(outIdx)->nextRow(); // will block until available
-        if (writeAheadException)
+        if (recsReady == current && writeAheadException.get())
             throw LINK(writeAheadException);
-        return row.getClear();
+        return smartBuf->queryOutput(outIdx)->nextRow(); // will block until available
     }
     rowcount_t writeahead(rowcount_t current, const bool &stopped, Semaphore &writeBlockSem, unsigned outIdx)
     {
@@ -472,7 +482,7 @@ const void *CSplitterOutput::nextRow()
         max = activity.writeahead(max, activity.queryAbortSoon(), writeBlockSem, outIdx);
         // NB: if this is sole input that actually started, writeahead will have returned RCMAX and calls to activity.nextRow will go directly to splitter input
     }
-    const void *row = activity.nextRow(outIdx); // pass ptr to max if need more
+    const void *row = activity.nextRow(outIdx, rec); // pass ptr to max if need more
     ++rec;
     if (row)
         dataLinkIncrement();
