@@ -159,8 +159,7 @@ size32_t RtlTypeInfoBase::buildString(ARowBuilder &builder, size32_t offset, con
 
 size32_t RtlTypeInfoBase::buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *val) const
 {
-    rtlFailUnexpected();
-    return 0;
+    return buildString(builder, offset, field, len, val);
 }
 
 size32_t RtlTypeInfoBase::buildInt(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, __int64 val) const
@@ -638,6 +637,32 @@ size32_t RtlStringTypeInfo::buildString(ARowBuilder &builder, size32_t offset, c
             rtlStrToEStr(length, (char *) dest, size, (char *) value);
         else
             rtlStrToStr(length, dest, size, value);
+        offset += length;
+    }
+    return offset;
+}
+
+size32_t RtlStringTypeInfo::buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t codepoints, const char *value) const
+{
+    if (!isFixedSize())
+    {
+        builder.ensureCapacity(offset+codepoints+sizeof(size32_t), field->name);
+        char *dest = (char *) builder.getSelf()+offset;
+        rtlWriteInt4(dest, codepoints);
+        if (isEbcdic())
+            UNIMPLEMENTED;
+        else
+            rtlUtf8ToStr(codepoints, dest+sizeof(size32_t), codepoints, value);
+        offset += codepoints+sizeof(size32_t);
+    }
+    else
+    {
+        builder.ensureCapacity(offset+length, field->name);
+        char *dest = (char *) builder.getSelf()+offset;
+        if (isEbcdic())
+            UNIMPLEMENTED;
+        else
+            rtlUtf8ToStr(length, dest, codepoints, value);
         offset += length;
     }
     return offset;

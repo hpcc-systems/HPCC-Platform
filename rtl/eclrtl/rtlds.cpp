@@ -1836,3 +1836,24 @@ bool RtlSimpleIterator::next()
     return (cur != NULL);
 }
 
+////
+
+byte * MemoryBufferBuilder::ensureCapacity(size32_t required, const char * fieldName)
+{
+    if (required > reserved)
+    {
+        void * next = buffer.reserve(required-reserved);
+        self = (byte *)next - reserved;
+        reserved = required;
+    }
+    return self;
+}
+
+void MemoryBufferBuilder::finishRow(size32_t length)
+{
+    assertex(length <= reserved);
+    size32_t newLength = (buffer.length() - reserved) + length;
+    buffer.setLength(newLength);
+    self = NULL;
+    reserved = 0;
+}

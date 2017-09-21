@@ -473,6 +473,25 @@ public:
      * <p>
      * Do not call more than once.
      *
+     * @param  _jsonTree JSON property tree to be deserialized, as created by CRtlFieldTypeSerializer
+     * @return Deserialized type object
+     */
+    virtual const RtlTypeInfo *deserialize(IPropertyTree &jsonTree) override
+    {
+        assertex(!base);
+        base = deserializeType(&jsonTree, &jsonTree);
+        return base;
+    }
+
+    /**
+     * Obtain the deserialized type information
+     * <p>
+     * Note that the RtlTypeInfo objects are not link-counted, so the lifetime of these objects
+     * is determined by the lifetime of the deserializer. They will be released once the deserializer
+     * that created them is deleted.
+     * <p>
+     * Do not call more than once.
+     *
      * @param  _json JSON text to be deserialized, as created by CRtlFieldTypeSerializer
      * @return Deserialized type object
      */
@@ -759,7 +778,7 @@ StringBuffer &describeFlags(StringBuffer &out, FieldMatchType flags)
 inline constexpr FieldMatchType operator|(FieldMatchType a, FieldMatchType b) { return (FieldMatchType)((int)a | (int)b); }
 inline FieldMatchType &operator|=(FieldMatchType &a, FieldMatchType b) { return (FieldMatchType &) ((int &)a |= (int)b); }
 
-class GeneralRecordTranslator
+class GeneralRecordTranslator : public CInterfaceOf<IDynamicTransform>
 {
 public:
     GeneralRecordTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo)
@@ -772,7 +791,24 @@ public:
     {
         delete [] matchInfo;
     }
-    void describe(unsigned indent = 0) const
+    virtual void describe() const override
+    {
+        doDescribe(0);
+    }
+    virtual size32_t translate(ARowBuilder &builder, const byte *sourceRec) const override
+    {
+        return doTranslate(builder, 0, sourceRec);
+    }
+    virtual bool canTranslate() const override
+    {
+        return (matchFlags & match_fail) == 0;
+    }
+    virtual bool needsTranslate() const override
+    {
+        return (matchFlags & ~match_link) != 0;
+    }
+private:
+    void doDescribe(unsigned indent) const
     {
         for (unsigned idx = 0; idx <  destRecInfo.getNumFields(); idx++)
         {
@@ -785,7 +821,7 @@ public:
                 StringBuffer matchStr;
                 DBGLOG("%*sMatch (%s) to field %d for field %s", indent, "", describeFlags(matchStr, match.matchType).str(), match.matchIdx, source);
                 if (match.subTrans)
-                    match.subTrans->describe(indent+2);
+                    match.subTrans->doDescribe(indent+2);
             }
         }
         if (!canTranslate())
@@ -798,7 +834,7 @@ public:
         else
             DBGLOG("%*sTranslation is not necessary", indent, "");
     }
-    size32_t translate(ARowBuilder &builder, size32_t offset, const byte *sourceRec) const
+    size32_t doTranslate(ARowBuilder &builder, size32_t offset, const byte *sourceRec) const
     {
         unsigned numOffsets = sourceRecInfo.getNumVarFields() + 1;
         size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
@@ -881,7 +917,7 @@ public:
                 }
                 case match_recurse:
                     if (type->getType()==type_record)
-                        offset = match.subTrans->translate(builder, offset, source);
+                        offset = match.subTrans->doTranslate(builder, offset, source);
                     else if (type->isLinkCounted())
                     {
                         // a 32-bit record count, and a pointer to an array of record pointers
@@ -901,7 +937,7 @@ public:
                             for (size32_t childRow = 0; childRow < childCount; childRow++)
                             {
                                 RtlDynamicRowBuilder childBuilder(*childAllocator);
-                                size32_t childLen = match.subTrans->translate(childBuilder, 0, sourceRows[childRow]);
+                                size32_t childLen = match.subTrans->doTranslate(childBuilder, 0, sourceRows[childRow]);
                                 childRows = childAllocator->appendRowOwn(childRows, ++numRows, (void *) childBuilder.finalizeRowClear(childLen));
                             }
                         }
@@ -914,7 +950,7 @@ public:
                             while ((size_t)(source - initialSource) < childSize)
                             {
                                 RtlDynamicRowBuilder childBuilder(*childAllocator);
-                                size32_t childLen = match.subTrans->translate(childBuilder, 0, source);
+                                size32_t childLen = match.subTrans->doTranslate(childBuilder, 0, source);
                                 childRows = childAllocator->appendRowOwn(childRows, ++numRows, (void *) childBuilder.finalizeRowClear(childLen));
                                 source += sourceType->queryChildType()->size(source, nullptr); // MORE - shame to repeat a calculation that the translate above almost certainly just did
                             }
@@ -939,7 +975,7 @@ public:
                             const byte ** sourceRows = *(const byte***) source;
                             for (size32_t childRow = 0; childRow < childCount; childRow++)
                             {
-                                offset = match.subTrans->translate(builder, offset, sourceRows[childRow]);
+                                offset = match.subTrans->doTranslate(builder, offset, sourceRows[childRow]);
                             }
                         }
                         else
@@ -950,7 +986,7 @@ public:
                             const byte *initialSource = source;
                             while ((size_t)(source - initialSource) < childSize)
                             {
-                                offset = match.subTrans->translate(builder, offset, source);
+                                offset = match.subTrans->doTranslate(builder, offset, source);
                                 source += sourceType->queryChildType()->size(source, nullptr); // MORE - shame to repeat a calculation that the translate above almost certainly just did
                             }
                         }
@@ -976,15 +1012,6 @@ public:
     {
         return matchFlags;
     }
-    bool canTranslate() const
-    {
-        return (matchFlags & match_fail) == 0;
-    }
-    bool needsTranslate() const
-    {
-        return (matchFlags & ~match_link) != 0;
-    }
-private:
     const RtlRecord &destRecInfo;
     const RtlRecord &sourceRecInfo;
     unsigned fixedDelta = 0;  // total size of all fixed-size source fields that are not matched
@@ -1256,13 +1283,18 @@ private:
     }
 };
 
+extern ECLRTL_API const IDynamicTransform *createRecordTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo)
+{
+    return new GeneralRecordTranslator(_destRecInfo, _srcRecInfo);
+}
+
 class TranslatedRowStream : public CInterfaceOf<IRowStream>
 {
 public:
     TranslatedRowStream(IRowStream *_inputStream, IEngineRowAllocator *_resultAllocator, const RtlRecord &outputRecord, const RtlRecord &inputRecord)
-    : inputStream(_inputStream), resultAllocator(_resultAllocator), translator(outputRecord, inputRecord)
+    : inputStream(_inputStream), resultAllocator(_resultAllocator), translator(new GeneralRecordTranslator(outputRecord, inputRecord))
     {
-        translator.describe();
+        translator->describe();
     }
     virtual const void *nextRow()
     {
@@ -1280,7 +1312,7 @@ public:
         else
             eogSeen = false;
         RtlDynamicRowBuilder rowBuilder(resultAllocator);
-        size32_t len = translator.translate(rowBuilder, 0, (const byte *) inRow);
+        size32_t len = translator->translate(rowBuilder, (const byte *) inRow);
         rtlReleaseRow(inRow);
         return rowBuilder.finalizeRowClear(len);
     }
@@ -1290,16 +1322,16 @@ public:
     }
     bool canTranslate() const
     {
-        return translator.canTranslate();
+        return translator->canTranslate();
     }
     bool needsTranslate() const
     {
-        return translator.needsTranslate();
+        return translator->needsTranslate();
     }
 protected:
     Linked<IRowStream> inputStream;
     Linked<IEngineRowAllocator> resultAllocator;
-    const GeneralRecordTranslator translator;
+    Owned<const IDynamicTransform> translator;
     unsigned numOffsets = 0;
     size_t * variableOffsets = nullptr;
     bool eof = false;

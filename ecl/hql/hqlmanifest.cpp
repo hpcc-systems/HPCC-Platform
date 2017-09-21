@@ -227,7 +227,6 @@ bool isManifestFileValid(const char *filename)
         ERRLOG("Error: MANIFEST file '%s' does not exist", filename);
         return false;
     }
-
     ResourceManifest manifest(filename);
     return manifest.checkResourceFilesExist();
 }

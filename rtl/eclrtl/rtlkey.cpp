@@ -203,7 +203,6 @@ public:
     virtual IKeySegmentMonitor *clone() const;
     virtual IKeySegmentMonitor *combine(const IKeySegmentMonitor *with) const { throwUnexpected(); }
     virtual KeySegmentMonitorSerializeType serializeType() const { return KSMST_WILDKEYSEGMENTMONITOR; }
-
 };
 
 class CSetKeySegmentMonitor : public CKeySegmentMonitor
@@ -827,14 +826,14 @@ protected:
 };
 
 // The base monitor provided to this segment monitor is constructed with offsets of 0
-// offset refers to where the field would be in an "expanded" version of the record (all variable size - and thus unkeyed - fields being assumed null)
 
 class CNewVarOffsetKeySegmentMonitor : public CIndirectKeySegmentMonitor
 {
 public:
     CNewVarOffsetKeySegmentMonitor(IKeySegmentMonitor * _base, unsigned _offset, unsigned _fieldIdx)
-    : CIndirectKeySegmentMonitor(_base, _offset), fieldIdx(_fieldIdx)
+    : CIndirectKeySegmentMonitor(_base, 0), fieldIdx(_fieldIdx)
     {
+        assert(_offset = 0);   // We no longer use partial size for offset
     }
 
     CNewVarOffsetKeySegmentMonitor(MemoryBuffer &mb)
