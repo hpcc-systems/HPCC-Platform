@@ -1645,6 +1645,200 @@ bool CWsWorkunitsEx::onWUQueryFiles(IEspContext &context, IEspWUQueryFilesReques
     return true;
 }
 
+void copyWorkunitForRecompile(IEspContext &context, IWorkUnitFactory *factory, const char *srcWuid, StringAttr &wuid, StringAttr &jobname)
+{
+    Owned<IConstWorkUnit> src(factory->openWorkUnit(srcWuid));
+    if (!src)
+        throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.", srcWuid);
+    WsWuInfo info(context, src);
+    StringBuffer archiveText;
+    info.getWorkunitArchiveQuery(archiveText); //archive required, fail otherwise
+    if (!isArchiveQuery(archiveText))
+        throw MakeStringException(ECLWATCH_RESOURCE_NOT_FOUND,"Cannot retrieve workunit ECL archive %s.", srcWuid);
+
+    SCMStringBuffer mainDefinition;
+    Owned <IConstWUQuery> query = src->getQuery();
+    if (query)
+        query->getQueryMainDefinition(mainDefinition);
+
+    NewWsWorkunit wu(factory, context);
+    wuid.set(wu->queryWuid());
+
+    wu->setAction(WUActionCompile);
+
+    SCMStringBuffer token;
+    wu->setSecurityToken(createToken(wuid.str(), context.queryUserId(), context.queryPassword(), token).str());
+
+    jobname.set(src->queryJobName());
+    if (jobname.length())
+        wu->setJobName(jobname);
+    wu.setQueryText(archiveText.str());
+    if (mainDefinition.length())
+        wu.setQueryMain(mainDefinition.str());
+    wu->setResultLimit(src->getResultLimit());
+    IStringIterator &names = src->getDebugValues();
+    ForEach(names)
+    {
+        SCMStringBuffer name, value;
+        names.str(name);
+        if (0==strncmp(name.str(), "eclcc", 5))
+            wu->setDebugValue(name.str(), src->getDebugValue(name.str(), value).str(), true);
+    }
+}
+
+
+bool CWsWorkunitsEx::onWURecreateQuery(IEspContext &context, IEspWURecreateQueryRequest &req, IEspWURecreateQueryResponse &resp)
+{
+    try
+    {
+        const char* srcTarget = req.getTarget();
+        const char* queryIdOrAlias = req.getQueryId();
+        if (!srcTarget || !*srcTarget)
+            throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Target not specified");
+        if (!queryIdOrAlias || !*queryIdOrAlias)
+            throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "QueryId not specified");
+
+        const char *target = req.getDestTarget();
+        if (isEmptyString(target))
+            target = srcTarget;
+
+        Owned<IPropertyTree> queryRegistry = getQueryRegistry(srcTarget, false);
+        Owned<IPropertyTree> srcQueryTree = resolveQueryAlias(queryRegistry, queryIdOrAlias);
+        if (!srcQueryTree)
+        {
+            DBGLOG("WURecreateQuery - No matching Query");
+            throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND,"No matching query for given id or alias %s.", queryIdOrAlias);
+        }
+
+        resp.setPriority(isEmptyString(req.getPriority()) ? srcQueryTree->queryProp("@priority") : req.getPriority());
+        resp.setComment(isEmptyString(req.getComment()) ? srcQueryTree->queryProp("@comment") : req.getComment());
+        resp.setMemoryLimit(isEmptyString(req.getMemoryLimit()) ? srcQueryTree->queryProp("@memoryLimit") : req.getMemoryLimit());
+        resp.setTimeLimit(req.getTimeLimit_isNull() ? srcQueryTree->getPropInt("@timeLimit") : req.getTimeLimit());
+        resp.setWarnTimeLimit(req.getWarnTimeLimit_isNull() ? srcQueryTree->getPropInt("@warnTimeLimit") : req.getWarnTimeLimit());
+
+        StringAttr wuid;
+        StringAttr jobname;
+
+        const char* srcQueryId = srcQueryTree->queryProp("@id");
+        const char* srcQueryName = srcQueryTree->queryProp("@name");
+        const char *srcWuid = srcQueryTree->queryProp("@wuid");
+
+        PROGLOG("WURecreateQuery: QuerySet %s, query %s, wuid %s", srcTarget, srcQueryId, srcWuid);
+
+        ensureWsWorkunitAccess(context, srcWuid, SecAccess_Write);
+
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+        copyWorkunitForRecompile(context, factory, srcWuid, wuid, jobname);
+        resp.setWuid(wuid);
+
+        WsWuHelpers::submitWsWorkunit(context, wuid.str(), target, NULL, 0, true, false, false, NULL, NULL, &req.getDebugValues());
+        waitForWorkUnitToCompile(wuid.str(), req.getWait());
+
+        Owned<IConstWorkUnit> cw(factory->openWorkUnit(wuid.str()));
+        if (!cw)
+            throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open recreated workunit %s.",wuid.str());
+
+        if (jobname.length())
+        {
+            StringBuffer name;
+            origValueChanged(jobname.str(), cw->queryJobName(), name, false);
+            if (name.length()) //non generated user specified name, so override #Workunit('name')
+            {
+                WorkunitUpdate wx(&cw->lock());
+                wx->setJobName(name.str());
+            }
+        }
+        PROGLOG("WURecreateQuery generated: %s", wuid.str());
+        AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid.str());
+
+        queryRegistry.clear();
+        srcQueryTree.clear();
+
+        if (req.getRepublish())
+        {
+            if (!req.getDontCopyFiles())
+            {
+                StringBuffer daliIP;
+                StringBuffer srcCluster;
+                StringBuffer srcPrefix;
+                splitDerivedDfsLocation(req.getRemoteDali(), srcCluster, daliIP, srcPrefix, req.getSourceProcess(),req.getSourceProcess(), NULL, NULL);
+
+                if (srcCluster.length())
+                {
+                    if (!isProcessCluster(daliIP, srcCluster))
+                        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Process cluster %s not found on %s DALI", srcCluster.str(), daliIP.length() ? daliIP.str() : "local");
+                }
+                unsigned updateFlags = 0;
+                if (req.getUpdateDfs())
+                    updateFlags |= (DALI_UPDATEF_SUPERFILES | DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM);
+                if (req.getUpdateCloneFrom())
+                    updateFlags |= DALI_UPDATEF_CLONE_FROM;
+                if (req.getUpdateSuperFiles())
+                    updateFlags |= DALI_UPDATEF_SUPERFILES;
+                if (req.getAppendCluster())
+                    updateFlags |= DALI_UPDATEF_APPEND_CLUSTER;
+
+                QueryFileCopier cpr(target);
+                cpr.init(context, req.getAllowForeignFiles());
+                cpr.remoteIP.set(daliIP);
+                cpr.remotePrefix.set(srcPrefix);
+                cpr.srcCluster.set(srcCluster);
+                cpr.queryname.set(srcQueryName);
+                cpr.copy(cw, updateFlags);
+
+                if (req.getIncludeFileErrors())
+                    cpr.gatherFileErrors(resp.getFileErrors());
+            }
+
+            StringBuffer queryId;
+            WorkunitUpdate wu(&cw->lock());
+            WUQueryActivationOptions activate = (WUQueryActivationOptions)req.getActivate();
+            addQueryToQuerySet(wu, target, srcQueryName, activate, queryId, context.queryUserId());
+            {
+                Owned<IPropertyTree> queryTree = getQueryById(target, queryId, false);
+                if (queryTree)
+                {
+                    queryTree->setProp("@priority", resp.getPriority());
+                    updateMemoryLimitSetting(queryTree, resp.getMemoryLimit());
+                    updateQuerySetting(resp.getTimeLimit_isNull(), queryTree, "@timeLimit", resp.getTimeLimit());
+                    updateQuerySetting(resp.getWarnTimeLimit_isNull(), queryTree, "@warnTimeLimit", resp.getWarnTimeLimit());
+                    updateQueryPriority(queryTree, resp.getPriority());
+                    queryTree->setProp("@comment", resp.getComment());
+                }
+            }
+
+            wu->commit();
+            wu.clear();
+
+            PROGLOG("WURecreateQuery published: %s as %s/%s", wuid.str(), target, queryId.str());
+
+            resp.setQuerySet(target);
+            resp.setQueryName(srcQueryName);
+            resp.setQueryId(queryId.str());
+
+            Owned <IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
+            bool reloadFailed = false;
+            if (0!=req.getWait() && !req.getNoReload())
+                reloadFailed = !reloadCluster(clusterInfo, (unsigned)req.getWait());
+
+            resp.setReloadFailed(reloadFailed);
+
+            StringBuffer errorMessage;
+            if (!reloadFailed && !req.getNoReload() && isQuerySuspended(queryId.str(), clusterInfo, (unsigned)req.getWait(), errorMessage))
+            {
+                resp.setSuspended(true);
+                resp.setErrorMessage(errorMessage);
+            }
+        }
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+
 bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRequest & req, IEspWUQueryDetailsResponse & resp)
 {
     const char* querySet = req.getQuerySet();

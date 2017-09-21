@@ -597,6 +597,62 @@ ESPresponse [exceptions_inline] WUResubmitResponse
     [min_ver("1.40")] ESParray<ESPstruct ResubmittedWU, WU> WUs;
 };
 
+ESPenum WUQueryActivationMode : int
+{
+    NoActivate(0, "Do not activate query"),
+    Activate(1, "Activate query"),
+    ActivateSuspendPrevious(2, "Activate query, suspend previous"),
+    ActivateDeletePrevious(3, "Activate query, delete previous")
+};
+
+ESPrequest [nil_remove] WURecreateQueryRequest
+{
+    string Target;
+    string QueryId;
+    ESParray<ESPstruct NamedValue> DebugValues;
+    string DestTarget;
+    bool Republish(0);
+    ESPEnum WUQueryActivationMode Activate;
+    bool NoReload(0);
+
+    string MemoryLimit;
+    nonNegativeInteger TimeLimit(0);
+    nonNegativeInteger WarnTimeLimit(0);
+    string Priority;
+    string Comment;
+
+    string RemoteDali;
+    bool DontCopyFiles(false);
+    string SourceProcess;
+    bool AllowForeignFiles(false);
+    bool UpdateDfs(false);
+    bool UpdateSuperFiles(false); //update content of superfiles if changed
+    bool UpdateCloneFrom(false); //explicity wan't to change where roxie will grab from
+    bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
+    bool IncludeFileErrors(false);
+
+    int Wait(-1);
+};
+
+ESPresponse [exceptions_inline, nil_remove] WURecreateQueryResponse
+{
+    string Wuid;
+    string QuerySet;
+    string QueryName;
+    string QueryId;
+
+    string MemoryLimit;
+    nonNegativeInteger TimeLimit;
+    nonNegativeInteger WarnTimeLimit;
+    string Priority;
+    string Comment;
+
+    bool ReloadFailed;
+    bool Suspended;
+    string ErrorMessage;
+    ESParray<ESPStruct LogicalFileError, File> FileErrors;
+};
+
 ESPenum WUExceptionSeverity : string
 {
     INFO("info"),
@@ -1221,14 +1277,6 @@ ESPresponse [exceptions_inline] WUCopyLogicalFilesResponse
 };
 
 
-ESPenum WUQueryActivationMode : int
-{
-    NoActivate(0, "Do not activate query"),
-    Activate(1, "Activate query"),
-    ActivateSuspendPrevious(2, "Activate query, suspend previous"),
-    ActivateDeletePrevious(3, "Activate query, delete previous")
-};
-
 ESPrequest [nil_remove] WUPublishWorkunitRequest
 {
     string Wuid;
@@ -1828,7 +1876,7 @@ ESPresponse [exceptions_inline, nil_remove] WUGetNumFileToCopyResponse
 
 ESPservice [
     auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
-    version("1.69"), default_client_version("1.69"),
+    version("1.70"), default_client_version("1.70"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
@@ -1864,6 +1912,7 @@ ESPservice [
 
     ESPmethod WUAbort(WUAbortRequest, WUAbortResponse);
     ESPmethod WUProtect(WUProtectRequest, WUProtectResponse);
+    ESPmethod [min_ver("1.70")] WURecreateQuery(WURecreateQueryRequest, WURecreateQueryResponse);
     ESPmethod WUResubmit(WUResubmitRequest, WUResubmitResponse); //????
     ESPmethod WURun(WURunRequest, WURunResponse);
 

@@ -434,7 +434,7 @@ bool CWsWorkunitsEx::onWUCreate(IEspContext &context, IEspWUCreateRequest &req, 
     return true;
 }
 
-static bool origValueChanged(const char *newValue, const char *origValue, StringBuffer &s, bool nillable=true)
+bool origValueChanged(const char *newValue, const char *origValue, StringBuffer &s, bool nillable)
 {
     if (!nillable && isEmpty(newValue))
         return false;
@@ -826,6 +826,7 @@ bool CWsWorkunitsEx::onWUResubmit(IEspContext &context, IEspWUResubmitRequest &r
     }
     return true;
 }
+
 
 bool CWsWorkunitsEx::onWUPushEvent(IEspContext &context, IEspWUPushEventRequest &req, IEspWUPushEventResponse &resp)
 {
