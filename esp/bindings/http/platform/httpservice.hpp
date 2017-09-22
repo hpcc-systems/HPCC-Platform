@@ -89,7 +89,7 @@ protected:
     void authOptionalGroups(EspAuthRequest& req);
     unsigned createHTTPSession(EspHttpBinding* authBinding, const char* userID, const char* loginURL);
     void timeoutESPSessions(EspHttpBinding* authBinding, IPropertyTree* espSessions);
-    void addCookie(const char* cookieName, const char *cookieValue, int maxAgeSec);
+    void addCookie(const char* cookieName, const char *cookieValue, int maxAgeSec, bool httpOnly);
     void clearCookie(const char* cookieName);
     unsigned readCookie(const char* cookieName);
     const char* readCookie(const char* cookieName, StringBuffer& cookieValue);
