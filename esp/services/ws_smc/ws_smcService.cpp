@@ -2125,15 +2125,15 @@ inline const char *controlCmdMessage(int cmd)
 {
     switch (cmd)
     {
-    case CRoxieControlCmd_ATTACH:
+    case CRoxieControlCmdType_ATTACH:
         return "<control:unlockDali/>";
-    case CRoxieControlCmd_DETACH:
+    case CRoxieControlCmdType_DETACH:
         return "<control:lockDali/>";
-    case CRoxieControlCmd_RELOAD:
+    case CRoxieControlCmdType_RELOAD:
         return "<control:reload/>";
-    case CRoxieControlCmd_RELOAD_RETRY:
+    case CRoxieControlCmdType_RELOAD_RETRY:
         return "<control:reload forceRetry='1' />";
-    case CRoxieControlCmd_STATE:
+    case CRoxieControlCmdType_STATE:
         return "<control:state/>";
     default:
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Unknown Roxie Control Command.");
