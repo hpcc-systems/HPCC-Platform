@@ -44,6 +44,7 @@
 #include "thorxmlwrite.hpp"
 #include "fvdatasource.hpp"
 #include "fvresultset.ipp"
+#include "ws_wudetails.hpp"
 
 #include "package.h"
 
@@ -4201,6 +4202,78 @@ bool CWsWorkunitsEx::onGVCAjaxGraph(IEspContext &context, IEspGVCAjaxGraphReques
             resp.setSubGraphId(req.getSubGraphId());
         if (version > 1.20)
             resp.setSubGraphOnly(req.getSubGraphOnly());
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWsWorkunitsEx::onWUDetails(IEspContext &context, IEspWUDetailsRequest &req, IEspWUDetailsResponse &resp)
+{
+    try
+    {
+        StringBuffer wuid = req.getWUID();
+        WsWuHelpers::checkAndTrimWorkunit("WUDetails", wuid);
+
+        PROGLOG("WUDetails: %s", wuid.str());
+
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
+        if(!cw)
+            throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid.str());
+        ensureWsWorkunitAccess(context, *cw, SecAccess_Read);
+
+        WUDetails wuDetails(cw, wuid);
+        wuDetails.processRequest(req, resp);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWsWorkunitsEx::onWUDetailsMeta(IEspContext &context, IEspWUDetailsMetaRequest &req, IEspWUDetailsMetaResponse &resp)
+{
+    try
+    {
+        StringArray statistics;
+        for (unsigned i=StatisticKind::StKindAll+1; i<StatisticKind::StMax;++i)
+        {
+            const char * s = queryStatisticName((StatisticKind)i);
+            if (s && *s)
+                statistics.append(s);
+        }
+        resp.setStatistics(statistics);
+
+        StringArray attributes;
+        for (unsigned i=WuAttr::WAAll+1; i<WuAttr::WAMax; ++i)
+        {
+            const char * s = queryWuAttributeName((WuAttr)i);
+            if (s && *s)
+                attributes.append(s);
+        }
+        resp.setAttributes(attributes);
+
+        StringArray scopeTypes;
+        for (unsigned i=StatisticScopeType::SSTall+1; i<StatisticScopeType::SSTmax; ++i)
+        {
+            const char * s = queryScopeTypeName((StatisticScopeType)i);
+            if (s && *s)
+                scopeTypes.append(s);
+        }
+        resp.setScopeTypes(scopeTypes);
+
+        StringArray measures;
+        for (unsigned i=StatisticMeasure::SMeasureAll+1; i<StatisticMeasure::SMeasureMax; ++i)
+        {
+            const char *s = queryMeasureName((StatisticMeasure)i);
+            if (s && *s)
+                measures.append(s);
+        }
+        resp.setMeasures(measures);
     }
     catch(IException* e)
     {
