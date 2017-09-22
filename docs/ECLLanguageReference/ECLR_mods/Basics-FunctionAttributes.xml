@@ -367,17 +367,19 @@ OUTPUT(doMany(2, applyValue4, applyValue2,multiValues));
 
         <tbody>
           <row>
-            <entry><emphasis>NAMED</emphasis></entry>
+            <entry><emphasis role="bold">NAMED</emphasis></entry>
 
             <entry>Optional. Required only when the <emphasis>AliasName
-            </emphasis>clashes with a reserved word.</entry>
+            </emphasis>clashes with a reserved word. </entry>
           </row>
 
           <row>
             <entry><emphasis>AliasName</emphasis></entry>
 
             <entry>The names of the parameter in the definition's function
-            definition.</entry>
+            definition. This must be a valid label (See <link
+            linkend="Attribute_Name_Rules">Definition Name
+            Rules</link>)</entry>
           </row>
 
           <row>
