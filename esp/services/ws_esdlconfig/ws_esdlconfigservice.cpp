@@ -1199,7 +1199,8 @@ bool CWsESDLConfigEx::onConfigureESDLBindingMethod(IEspContext &context, IEspCon
             ForEach(*iter)
             {
                 IPropertyTree &item = iter->query();
-                const char * methodName = item.queryProp("@name");
+                StringBuffer methodNameBuf(item.queryProp("@name"));
+                const char * methodName = methodNameBuf.str();
                 if (!existsESDLMethodDef(esdlDefinitionName.str(), esdlver, esdlServiceName, methodName))
                 {
                     StringBuffer msg;
