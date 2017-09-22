@@ -2565,7 +2565,7 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
         me->append(*MakeStringExceptionDirect(-1, "Unknown Exception"));
     }
     
-    response->handleExceptions(getXslProcessor(), me, "WsEcl", "", StringBuffer(getCFD()).append("./smc_xslt/exceptions.xslt").str());
+    response->handleExceptions(getXslProcessor(), me, "WsEcl", "", StringBuffer(getCFD()).append("./smc_xslt/exceptions.xslt").str(), false);
     return 0;
 }
 

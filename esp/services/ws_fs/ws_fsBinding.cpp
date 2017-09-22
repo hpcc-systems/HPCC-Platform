@@ -162,7 +162,7 @@ int CFileSpraySoapBindingEx::onGetInstantQuery(IEspContext &context, CHttpReques
 
                         Owned<IMultiException> me = MakeMultiException();
                         me->append(*E);
-                        response->handleExceptions(xslp, me, "FileSpray", method, StringBuffer(getCFD()).append("./smc_xslt/exceptions.xslt").str());
+                        response->handleExceptions(xslp, me, "FileSpray", method, StringBuffer(getCFD()).append("./smc_xslt/exceptions.xslt").str(), false);
                         return 0;
                     }
                 }
@@ -511,7 +511,7 @@ int CFileSpraySoapBindingEx::onFinishUpload(IEspContext &ctx, CHttpRequest* requ
         StringBuffer msg;
         WARNLOG("Exception(s) in EspHttpBinding::onStartUpload - %s", me->errorMessage(msg).append('\n').str());
         if ((ctx.getResponseFormat() == ESPSerializationXML) || (ctx.getResponseFormat() == ESPSerializationJSON))
-            response->handleExceptions(NULL, me, "FileSpray", "UploadFile", NULL);
+            response->handleExceptions(NULL, me, "FileSpray", "UploadFile", NULL, false);
         else
             return EspHttpBinding::onFinishUpload(ctx, request, response, service, method, fileNames, files, me);
     }

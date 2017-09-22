@@ -2446,3 +2446,9 @@ bool CHttpResponse::handleExceptions(IXslProcessor *xslp, IMultiException *me, c
     }
     return false;
 }
+
+void CHttpResponse::handleExceptions(IXslProcessor *xslp, IMultiException *me, const char *serv, const char *meth, const char *errorXslt, bool logHandleExceptions)
+{
+    if (handleExceptions(xslp, me, serv, meth, errorXslt) && logHandleExceptions)
+        PROGLOG("Exception(s) handled");
+}
