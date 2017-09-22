@@ -63,8 +63,6 @@ public:
         return queryRecordAccessor(true).getMinRecordSize();
     }
 
-    virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId) { throwUnexpected(); }
-
 protected:
     const RtlTypeInfo &typeInfo;
 };
