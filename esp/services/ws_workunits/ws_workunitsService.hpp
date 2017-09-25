@@ -230,6 +230,7 @@ public:
     bool onWURun(IEspContext &context, IEspWURunRequest &req, IEspWURunResponse &resp);
     bool onWUCreate(IEspContext &context, IEspWUCreateRequest &req, IEspWUCreateResponse &resp);
     bool onWUCreateAndUpdate(IEspContext &context, IEspWUUpdateRequest &req, IEspWUUpdateResponse &resp);
+    bool onWURecreateQuery(IEspContext &context, IEspWURecreateQueryRequest &req, IEspWURecreateQueryResponse &resp);
     bool onWUResubmit(IEspContext &context, IEspWUResubmitRequest &req, IEspWUResubmitResponse &resp);
     bool onWUPushEvent(IEspContext &context, IEspWUPushEventRequest &req, IEspWUPushEventResponse &resp);
 
@@ -402,5 +403,7 @@ public:
         return new CClusterQueryStateThread();
     }
 };
+
+bool origValueChanged(const char *newValue, const char *origValue, StringBuffer &s, bool nillable=true);
 
 #endif

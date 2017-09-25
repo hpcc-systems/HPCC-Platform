@@ -191,7 +191,9 @@ public:
     void getWorkunitThorLog(const char *processName, MemoryBuffer& buf);
     void getWorkunitThorSlaveLog(const char *groupName, const char *ipAddress, const char* logDate, const char* logDir, int slaveNum, MemoryBuffer& buf, bool forDownload);
     void getWorkunitResTxt(MemoryBuffer& buf);
-    void getWorkunitArchiveQuery(MemoryBuffer& buf);
+    void getWorkunitArchiveQuery(IStringVal& str);
+    void getWorkunitArchiveQuery(StringBuffer& str);
+    void getWorkunitArchiveQuery(MemoryBuffer& mb);
     void getWorkunitDll(StringBuffer &name, MemoryBuffer& buf);
     void getWorkunitXml(const char* plainText, MemoryBuffer& buf);
     void getWorkunitQueryShortText(MemoryBuffer& buf);

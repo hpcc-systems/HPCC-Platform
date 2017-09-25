@@ -2109,15 +2109,14 @@ IConstWUQuery* WsWuInfo::getEmbeddedQuery()
     return NULL;
 }
 
-void WsWuInfo::getWorkunitArchiveQuery(MemoryBuffer& buf)
+void WsWuInfo::getWorkunitArchiveQuery(IStringVal& str)
 {
     Owned<IConstWUQuery> query = cw->getQuery();
     if(!query)
         throw MakeStringException(ECLWATCH_QUERY_NOT_FOUND_FOR_WU,"No query for workunit %s.",wuid.str());
 
-    SCMStringBuffer queryText;
-    query->getQueryText(queryText);
-    if ((queryText.length() < 1) || !isArchiveQuery(queryText.str()))
+    query->getQueryText(str);
+    if ((str.length() < 1) || !isArchiveQuery(str.str()))
     {
         if (!query->hasArchive())
             throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Archive query not found for workunit %s.", wuid.str());
@@ -2126,10 +2125,22 @@ void WsWuInfo::getWorkunitArchiveQuery(MemoryBuffer& buf)
         if (!embeddedQuery)
             throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Embedded query not found for workunit %s.", wuid.str());
 
-        embeddedQuery->getQueryText(queryText);
-        if ((queryText.length() < 1) || !isArchiveQuery(queryText.str()))
+        embeddedQuery->getQueryText(str);
+        if ((str.length() < 1) || !isArchiveQuery(str.str()))
             throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Archive query not found for workunit %s.", wuid.str());
     }
+}
+
+void WsWuInfo::getWorkunitArchiveQuery(StringBuffer& buf)
+{
+    StringBufferAdaptor queryText(buf);
+    getWorkunitArchiveQuery(queryText);
+}
+
+void WsWuInfo::getWorkunitArchiveQuery(MemoryBuffer& buf)
+{
+    SCMStringBuffer queryText;
+    getWorkunitArchiveQuery(queryText);
     buf.append(queryText.length(), queryText.str());
 }
 

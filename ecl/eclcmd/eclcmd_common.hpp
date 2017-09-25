@@ -67,6 +67,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_PASSWORD_ENV "ECL_PASSWORD"
 
 #define ECLOPT_NORELOAD "--no-reload"
+#define ECLOPT_NOPUBLISH "--no-publish"
 #define ECLOPT_OVERWRITE "--overwrite"
 #define ECLOPT_REPLACE "--replace"
 #define ECLOPT_OVERWRITE_S "-O"

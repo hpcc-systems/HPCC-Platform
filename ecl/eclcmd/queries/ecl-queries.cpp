@@ -910,6 +910,273 @@ private:
     bool optNoReload;
 };
 
+class EclCmdQueriesRecreate : public EclCmdCommon
+{
+public:
+    EclCmdQueriesRecreate()
+    {
+    }
+    virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)
+    {
+        if (iter.done())
+            return EclCmdOptionNoMatch;
+
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (*arg!='-')
+            {
+                if (optTarget.isEmpty())
+                    optTarget.set(arg);
+                else if (optQueryId.isEmpty())
+                    optQueryId.set(arg);
+                else if (optDestTarget.isEmpty())
+                    optDestTarget.set(arg);
+                else
+                {
+                    fprintf(stderr, "\nunrecognized argument %s\n", arg);
+                    return EclCmdOptionNoMatch;
+                }
+                continue;
+            }
+            if (iter.matchOption(optDaliIP, ECLOPT_DALIIP))
+                continue;
+            if (iter.matchOption(optSourceProcess, ECLOPT_SOURCE_PROCESS))
+                continue;
+            if (iter.matchOption(optMsToWait, ECLOPT_WAIT))
+                continue;
+            if (iter.matchOption(optTimeLimit, ECLOPT_TIME_LIMIT))
+                continue;
+            if (iter.matchOption(optWarnTimeLimit, ECLOPT_WARN_TIME_LIMIT))
+                continue;
+            if (iter.matchOption(optMemoryLimit, ECLOPT_MEMORY_LIMIT))
+                continue;
+            if (iter.matchOption(optPriority, ECLOPT_PRIORITY))
+                continue;
+            if (iter.matchOption(optComment, ECLOPT_COMMENT))
+                continue;
+            if (iter.matchFlag(optDontCopyFiles, ECLOPT_DONT_COPY_FILES))
+                continue;
+            if (iter.matchFlag(optAllowForeign, ECLOPT_ALLOW_FOREIGN))
+                continue;
+            if (iter.matchFlag(optNoActivate, ECLOPT_NO_ACTIVATE))
+            {
+                activateSet=true;
+                continue;
+            }
+            if (iter.matchFlag(optNoReload, ECLOPT_NORELOAD))
+                continue;
+            if (iter.matchFlag(optNoPublish, ECLOPT_NOPUBLISH))
+                continue;
+            bool activate; //also supports "-A-"
+            if (iter.matchFlag(activate, ECLOPT_ACTIVATE)||iter.matchFlag(activate, ECLOPT_ACTIVATE_S))
+            {
+                activateSet=true;
+                optNoActivate=!activate;
+                continue;
+            }
+            if (iter.matchFlag(optSuspendPrevious, ECLOPT_SUSPEND_PREVIOUS)||iter.matchFlag(optSuspendPrevious, ECLOPT_SUSPEND_PREVIOUS_S))
+                continue;
+            if (iter.matchFlag(optDeletePrevious, ECLOPT_DELETE_PREVIOUS)||iter.matchFlag(optDeletePrevious, ECLOPT_DELETE_PREVIOUS_S))
+                continue;
+            if (iter.matchFlag(optUpdateDfs, ECLOPT_UPDATE_DFS))
+                continue;
+            if (iter.matchFlag(optUpdateSuperfiles, ECLOPT_UPDATE_SUPER_FILES))
+                continue;
+            if (iter.matchFlag(optUpdateCloneFrom, ECLOPT_UPDATE_CLONE_FROM))
+                continue;
+            if (iter.matchFlag(optDontAppendCluster, ECLOPT_DONT_APPEND_CLUSTER))
+                continue;
+            if (iter.matchOption(optResultLimit, ECLOPT_RESULT_LIMIT))
+                continue;
+            if (matchVariableOption(iter, 'f', debugValues))
+                continue;
+            eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
+            if (ind != EclCmdOptionMatch)
+                return ind;
+        }
+        return EclCmdOptionMatch;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (!EclCmdCommon::finalizeOptions(globals))
+            return false;
+        if (optTarget.isEmpty())
+        {
+            fputs("Target not specified.\n", stderr);
+            return false;
+        }
+        if (optQueryId.isEmpty())
+        {
+            fputs("Query not specified.\n", stderr);
+            return false;
+        }
+        if (!activateSet)
+        {
+            bool activate;
+            if (extractEclCmdOption(activate, globals, ECLOPT_ACTIVATE_ENV, ECLOPT_ACTIVATE_INI, true))
+                optNoActivate=!activate;
+        }
+        if (optNoActivate && (optSuspendPrevious || optDeletePrevious))
+        {
+            fputs("invalid --suspend-prev and --delete-prev require activation.\n", stderr);
+            return false;
+        }
+        if (!optSuspendPrevious && !optDeletePrevious)
+        {
+            extractEclCmdOption(optDeletePrevious, globals, ECLOPT_DELETE_PREVIOUS_ENV, ECLOPT_DELETE_PREVIOUS_INI, false);
+            if (!optDeletePrevious)
+                extractEclCmdOption(optSuspendPrevious, globals, ECLOPT_SUSPEND_PREVIOUS_ENV, ECLOPT_SUSPEND_PREVIOUS_INI, false);
+        }
+        if (optSuspendPrevious && optDeletePrevious)
+        {
+            fputs("invalid --suspend-prev and --delete-prev are mutually exclusive options.\n", stderr);
+            return false;
+        }
+        if (optMemoryLimit.length() && !isValidMemoryValue(optMemoryLimit))
+        {
+            fprintf(stderr, "invalid --memoryLimit value of %s.\n", optMemoryLimit.get());
+            return false;
+        }
+        if (optPriority.length() && !isValidPriorityValue(optPriority))
+        {
+            fprintf(stderr, "invalid --priority value of %s.\n", optPriority.get());
+            return false;
+        }
+        return true;
+    }
+    virtual int processCMD()
+    {
+        if (optVerbose)
+            fprintf(stdout, "\nRecreating %s/%s\n", optTarget.str(), optQueryId.str());
+
+        Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this); //upload_ disables maxRequestEntityLength
+        Owned<IClientWURecreateQueryRequest> req = client->createWURecreateQueryRequest();
+
+        if (optDeletePrevious)
+            req->setActivate(CWUQueryActivationMode_ActivateDeletePrevious);
+        else if (optSuspendPrevious)
+            req->setActivate(CWUQueryActivationMode_ActivateSuspendPrevious);
+        else
+            req->setActivate(optNoActivate ? CWUQueryActivationMode_NoActivate : CWUQueryActivationMode_Activate);
+
+        req->setTarget(optTarget);
+        req->setDestTarget(optDestTarget);
+        req->setQueryId(optQueryId);
+        req->setRemoteDali(optDaliIP);
+        req->setSourceProcess(optSourceProcess);
+        req->setWait(optMsToWait);
+        req->setNoReload(optNoReload);
+        req->setRepublish(!optNoPublish);
+        req->setDontCopyFiles(optDontCopyFiles);
+        req->setAllowForeignFiles(optAllowForeign);
+        req->setUpdateDfs(optUpdateDfs);
+        req->setUpdateSuperFiles(optUpdateSuperfiles);
+        req->setUpdateCloneFrom(optUpdateCloneFrom);
+        req->setAppendCluster(!optDontAppendCluster);
+        req->setIncludeFileErrors(true);
+        req->setDebugValues(debugValues);
+
+        if (optTimeLimit != (unsigned) -1)
+            req->setTimeLimit(optTimeLimit);
+        if (optWarnTimeLimit != (unsigned) -1)
+            req->setWarnTimeLimit(optWarnTimeLimit);
+        if (!optMemoryLimit.isEmpty())
+            req->setMemoryLimit(optMemoryLimit);
+        if (!optPriority.isEmpty())
+            req->setPriority(optPriority);
+        if (optComment.get()) //allow empty
+            req->setComment(optComment);
+
+        Owned<IClientWURecreateQueryResponse> resp = client->WURecreateQuery(req);
+        const char *wuid = resp->getWuid();
+        if (wuid && *wuid)
+            fprintf(stdout, "\nWorkunit: %s\n", wuid);
+        const char *id = resp->getQueryId();
+        if (id && *id)
+        {
+            const char *qs = resp->getQuerySet();
+            fprintf(stdout, "\nPublished: %s/%s\n", qs ? qs : "", resp->getQueryId());
+        }
+        if (resp->getReloadFailed())
+            fputs("\nAdded to Target, but request to reload queries on cluster failed\n", stderr);
+
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
+        if (outputQueryFileCopyErrors(resp->getFileErrors()))
+            ret = 1;
+
+        return ret;
+    }
+    virtual void usage()
+    {
+        fputs("\nUsage:\n"
+            "\n"
+            "The 'queries recreate' command recompiles a query into a new workunit and republishes\n"
+            "the new workunit.  This is usefull when upgrading to a new ECL compiler and you\n"
+            "want to recompile a query with the exact same source.\n"
+            "\n"
+            "The ECL archive must be available within the workunit of the query.\n"
+            "\n"
+            "ecl queries recreate <target> <query> [options]\n\n"
+            "ecl queries recreate <target> <query> <destination-target> [options]\n\n"
+            "   <target>               the target the query you wish to recreate is in\n"
+            "   <query>                the query ID of the query you wish to recreate\n"
+            "   <destination-target>   the target you want to move the new query to\n"
+            "                          (if different from the source target\n"
+            " Options:\n"
+            "   -A, --activate         Activate query when published (default)\n"
+            "   --limit=<limit>        Sets the result limit for the query, defaults to 100\n"
+            "   -sp, --suspend-prev    Suspend previously active query\n"
+            "   -dp, --delete-prev     Delete previously active query\n"
+            "   -A-, --no-activate     Do not activate query when published\n"
+            "   --no-publish           Create a recompiled workunit, but do not publish it\n"
+            "   --no-reload            Do not request a reload of the (roxie) cluster\n"
+            "   --no-files             Do not copy DFS file information for referenced files\n"
+            "   --allow-foreign        Do not fail if foreign files are used in query (roxie)\n"
+            "   --daliip=<IP>          The IP of the DALI to be used to locate remote files\n"
+            "   --update-super-files   Update local DFS super-files if remote DALI has changed\n"
+            "   --update-clone-from    Update local clone from location if remote DALI has changed\n"
+            "   --dont-append-cluster  Only use to avoid locking issues due to adding cluster to file\n"
+            "   --source-process       Process cluster to copy files from\n"
+            "   --timeLimit=<ms>       Value to set for query timeLimit configuration\n"
+            "   --warnTimeLimit=<ms>   Value to set for query warnTimeLimit configuration\n"
+            "   --memoryLimit=<mem>    Value to set for query memoryLimit configuration\n"
+            "                          format <mem> as 500000B, 550K, 100M, 10G, 1T etc.\n"
+            "   --priority=<val>       set the priority for this query. Value can be LOW,\n"
+            "                          HIGH, SLA, NONE. NONE will clear current setting.\n"
+            "   --comment=<string>     Set the comment associated with this query\n"
+            "   --wait=<ms>            Max time to wait in milliseconds\n",
+            stdout);
+        EclCmdCommon::usage();
+    }
+private:
+    StringAttr optTarget;
+    StringAttr optDestTarget;
+    StringAttr optQueryId;
+    StringAttr optDaliIP;
+    StringAttr optSourceProcess;
+    StringAttr optMemoryLimit;
+    StringAttr optPriority;
+    StringAttr optComment;
+    IArrayOf<IEspNamedValue> debugValues;
+    unsigned optMsToWait = (unsigned) -1;
+    unsigned optTimeLimit = (unsigned) -1;
+    unsigned optWarnTimeLimit = (unsigned) -1;
+    unsigned optResultLimit = (unsigned) -1;
+    bool optNoActivate = false;
+    bool activateSet = false;
+    bool optNoReload = false;
+    bool optNoPublish = false;
+    bool optDontCopyFiles = false;
+    bool optSuspendPrevious = false;
+    bool optDeletePrevious = false;
+    bool optAllowForeign = false;
+    bool optUpdateDfs = false;
+    bool optUpdateSuperfiles = false;
+    bool optUpdateCloneFrom = false;
+    bool optDontAppendCluster = false; //Undesirable but here temporarily because DALI may have locking issues
+};
+
 IEclCommand *createEclQueriesCommand(const char *cmdname)
 {
     if (!cmdname || !*cmdname)
@@ -924,6 +1191,8 @@ IEclCommand *createEclQueriesCommand(const char *cmdname)
         return new EclCmdQueriesCopy();
     if (strieq(cmdname, "copy-set"))
         return new EclCmdQueriesCopyQueryset();
+    if (strieq(cmdname, "recreate"))
+        return new EclCmdQueriesRecreate();
     return NULL;
 }
 
@@ -947,6 +1216,7 @@ public:
             "      config       update query settings\n"
             "      copy         copy a query from one target cluster to another\n"
             "      copy-set     copy queries from one target cluster to another\n"
+            "      recreate     recompiles query into a new workunit\n"
         );
     }
 };
