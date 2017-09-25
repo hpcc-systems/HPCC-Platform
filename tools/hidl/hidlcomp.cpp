@@ -3130,7 +3130,7 @@ void EspMessageInfo::write_esp_ipp()
     outs("\tStringBuffer m_methodName;\n");
     outs("\tStringBuffer m_msgName;\n");
     
-    outs("\n\tlong m_reqId = 0;\n");
+    outs("\n\tlong soap_reqid = 0;\n");
     outs("\tMutex m_mutex;\n");
     outs("public:\n");
     outs("\tIMPLEMENT_IINTERFACE;\n");
@@ -3227,8 +3227,8 @@ void EspMessageInfo::write_esp_ipp()
 
     outs("\tvoid setMethod(const char * method){m_methodName.set(method);}\n");
     outs("\tconst char * getMethod(){return m_methodName.str();}\n\n");
-    outs("\tvoid setReqId(unsigned val){m_reqId=val;}\n");
-    outs("\tunsigned getReqId(){return m_reqId;}\n\n");
+    outs("\tvoid setReqId(unsigned val){soap_reqid=val;}\n");
+    outs("\tunsigned getReqId(){return soap_reqid;}\n\n");
     
     outs("\tvoid lock(){m_mutex.lock();}\n");
     outs("\tvoid unlock(){m_mutex.unlock();}\n\n");
@@ -6412,34 +6412,34 @@ void EspServInfo::write_esp_client_ipp()
     outf("class CClient%s : public CInterface,\n", name_);
     outf("\timplements IClient%s\n", name_);
     outs("{\nprotected:\n");
-    outs("\tStringBuffer m_proxy;\n");
-    outs("\tStringBuffer m_url;\n");
+    outs("\tStringBuffer soap_proxy;\n");
+    outs("\tStringBuffer soap_url;\n");
     //dom
     
-    outs("\tStringBuffer m_userid;\n");
-    outs("\tStringBuffer m_password;\n");
-    outs("\tStringBuffer m_realm;\n");
-    outs("\tStringBuffer m_action;\n");
-    outs("\tlong m_reqId = 0;\n");
+    outs("\tStringBuffer soap_userid;\n");
+    outs("\tStringBuffer soap_password;\n");
+    outs("\tStringBuffer soap_realm;\n");
+    outs("\tStringBuffer soap_action;\n");
+    outs("\tlong soap_reqid = 0;\n");
     outs("\tMapStringTo<SecAccessFlags> m_accessmap;\n");
 
     outs("\npublic:\n");
     outs("\tIMPLEMENT_IINTERFACE;\n\n");
 
     outf("\tCClient%s()\n\t{\n", name_);
-    outs("\t\tm_reqId=0;\n\t");
-    outf("\t\tm_action.append(\"%s\");\n\t", name_);
+    outs("\t\tsoap_reqid=0;\n\t");
+    outf("\t\tsoap_action.append(\"%s\");\n\t", name_);
     const char *ver = getMetaString("default_client_version", NULL);
     if (ver && *ver)
-        outf("\t\tm_action.append(\"?ver_=\").append(%s);\n\t", ver);
+        outf("\t\tsoap_action.append(\"?ver_=\").append(%s);\n\t", ver);
     outf("}\n\tvirtual ~CClient%s(){}\n", name_);
 
-    outs("\tvirtual void setProxyAddress(const char *address)\n\t{\n\t\tm_proxy.set(address);\n\t}\n");
-    outs("\tvirtual void addServiceUrl(const char *url)\n\t{\n\t\tm_url.set(url);\n\t}\n");
+    outs("\tvirtual void setProxyAddress(const char *address)\n\t{\n\t\tsoap_proxy.set(address);\n\t}\n");
+    outs("\tvirtual void addServiceUrl(const char *url)\n\t{\n\t\tsoap_url.set(url);\n\t}\n");
     outs("\tvirtual void removeServiceUrl(const char *url)\n\t{\n\t}\n");
     //domsetUsernameToken
-    outs("\tvirtual void setUsernameToken(const char *userid,const char *password,const char *realm)\n\t{\n\t\tm_userid.set(userid);\n\t\tm_password.set(password);\n\t\tm_realm.set(realm);\n\t}\n");
-    outs("\tvirtual void setSoapAction(const char *action)\n\t{\n\t\tm_action.set(action);\n\t}\n");
+    outs("\tvirtual void setUsernameToken(const char *userid,const char *password,const char *realm)\n\t{\n\t\t soap_userid.set(userid);\n\t\t soap_password.set(password);\n\t\t soap_realm.set(realm);\n\t}\n");
+    outs("\tvirtual void setAction(const char *action)\n\t{\n\t\tsoap_action.set(action);\n\t}\n");
     
     EspMethodInfo *mthi;
     for (mthi=methods;mthi!=NULL;mthi=mthi->next)
@@ -6480,8 +6480,8 @@ void EspServInfo::write_esp_client()
         outf("\n//------ method %s ---------\n", mthi->getName());
         outf("\nIClient%s * CClient%s::create%sRequest()\n", mthi->getReq(), name_, mthi->getName());
         outf("{\n\tC%s* request = new C%s(\"%s\");\n", mthi->getReq(), mthi->getReq(), name_);
-        outs("\trequest->setProxyAddress(m_proxy.str());\n");
-        outs("\trequest->setUrl(m_url.str());\n");
+        outs("\trequest->setProxyAddress(soap_proxy.str());\n");
+        outs("\trequest->setUrl(soap_url.str());\n");
         if (useMethodName)
             outf("\trequest->setMsgName(\"%s\");\n", mthi->getName());
         
@@ -6489,31 +6489,31 @@ void EspServInfo::write_esp_client()
         
         outf("\nIClient%s * CClient%s::%s(IClient%s *request)\n", mthi->getResp(), name_, mthi->getName(), mthi->getReq());
         outs("{\n");
-        outs("\tif(m_url.length()== 0){ throw MakeStringExceptionDirect(-1, \"url not set\"); }\n\n");
+        outs("\tif(soap_url.length()== 0){ throw MakeStringExceptionDirect(-1, \"url not set\"); }\n\n");
         outf("\tC%s* esprequest = static_cast<C%s*>(request);\n", mthi->getReq(), mthi->getReq());
         outf("\tC%s* espresponse = new C%s(\"%s\");\n\n", mthi->getResp(), mthi->getResp(), name_);
-        outs("\tespresponse->setReqId(m_reqId++);\n");
+        outs("\tespresponse->setReqId(soap_reqid++);\n");
         //dom
-        outs("\tesprequest->setUserId(m_userid.str());\n");
-        outs("\tesprequest->setPassword(m_password.str());\n");
-        outs("\tesprequest->setRealm(m_realm.str());\n");
-        outs("\tconst char *soapaction=(m_action.length()) ? m_action.str() : NULL;\n");
-        outs("\tesprequest->post(m_proxy.str(), m_url.str(), *espresponse, soapaction);\n");
+        outs("\tesprequest->soap_setUserId( soap_userid.str());\n");
+        outs("\tesprequest->soap_setPassword(soap_password.str());\n");
+        outs("\tesprequest->soap_setRealm(soap_realm.str());\n");
+        outs("\tconst char *soapaction=(soap_action.length()) ? soap_action.str() : NULL;\n");
+        outs("\tesprequest->post(soap_proxy.str(), soap_url.str(), *espresponse, soapaction);\n");
         outs("\treturn espresponse;\n");
         outs("}\n");
         
         outf("\nvoid CClient%s::async_%s(IClient%s *request, IClient%sEvents *events,IInterface* state)\n", name_, mthi->getName(), mthi->getReq(), name_);
         outs("{\n");
-        outs("\tif(m_url.length()==0){ throw MakeStringExceptionDirect(-1, \"url not set\"); }\n\n");
+        outs("\tif(soap_url.length()==0){ throw MakeStringExceptionDirect(-1, \"url not set\"); }\n\n");
         outf("\tC%s* esprequest = static_cast<C%s*>(request);\n", mthi->getReq(), mthi->getReq());
         outf("\tesprequest->setMethod(\"%s\");\n", mthi->getName());
-        outs("\tesprequest->setReqId(m_reqId++);\n");
+        outs("\tesprequest->setReqId(soap_reqid++);\n");
         outs("\tesprequest->setEventSink(events);\n");
         outs("\tesprequest->setState(state);\n");
 
-        outs("\tesprequest->setUserId(m_userid.str());\n");
-        outs("\tesprequest->setPassword(m_password.str());\n");
-        outs("\tesprequest->setRealm(m_realm.str());\n");
+        outs("\tesprequest->soap_setUserId( soap_userid.str());\n");
+        outs("\tesprequest->soap_setPassword( soap_password.str());\n");
+        outs("\tesprequest->soap_setRealm( soap_realm.str());\n");
 
         outs("#ifdef USE_CLIENT_THREAD\n");
         outs("\tesprequest->setThunkHandle(GetThunkingHandle());\n");
@@ -6735,7 +6735,7 @@ void EspServInfo::write_client_interface()
     outs("\tvirtual void addServiceUrl(const char *url)=0;\n");
     outs("\tvirtual void removeServiceUrl(const char *url)=0;\n");
     outs("\tvirtual void setUsernameToken(const char *userName,const char *passWord,const char *realm)=0;\n");
-    outs("\tvirtual void setSoapAction(const char *action)=0;\n");
+    outs("\tvirtual void setAction(const char *action)=0;\n");
     
     EspMethodInfo *mthi;
     for (mthi=methods;mthi!=NULL;mthi=mthi->next)
