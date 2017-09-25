@@ -982,12 +982,6 @@ interface IConstWUStatistic : extends IConstStatistic
     virtual const char * queryScope() const = 0;          // what scope is the statistic gathered over? e.g., workunit, wfid:n, graphn, graphn:m
     virtual StatisticScopeType getScopeType() const = 0;
     virtual unsigned __int64 getTimestamp() const = 0;  // time the statistic was created
-    virtual bool matches(const IStatisticsFilter * filter) const = 0; // This is an implementation detail, and shouldn't really be exported.
-};
-
-interface IConstWUStatisticIterator : extends IScmIterator
-{
-    virtual IConstWUStatistic & query() = 0;
 };
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -1223,8 +1217,6 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual IConstWUResultIterator & getTemporaries() const = 0;
     virtual bool getRunningGraph(IStringVal & graphName, WUGraphIDType & subId) const = 0;
     virtual IConstWUWebServicesInfo * getWebServicesInfo() const = 0;
-    virtual IConstWUStatisticIterator & getStatistics(const IStatisticsFilter * filter) const = 0; // filter must currently stay alive while the iterator does.
-    virtual IConstWUStatistic * getStatistic(const char * scope, StatisticKind kind) const = 0;
     virtual bool getStatistic(stat_type & value, const char * scope, StatisticKind kind) const = 0;
     virtual IConstWUScopeIterator & getScopeIterator(const WuScopeFilter & filter) const = 0; // filter must currently stay alive while the iterator does.
     virtual IConstWUResult * getVariableByName(const char * name) const = 0;

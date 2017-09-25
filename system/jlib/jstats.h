@@ -130,16 +130,6 @@ public:
     virtual IStatisticCollection * getResult() = 0;
 };
 
-//All filtering should go through this interface - so we can extend and allow AND/OR filters at a later date.
-interface IStatisticsFilter : public IInterface
-{
-public:
-    virtual bool matches(StatisticCreatorType curCreatorType, const char * curCreator, StatisticScopeType curScopeType, const char * curScope, StatisticMeasure curMeasure, StatisticKind curKind, unsigned __int64 value) const = 0;
-    virtual bool recurseChildScopes(StatisticScopeType curScopeType, const char * curScope) const = 0;
-    virtual const char * queryScope() const = 0;
-
-};
-
 class StatsScopeBlock
 {
 public:
@@ -319,7 +309,7 @@ protected:
 };
 
 
-class jlib_decl StatisticsFilter : public CInterfaceOf<IStatisticsFilter>
+class jlib_decl StatisticsFilter : public CInterface
 {
 public:
     StatisticsFilter();
@@ -329,9 +319,9 @@ public:
     StatisticsFilter(const char * _creatorTypeText, const char * _creator, const char * _scopeTypeText, const char * _scope, const char * _measureText, const char * _kindText);
     StatisticsFilter(StatisticCreatorType _creatorType, const char * _creator, StatisticScopeType _scopeType, const char * _scope, StatisticMeasure _measure, StatisticKind _kind);
 
-    virtual bool matches(StatisticCreatorType curCreatorType, const char * curCreator, StatisticScopeType curScopeType, const char * curScope, StatisticMeasure curMeasure, StatisticKind curKind, unsigned __int64 value) const override;
-    virtual bool recurseChildScopes(StatisticScopeType curScopeType, const char * curScope) const;
-    virtual const char * queryScope() const { return scopeFilter.queryValue(); }
+    bool matches(StatisticCreatorType curCreatorType, const char * curCreator, StatisticScopeType curScopeType, const char * curScope, StatisticMeasure curMeasure, StatisticKind curKind, unsigned __int64 value) const;
+    bool recurseChildScopes(StatisticScopeType curScopeType, const char * curScope) const;
+    const char * queryScope() const { return scopeFilter.queryValue(); }
 
     void set(const char * _creatorTypeText, const char * _scopeTypeText, const char * _kindText);
     void set(const char * _creatorTypeText, const char * _creator, const char * _scopeTypeText, const char * _scope, const char * _measureText, const char * _kindText);

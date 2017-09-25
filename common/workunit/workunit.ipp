@@ -62,7 +62,6 @@ public:
     virtual unsigned __int64 getMax() const override;
     virtual unsigned __int64 getTimestamp() const override;
 
-    virtual bool matches(const IStatisticsFilter * filter) const override;
 };
 
 //==========================================================================================
@@ -302,8 +301,6 @@ public:
     virtual const char *queryStateDesc() const;
     virtual IConstWUResult * getTemporaryByName(const char * name) const;
     virtual IConstWUResultIterator & getTemporaries() const;
-    virtual IConstWUStatisticIterator & getStatistics(const IStatisticsFilter * filter) const;
-    virtual IConstWUStatistic * getStatistic(const char * scope, StatisticKind kind) const;
     virtual IConstWUScopeIterator & getScopeIterator(const WuScopeFilter & filter) const override;
     virtual bool getStatistic(stat_type & value, const char * scope, StatisticKind kind) const override;
     virtual IConstWUWebServicesInfo * getWebServicesInfo() const;

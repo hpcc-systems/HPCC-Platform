@@ -430,10 +430,6 @@ public:
     {
         return timeStamp;
     }
-    virtual bool matches(const IStatisticsFilter * filter) const
-    {
-        return filter->matches(creatorType, creator, scopeType, scope, measure, kind, value);
-    }
 
 public:
     StringBuffer creator;
@@ -508,9 +504,6 @@ static int compareEdgeNode(IInterface * const *ll, IInterface * const *rr)
 
 /*
  * A class for implementing a scope iterator that walks through graph progress information
- * Very similar to CConstGraphProgressStatisticsIterator.
- * The code has been cloned rather than commoned up because CConstGraphProgressStatisticsIterator
- * will be deprecated and deleted once this is fully functional (or implemented in terms of this).
  */
 class CConstGraphProgressScopeIterator : public CInterfaceOf<IConstWUScopeIterator>
 {
@@ -861,7 +854,7 @@ protected:
     }
 
 private:
-    class ScopeStatisticsIterator : public CInterfaceOf<IConstWUStatisticIterator>, public IConstWUStatistic
+    class ScopeStatisticsIterator : public CInterfaceOf<IConstWUStatistic>
     {
         friend class CConstGraphProgressScopeIterator; // cleaner if this was removed + setScope() functions added.
     public:
@@ -873,14 +866,12 @@ private:
             numStats = collection->getNumStatistics();
         }
 
-        IMPLEMENT_IINTERFACE_USING(CInterfaceOf<IConstWUStatisticIterator>)
-
 // interface IConstWUStatisticIterator
-        virtual IConstWUStatistic & query() override
+        IConstWUStatistic & query()
         {
             return *this;
         }
-        virtual bool first() override
+        bool first()
         {
             curStatIndex = 0;
             if (curStatIndex >= numStats)
@@ -894,7 +885,7 @@ private:
  */
             return true;
         }
-        virtual bool next() override
+        bool next()
         {
             for (;;)
             {
@@ -906,7 +897,7 @@ private:
                 return true;
             }
         }
-        virtual bool isValid() override
+        bool isValid()
         {
             return curStatIndex < numStats;
         }
@@ -969,12 +960,6 @@ private:
         virtual unsigned __int64 getTimestamp() const override
         {
             return timeStamp;
-        }
-
-        //MORE: I'm not sure this function should be in this interface
-        virtual bool matches(const IStatisticsFilter * filter) const override
-        {
-            return filter->matches(SCTall, NULL, SSTall, NULL, queryMeasure(kind), kind, value);
         }
 
         void play(IWuScopeVisitor & visitor)
@@ -2050,283 +2035,6 @@ protected:
 
 //---------------------------------------------------------------------------------------------------------------------
 
-// The following code is deprecated and will be deleted once the ScopeIterator is fully functional
-
-
-class CConstGraphProgressStatisticsIterator : public CInterfaceOf<IConstWUStatisticIterator>
-{
-public:
-    CConstGraphProgressStatisticsIterator(const char * wuid, const IStatisticsFilter * _filter) : filter(_filter)
-    {
-        if (filter)
-            scopes.appendList(filter->queryScope(), ":");
-        const char * searchGraph = "*";
-        if (scopes.ordinality())
-            searchGraph = scopes.item(0);
-
-        rootPath.append("/GraphProgress/").append(wuid).append('/');
-        bool singleGraph = false;
-        if (!containsWildcard(searchGraph))
-        {
-            rootPath.append(searchGraph).append("/");
-            singleGraph = true;
-        }
-
-        //Don't lock the statistics while we iterate - any partial updates must not cause problems
-        if (daliClientActive())
-            conn.setown(querySDS().connect(rootPath.str(), myProcessSession(), RTM_NONE, SDS_LOCK_TIMEOUT));
-
-        if (conn && !singleGraph)
-            graphIter.setown(conn->queryRoot()->getElements("*"));
-
-        curStat.setown(new ExtractedStatistic);
-        //These are currently constant for all graph statistics instances
-        curStat->count = 1;
-        curStat->max = 0;
-        valid = false;
-    }
-
-    virtual IConstWUStatistic & query()
-    {
-        return *curStat;
-    }
-
-    virtual bool first()
-    {
-        valid = false;
-        if (!conn)
-            return false;
-
-        if (graphIter && !graphIter->first())
-            return false;
-        ensureUniqueStatistic();
-        if (!firstSubGraph())
-        {
-            if (!nextGraph())
-                return false;
-        }
-
-        valid = true;
-        return true;
-    }
-
-    virtual bool next()
-    {
-        ensureUniqueStatistic();
-        if (!nextStatistic())
-        {
-            if (!nextSubGraph())
-            {
-                if (!nextGraph())
-                {
-                    valid = false;
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    virtual bool isValid()
-    {
-        return valid;
-    }
-
-protected:
-    bool firstSubGraph()
-    {
-        IPropertyTree & graphNode = graphIter ? graphIter->query() : *conn->queryRoot();
-        const char * xpath = "sg*";
-        StringBuffer childXpath;
-        if (scopes.isItem(1))
-        {
-            const char * scope1 = scopes.item(1);
-            if (strnicmp(scope1, "sg", 2) == 0)
-            {
-                childXpath.append(scope1);
-                xpath = childXpath.str();
-            }
-        }
-
-        subgraphIter.setown(graphNode.getElements(xpath));
-        if (!subgraphIter)
-            subgraphIter.setown(graphNode.getElements("sg0"));
-
-        if (!subgraphIter->first())
-            return false;
-        if (firstStat())
-            return true;
-        return nextSubGraph();
-    }
-
-    bool nextSubGraph()
-    {
-        for (;;)
-        {
-            if (!subgraphIter->next())
-                return false;
-            if (firstStat())
-                return true;
-        }
-    }
-
-    bool nextGraph()
-    {
-        if (!graphIter)
-            return false;
-        for (;;)
-        {
-            if (!graphIter->next())
-                return false;
-            if (firstSubGraph())
-                return true;
-        }
-    }
-
-    bool firstStat()
-    {
-        IPropertyTree & curSubGraph = subgraphIter->query();
-        if (!checkSubGraph())
-            return false;
-
-        curSubGraph.getPropBin("Stats", compressed.clear());
-        //Don't crash on old format progress...
-        if (compressed.length() == 0)
-            return false;
-
-        decompressToBuffer(serialized.clear(), compressed);
-
-        Owned<IStatisticCollection> collection = createStatisticCollection(serialized);
-        curStat->timeStamp = collection->queryWhenCreated();
-        return beginCollection(*collection);
-    }
-
-    bool beginCollection(IStatisticCollection & collection)
-    {
-        collections.append(OLINK(collection));
-        numStats = collection.getNumStatistics();
-        curStatIndex = 0;
-        if (checkScope())
-        {
-            if (curStatIndex < numStats)
-            {
-                if (checkStatistic())
-                    return true;
-                return nextStatistic();
-            }
-        }
-        return nextChildScope();
-    }
-
-    bool nextStatistic()
-    {
-        //Finish iterating the statistics at this level.
-        while (++curStatIndex < numStats)
-        {
-            if (checkStatistic())
-                return true;
-        }
-        return nextChildScope();
-    }
-
-    bool nextChildScope()
-    {
-        for (;;)
-        {
-            if (collections.ordinality() == 0)
-                return false;
-
-            IStatisticCollection * curCollection = &collections.tos();
-            if (childIterators.ordinality() < collections.ordinality())
-            {
-                if (!filter || filter->recurseChildScopes(curStat->scopeType, curStat->scope))
-                {
-                    //Start iterating the children for the current collection
-                    childIterators.append(curCollection->getScopes(NULL, false));
-                    if (!childIterators.tos().first())
-                    {
-                        finishCollection();
-                        continue;
-                    }
-                }
-                else
-                {
-                    //Don't walk the child scopes
-                    collections.pop();
-                    continue;
-                }
-            }
-            else if (!childIterators.tos().next())
-            {
-                finishCollection();
-                continue;
-            }
-
-            if (beginCollection(childIterators.tos().query()))
-                return true;
-        }
-    }
-
-    void finishCollection()
-    {
-        collections.pop();
-        childIterators.pop();
-    }
-
-    bool checkSubGraph()
-    {
-        if (!filter)
-            return true;
-        IPropertyTree & curSubGraph = subgraphIter->query();
-        curStat->creatorType = queryCreatorType(curSubGraph.queryProp("@c"));
-        curStat->creator.set(curSubGraph.queryProp("@creator"));
-        return filter->matches(curStat->creatorType, curStat->creator, SSTall, NULL, SMeasureAll, StKindAll, AnyStatisticValue);
-    }
-
-    bool checkScope()
-    {
-        if (!filter)
-            return true;
-        IStatisticCollection * collection = &collections.tos();
-        curStat->scopeType = collection->queryScopeType();
-        collection->getFullScope(curStat->scope.clear());
-        return filter->matches(SCTall, NULL, curStat->scopeType, curStat->scope, SMeasureAll, StKindAll, AnyStatisticValue);
-    }
-
-    bool checkStatistic()
-    {
-        IStatisticCollection & collection = collections.tos();
-        collection.getStatistic(curStat->kind, curStat->value, curStatIndex);
-        curStat->measure = queryMeasure(curStat->kind);
-        if (!filter)
-            return true;
-        if (!filter->matches(SCTall, NULL, SSTall, NULL, curStat->measure, curStat->kind, curStat->value))
-            return false;
-        return true;
-    }
-
-    void ensureUniqueStatistic()
-    {
-        //If something else has linked this statistic, clone a unique one.
-        if (curStat->IsShared())
-            curStat.setown(new ExtractedStatistic(*curStat));
-    }
-private:
-    Owned<IRemoteConnection> conn;
-    Owned<ExtractedStatistic> curStat;
-    const IStatisticsFilter * filter;
-    StringArray scopes;
-    StringBuffer rootPath;
-    Owned<IPropertyTreeIterator> graphIter;
-    Owned<IPropertyTreeIterator> subgraphIter;
-    IArrayOf<IStatisticCollection> collections;
-    IArrayOf<IStatisticCollectionIterator> childIterators;
-    MemoryBuffer compressed;
-    MemoryBuffer serialized;
-    unsigned numStats;
-    unsigned curStatIndex;
-    bool valid;
-};
 
 //Extract an argument of the format abc[def[ghi...,]],... as (abc,def[...])
 static bool extractOption(const char * & finger, StringAttr & option, StringAttr & arg)
@@ -3462,10 +3170,6 @@ public:
             { return c->queryStateDesc(); }
     virtual bool getRunningGraph(IStringVal & graphName, WUGraphIDType & subId) const
             { return c->getRunningGraph(graphName, subId); }
-    virtual IConstWUStatisticIterator & getStatistics(const IStatisticsFilter * filter) const
-            { return c->getStatistics(filter); }
-    virtual IConstWUStatistic * getStatistic(const char * scope, StatisticKind kind) const
-            { return c->getStatistic(scope, kind); }
     virtual IConstWUScopeIterator & getScopeIterator(const WuScopeFilter & filter) const override
             { return c->getScopeIterator(filter); }
     virtual bool getStatistic(stat_type & value, const char * scope, StatisticKind kind) const override
@@ -7948,47 +7652,6 @@ bool parseGraphScope(const char *scope, StringAttr &graphName, unsigned & graphN
 }
 
 
-class WorkUnitStatisticsIterator : public CArrayIteratorOf<IConstWUStatistic,IConstWUStatisticIterator>
-{
-    typedef CArrayIteratorOf<IConstWUStatistic,IConstWUStatisticIterator> PARENT;
-public:
-    WorkUnitStatisticsIterator(const IArray &a, aindex_t start, IInterface *owner, const IStatisticsFilter * _filter)
-        : PARENT(a,start, owner), filter(_filter)
-    {
-    }
-
-    virtual bool first()
-    {
-        if (!PARENT::first())
-            return false;
-        if (matchesFilter())
-            return true;
-        return next();
-    }
-
-    virtual bool next()
-    {
-        for (;;)
-        {
-            if (!PARENT::next())
-                return false;
-            if (matchesFilter())
-                return true;
-        }
-    }
-
-protected:
-    bool matchesFilter()
-    {
-        if (!filter)
-            return true;
-        return query().matches(filter);
-    }
-
-protected:
-    Linked<const IStatisticsFilter> filter;
-};
-
 void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * optDescription, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction)
 {
     if (!scope) scope = GLOBAL_SCOPE;
@@ -8078,40 +7741,6 @@ void CLocalWorkUnit::_loadStatistics() const
     statistics.load(p,"Statistics/*");
 }
 
-IConstWUStatisticIterator& CLocalWorkUnit::getStatistics(const IStatisticsFilter * filter) const
-{
-    CriticalBlock block(crit);
-    statistics.loadBranch(p,"Statistics");
-    Owned<IConstWUStatisticIterator> localStats = new WorkUnitStatisticsIterator(statistics, 0, (IConstWorkUnit *) this, filter);
-    if (filter && !filter->recurseChildScopes(SSTgraph, nullptr))
-        return *localStats.getClear();
-
-    const char * wuid = p->queryName();
-    Owned<IConstWUStatisticIterator> graphStats = new CConstGraphProgressStatisticsIterator(wuid, filter);
-    return * new CCompoundIteratorOf<IConstWUStatisticIterator, IConstWUStatistic>(localStats, graphStats);
-}
-
-IConstWUStatistic * CLocalWorkUnit::getStatistic(const char * scope, StatisticKind kind) const
-{
-#if 0
-    //MORE: Optimize this....
-    WuScopeFilter filter;
-    filter.addScope(scope).setIncludeNesting(0).finishedFilter();
-    Owned<IConstWUScopeIterator> stats = &getScopeIterator(&filter);
-    if (stats->first())
-        return stats->getStat(kind, value);
-    return NULL;
-#else
-    //MORE: Optimize this....
-    StatisticsFilter filter;
-    filter.setScope(scope);
-    filter.setKind(kind);
-    Owned<IConstWUStatisticIterator> stats = &getStatistics(&filter);
-    if (stats->first())
-        return LINK(&stats->query());
-    return NULL;
-#endif
-}
 
 bool CLocalWorkUnit::getStatistic(stat_type & value, const char * scope, StatisticKind kind) const
 {
@@ -11146,15 +10775,6 @@ unsigned __int64 CLocalWUStatistic::getTimestamp() const
     return p->getPropInt64("@ts", 0);
 }
 
-
-bool CLocalWUStatistic::matches(const IStatisticsFilter * filter) const
-{
-    if (!filter)
-        return true;
-    const char * creator = p->queryProp("@creator");
-    const char * scope = p->queryProp("@scope");
-    return filter->matches(getCreatorType(), creator, getScopeType(), scope, getMeasure(), getKind(), getValue());
-}
 
 //==========================================================================================
 
