@@ -566,7 +566,7 @@ public:
 
         for (; !iter.done(); iter.next())
         {
-            if (matchVariableOption(iter, 'X', variables))
+            if (matchVariableOption(iter, 'X', variables, false))
                 continue;
             if (iter.matchOption(optObj.value, ECLOPT_WUID)||iter.matchOption(optObj.value, ECLOPT_WUID_S))
                 continue;

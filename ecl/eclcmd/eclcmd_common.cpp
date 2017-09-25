@@ -484,7 +484,10 @@ public:
                 const char *name = item.getName();
                 const char *value = item.getValue();
                 cmdLine.append(' ');
-                if (!name || name[0]!='-')
+
+                if (name && 0==strncmp(name, "eclcc", 5))
+                    name+=5;
+                else
                     cmdLine.append("-f");
                 cmdLine.append(name);
                 if (value)
@@ -619,12 +622,18 @@ void addNamedValue(const char * arg, IArrayOf<IEspNamedValue> &values)
     }
 }
 
-bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNamedValue> &values)
+bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNamedValue> &values, bool expandEclccOptions)
 {
     const char *arg = iter.query();
     if (*arg++!='-' || *arg++!=prefix || !*arg)
         return false;
-    addNamedValue(arg, values);
+    if (expandEclccOptions && *arg=='-')
+    {
+        VStringBuffer expanded("eclcc%s", arg);
+        addNamedValue(expanded, values);
+    }
+    else
+        addNamedValue(arg, values);
     return true;
 }
 
@@ -669,9 +678,9 @@ eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvItera
             return EclCmdOptionCompletion;
         return EclCmdOptionMatch;
     }
-    if (matchVariableOption(iter, 'f', debugValues))
+    if (matchVariableOption(iter, 'f', debugValues, true))
         return EclCmdOptionMatch;
-    if (matchVariableOption(iter, 'D', definitions))
+    if (matchVariableOption(iter, 'D', definitions, false))
         return EclCmdOptionMatch;
     if (iter.matchPathFlag(optLibPath, ECLOPT_LIB_PATH_S))
         return EclCmdOptionMatch;

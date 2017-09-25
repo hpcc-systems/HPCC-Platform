@@ -254,7 +254,8 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         {
             //Allow eclcc-xx-<n> so that multiple values can be passed through for the same named debug symbol
             const char * start = option + (*option=='-' ? 1 : 6);
-            const char * dash = strrchr(start, '-');     // position of second dash, if present
+            const char * finger = (*start=='-') ? start+1 : start; //support leading double dash
+            const char * dash = strrchr(finger, '-');     // position of trailing dash, if present
             StringAttr optName;
             if (dash && (dash != start))
                 optName.set(start, dash-start);
