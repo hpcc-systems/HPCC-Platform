@@ -158,6 +158,7 @@ void CResPermissionsCache::add( IArrayOf<ISecResource>& resources )
                     break;
                 }
             }
+            resParamCacheEntry.second->Release();
             m_resAccessMap.erase(SecCacheKeyEntry(resource, resourcetype));
         }
 #ifdef _DEBUG
