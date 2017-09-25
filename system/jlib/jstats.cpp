@@ -344,7 +344,7 @@ static const unsigned oneKb = 1024;
 static const unsigned oneMb = 1024 * 1024;
 static const unsigned oneGb = 1024 * 1024 * 1024;
 static unsigned toPermille(unsigned x) { return (x * 1000) / 1024; }
-static void formatSize(StringBuffer & out, unsigned __int64 value)
+static StringBuffer & formatSize(StringBuffer & out, unsigned __int64 value)
 {
 
     unsigned Gb = (unsigned)(value / oneGb);
@@ -352,84 +352,74 @@ static void formatSize(StringBuffer & out, unsigned __int64 value)
     unsigned Kb = (unsigned)((value % oneMb) / oneKb);
     unsigned b = (unsigned)(value % oneKb);
     if (Gb)
-        out.appendf("%u.%03uGb", Gb, toPermille(Mb));
+        return out.appendf("%u.%03uGb", Gb, toPermille(Mb));
     else if (Mb)
-        out.appendf("%u.%03uMb", Mb, toPermille(Kb));
+        return out.appendf("%u.%03uMb", Mb, toPermille(Kb));
     else if (Kb)
-        out.appendf("%u.%03uKb", Kb, toPermille(b));
+        return out.appendf("%u.%03uKb", Kb, toPermille(b));
     else
-        out.appendf("%ub", b);
+        return out.appendf("%ub", b);
 }
 
-static void formatLoad(StringBuffer & out, unsigned __int64 value)
+static StringBuffer & formatLoad(StringBuffer & out, unsigned __int64 value)
 {
     //Stored as millionth of a core.  Display as a percentage => scale by 10,000
-    out.appendf("%u.%03u%%", (unsigned)(value / 10000), (unsigned)(value % 10000) / 10);
+    return out.appendf("%u.%03u%%", (unsigned)(value / 10000), (unsigned)(value % 10000) / 10);
 }
 
-static void formatSkew(StringBuffer & out, unsigned __int64 value)
+static StringBuffer & formatSkew(StringBuffer & out, unsigned __int64 value)
 {
     //Skew stored as 10000 = perfect, display as percentage
-    out.appendf("%.2f%%", ((double)(__int64)value) / 100.0);
+    return out.appendf("%.2f%%", ((double)(__int64)value) / 100.0);
 }
 
-static void formatIPV4(StringBuffer & out, unsigned __int64 value)
+static StringBuffer & formatIPV4(StringBuffer & out, unsigned __int64 value)
 {
     byte ip1 = (value & 255);
     byte ip2 = ((value >> 8) & 255);
     byte ip3 = ((value >> 16) & 255);
     byte ip4 = ((value >> 24) & 255);
-    out.appendf("%d.%d.%d.%d", ip1, ip2, ip3, ip4);
+    return out.appendf("%d.%d.%d.%d", ip1, ip2, ip3, ip4);
 }
 
-void formatStatistic(StringBuffer & out, unsigned __int64 value, StatisticMeasure measure)
+StringBuffer & formatStatistic(StringBuffer & out, unsigned __int64 value, StatisticMeasure measure)
 {
     switch (measure)
     {
     case SMeasureNone: // Unknown stat - e.g, on old esp accessing a new workunit
-        out.append(value);
-        break;
+        return out.append(value);
     case SMeasureTimeNs:
         formatTime(out, value);
-        break;
+        return out;
     case SMeasureTimestampUs:
         formatTimeStamp(out, value);
-        break;
+        return out;
     case SMeasureCount:
-        out.append(value);
-        break;
+        return out.append(value);
     case SMeasureSize:
-        formatSize(out, value);
-        break;
+        return formatSize(out, value);
     case SMeasureLoad:
-        formatLoad(out, value);
-        break;
+        return formatLoad(out, value);
     case SMeasureSkew:
-        formatSkew(out, value);
-        break;
+        return formatSkew(out, value);
     case SMeasureNode:
-        out.append(value);
-        break;
+        return out.append(value);
     case SMeasurePercent:
-        out.appendf("%.2f%%", (double)value / 10000.0);  // stored as ppm
-        break;
+        return out.appendf("%.2f%%", (double)value / 10000.0);  // stored as ppm
     case SMeasureIPV4:
-        formatIPV4(out, value);
-        break;
+        return formatIPV4(out, value);
     case SMeasureCycle:
-        out.append(value);
-        break;
+        return out.append(value);
     case SMeasureBool:
-        out.append(boolToStr(value != 0));
-        break;
+        return out.append(boolToStr(value != 0));
     default:
-        out.append(value).append('?');
+        return out.append(value).append('?');
     }
 }
 
-void formatStatistic(StringBuffer & out, unsigned __int64 value, StatisticKind kind)
+StringBuffer & formatStatistic(StringBuffer & out, unsigned __int64 value, StatisticKind kind)
 {
-    formatStatistic(out, value, queryMeasure(kind));
+    return formatStatistic(out, value, queryMeasure(kind));
 }
 
 //--------------------------------------------------------------------------------------------------------------------
@@ -540,6 +530,23 @@ bool getParentScope(StringBuffer & parent, const char * scope)
         return false;
 }
 
+
+void describeScope(StringBuffer & description, const char * scope)
+{
+    if (!*scope)
+        return;
+
+    StatsScopeId id;
+    for(;;)
+    {
+        id.extractScopeText(scope, &scope);
+        id.describe(description);
+        if (!*scope)
+            return;
+        description.append(": ");
+        scope++;
+    }
+}
 
 const char * queryMeasurePrefix(StatisticMeasure measure)
 {
@@ -1230,6 +1237,33 @@ int StatsScopeId::compare(const StatsScopeId & other) const
     return 0;
 }
 
+void StatsScopeId::describe(StringBuffer & description) const
+{
+    const char * name = queryScopeTypeName(scopeType);
+    description.append((char)toupper(*name)).append(name+1);
+    switch (scopeType)
+    {
+    case SSTgraph:
+        description.append(" graph").append(id);
+        break;
+    case SSTsubgraph:
+    case SSTactivity:
+    case SSTworkflow:
+    case SSTchildgraph:
+        description.append(' ').append(id);
+        break;
+    case SSTedge:
+        description.append(' ').append(id).append(',').append(extra);
+        break;
+    case SSTfunction:
+        description.append(' ').append(name);
+        break;
+    default:
+        throwUnexpected();
+        break;
+    }
+
+}
 
 
 bool StatsScopeId::matches(const StatsScopeId & other) const
@@ -2745,6 +2779,12 @@ ScopeCompare ScopeFilter::compare(const char * scope) const
     }
 
     return result;
+}
+
+bool ScopeFilter::canAlwaysPreFilter() const
+{
+    //If the only filter being applied is a restriction on the minimum depth, then you can always apply it as a pre-filter
+    return (!ids && !scopeTypes && !scopes && maxDepth == UINT_MAX);
 }
 
 int ScopeFilter::compareDepth(unsigned depth) const

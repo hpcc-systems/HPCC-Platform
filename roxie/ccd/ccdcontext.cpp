@@ -1452,19 +1452,13 @@ public:
                     graph->abort();
                 if (workUnit)
                 {
-                    unsigned __int64 totalTimeNs = 0;
-                    unsigned __int64 totalThisTimeNs = 0;
-                    const char *totalTimeStr = "Total cluster time";
-                    getWorkunitTotalTime(workUnit, "roxie", totalTimeNs, totalThisTimeNs);
-
                     const char * graphName = graph->queryName();
                     StringBuffer graphDesc;
                     formatGraphTimerLabel(graphDesc, graphName);
                     WorkunitUpdate progressWorkUnit(&workUnit->lock());
                     progressWorkUnit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphName, StWhenStarted, NULL, startTimeStamp, 1, 0, StatsMergeAppend);
                     updateWorkunitTimeStat(progressWorkUnit, SSTgraph, graphName, StTimeElapsed, graphDesc, elapsedTime);
-                    updateWorkunitTimeStat(progressWorkUnit, SSTglobal, GLOBAL_SCOPE, StTimeElapsed, NULL, totalThisTimeNs+elapsedTime);
-                    progressWorkUnit->setStatistic(SCTsummary, "roxie", SSTglobal, GLOBAL_SCOPE, StTimeElapsed, totalTimeStr, totalTimeNs+elapsedTime, 1, 0, StatsMergeReplace);
+                    addTimeStamp(progressWorkUnit, SSTgraph, graphName, StWhenFinished);
                 }
                 graph->reset();
             }

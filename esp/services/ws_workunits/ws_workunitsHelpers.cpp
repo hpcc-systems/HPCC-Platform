@@ -40,6 +40,8 @@
 
 namespace ws_workunits {
 
+const char * const timerFilterText = "measure[time],source[global],depth[1,]"; // Does not include hthor subgraph timings
+
 SecAccessFlags chooseWuAccessFlagsByOwnership(const char *user, const char *owner, SecAccessFlags accessOwn, SecAccessFlags accessOthers)
 {
     return (isEmpty(owner) || (user && streq(user, owner))) ? accessOwn : accessOthers;
@@ -378,58 +380,52 @@ void WsWuInfo::addTimerToList(SCMStringBuffer& name, const char * scope, IConstW
 
 void WsWuInfo::doGetTimers(IArrayOf<IEspECLTimer>& timers)
 {
-    unsigned __int64 totalThorTimeValue = 0;
-    unsigned __int64 totalThorTimerCount = 0; //Do we need this?
-
-    StatisticsFilter filter;
-    filter.setScopeDepth(1, 2);
-    filter.setMeasure(SMeasureTimeNs);
-    Owned<IConstWUStatisticIterator> it = &cw->getStatistics(&filter);
-    if (it->first())
+    class TimingVisitor : public WuScopeVisitorBase
     {
-        ForEach(*it)
+    public:
+        TimingVisitor(WsWuInfo & _wuInfo, IArrayOf<IEspECLTimer>& _timers) : wuInfo(_wuInfo), timers(_timers) {}
+
+        virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & extra) override
         {
-            IConstWUStatistic & cur = it->query();
             SCMStringBuffer name;
-            cur.getDescription(name, true);
-            const char * scope = cur.queryScope();
+            extra.getDescription(name, true);
+            const char * scope = extra.queryScope();
+            wuInfo.addTimerToList(name, scope, extra, timers);
 
-            bool isThorTiming = false;//Should it be renamed as isClusterTiming?
-            if ((cur.getCreatorType() == SCTsummary) && (cur.getKind() == StTimeElapsed) && isGlobalScope(scope))
-            {
-                SCMStringBuffer creator;
-                cur.getCreator(creator);
-                if (streq(creator.str(), "thor") || streq(creator.str(), "hthor") ||
-                    streq(creator.str(), "roxie"))
-                    isThorTiming = true;
-            }
-            else if (strieq(name.str(), TOTALTHORTIME)) // legacy
-                isThorTiming = true;
-
-            if (isThorTiming)
-            {
-                totalThorTimeValue += cur.getValue();
-                totalThorTimerCount += cur.getCount();
-            }
-            else
-                addTimerToList(name, scope, cur, timers);
+            //Aggregate all the times spent executing graphs
+            if ((kind == StTimeElapsed) && (extra.getScopeType() == SSTgraph))
+                totalGraphTime.noteValue(value);
         }
-    }
 
-    if (totalThorTimeValue > 0)
-    {
-        StringBuffer totalThorTimeText;
-        formatStatistic(totalThorTimeText, totalThorTimeValue, SMeasureTimeNs);
+        void addSummary()
+        {
+            if (totalGraphTime.getCount())
+            {
+                StringBuffer totalThorTimeText;
+                formatStatistic(totalThorTimeText, totalGraphTime.getSum(), SMeasureTimeNs);
 
-        Owned<IEspECLTimer> t= createECLTimer("","");
-        if (version > 1.52)
-            t->setName(TOTALCLUSTERTIME);
-        else
-            t->setName(TOTALTHORTIME);
-        t->setValue(totalThorTimeText.str());
-        t->setCount((unsigned)totalThorTimerCount);
-        timers.append(*t.getLink());
-    }
+                Owned<IEspECLTimer> t= createECLTimer("","");
+                if (wuInfo.version > 1.52)
+                    t->setName(TOTALCLUSTERTIME);
+                else
+                    t->setName(TOTALTHORTIME);
+                t->setValue(totalThorTimeText.str());
+                t->setCount((unsigned)totalGraphTime.getCount());
+                timers.append(*t.getClear());
+            }
+        }
+    protected:
+        WsWuInfo & wuInfo;
+        IArrayOf<IEspECLTimer>& timers;
+        StatsAggregation totalGraphTime;
+    } visitor(*this, timers);
+
+    WuScopeFilter filter(timerFilterText);
+    Owned<IConstWUScopeIterator> it = &cw->getScopeIterator(filter);
+    ForEach(*it)
+        it->playProperties(PTstatistics, visitor);
+
+    visitor.addSummary();
 }
 
 void WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned long flags)
@@ -451,18 +447,34 @@ void WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned long flags)
     }
 }
 
+class TimingCounter : public WuScopeVisitorBase
+{
+public:
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & extra) override
+    {
+        numTimers++;
+        if ((kind == StTimeElapsed) && (extra.getScopeType() == SSTgraph))
+            hasGraphTiming = true;
+    }
+
+    unsigned getNumTimers() const
+    {
+        return numTimers + (hasGraphTiming ? 1 : 0);
+    }
+protected:
+    bool hasGraphTiming = false;
+    unsigned numTimers = 0;
+};
+
 unsigned WsWuInfo::getTimerCount()
 {
-    unsigned numTimers = 0;
+    TimingCounter visitor;
     try
     {
-        //This filter must match the filter in the function above, otherwise it will be inconsistent
-        StatisticsFilter filter;
-        filter.setScopeDepth(1, 2);
-        filter.setMeasure(SMeasureTimeNs);
-        Owned<IConstWUStatisticIterator> it = &cw->getStatistics(&filter);
+        WuScopeFilter filter(timerFilterText);
+        Owned<IConstWUScopeIterator> it = &cw->getScopeIterator(filter);
         ForEach(*it)
-            numTimers++;
+            it->playProperties(PTstatistics, visitor);
     }
     catch(IException* e)
     {
@@ -470,7 +482,8 @@ unsigned WsWuInfo::getTimerCount()
         ERRLOG("%s", e->errorMessage(eMsg).str());
         e->Release();
     }
-    return numTimers;
+
+    return visitor.getNumTimers();
 }
 
 EnumMapping queryFileTypes[] = {
@@ -694,11 +707,25 @@ const char *getGraphNum(const char *s,unsigned &num)
 
 bool WsWuInfo::hasSubGraphTimings()
 {
-    StatisticsFilter filter;
-    filter.setScopeType(SSTsubgraph);
-    filter.setKind(StTimeElapsed);
-    Owned<IConstWUStatisticIterator> times = &cw->getStatistics(&filter);
-    return times->first();
+    try
+    {
+        WuScopeFilter filter("stype[subgraph],nested[0],prop[stat]");
+        Owned<IConstWUScopeIterator> it = &cw->getScopeIterator(filter);
+        ForEach(*it)
+        {
+            stat_type value;
+            if (it->getStat(StTimeElapsed, value))
+                return true;
+        }
+    }
+    catch(IException* e)
+    {
+        StringBuffer eMsg;
+        ERRLOG("%s", e->errorMessage(eMsg).str());
+        e->Release();
+    }
+
+    return false;
 }
 
 void WsWuInfo::doGetGraphs(IArrayOf<IEspECLGraph>& graphs)
@@ -737,18 +764,23 @@ void WsWuInfo::doGetGraphs(IArrayOf<IEspECLGraph>& graphs)
 
         if (version >= 1.53)
         {
-            SCMStringBuffer s;
-            Owned<IConstWUStatistic> whenGraphStarted = cw->getStatistic(NULL, name.str(), StWhenStarted);
-            if (!whenGraphStarted) // 6.x backward compatibility
-                whenGraphStarted.setown(cw->getStatistic(NULL, name.str(), StWhenGraphStarted));
-            Owned<IConstWUStatistic> whenGraphFinished = cw->getStatistic(NULL, name.str(), StWhenFinished);
-            if (!whenGraphFinished) // 6.x backward compatibility
-                whenGraphFinished.setown(cw->getStatistic(NULL, name.str(), StWhenGraphFinished));
+            //MORE: Will need to be prefixed with the wfid
+            StringBuffer scope;
+            scope.append(name);
 
-            if (whenGraphStarted)
-                g->setWhenStarted(whenGraphStarted->getFormattedValue(s).str());
-            if (whenGraphFinished)
-                g->setWhenFinished(whenGraphFinished->getFormattedValue(s).str());
+            StringBuffer s;
+            stat_type timeStamp;
+            if (cw->getStatistic(timeStamp, scope.str(), StWhenStarted) ||
+                cw->getStatistic(timeStamp, name.str(), StWhenGraphStarted))
+            {
+                g->setWhenStarted(formatStatistic(s.clear(), timeStamp, SMeasureTimestampUs));
+            }
+
+            if (cw->getStatistic(timeStamp, scope.str(), StWhenFinished) ||
+               cw->getStatistic(timeStamp, name.str(), StWhenGraphFinished))
+            {
+                g->setWhenFinished(formatStatistic(s.clear(), timeStamp, SMeasureTimestampUs));
+            }
         }
         graphs.append(*g.getLink());
     }
@@ -798,36 +830,46 @@ void WsWuInfo::getWUGraphNameAndTypes(WUGraphType graphType, IArrayOf<IEspNameAn
 
 void WsWuInfo::getGraphTimingData(IArrayOf<IConstECLTimingData> &timingData)
 {
-    StatisticsFilter filter(SCTall, SSTsubgraph, SMeasureTimeNs, StTimeElapsed);
-    Owned<IConstWUStatisticIterator> times = &cw->getStatistics(&filter);
-    bool matched = false;
-    ForEach(*times)
+    class TimingVisitor : public WuScopeVisitorBase
     {
-        IConstWUStatistic & cur = times->query();
-        const char * scope = cur.queryScope();
+    public:
+        TimingVisitor(WsWuInfo & _wuInfo, IArrayOf<IConstECLTimingData> & _timingData) : wuInfo(_wuInfo), timingData(_timingData) {}
 
-        StringAttr graphName;
-        unsigned graphNum;
-        unsigned subGraphId;
-        if (parseGraphScope(scope, graphName, graphNum, subGraphId))
+        virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & cur) override
         {
-            unsigned time = (unsigned)nanoToMilli(cur.getValue());
+            const char * scope = cur.queryScope();
+            StringAttr graphName;
+            unsigned graphNum;
+            unsigned subGraphId;
+            if (parseGraphScope(scope, graphName, graphNum, subGraphId))
+            {
+                unsigned time = (unsigned)nanoToMilli(value);
 
-            SCMStringBuffer name;
-            cur.getDescription(name, true);
+                SCMStringBuffer name;
+                cur.getDescription(name, true);
 
-            Owned<IEspECLTimingData> g = createECLTimingData();
-            g->setName(name.str());
-            g->setGraphNum(graphNum);
-            g->setSubGraphNum(subGraphId); // Use the Id - the number is not known
-            g->setGID(subGraphId);
-            g->setMS(time);
-            g->setMin(time/60000);
-            timingData.append(*g.getClear());
-            matched = true;
+                Owned<IEspECLTimingData> g = createECLTimingData();
+                g->setName(name.str());
+                g->setGraphNum(graphNum);
+                g->setSubGraphNum(subGraphId); // Use the Id - the number is not known
+                g->setGID(subGraphId);
+                g->setMS(time);
+                g->setMin(time/60000);
+                timingData.append(*g.getClear());
+            }
         }
-    }
+
+    protected:
+        WsWuInfo & wuInfo;
+        IArrayOf<IConstECLTimingData> & timingData;
+    } visitor(*this, timingData);
+
+    WuScopeFilter filter("stype[subgraph],stat[TimeElapsed],nested[0]");
+    Owned<IConstWUScopeIterator> it = &cw->getScopeIterator(filter);
+    ForEach(*it)
+        it->playProperties(PTstatistics, visitor);
 }
+
 
 void WsWuInfo::getEventScheduleFlag(IEspECLWorkunit &info)
 {
@@ -864,27 +906,12 @@ void WsWuInfo::getEventScheduleFlag(IEspECLWorkunit &info)
     }
 }
 
-unsigned WsWuInfo::getTotalThorTime(const char * scope)
-{
-    StatisticsFilter filter;
-    filter.setCreatorType(SCTsummary);
-    filter.setScope(scope);
-    filter.setKind(StTimeElapsed);
-
-    //Should only be a single value
-    unsigned totalThorTimeMS = 0;
-    Owned<IConstWUStatisticIterator> times = &cw->getStatistics(&filter);
-    ForEach(*times)
-    {
-        totalThorTimeMS += (unsigned)nanoToMilli(times->query().getValue());
-    }
-
-    return totalThorTimeMS;
-}
-
 unsigned WsWuInfo::getTotalThorTime()
 {
-    return getTotalThorTime(GLOBAL_SCOPE) + getTotalThorTime(LEGACY_GLOBAL_SCOPE);
+    const WuScopeFilter filter("stype[graph],nested[0],stat[TimeElapsed]");
+    StatsAggregation summary;
+    aggregateStatistic(summary, cw, filter, StTimeElapsed);
+    return nanoToMilli(summary.getSum());
 }
 
 void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned long flags)
@@ -1543,20 +1570,20 @@ void WsWuInfo::getResults(IEspECLWorkunit &info, unsigned long flags)
     }
 }
 
-void WsWuInfo::getStats(StatisticsFilter& filter, bool createDescriptions, IArrayOf<IEspWUStatisticItem>& statistics)
+class FilteredStatisticsVisitor : public WuScopeVisitorBase
 {
-    Owned<IConstWUStatisticIterator> stats = &cw->getStatistics(&filter);
-    ForEach(*stats)
+public:
+    FilteredStatisticsVisitor(WsWuInfo & _wuInfo, bool _createDescriptions, IArrayOf<IEspWUStatisticItem>& _statistics, const StatisticsFilter& _statsFilter)
+        : wuInfo(_wuInfo), statistics(_statistics), statsFilter(_statsFilter), createDescriptions(_createDescriptions) {}
+
+    virtual void noteStatistic(StatisticKind curKind, unsigned __int64 value, IConstWUStatistic & cur) override
     {
-        IConstWUStatistic & cur = stats->query();
         StringBuffer xmlBuf, tsValue;
         SCMStringBuffer curCreator, curDescription, curFormattedValue;
 
         StatisticCreatorType curCreatorType = cur.getCreatorType();
         StatisticScopeType curScopeType = cur.getScopeType();
         StatisticMeasure curMeasure = cur.getMeasure();
-        StatisticKind curKind = cur.getKind();
-        unsigned __int64 value = cur.getValue();
         unsigned __int64 count = cur.getCount();
         unsigned __int64 max = cur.getMax();
         unsigned __int64 ts = cur.getTimestamp();
@@ -1566,9 +1593,11 @@ void WsWuInfo::getStats(StatisticsFilter& filter, bool createDescriptions, IArra
         cur.getFormattedValue(curFormattedValue);
 
         Owned<IEspWUStatisticItem> wuStatistic = createWUStatisticItem();
+        if (!statsFilter.matches(curCreatorType, curCreator.str(), curScopeType, curScope, curMeasure, curKind, value))
+            return;
 
-        if (version > 1.61)
-            wuStatistic->setWuid(wuid);
+        if (wuInfo.version > 1.61)
+            wuStatistic->setWuid(wuInfo.wuid);
         if (curCreatorType != SCTnone)
             wuStatistic->setCreatorType(queryCreatorTypeName(curCreatorType));
         if (curCreator.length())
@@ -1597,6 +1626,20 @@ void WsWuInfo::getStats(StatisticsFilter& filter, bool createDescriptions, IArra
 
         statistics.append(*wuStatistic.getClear());
     }
+
+protected:
+    WsWuInfo & wuInfo;
+    const StatisticsFilter& statsFilter;
+    IArrayOf<IEspWUStatisticItem>& statistics;
+    bool createDescriptions;
+};
+
+void WsWuInfo::getStats(const WuScopeFilter & filter, const StatisticsFilter& statsFilter, bool createDescriptions, IArrayOf<IEspWUStatisticItem>& statistics)
+{
+    FilteredStatisticsVisitor visitor(*this, createDescriptions, statistics, statsFilter);
+    Owned<IConstWUScopeIterator> it = &cw->getScopeIterator(filter);
+    ForEach(*it)
+        it->playProperties(PTstatistics, visitor);
 }
 
 bool WsWuInfo::getFileSize(const char* fileName, const char* IPAddress, offset_t& fileSize)

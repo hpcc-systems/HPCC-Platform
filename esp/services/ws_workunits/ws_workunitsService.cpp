@@ -4883,6 +4883,13 @@ bool CWsWorkunitsEx::onWUCheckFeatures(IEspContext &context, IEspWUCheckFeatures
     return true;
 }
 
+static const char * checkGetStatsNullInput(const char * s)
+{
+    if (!s || !*s)
+        return nullptr;
+    return s;
+}
+
 static const char * checkGetStatsInput(const char * s)
 {
     if (!s || !*s)
@@ -4892,20 +4899,33 @@ static const char * checkGetStatsInput(const char * s)
 
 bool CWsWorkunitsEx::onWUGetStats(IEspContext &context, IEspWUGetStatsRequest &req, IEspWUGetStatsResponse &resp)
 {
+    //This function is deprecated for 7.x and will be removed shortly afterwards.
+    //Anything that cannot be implemented with the scope iterator is implemented as a post filter
     try
     {
-        const char* creatorType = checkGetStatsInput(req.getCreatorType());
-        const char* creator = checkGetStatsInput(req.getCreator());
-        const char* scopeType = checkGetStatsInput(req.getScopeType());
-        const char* scope = checkGetStatsInput(req.getScope());
-        const char* kind = checkGetStatsInput(req.getKind());
+        const char* creatorType = checkGetStatsNullInput(req.getCreatorType());
+        const char* creator = checkGetStatsNullInput(req.getCreator());
+        const char* scopeType = checkGetStatsNullInput(req.getScopeType());
+        const char* scope = checkGetStatsNullInput(req.getScope());
+        const char* kind = checkGetStatsNullInput(req.getKind());
         const char* measure = req.getMeasure();
 
-        StatisticsFilter filter(creatorType, creator, scopeType, scope, measure, kind);
+        WuScopeFilter filter;
+        StatisticsFilter statsFilter(creatorType, creator, "*", "*", "*", "*");
+        filter.addOutputProperties(PTstatistics);
+        if (scopeType)
+            filter.addScopeType(scopeType);
+        if (scope)
+            filter.addScope(scope);
+        if (kind)
+            filter.addOutputStatistic(kind);
+        if (measure)
+            filter.setMeasure(measure);
         if (!req.getMinScopeDepth_isNull() && !req.getMaxScopeDepth_isNull())
-            filter.setScopeDepth(req.getMinScopeDepth(), req.getMaxScopeDepth());
+            filter.setDepth(req.getMinScopeDepth(), req.getMaxScopeDepth());
         else if (!req.getMinScopeDepth_isNull())
-            filter.setScopeDepth(req.getMinScopeDepth());
+            filter.setDepth(req.getMinScopeDepth(), req.getMinScopeDepth());
+
         if (!req.getMinValue_isNull() || !req.getMaxValue_isNull())
         {
             unsigned __int64 lowValue = 0;
@@ -4914,12 +4934,14 @@ bool CWsWorkunitsEx::onWUGetStats(IEspContext &context, IEspWUGetStatsRequest &r
                 lowValue = (unsigned __int64)req.getMinValue();
             if (!req.getMaxValue_isNull())
                 highValue = (unsigned __int64)req.getMaxValue();
-            filter.setValueRange(lowValue, highValue);
+            statsFilter.setValueRange(lowValue, highValue);
         }
 
         const char * textFilter = req.getFilter();
         if (textFilter)
-            filter.setFilter(textFilter);
+            statsFilter.setFilter(textFilter);
+
+        filter.setIncludeNesting(0).finishedFilter();
 
         bool createDescriptions = false;
         if (!req.getCreateDescriptions_isNull())
@@ -4945,7 +4967,7 @@ bool CWsWorkunitsEx::onWUGetStats(IEspContext &context, IEspWUGetStatsRequest &r
                 {
                     //No need to check for access since the list is already filtered
                     WsWuInfo winfo(context, workunit->queryWuid());
-                    winfo.getStats(filter, createDescriptions, statistics);
+                    winfo.getStats(filter, statsFilter, createDescriptions, statistics);
                 }
             }
         }
@@ -4955,7 +4977,7 @@ bool CWsWorkunitsEx::onWUGetStats(IEspContext &context, IEspWUGetStatsRequest &r
             ensureWsWorkunitAccess(context, wuid, SecAccess_Read);
 
             WsWuInfo winfo(context, wuid);
-            winfo.getStats(filter, createDescriptions, statistics);
+            winfo.getStats(filter, statsFilter, createDescriptions, statistics);
         }
         resp.setStatistics(statistics);
         resp.setWUID(wuid.str());

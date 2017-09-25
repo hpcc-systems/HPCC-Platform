@@ -993,13 +993,20 @@ interface IConstWUStatisticIterator : extends IScmIterator
 //---------------------------------------------------------------------------------------------------------------------
 
 /*
- * An interface that is provided as a callback to a scope iterator to report the when iterating scopes
+ * An interface that is provided as a callback to a scope iterator to report properties when iterating scopes
  */
 interface IWuScopeVisitor
 {
     virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & extra) = 0;
     virtual void noteAttribute(WuAttr attr, const char * value) = 0;
     virtual void noteHint(const char * kind, const char * value) = 0;
+};
+
+class WORKUNIT_API WuScopeVisitorBase : implements IWuScopeVisitor
+{
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & extra) override {}
+    virtual void noteAttribute(WuAttr attr, const char * value) override {}
+    virtual void noteHint(const char * kind, const char * value) override {}
 };
 
 /*
@@ -1043,22 +1050,28 @@ public:
     WuScopeFilter() = default;
     WuScopeFilter(const char * filter);
 
-    void addFilter(const char * filter);
-    void addScope(const char * scope);
-    void addScopeType(const char * scopeType);
-    void addId(const char * id);
-    void setDepth(unsigned low, unsigned high);
-    void setSource(const char * source);
+    WuScopeFilter & addFilter(const char * filter);
+    WuScopeFilter & addScope(const char * scope);
+    WuScopeFilter & addScopeType(const char * scopeType);
+    WuScopeFilter & addId(const char * id);
+    WuScopeFilter & setDepth(unsigned low, unsigned high);
+    WuScopeFilter & addSource(const char * source);
 
-    void setIncludeMatch(bool value);
-    void setIncludeNesting(unsigned depth);
-    void setIncludeScopeType(const char * scopeType);
+    WuScopeFilter & setIncludeMatch(bool value);
+    WuScopeFilter & setIncludeNesting(unsigned depth);
+    WuScopeFilter & setIncludeScopeType(const char * scopeType);
+    WuScopeFilter & setMeasure(const char * measure);
 
-    void addOutput(const char * prop);              // Which statistics/properties/hints are required.
-    void addOutputProperties(const char * prop);    // stat/attr/hint/scope
-    void addOutputStatistic(const char * prop);
-    void addOutputAttribute(const char * prop);
-    void addOutputHint(const char * prop);
+    WuScopeFilter & addOutput(const char * prop);              // Which statistics/properties/hints are required.
+    WuScopeFilter & addOutputProperties(WuPropertyTypes prop); // stat/attr/hint/scope etc.
+    WuScopeFilter & addOutputStatistic(StatisticKind stat);
+    WuScopeFilter & addOutputStatistic(const char * prop);
+    WuScopeFilter & addOutputAttribute(WuAttr attr);
+    WuScopeFilter & addOutputAttribute(const char * prop);
+    WuScopeFilter & addOutputHint(const char * prop);
+
+    WuScopeFilter & addRequiredStat(StatisticKind statKind);
+    WuScopeFilter & addRequiredStat(StatisticKind statKind, stat_type lowValue, stat_type highValue);
 
     void finishedFilter(); // Call once filter has been completely set up
 
@@ -1211,7 +1224,8 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual bool getRunningGraph(IStringVal & graphName, WUGraphIDType & subId) const = 0;
     virtual IConstWUWebServicesInfo * getWebServicesInfo() const = 0;
     virtual IConstWUStatisticIterator & getStatistics(const IStatisticsFilter * filter) const = 0; // filter must currently stay alive while the iterator does.
-    virtual IConstWUStatistic * getStatistic(const char * creator, const char * scope, StatisticKind kind) const = 0;
+    virtual IConstWUStatistic * getStatistic(const char * scope, StatisticKind kind) const = 0;
+    virtual bool getStatistic(stat_type & value, const char * scope, StatisticKind kind) const = 0;
     virtual IConstWUScopeIterator & getScopeIterator(const WuScopeFilter & filter) const = 0; // filter must currently stay alive while the iterator does.
     virtual IConstWUResult * getVariableByName(const char * name) const = 0;
     virtual IConstWUResultIterator & getVariables() const = 0;
@@ -1662,8 +1676,7 @@ interface ITimeReporter;
 extern WORKUNIT_API void updateWorkunitTimeStat(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * description, unsigned __int64 value);
 extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, ITimeReporter *timer);
 extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, StatisticScopeType scopeType, StatisticKind kind, ITimeReporter *timer);
-extern WORKUNIT_API void getWorkunitTotalTime(IConstWorkUnit* workunit, const char* creator, unsigned __int64 & totalTimeNs, unsigned __int64 & totalThisTimeNs);
-extern WORKUNIT_API IConstWUStatistic * getStatistic(IConstWorkUnit * wu, const IStatisticsFilter & filter);
+extern WORKUNIT_API void aggregateStatistic(StatsAggregation & result, IConstWorkUnit * wu, const WuScopeFilter & filter, StatisticKind search);
 
 extern WORKUNIT_API const char *getTargetClusterComponentName(const char *clustname, const char *processType, StringBuffer &name);
 extern WORKUNIT_API void descheduleWorkunit(char const * wuid);

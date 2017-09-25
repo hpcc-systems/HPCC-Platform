@@ -185,7 +185,7 @@ public:
     void getEclSchemaFields(IArrayOf<IEspECLSchemaItem>& schemas, IHqlExpression * expr, bool isConditional);
     bool getResultEclSchemas(IConstWUResult &r, IArrayOf<IEspECLSchemaItem>& schemas);
     void getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, unsigned long flags);
-    void getStats(StatisticsFilter& filter, bool createDescriptions, IArrayOf<IEspWUStatisticItem>& statistics);
+    void getStats(const WuScopeFilter & filter, const StatisticsFilter& statsFilter, bool createDescriptions, IArrayOf<IEspWUStatisticItem>& statistics);
 
     void getWorkunitEclAgentLog(const char* eclAgentInstance, const char* agentPid, MemoryBuffer& buf);
     void getWorkunitThorLog(const char *processName, MemoryBuffer& buf);
@@ -208,14 +208,10 @@ public:
     void setWUAbortTime(IEspECLWorkunit &info, unsigned __int64 abortTS);
     IConstWUQuery* getEmbeddedQuery();
 
-protected:
     void addTimerToList(SCMStringBuffer& name, const char * scope, IConstWUStatistic & stat, IArrayOf<IEspECLTimer>& timers);
+protected:
     unsigned getTotalThorTime();
-    unsigned getTotalThorTime(const char * scope);
-    unsigned getLegacyTotalThorTime();
     bool hasSubGraphTimings();
-    bool legacyHasSubGraphTimings();
-    void legacyGetGraphTimingData(IArrayOf<IConstECLTimingData> &timingData);
 
 public:
     IEspContext &context;

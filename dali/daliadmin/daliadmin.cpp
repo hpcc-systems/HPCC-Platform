@@ -123,8 +123,6 @@ void usage(const char *exe)
   printf("  validatestore [fix=<true|false>]\n"
          "                [verbose=<true|false>]\n"
          "                [deletefiles=<true|false>]-- perform some checks on dali meta data an optionally fix or remove redundant info \n");
-  printf("  stats <workunit> [<creator-type> <creator> <scope-type> <scope> <kind>|category'['value']',...]\n"
-         "                                  -- dump the statistics for a workunit\n");
   printf("  workunit <workunit> [true]      -- dump workunit xml, if 2nd parameter equals true, will also include progress data\n");
   printf("  wuidcompress <wildcard> <type>  --  scan workunits that match <wildcard> and compress resources of <type>\n");
   printf("  wuiddecompress <wildcard> <type> --  scan workunits that match <wildcard> and decompress resources of <type>\n");
@@ -2538,148 +2536,6 @@ static void dumpProgress(const char *wuid, const char * graph)
     saveXML("stdout:", tree);
 }
 
-static const char * checkDash(const char * s)
-{
-    //Supplying * on the command line is a pain because it needs quoting. Allow - instead.
-    if (streq(s, ".") || streq(s, "-"))
-        return "*";
-    return s;
-}
-
-static void dumpStats(IConstWorkUnit * workunit, const StatisticsFilter & filter, bool csv)
-{
-    Owned<IConstWUStatisticIterator> stats = &workunit->getStatistics(&filter);
-    if (!csv)
-        printf("<Statistics wuid=\"%s\">\n", workunit->queryWuid());
-    ForEach(*stats)
-    {
-        IConstWUStatistic & cur = stats->query();
-        StringBuffer xml;
-        SCMStringBuffer curCreator;
-        SCMStringBuffer curDescription;
-        SCMStringBuffer curFormattedValue;
-
-        StatisticCreatorType curCreatorType = cur.getCreatorType();
-        StatisticScopeType curScopeType = cur.getScopeType();
-        StatisticMeasure curMeasure = cur.getMeasure();
-        StatisticKind curKind = cur.getKind();
-        unsigned __int64 value = cur.getValue();
-        unsigned __int64 count = cur.getCount();
-        unsigned __int64 max = cur.getMax();
-        unsigned __int64 ts = cur.getTimestamp();
-        const char * curScope = cur.queryScope();
-        cur.getCreator(curCreator);
-        cur.getDescription(curDescription, false);
-        cur.getFormattedValue(curFormattedValue);
-
-        if (csv)
-        {
-            xml.append(workunit->queryWuid());
-            xml.append(",");
-            if (curCreatorType != SCTnone)
-                xml.append(queryCreatorTypeName(curCreatorType));
-            xml.append(",");
-            if (curCreator.length())
-                xml.append(curCreator.str());
-            xml.append(",");
-            if (curScopeType != SSTnone)
-                xml.append(queryScopeTypeName(curScopeType));
-            xml.append(",");
-            if (!isEmptyString(curScope))
-                xml.append(curScope);
-            xml.append(",");
-            if (curMeasure != SMeasureNone)
-                xml.append(queryMeasureName(curMeasure));
-            xml.append(",");
-            if (curKind != StKindNone)
-                xml.append(queryStatisticName(curKind));
-            xml.append(",");
-            xml.append(value);
-            xml.append(",");
-            xml.append(curFormattedValue);
-            xml.append(",");
-            if (count != 1)
-                xml.append(count);
-            xml.append(",");
-            if (max)
-                xml.append(max);
-            xml.append(",");
-            if (ts)
-                formatStatistic(xml, ts, SMeasureTimestampUs);
-            xml.append(",");
-            if (curDescription.length())
-                xml.append('"').append(curDescription.str()).append('"');
-            printf("%s\n", xml.str());
-        }
-        else
-        {
-            if (curCreatorType != SCTnone)
-                xml.append("<ctype>").append(queryCreatorTypeName(curCreatorType)).append("</ctype>");
-            if (curCreator.length())
-                xml.append("<creator>").append(curCreator.str()).append("</creator>");
-            if (curScopeType != SSTnone)
-                xml.append("<stype>").append(queryScopeTypeName(curScopeType)).append("</stype>");
-            if (!isEmptyString(curScope))
-                xml.append("<scope>").append(curScope).append("</scope>");
-            if (curMeasure != SMeasureNone)
-                xml.append("<unit>").append(queryMeasureName(curMeasure)).append("</unit>");
-            if (curKind != StKindNone)
-                xml.append("<kind>").append(queryStatisticName(curKind)).append("</kind>");
-            xml.append("<rawvalue>").append(value).append("</rawvalue>");
-            xml.append("<value>").append(curFormattedValue).append("</value>");
-            if (count != 1)
-                xml.append("<count>").append(count).append("</count>");
-            if (max)
-                xml.append("<max>").append(value).append("</max>");
-            if (ts)
-            {
-                xml.append("<ts>");
-                formatStatistic(xml, ts, SMeasureTimestampUs);
-                xml.append("</ts>");
-            }
-            if (curDescription.length())
-                xml.append("<desc>").append(curDescription.str()).append("</desc>");
-            printf("<stat>%s</stat>\n", xml.str());
-        }
-    }
-    if (!csv)
-        printf("</Statistics>\n");
-}
-
-static void dumpStats(const char *wuid, const char * creatorTypeText, const char * creator, const char * scopeTypeText, const char * scope, const char * kindText, const char * userFilter, bool csv)
-{
-    StatisticsFilter filter(checkDash(creatorTypeText), checkDash(creator), checkDash(scopeTypeText), checkDash(scope), NULL, checkDash(kindText));
-    if (userFilter)
-        filter.setFilter(userFilter);
-
-    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-    const char * star = strchr(wuid, '*');
-    if (star)
-    {
-        WUSortField filters[2];
-        MemoryBuffer filterbuf;
-        filters[0] = WUSFwildwuid;
-        filterbuf.append(wuid);
-        filters[1] = WUSFterm;
-        Owned<IConstWorkUnitIterator> iter = factory->getWorkUnitsSorted((WUSortField) (WUSFwuid), filters, filterbuf.bufferBase(), 0, INT_MAX, NULL, NULL);
-
-        ForEach(*iter)
-        {
-            Owned<IConstWorkUnit> workunit = factory->openWorkUnit(iter->query().queryWuid());
-            if (workunit)
-                dumpStats(workunit, filter, csv);
-        }
-    }
-    else
-    {
-        Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
-        if (!workunit)
-            return;
-        dumpStats(workunit, filter, csv);
-    }
-}
-
-
 /* Callback used to output the different scope properties as xml */
 class ScopeDumper : public IWuScopeVisitor
 {
@@ -3628,21 +3484,6 @@ int main(int argc, char* argv[])
                     else if (strieq(cmd, "progress")) {
                         CHECKPARAMS(2,2);
                         dumpProgress(params.item(1), params.item(2));
-                    }
-                    else if (strieq(cmd, "stats")) {
-                        CHECKPARAMS(1, 7);
-                        if ((params.ordinality() >= 3) && (strchr(params.item(2), '[')))
-                        {
-                            bool csv = params.isItem(3) && strieq(params.item(3), "csv");
-                            dumpStats(params.item(1), "-", "-", "-", "-", "-", params.item(2), csv);
-                        }
-                        else
-                        {
-                            while (params.ordinality() < 7)
-                                params.append("*");
-                            bool csv = params.isItem(7) && strieq(params.item(7), "csv");
-                            dumpStats(params.item(1), params.item(2), params.item(3), params.item(4), params.item(5), params.item(6), nullptr, csv);
-                        }
                     }
                     else if (strieq(cmd, "migratefiles"))
                     {

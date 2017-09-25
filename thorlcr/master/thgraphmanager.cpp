@@ -834,9 +834,6 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     StringAttr wuid(workunit.queryWuid());
     const char *totalTimeStr = "Total thor time";
     cycle_t startCycles = get_cycles_now();
-    unsigned __int64 totalTimeNs = 0;
-    unsigned __int64 totalThisTimeNs = 0;
-    getWorkunitTotalTime(&workunit, "thor", totalTimeNs, totalThisTimeNs);
 
     Owned<IConstWUQuery> query = workunit.getQuery(); 
     SCMStringBuffer soName;
@@ -913,8 +910,6 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         formatGraphTimerLabel(graphTimeStr, graphName);
 
         updateWorkunitTimeStat(wu, SSTgraph, graphName, StTimeElapsed, graphTimeStr, graphTimeNs);
-        updateWorkunitTimeStat(wu, SSTglobal, GLOBAL_SCOPE, StTimeElapsed, NULL, totalThisTimeNs+graphTimeNs);
-        wu->setStatistic(SCTsummary, "thor", SSTglobal, GLOBAL_SCOPE, StTimeElapsed, totalTimeStr, totalTimeNs+graphTimeNs, 1, 0, StatsMergeReplace);
 
         addTimeStamp(wu, SSTgraph, graphName, StWhenFinished);
         
