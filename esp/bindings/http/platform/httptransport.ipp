@@ -370,6 +370,7 @@ public:
 
     virtual bool httpContentFromFile(const char *filepath);
     virtual bool handleExceptions(IXslProcessor *xslp, IMultiException *me, const char *serv, const char *meth, const char *errorXslt);
+    virtual void handleExceptions(IXslProcessor *xslp, IMultiException *me, const char *serv, const char *meth, const char *errorXslt, bool logHandleExceptions);
 
     virtual void redirect(CHttpRequest &req, const char *url)
     {

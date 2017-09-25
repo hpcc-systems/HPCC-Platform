@@ -1402,7 +1402,7 @@ int CWsPackageProcessSoapBindingEx::onFinishUpload(IEspContext &ctx, CHttpReques
         WARNLOG("Exception(s) in EspHttpBinding::onFinishUpload - %s", meIn->errorMessage(msg).append('\n').str());
         if ((ctx.getResponseFormat() == ESPSerializationXML) || (ctx.getResponseFormat() == ESPSerializationJSON))
         {
-            response->handleExceptions(NULL, meIn, "FileSpray", "UploadFile", NULL);
+            response->handleExceptions(NULL, meIn, "FileSpray", "UploadFile", NULL, false);
             return 0;
         }
         else
