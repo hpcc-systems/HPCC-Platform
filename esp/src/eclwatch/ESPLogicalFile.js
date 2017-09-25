@@ -409,6 +409,12 @@ define([
             }
             return dojoConfig.getImageURL("unlocked.png");
         },
+        getCompressedImage: function () {
+            if (this.IsCompressed) {
+                return dojoConfig.getImageURL("compressed.png");
+            }
+            return dojoConfig.getImageURL("");
+        },
         isDeleted: function () {
             return this.StateID === 999;
         }
