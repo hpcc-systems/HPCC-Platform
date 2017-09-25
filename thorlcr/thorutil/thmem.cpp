@@ -418,15 +418,19 @@ public:
         pos = numReadRows = 0;
         granularity = 500; // JCSMORE - rows
 
+        activateSpillingCallback(); // NB: it's possible the small allocate below will trigger this, 'readRows' will be free as soon as nextRow sees the spill.
+
         // a small amount of rows to read from swappable rows
         readRows = static_cast<const void * *>(rowIf->queryRowManager()->allocate(granularity * sizeof(void*), activity.queryContainer().queryId(), inRows.queryDefaultMaxSpillCost()));
-        activateSpillingCallback();
     }
     ~CSpillableStream()
     {
         spillStream.clear();
-        roxiemem::ReleaseRoxieRowRange(readRows, pos, numReadRows);
-        ReleaseThorRow(readRows);
+        if (readRows)
+        {
+            roxiemem::ReleaseRoxieRowRange(readRows, pos, numReadRows);
+            ReleaseThorRow(readRows);
+        }
     }
 
 // IRowStream
@@ -448,6 +452,8 @@ public:
                 }
                 rwFlags |= mapESRToRWFlags(emptyRowSemantics);
                 spillStream.setown(createRowStream(spillFile, rowIf, rwFlags));
+                ReleaseThorRow(readRows);
+                readRows = nullptr;
                 return spillStream->nextRow();
             }
             rowidx_t available = rows.numCommitted();
@@ -1694,10 +1700,8 @@ protected:
         ++outStreams;
 
         /* Ensure existing callback is cleared, before:
-         * a) instreams are built, since new spillFiles can be added to as long as existing callback is active
-         * b) locked CThorSpillableRowArrayLock section below, which in turn may add a new callback.
-         *    Otherwise, once this section has the lock, the existing callback may be called by roxiemem and block,
-         *    causing this section to deadlock inside roxiemem, if it tries to add a new callback.
+         * a) instrms are built, since new spillFiles can't be added to as long as existing callback is active
+         * b) streams created based on spillableRows, which take ownership of spillableRows and in turn add their own callbacks
          */
         deactivateSpillingCallback();
 
@@ -1718,50 +1722,48 @@ protected:
             instrms.append(* new CStreamFileOwner(fileOwner, strm));
         }
 
+        if (spillableRowSet)
+            instrms.append(*spillableRowSet->createRowStream());
+        else if (spillableRows.numCommitted())
         {
-            if (spillableRowSet)
-                instrms.append(*spillableRowSet->createRowStream());
-            else if (spillableRows.numCommitted())
+            totalRows += spillableRows.numCommitted();
+            if (iCompare && (1 == outStreams))
             {
-                totalRows += spillableRows.numCommitted();
-                if (iCompare && (1 == outStreams))
+                // Option(rcflag_noAllInMemSort) - avoid sorting allMemRows
+                if ((NULL == allMemRows) || (0 == (options & rcflag_noAllInMemSort)))
                 {
-                    // Option(rcflag_noAllInMemSort) - avoid sorting allMemRows
-                    if ((NULL == allMemRows) || (0 == (options & rcflag_noAllInMemSort)))
-                    {
-                        CCycleTimer timer;
-                        spillableRows.sort(*iCompare, maxCores);
-                        sortCycles += timer.elapsedCycles();
-                    }
-                }
-
-                if ((rc_allDiskOrAllMem == diskMemMix) || // must supply allMemRows, only here if no spilling (see above)
-                    (NULL!=allMemRows && (rc_allMem == diskMemMix)) ||
-                    (NULL!=allMemRows && (rc_mixed == diskMemMix) && 0 == overflowCount) // if allMemRows given, only if no spilling
-                   )
-                {
-                    assertex(allMemRows);
-                    assertex(1 == outStreams);
-                    if (memUsage)
-                        *memUsage = spillableRows.getMemUsage(); // a bit expensive if variable rows
-                    allMemRows->transferFrom(spillableRows);
-                    // stream cannot be used
-                    return NULL;
-                }
-                if (!shared)
-                    instrms.append(*spillableRows.createRowStream(spillPriority, spillCompInfo)); // NB: stream will take ownership of rows in spillableRows
-                else
-                {
-                    spillableRowSet.setown(new CSharedSpillableRowSet(activity, spillableRows, rowIf, emptyRowSemantics, spillPriority));
-                    instrms.append(*spillableRowSet->createRowStream());
+                    CCycleTimer timer;
+                    spillableRows.sort(*iCompare, maxCores);
+                    sortCycles += timer.elapsedCycles();
                 }
             }
+
+            if ((rc_allDiskOrAllMem == diskMemMix) || // must supply allMemRows, only here if no spilling (see above)
+                (NULL!=allMemRows && (rc_allMem == diskMemMix)) ||
+                (NULL!=allMemRows && (rc_mixed == diskMemMix) && 0 == overflowCount) // if allMemRows given, only if no spilling
+               )
+            {
+                assertex(allMemRows);
+                assertex(1 == outStreams);
+                if (memUsage)
+                    *memUsage = spillableRows.getMemUsage(); // a bit expensive if variable rows
+                allMemRows->transferFrom(spillableRows);
+                // stream cannot be used
+                return NULL;
+            }
+            if (!shared)
+                instrms.append(*spillableRows.createRowStream(spillPriority, spillCompInfo)); // NB: stream will take ownership of rows in spillableRows
             else
             {
-                // If 0 rows, no overflow, don't return stream, except for rc_allDisk which will never fill allMemRows
-                if (allMemRows && (0 == overflowCount) && (diskMemMix != rc_allDisk))
-                    return NULL;
+                spillableRowSet.setown(new CSharedSpillableRowSet(activity, spillableRows, rowIf, emptyRowSemantics, spillPriority));
+                instrms.append(*spillableRowSet->createRowStream());
             }
+        }
+        else
+        {
+            // If 0 rows, no overflow, don't return stream, except for rc_allDisk which will never fill allMemRows
+            if (allMemRows && (0 == overflowCount) && (diskMemMix != rc_allDisk))
+                return NULL;
         }
         if (0 == instrms.ordinality())
             return createNullRowStream();
