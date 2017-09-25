@@ -22,13 +22,106 @@ define([
     "dojo/_base/lang",
     "dojo/_base/array",
     "dojo/topic",
+    "dojo/request/xhr",
+
+    "dijit/Dialog",
+    "dijit/form/Button",
+
+    "hpcc/ESPUtil",
+    "hpcc/Utility",
 
     "dojox/html/entities",
     "dojox/widget/Toaster"
-], function (fx, dom, domStyle, ioQuery, ready, lang, arrayUtil, topic,
+], function (fx, dom, domStyle, ioQuery, ready, lang, arrayUtil, topic, xhr,
+            Dialog, Button,
+            ESPUtil, Utility,
             entities, Toaster) {
 
-    var initUi = function () {
+    var IDLE_TIMEOUT = 30 * 60 * 1000;  // 30 Mins;
+    var COUNTDOWN = 3 * 60;  // 3 Mins;
+    var SESSION_RESET_FREQ = 30 * 1000; //  30 Seconds
+    var idleWatcher;
+    var _prevReset = Date.now();
+    
+    function _resetESPTime(evt) {
+        if (Date.now() - _prevReset > SESSION_RESET_FREQ) {
+            _prevReset = Date.now();
+            xhr("esp/reset_session_timeout", {
+                method: "post"
+            }).then(function (data) {
+            });
+        }
+    }
+
+    function _onLogout(evt) {
+        xhr("esp/logout", {
+            method: "post"
+        }).then(function (data) {
+            if (data) {
+                document.cookie = "ESPSessionID" + location.port + " = '' "; "expires=Thu, 01 Jan 1970 00:00:00 GMT"; // or -1
+                window.location.reload();
+            }
+        });
+    }
+
+    function showTimeoutDialog() {
+        var dialogTimeout;
+        var countdown = COUNTDOWN;
+        var confirmLogoutDialog = new Dialog({
+            title: "You are about to be logged out",
+            content: "Due to inactivity, you will be logged out of your ECL Watch session in 3 minutes. This will close any sessions open in other tabs for this envrionment. Click on \'Continue Working\' to extend your session or click on \'Log Out\' to exit.",
+            style: "width: 350px;padding:10px;",
+            closable: false,
+            draggable: false
+        });
+
+        var actionBar = dojo.create("div", {
+            class: "dijitDialogPaneActionBar",
+            style: "margin-top:10px;"
+        }, confirmLogoutDialog.containerNode);
+
+        var continueBtn = new Button({
+            label: "Continue Working",
+            style: "float:left;",
+            onClick: function () {
+                idleWatcher.start();
+                confirmLogoutDialog.hide();
+            }
+        }).placeAt(actionBar);
+
+        var logoutBtn = new Button({
+            label: "Log Out - " + countdown,
+            style: "font-weight:bold;",
+            onClick: function () {
+                _onLogout();
+            }
+        }).placeAt(actionBar);
+
+        confirmLogoutDialog.show();
+        dialogTimeout = setInterval(function () {
+            if (--countdown < 0) {
+                clearInterval(dialogTimeout);
+                _onLogout();
+            }
+            logoutBtn.set("label", "Log Out - " + countdown);
+        }, 1000);
+    }
+
+    function startLoading(targetNode) {
+        domStyle.set(dom.byId("loadingOverlay"), "display", "block");
+        domStyle.set(dom.byId("loadingOverlay"), "opacity", "255");
+    }
+
+    function stopLoading() {
+        fx.fadeOut({
+            node: dom.byId("loadingOverlay"),
+            onEnd: function (node) {
+                domStyle.set(node, "display", "none");
+            }
+        }).play();
+    }
+
+    function initUi() {
         var params = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) === "?" ? 1 : 0)));
         var hpccWidget = params.Widget ? params.Widget : "HPCCPlatformWidget";
 
@@ -93,24 +186,20 @@ define([
                 }
 
                 document.title = widget.getTitle ? widget.getTitle() : params.Widget;
+
+                idleWatcher = new ESPUtil.IdleWatcher(IDLE_TIMEOUT);
+                idleWatcher.on("active", function () {
+                    _resetESPTime();
+                });
+                idleWatcher.on("idle", function () {
+                    idleWatcher.stop();
+                    showTimeoutDialog();
+                });
+                idleWatcher.start();
                 stopLoading();
             }
         );
-    },
-
-    startLoading = function (targetNode) {
-        domStyle.set(dom.byId("loadingOverlay"), "display", "block");
-        domStyle.set(dom.byId("loadingOverlay"), "opacity", "255");
-    },
-
-    stopLoading = function () { // jshint ignore:line
-        fx.fadeOut({
-            node: dom.byId("loadingOverlay"),
-            onEnd: function (node) {
-                domStyle.set(node, "display", "none");
-            }
-        }).play();
-    };
+    }
 
     return {
         init: function () {
