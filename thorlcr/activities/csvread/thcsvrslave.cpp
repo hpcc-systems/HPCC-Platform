@@ -284,6 +284,16 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
         CMessageBuffer msgMb;
         msgMb.append(subFile);
         msgMb.append(headerLinesRemaining[subFile]);
+        // inform next slave about all subfiles I'm not dealing with.
+        for (unsigned s=0; s<subFiles; s++)
+        {
+            if (NotFound == localLastPart[s])
+            {
+                sentHeaderLines->testSet(s);
+                msgMb.append(s);
+                msgMb.append(headerLinesRemaining[s]);
+            }
+        }
         queryJobChannel().queryJobComm().send(msgMb, queryJobChannel().queryMyRank()+1, mpTag);
     }
     void sendRemainingHeaderLines()
@@ -347,7 +357,9 @@ public:
             mpTag = container.queryJobChannel().deserializeMPTag(data);
             data.read(subFiles);
             superFDesc = partDescs.ordinality() ? partDescs.item(0).queryOwner().querySuperFileDescriptor() : NULL;
-            localLastPart.allocateN(subFiles, true);
+            localLastPart.allocateN(subFiles);
+            for (unsigned llp=0; llp<subFiles; llp++)
+                localLastPart[llp] = NotFound;
             ForEachItemIn(p, partDescs)
             {
                 IPartDescriptor &partDesc = partDescs.item(p);
@@ -360,7 +372,7 @@ public:
                         throw MakeActivityException(this, 0, "mapSubPart failed, file=%s, partnum=%d", logicalFilename.get(), pnum);
                     pnum = lnum;
                 }
-                if (pnum > localLastPart[subFile]) // don't think they can really be out of order
+                if ((NotFound == localLastPart[subFile]) || (pnum > localLastPart[subFile])) // don't think they can really be out of order
                     localLastPart[subFile] = pnum;
             }
             headerLinesRemaining.allocateN(subFiles);
