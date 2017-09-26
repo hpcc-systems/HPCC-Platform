@@ -26,7 +26,6 @@ set ( ESPSCM_GENERATED_DIR ${CMAKE_BINARY_DIR}/generated )
 set ( ESPSCM_SRCS
       common.ecm
       ecl.ecm
-      ecldirect.ecm
       ecllib.ecm
       esp.ecm
       ws_access.ecm

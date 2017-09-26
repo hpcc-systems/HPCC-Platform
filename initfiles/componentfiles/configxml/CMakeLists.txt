@@ -53,7 +53,6 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/eclscheduler.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/environment.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_account.xsd
-    ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_ecldirect.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wsecl.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wsecl2.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/GABConfig.xsd
