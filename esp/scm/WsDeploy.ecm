@@ -570,11 +570,6 @@ ESPresponse [exceptions_inline, encode(0)] GetSummaryResponse
 
 ESPservice [auth_feature("NONE"), exceptions_inline("xslt/exceptions.xslt")] WsDeploy
 {
-    ESPuses ESPstruct Task;
-    ESPuses ESPstruct Component;
-    ESPuses ESPstruct DeployOptions;
-    ESPuses ESPstruct DeployInfo;
-
     ESPmethod[description("Handle an event from the navigation tree menu"), help("")] 
         NavMenuEvent(NavMenuEventRequest, NavMenuEventResponse);    
     ESPmethod[description("Dependency graph"), help(""), resp_xsl_default("xslt/graph_display.xsl")] 

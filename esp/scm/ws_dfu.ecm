@@ -749,12 +749,6 @@ ESPservice [
     noforms,
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {
-    ESPuses ESPStruct DFULogicalFile;
-    ESPuses ESPStruct DFUPart;
-    ESPuses ESPStruct DFUFileStat;
-    ESPuses ESPStruct DFUFileDetail;
-    ESPuses ESPStruct DFUDataColumn;
-
     ESPmethod [resp_xsl_default("/esp/xslt/dfu_fileview.xslt")] DFUFileView(DFUFileViewRequest, DFUFileViewResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/dfu_search.xslt")] DFUSearch(DFUSearchRequest, DFUSearchResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/dfu.xslt")] DFUQuery(DFUQueryRequest, DFUQueryResponse);

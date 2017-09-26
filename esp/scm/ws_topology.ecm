@@ -613,26 +613,6 @@ ESPresponse [nil_remove, exceptions_inline] TpDropZoneQueryResponse
 
 ESPservice [auth_feature("DEFERRED"), noforms, version("1.26"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
 {
-    ESPuses ESPStruct TpBinding;
-    ESPuses ESPstruct TpCluster;
-    ESPuses ESPstruct TpDali;
-    ESPuses ESPstruct TpDfuServer;
-    ESPuses ESPstruct TpDropZone;
-    ESPuses ESPstruct TpEclAgent;
-    ESPuses ESPstruct TpEclServer;
-    ESPuses ESPstruct TpEspServer;
-    ESPuses ESPstruct TpFTSlave;
-    ESPuses ESPstruct TpDkcSlave;
-    ESPuses ESPstruct TpGroup;
-    ESPuses ESPstruct TpLdapServer;
-    ESPuses ESPStruct TpLogicalCluster;
-    ESPuses ESPstruct TpMachine;
-    ESPuses ESPstruct TpMySqlServer;
-    ESPuses ESPStruct TpQueryType;
-    ESPuses ESPStruct TpSashaServer;
-    ESPuses ESPstruct TpServices;
-    ESPuses ESPstruct TpTargetCluster;
-
     ESPmethod [cache_seconds(180), cache_global(1), resp_xsl_default("/esp/xslt/targetclusters.xslt")] TpTargetClusterQuery(TpTargetClusterQueryRequest, TpTargetClusterQueryResponse);
     ESPmethod [cache_seconds(180), cache_global(1), resp_xsl_default("/esp/xslt/topology.xslt")] TpClusterQuery(TpClusterQueryRequest, TpClusterQueryResponse);
     ESPmethod [cache_seconds(180), cache_global(1)] TpLogicalClusterQuery(TpLogicalClusterQueryRequest, TpLogicalClusterQueryResponse);

@@ -682,8 +682,6 @@ ESPservice [
     version("1.15"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
-    ESPuses ESPstruct DFUWorkunit;
-    ESPuses ESPstruct DFUException;
     ESPmethod EchoDateTime(EchoDateTime, EchoDateTimeResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/showresult.xslt")] ShowResult(ShowResultRequest, ShowResultResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/dfuwu_search.xslt")] DFUWUSearch(DFUWUSearchRequest, DFUWUSearchResponse);
