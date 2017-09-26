@@ -81,6 +81,7 @@ define([
         postCreate: function (args) {
             this.inherited(arguments);
             this.searchText = registry.byId(this.id + "FindText");
+            this.logoutBtn = registry.byId(this.id + "Logout");
             this.aboutDialog = registry.byId(this.id + "AboutDialog");
             this.setBannerDialog = registry.byId(this.id + "SetBannerDialog");
             this.stackContainer = registry.byId(this.id + "TabContainer");
@@ -212,6 +213,7 @@ define([
             this.createStackControllerTooltip(this.id + "_OPS", this.i18n.Operations);
             this.createStackControllerTooltip(this.id + "_Plugins", this.i18n.Plugins);
             this.initTab();
+            this.checkIfSessionsAreActive();
 
             topic.subscribe("hpcc/monitoring_component_update", function (topic) {
                 context.checkMonitoring(topic.status);
@@ -263,6 +265,12 @@ define([
                         });
                     }
                 });
+            }
+        },
+
+        checkIfSessionsAreActive: function () {
+            if (cookie("ESPSessionTimeoutSeconds")) {
+                this.logoutBtn.set("disabled", false);
             }
         },
 
