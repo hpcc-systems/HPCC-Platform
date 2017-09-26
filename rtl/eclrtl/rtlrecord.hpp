@@ -272,13 +272,18 @@ public:
     void setRow(const void * _row);
     void setRow(const void * _row, unsigned _numFields);
 
-    const void *queryRow() const
+    const byte *queryRow() const
     {
         return row;
     }
+    const byte * queryField(unsigned field) const
+    {
+        return queryRow() + getOffset(field);
+    }
+    explicit operator bool() { return row != nullptr; }
 protected:
     const RtlRecord & info;
-    const void * row;
+    const byte * row;
     size_t * variableOffsets;       // [0 + 1 entry for each variable size field ]
 };
 

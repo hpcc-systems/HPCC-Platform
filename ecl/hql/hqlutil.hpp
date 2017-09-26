@@ -748,7 +748,7 @@ extern HQL_API IHqlExpression * convertSetToExpression(bool isAll, size32_t len,
 
 struct FieldTypeInfoStruct;
 interface IRtlFieldTypeDeserializer;
-class RtlTypeInfo;
+struct RtlTypeInfo;
 
 /*
  * Check whether an xpath contains any non-scalar elements (and is this unsuitable for use when generating ECL)

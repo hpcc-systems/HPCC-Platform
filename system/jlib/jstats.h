@@ -250,14 +250,6 @@ protected:
     stat_type maxValue;
 };
 
-//These could be template definitions, but that would potentially affect too many classes.
-//MORE: Would it be useful to move this to a common definition point?
-#define BITMASK_ENUM(X) \
-inline constexpr X operator | (X l, X r) { return (X)((unsigned)l | (unsigned)r); } \
-inline constexpr X operator ~ (X l) { return (X)(~(unsigned)l); } \
-inline X & operator |= (X & l, X r) { l = l | r; return l; } \
-inline X & operator &= (X & l, X r) { l = (X)(l & r); return l; }
-
 enum ScopeCompare : unsigned
 {
     SCunknown   = 0x0000,   //

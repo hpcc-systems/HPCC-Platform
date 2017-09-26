@@ -156,7 +156,6 @@ extern FILEVIEW_API IResultSetFactory * getResultSetFactory(const char * usernam
 extern FILEVIEW_API IResultSetFactory * getSecResultSetFactory(ISecManager *secmgr, ISecUser *secuser, const char * username, const char * password);
 
 //Formatting applied remotely, so it can be accessed between different operating systems...
-extern FILEVIEW_API IResultSetFactory * getRemoteResultSetFactory(const char * remoteServer, const char * username, const char * password);
 extern FILEVIEW_API int findResultSetColumn(const INewResultSet * results, const char * columnName);
 
 extern FILEVIEW_API unsigned getResultCursorXml(IStringVal & ret, IResultSetCursor * cursor, const char * name, unsigned start=0, unsigned count=0, const char * schemaName=NULL, const IProperties *xmlns=NULL);

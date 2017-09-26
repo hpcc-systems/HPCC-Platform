@@ -179,7 +179,6 @@ ECLRTL_API IKeySegmentMonitor *createSingleBigSignedKeySegmentMonitor(bool optio
 ECLRTL_API IKeySegmentMonitor *createSingleLittleSignedKeySegmentMonitor(bool optional, unsigned offset, unsigned size, const void * value);
 ECLRTL_API IKeySegmentMonitor *createSingleLittleKeySegmentMonitor(bool optional, unsigned offset, unsigned size, const void * value);
 
-class RtlRecord;
 //takes over ownership of base
 ECLRTL_API IKeySegmentMonitor *createNewVarOffsetKeySegmentMonitor(IKeySegmentMonitor * base, unsigned offset, unsigned fieldIdx);
 
@@ -187,5 +186,6 @@ ECLRTL_API IKeySegmentMonitor *createNewVarOffsetKeySegmentMonitor(IKeySegmentMo
 ECLRTL_API IKeySegmentMonitor *createTranslatedKeySegmentMonitor(IKeySegmentMonitor * base, unsigned offset, IKeySegmentFormatTranslator * translator);
 
 ECLRTL_API IKeySegmentMonitor *deserializeKeySegmentMonitor(MemoryBuffer &mb);
+ECLRTL_API void deserializeSet(IStringSet & set, size32_t minRecordSize, const RtlTypeInfo * fieldType, const char * filter);
 
 #endif
