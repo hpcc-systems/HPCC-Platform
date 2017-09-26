@@ -160,6 +160,9 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_PROCESS_S "-p"
 #define ECLOPT_SOURCE_PROCESS "--source-process"
 
+#define ECLOPT_PATH "--path"
+#define ECLOPT_INC_THOR_SLAVE_LOGS "--inc-thor-slave-logs"
+#define ECLOPT_PROBLEM_DESC "--description"
 
 
 #define ECLOPT_LIB_PATH_S "-L"
