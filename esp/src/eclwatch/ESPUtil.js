@@ -252,10 +252,12 @@ define([
             this.stop();
             var context = this;
             this._keydownHandle = on(document, "keydown", function (item, index, array) {
+                context.emit("active", {});
                 context.stop();
                 context.start();
             });
             this._mousedownHandle = on(document, "mousedown", function (item, index, array) {
+                context.emit("active", {});
                 context.stop();
                 context.start();
             });
