@@ -77,9 +77,14 @@ END;</programlisting>
   contains the relative path to the file from the specified
   <emphasis>directory</emphasis>.</para>
 
+  <para>The mask argument is a string that can include wildcard characters.
+  Valid wildcard characters are '*' (to match zero or more characters) and '?'
+  (to match exactly one character). Non-wild characters are matched exactly
+  and are case-sensitive. </para>
+
   <para>Example:</para>
 
   <programlisting format="linespecific">OUTPUT(STD.File.RemoteDirectory('edata12','\in','*.d00'));
 OUTPUT(STD.File.RemoteDirectory('10.150.254.6',
-      '/c$/training',,TRUE));</programlisting>
+      '/var/lib/HPCCSystems/hpcc-data/thor/','acc*',TRUE));</programlisting>
 </sect1>
