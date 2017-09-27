@@ -232,13 +232,13 @@ private:
     ZBuffer& generate_key(int len, ZBuffer& keybuf);
 
     void init();
-    virtual int setPublicKey(const char* publickey);
-    virtual int setPrivateKey(const char* privatekey, const char* passphrase);
+    virtual int setPublicKey(const char* publickeyBuff);
+    virtual int setPrivateKey(const char* privatekeyBuff, const char* passphrase);
 
 public:
-    RSAZCryptor();
-    RSAZCryptor(const char* publickey);
-    RSAZCryptor(const char* privatekey, const char* passphrase);
+    RSAZCryptor(unsigned traceLevel = 11);
+    RSAZCryptor(const char* publickey, unsigned traceLevel = 11);
+    RSAZCryptor(const char* privatekey, const char* passphrase, unsigned traceLevel = 11);
     virtual ~RSAZCryptor();
 
     virtual ZBuffer& publickey_encrypt(int in_len, unsigned char* in, ZBuffer& result);

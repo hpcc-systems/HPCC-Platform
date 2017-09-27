@@ -47,26 +47,28 @@ IZZIPor::~IZZIPor()
 {
 }
 
-RSAZCryptor::RSAZCryptor()
+RSAZCryptor::RSAZCryptor(unsigned traceLevel)
 {
+    setTraceLevel(traceLevel);
     init();
 }
 
-RSAZCryptor::RSAZCryptor(const char* publickey)
+RSAZCryptor::RSAZCryptor(const char* publickeyBuff, unsigned traceLevel)
 {
+    setTraceLevel(traceLevel);
     init();
-    setPublicKey(publickey);
+    setPublicKey(publickeyBuff);
 }
 
-RSAZCryptor::RSAZCryptor(const char* privatekey, const char* passphrase)
+RSAZCryptor::RSAZCryptor(const char* privatekeyBuff, const char* passphrase, unsigned traceLevel)
 {
+    setTraceLevel(traceLevel);
     init();
-    setPrivateKey(privatekey, passphrase);
+    setPrivateKey(privatekeyBuff, passphrase);
 }
 
 void RSAZCryptor::init()
 {
-    m_trace_level = 0;
     m_encoding = true;
 
     bio_err = NULL;
@@ -98,18 +100,18 @@ void RSAZCryptor::init()
 
 }
 
-int RSAZCryptor::setPublicKey(const char* publickey)
+int RSAZCryptor::setPublicKey(const char* publickeyBuff)
 {
-    if(!publickey || !*publickey)
+    if(!publickeyBuff || !*publickeyBuff)
     {
         if(m_trace_level > 0)
-            printf("Warning: publickey is empty\n");
+            printf("Warning: publickeyBuff is empty\n");
 
         return -1;
     }
 
     if(m_trace_level > 10)
-        printf("setting publickey:\n%s\n", publickey);
+        printf("setting publickeyBuff:\n%s\n", publickeyBuff);
 
     if(pubkey)
     {
@@ -132,7 +134,7 @@ int RSAZCryptor::setPublicKey(const char* publickey)
     pub_size = 0;
 
     pub_mem = BIO_new(BIO_s_mem());
-    BIO_puts(pub_mem, publickey);
+    BIO_puts(pub_mem, publickeyBuff);
     if (!(pubkey = PEM_read_bio_PUBKEY(pub_mem, NULL, NULL, NULL)))
     {
         throw_error();
@@ -153,18 +155,18 @@ int RSAZCryptor::setPublicKey(const char* publickey)
     return 0;
 }
 
-int RSAZCryptor::setPrivateKey(const char* privatekey, const char* passphrase)
+int RSAZCryptor::setPrivateKey(const char* privatekeyBuff, const char* passphrase)
 {
-    if(!privatekey || !*privatekey)
+    if(!privatekeyBuff || !*privatekeyBuff)
     {
         if(m_trace_level > 0)
-            printf("Warning: privatekey is empty\n");
+            printf("Warning: privatekeyBuff is empty\n");
 
         return -1;
     }
 
     if(m_trace_level > 10)
-        printf("setting privatekey:\n%s\n", privatekey);
+        printf("setting privatekeyBuff:\n%s\n", privatekeyBuff);
 
     if(privkey)
     {
@@ -187,7 +189,7 @@ int RSAZCryptor::setPrivateKey(const char* privatekey, const char* passphrase)
     priv_size = 0;
 
     priv_mem = BIO_new(BIO_s_mem());
-    BIO_puts(priv_mem, privatekey);
+    BIO_puts(priv_mem, privatekeyBuff);
     if (!(privkey = PEM_read_bio_PrivateKey (priv_mem, NULL, NULL, (void*)passphrase)))
     {
         throw_error();
