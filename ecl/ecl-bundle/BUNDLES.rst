@@ -51,7 +51,7 @@ version of the bundle is required.
 
 Enabling a Self-Test in a Bundle
 =================================
-To enable automatic testing by the regression suite and the smoketest process, follow these steps:
+To enable support for automatic testing by the regression suite and the smoketest process, follow these steps:
 
 1. Create a top-level "ecl" folder in the bundle.
 2. Add one or more ECL attributes to execute
@@ -68,6 +68,32 @@ The test is declared successful if the contents of the XML file exactly match th
 
 
 then remove the **<Result>** and **</Result>** tags and save as XML.
+
+Note: Adding a self-test does not automatically ensure testing by the regression suite or smoketest. 
+
+Running a Self-Test
+===================
+1. Install and start an HPCC platofrm or VM image installed then hpcc started
+2. Install the bundle installed with the ecl command line tool. 
+
+3. Run the Regression Test Engine from the bundle main directory like this:
+
+  ``<TEST_ENGINE_HOME>/ecl-test run -t <TARGET_PLATFORM>``
+
+where
+
+TEST_ENGINE_HOME: /testing/regress
+
+TARGET_PLATFORM: hthor | thor | roxie | all
+
+For example:
+
+from the ML bundle directory: 
+
+``/mnt/disk1/home/hpccdemo/.HPCCSystems/bundles/_versions/PBblas/V3_0_2/PBblas``
+
+use
+  ``/mnt/disk1/home/hpccdemo/build/CE/platform/HPCCPlatform/testing/regress/ecl-test run -t thor``
 
 Installing a bundle
 ===================
