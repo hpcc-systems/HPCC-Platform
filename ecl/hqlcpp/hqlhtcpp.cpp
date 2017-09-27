@@ -3776,11 +3776,14 @@ unsigned HqlCppTranslator::buildRtlIfBlockField(StringBuffer & instanceName, IHq
         //The ifblock needs a unique instance of the class to evaluate the test
         BuildCtx fieldclassctx(declarectx);
         fieldclassctx.setNextPriority(TypeInfoPrio);
-        fieldclassctx.addQuotedCompound(s.clear().append("struct ").append(className).append(" : public RtlIfBlockTypeInfo"), ";");
+        fieldclassctx.addQuotedCompound(s.clear().append("struct ").append(className).append(" final : public RtlIfBlockTypeInfo"), ";");
         fieldclassctx.addQuoted(s.clear().append(className).append("() : RtlIfBlockTypeInfo(0x").appendf("%x", fieldType).append(",").append(0).append(",").append(childTypeName).append(") {}"));
 
         OwnedHqlExpr anon = createDataset(no_anon, LINK(rowRecord));
-
+        {
+            MemberFunction deletefunc(*this, fieldclassctx, "virtual void doDelete() const override final");
+            deletefunc.ctx.addQuotedLiteral("delete this;");
+        }
         {
             MemberFunction condfunc(*this, fieldclassctx, "virtual bool getCondition(const byte * self) const override");
             BoundRow * self = bindTableCursor(condfunc.ctx, anon, "self");

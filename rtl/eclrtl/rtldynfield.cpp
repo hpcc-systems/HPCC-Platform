@@ -546,7 +546,7 @@ private:
                 }
                 delete [] fields;
             }
-            delete type;
+            type->doDelete();
         }
     }
     const RtlTypeInfo *lookupType(const char *name, IPropertyTree *all)

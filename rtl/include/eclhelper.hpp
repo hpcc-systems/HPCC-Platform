@@ -44,8 +44,8 @@ typedef unsigned short UChar;
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      200
-#define MIN_ACTIVITY_INTERFACE_VERSION  200             //minimum value that is compatible with current interface
+#define ACTIVITY_INTERFACE_VERSION      201
+#define MIN_ACTIVITY_INTERFACE_VERSION  201             //minimum value that is compatible with current interface
 
 typedef unsigned char byte;
 
@@ -359,7 +359,6 @@ interface IRtlFieldTypeDeserializer;
 //Interface used to get field information.  Separate from RtlTypeInfo for clarity and to ensure the vmt comes first.
 interface RtlITypeInfo
 {
-    virtual ~RtlITypeInfo() {}
     virtual size32_t size(const byte * self, const byte * selfrow) const = 0;
     virtual size32_t process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const = 0;  // returns the size
     virtual size32_t toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & out) const = 0;
@@ -380,6 +379,8 @@ interface RtlITypeInfo
     virtual __int64 getInt(const void * ptr) const = 0;
     virtual double getReal(const void * ptr) const = 0;
     virtual size32_t getMinSize() const = 0;
+protected:
+    ~RtlITypeInfo() = default;  // we can't use a virtual destructor as we want constexpr constructors.
 };
 
 
@@ -404,11 +405,15 @@ struct RtlTypeInfo : public RtlITypeInfo
     virtual bool isNumeric() const = 0;
     virtual bool canTruncate() const = 0;
     virtual bool canExtend(char &) const = 0;
+
+    virtual void doDelete() const = 0;  // Used in place of virtual destructor to allow constexpr constructors.
 public:
     unsigned fieldType;
     unsigned length;                // for bitfield (int-size, # bits, bitoffset) << 16
                                     // for decimal, numdigits | precision << 16
                                     // if RFTMunknownsize then maxlength (records) [maxcount(datasets)]
+protected:
+    ~RtlTypeInfo() = default;
 };
 
 //Core struct used for representing meta for a field.  Effectively used as an interface.
