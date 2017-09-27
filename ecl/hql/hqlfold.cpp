@@ -3525,6 +3525,32 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                 IHqlExpression * newEqual = createBoolExpr(no_eq, ensureExprType(leftExpr, type), ensureExprType(key, type));
                 return createIf(newEqual, LINK(mapto->queryChild(1)), LINK(expr->queryChild(2)));
             }
+
+            // Special case boolean cases matching constant values
+            if (leftExpr->isBoolean())
+            {
+                HqlExprArray args;
+                bool seenOpt[2] = { false, false };
+                args.append(*LINK(leftExpr));
+                for (unsigned idx = 1; idx <= numCases; idx++)
+                {
+                    IHqlExpression * child = expr->queryChild(idx);
+                    IHqlExpression * grand = child->queryChild(0);
+                    IValue * grandValue = grand->queryValue();
+                    if (grandValue)
+                    {
+                        seenOpt[grandValue->getBoolValue()] = true;
+                        //Once both true and false branches have been seen, no other options can possibly match.
+                        //Therefore add this value as the default and remove any trailing arguments
+                        if (seenOpt[false] && seenOpt[true])
+                        {
+                            args.append(*LINK(child->queryChild(1)));
+                            return expr->clone(args);
+                        }
+                    }
+                    args.append(*LINK(child));
+                }
+            }
             break;
         }
     case no_map:
