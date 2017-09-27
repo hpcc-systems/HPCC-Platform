@@ -599,6 +599,9 @@ unsigned CEspApplicationPort::updatePassword(IEspContext &context, IHttpMessage*
     bool returnFlag = false;
     try
     {
+        ISecCredentials& cred = user->credentials();
+        if (isEmptyString(cred.getPassword()))
+            cred.setPassword(oldpass);
         returnFlag = secmgr->updateUserPassword(*user, newpass1, oldpass);//provide the entered current password, not the cached one
     }
     catch(IException* e)
