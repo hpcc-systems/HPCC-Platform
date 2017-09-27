@@ -201,7 +201,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                 unsigned __int64 cnt = timing->getPropInt64("@count");
                 const char * scope = timing->queryProp("@scope");
                 StatisticScopeType scopeType = (StatisticScopeType)timing->getPropInt("@scopeType");
-                StatisticKind kind = queryStatisticKind(timing->queryProp("@kind"));
+                StatisticKind kind = queryStatisticKind(timing->queryProp("@kind"), StKindNone);
                 workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, NULL, nval, cnt, nmax, StatsMergeReplace);
             }
             else

@@ -1014,6 +1014,7 @@ enum WuPropertyTypes : unsigned
     PThints                 = 0x04,
     PTscope                 = 0x08, // Just the existence of the scope is interesting
     PTall                   = 0xFF,
+    PTunknown               = 0x80000000,
 };
 BITMASK_ENUM(WuPropertyTypes);
 
@@ -1024,7 +1025,8 @@ enum WuScopeSourceFlags : unsigned
     SSFsearchGraphStats     = 0x0002,
     SSFsearchGraph          = 0x0004,
     SSFsearchExceptions     = 0x0008,
-    SSFsearchAll            = UINT_MAX,
+    SSFsearchAll            = 0x7fffffff,
+    SSFunknown              = 0x80000000,
 };
 BITMASK_ENUM(WuScopeSourceFlags);
 
@@ -1093,7 +1095,7 @@ public:
     struct
     {
         bool matchedScope = true;
-        unsigned nestedDepth = UINT_MAX;
+        unsigned nestedDepth = 0;
         UnsignedArray scopeTypes;
     } include;
 

@@ -793,7 +793,7 @@ protected:
     {
         IPropertyTree & curSubGraph = subgraphIter->query();
 
-        StatisticCreatorType creatorType = queryCreatorType(curSubGraph.queryProp("@c"));
+        StatisticCreatorType creatorType = queryCreatorType(curSubGraph.queryProp("@c"), SCTnone);
         const char * creator = curSubGraph.queryProp("@creator");
 
         //MORE: Check minVersion and allow early filtering
@@ -2037,7 +2037,7 @@ protected:
 
 
 //Extract an argument of the format abc[def[ghi...,]],... as (abc,def[...])
-static bool extractOption(const char * & finger, StringAttr & option, StringAttr & arg)
+static bool extractOption(const char * & finger, StringBuffer & option, StringBuffer & arg)
 {
     const char * start = finger;
     if (!*start)
@@ -2072,7 +2072,7 @@ static bool extractOption(const char * & finger, StringAttr & option, StringAttr
                 if (--braDepth == 0)
                 {
                     end = cur;
-                    arg.set(bra+1, cur - (bra+1));
+                    arg.append(cur - (bra+1), bra+1);
                 }
             }
             break;
@@ -2084,14 +2084,15 @@ static bool extractOption(const char * & finger, StringAttr & option, StringAttr
     if (braDepth != 0)
         throw makeStringExceptionV(0, "Mismatched ] in filter : %s", start);
 
+    option.clear();
     if (bra)
     {
         if (cur != end+1)
             throw makeStringExceptionV(0, "Text follows closing bracket: %s", end);
-        option.set(start, bra-start);
+        option.append(bra-start, start);
     }
     else
-        option.set(start, cur-start);
+        option.append(cur-start, start);
 
     if (next)
         finger = cur+1;
@@ -2100,10 +2101,68 @@ static bool extractOption(const char * & finger, StringAttr & option, StringAttr
     return true;
 }
 
-enum { FOscope, FOstype, FOid, FOdepth, FOsource, FOwhere, FOmatched, FOnested, FOinclude, FOproperties, FOstatistic, FOattribute, FOhint, FOmeasure, FOversion }; // Enum to clarify the swicth statement below
-static constexpr const char * filterOptions[] = { "scope", "stype", "id", "depth", "source", "where", "matched", "nested", "include", "prop", "stat", "attr", "hint", "measure", "version", nullptr };
-static constexpr EnumMapping sourceMappings[] = { { SSFsearchGlobalStats, "global" }, { SSFsearchGraphStats, "stats" }, { SSFsearchGraph, "graph" }, { SSFsearchExceptions, "exception" }, { (int)SSFsearchAll, "all" }, { 0, nullptr } };
-static constexpr EnumMapping propertyMappings[] = { { PTnone, "none" }, { PTstatistics, "stat" }, { PTattributes, "attr" }, { PThints, "hint" }, { PTscope, "scope" }, { PTall, "all" }, { 0, nullptr } };
+static unsigned readOptValue(const char * start, const char * end, unsigned dft, const char * type)
+{
+    if (start == end)
+        return dft;
+    char * next;
+    unsigned value = strtoll(start, &next, 10);
+    if (next != end)
+        throw makeStringExceptionV(0, "Unexpected characters in %s option '%s'", type, next);
+    return value;
+}
+
+static unsigned readValue(const char * start, const char * type)
+{
+    if (*start == '\0')
+        throw makeStringExceptionV(0, "Expected a value for the %s option", type);
+
+    char * next;
+    unsigned value = strtoll(start, &next, 10);
+    if (*next != '\0')
+        throw makeStringExceptionV(0, "Unexpected characters in %s option '%s'", type, next);
+    return value;
+}
+
+/*
+Scope service matching Syntax:  * indicates
+Which items are matched:
+    scope[<scope-id>]* | stype[<scope-type>]* | id[<id>]* - which scopes should be matched?
+    depth[n | low..high] - range of depths to search for a match
+    source[global|stats|graph|all]* - which sources to search within the workunit
+    where[<statistickind> | <statistickind> (=|<|<=|>|>=) value | <statistickind>=low..high] - a statistic filter
+Which items are include in the results:
+    matched[true|false] - are the matched scopes returned?
+    nested[<depth>|all] - how deep within a scope should be matched (default = 0 if matched[true], all if matched[false])
+    includetype[<scope-type>] - which scope types should be included?
+Which properties of the items are returned:
+    properties[statistics|hints|attributes|scope|all]
+    statistic[<statistic-kind>|none|all] - include statistic
+    attribute[<attribute-name>|none|all] - include attribute
+    hint[<hint-name>] - include hint
+    property[<statistic-kind>|<attribute-name>|<hint-name>] - include property
+    measure[<measure>] - all statistics with a particular measure
+    version[<version>] - minimum version to return
+*/
+
+enum { FOscope, FOstype, FOid, FOdepth, FOsource, FOwhere, FOmatched, FOnested, FOinclude, FOproperties, FOstatistic, FOattribute, FOhint, FOproperty, FOmeasure, FOversion, FOunknown };
+//Some of the following contains aliases for the same option e.g. stat and statistic
+static constexpr EnumMapping filterOptions[] = {
+        { FOscope, "scope" }, { FOstype, "stype" }, { FOid, "id" },
+        { FOdepth, "depth" }, { FOsource, "source" }, { FOwhere, "where" },
+        { FOmatched, "matched" }, { FOnested, "nested" },
+        { FOinclude, "include" }, { FOinclude, "includetype" },
+        { FOproperties, "props" }, { FOproperties, "properties" }, // some aliases
+        { FOstatistic, "stat" }, { FOstatistic, "statistic" }, { FOattribute, "attr" }, { FOattribute, "attribute" }, { FOhint, "hint" },
+        { FOproperty, "prop" }, { FOproperty, "property" },
+        { FOmeasure, "measure" }, { FOversion, "version" }, { 0, nullptr} };
+static constexpr EnumMapping sourceMappings[] = {
+        { SSFsearchGlobalStats, "global" }, { SSFsearchGraphStats, "stats" }, { SSFsearchGraphStats, "statistics" }, { SSFsearchGraph, "graph" }, { SSFsearchExceptions, "exception" },
+        { (int)SSFsearchAll, "all" }, { 0, nullptr } };
+static constexpr EnumMapping propertyMappings[] = {
+        { PTstatistics, "stat" }, { PTstatistics, "statistic" }, { PTattributes, "attr" }, { PTattributes, "attribute" }, { PThints, "hint" },
+        { PTstatistics, "stats" }, { PTstatistics, "statistics" }, { PTattributes, "attrs" }, { PTattributes, "attributes" }, { PThints, "hints" },
+        { PTnone, "none" }, { PTscope, "scope" }, { PTall, "all" }, { 0, nullptr } };
 WuScopeFilter::WuScopeFilter(const char * filter)
 {
     addFilter(filter);
@@ -2115,11 +2174,11 @@ WuScopeFilter & WuScopeFilter::addFilter(const char * filter)
     if (!filter)
         return *this;
 
-    StringAttr option;
-    StringAttr arg;
+    StringBuffer option;
+    StringBuffer arg;
     while (extractOption(filter, option, arg))
     {
-        switch (matchString(option, filterOptions))
+        switch (getEnum(option, filterOptions, FOunknown))
         {
         case FOscope:
             addScope(arg);
@@ -2132,17 +2191,31 @@ WuScopeFilter & WuScopeFilter::addFilter(const char * filter)
             break;
         case FOdepth:
         {
+            //Allow depth[n], depth[a,b] or depth[a..b]
             const char * comma = strchr(arg, ',');
+            const char * dotdot = strstr(arg, "..");
             if (comma)
             {
-                unsigned low = atoi(arg); // note: =0 if number omitted
+                unsigned low = readOptValue(arg, comma, 0, "depth");
                 if (comma[1])
-                    scopeFilter.setDepth(low, atoi(comma+1));
+                {
+                    scopeFilter.setDepth(low, readValue(comma+1, "depth"));
+                }
+                else
+                    scopeFilter.setDepth(low, UINT_MAX);
+            }
+            else if (dotdot)
+            {
+                unsigned low = readOptValue(arg, dotdot, 0, "depth");
+                if (dotdot[2])
+                    scopeFilter.setDepth(low, readValue(dotdot+2, "depth"));
                 else
                     scopeFilter.setDepth(low, UINT_MAX);
             }
             else
-                scopeFilter.setDepth(atoi(arg));
+            {
+                scopeFilter.setDepth(readValue(arg, "depth"));
+            }
             break;
         }
         case FOsource:
@@ -2155,14 +2228,24 @@ WuScopeFilter & WuScopeFilter::addFilter(const char * filter)
             setIncludeMatch(strToBool(arg));
             break;
         case FOnested:
-            setIncludeNesting(atoi(arg));
+            if (strieq(arg, "all"))
+                setIncludeNesting(UINT_MAX);
+            else if (isdigit(*arg))
+                setIncludeNesting(atoi(arg));
+            else
+                throw makeStringExceptionV(0, "Expected a value for the nesting depth: %s", arg.str());
             break;
         case FOinclude:
             setIncludeScopeType(arg);
             break;
         case FOproperties:
-            addOutputProperties((WuPropertyTypes)getEnum(arg, propertyMappings));
+        {
+            WuPropertyTypes prop = (WuPropertyTypes)getEnum(arg, propertyMappings, PTunknown);
+            if (prop == PTunknown)
+                throw makeStringExceptionV(0, "Unexpected properties '%s'", arg.str());
+            addOutputProperties(prop);
             break;
+        }
         case FOstatistic:
             addOutputStatistic(arg);
             break;
@@ -2172,11 +2255,17 @@ WuScopeFilter & WuScopeFilter::addFilter(const char * filter)
         case FOhint:
             addOutputHint(arg);
             break;
+        case FOproperty:
+            addOutput(arg);
+            break;
         case FOmeasure:
             setMeasure(arg);
             break;
         case FOversion:
-            minVersion = atoi64(arg);
+            if (isdigit(*arg))
+                minVersion = atoi64(arg);
+            else
+                throw makeStringExceptionV(0, "Expected a value for the version: %s", arg.str());
             break;
         default:
             throw makeStringExceptionV(0, "Unrecognised filter option: %s", option.str());
@@ -2187,27 +2276,36 @@ WuScopeFilter & WuScopeFilter::addFilter(const char * filter)
 
 WuScopeFilter & WuScopeFilter::addScope(const char * scope)
 {
+    validateScope(scope);
     scopeFilter.addScope(scope);
     return *this;
 }
 
 WuScopeFilter & WuScopeFilter::addScopeType(const char * scopeType)
 {
-    scopeFilter.addScopeType(queryScopeType(scopeType));
+    if (scopeType)
+    {
+        StatisticScopeType sst = queryScopeType(scopeType, SSTmax);
+        if (sst == SSTmax)
+            throw makeStringExceptionV(0, "Unrecognised scope type '%s'", scopeType);
+
+        scopeFilter.addScopeType(sst);
+    }
     return *this;
 }
 
 WuScopeFilter & WuScopeFilter::addId(const char * id)
 {
+    validateScopeId(id);
     scopeFilter.addId(id);
     return *this;
 }
 
 WuScopeFilter & WuScopeFilter::addOutput(const char * prop)
 {
-    if (queryStatisticKind(prop) != StKindNone)
+    if (queryStatisticKind(prop, StMax) != StMax)
         addOutputStatistic(prop);
-    else if (queryWuAttribute(prop) != WANone)
+    else if (queryWuAttribute(prop, WAMax) != WAMax)
         addOutputAttribute(prop);
     else
         addOutputHint(prop);
@@ -2216,7 +2314,14 @@ WuScopeFilter & WuScopeFilter::addOutput(const char * prop)
 
 WuScopeFilter & WuScopeFilter::addOutputStatistic(const char * prop)
 {
-    return addOutputStatistic(queryStatisticKind(prop));
+    if (!prop)
+        return *this;
+
+    StatisticKind kind = queryStatisticKind(prop, StMax);
+    if (kind == StMax)
+        throw makeStringExceptionV(0, "Unrecognised statistic '%s'", prop);
+
+    return addOutputStatistic(kind);
 }
 
 WuScopeFilter & WuScopeFilter::addOutputStatistic(StatisticKind stat)
@@ -2236,7 +2341,14 @@ WuScopeFilter & WuScopeFilter::addOutputStatistic(StatisticKind stat)
 
 WuScopeFilter & WuScopeFilter::addOutputAttribute(const char * prop)
 {
-    return addOutputAttribute(queryWuAttribute(prop));
+    if (!prop)
+        return *this;
+
+    WuAttr attr = queryWuAttribute(prop, WAMax);
+    if (attr == WAMax)
+        throw makeStringExceptionV(0, "Unrecognised attribute '%s'", prop);
+
+    return addOutputAttribute(attr);
 }
 
 WuScopeFilter & WuScopeFilter::addOutputAttribute(WuAttr attr)
@@ -2287,14 +2399,26 @@ WuScopeFilter & WuScopeFilter::setIncludeNesting(unsigned depth)
 
 WuScopeFilter & WuScopeFilter::setIncludeScopeType(const char * scopeType)
 {
-    include.scopeTypes.append(queryScopeType(scopeType));
+    if (scopeType)
+    {
+        StatisticScopeType sst = queryScopeType(scopeType, SSTmax);
+        if (sst == SSTmax)
+            throw makeStringExceptionV(0, "Unrecognised scope type '%s'", scopeType);
+
+        include.scopeTypes.append(sst);
+    }
     return *this;
 }
 
 WuScopeFilter & WuScopeFilter::setMeasure(const char * measure)
 {
-    desiredMeasure = queryMeasure(measure);
-    properties |= PTstatistics;
+    if (measure)
+    {
+        desiredMeasure = queryMeasure(measure, SMeasureNone);
+        if (desiredMeasure == SMeasureNone)
+            throw makeStringExceptionV(0, "Unrecognised measure '%s'", measure);
+        properties |= PTstatistics;
+    }
     return *this;
 }
 
@@ -2319,8 +2443,10 @@ WuScopeFilter & WuScopeFilter::addRequiredStat(StatisticKind statKind)
     return *this;
 }
 
-//This does not strictly validate - invalid filters may be accepted
-//process a filter of the form <statistic-name> [=|<|<=|>|>= <value>] or <statistic-name>=[<low>],[<high>]
+//process a filter in one of the following forms:
+//  <statistic-name>
+//  <statistic-name> (=|<|<=|>|>=) <value>
+//  <statistic-name>=[<low>]..[<high>]
 
 void WuScopeFilter::addRequiredStat(const char * filter)
 {
@@ -2330,13 +2456,33 @@ void WuScopeFilter::addRequiredStat(const char * filter)
         cur++;
 
     StringBuffer statisticName(cur-stat, stat);
-    StatisticKind statKind = queryStatisticKind(statisticName);
+    StatisticKind statKind = queryStatisticKind(statisticName, StKindNone);
     if (statKind == StKindNone)
         throw makeStringExceptionV(0, "Unknown statistic name '%s'", statisticName.str());
 
-    const char * op = cur;
-    while (*cur && !isdigit(*cur))
+    //Skip any spaces before a comparison operator.
+    while (*cur && isspace(*cur))
         cur++;
+
+    //Save the operator, and skip over any non digits.
+    const char * op = cur;
+    switch (*op)
+    {
+    case '=':
+        cur++;
+        break;
+    case '<':
+    case '>':
+        if (op[1] == '=')
+            cur += 2;
+        else
+            cur++;
+        break;
+    case '\0':
+        break;
+    default:
+        throw makeStringExceptionV(0, "Unknown comparison '%s'", op);
+    }
 
     const char * next;
     stat_type value = readStatisticValue(cur, &next, queryMeasure(statKind));
@@ -2344,15 +2490,22 @@ void WuScopeFilter::addRequiredStat(const char * filter)
     stat_type highValue = MaxStatisticValue;
     switch (op[0])
     {
-    case ']':
-        break;
     case '=':
     {
+        //Allow a,b or a..b to specify a range - either bound may be omitted.
         if (next[0] == ',')
         {
             lowValue = value;
-            if (next[1] != '\0')
-                highValue = readStatisticValue(next+1, nullptr, queryMeasure(statKind));
+            next++;
+            if (*next != '\0')
+                highValue = readStatisticValue(next, &next, queryMeasure(statKind));
+        }
+        else if (strncmp(next, "..", 2) == 0)
+        {
+            lowValue = value;
+            next += 2;
+            if (*next != '\0')
+                highValue = readStatisticValue(next, &next, queryMeasure(statKind));
         }
         else
         {
@@ -2375,12 +2528,17 @@ void WuScopeFilter::addRequiredStat(const char * filter)
         break;
     }
 
+    if (*next)
+        throw makeStringExceptionV(0, "Trailing characters in where '%s'", next);
+
     requiredStats.emplace_back(statKind, lowValue, highValue);
 }
 
 WuScopeFilter & WuScopeFilter::addSource(const char * source)
 {
-    WuScopeSourceFlags mask = (WuScopeSourceFlags)getEnum(source, sourceMappings);
+    WuScopeSourceFlags mask = (WuScopeSourceFlags)getEnum(source, sourceMappings, SSFunknown);
+    if (mask == SSFunknown)
+        throw makeStringExceptionV(0, "Unexpected source '%s'", source);
     if (!mask)
         sourceFlags = mask;
     else
@@ -2416,6 +2574,8 @@ void WuScopeFilter::finishedFilter()
     assertex(!optimized);
     optimized = true;
 
+    if ((include.nestedDepth == 0) && !include.matchedScope)
+        include.nestedDepth = UINT_MAX;
     preFilterScope = include.matchedScope && (include.nestedDepth == 0);
     if (scopeFilter.canAlwaysPreFilter())
         preFilterScope = true;
@@ -10729,17 +10889,17 @@ IStringVal & CLocalWUStatistic::getFormattedValue(IStringVal & str) const
 
 StatisticCreatorType CLocalWUStatistic::getCreatorType() const
 {
-    return queryCreatorType(p->queryProp("@c"));
+    return queryCreatorType(p->queryProp("@c"), SCTnone);
 }
 
 StatisticScopeType CLocalWUStatistic::getScopeType() const
 {
-    return queryScopeType(p->queryProp("@s"));
+    return queryScopeType(p->queryProp("@s"), SSTnone);
 }
 
 StatisticKind CLocalWUStatistic::getKind() const
 {
-    return queryStatisticKind(p->queryProp("@kind"));
+    return queryStatisticKind(p->queryProp("@kind"), StKindNone);
 }
 
 const char * CLocalWUStatistic::queryScope() const
@@ -10752,7 +10912,7 @@ const char * CLocalWUStatistic::queryScope() const
 
 StatisticMeasure CLocalWUStatistic::getMeasure() const
 {
-    return queryMeasure(p->queryProp("@unit"));
+    return queryMeasure(p->queryProp("@unit"), SMeasureNone);
 }
 
 unsigned __int64 CLocalWUStatistic::getValue() const

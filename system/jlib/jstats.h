@@ -63,8 +63,8 @@ public:
     void deserialize(MemoryBuffer & in, unsigned version);
     void serialize(MemoryBuffer & out) const;
 
-    void extractScopeText(const char * text, const char * * next);
-    bool setScopeText(const char * text, char * * next = nullptr);
+    bool extractScopeText(const char * text, const char * * next);
+    bool setScopeText(const char * text, const char * * next = nullptr);
     void setId(StatisticScopeType _scopeType, unsigned _id, unsigned _extra = 0);
     void setActivityId(unsigned _id);
     void setEdgeId(unsigned _id, unsigned _output);
@@ -685,10 +685,10 @@ extern jlib_decl const char * queryMeasureName(StatisticMeasure measure);
 extern jlib_decl StatsMergeAction queryMergeMode(StatisticMeasure measure);
 extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind);
 
-extern jlib_decl StatisticMeasure queryMeasure(const char *  measure);
-extern jlib_decl StatisticKind queryStatisticKind(const char *  kind);
-extern jlib_decl StatisticCreatorType queryCreatorType(const char * sct);
-extern jlib_decl StatisticScopeType queryScopeType(const char * sst);
+extern jlib_decl StatisticMeasure queryMeasure(const char *  measure, StatisticMeasure dft);
+extern jlib_decl StatisticKind queryStatisticKind(const char *  kind, StatisticKind dft);
+extern jlib_decl StatisticCreatorType queryCreatorType(const char * sct, StatisticCreatorType dft);
+extern jlib_decl StatisticScopeType queryScopeType(const char * sst, StatisticScopeType dft);
 
 extern jlib_decl IStatisticGatherer * createStatisticsGatherer(StatisticCreatorType creatorType, const char * creator, const StatsScopeId & rootScope);
 extern jlib_decl void serializeStatisticCollection(MemoryBuffer & out, IStatisticCollection * collection);
@@ -707,6 +707,9 @@ extern jlib_decl void setStatisticsComponentName(StatisticCreatorType processTyp
 extern jlib_decl void verifyStatisticFunctions();
 extern jlib_decl void formatTimeCollatable(StringBuffer & out, unsigned __int64 value, bool nano);
 extern jlib_decl unsigned __int64 extractTimeCollatable(const char *s, bool nano);
+
+extern jlib_decl void validateScopeId(const char * idText);
+extern jlib_decl void validateScope(const char * scopeText);
 
 //Scopes need to be processed in a consistent order so they can be merged.
 //activities are in numeric order

@@ -29,6 +29,7 @@
 #include "jprop.hpp"
 #include "jerror.hpp"
 #include "jencrypt.hpp"
+#include "jerror.hpp"
 #ifdef _WIN32
 #include <mmsystem.h> // for timeGetTime 
 #include <float.h> //for _isnan and _fpclass
