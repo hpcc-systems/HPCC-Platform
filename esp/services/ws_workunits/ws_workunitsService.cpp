@@ -52,6 +52,7 @@
 #endif
 
 #define ESP_WORKUNIT_DIR "workunits/"
+const char* zipFolder = "tempzipfiles" PATHSEPSTR;
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5 mins
 const unsigned CHECK_QUERY_STATUS_THREAD_POOL_SIZE = 25;
@@ -3020,6 +3021,235 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
     return true;
 }
 
+void CWsWorkunitsEx::readWUFile(const char *wuid, WsWuInfo &winfo, IConstWUFileOption &item, bool forDownload, MemoryBuffer &mb, StringBuffer &fileName, StringBuffer &fileMimeType)
+{
+    CWUFileType fileType = item.getFileType();
+    switch (fileType)
+    {
+    case CWUFileType_ArchiveQuery:
+        winfo.getWorkunitArchiveQuery(mb);
+        fileMimeType.set(HTTP_TYPE_APPLICATION_XML);
+        fileName.set("ArchiveQuery.xml");
+        break;
+    case CWUFileType_CPP:
+    {
+        const char *tail=pathTail(item.getName());
+        fileName.set(tail ? tail : item.getName());
+        fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
+        winfo.getWorkunitCpp(item.getName(), item.getDescription(), item.getIPAddress(),mb, forDownload);
+        break;
+    }
+    case CWUFileType_DLL:
+    {
+        const char *tail=pathTail(item.getName());
+        fileName.set(tail ? tail : item.getName());
+        fileMimeType.set(HTTP_TYPE_OCTET_STREAM);
+        break;
+    }
+    case CWUFileType_Res:
+        winfo.getWorkunitResTxt(mb);
+        fileName.set("res.txt");
+        fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
+        break;
+    case CWUFileType_ThorLog:
+        winfo.getWorkunitThorLog(item.getName(), mb);
+        fileName.set("thormaster.log");
+        fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
+        break;
+    case CWUFileType_ThorSlaveLog:
+    {
+        StringBuffer logDir;
+        getConfigurationDirectory(directories, "log", "thor", item.getProcess(), logDir);
+        winfo.getWorkunitThorSlaveLog(item.getClusterGroup(), item.getIPAddress(), item.getLogDate(), logDir.str(), item.getSlaveNumber(), mb, false);
+        fileName.set("ThorSlave.log");
+        fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
+        break;
+    }
+    case CWUFileType_EclAgentLog:
+        winfo.getWorkunitEclAgentLog(item.getName(), item.getProcess(), mb);
+        fileName.set("eclagent.log");
+        fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
+        break;
+    case CWUFileType_XML:
+    {
+        StringBuffer name  = item.getName();
+        if (!name.isEmpty())
+        {
+            const char *tail=pathTail(name.str());
+            fileName.set(tail ? tail : name.str());
+            winfo.getWorkunitAssociatedXml(fileName.str(), item.getIPAddress(), item.getPlainText(), item.getDescription(), forDownload, true, mb);
+        }
+        else
+        {
+            fileName.setf("%s.xml", wuid);
+            winfo.getWorkunitXml(item.getPlainText(), mb);
+        }
+        const char* plainText = item.getPlainText();
+        if (plainText && strieq(plainText, "yes"))
+            fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
+        else
+            fileMimeType.set(HTTP_TYPE_APPLICATION_XML);
+        break;
+    }
+    case CWUFileType_WUECL:
+        fileName.setf("%s.ecl", wuid);
+        winfo.getWorkunitQueryShortText(mb);
+        fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
+        break;
+    default:
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Unsupported file type %d.", fileType);
+    }
+}
+
+void CWsWorkunitsEx::zipAFolderToMB(const char *folderToZIP, const char *zipFileName, bool gzip, MemoryBuffer &mb)
+{
+    StringBuffer folderToZIPEx, zipFileNameWithPath, zipCommand;
+    zipFileNameWithPath.set(zipFolder).append(zipFileName);
+    folderToZIPEx.set(folderToZIP).append("/*");
+
+    {
+        Owned<IFile> oldZIPFile = createIFile(zipFileNameWithPath.str());
+        if (oldZIPFile->exists())
+            oldZIPFile->remove();
+    }
+
+    if (!gzip)
+        zipCommand.appendf("zip -j %s %s", zipFileNameWithPath.str(), folderToZIPEx.str());
+    else
+        zipCommand.appendf("tar -czf %s %s", zipFileNameWithPath.str(), folderToZIPEx.str());
+    if (system(zipCommand.str()) != 0)
+        throw MakeStringException(ECLWATCH_CANNOT_COMPRESS_DATA,"Failed to execute system command %s. Please make sure that zip utility is installed.", zipCommand.str());
+
+    Owned<IFile> f = createIFile(zipFileNameWithPath.str());
+    Owned<IFileIO> io = f->open(IFOread);
+    void * data = mb.reserve((unsigned)io->size());
+    size32_t read = io->read(0, (unsigned)io->size(), data);
+    mb.setLength(read);
+    io->close();
+    f->remove();
+}
+
+void CWsWorkunitsEx::setAttachmentFileName(IEspContext &context, const char *fileName)
+{
+    VStringBuffer headerStr("attachment;filename=%s", fileName);
+    context.addCustomerHeader("Content-disposition", headerStr.str());
+}
+
+bool CWsWorkunitsEx::onWUDownloadFiles(IEspContext &context, IEspWUDownloadFilesRequest &req, IEspWUDownloadFilesResponse &resp)
+{
+    try
+    {
+        StringBuffer wuid = req.getWuid();
+        if (wuid.trim().isEmpty())
+        {
+            StringBuffer querySet = req.getQuerySet();
+            StringBuffer queryReq = req.getQuery();
+            if (queryReq.trim().isEmpty() || querySet.trim().isEmpty())
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "WU ID or QuerySet/Query not specified");
+
+            Owned<IPropertyTree> registry = getQueryRegistry(querySet.str(), false);
+            if (!registry)
+                throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Queryset %s not found", querySet.str());
+            Owned<IPropertyTree> query = resolveQueryAlias(registry, queryReq.str());
+            if (!query)
+                throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "Query %s not found", queryReq.str());
+            resp.setQuerySet(querySet.str());
+            resp.setQueryName(query->queryProp("@name"));
+            resp.setQueryId(query->queryProp("@id"));
+            wuid.set(query->queryProp("@wuid"));
+        }
+
+        if (!looksLikeAWuid(wuid, 'W'))
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID");
+
+        ensureWsWorkunitAccess(context, wuid, SecAccess_Read);
+
+        IArrayOf<IConstWUFileOption> &wuFileOptions = req.getWUFileOptions();
+        if (!wuFileOptions.ordinality())
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "No WU file specified");
+
+        CWUFileDownloadOption opt = req.getDownloadOption();
+        if ((wuFileOptions.length() > 1) && ((opt == CWUFileDownloadOption_OriginalText) || (opt == CWUFileDownloadOption_Attachment)))
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Cannot download multiple files without zip");
+
+        Owned<IFile> zipDir;
+        StringBuffer folderToZIP, zipFileName;
+        if ((opt == CWUFileDownloadOption_ZIP) || (opt == CWUFileDownloadOption_GZIP))
+        {
+            StringBuffer userName;
+            if (context.queryUser())
+                userName.append(context.queryUser()->getName());
+
+            zipFileName.set("WUFiles_").append(wuid.str());
+            folderToZIP.set(zipFolder).append(zipFileName.str()).append('_').append(userName.str());
+            if (opt == CWUFileDownloadOption_ZIP)
+                zipFileName.append(".zip");
+            else
+                zipFileName.append(".gzip");
+
+            zipDir.setown(createIFile(folderToZIP));
+            if (!zipDir->exists())
+                zipDir->createDirectory();
+            else
+                cleanZAPFolder(zipDir, false);
+        }
+
+        resp.setWuid(wuid.str());
+        WsWuInfo winfo(context, wuid.str());
+        ForEachItemIn(i, wuFileOptions)
+        {
+            IConstWUFileOption &item = wuFileOptions.item(i);
+
+            MemoryBuffer mb;
+            StringBuffer downloadFileName, downloadFileMimeType;
+            readWUFile(wuid.str(), winfo, item, opt != CWUFileDownloadOption_OriginalText, mb, downloadFileName, downloadFileMimeType);
+
+            if (item.getFileType() == CWUFileType_DLL)
+            {
+                StringBuffer name;
+                winfo.getWorkunitDll(name, mb);
+                resp.setFileName(name.str());
+                resp.setDaliServer(daliServers.get());
+            }
+            if ((opt == CWUFileDownloadOption_OriginalText) || (opt == CWUFileDownloadOption_Attachment))
+            {
+                checkFileSizeLimit(mb.length(), item.getSizeLimit());
+                resp.setThefile(mb);
+                resp.setThefile_mimetype(downloadFileMimeType.str());
+                if (opt == CWUFileDownloadOption_Attachment)
+                    setAttachmentFileName(context, downloadFileName.str());
+                break;
+            }
+            else
+            {
+                StringBuffer aZIPFile = folderToZIP;
+                aZIPFile.append(PATHSEPCHAR).append(downloadFileName.str());
+                Owned<IFile> wuIFile = createIFile(aZIPFile.str());
+                Owned<IFileIO> wuIFileIO = wuIFile->open(IFOcreate);
+                if (wuIFileIO)
+                    wuIFileIO->write(0, mb.length(), mb.bufferBase());
+            }
+        }
+
+        if ((opt == CWUFileDownloadOption_ZIP) || (opt == CWUFileDownloadOption_GZIP))
+        {
+            MemoryBuffer mb;
+            zipAFolderToMB(folderToZIP.str(), zipFileName.str(), opt == CWUFileDownloadOption_GZIP, mb);
+
+            //Remove the temporary files and the folder
+            cleanZAPFolder(zipDir, true);
+
+            resp.setThefile(mb);
+            resp.setThefile_mimetype(HTTP_TYPE_OCTET_STREAM);
+            setAttachmentFileName(context, zipFileName.str());
+        }
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
 
 bool CWsWorkunitsEx::onWUResultBin(IEspContext &context,IEspWUResultBinRequest &req, IEspWUResultBinResponse &resp)
 {
@@ -4719,7 +4949,6 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
         nameStr.append("ZAPReport_").append(req.getWuid()).append('_').append(userName.str());
 
         //create a folder for WU ZAP files
-        const char* zipFolder = "tempzipfiles" PATHSEPSTR;
         folderToZIP.append(zipFolder).append(nameStr.str());
         Owned<IFile> zipDir = createIFile(folderToZIP.str());
         if (!zipDir->exists())
