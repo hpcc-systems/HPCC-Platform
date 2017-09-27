@@ -4983,7 +4983,12 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
         zipFileNameWithPath.append(zipFolder).append(zipFileName.str());
         pathNameStr.set(folderToZIP.str()).append("/*");
 
-        const char* password = req.getPassword();
+        const char* password;
+        double version = context.getClientVersion();
+        if (version >= 1.70)
+            password = req.getZAPPassword();
+        else
+            password = req.getPassword();
         if (password && *password)
             zipCommand.appendf("zip -j --password %s %s %s", password, zipFileNameWithPath.str(), pathNameStr.str());
         else
@@ -5005,6 +5010,7 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
         mb.setLength(read);
         resp.setThefile(mb);
         resp.setThefile_mimetype(HTTP_TYPE_OCTET_STREAM);
+        resp.setZAPFileName(zipFileName.str());
         StringBuffer headerStr("attachment;filename=");
         headerStr.append(zipFileName.str());
         context.addCustomerHeader("Content-disposition", headerStr.str());
