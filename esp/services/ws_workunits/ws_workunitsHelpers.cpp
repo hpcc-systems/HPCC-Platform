@@ -3106,7 +3106,7 @@ void WsWuHelpers::submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, con
             IConstNamedValue &item = debugs->item(i);
             const char *name = item.getName();
             const char *value = item.getValue();
-            if (!name || !*name)
+            if (!name || !*name || *name=='-')
                 continue;
             if (!value)
             {

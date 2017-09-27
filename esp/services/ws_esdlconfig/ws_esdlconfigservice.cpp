@@ -377,7 +377,7 @@ bool CWsESDLConfigEx::existsESDLMethodDef(const char * esdlDefinitionName, unsig
                 IPropertyTree* pCurrService = &it->query();
                 if ((servicesCount == 1 && !esdlServiceName.length()) || stricmp(pCurrService->queryProp("@name"), esdlServiceName.str())==0)
                 {
-                    Owned<IPropertyTreeIterator> it2 = esxdl->getElements("EsdlMethod");
+                    Owned<IPropertyTreeIterator> it2 = pCurrService->getElements("EsdlMethod");
                     ForEach(*it2)
                     {
                         IPropertyTree* pChildNode = &it2->query();
@@ -514,6 +514,7 @@ bool CWsESDLConfigEx::onPublishESDLDefinition(IEspContext &context, IEspPublishE
         }
 
         msg.appendf("Successfully published %s", newqueryid.str());
+        ESPLOG(LogMin, "ESDL Definition '%s' published by user='%s'", newqueryid.str(), (user && *user) ? user : "Anonymous");
 
         double ver = context.getClientVersion();
         if (ver >= 1.2)
@@ -728,6 +729,8 @@ int CWsESDLConfigEx::publishESDLBinding(const char * bindingName,
     conn->commit();
     conn->close(false);
     message.setf("Successfully configured Service '%s', associated with ESDL definition '%s', on ESP '%s' and binding '%s'", esdlServiceName, newId.str(), espProcName, bindingName);
+
+    ESPLOG(LogMin, "ESDL Binding '%s' published by user='%s' overwrite flag: %s", newId.str(), (user && *user) ? user : "Anonymous", overwrite ? "TRUE" : "FALSE");
     return 0;
 }
 
@@ -873,6 +876,7 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
                                                            overwrite,
                                                            username.str()
                                                            ));
+
 
             if (ver >= 1.2)
             {
@@ -1195,7 +1199,8 @@ bool CWsESDLConfigEx::onConfigureESDLBindingMethod(IEspContext &context, IEspCon
             ForEach(*iter)
             {
                 IPropertyTree &item = iter->query();
-                const char * methodName = item.queryProp("@name");
+                StringBuffer methodNameBuf(item.queryProp("@name"));
+                const char * methodName = methodNameBuf.str();
                 if (!existsESDLMethodDef(esdlDefinitionName.str(), esdlver, esdlServiceName, methodName))
                 {
                     StringBuffer msg;
@@ -1215,6 +1220,8 @@ bool CWsESDLConfigEx::onConfigureESDLBindingMethod(IEspContext &context, IEspCon
                     if (success == 0)
                     {
                         double ver = context.getClientVersion();
+
+                        ESPLOG(LogMin, "ESDL Binding '%s.%d' configured method '%s' by user='%s' overwrite flag: %s", esdlDefinitionName.str(), esdlver, username.isEmpty() ? "Anonymous" : username.str(), methodName, override ? "TRUE" : "FALSE");
 
                         if (ver >= 1.2)
                         {
@@ -1640,7 +1647,10 @@ bool CWsESDLConfigEx::onDeleteESDLDefinition(IEspContext &context, IEspDeleteESD
     {
         StringBuffer thexml;
         toXML(oldEnvironment.get(), thexml,0,0);
-        fprintf(stderr, "DELETING: \n%s\n", thexml.str());
+
+        StringBuffer username;
+        context.getUserID(username);
+        ESPLOG(LogMin, "ESDL Definition '%s' Deleted by user='%s'", esdlDefinitionId.str(), username.isEmpty() ? "Anonymous" : username.str());
         resp.setDeletedTree(thexml.str());
         resp.updateStatus().setCode(0);
         resp.updateStatus().setDescription("Deleted ESDL Definition");
@@ -1690,7 +1700,10 @@ bool CWsESDLConfigEx::onDeleteESDLBinding(IEspContext &context, IEspDeleteESDLBi
     {
         StringBuffer thexml;
         toXML(oldEnvironment.get(), thexml,0,0);
-        fprintf(stderr, "DELETING: \n%s\n", thexml.str());
+        StringBuffer username;
+        context.getUserID(username);
+        ESPLOG(LogMin, "ESDL Definition '%s' Deleted by user='%s'", espBindingId.str(), username.isEmpty() ? "Anonymous" : username.str());
+
         resp.setDeletedTree(thexml.str());
         resp.updateStatus().setCode(0);
         root->removeTree(oldEnvironment);

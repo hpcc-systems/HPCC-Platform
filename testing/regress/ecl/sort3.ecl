@@ -36,6 +36,8 @@ SomeFile := DATASET([{0x001,'GAVIN'},
                     ],MyRec);
 
 p := PROJECT(SomeFile, TRANSFORM(myRec2, SELF := LEFT; SELF := []));
+p2 := PROJECT(SomeFile, TRANSFORM(myRec, SELF.uv := LEFT.uv - 0x200; SELF := LEFT));
+s2 := SORT(p2, uv);
 
 sequential(
     output(SORT(SomeFile, uv)), // needs to be stable
@@ -46,5 +48,6 @@ sequential(
     output(SORT(SomeFile, (string20)sv,(unsigned4)uv)), // can be unstable
     buildindex(NOFOLD(SomeFile), { uv }, { SomeFile }, 'REGRESS:dummyIndex1',overwrite);
     buildindex(NOFOLD(p), { uv }, { p }, 'REGRESS:dummyIndex2',overwrite);
+    output(SORT(s2, (integer2)uv));
     output('done')
 );    

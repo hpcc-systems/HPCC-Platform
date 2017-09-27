@@ -349,7 +349,7 @@
             <entry><emphasis role="bold">NAMED</emphasis></entry>
 
             <entry>Specifies the result name that appears in the workunit. Not
-            valid if the file parameter is present.</entry>
+            valid if the file parameter is present. </entry>
           </row>
 
           <row>
@@ -357,7 +357,9 @@
 
             <entry>A string constant containing the result label. This must be
             a compile-time constant and meet the attribute naming
-            requirements.</entry>
+            requirements. This must be a valid label (See <link
+            linkend="Attribute_Name_Rules">Definition Name
+            Rules</link>)</entry>
           </row>
 
           <row>
@@ -1406,11 +1408,14 @@ OUTPUT(B,,'fred2.json',JSON('MyResult', HEADING('[', ']')));
       </indexterm>])</emphasis></para>
 
     <para>This form writes the <emphasis>recordset</emphasis> to the workunit
-    with the specified <emphasis>name</emphasis>. The EXTEND option allows
-    multiple OUTPUT actions to the same <emphasis>named</emphasis> result. The
-    ALL option is used to override the implicit CHOOSEN applied to interactive
-    queries in the Query Builder program. This specifies returning all
-    records.</para>
+    with the specified <emphasis>name</emphasis>. This must be a valid label
+    (See <link linkend="Attribute_Name_Rules">Definition Name
+    Rules</link>)</para>
+
+    <para>The EXTEND option allows multiple OUTPUT actions to the same
+    <emphasis>named</emphasis> result. The ALL option is used to override the
+    implicit CHOOSEN applied to interactive queries in the Query Builder
+    program. This specifies returning all records.</para>
 
     <para>Example:</para>
 

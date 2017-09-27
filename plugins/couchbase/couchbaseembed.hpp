@@ -189,14 +189,16 @@ namespace couchbaseembed
         CouchbaseConnection(bool useSSL, const char * host, unsigned port, const char * bucketname, const char * password, const char * connOptions)
         {
             StringBuffer connectionString;
-            
+
             makeConnectionString(useSSL, host, port, bucketname, connOptions, connectionString);
             m_pCouchbaseClient = new Couchbase::Client(connectionString.str(), password);
+            timeLastUsed = 0;
         }
 
         CouchbaseConnection(const StringBuffer& connectionString, const char * password)
         {
             m_pCouchbaseClient = new Couchbase::Client(connectionString.str(), password);
+            timeLastUsed = 0;
         }
 
         virtual ~CouchbaseConnection()

@@ -1008,6 +1008,13 @@ goodObject
                             OwnedHqlExpr value = $2.getExpr();
                             $$.setExpr(parser->convertToOutOfLineFunction($2.pos, value), $1);
                         }
+    | INLINE goodObject
+                        {
+                            //Ugly internal unsupported syntax for defining an out of line function
+                            //Needs a lot more work.
+                            OwnedHqlExpr value = $2.getExpr();
+                            $$.setExpr(parser->convertToInlineFunction($2.pos, value), $1);
+                        }
     ;
 
 goodTypeObject
@@ -4198,6 +4205,8 @@ recordDef
     | simpleRecord
     | recordDef AND recordDef
                         {
+                            parser->checkConcreteRecord($1);
+                            parser->checkConcreteRecord($3);
                             OwnedHqlExpr left = $1.getExpr();
                             OwnedHqlExpr right = $3.getExpr();
                             $$.setExpr(parser->createRecordIntersection(left, right, $1));
@@ -4206,6 +4215,8 @@ recordDef
                         }
     | recordDef OR recordDef
                         {
+                            parser->checkConcreteRecord($1);
+                            parser->checkConcreteRecord($3);
                             OwnedHqlExpr left = $1.getExpr();
                             OwnedHqlExpr right = $3.getExpr();
                             $$.setExpr(parser->createRecordUnion(left, right, $1));
@@ -4213,6 +4224,8 @@ recordDef
                         }
     | recordDef '-' recordDef
                         {
+                            parser->checkConcreteRecord($1);
+                            parser->checkConcreteRecord($3);
                             OwnedHqlExpr left = $1.getExpr();
                             OwnedHqlExpr right = $3.getExpr();
                             $$.setExpr(parser->createRecordDifference(left, right, $1));
@@ -4221,6 +4234,7 @@ recordDef
                         }
     | recordDef '-' UNKNOWN_ID
                         {
+                            parser->checkConcreteRecord($1);
                             OwnedHqlExpr left = $1.getExpr();
                             OwnedHqlExpr right = createId($3.getId());
                             $$.setExpr(parser->createRecordExcept(left, right, $1));
@@ -4229,6 +4243,7 @@ recordDef
                         }
     | recordDef '-' '[' UnknownIdList ']'
                         {
+                            parser->checkConcreteRecord($1);
                             OwnedHqlExpr left = $1.getExpr();
                             OwnedHqlExpr right = $4.getExpr();
                             $$.setExpr(parser->createRecordExcept(left, right, $1));
@@ -4237,6 +4252,8 @@ recordDef
                         }
     | recordDef AND NOT recordDef
                         {
+                            parser->checkConcreteRecord($1);
+                            parser->checkConcreteRecord($4);
                             OwnedHqlExpr left = $1.getExpr();
                             OwnedHqlExpr right = $4.getExpr();
                             $$.setExpr(parser->createRecordDifference(left, right, $1));
@@ -4245,6 +4262,7 @@ recordDef
                         }
     | recordDef AND NOT UNKNOWN_ID
                         {
+                            parser->checkConcreteRecord($1);
                             OwnedHqlExpr left = $1.getExpr();
                             OwnedHqlExpr right = createId($4.getId());
                             $$.setExpr(parser->createRecordExcept(left, right, $1));
@@ -4253,6 +4271,7 @@ recordDef
                         }
     | recordDef AND NOT '[' UnknownIdList ']'
                         {
+                            parser->checkConcreteRecord($1);
                             OwnedHqlExpr left = $1.getExpr();
                             OwnedHqlExpr right = $5.getExpr();
                             $$.setExpr(parser->createRecordExcept(left, right, $1));

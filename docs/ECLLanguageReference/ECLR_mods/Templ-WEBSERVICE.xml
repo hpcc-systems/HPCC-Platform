@@ -35,7 +35,8 @@
             <entry><emphasis>fieldlist</emphasis></entry>
 
             <entry>A comma-separated list of field names in the order in which
-            they should appear on the form.</entry>
+            they should appear on the form. Use an asterisk (*) to include
+            unspecified fields.</entry>
           </row>
 
           <row>
@@ -80,6 +81,8 @@ Field2 := 2 :Stored('Field2');
 AddThem := TRUE :STORED ('AddThem');
 HiddenValue := 12 :STORED ('HiddenValue'); //not in fieldlist, won't display on WsECl form
 IF(AddThem,OUTPUT(Field1+Field2),OUTPUT('Not Added'));
+
+#WEBSERVICE(FIELDS('field1','field2','*'));//includes unspecified fields on the WsECL form
 </programlisting>
 
   <para>See Also: <link linkend="STORED_workflow_service">STORED</link></para>

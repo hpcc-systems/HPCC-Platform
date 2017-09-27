@@ -2054,7 +2054,7 @@
           all nodes in the active environment.xml file.</para>
 
           <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-push.sh \
-             /etc/HPCCSystems/environment.xml /etc/HPCCSystems/environment.xml</programlisting></para>
+             -s /etc/HPCCSystems/environment.xml -t /etc/HPCCSystems/environment.xml</programlisting></para>
         </listitem>
       </orderedlist>
     </sect1>

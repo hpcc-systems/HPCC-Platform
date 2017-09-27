@@ -559,7 +559,8 @@ bool CWsWorkunitsEx::onWUUpdate(IEspContext &context, IEspWUUpdateRequest &req, 
         ForEachItemIn(di, req.getDebugValues())
         {
             IConstDebugValue& item = req.getDebugValues().item(di);
-            if (notEmpty(item.getName()))
+            const char *debugName = item.getName();
+            if (notEmpty(debugName) && *debugName!='-')
                 wu->setDebugValue(item.getName(), item.getValue(), true);
         }
 
@@ -1177,7 +1178,8 @@ bool CWsWorkunitsEx::onWUSyntaxCheckECL(IEspContext &context, IEspWUSyntaxCheckR
         ForEachItemIn(di, req.getDebugValues())
         {
             IConstDebugValue& item=req.getDebugValues().item(di);
-            if(notEmpty(item.getName()))
+            const char *debugName = item.getName();
+            if (notEmpty(debugName) && *debugName!='-')
                 wu->setDebugValue(item.getName(), item.getValue(), true);
         }
 
