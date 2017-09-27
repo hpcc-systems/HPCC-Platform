@@ -1025,8 +1025,6 @@
     Distributed File Utility. This allows the collection of file parts to be
     referenced as a single entity.</para>
 
-    <!--  Might this be chapter for Xref?***-->
-
     <xi:include href="ECLWatch/ECLWa_mods/ECLWatchSrc.xml"
                 xpointer="xpointer(//*[@id='ECLWatchLogicalFiles'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -1120,11 +1118,10 @@
 
       <para>Under the <emphasis role="bold">Files</emphasis> Icon on the
       navigation sub-menu there is a link for XRef. This link will take you to
-      the XRef Clusters page. On the XRef clusters page you can run the XREF
-      utility.</para>
+      the XRef page. On the XRef page you can run the XREF utility.</para>
 
       <para><figure>
-          <title>XRef Clusters page</title>
+          <title>XRef page</title>
 
           <mediaobject>
             <imageobject>
@@ -1133,150 +1130,173 @@
           </mediaobject>
         </figure></para>
 
-      <para>The XREF utility provides the ability to find "orphaned" and "lost
-      and found" files. These "orphan" are files which are found on the nodes
-      but not registered in the Distributed File System.</para>
+      <sect2 id="The_XREF_Utility">
+        <title>The XRef Utility</title>
 
-      <variablelist>
-        <varlistentry>
-          <term>Found File</term>
+        <para>The XREF utility provides the ability to find "orphaned",
+        "lost", and "found" files. These "orphan" are files which are found on
+        the nodes but not registered in the Distributed File System.</para>
 
+        <variablelist>
+          <varlistentry>
+            <term>Found File</term>
+
+            <listitem>
+              <para>A found file has file parts on disk that are not
+              referenced in the Dali server. All the file parts are accounted
+              for so they can be added back to the Dali server. They can also
+              be deleted from the cluster, if required.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>Orphan File</term>
+
+            <listitem>
+              <para>An orphan file is a file without a Dali entry and without
+              a complete set of physical files. Since some of the physical
+              files are missing it is an incomplete file and it cannot be used
+              to add a logical file entry back into the Dali server. These
+              orphan file parts do not have a reference in the Dali
+              server.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>Lost File</term>
+
+            <listitem>
+              <para>A logical file that is missing at least one file part on
+              both the primary and replicated locations in storage. The
+              logical file is still referenced in the Dali server. Deleting
+              the file removes the reference from the Dali server and any
+              remaining parts on disk.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec colwidth="49.50pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><inlinegraphic fileref="images/tip.jpg" /></entry>
+
+                <entry><para>On a large system, we suggest limiting the number
+                of users who can Generate XREF reports by setting
+                DfuXrefAccess access to FULL for only those
+                users.</para><para> </para></entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+        <para>To generate a list:</para>
+
+        <itemizedlist>
           <listitem>
-            <para>A found file has partial file parts on disk that are not
-            referenced in the Dali server. All the file parts are accounted
-            for so they can be added back to the Dali server. They can also be
-            deleted from the cluster, if required.</para>
+            <para>Press the <emphasis role="bold">Generate</emphasis>
+            button.</para>
+
+            <informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic fileref="images/tip.jpg" /></entry>
+
+                    <entry><para>Sasha Server typically runs Xref at the times
+                    scheduled when deployed.</para><para> </para></entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable>
           </listitem>
-        </varlistentry>
+        </itemizedlist>
 
-        <varlistentry>
-          <term>Orphan File</term>
+        <para>To view results:</para>
 
+        <itemizedlist>
           <listitem>
-            <para>An orphan file has partial file parts on disk. However, a
-            full set of parts is not available to construct a complete logical
-            file. These partial file parts, therefore, do not have a reference
-            in the Dali server.</para>
+            <para>Click on one of the tabs (Found Files, Orphan Files, Lost
+            Files, Directories, or Errors/Warnings).</para>
           </listitem>
-        </varlistentry>
+        </itemizedlist>
 
-        <varlistentry>
-          <term>Lost File</term>
+        <sect3 id="ECLWatchXREFMultiThor">
+          <title>XREF with multiple Thor clusters</title>
 
-          <listitem>
-            <para>A logical file that is missing at least one file part on
-            both the primary and replicated locations in storage. The logical
-            file is still referenced in the Dali server. Deleting the file
-            removes the reference from the Dali server and any remaining parts
-            on disk.</para>
-          </listitem>
-        </varlistentry>
-      </variablelist>
+          <para>XREF runs on the primary Thor cluster. For a configuration
+          with more than one Thor cluster on the same physical node group, ECL
+          Watch only displays the primary Thor and not any other Thor that
+          shares the same node group. This is the Thor cluster whose name
+          matches the <emphasis>nodeGroup</emphasis> in the
+          configuration.</para>
 
-      <informaltable colsep="1" frame="all" rowsep="1">
-        <?dbfo keep-together="always"?>
+          <para>To allow XREF to run in an environment with multiple Thor
+          clusters, set the nodeGroup to the same value for all Thor
+          clusters.</para>
+        </sect3>
 
-        <tgroup cols="2">
-          <colspec colwidth="49.50pt" />
+        <sect3 id="ECLWatch_WorkingWithXref">
+          <title>Working with XREF results:</title>
 
-          <colspec />
+          <para>After XRef completes you can see a list of available reports.
+          Click on one of the tabs to see the results page of each
+          type.</para>
 
-          <tbody>
-            <row>
-              <entry><inlinegraphic fileref="images/tip.jpg" /></entry>
-
-              <entry><para>On a large system, we suggest limiting the number
-              of users who can Generate XREF reports by setting DfuXrefAccess
-              access to FULL for only those users.</para><para>
-              </para></entry>
-            </row>
-          </tbody>
-        </tgroup>
-      </informaltable>
-
-      <para>To generate a list:</para>
-
-      <itemizedlist>
-        <listitem>
-          <para>Press the <emphasis role="bold">Generate</emphasis>
-          button.</para>
-
-          <informaltable colsep="1" frame="all" rowsep="1">
-            <?dbfo keep-together="always"?>
-
-            <tgroup cols="2">
-              <colspec colwidth="49.50pt" />
-
-              <colspec />
-
-              <tbody>
-                <row>
-                  <entry><inlinegraphic fileref="images/tip.jpg" /></entry>
-
-                  <entry><para>Sasha Server typically runs Xref at the times
-                  scheduled when deployed.</para><para> </para></entry>
-                </row>
-              </tbody>
-            </tgroup>
-          </informaltable>
-        </listitem>
-      </itemizedlist>
-
-      <para>To view results:</para>
-
-      <itemizedlist>
-        <listitem>
-          <para>Click on one of the hyperlinks (Found Files, Orphan Files,
-          Lost Files, Directories, or Errors/Warnings).</para>
-        </listitem>
-      </itemizedlist>
-
-      <sect2 id="ECLWatch_WorkingWithXref">
-        <title>Working with XREF results:</title>
-
-        <para>After XRef completes you will see a list of available reports.
-        Click on one of the links to see the results page of each type.</para>
-
-        <figure>
-          <title>XRef Errors</title>
-
-          <mediaobject>
-            <imageobject>
-              <imagedata fileref="images/ECLWA435b.jpg" vendor="eclwatchSS" />
-            </imageobject>
-          </mediaobject>
-        </figure>
-
-        <para>The Orphan and Lost Files pages list any Orphan or Lost files.
-        Orphan and Lost files are difficult to recover, unless you have copies
-        of missing parts needed to reconstruct the file (for example, if a
-        missing part is on a hard drive that was replaced.)</para>
-
-        <figure>
-          <title>XRef: Delete Lost Files</title>
-
-          <mediaobject>
-            <imageobject>
-              <imagedata fileref="images/ECLWA436.jpg" vendor="eclwatchSS" />
-            </imageobject>
-          </mediaobject>
-        </figure>
-
-        <para>Typically, these files are deleted. To Delete, check the boxes
-        next to files you want to delete, then press the Delete button.</para>
-
-        <para>Found files can and usually are reattached. <figure>
-            <title>XRef: Attach Found Files</title>
+          <figure>
+            <title>XRef Errors</title>
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/ECLWA437.jpg" vendor="eclwatchSS" />
+                <imagedata fileref="images/ECLWA435b.jpg" vendor="eclwatchSS" />
               </imageobject>
             </mediaobject>
-          </figure></para>
+          </figure>
 
-        <para>Check the boxes next to files you want to reattach, then press
-        the Attach button.</para>
+          <para>The Orphan and Lost Files pages list any Orphan or Lost files.
+          Orphan and Lost files are difficult to recover, unless you have
+          copies of missing parts needed to reconstruct the file (for example,
+          if a missing part is on a hard drive that was replaced.)</para>
+
+          <figure>
+            <title>XRef: Delete Orphan Files</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA436.jpg" vendor="eclwatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure>
+
+          <para>Typically, these files will need to be deleted. To Delete,
+          check the boxes next to files you want to delete, then press the
+          <emphasis role="bold">Delete</emphasis> button.</para>
+
+          <para>Found files can and usually are reattached. <figure>
+              <title>XRef: Attach Found Files</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/ECLWA437.jpg" vendor="eclwatchSS" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Check the boxes next to files you want to reattach, then press
+          the <emphasis role="bold">Attach</emphasis> button.</para>
+        </sect3>
       </sect2>
     </sect1>
   </chapter>
