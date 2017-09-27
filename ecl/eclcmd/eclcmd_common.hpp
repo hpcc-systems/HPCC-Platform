@@ -170,6 +170,8 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_CHECKDIRTY "-checkDirty"
 #define ECLOPT_DEBUG "--debug"
 #define ECLOPT_DEBUG_DASH "-g"
+#define ECLOPT_FAST_SYNTAX "--fastsyntax"
+#define ECLOPT_NO_STD_INC "--nostdinc"
 
 #define ECLOPT_VERBOSE "--verbose"
 #define ECLOPT_VERBOSE_S "-v"
@@ -325,6 +327,8 @@ public:
     bool optLegacy;
     bool optDebug;
     bool optCheckDirty;
+    bool optFastSyntax = false;
+    bool optNoStdInc = false;
 };
 
 class EclCmdWithQueryTarget : public EclCmdCommon
