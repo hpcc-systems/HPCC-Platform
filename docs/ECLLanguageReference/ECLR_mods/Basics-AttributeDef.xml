@@ -53,7 +53,9 @@ MySecondDefinition := MyFirstDefinition + 5; //this is 10</programlisting>
 
     <para>Definition name<indexterm>
         <primary>Definition Name</primary>
-      </indexterm>s begin with a letter and may contain only letters, numbers,
+      </indexterm>s <indexterm>
+        <primary>valid identifier</primary>
+      </indexterm>begin with a letter and may contain only letters, numbers,
     or underscores (_).</para>
 
     <programlisting>My_First_Definition1 := 5; // valid name
@@ -81,7 +83,7 @@ My First Definition := 5;  // INVALID name, spaces not allowed</programlisting>
                                //ds dataset - not DEDUP’s ALL option</programlisting>
 
     <para>However, it is still a good idea to avoid using ECL keywords as
-    definition or field names. </para>
+    definition or field names.</para>
 
     <para>Definition or field names cannot begin with <emphasis
     role="bold">UNICODE_</emphasis> , <emphasis role="bold">UTF8_</emphasis>,

@@ -93,6 +93,13 @@
   <emphasis>code</emphasis> parameter contains all the code to execute, making
   this useful only for very simple expressions.</para>
 
+  <para>You can use EMBED instead of BEGINC++ to embed C++ code and specify
+  additional options (for example, DISTRIBUTED) using this form:</para>
+
+  <para><programlisting>myFunction(string name) := EMBED(C++ [: options]) 
+  ... text 
+ENDEMBED</programlisting></para>
+
   <para><emphasis role="bold">WARNING: This feature could create memory
   corruption and/or security issues, so great care and forethought are
   advised—consult with Technical Support before using.</emphasis></para>
