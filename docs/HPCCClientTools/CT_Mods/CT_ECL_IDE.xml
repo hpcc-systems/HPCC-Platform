@@ -926,7 +926,7 @@
           tree format. Expand any folder branch to see the ECL files within
           it. The IDE supports other languages in addition to ECL, namely
           ESDL, KEL, SALT, and others. To help differentiate the files are
-          color coded according to the type of file they are. </para>
+          color coded according to the type of file they are.</para>
 
           <para><graphic fileref="../../images/CT12.jpg" /></para>
 
@@ -2088,8 +2088,6 @@
             <tgroup cols="2">
               <colspec align="left" colwidth="122.40pt" />
 
-              <colspec colwidth="333.00pt" />
-
               <tbody>
                 <row>
                   <entry><emphasis role="bold">Download
@@ -2125,8 +2123,6 @@
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="122.40pt" />
-
-              <colspec />
 
               <tbody>
                 <row>
@@ -2263,8 +2259,6 @@
             <tgroup cols="2">
               <colspec align="left" colwidth="130.40pt" />
 
-              <colspec />
-
               <tbody>
                 <row>
                   <entry><emphasis role="bold">Open in Builder
@@ -2399,8 +2393,6 @@
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="130.40pt" />
-
-              <colspec />
 
               <tbody>
                 <row>
@@ -3174,7 +3166,7 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="Editing" role="brk">
-        <title><emphasis>Editing</emphasis></title>
+        <title>Editing</title>
 
         <para>The Builder Window also supports editing ECL files.</para>
 
@@ -3185,6 +3177,160 @@ ENDMACRO;
 
         <para>There is also a right-click pop-up menu with the all the options
         found on the <emphasis role="bold">Edit</emphasis> menu.</para>
+
+        <sect3 id="IDE_Support_For_Other_Languages">
+          <title>Support for Other Languages</title>
+
+          <para>In addition to providing native support for ECL Files, the ECL
+          IDE also provides support for working with other languages. The IDE
+          provides colored file type differentiation, where different file
+          types all display in a different color. The IDE also provides
+          colorized keywords in the supported languages. The colorization is
+          set up as a default, but can be customized. Other languages that the
+          IDE supports</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <tgroup cols="2">
+                <colspec align="left" colwidth="122.40pt" />
+
+                <tbody>
+                  <row>
+                    <entry><emphasis role="bold">Language</emphasis></entry>
+
+                    <entry><emphasis
+                    role="bold">Functionality</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry>ECL</entry>
+
+                    <entry><itemizedlist>
+                        <listitem>
+                          <para>Repository icon colorized to identify the file
+                          type</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Syntax Highlighting</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Syntax Check</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Submit Selected</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Compile</para>
+                        </listitem>
+                      </itemizedlist></entry>
+                  </row>
+
+                  <row>
+                    <entry>ESDL</entry>
+
+                    <entry><itemizedlist>
+                        <listitem>
+                          <para>Repository icon colorized to identify the file
+                          type</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Syntax Highlighting</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Syntax Check</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Generates ECL</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Publish</para>
+                        </listitem>
+                      </itemizedlist></entry>
+                  </row>
+
+                  <row>
+                    <entry>KEL</entry>
+
+                    <entry><itemizedlist>
+                        <listitem>
+                          <para>Repository icon colorized to identify the file
+                          type</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Syntax Highlighting</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Syntax Check</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Generates ECL and DUD files</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Submit</para>
+                        </listitem>
+                      </itemizedlist></entry>
+                  </row>
+
+                  <row>
+                    <entry>SPC (SALT)</entry>
+
+                    <entry><itemizedlist>
+                        <listitem>
+                          <para>Repository icon colorized to identify the file
+                          type</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Syntax Highlighting</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Syntax Check</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Generates ECL</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Submit</para>
+                        </listitem>
+                      </itemizedlist></entry>
+                  </row>
+
+                  <row>
+                    <entry>DUD</entry>
+
+                    <entry><itemizedlist>
+                        <listitem>
+                          <para>Repository icon colorized to identify the file
+                          type</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Syntax Highlighting</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Syntax Check</para>
+                        </listitem>
+                      </itemizedlist></entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </sect3>
       </sect2>
 
       <sect2>
