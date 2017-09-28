@@ -236,9 +236,9 @@ private:
     virtual int setPrivateKey(const char* privatekeyBuff, const char* passphrase);
 
 public:
-    RSAZCryptor(unsigned traceLevel = 11);
-    RSAZCryptor(const char* publickey, unsigned traceLevel = 11);
-    RSAZCryptor(const char* privatekey, const char* passphrase, unsigned traceLevel = 11);
+    RSAZCryptor(unsigned traceLevel = 0);
+    RSAZCryptor(const char* publickey, unsigned traceLevel = 0);
+    RSAZCryptor(const char* privatekey, const char* passphrase, unsigned traceLevel = 0);
     virtual ~RSAZCryptor();
 
     virtual ZBuffer& publickey_encrypt(int in_len, unsigned char* in, ZBuffer& result);

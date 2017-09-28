@@ -110,9 +110,6 @@ int RSAZCryptor::setPublicKey(const char* publickeyBuff)
         return -1;
     }
 
-    if(m_trace_level > 10)
-        printf("setting publickeyBuff:\n%s\n", publickeyBuff);
-
     if(pubkey)
     {
         EVP_PKEY_free(pubkey);
@@ -164,9 +161,6 @@ int RSAZCryptor::setPrivateKey(const char* privatekeyBuff, const char* passphras
 
         return -1;
     }
-
-    if(m_trace_level > 10)
-        printf("setting privatekeyBuff:\n%s\n", privatekeyBuff);
 
     if(privkey)
     {
