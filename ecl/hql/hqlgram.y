@@ -4009,16 +4009,10 @@ beginNestedParamDef
     ;
 
 defvalue
-    : EQ expression     
+    : EQ goodObject
                         {
                             parser->normalizeExpression($2);
                             $$.inherit($2); 
-                        }
-    | EQ dataSet        {   $$.inherit($2); }
-    | EQ dataRow        {   $$.inherit($2); }
-    | EQ abstractModule
-                        {
-                            $$.inherit($2);
                         }
     |                   {   $$.setNullExpr(); }
     ;
