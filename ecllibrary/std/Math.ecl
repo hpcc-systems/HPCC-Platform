@@ -62,7 +62,7 @@ EXPORT BOOLEAN isFinite(REAL8 val) := rtl.isFinite(val);
  *   'fail': throw an exception
  * 
  * @param numer           The numerator.
- * @param denom           The numerator.
+ * @param denom           The denominator.
  */
 
 EXPORT REAL8 FMod(REAL8 numer, REAL8 denom) := 
