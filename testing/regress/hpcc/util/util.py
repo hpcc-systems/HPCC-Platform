@@ -142,61 +142,35 @@ def abortWorkunit(wuid):
     state=shell.command(cmd, *defaults)(*args)
     return state
 
-def createZAP(wuid,  taskId):
+def createZAP(wuid,  taskId,  reason=''):
     retVal = 'Error in create ZAP'
-    if gConfig.useSsl.lower() == 'true':
-        retVal = 'Currently ZAP file generation not supported with SSL connection.'
-        return retVal
+    zapFilePath = os.path.join(os.path.expanduser(gConfig.regressionDir), gConfig.zapDir)
+    shell = Shell()
+    cmd = 'ecl'
+    defaults=[]
+    args = []
+    args.append('zapgen')
+    args.append(wuid)
+    args.append('--path=' + zapFilePath)
+    if reason != '':
+        args.append('--description=' + reason)
+    else:
+        args.append('--description="Failed in OBT"')
 
-    # http://localhost:8010/WsWorkunits/WUCreateZAPInfo?Wuid=<wuid>&ProblemDescription=<problem_description>&IncludeThorSlaveLog="on"
-    host = "http://" + gConfig.espIp + ":" + gConfig.espSocket + "/WsWorkunits/WUCreateZAPInfo?Wuid="+wuid+"&ProblemDescription=\"Failed+in+OBT\"&IncludeThorSlaveLog=on"
-    logging.debug("%3d. createZAP(%s, host :'%s')",  taskId,  wuid, host)
+    args.append('--inc-thor-slave-logs')
+    addCommonEclArgs(args)
 
-    state = 'OK'
     try:
-        # Add authentication by default it works w/wo LDAP
-        request = urllib2.Request(host)
-        base64string = base64.encodestring('%s:%s' % (gConfig.username, gConfig.password)).replace('\n', '')
-        request.add_header("Authorization", "Basic %s" % base64string)
-        response_stream = urllib2.urlopen(request)
-
-        respHeaders=str(response_stream.info()).replace('\r','').split('\n')
-        response = response_stream.read()
-        logging.debug("%3d. createZAP(%s) -> headers: '%s', response: '%s'\n",  taskId,  wuid, respHeaders,  response)
-
-        zapFilename = ''
-        for headerIndex in range(len(respHeaders)):
-            if respHeaders[headerIndex].startswith('Content-disposition'):
-                items = respHeaders[headerIndex].split(';')
-                if len(items) == 2 and ('filename=' in items[1]):
-                    zapFilename = items[1].replace('filename=', '')
-
-        if zapFilename == '':
-            retVal = response
-            logging.debug("%3d. No zap file name in the response!",  taskId)
+        state=shell.command(cmd, *defaults)(*args)
+        logging.debug("%3d. createZAP(state:%s)",  taskId, str(state))
+        if state[1] != '':
+            retVal = state[1]
         else:
-            zapFilename = os.path.join(os.path.expanduser(gConfig.regressionDir), gConfig.zapDir)+'/'+ zapFilename
-            logging.debug("%3d. zap file name:'%s'",  taskId,  zapFilename)
-            zapFile = open(zapFilename, "w");
-            zapFile.write(response)
-            zapFile.close()
-            retVal = zapFilename + " created."
-
-    except KeyError as ke:
-        state = "Key error:"+ke.str()
-
-    except urllib2.HTTPError as ex:
-        state = "HTTP Error: "+ str(ex.reason)
-        state += '\n' + ex.headers
-
-    except urllib2.URLError as ex:
-        state = "URL Error: "+ str(ex.reason)
-
+            retVal = state[0]
     except Exception as ex:
-        state = "Unable to query "+ str(ex.reason)
-
-    finally:
+        state = "Unable to query "+ str(ex)
         logging.debug("%3d. %s in createZAP(%s)",  taskId,  state,  wuid)
+        retVal += " (" + str(ex). replace('\n',' ') + ")"
 
     return retVal
 
