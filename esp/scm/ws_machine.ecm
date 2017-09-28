@@ -370,14 +370,6 @@ ESPresponse [encode(0), nil_remove, exceptions_inline] UpdateComponentStatusResp
 //-------- service ---------
 ESPservice [auth_feature("DEFERRED"), version("1.13")] ws_machine
 {
-    ESPuses ESPstruct RequestInfoStruct;
-    ESPuses ESPstruct MachineInfoEx;
-    ESPuses ESPstruct ProcessorInfo;
-    ESPuses ESPstruct StorageInfo;
-    ESPuses ESPstruct SWRunInfo;
-    ESPuses ESPstruct RemoteExecResult;
-    ESPuses ESPStruct ComponentInfo;
-
     ESPmethod [resp_xsl_default("./smc_xslt/clusterprocesses.xslt"), exceptions_inline("./smc_xslt/exceptions.xslt")]
        GetTargetClusterInfo(GetTargetClusterInfoRequest, GetTargetClusterInfoResponse);
 

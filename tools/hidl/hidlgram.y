@@ -97,7 +97,6 @@ int  nCommentStartLine = -1;
   ESPVERSIONDEF
   ESPTEMPLATE
   ESPMOUNT
-  ESPUSES
   ESPDEFEXPORT
   XSDTYPE
   _CONST
@@ -209,7 +208,6 @@ EspServiceEntryList
 EspServiceEntry
  : EspServiceMethod
  | EspServiceMount
- | EspServiceUses
  ;
 
 EspServiceMethod
@@ -258,18 +256,6 @@ EspServiceMount
 
     mount->next=CurService->mounts;
     CurService->mounts=mount;
- }
- ;
-
-EspServiceUses
- : ESPUSES EspMetaData EspType ID ';'
- {
-    EspStructInfo *esp_struct=new EspStructInfo($4.getName());
-    
-    esp_struct->tags = getClearCurMetaTags();
-
-    esp_struct->next=CurService->structs;
-    CurService->structs=esp_struct;
  }
  ;
 
