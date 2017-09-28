@@ -115,31 +115,6 @@ elif [ -e /etc/redhat-release -o -e /etc/SuSE-release ]; then
     fi
 fi
 
-distrib_check
-if [ "${DISTRIB_NAME}" = "ubuntu" ] &&
-   [ ${DISTRIB_MAJOR_VERSION} -ge 15 ]; then
-
-   dpkg -l | grep -q -e "^ii[[:space:]]*systemd "
-   if [ $? -eq 0 ]; then
-      echo "Remove systemd service"
-      systemctl list-units | grep hpcc-init | while read hpcc_service rest
-      do
-         systemctl stop ${hpcc_service}
-      done
-      systemctl list-units | grep dafilesrv | while read hpcc_service rest
-      do
-         systemctl stop ${hpcc_service}
-      done
-      systemctl reset-failed
-
-      [ -e /lib/systemd/system/hpcc-init.service ] && rm -rf /lib/systemd/system/hpcc-init.service
-      [ -e /lib/systemd/system/hpcc-init@.service ] && rm -rf /lib/systemd/system/hpcc-init@.service
-      [ -e /lib/systemd/system/dafilesrv.service ] && rm -rf /lib/systemd/system/dafilesrv.service
-      [ -e /lib/systemd/system/dafilesrv@.service ] && rm -rf /lib/systemd/system/dafilesrv@.service
-   fi
-fi
-
-
 echo "Removing Directory - ${path}"
 removedir ${path}
 

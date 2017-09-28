@@ -1,0 +1,10 @@
+[Unit]
+Description=Generates %i configuration files and @RUNTIME_PATH@/%i/%i.cfg
+After=hpcc-conf@%i.service
+Requires=hpcc-conf@%i.service
+
+[Service]
+Type=oneshot
+User=@RUNTIME_USER@
+Group=@RUNTIME_GROUP@
+ExecStart=/bin/bash -c "/bin/sed -e 's/export //g' @RUNTIME_PATH@/%i/setvars >> @RUNTIME_PATH@/%i/%i.cfg"

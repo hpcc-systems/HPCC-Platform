@@ -1,0 +1,8 @@
+[Unit]
+Description=Triggers the service that regenerates hpccsystems-platform.target
+
+[Path]
+PathModified=@CONFIG_DIR@/@ENV_XML_FILE@
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,4 @@
+if which systemctl 1>/dev/null 2>&1; then
+    removeSymlink "/etc/systemd/system/hpcc-init@.service"
+    removeSymlink "/etc/systemd/system/hpcc-init.service"
+fi

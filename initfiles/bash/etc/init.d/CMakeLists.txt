@@ -22,11 +22,6 @@ GENERATE_BASH(processor ${bash-vars} "hpcc-init.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "hpcc_common.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "uninstall-init.in" outFiles)
 
-configure_file(hpcc-init.service.in hpcc-init.service @ONLY)
-configure_file(hpcc-init@.service.in hpcc-init@.service @ONLY)
-configure_file(dafilesrv.service.in dafilesrv.service @ONLY)
-configure_file(dafilesrv@.service.in dafilesrv@.service @ONLY)
-
 ADD_CUSTOM_TARGET(ProcessFiles-initfiles-bash-etc-init.d ALL DEPENDS ${outFiles})
 FOREACH( oFILES
     ${outFiles}
@@ -42,13 +37,3 @@ if ( PLATFORM )
     install ( PROGRAMS hpcc-init.install DESTINATION etc/init.d/install COMPONENT Runtime )
     install ( PROGRAMS hpcc-init.uninstall DESTINATION etc/init.d/uninstall COMPONENT Runtime )
 endif()
-
-FOREACH( sFILES
-    ${CMAKE_CURRENT_BINARY_DIR}/hpcc-init.service
-    ${CMAKE_CURRENT_BINARY_DIR}/hpcc-init@.service
-    ${CMAKE_CURRENT_BINARY_DIR}/dafilesrv.service
-    ${CMAKE_CURRENT_BINARY_DIR}/dafilesrv@.service
-)
-    install ( FILES ${sFILES} DESTINATION etc/init.d COMPONENT Runtime
-        PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ )
-ENDFOREACH ( sFILES )
