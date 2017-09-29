@@ -22,6 +22,7 @@
 #include "jlib.hpp"
 #include "jmutex.hpp"
 #include <vector>
+#include <initializer_list>
 
 #include "jstatcodes.h"
 
@@ -359,10 +360,10 @@ protected:
 class jlib_decl StatisticsMapping
 {
 public:
-    //Takes a list of StatisticKind terminated by StKindNone
-    StatisticsMapping(StatisticKind kind, ...);
-    //Takes an existing Mapping, and extends it with a list of StatisticKind terminated by StKindNone
-    StatisticsMapping(const StatisticsMapping * from, ...);
+    //Takes a list of StatisticKind
+    StatisticsMapping(const std::initializer_list<StatisticKind> &kinds);
+    //Takes an existing Mapping, and extends it with a list of StatisticKind
+    StatisticsMapping(const StatisticsMapping * from, const std::initializer_list<StatisticKind> &kinds);
     //Accepts all StatisticKind values
     StatisticsMapping();
 

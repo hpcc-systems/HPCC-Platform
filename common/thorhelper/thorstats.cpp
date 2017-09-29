@@ -22,7 +22,7 @@
 
 
 //Cycles are accumulated locally, time is updated once it is serialized or persisted
-const StatisticsMapping nestedSectionStatistics(StCycleLocalExecuteCycles, StTimeLocalExecute, StNumStarts, StNumStops, StKindNone);
+const StatisticsMapping nestedSectionStatistics({StCycleLocalExecuteCycles, StTimeLocalExecute, StNumStarts, StNumStops});
 
 ThorSectionTimer::ThorSectionTimer(const char * _name, CRuntimeStatistic & _starts, CRuntimeStatistic & _stops, CRuntimeStatistic & _elapsed)
 : starts(_starts), stops(_stops), elapsed(_elapsed), name(_name)

@@ -345,29 +345,29 @@ protected:
 
 // General activity statistics
 
-static const StatisticsMapping actStatistics(StWhenFirstRow, StTimeElapsed, StTimeLocalExecute, StTimeTotalExecute, StSizeMaxRowSize,
+static const StatisticsMapping actStatistics({StWhenFirstRow, StTimeElapsed, StTimeLocalExecute, StTimeTotalExecute, StSizeMaxRowSize,
                                               StNumRowsProcessed, StNumSlaves, StNumStarts, StNumStops, StNumStrands,
                                               StNumScansPerRow, StNumAllocations, StNumAllocationScans,
-                                              StTimeFirstExecute, StCycleLocalExecuteCycles, StCycleTotalExecuteCycles, StKindNone);
-static const StatisticsMapping joinStatistics(&actStatistics, StNumAtmostTriggered, StKindNone);
-static const StatisticsMapping keyedJoinStatistics(&joinStatistics, StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
+                                              StTimeFirstExecute, StCycleLocalExecuteCycles, StCycleTotalExecuteCycles});
+static const StatisticsMapping joinStatistics(&actStatistics, {StNumAtmostTriggered});
+static const StatisticsMapping keyedJoinStatistics(&joinStatistics, { StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
                                                     StNumIndexSkips, StNumIndexNullSkips, StNumIndexMerges, StNumIndexMergeCompares,
                                                     StNumPreFiltered, StNumPostFiltered, StNumIndexAccepted, StNumIndexRejected,
                                                     StNumIndexRowsRead, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
                                                     StNumBlobCacheHits, StNumLeafCacheHits, StNumNodeCacheHits,
                                                     StNumBlobCacheAdds, StNumLeafCacheAdds, StNumNodeCacheAdds,
-                                                    StNumDiskRejected, StKindNone);
-static const StatisticsMapping indexStatistics(&actStatistics, StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
+                                                    StNumDiskRejected});
+static const StatisticsMapping indexStatistics(&actStatistics, {StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
                                                 StNumIndexSkips, StNumIndexNullSkips, StNumIndexMerges, StNumIndexMergeCompares,
                                                 StNumPreFiltered, StNumPostFiltered, StNumIndexAccepted, StNumIndexRejected,
                                                 StNumBlobCacheHits, StNumLeafCacheHits, StNumNodeCacheHits,
                                                 StNumBlobCacheAdds, StNumLeafCacheAdds, StNumNodeCacheAdds,
-                                                StNumIndexRowsRead, StKindNone);
-static const StatisticsMapping diskStatistics(&actStatistics, StNumServerCacheHits, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
-                                               StNumDiskRejected, StKindNone);
-static const StatisticsMapping soapStatistics(&actStatistics, StTimeSoapcall, StKindNone);
-static const StatisticsMapping groupStatistics(&actStatistics, StNumGroups, StNumGroupMax, StKindNone);
-static const StatisticsMapping sortStatistics(&actStatistics, StTimeSortElapsed, StKindNone);
+                                                StNumIndexRowsRead});
+static const StatisticsMapping diskStatistics(&actStatistics, {StNumServerCacheHits, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
+                                               StNumDiskRejected });
+static const StatisticsMapping soapStatistics(&actStatistics, { StTimeSoapcall });
+static const StatisticsMapping groupStatistics(&actStatistics, { StNumGroups, StNumGroupMax });
+static const StatisticsMapping sortStatistics(&actStatistics, { StTimeSortElapsed });
 
 //=================================================================================
 

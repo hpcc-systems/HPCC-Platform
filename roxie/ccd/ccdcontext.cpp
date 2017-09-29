@@ -1126,7 +1126,7 @@ public:
 
 //---------------------------------------------------------------------------------------
 
-static const StatisticsMapping graphStatistics(StKindNone);
+static const StatisticsMapping graphStatistics({});
 class CRoxieContextBase : implements IRoxieSlaveContext, implements ICodeContext, implements roxiemem::ITimeLimiter, implements IRowAllocatorMetaActIdCacheCallback, public CInterface
 {
 protected:
