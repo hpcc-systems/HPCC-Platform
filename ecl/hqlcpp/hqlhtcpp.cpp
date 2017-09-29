@@ -8855,7 +8855,7 @@ void HqlCppTranslator::doBuildStmtAssert(BuildCtx & ctx, IHqlExpression * expr)
             return;
 
         StringBuffer msgText;
-        getStringValue(msgText, msg);
+        getUTF8Value(msgText, msg);
         reportErrorDirect(locationAttr, ERR_ASSERTION_FAILS, msgText.str(), false);
         return;
     }

@@ -12722,6 +12722,12 @@ extern IHqlExpression *createConstant(const char *constant)
     return CHqlConstant::makeConstant(createStringValue(constant, strlen(constant)));
 }
 
+extern IHqlExpression *createUtf8Constant(const char *constant)
+{
+    unsigned len = rtlUtf8Length(strlen(constant), constant);
+    return CHqlConstant::makeConstant(createUtf8Value(constant, makeUtf8Type(len, NULL)));
+}
+
 extern IHqlExpression *createConstant(IValue * constant)
 {
     return CHqlConstant::makeConstant(constant);
