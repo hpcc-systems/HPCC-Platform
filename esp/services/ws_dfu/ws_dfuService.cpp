@@ -2525,43 +2525,6 @@ __int64 CWsDfuEx::findPositionByDescription(const char *description, bool descen
     return addToPos;
 }
 
-bool CWsDfuEx::checkDescription(const char *description, const char *descriptionFilter)
-{
-    if (!descriptionFilter || (descriptionFilter[0] == 0))
-        return true;
-    if (!description || (description[0] == 0))
-        return false;
-
-    int len = strlen(descriptionFilter);
-    int filterType = 0;
-    if (descriptionFilter[0] == '*')
-        filterType += 1;
-    if (descriptionFilter[len - 1] == '*')
-        filterType += 2;
-
-    StringBuffer descFilter;
-    if (filterType < 1)
-        descFilter.append(descriptionFilter);
-    else if (filterType < 2)
-        descFilter.append(descriptionFilter+1);
-    else if (filterType < 3)
-        descFilter.append(len-1, descriptionFilter);
-    else
-        descFilter.append(len-2, descriptionFilter+1);
-
-    const char *pos = strstr(description, descFilter);
-    if (!pos)
-        return false;
-
-    if ((pos != description) && (descriptionFilter[0] != '*'))
-        return false;
-
-    if ((pos + strlen(descFilter) != description + strlen(description)) && (descriptionFilter[len - 1] != '*'))
-        return false;
-
-    return true;
-}
-
 //The code inside this method is copied from previous code for legacy (< 5.0) dali support
 void CWsDfuEx::getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor* udesc, IEspDFUQueryRequest & req, IEspDFUQueryResponse & resp)
 {
@@ -2748,13 +2711,6 @@ void CWsDfuEx::getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor
                     nodeGroups.append(fileNodeGroups.item(i));
             }
 
-            const char* desc = attr.queryProp("@description");
-            if(req.getDescription() && *req.getDescription())
-            {
-                if (!checkDescription(desc, req.getDescription()))
-                    continue;
-            }
-
             if (sFileType && *sFileType)
             {
                 bool bHasSubFiles = attr.hasProp("@numsubfiles");
@@ -2791,6 +2747,7 @@ void CWsDfuEx::getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor
             else if(recordSize)
                 records = size/recordSize;
 
+            const char* desc = attr.queryProp("@description");
             ForEachItemIn(i, nodeGroups)
             {
                 const char* nodeGroup = nodeGroups.item(i);
@@ -2979,11 +2936,6 @@ void CWsDfuEx::getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor
         resp.setLogicalName(req.getLogicalName());
         addToQueryString(basicQuery, "LogicalName", req.getLogicalName());
     }
-    if (req.getDescription() && *req.getDescription())
-    {
-        resp.setDescription(req.getDescription());
-        addToQueryString(basicQuery, "Description", req.getDescription());
-    }
     if (req.getStartDate() && *req.getStartDate())
     {
         resp.setStartDate(req.getStartDate());
@@ -3156,7 +3108,6 @@ void CWsDfuEx::setDFUQueryFilters(IEspDFUQueryRequest& req, StringBuffer& filter
 {
     setFileNameFilter(req.getLogicalName(), req.getPrefix(), filterBuf);
     setFileTypeFilter(req.getFileType(), filterBuf);
-    appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFdescription), DFUQFTwildcardMatch, req.getDescription(), filterBuf);
     appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFattrowner), DFUQFTwildcardMatch, req.getOwner(), filterBuf);
     appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFkind), DFUQFTwildcardMatch, req.getContentType(), filterBuf);
     appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFgroup), DFUQFTcontainString, req.getNodeGroup(), ",", filterBuf);
@@ -3228,8 +3179,6 @@ void CWsDfuEx::setDFUQuerySortOrder(IEspDFUQueryRequest& req, StringBuffer& sort
         sortOrder[0] = DFUQRFnodegroup;
     else if (strieq(sortByPtr, "Modified"))
         sortOrder[0] = DFUQRFtimemodified;
-    else if (strieq(sortByPtr, "Description"))
-        sortOrder[0] = DFUQRFdescription;
     else if (strieq(sortByPtr, "ContentType"))
         sortOrder[0] = DFUQRFkind;
     else
@@ -3413,11 +3362,6 @@ void CWsDfuEx::setDFUQueryResponse(IEspContext &context, unsigned totalFiles, St
     {
         resp.setLogicalName(req.getLogicalName());
         addToQueryString(queryReq, "LogicalName", req.getLogicalName());
-    }
-    if (req.getDescription() && *req.getDescription())
-    {
-        resp.setDescription(req.getDescription());
-        addToQueryString(queryReq, "Description", req.getDescription());
     }
     if (req.getStartDate() && *req.getStartDate())
     {

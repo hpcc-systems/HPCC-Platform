@@ -174,7 +174,6 @@ ESPrequest [nil_remove] DFUQueryRequest
     [min_ver("1.26")] string NodeGroup;
     [min_ver("1.30")] string ContentType;
     string LogicalName;
-    string Description;
     string Owner;
     string StartDate;
     string EndDate;
