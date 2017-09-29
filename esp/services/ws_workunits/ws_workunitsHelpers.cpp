@@ -788,7 +788,7 @@ void WsWuInfo::doGetGraphs(IArrayOf<IEspECLGraph>& graphs)
 
 void WsWuInfo::getGraphInfo(IEspECLWorkunit &info, unsigned long flags)
 {
-     if (version > 1.01)
+     if ((version > 1.01) && (version < 1.71))
      {
         info.setHaveSubGraphTimings(false);
 
