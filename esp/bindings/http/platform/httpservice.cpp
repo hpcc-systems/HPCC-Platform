@@ -514,6 +514,7 @@ int CEspHttpServer::onUpdatePasswordInput(CHttpRequest* request, CHttpResponse* 
 {
     StringBuffer html;
     m_apport->onUpdatePasswordInput(*request->queryContext(), html);
+
     response->setContent(html.length(), html.str());
     response->setContentType("text/html; charset=UTF-8");
     response->setStatus(HTTP_STATUS_OK);
@@ -1027,6 +1028,15 @@ EspAuthState CEspHttpServer::preCheckAuth(EspAuthRequest& authReq)
             EspHttpBinding* thebinding = getBinding();
             if (thebinding)
                 thebinding->populateRequest(m_request.get());
+            StringBuffer userID;
+            readCookie(SESSION_ID_TEMP_COOKIE, userID);
+            if (!userID.isEmpty()) //For session auth, the cookie has the userID.
+            {
+                authReq.ctx->setUserID(userID.str());
+                ISecUser* user = authReq.ctx->queryUser();
+                if (user)
+                    user->setName(userID.str());
+            }
             onUpdatePassword(m_request.get(), m_response.get());
             return authTaskDone;
         }
