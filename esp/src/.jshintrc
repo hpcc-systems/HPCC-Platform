@@ -1,5 +1,6 @@
 {
     "predef": [
+        "module",
         "debugConfig",
         "define",
         "require",

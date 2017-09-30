@@ -20,10 +20,12 @@ define([
     "dojo/dom",
     "dojo/dom-style",
 
-    "dijit/layout/ContentPane"
+    "dijit/layout/ContentPane",
 
+    "hpcc/Utility"
 ], function (declare, Deferred, lang, dom, domStyle,
-    ContentPane) {
+    ContentPane,
+    Utility) {
     return declare("DelayLoadWidget", [ContentPane], {
         __hpcc_initalized: false,
         refresh: null,
@@ -57,10 +59,7 @@ define([
             this.deferred = new Deferred();
             this.startLoading();
             var context = this;
-            require([(this.delayFolder ? "plugins/" + this.delayFolder + "/" : "hpcc/") + this.delayWidget], function (widget) {
-                if (widget.fixCircularDependency) {
-                    widget = widget.fixCircularDependency;
-                }
+                Utility.resolve(this.delayWidget, function (widget) {
                 var widgetInstance = new widget(lang.mixin({
                     id: context.childWidgetID,
                     style: {

@@ -120,7 +120,7 @@ define([
             var results = this.store.query();
 
             arrayUtil.forEach(results, function(row, idx){
-                if (row.__hpcc_parentName !== null && row.Value !="") {
+                if (row.__hpcc_parentName !== null && row.Value !== "") {
                     userXML += row.Value;
                 }
             });

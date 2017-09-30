@@ -27,11 +27,12 @@ define([
     "hpcc/GridDetailsWidget",
     "hpcc/ESPWorkunit",
     "hpcc/DelayLoadWidget",
-    "hpcc/ESPUtil"
+    "hpcc/ESPUtil",
+    "hpcc/Utility",
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
                 tree, selector,
-                GridDetailsWidget, ESPWorkunit, DelayLoadWidget, ESPUtil) {
+                GridDetailsWidget, ESPWorkunit, DelayLoadWidget, ESPUtil, Utility) {
     return declare("SourceFilesWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 
@@ -75,7 +76,7 @@ define([
                     Name: tree({
                         label: "Name", sortable: true,
                         formatter: function (Name, row) {
-                            return dojoConfig.getImageHTML(row.IsSuperFile ? "folder_table.png" : "file.png") + "&nbsp;<a href='#' class='dgrid-row-url'>" + Name + "</a>";
+                            return Utility.getImageHTML(row.IsSuperFile ? "folder_table.png" : "file.png") + "&nbsp;<a href='#' class='dgrid-row-url'>" + Name + "</a>";
                         }
                     }),
                     FileCluster: { label: this.i18n.FileCluster, width: 300, sortable: false },

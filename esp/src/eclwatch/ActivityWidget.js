@@ -35,12 +35,13 @@ define([
     "hpcc/ESPRequest",
     "hpcc/ESPActivity",
     "hpcc/DelayLoadWidget",
-    "hpcc/ESPUtil"
+    "hpcc/ESPUtil",
+    "hpcc/Utility",
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
                 registry, Button, ToggleButton, ToolbarSeparator, ContentPane, Tooltip,
                 selector, tree,
-                GridDetailsWidget, ESPRequest, ESPActivity, DelayLoadWidget, ESPUtil) {
+                GridDetailsWidget, ESPRequest, ESPActivity, DelayLoadWidget, ESPUtil, Utility) {
     return declare("ActivityWidget", [GridDetailsWidget], {
 
         i18n: nlsHPCC,
@@ -380,16 +381,16 @@ define([
                     }),
                     Priority: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("priority.png", context.i18n.Priority);
+                            node.innerHTML = Utility.getImageHTML("priority.png", context.i18n.Priority);
                         },
                         width: 25,
                         sortable: false,
                         formatter: function (Priority) {
                             switch (Priority) {
                                 case "high":
-                                    return dojoConfig.getImageHTML("priority_high.png");
+                                    return Utility.getImageHTML("priority_high.png");
                                 case "low":
-                                    return dojoConfig.getImageHTML("priority_low.png");
+                                    return Utility.getImageHTML("priority_low.png");
                             }
                             return "";
                         }

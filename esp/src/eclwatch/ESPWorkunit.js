@@ -708,10 +708,10 @@ define([
             return "workunit.png";
         },
         getStateImage: function () {
-            return dojoConfig.getImageURL(this.getStateImageName());
+            return Utility.getImageURL(this.getStateImageName());
         },
         getStateImageHTML: function () {
-            return dojoConfig.getImageHTML(this.getStateImageName());
+            return Utility.getImageHTML(this.getStateImageName());
         },
         getProtectedImageName: function () {
             if (this.Protected) {
@@ -720,10 +720,10 @@ define([
             return "unlocked.png";
         },
         getProtectedImage: function () {
-            return dojoConfig.getImageURL(this.getProtectedImageName());
+            return Utility.getImageURL(this.getProtectedImageName());
         },
         getProtectedHTML: function () {
-            return dojoConfig.getImageHTML(this.getProtectedImageName());
+            return Utility.getImageHTML(this.getProtectedImageName());
         },
         fetchText: function (onFetchText) {
             var context = this;

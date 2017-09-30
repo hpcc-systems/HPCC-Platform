@@ -560,7 +560,7 @@ define([
 
             startup: function (args) {
                 this.inherited(arguments);
-                this._isPluginInstalled = dojoConfig.isPluginInstalled();
+                this._isPluginInstalled = Utility.isPluginInstalled();
                 this.createPlugin();
                 this.watchStyleChange();
                 this.watchSelect(this.zoomDropCombo);
@@ -747,14 +747,8 @@ define([
                 return this.depth.get("value");
             },
 
-            localLayout: function(callback) {
-                var context = this;
-                require(
-                  ["hpcc/viz"],
-                  function (viz) {
-                      callback(viz(context.dot, "svg"));
-                  }
-                );
+            localLayout: function (callback) {
+                callback("Deprecated...");
             },
 
             displayProperties: function (wu, globalID, place) {

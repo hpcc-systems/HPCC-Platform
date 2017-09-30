@@ -33,10 +33,12 @@ define([
     "hpcc/FileSpray",
     "hpcc/ws_access",
     "hpcc/WsESDLConfig",
-    "hpcc/WsPackageMaps"
+    "hpcc/WsPackageMaps",
+    "hpcc/Utility"
+
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, xhr, Deferred, ItemFileReadStore, all, Memory, on,
     registry,
-    WsTopology, WsWorkunits, FileSpray, WsAccess, WsESDLConfig, WsPackageMaps) {
+    WsTopology, WsWorkunits, FileSpray, WsAccess, WsESDLConfig, WsPackageMaps, Utility) {
 
     return {
         i18n: nlsHPCC,
@@ -509,14 +511,14 @@ define([
 
         loadECLSamples: function () {
             var sampleStore = new ItemFileReadStore({
-                url: dojoConfig.getURL("ecl/ECLPlaygroundSamples.json")
+                url: Utility.getURL("ecl/ECLPlaygroundSamples.json")
             });
             this.setStore(sampleStore);
             var context = this;
             this.on("change", function (evt) {
                 var filename = this.get("value");
                 xhr.get({
-                    url: dojoConfig.getURL("ecl/" + filename),
+                    url: Utility.getURL("ecl/" + filename),
                     handleAs: "text",
                     load: function (eclText) {
                         context.onNewSelection(eclText);

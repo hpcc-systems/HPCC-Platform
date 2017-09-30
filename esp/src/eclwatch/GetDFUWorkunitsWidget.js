@@ -364,13 +364,13 @@ define([
                     }),
                     isProtected: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("locked.png", context.i18n.Protected);
+                            node.innerHTML = Utility.getImageHTML("locked.png", context.i18n.Protected);
                         },
                         width: 25,
                         sortable: false,
                         formatter: function (_protected) {
                             if (_protected === true) {
-                                return dojoConfig.getImageHTML("locked.png");
+                                return Utility.getImageHTML("locked.png");
                             }
                             return "";
                         }

@@ -15,8 +15,6 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
-    "dojo/_base/xhr",
-    "dojo/dom",
 
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
@@ -27,37 +25,21 @@ define([
     "dijit/registry",
 
     "hpcc/_Widget",
-    "hpcc/ECLSourceWidget",
     "hpcc/TargetSelectWidget",
-    "hpcc/GraphWidget",
     "hpcc/ResultsWidget",
     "hpcc/InfoGridWidget",
     "hpcc/ESPWorkunit",
 
     "dojo/text!../templates/DFUSearchWidget.html"
-], function (declare, xhr, dom,
+], function (declare,
                 BorderContainer, TabContainer, ContentPane, Toolbar, Textarea, TitlePane, registry,
-                _Widget, EclSourceWidget, TargetSelectWidget, GraphWidget, ResultsWidget, InfoGridWidget, Workunit,
+                _Widget, TargetSelectWidget, ResultsWidget, InfoGridWidget, Workunit,
                 template) {
     return declare("DFUSearchWidget", [_Widget], {
         templateString: template,
         baseClass: "DFUSearchWidget",
         borderContainer: null,
         tabContainer: null,
-        resultsWidget: null,
-        resultsWidgetLoaded: false,
-        filesWidget: null,
-        filesWidgetLoaded: false,
-        timersWidget: null,
-        timersWidgetLoaded: false,
-        graphsWidget: null,
-        graphsWidgetLoaded: false,
-        sourceWidget: null,
-        sourceWidgetLoaded: false,
-        playgroundWidget: null,
-        playgroundWidgetLoaded: false,
-        xmlWidget: null,
-        xmlWidgetLoaded: false,
 
         wu: null,
         loaded: false,
@@ -69,57 +51,6 @@ define([
         postCreate: function (args) {
             this.inherited(arguments);
             this.borderContainer = registry.byId(this.id + "BorderContainer");
-            //this.tabContainer = registry.byId(this.id + "TabContainer");
-            //this.resultsWidget = registry.byId(this.id + "Results");
-            //this.filesWidget = registry.byId(this.id + "Files");
-            //this.timersWidget = registry.byId(this.id + "Timers");
-           // this.graphsWidget = registry.byId(this.id + "Graphs");
-            //this.sourceWidget = registry.byId(this.id + "Source");
-            //this.playgroundWidget = registry.byId(this.id + "Playground");
-            //this.xmlWidget = registry.byId(this.id + "XML");
-            //this.infoGridWidget = registry.byId(this.id + "InfoContainer");
-            var context = this;
-           /* this.tabContainer.watch("selectedChildWidget", function (name, oval, nval) {
-                if (nval.id == context.id + "Results" && !context.resultsWidgetLoaded) {
-                    context.resultsWidgetLoaded = true;
-                    context.resultsWidget.init({
-                        Wuid: context.wu.wuid
-                    });
-                } else if (nval.id == context.id + "Files" && !context.filesWidgetLoaded) {
-                    context.filesWidgetLoaded = true;
-                    context.filesWidget.init({
-                        Wuid: context.wu.wuid,
-                        SourceFiles: true
-                    });
-                } else if (nval.id == context.id + "Timers" && !context.timersWidgetLoaded) {
-                    context.timersWidgetLoaded = true;
-                    context.timersWidget.init({
-                        Wuid: context.wu.wuid
-                    });
-                } else if (nval.id == context.id + "Graphs" && !context.graphsWidgetLoaded) {
-                    context.graphsWidgetLoaded = true;
-                    context.graphsWidget.init({
-                        Wuid: context.wu.wuid
-                    });
-                } else if (nval.id == context.id + "Source" && !context.sourceWidgetLoaded) {
-                    context.sourceWidgetLoaded = true;
-                    context.sourceWidget.init({
-                        Wuid: context.wu.wuid
-                    });
-                } else if (nval.id == context.id + "Playground" && !context.playgroundWidgetLoaded) {
-                    context.playgroundWidgetLoaded = true;
-                    context.playgroundWidget.init({
-                        Wuid: context.wu.wuid
-                    });
-                } else if (nval.id == context.id + "XML" && !context.xmlWidgetLoaded) {
-                    context.xmlWidgetLoaded = true;
-                    context.xmlWidget.init({
-                        Wuid: context.wu.wuid
-                    });
-                }
-            });*/
-
-            
         },
 
         startup: function (args) {
@@ -158,9 +89,7 @@ define([
             if (this.inherited(arguments))
                 return;
 
-            //dom.byId("showWuid").innerHTML = params.Wuid;
             if (params.Wuid) {
-                //dom.byId(this.id + "Wuid").innerHTML = params.Wuid;
                 this.wu = new Workunit({
                     wuid: params.Wuid
                 });
@@ -196,16 +125,6 @@ define([
 
         monitorWorkunit: function (response) {
             if (!this.loaded) {
-                //dom.byId(this.id + "WUInfoResponse").innerHTML = this.objectToText(response);             
-                //dom.byId("showStateIdImage").src = this.wu.getStateImage();
-                //dom.byId("showStateIdImage").title = response.State;
-                //dom.byId("showStateReadOnly").innerHTML = response.State;
-                //dom.byId("showAction").innerHTML = response.ActionId;
-               // dom.byId("showOwner").innerHTML = response.Owner;
-                //dom.byId("showScope").value = response.Scope;
-                //dom.byId("showJobName").value = response.Jobname;
-                //dom.byId("showCluster").innerHTML = response.Cluster;
-                
                 this.loaded = true;
             }
 
@@ -229,8 +148,6 @@ define([
                     },
 
                     onAfterSend: function (response) {
-                        //dom.byId(context.id + "WUInfoResponse").innerHTML = context.objectToText(response);
-
                     }
                 });
             }

@@ -321,53 +321,53 @@ define([
                     Suspended: {
                         label: this.i18n.Suspended,
                         renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("suspended.png", context.i18n.Suspended);
+                            node.innerHTML = Utility.getImageHTML("suspended.png", context.i18n.Suspended);
                         },
                         width: 25,
                         sortable: false,
                         formatter: function (suspended) {
                             if (suspended === true) {
-                                return dojoConfig.getImageHTML("suspended.png");
+                                return Utility.getImageHTML("suspended.png");
                             }
                             return "";
                         }
                     },
                     ErrorCount: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("errwarn.png", context.i18n.ErrorWarnings);
+                            node.innerHTML = Utility.getImageHTML("errwarn.png", context.i18n.ErrorWarnings);
                         },
                         width: 25,
                         sortable: false,
                         formatter: function (error) {
                             if (error > 0) {
-                                return dojoConfig.getImageHTML("errwarn.png");
+                                return Utility.getImageHTML("errwarn.png");
                             }
                             return "";
                         }
                     },
                     MixedNodeStates: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("mixwarn.png", context.i18n.MixedNodeStates);
+                            node.innerHTML = Utility.getImageHTML("mixwarn.png", context.i18n.MixedNodeStates);
                         },
                         width: 25,
                         sortable: false,
                         formatter: function (mixed) {
                             if (mixed === true) {
-                                return dojoConfig.getImageHTML("mixwarn.png");
+                                return Utility.getImageHTML("mixwarn.png");
                             }
                             return "";
                         }
                     },
                     Activated: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("active.png", context.i18n.Active);
+                            node.innerHTML = Utility.getImageHTML("active.png", context.i18n.Active);
                         },
                         width: 25,
                         formatter: function (activated) {
                             if (activated === true) {
-                                return dojoConfig.getImageHTML("active.png");
+                                return Utility.getImageHTML("active.png");
                             }
-                            return dojoConfig.getImageHTML("inactive.png");
+                            return Utility.getImageHTML("inactive.png");
                         }
                     },
                     Id: {

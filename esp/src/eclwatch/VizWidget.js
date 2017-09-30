@@ -37,7 +37,8 @@ define([
     "hpcc/ESPWorkunit",
     "hpcc/WsWorkunits",
     "hpcc/SelectionGridWidget",
-
+    "hpcc/Utility",
+    
     "dojo/text!../templates/VizWidget.html",
 
     "dijit/layout/BorderContainer",
@@ -54,7 +55,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, domConstruct, domForm, ioQuery, all,
                 registry, ContentPane, Select, CheckBox,
                 editor,
-                TableContainer, _Widget, ESPWorkunit, WsWorkunits, SelectionGridWidget,
+                TableContainer, _Widget, ESPWorkunit, WsWorkunits, SelectionGridWidget, Utility,
                 template) {
     return declare("VizWidget", [_Widget], {
         templateString: template,
@@ -369,7 +370,7 @@ define([
             var context = this;
 
             function requireWidget() {
-                require(["src/layout/Grid", "hpcc/viz/" + context.vizType], function (Grid, D3Viz) {
+                Utility.resolve("viz/" + context.vizType, function (D3Viz) {
                     context.d3Viz = new D3Viz();
                     context.d3Viz._chartType = chartType;
                     domConstruct.empty(context.id + "VizCP");
@@ -383,19 +384,7 @@ define([
             if (this.vizType !== value || this.chartType !== chartType) {
                 this.vizType = value;
                 this.chartType = chartType;
-                if (dojoConfig.vizDebug) {
-                    requireWidget();
-                } else {
-                    require(["dist-amd/hpcc-viz"], function () {
-                        require(["dist-amd/hpcc-viz-common"], function () {
-                            require(["dist-amd/hpcc-viz-api"], function () {
-                                require(["dist-amd/hpcc-viz-chart", "dist-amd/hpcc-viz-layout", "dist-amd/hpcc-viz-other", "dist-amd/hpcc-viz-map"], function () {
-                                    requireWidget();
-                                });
-                            });
-                        });
-                    });
-                }
+                requireWidget();
             }
 
             return deferred.promise;
@@ -434,6 +423,7 @@ define([
                 }
             }, this);
             var context = this;
+            /*
             var data = d3.nest()
                 .key(function (d) { return d[request.label] })
                 .rollup(function (leaves) {
@@ -461,6 +451,9 @@ define([
                     return retVal;
                 })
             ;
+            */
+            //  TODO - reimplement with d3v4  ---
+            var data = [];
 
             this.d3Viz.setData(data, null, request);
 

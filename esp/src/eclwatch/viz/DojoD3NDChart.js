@@ -4,10 +4,14 @@ define([
   "dojo/_base/array",
   "dojo/_base/Deferred",
 
+  "@hpcc-js/composite",
+
   "./DojoD3",
   "./Mapping"
 ], function (declare, lang, arrayUtil, Deferred,
+    hpccComposite,
     DojoD3, Mapping) {
+
     return declare([Mapping, DojoD3], {
         mapping: {
             NDChart: {
@@ -33,14 +37,11 @@ define([
 
         renderTo: function (_target) {
             var deferred = new Deferred();
-            var context = this;
-            require(["src/chart/MultiChart"], function (MultiChart) {
-                context.chart = new MultiChart()
-                    .chartType(context._chartType)
-                    .target(_target.domNodeID)
-                ;
-                deferred.resolve(context.chart);
-            });
+            this.chart = new hpccComposite.MultiChart()
+            .chartType(this._chartType)
+                .target(_target.domNodeID)
+            ;
+            deferred.resolve(this.chart);
             return deferred.promise;
         },
 
