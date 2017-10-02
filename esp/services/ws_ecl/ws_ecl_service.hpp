@@ -150,6 +150,9 @@ public:
 
     virtual int getQualifiedNames(IEspContext& ctx, MethodInfoArray & methods){return 0;}
     virtual unsigned getCacheMethodCount(){return 0;}
+    virtual void attachBindingToDali(){}
+    virtual void detachBindingFromDali(){}
+    virtual bool canDetachFromDali() {return false;}
 
     void getNavigationData(IEspContext &context, IPropertyTree & data);
     void getRootNavigationFolders(IEspContext &context, IPropertyTree & data);

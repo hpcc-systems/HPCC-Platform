@@ -256,6 +256,15 @@ public:
         m_SEHMappingEnabled = mappingEnabled;
     }
     virtual void sendSnmpMessage(const char* msg) { throwUnexpected(); }
+
+    virtual void attachBindingsToDali()
+    {
+        m_config->attachBindingsToDali();
+    }
+    virtual void detachBindingsFromDali()
+    {
+        m_config->detachBindingsFromDali();
+    }
 };
 
 

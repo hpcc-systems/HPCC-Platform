@@ -5531,6 +5531,8 @@ void EspServInfo::write_esp_binding_ipp()
 
     outs("\tvirtual void init_strings();\n");
     outs("\tvirtual unsigned getCacheMethodCount(){return m_cacheMethodCount;}\n");
+    outs("\tvirtual void attachBinding(){}\n");
+    outs("\tvirtual void detachBinding(){}\n");
 
     //method ==> processRequest
     outs("\tvirtual int processRequest(IRpcMessage* rpc_call, IRpcMessage* rpc_response);\n");

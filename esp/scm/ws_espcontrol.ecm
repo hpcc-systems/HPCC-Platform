@@ -93,13 +93,35 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] SetSessionTimeoutRes
     string Message;
 };
 
-ESPservice [auth_feature("NONE"), version("1.01"), default_client_version("1.01"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSESPControl
+ESPrequest [nil_remove] DetachBindingsFromDaliRequest
+{
+};
+
+ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DetachBindingsFromDaliResponse
+{
+    int Status;
+    string Message;
+};
+
+ESPrequest [nil_remove] AttachBindingsToDaliRequest
+{
+};
+
+ESPresponse [exceptions_inline, nil_remove, http_encode(0)] AttachBindingsToDaliResponse
+{
+    int Status;
+    string Message;
+};
+
+ESPservice [auth_feature("NONE"), version("1.02"), default_client_version("1.01"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSESPControl
 {
     ESPmethod SetLogging(SetLoggingRequest, SetLoggingResponse);
     ESPmethod [min_ver("1.01")] SessionQuery(SessionQueryRequest, SessionQueryResponse);
     ESPmethod [min_ver("1.01")] SessionInfo(SessionInfoRequest, SessionInfoResponse);
     ESPmethod [min_ver("1.01")] CleanSession(CleanSessionRequest, CleanSessionResponse);
     ESPmethod [min_ver("1.01")] SetSessionTimeout(SetSessionTimeoutRequest, SetSessionTimeoutResponse);
+    ESPmethod [min_ver("1.02")] DetachBindingsFromDali(DetachBindingsFromDaliRequest, DetachBindingsFromDaliResponse);
+    ESPmethod [min_ver("1.02")] AttachBindingsToDali(AttachBindingsToDaliRequest, AttachBindingsToDaliResponse);
 };
 
 SCMexportdef(WSESPControl);

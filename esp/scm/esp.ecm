@@ -213,6 +213,8 @@ interface IEspContainer : extends IInterface
     virtual void setFrameTitle(const char* title) = 0;
     virtual const char* getFrameTitle() = 0;
     virtual void sendSnmpMessage(const char* msg) = 0;
+    virtual void attachBindingsToDali() = 0;
+    virtual void detachBindingsFromDali() = 0;
 };
 
 interface IEspRpcBinding;
@@ -316,6 +318,9 @@ SCMinterface IEspRpcBinding(IInterface)
     void setXslProcessor(IInterface *xslp);
     IEspContainer* queryContainer();
     unsigned getCacheMethodCount();
+    void attachBindingToDali();
+    void detachBindingFromDali();
+    bool canDetachFromDali();
 };
 
 SCMinterface IEspUriMap(IInterface)
