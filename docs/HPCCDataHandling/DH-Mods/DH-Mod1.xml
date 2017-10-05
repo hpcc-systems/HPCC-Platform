@@ -90,7 +90,7 @@
           <emphasis role="bold">Landing Zones</emphasis> button from the
           sub-menu, and then click on the <emphasis
           role="bold">Upload</emphasis> action button as illustrated in the
-          following image. </para>
+          following image.</para>
 
           <para><figure>
               <title>Upload/download</title>
@@ -101,9 +101,9 @@
                              vendor="eclwatchSS" />
                 </imageobject>
               </mediaobject>
-            </figure>A system file dialog opens. Browse to and select the file
-          to upload and then press the <emphasis role="bold">Open</emphasis>
-          button. </para>
+            </figure>A system file dialog opens. Browse and select the file to
+          upload and then press the <emphasis role="bold">Open</emphasis>
+          button.</para>
 
           <para><figure>
               <title>Dropzones</title>
