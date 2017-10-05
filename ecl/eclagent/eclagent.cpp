@@ -37,6 +37,7 @@
 #include "hqlplugins.hpp"
 #include "eclrtl_imp.hpp"
 #include "rtlds_imp.hpp"
+#include "rtlcommon.hpp"
 #include "workunit.hpp"
 #include "eventqueue.hpp"
 #include "schedulectrl.hpp"

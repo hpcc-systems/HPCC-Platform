@@ -18,6 +18,7 @@
 #include "platform.h"
 #include "jliball.hpp"
 #include "rtlbcd.hpp"
+#include "rtlformat.hpp"
 #include "workunit.hpp"
 #include "seclib.hpp"
 #include "eclrtl.hpp"

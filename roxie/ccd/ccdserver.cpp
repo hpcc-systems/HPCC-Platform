@@ -41,6 +41,7 @@
 #include "rtlfield.hpp"
 #include "rtlds_imp.hpp"
 #include "rtlread_imp.hpp"
+#include "rtlcommon.hpp"
 
 #include <algorithm>
 

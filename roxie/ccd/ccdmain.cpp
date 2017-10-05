@@ -29,6 +29,8 @@
 #include "jutil.hpp"
 #include <build-config.h>
 
+#include "rtlformat.hpp"
+
 #include "dalienv.hpp"
 #include "rmtfile.hpp"
 #include "ccd.hpp"

@@ -69,6 +69,20 @@ CDeserializedOutputMetaData::CDeserializedOutputMetaData(const char *json)
     typeInfo = deserializer->deserialize(json);
 }
 
+extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(MemoryBuffer &binInfo)
+{
+    return new CDeserializedOutputMetaData(binInfo);
+}
+
+extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(IPropertyTree &jsonInfo)
+{
+    return new CDeserializedOutputMetaData(jsonInfo);
+}
+
+extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(const char *json)
+{
+    return new CDeserializedOutputMetaData(json);
+}
 //---------------------------------------------------------------------------------------------------------------------
 
 class ECLRTL_API CDynamicDiskReadArg : public CThorDiskReadArg

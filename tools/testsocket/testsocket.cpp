@@ -44,6 +44,10 @@ bool sendFileAfterQuery = false;
 bool doLock = false;
 bool roxieLogMode = false;
 bool rawOnly = false;
+bool rawSend = false;
+bool remoteStreamForceResend = false;
+bool remoteStreamSendCursor = false;
+
 
 StringBuffer sendFileName;
 StringAttr queryNameOverride;
@@ -182,11 +186,12 @@ void sendFileChunk(const char * filename, offset_t offset, ISocket * socket)
     free(buff);
 }
 
-int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &result)
+int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &result, const char *query, size32_t queryLen)
 {
     if (readBlocked)
         socket->set_block_mode(BF_SYNC_TRANSFER_PULL,0,60*1000);
 
+    MemoryBuffer remoteReadCursorMb;
     unsigned len;
     bool is_status;
     bool isBlockedResult;
@@ -231,6 +236,7 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
         bool isSpecial = false;
         bool pluginRequest = false;
         bool dataBlockRequest = false;
+        bool remoteReadRequest = false;
         if (len & 0x80000000)
         {
             unsigned char flag;
@@ -266,14 +272,19 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
             case 'R':
                 isBlockedResult = true;
                 break;
+            case 'J':
+                remoteReadRequest = true;
+                break;
             }
             len &= 0x7FFFFFFF;
             len--;      // flag already read
         }
 
-        char * mem = (char*) malloc(len+1);
+        MemoryBuffer mb;
+        mb.setEndian(BIG_ENDIAN);
+        char *mem = (char *)mb.reserveTruncate(len+1);
         char * t = mem;
-        unsigned sendlen = len;
+        size32_t sendlen = len;
         t[len]=0;
         try
         {
@@ -301,6 +312,7 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
         catch(IException * e)
         {
             pexception("failed to read data", e);
+            e->Release();
             return 1;
         }
         if (pluginRequest)
@@ -318,9 +330,112 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
         {
             //Not very robust!  A poor man's implementation for testing...
             offset_t offset;
-            memcpy(&offset, t, sizeof(offset));
-            _WINREV(offset);
-            sendFileChunk(t+sizeof(offset), offset, socket);
+            mb.read(offset);
+            sendFileChunk((const char *)mb.readDirect(offset), offset, socket);
+        }
+        else if (remoteReadRequest)
+        {
+            Owned<IPropertyTree> requestTree = createPTreeFromJSONString(queryLen, query);
+            Owned<IPropertyTree> responseTree; // used if response is xml or json
+            const char *outputFmtStr = requestTree->queryProp("format");
+            const char *response = nullptr;
+            if (!outputFmtStr || strieq("xml", outputFmtStr))
+            {
+                response = (const char *)mb.readDirect(len);
+                responseTree.setown(createPTreeFromXMLString(len, response));
+            }
+            else if (strieq("json", outputFmtStr))
+            {
+                response = (const char *)mb.readDirect(len);
+                responseTree.setown(createPTreeFromJSONString(len, response));
+            }
+            unsigned cursorHandle;
+            if (responseTree)
+                cursorHandle = responseTree->getPropInt("cursor");
+            else
+                mb.read(cursorHandle);
+            bool retrySend = false;
+            if (cursorHandle)
+            {
+                PROGLOG("Got handle back: %u; len=%u", cursorHandle, len);
+                StringBuffer xml;
+                if (responseTree)
+                {
+                    if (echoResults)
+                    {
+                        fputs(response, stdout);
+                        fflush(stdout);
+                    }
+                    if (!responseTree->getPropBin("cursorBin", remoteReadCursorMb.clear()))
+                        break;
+                }
+                else
+                {
+                    size32_t dataLen;
+                    mb.read(dataLen);
+                    if (!dataLen)
+                        break;
+                    const void *rowData = mb.readDirect(dataLen);
+                    // JCSMORE - output binary row data?
+
+                    // cursor
+                    size32_t cursorLen;
+                    mb.read(cursorLen);
+                    if (!cursorLen)
+                        break;
+                    const void *cursor = mb.readDirect(cursorLen);
+                    memcpy(remoteReadCursorMb.clear().reserveTruncate(cursorLen), cursor, cursorLen);
+                }
+
+                if (remoteStreamForceResend)
+                    cursorHandle = NotFound; // fake that it's a handle dafilesrv doesn't know about
+
+                Owned<IPropertyTree> requestTree = createPTree();
+                requestTree->setPropInt("cursor", cursorHandle);
+
+                // Only the handle is needed for continuation, but this tests the behaviour of some clients which may send cursor per request (e.g. to refresh)
+                if (remoteStreamSendCursor)
+                    requestTree->setPropBin("cursorBin", remoteReadCursorMb.length(), remoteReadCursorMb.toByteArray());
+
+                requestTree->setProp("format", outputFmtStr);
+                StringBuffer requestStr;
+                toJSON(requestTree, requestStr);
+#ifdef _DEBUG
+                fputs(requestStr, stdout);
+#endif
+
+                sendlen = requestStr.length();
+                _WINREV(sendlen);
+
+                try
+                {
+                    if (!rawSend && !useHTTP)
+                        socket->write(&sendlen, sizeof(sendlen));
+                    socket->write(requestStr.str(), requestStr.length());
+                }
+                catch (IJSOCK_Exception *e)
+                {
+                    retrySend = true;
+                    EXCLOG(e, nullptr);
+                    e->Release();
+                }
+            }
+            else // dafilesrv didn't know who I was, resent query + serialized cursor
+                retrySend = true;
+            if (retrySend)
+            {
+                PROGLOG("Retry send for handle: %u", cursorHandle);
+                requestTree->setPropBin("cursorBin", remoteReadCursorMb.length(), remoteReadCursorMb.toByteArray());
+                StringBuffer requestStr;
+                toJSON(requestTree, requestStr);
+
+                PROGLOG("requestStr = %s", requestStr.str());
+                sendlen = requestStr.length();
+                _WINREV(sendlen);
+                if (!rawSend && !useHTTP)
+                    socket->write(&sendlen, sizeof(sendlen));
+                socket->write(requestStr.str(), requestStr.length());
+            }
         }
         else
         {
@@ -339,7 +454,6 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
                 result.append(sendlen, t);
         }
 
-        free(mem);
         if (abortAfterFirst)
             return 0;
     }
@@ -358,7 +472,7 @@ int ReceiveThread::run()
     ISocket * socket = ISocket::create(3456);
     ISocket * client = socket->accept();
     StringBuffer result;
-    readResults(client, parallelBlocked, false, result);
+    readResults(client, parallelBlocked, false, result, nullptr, 0);
     client->Release();
     socket->Release();
     finishedReading.signal();
@@ -431,7 +545,7 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
         else
         {
             SocketEndpoint ep(ip,port);
-            socket.setown(ISocket::connect_timeout(ep, 1000));
+            socket.setown(ISocket::connect_timeout(ep, 100000));
             if (useSSL)
             {
 #ifdef _USE_OPENSSL
@@ -492,7 +606,7 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
             socket->write(&locklen, sizeof(locklen));
             socket->write(lock, strlen(lock));
             StringBuffer lockResult;
-            readResults(socket, false, false, lockResult);
+            readResults(socket, false, false, lockResult, nullptr, 0);
         }
         if (queryNameOverride.length())
         {
@@ -515,17 +629,22 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
     }
 
     const char * query = fullQuery.str();
-    int len=strlen(query);
-    int sendlen = len;
+    size32_t queryLen=(size32_t)strlen(query);
+    size32_t len = queryLen;
+    size32_t sendlen = len;
     if (persistConnections)
         sendlen |= 0x80000000;
     _WINREV(sendlen);                    
 
     try
     {
-        if (!useHTTP)
+        if (!rawSend && !useHTTP)
             socket->write(&sendlen, sizeof(sendlen));
+
+        fprintf(stdout, "about to write %u <%s>\n", len, query);
+
         socket->write(query, len);
+
         if (sendFileAfterQuery)
         {
             FILE *in = fopen(sendFileName.str(), "rb");
@@ -560,7 +679,7 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
     // back-end does some processing.....
 
     StringBuffer result;
-    int ret = readResults(socket, false, useHTTP, result);
+    int ret = readResults(socket, false, useHTTP, result, query, queryLen);
 
     if ((ret == 0) && !justResults)
     {
@@ -649,6 +768,8 @@ void usage(int exitCode)
     printf("  -qname xx Use xx as queryname in place of the xml root element name\n");
     printf("  -r <n>    repeat the query several times\n");
     printf("  -rl       roxie logfile mode\n");
+    printf("  -rsr      force remote stream resend per continuation request\n");
+    printf("  -rssc     send cursor per continuation request\n");
     printf("  -s        add stars to indicate transfer packets\n");
     printf("  -ss       suppress XML Status messages to screen (always suppressed from tracefile)\n");
     printf("  -ssl      use ssl\n");
@@ -658,6 +779,7 @@ void usage(int exitCode)
     printf("  -u<max>   run queries on separate threads\n");
     printf("  -cascade  cascade query (to all roxie nodes)\n");
     printf("  -lock     locked cascade query (to all roxie nodes)\n");
+    printf("  -x        raw send\n");
     
     exit(exitCode);
 }
@@ -665,6 +787,7 @@ void usage(int exitCode)
 int main(int argc, char **argv) 
 {
     InitModuleObjects();
+
     StringAttr outputName("result.txt");
 
     bool fromFile = false;
@@ -727,6 +850,11 @@ int main(int argc, char **argv)
         else if (stricmp(argv[arg], "-f") == 0)
         {
             fromFile = true;
+            ++arg;
+        }
+        else if (stricmp(argv[arg], "-x") == 0)
+        {
+            rawSend = true;
             ++arg;
         }
         else if (stricmp(argv[arg], "-ff") == 0)
@@ -837,6 +965,16 @@ int main(int argc, char **argv)
                 exit (EXIT_FAILURE);
             }
             arg+=2;
+        }
+        else if (strieq(argv[arg], "-rsr"))
+        {
+            remoteStreamForceResend = true;
+            ++arg;
+        }
+        else if (strieq(argv[arg], "-rssc"))
+        {
+            remoteStreamSendCursor = true;
+            ++arg;
         }
         else
         {

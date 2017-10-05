@@ -21,6 +21,8 @@
 #include "xpp/xpputils.h"
 #include <memory>
 
+#include "rtlformat.hpp"
+
 #include "eclhelper.hpp"    //IXMLWriter
 #include "thorxmlwrite.hpp" //JSON WRITER
 #include "eclrtl.hpp"

@@ -25,6 +25,7 @@
 #include "thormisc.hpp"
 #include "thbufdef.hpp"
 #include "thmem.hpp"
+#include "rtlformat.hpp"
 
 
 PointerArray createFuncs;

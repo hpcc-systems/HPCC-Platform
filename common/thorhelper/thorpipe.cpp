@@ -23,6 +23,7 @@
 #include "csvsplitter.hpp"
 #include "rtlread_imp.hpp"
 #include "rtlds_imp.hpp"
+#include "rtlformat.hpp"
 #include "roxiemem.hpp"
 
 using roxiemem::OwnedRoxieString;

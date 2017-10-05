@@ -17,6 +17,7 @@
 
 #include "jiface.hpp"
 #include "jtime.hpp"
+#include "rtlformat.hpp"
 #include "dadfs.hpp"
 #include "thexception.hpp"
 #include "thmfilemanager.hpp"

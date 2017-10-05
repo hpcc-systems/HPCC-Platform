@@ -44,6 +44,8 @@ set (    SRCS
          rtlrecord.cpp
          rtltype.cpp 
          rtlxml.cpp
+         rtlcommon.cpp
+         rtlformat.cpp
          
          eclinclude4.hpp
          eclrtl.hpp
@@ -66,6 +68,7 @@ set (    SRCS
 include_directories ( 
          ./../../rtl/include 
          ./../../rtl/nbcd 
+         ./../../rtl/eclrtl 
          ./../../system/include 
          ./../../system/jlib 
          ./../../roxie/roxiemem

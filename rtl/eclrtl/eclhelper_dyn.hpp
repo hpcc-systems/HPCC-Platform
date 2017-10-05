@@ -22,7 +22,12 @@
 #include "eclrtl.hpp"
 #include "eclhelper.hpp"
 
+extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(MemoryBuffer &mb);
+extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(IPropertyTree &jsonTree);
+extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(const char *json);
+
 extern ECLRTL_API IHThorDiskReadArg *createDiskReadArg(IPropertyTree &xgmml);
+extern ECLRTL_API IHThorDiskReadArg *createDiskReadArg(const char *fileName, IOutputMetaData *in, IOutputMetaData *out, unsigned __int64 chooseN, unsigned __int64 skipN, unsigned __int64 rowLimit);
 extern ECLRTL_API IHThorArg *createWorkunitWriteArg(IPropertyTree &xgmml);
 extern ECLRTL_API IEclProcess* createDynamicEclProcess();
 
