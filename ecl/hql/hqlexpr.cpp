@@ -14054,6 +14054,20 @@ void exportMap(IPropertyTree *dataNode, IHqlExpression *destTable, IHqlExpressio
     maps->addPropTree("MapTables", map);
 }
 
+void exportJsonType(StringBuffer &ret, IHqlExpression *table)
+{
+    Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer());
+    const RtlTypeInfo *typeInfo = buildRtlType(*deserializer.get(), table->queryType());
+    dumpTypeInfo(ret, typeInfo);
+}
+
+void exportBinaryType(MemoryBuffer &ret, IHqlExpression *table)
+{
+    Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer());
+    const RtlTypeInfo *typeInfo = buildRtlType(*deserializer.get(), table->queryType());
+    dumpTypeInfo(ret, typeInfo);
+}
+
 void exportData(IPropertyTree *data, IHqlExpression *table, bool flatten)
 {
     IPropertyTree *tt = NULL;

@@ -346,11 +346,13 @@ bool CWsDfuEx::onDFUInfo(IEspContext &context, IEspDFUInfoRequest &req, IEspDFUI
 
         if (req.getUpdateDescription())
         {
-            doGetFileDetails(context, userdesc.get(), req.getFileName(), req.getCluster(), req.getFileDesc(), resp.updateFileDetail());
+            doGetFileDetails(context, userdesc.get(), req.getFileName(), req.getCluster(), req.getFileDesc(),
+                             req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), resp.updateFileDetail());
         }
         else
         {
-            doGetFileDetails(context, userdesc.get(), req.getName(), req.getCluster(), NULL, resp.updateFileDetail());
+            doGetFileDetails(context, userdesc.get(), req.getName(), req.getCluster(), NULL,
+                             req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), resp.updateFileDetail());
         }
     }
     catch(IException* e)
@@ -1531,6 +1533,73 @@ bool CWsDfuEx::onDFUDefFile(IEspContext &context,IEspDFUDefFileRequest &req, IEs
     return true;
 }
 
+IHqlExpression * getEclRecordDefinition(const char * ecl)
+{
+    MultiErrorReceiver errs;
+    OwnedHqlExpr record = parseQuery(ecl, &errs);
+    if (errs.errCount())
+    {
+        StringBuffer errtext;
+        IError *first = errs.firstError();
+        first->toString(errtext);
+        throw MakeStringException(ECLWATCH_CANNOT_PARSE_ECL_QUERY, "Failed in parsing ECL record definition: %s @ %d:%d.", errtext.str(), first->getColumn(), first->getLine());
+    }
+    if(!record)
+        throw MakeStringException(ECLWATCH_CANNOT_PARSE_ECL_QUERY, "Failed in parsing ECL record definition.");
+    return record.getClear();
+}
+
+IHqlExpression * getEclRecordDefinition(IUserDescriptor* udesc, const char* FileName)
+{
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(FileName, udesc);
+    if(!df)
+        throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",FileName);
+    if(!df->queryAttributes().hasProp("ECL"))
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS,"No record definition for file %s.",FileName);
+
+    return getEclRecordDefinition(df->queryAttributes().queryProp("ECL"));
+}
+
+bool CWsDfuEx::onDFURecordTypeInfo(IEspContext &context, IEspDFURecordTypeInfoRequest &req, IEspDFURecordTypeInfoResponse &resp)
+{
+    try
+    {
+        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
+            throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "Failed to access DFURecordTypeInfo. Permission denied.");
+
+        const char* fileName = req.getName();
+        if (!fileName || !*fileName)
+            throw MakeStringException(ECLWATCH_MISSING_PARAMS, "File name required");
+        PROGLOG("DFURecordTypeInfo file: %s", fileName);
+
+        const char* userId = context.queryUserId();
+        Owned<IUserDescriptor> userdesc;
+        if(userId && *userId)
+        {
+            userdesc.setown(createUserDescriptor());
+            userdesc->set(userId, context.queryPassword(), context.querySessionToken(), context.querySignature());
+        }
+
+        OwnedHqlExpr record = getEclRecordDefinition(userdesc, fileName);
+        if (req.getIncludeJsonTypeInfo())
+        {
+            StringBuffer jsonFormat;
+            exportJsonType(jsonFormat,record);
+            resp.setJsonInfo(jsonFormat);
+        }
+        if (req.getIncludeBinTypeInfo())
+        {
+            MemoryBuffer binFormat;
+            exportBinaryType(binFormat,record);
+            resp.setBinInfo(binFormat);
+        }
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
 void CWsDfuEx::xsltTransformer(const char* xsltPath,StringBuffer& source,StringBuffer& returnStr)
 {
     if (m_xsl.get() == 0)
@@ -1547,28 +1616,7 @@ void CWsDfuEx::xsltTransformer(const char* xsltPath,StringBuffer& source,StringB
 
 void CWsDfuEx::getDefFile(IUserDescriptor* udesc, const char* FileName,StringBuffer& returnStr)
 {
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(FileName, udesc);
-    if(!df)
-        throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",FileName);
-    if(!df->queryAttributes().hasProp("ECL"))
-        throw MakeStringException(ECLWATCH_MISSING_PARAMS,"No record definition for file %s.",FileName);
-
-    StringBuffer text;
-    text.append(df->queryAttributes().queryProp("ECL"));
-
-    MultiErrorReceiver errs;
-    OwnedHqlExpr record = parseQuery(text.str(), &errs);
-    if (errs.errCount())
-    {
-        StringBuffer errtext;
-        IError *first = errs.firstError();
-        first->toString(errtext);
-        throw MakeStringException(ECLWATCH_CANNOT_PARSE_ECL_QUERY, "Failed in parsing ECL query: %s @ %d:%d.", errtext.str(), first->getColumn(), first->getLine());
-    }
-
-    if(!record)
-        throw MakeStringException(ECLWATCH_CANNOT_PARSE_ECL_QUERY, "Failed in parsing ECL query.");
-
+    OwnedHqlExpr record = getEclRecordDefinition(udesc, FileName);
     Owned<IPropertyTree> data = createPTree("Table", ipt_caseInsensitive);
     exportData(data, record);
 
@@ -1819,7 +1867,7 @@ void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char* clusterR
 }
 
 void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, const char *name, const char *cluster,
-    const char *description,IEspDFUFileDetail& FileDetails)
+    const char *description, bool includeJsonTypeInfo, bool includeBinTypeInfo, IEspDFUFileDetail& FileDetails)
 {
     if (!name || !*name)
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "File name required");
@@ -2184,6 +2232,22 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
                 FileDetails.setUserPermission("Permission Unknown");
                 break;
             }
+        }
+    }
+    if (df->queryAttributes().hasProp("ECL") && (includeJsonTypeInfo||includeBinTypeInfo) )
+    {
+        OwnedHqlExpr record = getEclRecordDefinition(df->queryAttributes().queryProp("ECL"));
+        if (includeJsonTypeInfo)
+        {
+            StringBuffer jsonFormat;
+            exportJsonType(jsonFormat,record);
+            FileDetails.setJsonInfo(jsonFormat);
+        }
+        if (includeBinTypeInfo)
+        {
+            MemoryBuffer binFormat;
+            exportBinaryType(binFormat,record);
+            FileDetails.setBinInfo(binFormat);
         }
     }
     PROGLOG("doGetFileDetails: %s done", name);

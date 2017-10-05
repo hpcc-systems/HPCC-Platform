@@ -678,6 +678,11 @@ extern ECLRTL_API StringBuffer &dumpTypeInfo(StringBuffer &ret, const RtlTypeInf
     return CRtlFieldTypeSerializer::serialize(ret, t);
 }
 
+extern ECLRTL_API MemoryBuffer &dumpTypeInfo(MemoryBuffer &ret, const RtlTypeInfo *t)
+{
+    return CRtlFieldTypeBinSerializer::serialize(ret, t);
+}
+
 extern ECLRTL_API void dumpRecordType(size32_t & __lenResult,char * & __result,IOutputMetaData &metaVal)
 {
     StringBuffer ret;
