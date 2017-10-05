@@ -2,13 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Non-Random_RANDOM">
-  <title><emphasis role="bold">Non-Random RANDOM</emphasis></title>
+  <title>Non-Random RANDOM</title>
 
-  <para>There are occasions when you need a random number, but once
-  you've gotten it, you want that value to stay the same for the duration of
-  the workunit. For example, the “problem” with this code is that it will
-  OUTPUT three different values (this code is in
-  NonRandomRandom.ECL):</para>
+  <para>There are occasions when you need a random number, but once you've
+  gotten it, you want that value to stay the same for the duration of the
+  workunit. For example, the “problem” with this code is that it will OUTPUT
+  three different values (this code is in NonRandomRandom.ECL):</para>
 
   <programlisting>INTEGER1 Rand1 := (RANDOM() % 25) + 1;
 OUTPUT(Rand1);

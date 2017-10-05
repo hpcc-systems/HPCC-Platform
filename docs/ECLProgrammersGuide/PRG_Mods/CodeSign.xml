@@ -2,8 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="code-signing">
-  <title><emphasis role="strong">Code Signing, Embedded languages, and
-  Security</emphasis></title>
+  <title>Code Signing, Embedded languages, and Security</title>
 
   <para>Versions of HPCC Systems<superscript>®</superscript> platform prior to
   6.0.0 have always allowed some control over which operations were permitted
@@ -113,7 +112,7 @@
 
             <entry>(Valid only for --allowedsigned). This specifies that
             access to data is only allowed if the code has been signed and the
-            key is present. </entry>
+            key is present.</entry>
           </row>
         </tbody>
       </tgroup>

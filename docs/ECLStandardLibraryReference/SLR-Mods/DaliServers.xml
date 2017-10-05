@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="DaliServer">
-  <title><emphasis role="bold">DaliServer</emphasis></title>
+  <title>DaliServer</title>
 
   <para><emphasis role="bold">STD.System.Thorlib.DaliServer <indexterm>
       <primary>STD.System.ThorLib.DaliServer</primary>

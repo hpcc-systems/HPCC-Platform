@@ -2,7 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Attributes_depr_ver">
-  <title><emphasis role="bold">depr_ver</emphasis></title>
+  <title>depr_ver</title>
 
   <para><indexterm>
       <primary>depr_ver</primary>

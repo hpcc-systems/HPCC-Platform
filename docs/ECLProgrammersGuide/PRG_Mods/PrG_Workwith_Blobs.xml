@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Working_with_BLOBs">
-  <title><emphasis role="bold">Working with BLOBs</emphasis></title>
+  <title>Working with BLOBs</title>
 
   <para>BLOB (Binary Large OBject) support in ECL begins with the DATA value
   type. This type may contain any type of data, making it perfect for housing
@@ -76,7 +76,7 @@ imageData := DATASET('LE::imagedb',imageRecord,FLAT);
     contain an integer value specifying the number of bytes in the original
     file, followed by the XML data from the file.</para>
 
-    <para>The upper size limit for any STRING or DATA value is 4GB. </para>
+    <para>The upper size limit for any STRING or DATA value is 4GB.</para>
 
     <para>The addition of the RecPos field (a standard ECL “record pointer”
     field) allows us to create an INDEX, like this:</para>

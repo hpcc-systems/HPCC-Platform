@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Records_Containing_Any_of_a_Set_of_Words">
-  <title><emphasis>Records Containing Any of a Set of Words</emphasis></title>
+  <title>Records Containing Any of a Set of Words</title>
 
   <para>Part of the data cleanup problem is the possible presence of profanity
   or cartoon character names in the data. This can become an issue whenever
@@ -109,17 +109,17 @@ ENDMACRO;
   <para>This MACRO does a bit more than the previous example. It begins by
   passing in:</para>
 
-  <para> * The set of words to find</para>
+  <para>* The set of words to find</para>
 
-  <para> * The file to search</para>
+  <para>* The file to search</para>
 
-  <para> * The unique identifier field for the search record</para>
+  <para>* The unique identifier field for the search record</para>
 
-  <para> * The field to search in</para>
+  <para>* The field to search in</para>
 
-  <para> * The attribute name of the resulting recordset</para>
+  <para>* The attribute name of the resulting recordset</para>
 
-  <para> * The type of matching to do (defaulting to 1)</para>
+  <para>* The type of matching to do (defaulting to 1)</para>
 
   <para>Passing in the set of words to seek allows the MACRO to operate
   against any given set of strings. Specifying the result attribute name

@@ -2,7 +2,7 @@
 <!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Cross-Tab_Reports">
-  <title><emphasis role="bold">Cross-Tab Reports</emphasis></title>
+  <title>Cross-Tab Reports</title>
 
   <para>Cross-Tab reports are a very useful way of discovering statistical
   information about the data that you work with. They can be easily produced
