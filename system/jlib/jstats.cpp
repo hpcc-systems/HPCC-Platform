@@ -1086,39 +1086,27 @@ static int compareUnsigned(unsigned const * left, unsigned const * right)
     return (*left < *right) ? -1 : (*left > *right) ? +1 : 0;
 }
 
-StatisticsMapping::StatisticsMapping(StatisticKind kind, ...)
+StatisticsMapping::StatisticsMapping(const std::initializer_list<StatisticKind> &kinds)
 {
-    if (kind != StKindNone)
+    for (auto kind : kinds)
     {
+        assert(kind != StKindNone);
+        assert(!indexToKind.contains(kind));
         indexToKind.append(kind);
-        va_list args;
-        va_start(args, kind);
-        for (;;)
-        {
-            unsigned next  = va_arg(args, unsigned);
-            if (!next)
-                break;
-            indexToKind.appendUniq(next);
-        }
-        va_end(args);
     }
     createMappings();
 }
 
-StatisticsMapping::StatisticsMapping(const StatisticsMapping * from, ...)
+StatisticsMapping::StatisticsMapping(const StatisticsMapping * from, const std::initializer_list<StatisticKind> &kinds)
 {
     ForEachItemIn(idx, from->indexToKind)
         indexToKind.append(from->indexToKind.item(idx));
-    va_list args;
-    va_start(args, from);
-    for (;;)
+    for (auto kind : kinds)
     {
-        unsigned next  = va_arg(args, unsigned);
-        if (!next)
-            break;
-        indexToKind.appendUniq(next);
+        assert(kind != StKindNone);
+        assert(!indexToKind.contains(kind));
+        indexToKind.append(kind);
     }
-    va_end(args);
     createMappings();
 }
 
@@ -1146,11 +1134,11 @@ void StatisticsMapping::createMappings()
 }
 
 const StatisticsMapping allStatistics;
-const StatisticsMapping heapStatistics(StNumAllocations, StNumAllocationScans, StKindNone);
-const StatisticsMapping diskLocalStatistics(StCycleDiskReadIOCycles, StSizeDiskRead, StNumDiskReads, StCycleDiskWriteIOCycles, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries, StKindNone);
-const StatisticsMapping diskRemoteStatistics(StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries, StKindNone);
-const StatisticsMapping diskReadRemoteStatistics(StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StNumDiskRetries, StKindNone);
-const StatisticsMapping diskWriteRemoteStatistics(StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries, StKindNone);
+const StatisticsMapping heapStatistics({StNumAllocations, StNumAllocationScans});
+const StatisticsMapping diskLocalStatistics({StCycleDiskReadIOCycles, StSizeDiskRead, StNumDiskReads, StCycleDiskWriteIOCycles, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries});
+const StatisticsMapping diskRemoteStatistics({StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries});
+const StatisticsMapping diskReadRemoteStatistics({StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StNumDiskRetries});
+const StatisticsMapping diskWriteRemoteStatistics({StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries});
 
 //--------------------------------------------------------------------------------------------------------------------
 
