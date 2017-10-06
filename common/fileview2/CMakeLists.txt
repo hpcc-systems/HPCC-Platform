@@ -29,7 +29,6 @@ project( fileview2 )
 
 set (    SRCS 
          fvdisksource.cpp 
-         fvdsremote.cpp 
          fvidxsource.cpp 
          fvquerysource.cpp 
          fvrelate.cpp 
@@ -40,7 +39,6 @@ set (    SRCS
          fvwusource.cpp 
          
          fvdisksource.ipp 
-         fvdsremote.ipp 
          fvidxsource.ipp 
          fvquerysource.ipp 
          fvrelate.ipp 
@@ -101,36 +99,4 @@ target_link_libraries ( fileview2
          thorhelper
          hql 
     )
-
-set (    SRCS 
-         fvserver.cpp 
-    )
-
-ADD_DEFINITIONS ( -D_CONSOLE )
-
-if( PLATFORM )
-    HPCC_ADD_EXECUTABLE ( fvserver ${SRCS} )
-    set_target_properties(fvserver PROPERTIES 
-        COMPILE_FLAGS -D_CONSOLE
-    )
-    #install ( TARGETS fvserver RUNTIME DESTINATION ${EXEC_DIR} ) #not used at present
-
-    target_link_libraries ( fvserver
-         jlib 
-         mp 
-         hrpc 
-         remote 
-         dalibase 
-         environment 
-         dllserver 
-         jhtree 
-         nbcd 
-         eclrtl 
-         deftype 
-         workunit 
-         hql 
-         fileview2 
-    )
-endif()
-
 
