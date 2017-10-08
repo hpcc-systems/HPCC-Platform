@@ -379,6 +379,9 @@ interface RtlITypeInfo
     virtual __int64 getInt(const void * ptr) const = 0;
     virtual double getReal(const void * ptr) const = 0;
     virtual size32_t getMinSize() const = 0;
+    virtual size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in, size32_t offset) const = 0;
+    virtual void readAhead(IRowDeserializerSource & in) const = 0;
+
 protected:
     ~RtlITypeInfo() = default;  // we can't use a virtual destructor as we want constexpr constructors.
 };

@@ -203,6 +203,20 @@ const RtlTypeInfo * RtlTypeInfoBase::queryChildType() const
     return NULL; 
 }
 
+size32_t RtlTypeInfoBase::deserialize(ARowBuilder & builder, IRowDeserializerSource & in, size32_t offset) const
+{
+    size32_t thisSize = size(nullptr, nullptr);
+    byte * dest = builder.ensureCapacity(offset + thisSize, nullptr) + offset;
+    in.read(thisSize, dest);
+    return offset + thisSize;
+}
+
+void RtlTypeInfoBase::readAhead(IRowDeserializerSource & in) const
+{
+    size32_t thisSize = size(nullptr, nullptr);
+    in.skip(thisSize);
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 size32_t RtlBoolTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
@@ -532,6 +546,21 @@ size32_t RtlPackedIntTypeInfo::toXML(const byte * self, const byte * selfrow, co
     return fieldsize;
 }
 
+size32_t RtlPackedIntTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSource & in, size32_t offset) const
+{
+    char temp[9];
+    size32_t size = in.readPackedInt(temp);
+    byte * dest = builder.ensureCapacity(offset + size, nullptr) + offset;
+    memcpy(dest, temp, size);
+    return offset + size;
+}
+
+void RtlPackedIntTypeInfo::readAhead(IRowDeserializerSource & in) const
+{
+    in.skipPackedInt();
+}
+
+
 void RtlPackedIntTypeInfo::getString(size32_t & resultLen, char * & result, const void * ptr) const
 {
     if (isUnsigned())
@@ -688,6 +717,40 @@ size32_t RtlStringTypeInfo::toXML(const byte * self, const byte * selfrow, const
     return thisSize;
 }
 
+size32_t RtlStringTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSource & in, size32_t offset) const
+{
+    if (isFixedSize())
+    {
+        size32_t size = length;
+        byte * dest = builder.ensureCapacity(offset+size, nullptr) + offset;
+        in.read(size, dest);
+        offset += size;
+    }
+    else
+    {
+        size32_t size = in.readSize();
+        byte * dest = builder.ensureCapacity(offset+sizeof(size32_t)+size, nullptr) + offset;
+        rtlWriteSize32t(dest, size);
+        in.read(size, dest + sizeof(size32_t));
+        offset += sizeof(size32_t)+size;
+    }
+    return offset;
+}
+
+void RtlStringTypeInfo::readAhead(IRowDeserializerSource & in) const
+{
+    if (isFixedSize())
+    {
+        in.skip(length);
+    }
+    else
+    {
+        size32_t thisLength = in.readSize();
+        in.skip(thisLength);
+    }
+}
+
+
 void RtlStringTypeInfo::getString(size32_t & resultLen, char * & result, const void * ptr) const
 {
     if (isFixedSize())
@@ -818,6 +881,40 @@ size32_t RtlDataTypeInfo::toXML(const byte * self, const byte * selfrow, const R
     target.outputData(thisLength, str, queryScalarXPath(field));
     return thisSize;
 }
+
+size32_t RtlDataTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSource & in, size32_t offset) const
+{
+    if (isFixedSize())
+    {
+        size32_t size = length;
+        byte * dest = builder.ensureCapacity(offset+size, nullptr) + offset;
+        in.read(size, dest);
+        offset += size;
+    }
+    else
+    {
+        size32_t size = in.readSize();
+        byte * dest = builder.ensureCapacity(offset+sizeof(size32_t)+size, nullptr) + offset;
+        rtlWriteSize32t(dest, size);
+        in.read(size, dest + sizeof(size32_t));
+        offset += sizeof(size32_t)+size;
+    }
+    return offset;
+}
+
+void RtlDataTypeInfo::readAhead(IRowDeserializerSource & in) const
+{
+    if (isFixedSize())
+    {
+        in.skip(length);
+    }
+    else
+    {
+        size32_t thisLength = in.readSize();
+        in.skip(thisLength);
+    }
+}
+
 
 void RtlDataTypeInfo::getString(size32_t & resultLen, char * & result, const void * ptr) const
 {
@@ -963,6 +1060,32 @@ size32_t RtlVarStringTypeInfo::toXML(const byte * self, const byte * selfrow, co
     return thisSize;
 }
 
+size32_t RtlVarStringTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSource & in, size32_t offset) const
+{
+    if (isFixedSize())
+    {
+        size32_t size = length+1;
+        byte * dest = builder.ensureCapacity(offset+size, nullptr) + offset;
+        in.read(size, dest);
+        return offset + size;
+    }
+    else
+        return offset + in.readVStr(builder, offset, 0);
+}
+
+void RtlVarStringTypeInfo::readAhead(IRowDeserializerSource & in) const
+{
+    if (isFixedSize())
+    {
+        in.skip(length+1);
+    }
+    else
+    {
+        in.skipVStr();
+    }
+}
+
+
 void RtlVarStringTypeInfo::getString(size32_t & resultLen, char * & result, const void * ptr) const
 {
     const char * str = (const char *)ptr;
@@ -1078,6 +1201,43 @@ size32_t RtlQStringTypeInfo::toXML(const byte * self, const byte * selfrow, cons
     target.outputQString(thisLength, str, queryScalarXPath(field));
     return thisSize;
 }
+
+size32_t RtlQStringTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSource & in, size32_t offset) const
+{
+    if (isFixedSize())
+    {
+        size32_t size = rtlQStrSize(length);
+        byte * dest = builder.ensureCapacity(offset+size, nullptr) + offset;
+        in.read(size, dest);
+        offset += size;
+    }
+    else
+    {
+        size32_t thisLength = in.readSize();
+        size32_t size = rtlQStrSize(thisLength);
+        byte * dest = builder.ensureCapacity(offset+sizeof(size32_t)+size, nullptr) + offset;
+        rtlWriteSize32t(dest, thisLength);
+        in.read(size, dest + sizeof(size32_t));
+        offset += sizeof(size32_t)+size;
+    }
+    return offset;
+}
+
+void RtlQStringTypeInfo::readAhead(IRowDeserializerSource & in) const
+{
+    if (isFixedSize())
+    {
+        size32_t size = rtlQStrSize(length);
+        in.skip(size);
+    }
+    else
+    {
+        size32_t thisLength = in.readSize();
+        size32_t size = rtlQStrSize(thisLength);
+        in.skip(size);
+    }
+}
+
 
 void RtlQStringTypeInfo::getString(size32_t & resultLen, char * & result, const void * ptr) const
 {
@@ -1406,6 +1566,43 @@ size32_t RtlUnicodeTypeInfo::toXML(const byte * self, const byte * selfrow, cons
     return thisSize;
 }
 
+size32_t RtlUnicodeTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSource & in, size32_t offset) const
+{
+    if (isFixedSize())
+    {
+        size32_t size = length * sizeof(UChar);
+        byte * dest = builder.ensureCapacity(offset+size, nullptr) + offset;
+        in.read(size, dest);
+        offset += size;
+    }
+    else
+    {
+        size32_t thisLength = in.readSize();
+        size32_t size = thisLength * sizeof(UChar);
+        byte * dest = builder.ensureCapacity(offset+sizeof(size32_t)+size, nullptr) + offset;
+        rtlWriteSize32t(dest, thisLength);
+        in.read(size, dest + sizeof(size32_t));
+        offset += sizeof(size32_t)+size;
+    }
+    return offset;
+}
+
+void RtlUnicodeTypeInfo::readAhead(IRowDeserializerSource & in) const
+{
+    if (isFixedSize())
+    {
+        size32_t size = length * sizeof(UChar);
+        in.skip(size);
+    }
+    else
+    {
+        size32_t thisLength = in.readSize();
+        size32_t size = thisLength * sizeof(UChar);
+        in.skip(size);
+    }
+}
+
+
 void RtlUnicodeTypeInfo::getString(size32_t & resultLen, char * & result, const void * ptr) const
 {
     if (isFixedSize())
@@ -1540,6 +1737,33 @@ size32_t RtlVarUnicodeTypeInfo::toXML(const byte * self, const byte * selfrow, c
     return thisSize;
 }
 
+size32_t RtlVarUnicodeTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSource & in, size32_t offset) const
+{
+    if (isFixedSize())
+    {
+        size32_t size = (length+1)*sizeof(UChar);
+        byte * dest = builder.ensureCapacity(offset+size, nullptr) + offset;
+        in.read(size, dest);
+        return offset + size;
+    }
+    else
+        return offset + in.readVUni(builder, offset, 0);
+}
+
+void RtlVarUnicodeTypeInfo::readAhead(IRowDeserializerSource & in) const
+{
+    if (isFixedSize())
+    {
+        size32_t size = (length+1)*sizeof(UChar);
+        in.skip(size);
+    }
+    else
+    {
+        in.skipVUni();
+    }
+}
+
+
 void RtlVarUnicodeTypeInfo::getString(size32_t & resultLen, char * & result, const void * ptr) const
 {
     const UChar * str = (const UChar *)ptr;
@@ -1612,6 +1836,23 @@ size32_t RtlUtf8TypeInfo::toXML(const byte * self, const byte * selfrow, const R
     target.outputUtf8(thisLength, str, queryScalarXPath(field));
     return thisSize;
 }
+
+size32_t RtlUtf8TypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSource & in, size32_t offset) const
+{
+    assertex(!isFixedSize());
+    size32_t thisLength = in.readSize();
+    size32_t size = in.readUtf8(builder, offset + sizeof(size_t), 0, thisLength);
+    rtlWriteSize32t(builder.getSelf() + offset, thisLength);
+    return offset + sizeof(size32_t) + size;
+}
+
+void RtlUtf8TypeInfo::readAhead(IRowDeserializerSource & in) const
+{
+    assertex(!isFixedSize());
+    size32_t thisLength = in.readSize();
+    in.skipUtf8(thisLength);
+}
+
 
 void RtlUtf8TypeInfo::getString(size32_t & resultLen, char * & result, const void * ptr) const
 {
@@ -1709,6 +1950,32 @@ inline size32_t toXMLFields(const RtlFieldInfo * const * cur, const byte * self,
     return offset;
 }
 
+static size32_t deserializeFields(const RtlFieldInfo * const * cur, ARowBuilder & builder, IRowDeserializerSource & in, size32_t offset)
+{
+    for (;;)
+    {
+        const RtlFieldInfo * child = *cur;
+        if (!child)
+            break;
+        offset = child->type->deserialize(builder, in, offset);
+        cur++;
+    }
+
+    return offset;
+}
+
+static void readAheadFields(const RtlFieldInfo * const * cur, IRowDeserializerSource & in)
+{
+    for (;;)
+    {
+        const RtlFieldInfo * child = *cur;
+        if (!child)
+            break;
+        child->type->readAhead(in);
+        cur++;
+    }
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 size32_t RtlRecordTypeInfo::getMinSize() const
@@ -1745,6 +2012,19 @@ size32_t RtlRecordTypeInfo::toXML(const byte * self, const byte * selfrow, const
 
     return thisSize;
 }
+
+size32_t RtlRecordTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSource & in, size32_t offset) const
+{
+    //Will not generally be called because it will have been expanded
+    return deserializeFields(fields, builder, in, offset);
+}
+
+void RtlRecordTypeInfo::readAhead(IRowDeserializerSource & in) const
+{
+    //Will not generally be called because it will have been expanded
+    return readAheadFields(fields, in);
+}
+
 
 size32_t RtlRecordTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
 {
@@ -1915,6 +2195,27 @@ size32_t RtlSetTypeInfo::toXML(const byte * self, const byte * selfrow, const Rt
     return max;
 }
 
+size32_t RtlSetTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSource & in, size32_t offset) const
+{
+    bool isAll;
+    in.read(1, &isAll);
+    size32_t size = in.readSize();
+    byte * dest = builder.ensureCapacity(offset+sizeof(bool)+sizeof(size32_t)+size, nullptr) + offset;
+    *dest = isAll;
+    rtlWriteSize32t(dest + sizeof(bool), size);
+    in.read(size, dest + sizeof(bool) + sizeof(size32_t));
+    return offset+sizeof(bool)+sizeof(size32_t)+size;
+}
+
+
+void RtlSetTypeInfo::readAhead(IRowDeserializerSource & in) const
+{
+    in.skip(1);
+    size32_t thisLength = in.readSize();
+    in.skip(thisLength);
+}
+
+
 //-------------------------------------------------------------------------------------------------------------------
 
 size32_t RtlRowTypeInfo::getMinSize() const
@@ -1954,6 +2255,22 @@ size32_t RtlRowTypeInfo::toXML(const byte * self, const byte * selfrow, const Rt
 
     return child->toXML(self, self, field, target);
 }
+
+size32_t RtlRowTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSource & in, size32_t offset) const
+{
+    //Link counted isn't yet implemented in the code generator
+    if (isLinkCounted())
+        UNIMPLEMENTED;
+
+    return child->deserialize(builder, in, offset);
+}
+
+
+void RtlRowTypeInfo::readAhead(IRowDeserializerSource & in) const
+{
+    return child->readAhead(in);
+}
+
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -2097,6 +2414,55 @@ size32_t RtlDatasetTypeInfo::toXML(const byte * self, const byte * selfrow, cons
     return thisSize;
 }
 
+size32_t RtlDatasetTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSource & in, size32_t offset) const
+{
+    const bool canUseMemcpy = true;
+
+    if (canUseMemcpy && !isLinkCounted())
+    {
+        size32_t size = in.readSize();
+        byte * dest = builder.ensureCapacity(offset+sizeof(size32_t)+size, nullptr) + offset;
+        rtlWriteSize32t(dest, size);
+        in.read(size, dest + sizeof(size32_t));
+        return offset + sizeof(size32_t) + size;
+    }
+    else
+    {
+        if (isLinkCounted())
+        {
+            //Currently inefficient because it is recreating deserializers and resolving child allocators each time it is called.
+            ICodeContext * ctx = nullptr; // Slightly dodgy, but not needed if the child deserializers are also calculated
+            unsigned activityId = 0;
+
+            // a 32-bit record count, and a pointer to an hash table with record pointers
+            size32_t sizeInBytes = sizeof(size32_t) + sizeof(void *);
+            byte * dest = builder.ensureCapacity(offset+sizeInBytes, nullptr) + offset;
+            Owned<IEngineRowAllocator> childAllocator = builder.queryAllocator()->createChildRowAllocator(child);
+            Owned<IOutputRowDeserializer> deserializer = childAllocator->queryOutputMeta()->createDiskDeserializer(ctx, activityId);
+            rtlDeserializeChildRowset(*(size32_t *)dest, *(const byte * * *)(dest + sizeof(size32_t)), childAllocator, deserializer, in);
+            return offset + sizeInBytes;
+        }
+        else
+        {
+            offset_t startOffset = offset + sizeof(size32_t);
+            offset_t nextOffset = startOffset;
+            offset_t endOffset = in.beginNested();
+            while (in.finishedNested(endOffset))
+                nextOffset = child->deserialize(builder, in, nextOffset);
+            rtlWriteSize32t(builder.getSelf() + offset, nextOffset - startOffset);
+            return nextOffset;
+        }
+    }
+}
+
+
+void RtlDatasetTypeInfo::readAhead(IRowDeserializerSource & in) const
+{
+    size32_t size = in.readSize();
+    in.skip(size);
+}
+
+
 //-------------------------------------------------------------------------------------------------------------------
 
 size32_t RtlDictionaryTypeInfo::getMinSize() const
@@ -2204,6 +2570,36 @@ size32_t RtlDictionaryTypeInfo::toXML(const byte * self, const byte * selfrow, c
     return thisSize;
 }
 
+size32_t RtlDictionaryTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSource & in, size32_t offset) const
+{
+    if (isLinkCounted())
+    {
+        //Currently inefficient because it is recreating deserializers and resolving child allocators each time it is called.
+        ICodeContext * ctx = nullptr; // Slightly dodgy, but not needed if the child deserializers are also calculated
+        unsigned activityId = 0;
+
+        // a 32-bit record count, and a pointer to an hash table with record pointers
+        size32_t sizeInBytes = sizeof(size32_t) + sizeof(void *);
+        byte * dest = builder.ensureCapacity(offset+sizeInBytes, nullptr) + offset;
+        Owned<IEngineRowAllocator> childAllocator = builder.queryAllocator()->createChildRowAllocator(child);
+        Owned<IOutputRowDeserializer> deserializer = childAllocator->queryOutputMeta()->createDiskDeserializer(ctx, activityId);
+        rtlDeserializeChildDictionary(*(size32_t *)dest, *(const byte * * *)(dest + sizeof(size32_t)), childAllocator, deserializer, in);
+        return offset + sizeInBytes;
+    }
+    else
+    {
+        UNIMPLEMENTED;
+    }
+}
+
+
+void RtlDictionaryTypeInfo::readAhead(IRowDeserializerSource & in) const
+{
+    size32_t size = in.readSize();
+    in.skip(size);
+}
+
+
 //-------------------------------------------------------------------------------------------------------------------
 
 size32_t RtlIfBlockTypeInfo::getMinSize() const
@@ -2231,6 +2627,19 @@ size32_t RtlIfBlockTypeInfo::toXML(const byte * self, const byte * selfrow, cons
         return toXMLFields(fields, self, selfrow, target);
     return 0;
 }
+
+size32_t RtlIfBlockTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSource & in, size32_t offset) const
+{
+    if (getCondition(builder.getSelf()))
+        return deserializeFields(fields, builder, in, offset);
+    return offset;
+}
+
+void RtlIfBlockTypeInfo::readAhead(IRowDeserializerSource & in) const
+{
+    UNIMPLEMENTED;
+}
+
 
 void RtlIfBlockTypeInfo::getString(size32_t & resultLen, char * & result, const void * ptr) const
 {
@@ -2359,6 +2768,18 @@ size32_t RtlUnimplementedTypeInfo::toXML(const byte * self, const byte * selfrow
     rtlFailUnexpected();
     return 0;
 }
+
+size32_t RtlUnimplementedTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSource & in, size32_t offset) const
+{
+    rtlFailUnexpected();
+    return offset;
+}
+
+void RtlUnimplementedTypeInfo::readAhead(IRowDeserializerSource & in) const
+{
+    rtlFailUnexpected();
+}
+
 
 void RtlUnimplementedTypeInfo::getString(size32_t & resultLen, char * & result, const void * ptr) const
 {

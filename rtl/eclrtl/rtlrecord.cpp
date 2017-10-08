@@ -303,6 +303,34 @@ size32_t RtlRecord::getMinRecordSize() const
     return minSize;
 }
 
+size32_t RtlRecord::deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in) const
+{
+    size32_t offset = 0;
+    for (unsigned i = 0; i < numVarFields; i++)
+    {
+        unsigned fieldIndex = variableFieldIds[i];
+        size32_t fixedSize = fixedOffsets[fieldIndex];
+        byte * self = rowBuilder.ensureCapacity(offset + fixedSize, "");
+        in.read(fixedSize, self + offset);
+        offset = queryType(fieldIndex)->deserialize(rowBuilder, in, offset);
+    }
+    size32_t lastFixedSize = fixedOffsets[numFields];
+    byte * self = rowBuilder.ensureCapacity(offset + lastFixedSize, "");
+    in.read(lastFixedSize, self + offset);
+    return offset + lastFixedSize;
+}
+
+void RtlRecord::readAhead(IRowDeserializerSource & in) const
+{
+    for (unsigned i=0; i < numVarFields; i++)
+    {
+        unsigned fieldIndex = variableFieldIds[i];
+        in.skip(fixedOffsets[fieldIndex]);
+        queryType(fieldIndex)->readAhead(in);
+    }
+    in.skip(fixedOffsets[numFields]);
+}
+
 static const FieldNameToFieldNumMap *setupNameMap(const RtlRecord &record, std::atomic<const FieldNameToFieldNumMap *> &aNameMap)
 {
     const FieldNameToFieldNumMap *lnameMap = new FieldNameToFieldNumMap(record);
@@ -406,6 +434,38 @@ RtlDynRow::~RtlDynRow()
     delete [] variableOffsets;
 }
 
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class CDefaultDeserializer : public CInterfaceOf<IOutputRowDeserializer>
+{
+public:
+    CDefaultDeserializer(const RtlRecord & _record) : record(_record) {}
+
+    virtual size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in)
+    {
+        return record.deserialize(rowBuilder, in);
+    }
+private:
+    const RtlRecord & record;
+};
+
+
+class CDefaultPrefetcher : public CInterfaceOf<ISourceRowPrefetcher>
+{
+public:
+    CDefaultPrefetcher(const RtlRecord & _record) : record(_record) {}
+
+    virtual void readAhead(IRowDeserializerSource & in)
+    {
+        record.readAhead(in);
+    }
+private:
+    const RtlRecord & record;
+};
+
+
+
 //-----------------
 
 static const RtlRecord *setupRecordAccessor(const COutputMetaData &meta, bool expand, std::atomic<const RtlRecord *> &aRecordAccessor)
@@ -494,8 +554,12 @@ ISourceRowPrefetcher * COutputMetaData::createDiskPrefetcher(ICodeContext * ctx,
     ISourceRowPrefetcher * fetcher = defaultCreateDiskPrefetcher(ctx, activityId);
     if (fetcher)
         return fetcher;
-    //Worse case implementation using a deserialize
-    return new CSimpleSourceRowPrefetcher(*this, ctx, activityId);
+    return new CDefaultPrefetcher(queryRecordAccessor(true));
+}
+
+IOutputRowDeserializer *COutputMetaData::createDiskDeserializer(ICodeContext * ctx, unsigned activityId)
+{
+    return new CDefaultDeserializer(queryRecordAccessor(true));
 }
 
 ISourceRowPrefetcher *COutputMetaData::defaultCreateDiskPrefetcher(ICodeContext * ctx, unsigned activityId)
