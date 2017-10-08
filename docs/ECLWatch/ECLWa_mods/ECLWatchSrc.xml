@@ -1671,7 +1671,16 @@
         <title>Upload files</title>
 
         <para>You can upload files to your landing zone from the Landing Zone
-        page.</para>
+        page. <figure>
+            <title>Landing Zone Upload</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA440a.jpg"
+                           vendor="eclwatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
 
         <orderedlist>
           <listitem>
@@ -1704,8 +1713,9 @@
           </listitem>
 
           <listitem>
-            <para>Verify the file and dropzone are correct in the <emphasis
-            role="bold">Info Dialog</emphasis> that displays. <figure>
+            <para>Verify the file, folder, and dropzone information are
+            correct in the <emphasis role="bold">File Uploader</emphasis>
+            dialog that displays. <figure>
                 <title>Info Dialog</title>
 
                 <mediaobject>
@@ -1721,8 +1731,8 @@
             <para>Press the <emphasis role="bold">Start</emphasis> button to
             begin the upload.</para>
 
-            <para>The file progress indicator shows as the file uploads. When
-            upload is complete, the window closes.</para>
+            <para>The Upload action button displays the progress as the file
+            uploads. </para>
           </listitem>
         </orderedlist>
 

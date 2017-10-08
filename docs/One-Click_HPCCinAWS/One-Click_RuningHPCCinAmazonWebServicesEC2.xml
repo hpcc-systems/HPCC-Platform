@@ -1091,9 +1091,11 @@ OUTPUT(L);</programlisting></para>
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>From ECL Watch page, click on the <emphasis
-            role="bluebold">Upload/download File </emphasis> link in the menu
-            on the left side.</para>
+            <para>From the ECL Watch page, click on the <emphasis
+            role="bold">Files</emphasis> link icon then the <emphasis
+            role="bold">Landing Zones</emphasis> button to get to the Landing
+            Zones tab. On the Landing Zones tab press the <emphasis
+            role="bold">Upload</emphasis> action button.</para>
 
             <para><figure>
                 <title>Upload/download</title>
@@ -1106,39 +1108,30 @@ OUTPUT(L);</programlisting></para>
                 </mediaobject>
               </figure></para>
 
-            <para>Once you click on the Upload/download file link, it will
-            take you to the <emphasis role="bold">Dropzones and
-            Files</emphasis> page, where you can choose to <emphasis
-            role="bold">Browse</emphasis> your machine for a file to
-            upload:</para>
-
-            <para><figure>
-                <title>Dropzones and Files</title>
-
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="images/LZimg04.jpg"
-                               vendor="eclwatchSS" />
-                  </imageobject>
-                </mediaobject>
-              </figure></para>
+            <para>Once you click on the Upload action button, it will open a
+            dialog where you can choose to <emphasis
+            role="bold">Browse</emphasis> for a file to upload:</para>
           </listitem>
 
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Press the <emphasis role="bold">Browse</emphasis> button to
-            browse the files on your local machine, select the file to upload
-            and then press the <emphasis role="bold">Open</emphasis>
-            button.</para>
-
-            <para>The file you selected should appear in the <emphasis
-            role="bold">Select a file to upload:</emphasis> field. The data
-            file is named: <emphasis role="bold">2of12.txt</emphasis>.</para>
+            <para>Browse the files on your local machine, select the file
+            <emphasis role="bold">2of12.txt</emphasis> to upload and then
+            press the <emphasis role="bold">Open</emphasis> button.</para>
           </listitem>
 
           <listitem>
-            <para>Press on <emphasis role="bold">Upload Now</emphasis> to
+            <para><figure>
+                <title>File Uploader</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/LZimg04a.jpg"
+                               vendor="eclwatchSS" />
+                  </imageobject>
+                </mediaobject>
+              </figure>Press <emphasis role="bold">Start</emphasis> to
             complete the file upload.</para>
           </listitem>
         </orderedlist>
