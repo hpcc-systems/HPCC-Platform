@@ -285,7 +285,7 @@ void SoapParamBinary::toJSON(IEspContext* ctx, StringBuffer &s, const char *tagn
     if (tagname && *tagname)
         s.append('"').append(tagname).append("\": ");
     s.append('"');
-    JBASE64_Encode(value.toByteArray(), value.length(), s);
+    JBASE64_Encode(value.toByteArray(), value.length(), s, false);
     s.append('"');
     return;
 }
