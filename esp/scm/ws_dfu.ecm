@@ -145,6 +145,8 @@ ESPStruct [nil_remove] DFUFileDetail
     [min_ver("1.34")] string PercentCompressed;
     [min_ver("1.22")] bool IsCompressed(false);
     [min_ver("1.28")] bool BrowseData(true);
+    [min_ver("1.37"), json_inline(1)] string jsonInfo;
+    [min_ver("1.37")] binary binInfo;
 };
 
 ESPStruct DFUSpaceItem
@@ -292,6 +294,8 @@ DFUInfoRequest
     bool UpdateDescription(false);
     string FileName;
     string FileDesc;
+    [min_ver("1.37")] bool IncludeJsonTypeInfo(false);
+    [min_ver("1.37")] bool IncludeBinTypeInfo(false);
 };
 
 ESPresponse
@@ -317,6 +321,19 @@ ESPresponse
 DFUDefFileResponse
 {
     [http_content("application/octet-stream")] binary defFile;
+};
+
+ESPrequest DFURecordTypeInfoRequest
+{
+    string Name;
+    bool IncludeJsonTypeInfo(true);
+    bool IncludeBinTypeInfo(true);
+};
+
+ESPresponse DFURecordTypeInfoResponse
+{
+    [json_inline(1)] string jsonInfo;
+    binary binInfo;
 };
 
 ESPrequest SuperfileActionRequest
@@ -745,7 +762,7 @@ ESPresponse [exceptions_inline, nil_remove] EraseHistoryResponse
 //  ===========================================================================
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.36"),
+    version("1.37"),
     noforms,
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {
@@ -771,6 +788,7 @@ ESPservice [
 
     ESPmethod ListHistory(ListHistoryRequest, ListHistoryResponse);
     ESPmethod EraseHistory(EraseHistoryRequest, EraseHistoryResponse);
+    ESPmethod DFURecordTypeInfo(DFURecordTypeInfoRequest, DFURecordTypeInfoResponse);
 };
 
 SCMexportdef(WSDFU);

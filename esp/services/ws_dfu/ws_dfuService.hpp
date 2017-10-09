@@ -131,7 +131,8 @@ public:
     bool onDFUBrowseData(IEspContext &context, IEspDFUBrowseDataRequest &req, IEspDFUBrowseDataResponse &resp);
     bool onDFUSearchData(IEspContext &context, IEspDFUSearchDataRequest &req, IEspDFUSearchDataResponse &resp);
     bool onDFUGetFileMetaData(IEspContext &context, IEspDFUGetFileMetaDataRequest &req, IEspDFUGetFileMetaDataResponse &resp);
-
+    bool onDFURecordTypeInfo(IEspContext &context, IEspDFURecordTypeInfoRequest &req, IEspDFURecordTypeInfoResponse &resp);
+	
     virtual bool onSavexml(IEspContext &context, IEspSavexmlRequest &req, IEspSavexmlResponse &resp);
     virtual bool onAdd(IEspContext &context, IEspAddRequest &req, IEspAddResponse &resp);
     virtual bool onAddRemote(IEspContext &context, IEspAddRemoteRequest &req, IEspAddRemoteResponse &resp);
@@ -157,7 +158,7 @@ private:
         bool includeSuperOwner, IArrayOf<IEspDFULogicalFile>& LogicalFiles, int& numFiles, int& numDirs);
     bool doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc, IEspDFUQueryRequest & req, IEspDFUQueryResponse & resp);
     void doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, const char *name,const char *cluster,
-        const char *description,IEspDFUFileDetail& FileDetails);
+        const char *description, bool includeJsonTypeInfo, bool includeBinTypeInfo, IEspDFUFileDetail& FileDetails);
     bool createSpaceItemsByDate(IArrayOf<IEspSpaceItem>& SpaceItems, StringBuffer interval, unsigned& yearFrom,
         unsigned& monthFrom, unsigned& dayFrom, unsigned& yearTo, unsigned& monthTo, unsigned& dayTo);
     bool setSpaceItemByScope(IArrayOf<IEspSpaceItem>& SpaceItems64, const char*scopeName, const char*logicalName, __int64 size);

@@ -96,6 +96,7 @@ interface IRtlFieldTypeDeserializer : public IInterface
 extern ECLRTL_API IRtlFieldTypeDeserializer *createRtlFieldTypeDeserializer();
 
 extern ECLRTL_API StringBuffer &dumpTypeInfo(StringBuffer &ret, const RtlTypeInfo *t);
+extern ECLRTL_API MemoryBuffer &dumpTypeInfo(MemoryBuffer &ret, const RtlTypeInfo *t);
 
 /**
  * Serialize metadata of supplied record to JSON, and return it to ECL caller as a string. Used for testing serializer.
