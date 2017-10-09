@@ -7715,15 +7715,20 @@ IHqlExpression * createDefaultAssertMessage(IHqlExpression * cond)
     StringBuffer cmpText;
     cmpText.append(" ").append(getOpString(op)).append(" ");
 
-    OwnedITypeInfo unknownStringType = makeStringType(UNKNOWN_LENGTH, NULL, NULL);
-    OwnedITypeInfo unknownVarStringType = makeVarStringType(UNKNOWN_LENGTH, NULL, NULL);
+    OwnedITypeInfo utf8Type = makeUtf8Type(UNKNOWN_LENGTH, NULL);
     HqlExprArray args;
-    args.append(*createConstant(prefix));
-    args.append(*ensureExprType(lhs, unknownStringType));
-    args.append(*createConstant(cmpText));
-    args.append(*ensureExprType(rhs, unknownStringType));
-    args.append(*createConstant(suffix));
-    return createBalanced(no_concat, unknownVarStringType, args);
+    args.append(*createUtf8Constant(prefix));
+    args.append(*ensureExprType(lhs, utf8Type));
+    args.append(*createUtf8Constant(cmpText));
+    args.append(*ensureExprType(rhs, utf8Type));
+    args.append(*createUtf8Constant(suffix));
+    // Really what we want to do is
+    // return createBalanced(no_concat, utf8Type, args);
+    // and declare the param to the assert helper as varutf8 - but there is no such type so we have to fool it into passing it as a string without conversion
+    OwnedITypeInfo unknownStringType = makeStringType(UNKNOWN_LENGTH);
+    OwnedITypeInfo unknownVarStringType = makeVarStringType(UNKNOWN_LENGTH);
+    OwnedHqlExpr transfer = createValue(no_typetransfer, LINK(unknownStringType), createBalanced(no_concat, utf8Type, args));
+    return ensureExprType(transfer, unknownVarStringType);
 }
 
 //-------------------------------------------------------------------------------------------------------------------

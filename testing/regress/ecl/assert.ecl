@@ -65,3 +65,7 @@ rec t(ds l) := transform
 o3 := output(project(ds, t(LEFT)));
 sequential(o1, o2, o3);
 ASSERT(COUNT(ds) = 9); // should be 2
+
+// Test unicode formatting
+utf8 euro := u'€' : stored('euro'); 
+ASSERT(euro=u'€€');  // fail!
