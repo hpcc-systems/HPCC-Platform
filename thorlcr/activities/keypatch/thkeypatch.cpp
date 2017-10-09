@@ -161,8 +161,12 @@ public:
         if (originalProps.queryProp("ECL"))
             props.setProp("ECL", originalProps.queryProp("ECL"));
         MemoryBuffer rLMB;
+        // Legacy record layout info
         if (originalProps.getPropBin("_record_layout", rLMB))
             props.setPropBin("_record_layout", rLMB.length(), rLMB.toByteArray());
+        // New record layout info
+        if (originalProps.getPropBin("_rtlType", rLMB.clear()))
+            props.setPropBin("_rtlType", rLMB.length(), rLMB.toByteArray());
         props.setPropInt("@formatCrc", originalProps.getPropInt("@formatCrc"));
         if (originalProps.getPropBool("@local"))
             props.setPropBool("@local", true);

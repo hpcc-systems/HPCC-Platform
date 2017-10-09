@@ -93,6 +93,7 @@ public:
     inline TYPE & tos(void) const                 { return (TYPE &)CIArray::tos(); }
     inline TYPE & tos(aindex_t num) const         { return (TYPE &)CIArray::tos(num); }
     inline TYPE **getArray(aindex_t pos = 0)      { return (TYPE **)CIArray::getArray(pos); }
+    inline TYPE **detach()                        { return (TYPE **)CIArray::detach(); }
     inline void append(TYPE& obj)                 { assert(&obj); CIArray::append(obj); } 
     inline void appendUniq(TYPE& obj)             { assert(&obj); CIArray::appendUniq(obj); } 
     inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); CIArray::add(obj, pos); } 
@@ -110,6 +111,7 @@ public:
     inline TYPE & tos(void) const                 { return (TYPE &)CICopyArray::tos(); }
     inline TYPE & tos(aindex_t num) const         { return (TYPE &)CICopyArray::tos(num); }
     inline TYPE **getArray(aindex_t pos = 0)      { return (TYPE **)CICopyArray::getArray(pos); }
+    inline TYPE **detach()                        { return (TYPE **)CICopyArray::detach(); }
     inline void append(TYPE& obj)                 { assert(&obj); CICopyArray::append(obj); } 
     inline void appendUniq(TYPE& obj)             { assert(&obj); CICopyArray::appendUniq(obj); } 
     inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); CICopyArray::add(obj, pos); } 
@@ -127,6 +129,7 @@ public:
     inline TYPE & tos(void) const                 { return (TYPE &)IArray::tos(); }
     inline TYPE & tos(aindex_t num) const         { return (TYPE &)IArray::tos(num); }
     inline TYPE **getArray(aindex_t pos = 0)      { return (TYPE **)IArray::getArray(pos); }
+    inline TYPE **detach()                        { return (TYPE **)IArray::detach(); }
     inline void append(TYPE& obj)                 { assert(&obj); IArray::append(obj); } 
     inline void appendUniq(TYPE& obj)             { assert(&obj); IArray::appendUniq(obj); } 
     inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); IArray::add(obj, pos); } 
@@ -160,6 +163,7 @@ public:
     inline TYPE & tos(void) const                 { return (TYPE &)ICopyArray::tos(); }
     inline TYPE & tos(aindex_t num) const         { return (TYPE &)ICopyArray::tos(num); }
     inline TYPE **getArray(aindex_t pos = 0)      { return (TYPE **)ICopyArray::getArray(pos); }
+    inline TYPE **detach()                        { return (TYPE **)ICopyArray::detach(); }
     inline void append(TYPE& obj)                 { assert(&obj); ICopyArray::append(obj); } 
     inline void appendUniq(TYPE& obj)             { assert(&obj); ICopyArray::appendUniq(obj); } 
     inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); ICopyArray::add(obj, pos); } 
@@ -177,6 +181,7 @@ public:
     inline TYPE * tos(void) const                 { return (TYPE *)IPointerArray::tos(); }
     inline TYPE * tos(aindex_t num) const         { return (TYPE *)IPointerArray::tos(num); }
     inline TYPE **getArray(aindex_t pos = 0)      { return (TYPE **)IPointerArray::getArray(pos); }
+    inline TYPE **detach()                        { return (TYPE **)IPointerArray::detach(); }
     inline void append(TYPE * obj)                { IPointerArray::append(obj); } 
     inline void appendUniq(TYPE * obj)            { IPointerArray::appendUniq(obj); } 
     inline void add(TYPE * obj, aindex_t pos)     { IPointerArray::add(obj, pos); } 
@@ -193,15 +198,37 @@ public:
     inline void add(TYPE * x, aindex_t pos)     { PointerArray::add(x, pos); }
     inline void append(TYPE * x)                { PointerArray::append(x); }
     inline aindex_t bAdd(TYPE * & newItem, PointerOfCompareFunc f, bool & isNew) { return PointerArray::bAdd(*(void * *)&newItem, (CompareFunc)f, isNew); }
-    inline aindex_t bSearch(const TYPE * & key, CompareFunc f) const    { return PointerArray:: bSearch(*(const void * *)&key, f); }
+    inline aindex_t bSearch(const TYPE * & key, PointerOfCompareFunc f) const    { return PointerArray:: bSearch(*(const void * *)&key, (CompareFunc)f); }
     inline aindex_t find(TYPE * x) const        { return PointerArray::find(x); }
     inline TYPE **getArray(aindex_t pos = 0)    { return (TYPE **)PointerArray::getArray(pos); }
+    inline TYPE **detach()                      { return (TYPE **)PointerArray::detach(); }
     inline TYPE * item(aindex_t pos) const      { return (TYPE *)PointerArray::item(pos); }
     inline TYPE * popGet()                      { return (TYPE *)PointerArray::popGet(); }
     inline void replace(TYPE * x, aindex_t pos) { PointerArray::replace(x, pos); }
     inline TYPE * tos(void) const               { return (TYPE *)PointerArray::tos(); }
     inline TYPE * tos(aindex_t num) const       { return (TYPE *)PointerArray::tos(num); }
     inline bool zap(TYPE * x)                   { return PointerArray::zap(x); }
+};
+
+template <class BTYPE>
+class ConstPointerArrayOf : public ConstPointerArray
+{
+    typedef const BTYPE TYPE;
+    typedef int (*PointerOfCompareFunc)(TYPE **, TYPE **);
+public:
+    inline void add(TYPE * x, aindex_t pos)     { ConstPointerArray::add(x, pos); }
+    inline void append(TYPE * x)                { ConstPointerArray::append(x); }
+    inline aindex_t bAdd(TYPE * & newItem, PointerOfCompareFunc f, bool & isNew) { return ConstPointerArray::bAdd(*(void * *)&newItem, (CompareFunc)f, isNew); }
+    inline aindex_t bSearch(const TYPE * & key, PointerOfCompareFunc f) const    { return ConstPointerArray:: bSearch(*(const void * *)&key, (CompareFunc)f); }
+    inline aindex_t find(TYPE * x) const        { return ConstPointerArray::find(x); }
+    inline TYPE **getArray(aindex_t pos = 0)    { return (TYPE **)ConstPointerArray::getArray(pos); }
+    inline TYPE **detach()                      { return (TYPE **)ConstPointerArray::detach(); }
+    inline TYPE * item(aindex_t pos) const      { return (TYPE *)ConstPointerArray::item(pos); }
+    inline TYPE * popGet()                      { return (TYPE *)ConstPointerArray::popGet(); }
+    inline void replace(TYPE * x, aindex_t pos) { ConstPointerArray::replace(x, pos); }
+    inline TYPE * tos(void) const               { return (TYPE *)ConstPointerArray::tos(); }
+    inline TYPE * tos(aindex_t num) const       { return (TYPE *)ConstPointerArray::tos(num); }
+    inline bool zap(TYPE * x)                   { return ConstPointerArray::zap(x); }
 };
 
 enum DAFSConnectCfg { SSLNone = 0, SSLOnly, SSLFirst, UnsecureFirst };

@@ -59,7 +59,7 @@ protected:
         const IPropertyTree &elem = *(const IPropertyTree *)e;
         return elem.queryName();
     }
-    virtual unsigned getHashFromElement(const void *e) const;
+    virtual unsigned getHashFromElement(const void *e) const override;
     virtual unsigned getHashFromFindParam(const void *fp) const override
     {
         return hashc((const unsigned char *)fp, (size32_t)strlen((const char *)fp), 0);
@@ -897,7 +897,7 @@ class CPTreeMaker : public CInterfaceOf<IPTreeMaker>
     {
         byte flags;
     public:
-        IMPLEMENT_IINTERFACE;
+        IMPLEMENT_IINTERFACE_O;
 
         CDefaultNodeCreator(byte _flags) : flags(_flags) { }
 
@@ -986,7 +986,7 @@ public:
         }
         currentNode = NULL;
     }
-    virtual IPropertyTree *create(const char *tag)
+    virtual IPropertyTree *create(const char *tag) override
     {
         return nodeCreator->create(tag);
     }

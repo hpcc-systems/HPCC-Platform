@@ -109,7 +109,8 @@ size32_t SegMonitorList::getSize() const
 
 void SegMonitorList::checkSize(size32_t keyedSize, char const * keyname)
 {
-    if (getSize() != keyedSize)
+    size32_t segSize = getSize();
+    if (segSize > keyedSize)
     {
         StringBuffer err;
         err.appendf("Key size mismatch on key %s - key size is %u, expected %u", keyname, keyedSize, getSize());
@@ -117,6 +118,8 @@ void SegMonitorList::checkSize(size32_t keyedSize, char const * keyname)
         EXCLOG(e, err.str());
         throw e;
     }
+    else if (segSize < keyedSize)
+        segMonitors.append(*createWildKeySegmentMonitor(segSize, keyedSize-segSize));
 }
 
 void SegMonitorList::setLow(unsigned segno, void *keyBuffer) const
@@ -706,6 +709,16 @@ public:
             return reinterpret_cast<byte const *>(keyBuffer);
     }
 
+    inline size32_t queryRowSize()
+    {
+        return keyCursor ? keyCursor->getSize() : 0;
+    }
+
+    inline unsigned __int64 querySequence()
+    {
+        return keyCursor ? keyCursor->getSequence() : 0;
+    }
+
     inline offset_t queryFpos()
     {
         return lookupFpos;
@@ -737,11 +750,14 @@ public:
                 lookupFpos = keyCursor->getFPos();
                 unsigned i = 0;
                 matched = true;
-                for (; i <= lastSeg; i++)
+                if (segs.segMonitors.length())
                 {
-                    matched = segs.segMonitors.item(i).matchesBuffer(keyBuffer);
-                    if (!matched)
-                        break;
+                    for (; i <= lastSeg; i++)
+                    {
+                        matched = segs.segMonitors.item(i).matchesBuffer(keyBuffer);
+                        if (!matched)
+                            break;
+                    }
                 }
                 if (matched)
                 {
@@ -3178,7 +3194,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
                 }
             }
         }
-        builder->finish();
+        builder->finish(nullptr, nullptr);
         out->flush();
     }
 

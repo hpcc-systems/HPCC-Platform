@@ -74,6 +74,7 @@
 #include "thorplugin.hpp"
 #include "keybuild.hpp"
 #include "thorstrand.hpp"
+#include "rtldynfield.hpp"
 
 #define MAX_HTTP_HEADERSIZE 8000
 #define MIN_PAYLOAD_SIZE 800
@@ -12013,12 +12014,11 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
             metadata.setown(createPTree("metadata", ipt_fast));
         metadata->setProp("_record_ECL", helper.queryRecordECL());
 
-        void * layoutMetaBuff;
-        size32_t layoutMetaSize;
-        if(helper.getIndexLayout(layoutMetaSize, layoutMetaBuff))
+        if (helper.queryOutputMeta() && helper.queryOutputMeta()->queryTypeInfo())
         {
-            metadata->setPropBin("_record_layout", layoutMetaSize, layoutMetaBuff);
-            rtlFree(layoutMetaBuff);
+            MemoryBuffer out;
+            dumpTypeInfo(out, helper.queryOutputMeta()->queryTypeInfo(), true);
+            metadata->setPropBin("_rtlType", out.length(), out.toByteArray());
         }
     }
 
@@ -12119,10 +12119,7 @@ public:
                 }
                 reccount++;
             }
-            if(metadata)
-                builder->finish(metadata,&fileCrc);
-            else
-                builder->finish(&fileCrc);
+            builder->finish(metadata, &fileCrc);
         }
     }
 
@@ -12217,12 +12214,20 @@ public:
 
         properties.setPropInt("@fileCrc", fileCrc);
         properties.setPropInt("@formatCrc", helper.getFormatCrc());
+        // Legacy record layout info
         void * layoutMetaBuff;
         size32_t layoutMetaSize;
         if(helper.getIndexLayout(layoutMetaSize, layoutMetaBuff))
         {
             properties.setPropBin("_record_layout", layoutMetaSize, layoutMetaBuff);
             rtlFree(layoutMetaBuff);
+        }
+        // New record layout info
+        if (helper.queryOutputMeta() && helper.queryOutputMeta()->queryTypeInfo())
+        {
+            MemoryBuffer out;
+            dumpTypeInfo(out, helper.queryOutputMeta()->queryTypeInfo(), true);
+            properties.setPropBin("_rtlType", out.length(), out.toByteArray());
         }
     }
 
@@ -23724,12 +23729,15 @@ public:
         sorted = (flags & TIRunordered) == 0;
         isLocal = _graphNode.getPropBool("att[@name='local']/@value") && queryFactory.queryChannel()!=0;
         rtlDataAttr indexLayoutMeta;
-        size32_t indexLayoutSize;
-        if(!indexHelper->getIndexLayout(indexLayoutSize, indexLayoutMeta.refdata()))
+        size32_t indexLayoutSize = 0;
+        if(indexHelper->getIndexLayout(indexLayoutSize, indexLayoutMeta.refdata()))
+        {
+            MemoryBuffer m;
+            m.setBuffer(indexLayoutSize, indexLayoutMeta.getdata());
+            activityMeta.setown(deserializeRecordMeta(m, true));
+        }
+        else
             assertex(indexLayoutSize==0);
-        MemoryBuffer m;
-        m.setBuffer(indexLayoutSize, indexLayoutMeta.getdata());
-        activityMeta.setown(deserializeRecordMeta(m, true));
         enableFieldTranslation = queryFactory.queryOptions().enableFieldTranslation;
         translatorArray.setown(new TranslatorArray);
         variableFileName = allFilesDynamic || _queryFactory.isDynamic() || ((flags & (TIRvarfilename|TIRdynamicfilename)) != 0);

@@ -2195,6 +2195,17 @@ bool isIntegralType(ITypeInfo * type)
     return false;
 }
 
+bool isSimpleIntegralType(ITypeInfo * type)
+{
+    switch (type->getTypeCode())
+    {
+    case type_int:
+    case type_swapint:
+        return true;
+    }
+    return false;
+}
+
 bool isPatternType(ITypeInfo * type)
 {
     switch(type->getTypeCode())

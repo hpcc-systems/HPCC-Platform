@@ -242,6 +242,7 @@ extern DEFTYPE_API ITypeInfo * getPromotedCompareType(ITypeInfo * left, ITypeInf
 extern DEFTYPE_API bool isNumericType(ITypeInfo * type);
 extern DEFTYPE_API bool isStringType(ITypeInfo * type);
 extern DEFTYPE_API bool isSimpleStringType(ITypeInfo * type);
+extern DEFTYPE_API bool isSimpleIntegralType(ITypeInfo * type);
 extern DEFTYPE_API bool isIntegralType(ITypeInfo * type);
 extern DEFTYPE_API bool isPatternType(ITypeInfo * type);
 extern DEFTYPE_API bool isUnicodeType(ITypeInfo * type);

@@ -18,6 +18,9 @@
 #include "jliball.hpp"
 #include "jhtree.hpp"
 #include "ctfile.hpp"
+#include "rtlrecord.hpp"
+#include "rtlformat.hpp"
+#include "eclhelper_dyn.hpp"
 
 void fatal(const char *format, ...) __attribute__((format(printf, 1, 2)));
 void fatal(const char *format, ...)
@@ -35,16 +38,23 @@ void fatal(const char *format, ...)
 
 bool optHex = false;
 bool optRaw = false;
+bool optFullHeader = false;
+bool optHeader = false;
+StringArray files;
 
 void usage()
 {
-    fprintf(stderr, "Usage: dumpkey dataset [options]\n"
+    fprintf(stderr, "Usage: dumpkey [options] dataset [dataset...]\n"
         "Options:\n"
         "  node=[n]            - dump node n (0 = just header)\n"
         "  fpos=[n]            - dump node at offset fpos\n"
-        "  recs=[n]            - dump n rows\n"
+        "  recs=[n]            - output n rows\n"
+        "  fields=[fieldnames] - output specified fields only\n"
+        "  filter=[filter]     - filter rows\n"
         "  -H                  - hex display\n"
         "  -R                  - raw output\n"
+        "  -fullheader         - output full header info for each file\n"
+        "  -header             - output minimal header info for each file\n"
                     );
     fflush(stderr);
     releaseAtoms();
@@ -54,17 +64,16 @@ void usage()
 
 void doOption(const char *opt)
 {
-    switch (toupper(opt[1]))
-    {
-    case 'H':
+    if (streq(opt, "-H"))
         optHex = true;
-        break;
-    case 'R':
+    else if (streq(opt, "-R"))
         optRaw = true;
-        break;
-    default:
+    else if (streq(opt, "-header"))
+        optHeader = true;
+    else if (streq(opt, "-fullheader"))
+        optFullHeader = true;
+    else
         usage();
-    }
 }
 
 int main(int argc, const char **argv)
@@ -75,116 +84,187 @@ int main(int argc, const char **argv)
     _setmode( _fileno( stdin ), _O_BINARY );
 #endif
     Owned<IProperties> globals = createProperties("dumpkey.ini", true);
+    StringArray filters;
     for (int i = 1; i < argc; i++)
     {
         if (argv[i][0] == '-')
             doOption(argv[i]);
+        else if (strncmp(argv[i], "filter=", 7)==0)
+            filters.append(argv[i]+7);
         else if (strchr(argv[i], '='))
             globals->loadProp(argv[i]);
         else
-            globals->setProp("keyfile", argv[i]);
+            files.append(argv[i]);
     }
-    try
+    StringBuffer logname("dumpkey.");
+    logname.append(GetCachedHostName()).append(".");
+    StringBuffer lf;
+    openLogFile(lf, logname.append("log").str());
+    ForEachItemIn(idx, files)
     {
-        StringBuffer logname("dumpkey.");
-        logname.append(GetCachedHostName()).append(".");
-        StringBuffer lf;
-        openLogFile(lf, logname.append("log").str());
-        
-        Owned <IKeyIndex> index;
-        const char * keyName = globals->queryProp("keyfile");
-        if (keyName)
+        try
+        {
+            Owned <IKeyIndex> index;
+            const char * keyName = files.item(idx);
             index.setown(createKeyIndex(keyName, 0, false, false));
-        else
-            usage();
-        Owned <IKeyCursor> cursor = index->getCursor(NULL);
-
-        size32_t key_size = index->keySize();
-        Owned<IFile> in = createIFile(keyName);
-        Owned<IFileIO> io = in->open(IFOread);
-        if (!io)
-            throw MakeStringException(999, "Failed to open file %s", keyName);
-        Owned<CKeyHdr> header = new CKeyHdr;
-        MemoryAttr block(sizeof(KeyHdr));
-        io->read(0, sizeof(KeyHdr), (void *)block.get());
-        header->load(*(KeyHdr*)block.get());
-        unsigned nodeSize = header->getNodeSize();
-
-        if (!optRaw)
-        {
-            printf("Key '%s'\nkeySize=%d NumParts=%x, Top=%d\n", keyName, key_size, index->numParts(), index->isTopLevelKey());
-            printf("File size = %" I64F "d, nodes = %" I64F "d\n", in->size(), in->size() / nodeSize - 1);
-            printf("rootoffset=%" I64F "d[%" I64F "d]\n", header->getRootFPos(), header->getRootFPos()/nodeSize);
-        }
-        char *buffer = (char*)alloca(key_size);
-
-        if (globals->hasProp("node"))
-        {
-            if (stricmp(globals->queryProp("node"), "all")==0)
+            size32_t key_size = index->keySize();  // NOTE - in variable size case, this is 32767
+            unsigned nodeSize = index->getNodeSize();
+            if (optFullHeader)
             {
+                Owned<IFile> in = createIFile(keyName);
+                Owned<IFileIO> io = in->open(IFOread);
+                if (!io)
+                    throw MakeStringException(999, "Failed to open file %s", keyName);
+                Owned<CKeyHdr> header = new CKeyHdr;
+                MemoryAttr block(sizeof(KeyHdr));
+                io->read(0, sizeof(KeyHdr), (void *)block.get());
+                header->load(*(KeyHdr*)block.get());
+
+                printf("Key '%s'\nkeySize=%d NumParts=%x, Top=%d\n", keyName, key_size, index->numParts(), index->isTopLevelKey());
+                printf("File size = %" I64F "d, nodes = %" I64F "d\n", in->size(), in->size() / nodeSize - 1);
+                printf("rootoffset=%" I64F "d[%" I64F "d]\n", header->getRootFPos(), header->getRootFPos()/nodeSize);
+                Owned<IPropertyTree> metadata = index->getMetadata();
+                if (metadata)
+                {
+                    StringBuffer xml;
+                    toXML(metadata, xml);
+                    printf("MetaData:\n%s\n", xml.str());
+                }
+            }
+            else if (optHeader)
+            {
+                if (idx)
+                    printf("\n");
+                printf("%s:\n\n", keyName);
+            }
+
+            if (globals->hasProp("node"))
+            {
+                if (stricmp(globals->queryProp("node"), "all")==0)
+                {
+                }
+                else
+                {
+                    int node = globals->getPropInt("node");
+                    if (node != 0)
+                        index->dumpNode(stdout, node * nodeSize, globals->getPropInt("recs", 0), optRaw);
+                }
+            }
+            else if (globals->hasProp("fpos"))
+            {
+                index->dumpNode(stdout, globals->getPropInt("fpos"), globals->getPropInt("recs", 0), optRaw);
             }
             else
             {
-                int node = globals->getPropInt("node");
-                if (node != 0)
-                    index->dumpNode(stdout, node * nodeSize, globals->getPropInt("recs", 0), optRaw);
-            }
-        }
-        else if (globals->hasProp("fpos"))
-        {
-            index->dumpNode(stdout, globals->getPropInt("fpos"), globals->getPropInt("recs", 0), optRaw);
-        }
-        else
-        {
-            bool backwards=false;
-            bool ok;
-            if (globals->hasProp("end"))
-            {
-                memset(buffer, 0, key_size);
-                strcpy(buffer, globals->queryProp("end"));
-                ok = cursor->ltEqual(buffer, buffer);
-                backwards = true;
-            }
-            else if (globals->hasProp("start"))
-            {
-                memset(buffer, 0, key_size);
-                strcpy(buffer, globals->queryProp("start"));
-                ok = cursor->gtEqual(buffer, buffer);
-            }
-            else
-                ok = cursor->first(buffer);
-            
-            unsigned count = globals->getPropInt("recs", 1);
-            while (ok && count--)
-            {
-                offset_t pos = cursor->getFPos();
-                unsigned __int64 seq = cursor->getSequence();
-                size32_t size = cursor->getSize();
-                if (optRaw)
+                Owned<IKeyManager> manager = createLocalKeyManager(index, key_size, NULL);
+                Owned<IPropertyTree> metadata = index->getMetadata();
+                Owned<IOutputMetaData> diskmeta;
+                Owned<IOutputMetaData> translatedmeta;
+                ArrayOf<const RtlFieldInfo *> fields;  // Note - the lifetime of the array needs to extend beyond the lifetime of outmeta. The fields themselves are shared with diskmeta, and do not need to be released.
+                Owned<IOutputMetaData> outmeta;
+                Owned<IHThorIndexReadArg> helper;
+                Owned<IXmlWriterExt> writer;
+                class MyIndexCallback : public CInterfaceOf<IThorIndexCallback>
                 {
-                    fwrite(buffer, 1, size, stdout);
-                }
-                else if (optHex)
+                public:
+                    MyIndexCallback(IKeyManager *_manager) : manager(_manager) {}
+                    virtual unsigned __int64 getFilePosition(const void * row)
+                    {
+                        return manager->queryFpos();
+                    }
+                    virtual byte * lookupBlob(unsigned __int64 id)
+                    {
+                        UNIMPLEMENTED;
+                    }
+                    Linked<IKeyManager> manager;
+                } callback(manager);
+                unsigned count = globals->getPropInt("recs", 1);
+                const RtlRecordTypeInfo *outRecType = nullptr;
+                if (metadata && metadata->hasProp("_rtlType"))
                 {
-                    for (unsigned i = 0; i < size; i++)
-                        printf("%02x", ((unsigned char) buffer[i]) & 0xff);
-                    printf("  :%" I64F "u:%012" I64F "x\n", seq, pos);
+                    MemoryBuffer layoutBin;
+                    metadata->getPropBin("_rtlType", layoutBin);
+                    diskmeta.setown(createTypeInfoOutputMetaData(layoutBin, &callback));
+                    writer.setown(new SimpleOutputWriter);
+                    if (globals->hasProp("fields"))
+                    {
+                        StringArray fieldNames;
+                        fieldNames.appendList(globals->queryProp("fields"), ",");
+                        const RtlRecord &inrec = diskmeta->queryRecordAccessor(true);
+                        size32_t minRecSize = 0;
+                        ForEachItemIn(idx, fieldNames)
+                        {
+                            unsigned fieldNum = inrec.getFieldNum(fieldNames.item(idx));
+                            if (fieldNum == (unsigned) -1)
+                                throw MakeStringException(0, "Requested output field '%s' not found", fieldNames.item(idx));
+                            fields.append(inrec.queryOriginalField(fieldNum));
+                            minRecSize += inrec.queryType(fieldNum)->getMinSize();
+                        }
+                        fields.append(nullptr);
+                        outRecType = new RtlRecordTypeInfo(type_record, minRecSize, fields.getArray(0));
+                        outmeta.setown(new CDynamicOutputMetaData(*outRecType));
+                    }
+                    else
+                        outmeta.set(diskmeta);
+                    helper.setown(createIndexReadArg(keyName, diskmeta.getLink(), outmeta.getLink(), count, 0, (uint64_t) -1));
+                    helper->setCallback(&callback);
+                    if (filters.ordinality())
+                    {
+                        IDynamicIndexReadArg *arg = QUERYINTERFACE(helper.get(), IDynamicIndexReadArg);
+                        assertex(arg);
+                        ForEachItemIn(idx, filters)
+                        {
+                            arg->addFilter(filters.item(idx));
+                        }
+                    }
+                    helper->createSegmentMonitors(manager);
+                    count = helper->getChooseNLimit(); // Just because this is testing out the createIndexReadArg functionality
                 }
-                else
-                    printf("%.*s  :%" I64F "u:%012" I64F "x\n", size, buffer, seq, pos);
-                if (backwards)
-                    ok = cursor->prev(buffer);
-                else
-                    ok = cursor->next(buffer);
+                manager->finishSegmentMonitors();
+                manager->reset();
+                while (manager->lookup(true) && count--)
+                {
+                    offset_t pos;
+                    byte const * buffer = manager->queryKeyBuffer(pos);
+                    size32_t size = manager->queryRowSize();
+                    unsigned __int64 seq = manager->querySequence();
+                    if (optRaw)
+                    {
+                        fwrite(buffer, 1, size, stdout);
+                    }
+                    else if (optHex)
+                    {
+                        for (unsigned i = 0; i < size; i++)
+                            printf("%02x", ((unsigned char) buffer[i]) & 0xff);
+                        printf("  :%" I64F "u:%012" I64F "x\n", seq, pos);
+                    }
+                    else if (helper)
+                    {
+                        MemoryBuffer buf;
+                        MemoryBufferBuilder aBuilder(buf, 0);
+                        if (helper->transform(aBuilder, (const byte *) buffer))
+                        {
+                            outmeta->toXML((const byte *) buf.toByteArray(), *writer.get());
+                            printf("%s\n", writer->str());
+                            writer->clear();
+                        }
+                        else
+                            count++;  // Don't count this row as it was postfiltered
+                    }
+                    else
+                        printf("%.*s  :%" I64F "u:%012" I64F "x\n", size, buffer, seq, pos);
+                }
+                if (outRecType)
+                    outRecType->doDelete();
             }
         }
-    }
-    catch (IException *E)
-    {
-        StringBuffer msg;
-        E->errorMessage(msg);
-        E->Release();
-        fatal("%s", msg.str());
+        catch (IException *E)
+        {
+            StringBuffer msg;
+            E->errorMessage(msg);
+            printf("%s\n", msg.str());
+            E->Release();
+        }
     }
     releaseAtoms();
     ExitModuleObjects();

@@ -134,7 +134,7 @@ public:
     // Multi routines
     unsigned multiOrdinality() const;
     const CDfsLogicalFileName &multiItem(unsigned idx) const;
-    const void resolveWild();  // only for multi
+    void resolveWild();  // only for multi
     IPropertyTree *createSuperTree() const;
     void allowOsPath(bool allow=true) { allowospath = allow; } // allow local OS path to be specified
     void setAllowWild(bool b=true) { allowWild = b; } // allow wildcards

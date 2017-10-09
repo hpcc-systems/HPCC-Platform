@@ -423,7 +423,7 @@ public:
     ~CKeyWriter()
     {
         if (keyBuilder)
-            keyBuilder->finish();
+            keyBuilder->finish(nullptr, nullptr);
     }
 
     void put(RowBuffer & buffer)

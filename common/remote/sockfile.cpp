@@ -3038,7 +3038,19 @@ public:
     {
         if (!remoteSupport())
             return directKM->queryRecordSize();
+        return currentSize; // this is wrong I think
+    }
+    virtual size32_t queryRowSize() override
+    {
+        if (!remoteSupport())
+            return directKM->queryRowSize();
         return currentSize;
+    }
+    virtual unsigned __int64 querySequence() override
+    {
+        if (!remoteSupport())
+            return directKM->querySequence();
+        UNIMPLEMENTED;
     }
     virtual bool lookup(bool exact) override
     {

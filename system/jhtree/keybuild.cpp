@@ -348,11 +348,6 @@ public:
     }
 
 public:
-    void finish(unsigned *fileCrc)
-    {
-        finish(NULL, fileCrc);
-    }
-
     void finish(IPropertyTree * metadata, unsigned * fileCrc)
     {
         if (NULL != activeNode)
