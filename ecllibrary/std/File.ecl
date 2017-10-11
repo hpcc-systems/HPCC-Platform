@@ -921,4 +921,13 @@ EXPORT varstring fPromoteSuperFileList(set of varstring superNames, varstring ad
 EXPORT PromoteSuperFileList(set of varstring superNames, varstring addHead='', boolean delTail=FALSE, boolean createOnlyOne=FALSE, boolean reverse=FALSE) :=
     lib_fileservices.FileServices.PromoteSuperFileList(superNames, addHead, delTail, createOnlyOne, reverse);
 
+/**
+ * Returns the full URL to an ESP server process
+ *
+ * @return              A string containing the full URL to an ESP server process
+                        (typically the first one defined in the configuration); will
+ *                      return an empty string if a ESP server process cannot be found
+ */
+EXPORT varstring GetEspURL() := lib_fileservices.FileServices.GetEspURL();
+
 END;
