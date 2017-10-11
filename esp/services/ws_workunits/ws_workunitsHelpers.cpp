@@ -1469,7 +1469,7 @@ void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, un
                 Owned<IResultSetCursor> cursor(result->createCursor());
                 cursor->first();
 
-                if (cursor->getIsAll(0))
+                if (r.getResultIsAll())
                 {
                     value.set("<All/>");
                 }

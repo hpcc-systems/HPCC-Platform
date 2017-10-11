@@ -2663,11 +2663,11 @@ unsigned getResultCSV(IStringVal& ret, INewResultSet* result, const char* name, 
     csvOptions.terminator.set("\n");
     csvOptions.includeHeader = true;
     Owned<CommonCSVWriter> writer = new CommonCSVWriter(XWFtrim, csvOptions);
-    Owned<IResultSetCursor> cursor = result->createCursor();
-    const IResultSetMetaData & meta = cursor->queryResultSet()->getMetaData();
+    const IResultSetMetaData & meta = result->getMetaData();
     getCSVHeaders(meta, writer, headerLayer);
     writer->finishCSVHeaders();
 
+    Owned<IResultSetCursor> cursor = result->createCursor();
     count = writeResultCursorXml(*writer, cursor, name, start, count, NULL);
     ret.set(writer->str());
     return count;
@@ -2678,7 +2678,6 @@ void appendResultSet(MemoryBuffer& mb, INewResultSet* result, const char *name, 
     if (!result)
         return;
 
-    Owned<IResultSetCursor> cursor(result->createCursor());
     total=result->getNumRows();
 
     if(bin)

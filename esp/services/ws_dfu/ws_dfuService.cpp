@@ -3869,8 +3869,7 @@ bool CWsDfuEx::onDFUGetDataColumns(IEspContext &context, IEspDFUGetDataColumnsRe
             {
                 IArrayOf<IEspDFUDataColumn> dataKeyedColumns[MAX_KEY_ROWS];
                 IArrayOf<IEspDFUDataColumn> dataNonKeyedColumns[MAX_KEY_ROWS];
-                Owned<IResultSetCursor> cursor = result->createCursor();
-                const IResultSetMetaData & meta = cursor->queryResultSet()->getMetaData();
+               const IResultSetMetaData & meta = result->getMetaData();
                 int columnCount = meta.getColumnCount();
                 int keyedColumnCount = meta.getNumKeyedColumns();
                 unsigned columnSize = 0;
@@ -4587,8 +4586,7 @@ bool CWsDfuEx::onDFUGetFileMetaData(IEspContext &context, IEspDFUGetFileMetaData
         if (!result)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "CWsDfuEx::onDFUGetFileMetaData: Failed to access FileResultSet for %s.", fileName);
 
-        Owned<IResultSetCursor> cursor = result->createCursor();
-        CDFUFileMetaDataReader dataReader(context, cursor->queryResultSet()->getMetaData());
+        CDFUFileMetaDataReader dataReader(context, result->getMetaData());
         resp.setTotalColumnCount(dataReader.getTotalColumnCount());
         resp.setKeyedColumnCount(dataReader.getKeyedColumnCount());
         resp.setDataColumns(dataReader.getDataColumns());
@@ -4638,8 +4636,6 @@ bool CWsDfuEx::onDFUBrowseData(IEspContext &context, IEspDFUBrowseDataRequest &r
         bool bSchemaOnly=req.getSchemaOnly() ? req.getSchemaOnly() : false;
         bool bDisableUppercaseTranslation = req.getDisableUppercaseTranslation() ? req.getDisableUppercaseTranslation() : false;
 
-#define HPCCBROWSER 1
-#ifdef HPCCBROWSER
         const char* filterBy = req.getFilterBy();
         const char* showColumns = req.getShowColumns();
 
@@ -4745,231 +4741,6 @@ bool CWsDfuEx::onDFUBrowseData(IEspContext &context, IEspDFUBrowseDataRequest &r
             if (req.getCountForGoback())
                 resp.setCountForGoback(req.getCountForGoback());
         }
-#else
-        StringBuffer username;
-        context.getUserID(username);
-        double version = context.getClientVersion();
-        const char* passwd = context.queryPassword();
-
-        StringBuffer eclqueue, cluster;
-        Owned<IUserDescriptor> userdesc;
-        try
-        {
-            userdesc.setown(createUserDescriptor());
-            userdesc->set(username.str(), passwd, context.querySessionToken(), context.querySignature());
-            Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalNameStr.str(), userdesc);
-            if(df)
-            {
-                const char* wuid = df->queryAttributes().queryProp("@workunit");
-                if (wuid && *wuid)
-                {
-                    CWUWrapper wu(wuid, context);
-                    if (wu)
-                    {
-                        SCMStringBuffer eclqueue0, cluster0;
-                        eclqueue.append(wu->getQueue(eclqueue0).str());
-                        cluster.append(wu->getClusterName(cluster0).str());
-                    }
-                }
-            }
-        }
-        catch(...)
-        {
-            ;
-        }
-
-        Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), *context.queryUser());
-        Owned<INewResultSet> result;
-        if (eclqueue && *eclqueue && cluster && *cluster)
-        {
-            result.setown(resultSetFactory->createNewFileResultSet(logicalNameStr.str(), eclqueue, cluster));
-        }
-        else if (m_clusterName.length() > 0 && m_eclServerQueue.length() > 0)
-        {
-            result.setown(resultSetFactory->createNewFileResultSet(logicalNameStr.str(), m_eclServerQueue.str(), m_clusterName.str()));
-        }
-        else
-        {
-            result.setown(resultSetFactory->createNewFileResultSet(logicalNameStr.str(), NULL, NULL));
-        }
-        const IResultSetMetaData &meta = result->getMetaData();
-        unsigned columnCount = meta.getColumnCount();
-
-        StringArray filterByNames, filterByValues;
-        IArrayOf<IEspDFUDataColumn> dataColumns;
-        if (version > 1.04 && columnCount > 0)
-        {
-            int lenShowCols = 0, showCols[1024];
-            const char* showColumns = req.getShowColumns();
-            char *pShowColumns =  (char*) showColumns;
-            while (pShowColumns && *pShowColumns)
-            {
-                StringBuffer buf;
-                while (pShowColumns && isdigit(pShowColumns[0]))
-                {
-                    buf.append(pShowColumns[0]);
-                    pShowColumns++;
-                }
-                if (buf.length() > 0)
-                {
-                    showCols[lenShowCols] = atoi(buf.str());
-                    lenShowCols++;
-                }
-
-                if (!pShowColumns || !*pShowColumns)
-                    break;
-                pShowColumns++;
-            }
-
-            for(int col = 0; col < columnCount; col++)
-            {
-                Owned<IEspDFUDataColumn> item = createDFUDataColumn("","");
-
-                SCMStringBuffer scmbuf;
-                meta.getColumnLabel(scmbuf, col);
-                item->setColumnLabel(scmbuf.str());
-                if (!showColumns || !*showColumns)
-                {
-                    item->setColumnSize(1); //Show this column
-                    dataColumns.append(*item.getLink());
-                    continue;
-                }
-                else
-                {
-                    item->setColumnSize(0); //not show this column
-                }
-
-                for(int col1 = 0; col1 < lenShowCols; col1++)
-                {
-                    if (col == showCols[col1])
-                    {
-                        item->setColumnSize(1); //Show this column
-                        break;
-                    }
-                }
-                dataColumns.append(*item.getLink());
-            }
-
-            const char* filterBy = req.getFilterBy();
-            if (filterBy && *filterBy)
-            {
-                parseTwoStringArrays(filterBy, filterByNames, filterByValues);
-            }
-
-            if (req.getStartForGoback())
-                resp.setStartForGoback(req.getStartForGoback());
-            if (req.getCountForGoback())
-                resp.setCountForGoback(req.getCountForGoback());
-        }
-
-        StringBuffer filterByStr, filterByStr0;
-        unsigned int max_name_length = 3; //max length for name length
-        unsigned int max_value_length = 4; //max length for value length:
-        filterByStr0.appendf("%d%d", max_name_length, max_value_length);
-        if (columnCount > 0 && filterByNames.length() > 0)
-        {
-            Owned<IFilteredResultSet> filter = result->createFiltered();
-
-            for (int ii = 0; ii < filterByNames.length(); ii++)
-            {
-                const char* columnName = filterByNames.item(ii);
-                const char* columnValue = filterByValues.item(ii);
-                if (columnName && *columnName && columnValue && *columnValue)
-                {
-                    int col = 0;
-                    for(col = 0; col < columnCount; col++)
-                    {
-                        SCMStringBuffer scmbuf;
-                        meta.getColumnLabel(scmbuf, col);
-                        if (stricmp(scmbuf.str(), columnName) == 0)
-                        {
-                            filter->addFilter(col, columnValue);
-                            filterByStr.appendf("%s[%s]", columnName, columnValue);
-                            filterByStr0.appendf("%03d%04d%s%s", strlen(columnName), strlen(columnValue), columnName, columnValue);
-
-                            break;
-                        }
-                    }
-                    if (col == columnCount)
-                    {
-                        throw MakeStringException(0,"The filter %s not defined", columnName);
-                    }
-                }
-            }
-
-            result.setown(filter->create());
-        }
-
-        StringBuffer text;
-        const char* schemaName = "myschema";
-        Owned<IResultSetCursor> cursor = result->createCursor();
-
-        text.append("<XmlSchema name=\"").append(schemaName).append("\">");
-        const IResultSetMetaData & meta1 = cursor->queryResultSet()->getMetaData();
-        StringBufferAdaptor adaptor(text);
-        meta1.getXmlSchema(adaptor, false);
-        text.append("</XmlSchema>").newline();
-
-        text.append("<Dataset");
-        //if (name)
-        //  text.append(" name=\"").append(name).append("\" ");
-        text.append(" xmlSchema=\"").append(schemaName).append("\" ");
-        text.append(">").newline();
-
-        //__int64 total=0;
-        __int64 total=result->getNumRows();
-        __int64 read=0;
-        try
-        {
-            for(bool ok=cursor->absolute(start);ok;ok=cursor->next())
-            {
-                //total++;
-                //if(read < count)
-                {
-                    text.append(" ");
-                    StringBufferAdaptor adaptor2(text);
-                    cursor->getXmlRow(adaptor2);
-                    text.newline();
-
-                    read++;
-                }
-                if(read>=count)
-                    break;
-            }
-        }
-        catch(IException* e)
-        {
-            if ((version < 1.08) || (e->errorCode() != FVERR_FilterTooRestrictive))
-                throw e;
-
-            e->Release();
-            resp.setMsgToDisplay("This search is timed out due to the restrictive filter. There may be more records.");
-        }
-
-        if (count > read)
-            count = read;
-
-        text.append("</Dataset>").newline();
-        ///DBGLOG("Dataset:%s", text.str());
-
-        MemoryBuffer buf;
-        struct MemoryBuffer2IStringVal : public CInterface, implements IStringVal
-        {
-             MemoryBuffer2IStringVal(MemoryBuffer & _buffer) : buffer(_buffer) {}
-             IMPLEMENT_IINTERFACE;
-
-             virtual const char * str() const { UNIMPLEMENTED;  }
-             virtual void set(const char *val) { buffer.append(strlen(val),val); }
-             virtual void clear() { } // clearing when appending does nothing
-             virtual void setLen(const char *val, unsigned length) { buffer.append(length, val); }
-             virtual unsigned length() const { return buffer.length(); };
-             MemoryBuffer & buffer;
-        } adaptor0(buf);
-
-        adaptor0.set(text.str());
-        buf.append(0);
-        resp.setResult(buf.toByteArray());
-#endif
 
         //resp.setFilterBy(filterByStr.str());
         if (filterByStr.length() > 0)
@@ -5699,61 +5470,10 @@ int CWsDfuEx::browseRelatedFileDataSet(double version, IRelatedBrowseFile * file
         {
             for(bool ok=cursor->absolute(start);ok;ok=cursor->next())
             {
-                if (rows > 200)
-                    throw MakeStringException(ECLWATCH_TOO_MANY_DATA_ROWS,"Too many data rows selected.");
 
                 StringBuffer text;
                 StringBufferAdaptor adaptor2(text);
                 cursor->getXmlRow(adaptor2);
-
-#ifdef TESTDATASET
-text.clear();
-if (depth < 1)
-{
-    if (rows < 1)
-    {
-        text.append("<Row><state>AA</state><rtype>ab</rtype><id>abc</id><seq>12</seq></Row>");
-    }
-    else if (rows < 2)
-    {
-        text.append("<Row><state>BB</state><rtype>ba</rtype><id>abc</id><seq>13</seq></Row>");
-    }
-    else if (rows < 3)
-    {
-        text.append("<Row><state>CC</state><rtype>ca</rtype><id>bcd</id><seq>13</seq></Row>");
-    }
-    else
-    {
-        break;
-    }
-}
-else
-{
-    if (read < 1)
-    {
-        if (rows > 0)
-            break;
-        text.append("<Row><date_first_reported>20090511</date_first_reported><msa>6200</msa><sid>abc</sid><seq>12</seq></Row>");
-    }
-    else if (read < 2)
-    {
-        if (rows > 0)
-            break;
-        text.append("<Row><date_first_reported>20090512</date_first_reported><msa>6201</msa><sid>abc</sid><seq>13</seq></Row>");
-    }
-    else if (read < 3)
-    {
-        if (rows > 1)
-            break;
-        else if (rows > 0)
-            text.append("<Row><date_first_reported>20090514</date_first_reported><msa>6203</msa><sid>bcd</sid><seq>13</seq></Row>");
-        else
-            text.append("<Row><date_first_reported>20090513</date_first_reported><msa>6202</msa><sid>bcd</sid><seq>13</seq></Row>");
-    }
-}
-
-rows++;
-#endif
 
                 StringArray dataSetOutput0;
                 if (parentName && *parentName)
