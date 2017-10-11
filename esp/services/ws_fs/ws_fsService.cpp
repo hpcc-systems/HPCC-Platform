@@ -2224,7 +2224,7 @@ void CFileSprayEx::getDropZoneInfoByIP(double clientVersion, const char* ip, con
         destFileOut.set(destFileIn);
 
     if (!ip || !*ip)
-        throw MakeStringExceptionDirect(ECLWATCH_INVALID_IP, "Network address must be specified for a dropzone!");
+        throw MakeStringExceptionDirect(ECLWATCH_INVALID_IP, "Network address must be specified for a drop zone!");
 
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
     Owned<IConstEnvironment> constEnv = factory->openEnvironment();
@@ -2237,7 +2237,16 @@ void CFileSprayEx::getDropZoneInfoByIP(double clientVersion, const char* ip, con
         destFile.set(destFileIn);
         Owned<IConstDropZoneInfo> dropZone = constEnv->getDropZoneByAddressPath(ip, destFile.str());
         if (!dropZone)
-            throw MakeStringException(ECLWATCH_DROP_ZONE_NOT_FOUND, "Dropzone not found for network address %s.", ip);
+        {
+            if (constEnv->isDropZoneRestrictionEnabled())
+                throw MakeStringException(ECLWATCH_DROP_ZONE_NOT_FOUND, "No drop zone configured for '%s' and '%s'. Check your system drop zone configuration.", ip, destFile.str());
+            else
+            {
+                LOG(MCdebugInfo, unknownJob, "No drop zone configured for '%s' and '%s'. Check your system drop zone configuration.", ip, destFile.str());
+                return;
+            }
+        }
+
 
         SCMStringBuffer directory, maskBuf;
         dropZone->getDirectory(directory);
@@ -2251,7 +2260,15 @@ void CFileSprayEx::getDropZoneInfoByIP(double clientVersion, const char* ip, con
 
     Owned<IConstDropZoneInfoIterator> dropZoneItr = constEnv->getDropZoneIteratorByAddress(ip);
     if (dropZoneItr->count() < 1)
-        throw MakeStringException(ECLWATCH_DROP_ZONE_NOT_FOUND, "Dropzone not found for network address %s.", ip);
+    {
+        if (constEnv->isDropZoneRestrictionEnabled())
+            throw MakeStringException(ECLWATCH_DROP_ZONE_NOT_FOUND, "Drop zone not found for network address '%s'. Check your system drop zone configuration.", ip);
+        else
+        {
+            LOG(MCdebugInfo, unknownJob, "Drop zone not found for network address '%s'. Check your system drop zone configuration.", ip);
+            return;
+        }
+    }
 
     bool dzFound = false;
     ForEach(*dropZoneItr)
@@ -2274,10 +2291,23 @@ void CFileSprayEx::getDropZoneInfoByIP(double clientVersion, const char* ip, con
                 umask.set(dropZoneUMask.str());
         }
         else
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "> 1 dropzones found for network address %s.", ip);
+        {
+            if (constEnv->isDropZoneRestrictionEnabled())
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "> 1 drop zones found for network address '%s'.", ip);
+            else
+            {
+                LOG(MCdebugInfo, unknownJob, "> 1 drop zones found for network address '%s'.", ip);
+                return;
+            }
+        }
     }
     if (!dzFound)
-        throw MakeStringException(ECLWATCH_DROP_ZONE_NOT_FOUND, "No valid dropzone found for network address %s.", ip);
+    {
+        if (constEnv->isDropZoneRestrictionEnabled())
+            throw MakeStringException(ECLWATCH_DROP_ZONE_NOT_FOUND, "No valid drop zone found for network address '%s'. Check your system drop zone configuration.", ip);
+        else
+            LOG(MCdebugInfo, unknownJob, "No valid drop zone found for network address '%s'. Check your system drop zone configuration.", ip);
+    }
 }
 
 bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDesprayResponse &resp)
