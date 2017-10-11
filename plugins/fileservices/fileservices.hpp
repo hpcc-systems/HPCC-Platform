@@ -142,6 +142,7 @@ FILESERVICES_API void  FILESERVICES_CALL fsCreateExternalDirectory(ICodeContext 
 FILESERVICES_API char * FILESERVICES_CALL fsfGetLogicalFileAttribute(ICodeContext * ctx,const char *lfn,const char *attrname);
 FILESERVICES_API void FILESERVICES_CALL fsProtectLogicalFile(ICodeContext * ctx,const char *lfn,bool set);
 FILESERVICES_API void FILESERVICES_CALL fsDfuPlusExec(ICodeContext * ctx,const char *_cmd);
+FILESERVICES_API const char * FILESERVICES_CALL fsGetEspURL();
 
 }
 

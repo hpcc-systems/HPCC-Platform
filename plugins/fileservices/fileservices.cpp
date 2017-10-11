@@ -39,13 +39,14 @@
 #define USE_DALIDFS
 #define SDS_LOCK_TIMEOUT  10000
 
-#define FILESERVICES_VERSION "FILESERVICES 2.1.3"
+#define FILESERVICES_VERSION "FILESERVICES 2.1.4"
 
 static const char * compatibleVersions[] = {
     "FILESERVICES 2.1  [a68789cfb01d00ef6dc362e52d5eac0e]", // linux version
     "FILESERVICES 2.1.1",
     "FILESERVICES 2.1.2",
     "FILESERVICES 2.1.3",
+    "FILESERVICES 2.1.4",
     NULL };
 
 static const char * EclDefinition =
@@ -134,6 +135,7 @@ static const char * EclDefinition =
 "  varstring GetLogicalFileAttribute(const varstring lfn,const varstring attrname) : c,context,entrypoint='fsfGetLogicalFileAttribute'; \n"
 "  ProtectLogicalFile(const varstring lfn,boolean set=true) : c,context,entrypoint='fsProtectLogicalFile'; \n"
 "  DfuPlusExec(const varstring cmdline) : c,context,entrypoint='fsDfuPlusExec'; \n"
+"  varstring GetEspURL() : c,once,entrypoint='fsGetEspURL'; \n"
 "END;";
 
 #define WAIT_SECONDS 30
@@ -2507,6 +2509,58 @@ FILESERVICES_API void FILESERVICES_CALL fsDfuPlusExec(ICodeContext * ctx,const c
         EXCLOG(e,"fsDfuPlusExec");
         throw;
     }
+}
+
+FILESERVICES_API const char * FILESERVICES_CALL fsGetEspURL()
+{
+    Owned<IConstEnvironment> daliEnv = openDaliEnvironment();
+    Owned<IPropertyTree> env = getEnvironmentTree(daliEnv);
+
+    if (env.get())
+    {
+        StringBuffer espURL;
+        StringBuffer espInstanceComputerName;
+        StringBuffer bindingProtocol;
+        StringBuffer xpath;
+        StringBuffer instanceAddress;
+        StringBuffer espServiceType;
+
+        Owned<IPropertyTreeIterator> espProcessIter = env->getElements("Software/EspProcess");
+        ForEach(*espProcessIter)
+        {
+            Owned<IPropertyTreeIterator> espBindingIter = espProcessIter->query().getElements("EspBinding");
+            ForEach(*espBindingIter)
+            {
+                espBindingIter->query().getProp("@service", espURL.clear());
+                xpath.setf("Software/EspService[@name=\"%s\"]/Properties/@type", espURL.str());
+
+                if(env->getProp(xpath.str(), espServiceType.clear()))
+                {
+                    if (!espServiceType.isEmpty() && (strieq(espServiceType.str(), "WsSMC")))
+                    {
+                        if (espBindingIter->query().getProp("@protocol", bindingProtocol.clear()))
+                        {
+                            Owned<IPropertyTreeIterator> espInstanceIter = espProcessIter->query().getElements("Instance");
+                            ForEach(*espInstanceIter)
+                            {
+                                if (espInstanceIter->query().getProp("@computer", espInstanceComputerName.clear()))
+                                {
+                                    xpath.setf("Hardware/Computer[@name=\"%s\"]/@netAddress", espInstanceComputerName.str());
+                                    if (env->getProp(xpath.str(), instanceAddress.clear()))
+                                    {
+                                        espURL.setf("%s://%s:%d", bindingProtocol.str(), fsfResolveHostName(instanceAddress.str()), espBindingIter->query().getPropInt("@port", 8010));
+                                        return espURL.detach();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return NULL;
 }
 
 

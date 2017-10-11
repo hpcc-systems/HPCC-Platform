@@ -456,6 +456,10 @@ public:
             cmdLine.append(" -legacy");
         if (cmd.optCheckDirty)
             cmdLine.append(" -checkDirty");
+        if (cmd.optFastSyntax)
+            cmdLine.append(" --fastsyntax");
+        if (cmd.optNoStdInc)
+            cmdLine.append(" --nostdinc");
         if (cmd.optDebug)
             cmdLine.append(" -g");
         appendOptPath(cmdLine, 'I', cmd.optImpPath.str());
@@ -688,6 +692,10 @@ eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvItera
     if (iter.matchFlag(optLegacy, ECLOPT_LEGACY) || iter.matchFlag(optLegacy, ECLOPT_LEGACY_DASH))
         return EclCmdOptionMatch;
     if (iter.matchFlag(optCheckDirty, ECLOPT_CHECKDIRTY))
+        return EclCmdOptionMatch;
+    if (iter.matchFlag(optFastSyntax, ECLOPT_FAST_SYNTAX))
+        return EclCmdOptionMatch;
+    if (iter.matchFlag(optNoStdInc, ECLOPT_NO_STD_INC))
         return EclCmdOptionMatch;
     if (iter.matchFlag(optDebug, ECLOPT_DEBUG) || iter.matchFlag(optDebug, ECLOPT_DEBUG_DASH))
         return EclCmdOptionMatch;
