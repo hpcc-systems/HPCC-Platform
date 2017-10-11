@@ -50,7 +50,7 @@ public:
     inline COutputRowSerializer(unsigned _activityId) : CGlobalHelperClass(_activityId) { }
     RTLIMPLEMENT_IINTERFACE
 
-    virtual void serialize(IRowSerializerTarget & out, const byte * self) = 0;
+    virtual void serialize(IRowSerializerTarget & out, const byte * self) override = 0;
 };
 
 
@@ -62,7 +62,7 @@ public:
 
     inline void onCreate(ICodeContext * _ctx) { ctx = _ctx; }
 
-    virtual size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in) = 0;
+    virtual size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in) override = 0;
 
 protected:
     ICodeContext * ctx;
@@ -78,7 +78,7 @@ public:
 
     inline void onCreate(ICodeContext * _ctx) { ctx = _ctx; }
 
-    virtual void readAhead(IRowDeserializerSource & in) = 0;
+    virtual void readAhead(IRowDeserializerSource & in) override = 0;
 
 protected:
     ICodeContext * ctx;
@@ -138,8 +138,8 @@ public:
     CNormalizeChildIterator(IOutputMetaData & _recordSize) : iter(0, NULL, _recordSize) {}
     RTLIMPLEMENT_IINTERFACE
 
-    virtual byte * first(const void * parentRecord)         { init(parentRecord); return (byte *)iter.first(); }
-    virtual byte * next()                                   { return (byte *)iter.next(); }
+    virtual byte * first(const void * parentRecord) override         { init(parentRecord); return (byte *)iter.first(); }
+    virtual byte * next() override                                   { return (byte *)iter.next(); }
     virtual void init(const void * parentRecord) = 0;
 
     inline void setDataset(size32_t len, const void * data) { iter.setDataset(len, data); }
@@ -154,8 +154,8 @@ public:
     CNormalizeLinkedChildIterator() : iter(0, NULL) {}
     RTLIMPLEMENT_IINTERFACE
 
-    virtual byte * first(const void * parentRecord)         { init(parentRecord); return (byte *)iter.first(); }
-    virtual byte * next()                                   { return (byte *)iter.next(); }
+    virtual byte * first(const void * parentRecord) override         { init(parentRecord); return (byte *)iter.first(); }
+    virtual byte * next() override                                   { return (byte *)iter.next(); }
     virtual void init(const void * parentRecord) = 0;
 
     inline void setDataset(unsigned _numRows, const byte * * _rows) { iter.setDataset(_numRows, _rows); }
@@ -170,8 +170,8 @@ public:
     CNormalizeStreamedChildIterator() {}
     RTLIMPLEMENT_IINTERFACE
 
-    virtual byte * first(const void * parentRecord)         { init(parentRecord); return (byte *)iter.first(); }
-    virtual byte * next()                                   { return (byte *)iter.next(); }
+    virtual byte * first(const void * parentRecord) override         { init(parentRecord); return (byte *)iter.first(); }
+    virtual byte * next() override                                   { return (byte *)iter.next(); }
     virtual void init(const void * parentRecord) = 0;
 
     inline void setDataset(IRowStream * _streamed) { iter.init(_streamed); }
@@ -305,7 +305,7 @@ public:
     RtlRecordSize(const RtlRecordTypeInfo & fields) : offsetInformation(fields, true) {}
     RTLIMPLEMENT_IINTERFACE
 
-    virtual size32_t getRecordSize(const void * row)
+    virtual size32_t getRecordSize(const void * row) override
     {
         //Allocate a temporary offset array on the stack to avoid runtime overhead.
         unsigned numOffsets = offsetInformation.getNumVarFields() + 1;
@@ -314,12 +314,12 @@ public:
         return offsetCalculator.getRecordSize();
     }
 
-    virtual size32_t getFixedSize() const
+    virtual size32_t getFixedSize() const override
     {
         return offsetInformation.getFixedSize();
     }
     // returns 0 for variable row size
-    virtual size32_t getMinRecordSize() const
+    virtual size32_t getMinRecordSize() const override
     {
         return offsetInformation.getMinRecordSize();
     }
@@ -337,35 +337,48 @@ public:
     COutputMetaData();
     ~COutputMetaData();
 
-    virtual void toXML(const byte * self, IXmlWriter & out) {
-                                                                const RtlTypeInfo * type = queryTypeInfo();
-                                                                if (type)
-                                                                {
-                                                                    RtlFieldStrInfo dummyField("",NULL,type);
-                                                                    type->toXML(self, self, &dummyField, out);
-                                                                }
-                                                            }
-    virtual unsigned getVersion() const                     { return OUTPUTMETADATA_VERSION; }
-    virtual unsigned getMetaFlags()                         { return MDFhasserialize|MDFhasxml; }
+    virtual void toXML(const byte * self, IXmlWriter & out) override
+    {
+        const RtlTypeInfo * type = queryTypeInfo();
+        if (type)
+        {
+            RtlFieldStrInfo dummyField("",NULL,type);
+            type->toXML(self, self, &dummyField, out);
+        }
+    }
+    virtual unsigned getVersion() const override                     { return OUTPUTMETADATA_VERSION; }
+    virtual unsigned getMetaFlags() override                         { return MDFhasserialize|MDFhasxml; }
 
-    virtual void destruct(byte * self)                      {}
-    virtual IOutputMetaData * querySerializedDiskMeta()    { return this; }
-    virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId);
-    virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId);
-    virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId);
+    virtual void destruct(byte * self) override                      {}
+    virtual IOutputMetaData * querySerializedDiskMeta() override    { return this; }
+    virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId) override;
+    virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId) override;
+    virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId) override;
     //Default internal serializers are the same as the disk versions
-    virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId)
+    virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId) override
     {
         return createDiskSerializer(ctx, activityId);
     }
-    virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId)
+    virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) override
     {
         return createDiskDeserializer(ctx, activityId);
     }
-    virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) { }
-    virtual IOutputMetaData * queryChildMeta(unsigned i) { return NULL; }
+    virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) override{ }
+    virtual IOutputMetaData * queryChildMeta(unsigned i) override { return NULL; }
 
-    virtual const RtlRecord &queryRecordAccessor(bool expand) const;
+    virtual const RtlRecord &queryRecordAccessor(bool expand) const override final;
+    virtual size32_t getRecordSize(const void * data) override;
+
+    virtual size32_t getFixedSize() const override
+    {
+        return queryRecordAccessor(true).getFixedSize();
+    }
+    // returns 0 for variable row size
+    virtual size32_t getMinRecordSize() const override
+    {
+        return queryRecordAccessor(true).getMinRecordSize();
+    }
+
 
 protected:
     //This is the prefetch function that is actually generated by the code generator
@@ -374,6 +387,46 @@ protected:
     ISourceRowPrefetcher * defaultCreateDiskPrefetcher(ICodeContext * ctx, unsigned activityId);
     mutable RtlRecord *recordAccessor[2];
 };
+
+/**
+ * class CDynamicOutputMetaData
+ *
+ * An implementation of IOutputMetaData for use with a dynamically-created record type info structure
+ *
+ */
+
+class ECLRTL_API CDynamicOutputMetaData : public COutputMetaData
+{
+public:
+    CDynamicOutputMetaData(const RtlRecordTypeInfo & fields) : typeInfo(fields)
+    {
+    }
+
+    virtual const RtlTypeInfo * queryTypeInfo() const override { return &typeInfo; }
+protected:
+    const RtlTypeInfo &typeInfo;
+};
+
+/**
+ * class CDeserializedOutputMetaData
+ *
+ * An implementation of IOutputMetaData for use with serialized rtlTypeInfo information
+ *
+ */
+
+class ECLRTL_API CDeserializedOutputMetaData : public COutputMetaData
+{
+public:
+    CDeserializedOutputMetaData(MemoryBuffer &binInfo);
+    CDeserializedOutputMetaData(IPropertyTree &jsonInfo);
+    CDeserializedOutputMetaData(const char *json);
+
+    virtual const RtlTypeInfo * queryTypeInfo() const override { return typeInfo; }
+protected:
+    Owned<IRtlFieldTypeDeserializer> deserializer;
+    const RtlTypeInfo *typeInfo = nullptr;
+};
+
 
 class ECLRTL_API CFixedOutputMetaData : public COutputMetaData
 {

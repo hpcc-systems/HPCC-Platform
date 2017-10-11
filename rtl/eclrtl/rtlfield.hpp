@@ -164,8 +164,9 @@ struct ECLRTL_API RtlStringTypeInfo : public RtlTypeInfoBase
     virtual size32_t getMinSize() const override;
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const override;
-    size32_t buildNull(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field) const override;
+    virtual size32_t buildNull(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field) const override;
     virtual size32_t buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const override;
+    virtual size32_t buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t codepoints, const char *value) const override;
     virtual size32_t process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const override;
     virtual size32_t toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const override;
     virtual size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in, size32_t offset) const override;

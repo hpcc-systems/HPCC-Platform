@@ -57,6 +57,14 @@ interface IRtlFieldTypeDeserializer : public IInterface
     virtual const RtlTypeInfo *deserialize(const char *json) = 0;
 
     /*
+     * Create RtlTypeInfo structures from a serialized json representation
+     *
+     * @param jsonTree The json representation
+     * @return         Deserialized RtlTypeInfo structure
+     */
+     virtual const RtlTypeInfo *deserialize(IPropertyTree &jsonTree) = 0;
+
+    /*
      * Create RtlTypeInfo structures from a serialized binary representation
      *
      * @param buf  The binary representation
@@ -93,9 +101,20 @@ interface IRtlFieldTypeDeserializer : public IInterface
 
 };
 
+interface IDynamicTransform : public IInterface
+{
+    virtual void describe() const = 0;
+    virtual size32_t translate(ARowBuilder &builder, const byte *sourceRec) const = 0;
+    virtual bool canTranslate() const = 0;
+    virtual bool needsTranslate() const = 0;
+};
+
+extern ECLRTL_API const IDynamicTransform *createRecordTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo);
+
 extern ECLRTL_API IRtlFieldTypeDeserializer *createRtlFieldTypeDeserializer();
 
 extern ECLRTL_API StringBuffer &dumpTypeInfo(StringBuffer &ret, const RtlTypeInfo *t);
+
 extern ECLRTL_API MemoryBuffer &dumpTypeInfo(MemoryBuffer &ret, const RtlTypeInfo *t);
 
 /**

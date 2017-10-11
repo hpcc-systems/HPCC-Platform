@@ -28,45 +28,6 @@
 #include "hqlir.hpp"
 #include "hqlutil.hpp"
 
-/**
- * class CDynamicOutputMetaData
- *
- * An implementation of IOutputMetaData for use with a dynamically-created record type info structure
- *
- */
-
-class CDynamicOutputMetaData : public COutputMetaData
-{
-public:
-    CDynamicOutputMetaData(const RtlRecordTypeInfo & fields) : typeInfo(fields)
-    {
-    }
-
-    virtual const RtlTypeInfo * queryTypeInfo() const { return &typeInfo; }
-    virtual size32_t getRecordSize(const void * row)
-    {
-        //Allocate a temporary offset array on the stack to avoid runtime overhead.
-        const RtlRecord &offsetInformation = queryRecordAccessor(true);
-        unsigned numOffsets = offsetInformation.getNumVarFields() + 1;
-        size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
-        RtlRow offsetCalculator(offsetInformation, row, numOffsets, variableOffsets);
-        return offsetCalculator.getRecordSize();
-    }
-
-    virtual size32_t getFixedSize() const
-    {
-        return queryRecordAccessor(true).getFixedSize();
-    }
-    // returns 0 for variable row size
-    virtual size32_t getMinRecordSize() const
-    {
-        return queryRecordAccessor(true).getMinRecordSize();
-    }
-
-protected:
-    const RtlTypeInfo &typeInfo;
-};
-
 FuncCallStack::FuncCallStack(bool _hasMeta, int size)
 {
     hasMeta = _hasMeta;

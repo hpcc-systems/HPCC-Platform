@@ -432,7 +432,7 @@ bool CThorKeyedDistributeArg::getIndexLayout(size32_t & _retLen, void * & _retDa
 int CThorWorkUnitWriteArg::getSequence() { return -3; }
 const char * CThorWorkUnitWriteArg::queryName() { return NULL; }
 unsigned CThorWorkUnitWriteArg::getFlags() { return 0; }
-void CThorWorkUnitWriteArg::serializeXml(const byte * self, IXmlWriter & out) { rtlSysFail(1, "serializeXml not implemented"); }
+void CThorWorkUnitWriteArg::serializeXml(const byte * self, IXmlWriter & out) { queryOutputMeta()->toXML(self, out); }
 unsigned CThorWorkUnitWriteArg::getMaxSize() { return 0; }
 
 //CThorXmlWorkunitWriteArg

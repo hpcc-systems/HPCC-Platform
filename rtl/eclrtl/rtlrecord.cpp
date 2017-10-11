@@ -495,13 +495,47 @@ COutputMetaData::~COutputMetaData()
 const RtlRecord &COutputMetaData::queryRecordAccessor(bool expand) const
 {
     // NOTE: the recordAccessor field cannot be declared as atomic, since the class definition is included in generated
-    // code which is not (yet) compiled using C++11. If that changes then the reinterpret_cast can be removed.
+    // code which does not include <atomic>. If that changes then the reinterpret_cast can be removed.
     std::atomic<const RtlRecord *> &aRecordAccessor = reinterpret_cast<std::atomic<const RtlRecord *> &>(recordAccessor[expand]);
     const RtlRecord *useAccessor = aRecordAccessor.load(std::memory_order_relaxed);
     if (!useAccessor)
         useAccessor = setupRecordAccessor(*this, expand, aRecordAccessor);
     return *useAccessor;
 }
+
+size32_t COutputMetaData::getRecordSize(const void * data)
+{
+    //Allocate a temporary offset array on the stack to avoid runtime overhead.
+    const RtlRecord &r = queryRecordAccessor(true);
+    size32_t size = r.getFixedSize();
+    if (!size)
+    {
+        unsigned numOffsets = r.getNumVarFields() + 1;
+        size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
+        RtlRow offsetCalculator(r, data, numOffsets, variableOffsets);
+        size = offsetCalculator.getRecordSize();
+    }
+    return size;
+}
+
+CDeserializedOutputMetaData::CDeserializedOutputMetaData(MemoryBuffer &binInfo)
+{
+    deserializer.setown(createRtlFieldTypeDeserializer());
+    typeInfo = deserializer->deserialize(binInfo);
+}
+
+CDeserializedOutputMetaData::CDeserializedOutputMetaData(IPropertyTree &jsonInfo)
+{
+    deserializer.setown(createRtlFieldTypeDeserializer());
+    typeInfo = deserializer->deserialize(jsonInfo);
+}
+
+CDeserializedOutputMetaData::CDeserializedOutputMetaData(const char *json)
+{
+    deserializer.setown(createRtlFieldTypeDeserializer());
+    typeInfo = deserializer->deserialize(json);
+}
+
 
 class CVariableOutputRowSerializer : public COutputRowSerializer
 {
