@@ -593,7 +593,6 @@ static void dfspart(const char *lname,IUserDescriptor *userDesc, unsigned partnu
 
 static void setdfspartattr(const char *lname, unsigned partNum, const char *attr, const char *value, IUserDescriptor *userDesc)
 {
-    verifyex(partNum>=0);
     StringBuffer str;
     CDfsLogicalFileName lfn;
     lfn.set(lname);
@@ -602,8 +601,14 @@ static void setdfspartattr(const char *lname, unsigned partNum, const char *attr
     if (lfn.isForeign()) 
         throw MakeStringException(0, "Foreign file not supported");
     Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname, userDesc);
-    verifyex(nullptr != file.get());
-    IDistributedFilePart &part = file->queryPart(partNum);
+    if (nullptr == file.get())
+        throw MakeStringException(0, "Could not find file: '%s'", lname);
+    if (file->querySuperFile())
+        throw MakeStringException(0, "Cannot be used on a superfile");
+    if (!partNum || partNum>file->numParts())
+        throw MakeStringException(0, "Invalid part number, must be in the range 1 - %u", file->numParts());
+
+    IDistributedFilePart &part = file->queryPart(partNum-1);
 
     StringBuffer attrProp("@");
     attrProp.append(attr);
@@ -3346,7 +3351,7 @@ int main(int argc, char* argv[])
                     }
                     else if (strieq(cmd,"setdfspartattr")) {
                         CHECKPARAMS(3,4);
-                        setdfspartattr(params.item(1), atoi(params.item(2))-1, params.item(3), np>3 ? params.item(4) : nullptr, userDesc);
+                        setdfspartattr(params.item(1), atoi(params.item(2)), params.item(3), np>3 ? params.item(4) : nullptr, userDesc);
                     }
                     else if (strieq(cmd,"dfscheck")) {
                         CHECKPARAMS(0,0);
