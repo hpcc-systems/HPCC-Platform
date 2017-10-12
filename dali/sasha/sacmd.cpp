@@ -22,8 +22,10 @@ class CSashaCommand: public CInterface, implements ISashaCommand
     CDateTime *dts;
     unsigned numdts;
 
-    StringAttr after;
-    StringAttr before;
+    StringAttr after; //datetime
+    StringAttr before; //datetime
+    StringAttr afterWU;
+    StringAttr beforeWU;
     StringAttr state;
     StringAttr owner;
     StringAttr cluster;
@@ -107,6 +109,11 @@ public:
         }
         mb.read(after);
         mb.read(before);
+        if (action == SCA_LISTSORTED)
+        {
+            mb.read(afterWU);
+            mb.read(beforeWU);
+        }
         mb.read(state);
         mb.read(owner);
         mb.read(cluster);
@@ -164,6 +171,11 @@ public:
             mb.append(ids.item(i).text);
         mb.append(after);
         mb.append(before);
+        if (action == SCA_LISTSORTED)
+        {
+            mb.append(afterWU);
+            mb.append(beforeWU);
+        }
         mb.append(state);
         mb.append(owner);
         mb.append(cluster);
@@ -278,6 +290,26 @@ public:
     void setBefore(const char *val)
     {
         before.set(val);
+    }
+
+    const char *queryAfterWU()
+    {
+        return retstr(afterWU);
+    }
+
+    void setAfterWU(const char *val)
+    {
+        afterWU.set(val);
+    }
+
+    const char *queryBeforeWU()
+    {
+        return retstr(beforeWU);
+    }
+
+    void setBeforeWU(const char *val)
+    {
+        beforeWU.set(val);
     }
 
     const char *queryState()
