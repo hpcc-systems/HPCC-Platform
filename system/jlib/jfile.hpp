@@ -80,6 +80,8 @@ interface ICopyFileProgress
 class RemoteFilename;
 
 enum fileBool { foundNo = false, foundYes = true, notFound = 2 };
+typedef enum { SD_nosort, SD_byname, SD_bynameNC, SD_bydate, SD_bysize }  SortDirectoryMode;
+
 interface IFile :extends IInterface
 {
     virtual bool exists() = 0; // NB this can raise exceptions if the machine doesn't exist or other fault
@@ -107,6 +109,7 @@ interface IFile :extends IInterface
 // Directory functions
     virtual bool createDirectory() = 0;
     virtual IDirectoryIterator *directoryFiles(const char *mask=NULL,bool sub=false,bool includedirs=false)=0;
+    virtual IDirectoryIterator *directoryFilesSorted(SortDirectoryMode mode, bool rev, const char *mask=NULL,bool sub=false,bool includedirs=false)=0;
     virtual IDirectoryDifferenceIterator *monitorDirectory(
                                   IDirectoryIterator *prev=NULL,    // in (NULL means use current as baseline)
                                   const char *mask=NULL,
@@ -136,14 +139,16 @@ public:
         name.set(iter.getName(tmp));
         iter.getModifiedTime(modifiedTime);
     }
+    CDirectoryEntry(IFile *_file, const char *_name, bool _isdir, __int64 _size, CDateTime &_modifiedTime)
+        : file(_file), name(_name), isdir(_isdir), size(_size), modifiedTime(_modifiedTime)
+    {
+    }
     Linked<IFile> file;
     StringAttr name;
     bool isdir;
     __int64 size;
     CDateTime modifiedTime;
 };
-
-typedef enum { SD_nosort, SD_byname, SD_bynameNC, SD_bydate, SD_bysize }  SortDirectoryMode;
 
 
 extern jlib_decl unsigned sortDirectory( 

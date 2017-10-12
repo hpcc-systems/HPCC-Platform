@@ -35,6 +35,10 @@ interface ISashaCommand: extends IInterface
     virtual void setAfter(const char *val) = 0;
     virtual const char *queryBefore() = 0;
     virtual void setBefore(const char *val) = 0;
+    virtual const char *queryAfterWU() = 0;
+    virtual void setAfterWU(const char *val) = 0;
+    virtual const char *queryBeforeWU() = 0;
+    virtual void setBeforeWU(const char *val) = 0;
     virtual const char *queryState() = 0;
     virtual void setState(const char *val) = 0;
     virtual const char *queryOwner() = 0;

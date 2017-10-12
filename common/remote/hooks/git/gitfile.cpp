@@ -227,6 +227,10 @@ public:
             return createGitRepositoryDirectoryIterator(dirName, mask, sub, includeDirs);
         }
     }
+    virtual IDirectoryIterator *directoryFilesSorted(SortDirectoryMode mode, bool rev, const char *mask, bool sub, bool includeDirs)
+    {
+        UNIMPLEMENTED;
+    }
     virtual bool getInfo(bool &isdir,offset_t &size,CDateTime &modtime)
     {
         isdir = isDir;

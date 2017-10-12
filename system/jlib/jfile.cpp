@@ -1492,6 +1492,11 @@ public:
         return ifile->directoryFiles(mask,sub,includedirs);
     }
 
+    IDirectoryIterator *directoryFilesSorted(SortDirectoryMode mode, bool rev, const char *mask, bool sub, bool includedirs)
+    {
+        UNIMPLEMENTED;
+    }
+
     IDirectoryDifferenceIterator *monitorDirectory(
                                   IDirectoryIterator *prev=NULL,    // in (NULL means use current as baseline)
                                   const char *mask=NULL,
@@ -3336,10 +3341,40 @@ extern jlib_decl IDirectoryIterator *createNullDirectoryIterator()
     return new CNullDirectoryIterator;
 }
 
+//This struct was called 'struct icmp' inside the sortDirectory().
+struct CMPCDirectory: implements ICompare
+{
+    SortDirectoryMode mode;
+    bool rev;
+    int docompare(const void *l,const void *r) const
+    {
+        int ret=0;
+        const CDirectoryEntry *dl = (const CDirectoryEntry *)l;
+        const CDirectoryEntry *dr = (const CDirectoryEntry *)r;
+        switch (mode) {
+        case SD_byname:
+            ret = strcmp(dl->name,dr->name);
+            break;
+        case SD_bynameNC:
+            ret = stricmp(dl->name,dr->name);
+            break;
+        case SD_bydate:
+            ret = dl->modifiedTime.compare(dr->modifiedTime);
+            break;
+        case SD_bysize:
+            ret = (dl->size>dr->size)?1:((dl->size<dr->size)?-1:0);
+            break;
+        }
+        if (rev)
+            ret = -ret;
+        return ret;
+    }
+};
+
 class CDirectoryIterator : implements IDirectoryIterator, public CInterface
 {
 public:
-    CDirectoryIterator(const char * _path, const char * _mask, bool _sub, bool _includedir)
+    CDirectoryIterator(const char * _path, const char * _mask, bool _sub, bool _includedir, SortDirectoryMode _mode, bool _rev)
     {
         StringBuffer tmp;
         if (!_path || !*_path) 
@@ -3352,6 +3387,8 @@ public:
         includedir = _includedir;
         subidx = 0;
         curisdir = false;
+        mode = _mode;
+        rev = _rev;
     }
 
     IMPLEMENT_IINTERFACE
@@ -3371,6 +3408,50 @@ protected:
     bool            sub;    // TBD
     StringAttrArray subpaths;
     unsigned        subidx; // -1 to index subpaths
+
+    SortDirectoryMode mode = SD_nosort;
+    bool rev = false;
+    CIArrayOf<CDirectoryEntry> sortedFiles;
+    CDirectoryEntry *curDirectoryEntry = nullptr;
+    unsigned sortedFileCount = 0;
+    unsigned sortedFileIndex = 0;
+    bool fileSorted = false;
+
+    bool createSortFiles()
+    {
+        while (next())
+        {
+            CDateTime modifiedTime;
+            getModifiedTime(modifiedTime);
+
+            StringBuffer buf;
+            sortedFiles.append(*new CDirectoryEntry(cur, getName(buf).str(), curisdir, getFileSize(), modifiedTime));
+            sortedFileCount++;
+        }
+        if (sortedFileCount == 0)
+            return false;
+
+        CMPCDirectory cmp;
+        cmp.mode = mode;
+        cmp.rev = rev;
+        qsortvec((void **)sortedFiles.getArray(), sortedFiles.ordinality(), cmp);
+        fileSorted = true;
+        return true;
+    }
+    bool setCurrentFromSortFiles()
+    {
+        if (sortedFileIndex >= sortedFileCount) {
+            cur.clear();
+            curDirectoryEntry = nullptr;
+            return false;
+        }
+
+        curDirectoryEntry = &sortedFiles.item(sortedFileIndex);
+        cur.setown(createIFile(curDirectoryEntry->file->queryFilename()));
+        curisdir = curDirectoryEntry->isdir;
+        sortedFileIndex++;
+        return true;
+    }
 };
 
 #ifdef _WIN32
@@ -3383,6 +3464,9 @@ class CWindowsDirectoryIterator : public CDirectoryIterator
 
     bool setCurrent()
     {
+        if (fileSorted) {
+            return setCurrentFromSortFiles();
+        }
         if (strcmp(info.cFileName, ".") == 0 || strcmp(info.cFileName, "..") == 0)
             return false;
         bool match = (!mask.length() || WildMatch(info.cFileName, mask, true));
@@ -3421,8 +3505,11 @@ class CWindowsDirectoryIterator : public CDirectoryIterator
                 location.append(subpaths.item(subidx-1).text).append('\\');
             location.append("*");
             handle = FindFirstFile(location.str(), &info);
-            if (handle != INVALID_HANDLE_VALUE)
-                return true;
+            if (handle != INVALID_HANDLE_VALUE) {
+                if (mode == SD_nosort)
+                    return true;
+                return createSortFiles();
+            }
             subidx++;
         }
         return false;
@@ -3439,8 +3526,8 @@ class CWindowsDirectoryIterator : public CDirectoryIterator
 
 
 public:
-    CWindowsDirectoryIterator(const char * _path, const char * _mask, bool _sub, bool _includedir)
-        : CDirectoryIterator(_path,_mask,_sub,_includedir)
+    CWindowsDirectoryIterator(const char * _path, const char * _mask, bool _sub, bool _includedir, SortDirectoryMode _mode, bool _rev)
+        : CDirectoryIterator(_path,_mask,_sub,_includedir, _mode, _rev)
     {
         handle = INVALID_HANDLE_VALUE;
     }
@@ -3453,6 +3540,10 @@ public:
 
     bool first()
     {
+        if (fileSorted) {
+            sortedFileIndex = 0;
+            return next();
+        }
         subpaths.kill();
         subidx = 0;
         if (!open())
@@ -3464,6 +3555,9 @@ public:
 
     bool next()
     {
+        if (fileSorted) {
+            return setCurrentFromSortFiles();
+        }
         for (;;) {
             for (;;) {
                 if (!FindNextFile(handle, &info))
@@ -3482,6 +3576,8 @@ public:
 
     StringBuffer &getName(StringBuffer &buf)
     {
+        if (curDirectoryEntry)
+            return buf.set(curDirectoryEntry->name.get());
         if (subidx)
             buf.append(subpaths.item(subidx-1).text).append('\\');
         return buf.append(info.cFileName);
@@ -3490,6 +3586,8 @@ public:
 
     __int64 getFileSize()
     {
+        if (curDirectoryEntry)
+            return curDirectoryEntry->size;
         if (curisdir)
             return -1;
         LARGE_INTEGER x;
@@ -3501,6 +3599,10 @@ public:
 
     bool getModifiedTime(CDateTime &ret)
     {
+        if (curDirectoryEntry) {
+            ret = curDirectoryEntry->modifiedTime;
+            return true;
+        }
         FILETIMEtoIDateTime(&ret, info.ftLastWriteTime);
         return true;
     }
@@ -3514,7 +3616,7 @@ IDirectoryIterator * createDirectoryIterator(const char * path, const char * mas
     if (mask&&!*mask)   // only NULL is wild
         return new CNullDirectoryIterator;
     if (!path || !*path) // cur directory so no point in checking for remote etc.
-        return new CWindowsDirectoryIterator(path, mask,false,true);
+        return new CWindowsDirectoryIterator(path, mask, false, true, SD_nosort, false);
     OwnedIFile iFile = createIFile(path);
     if (!iFile||(iFile->isDirectory()!=foundYes))
         return new CNullDirectoryIterator;
@@ -3526,7 +3628,15 @@ IDirectoryIterator *CFile::directoryFiles(const char *mask,bool sub,bool include
     if ((mask&&!*mask)||    // only NULL is wild
         (isDirectory()!=foundYes))
         return new CNullDirectoryIterator;
-    return new CWindowsDirectoryIterator(filename, mask,sub,includedirs);
+    return new CWindowsDirectoryIterator(filename, mask, sub, includedirs, SD_nosort, false);
+}
+
+IDirectoryIterator *CFile::directoryFilesSorted(SortDirectoryMode mode, bool rev, const char *mask,bool sub,bool includedirs)
+{
+    if ((mask&&!*mask)||    // only NULL is wild
+        (isDirectory()!=foundYes))
+        return new CNullDirectoryIterator;
+    return new CWindowsDirectoryIterator(filename, mask,sub,includedirs, mode, rev);
 }
 
 bool CFile::getInfo(bool &isdir,offset_t &size,CDateTime &modtime)
@@ -3564,11 +3674,11 @@ class CLinuxDirectoryIterator : public CDirectoryIterator
             gotst = (stat(cur->queryFilename(), &st) == 0);
         return gotst;
     }
-    
-    
+
+
 public:
-    CLinuxDirectoryIterator(const char * _path, const char * _mask, bool _sub,bool _includedir)
-        : CDirectoryIterator(_path,_mask,_sub,_includedir)
+    CLinuxDirectoryIterator(const char * _path, const char * _mask, bool _sub,bool _includedir, SortDirectoryMode _mode, bool _rev)
+        : CDirectoryIterator(_path,_mask,_sub,_includedir, _mode, _rev)
     {
         handle = NULL;
         gotst = false;
@@ -3590,7 +3700,11 @@ public:
             handle = ::opendir(location.str());
             // better error handling here?
             if (handle)
-                return true;
+            {
+                if (mode == SD_nosort)
+                    return true;
+                return createSortFiles();
+            }
             subidx++;
         }
         return false;
@@ -3607,6 +3721,11 @@ public:
 
     bool first()
     {
+        if (fileSorted)
+        {
+            sortedFileIndex = 0;
+            return next();
+        }
         subpaths.kill();
         subidx = 0;
         if (open()) 
@@ -3616,6 +3735,9 @@ public:
 
     bool next()
     {
+        if (fileSorted) {
+            return setCurrentFromSortFiles();
+        }
         for (;;) {
             struct dirent *entry;
             for (;;) {
@@ -3673,6 +3795,8 @@ public:
 
     StringBuffer &getName(StringBuffer &buf)
     {
+        if (curDirectoryEntry)
+            return buf.set(curDirectoryEntry->name.get());
         if (subidx)
             buf.append(subpaths.item(subidx-1).text).append('/');
         return buf.append(tail);
@@ -3680,6 +3804,8 @@ public:
 
     __int64 getFileSize()
     {
+        if (curDirectoryEntry)
+            return curDirectoryEntry->size;
         if (curisdir)
             return -1;
         if (!loadst())
@@ -3690,6 +3816,11 @@ public:
 
     bool getModifiedTime(CDateTime &ret)
     {
+        if (curDirectoryEntry)
+        {
+            ret = curDirectoryEntry->modifiedTime;
+            return true;
+        }
         if (!loadst())
             return false;
         timetToIDateTime(&ret,st.st_mtime);
@@ -3703,7 +3834,7 @@ IDirectoryIterator * createDirectoryIterator(const char * path, const char * mas
     if (mask&&!*mask)   // only NULL is wild
         return new CNullDirectoryIterator;
     if (!path || !*path) // no point in checking for remote etc.
-        return new CLinuxDirectoryIterator(path, mask,false,true);
+        return new CLinuxDirectoryIterator(path, mask,false,true,SD_nosort,false);
     OwnedIFile iFile = createIFile(path);
     if (!iFile||(iFile->isDirectory()!=foundYes))
         return new CNullDirectoryIterator;
@@ -3715,9 +3846,16 @@ IDirectoryIterator *CFile::directoryFiles(const char *mask,bool sub,bool include
     if ((mask&&!*mask)||    // only NULL is wild
         (isDirectory()!=foundYes))
         return new CNullDirectoryIterator;
-    return new CLinuxDirectoryIterator(filename, mask,sub,includedirs);
+    return new CLinuxDirectoryIterator(filename, mask,sub,includedirs,SD_nosort,false);
 }
 
+IDirectoryIterator *CFile::directoryFilesSorted(SortDirectoryMode mode, bool rev, const char *mask,bool sub,bool includedirs)
+{
+    if ((mask&&!*mask)||    // only NULL is wild
+        (isDirectory()!=foundYes))
+        return new CNullDirectoryIterator;
+    return new CLinuxDirectoryIterator(filename, mask,sub,includedirs, mode, rev);
+}
 
 bool CFile::getInfo(bool &isdir,offset_t &size,CDateTime &modtime)
 {
@@ -5542,34 +5680,7 @@ unsigned sortDirectory( CIArrayOf<CDirectoryEntry> &sortedfiles,
             sortedfiles.append(*new CDirectoryEntry(iter));
     }
     if (mode!=SD_nosort) {
-        struct icmp: implements ICompare
-        {
-            SortDirectoryMode mode;
-            bool rev;
-            int docompare(const void *l,const void *r) const
-            {
-                int ret=0;
-                const CDirectoryEntry *dl = (const CDirectoryEntry *)l;
-                const CDirectoryEntry *dr = (const CDirectoryEntry *)r;
-                switch (mode) {
-                case SD_byname:
-                    ret = strcmp(dl->name,dr->name);
-                    break;
-                case SD_bynameNC:
-                    ret = stricmp(dl->name,dr->name);
-                    break;
-                case SD_bydate:
-                    ret = dl->modifiedTime.compare(dr->modifiedTime);
-                    break;
-                case SD_bysize:
-                    ret = (dl->size>dr->size)?1:((dl->size<dr->size)?-1:0);
-                    break;
-                }
-                if (rev)
-                    ret = -ret;
-                return ret;
-            }
-        } cmp;
+        CMPCDirectory cmp;
         cmp.mode = mode;
         cmp.rev = rev;
         qsortvec((void **)sortedfiles.getArray(), sortedfiles.ordinality(), cmp);

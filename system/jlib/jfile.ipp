@@ -60,6 +60,7 @@ public:
 
     virtual bool createDirectory();
     virtual IDirectoryIterator *directoryFiles(const char *mask=NULL,bool sub=false,bool includedirs=false);
+    virtual IDirectoryIterator *directoryFilesSorted(SortDirectoryMode mode, bool rev, const char *mask=NULL,bool sub=false,bool includedirs=false);
     virtual IDirectoryDifferenceIterator *monitorDirectory(
                                   IDirectoryIterator *prev=NULL,        // in
                                   const char *mask=NULL,

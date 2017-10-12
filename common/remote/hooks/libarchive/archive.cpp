@@ -385,6 +385,10 @@ public:
             return createArchiveDirectoryIterator(dirName, mask, sub, includeDirs);
         }
     }
+    virtual IDirectoryIterator *directoryFilesSorted(SortDirectoryMode mode, bool rev, const char *mask, bool sub, bool includeDirs)
+    {
+        UNIMPLEMENTED;
+    }
     virtual bool getInfo(bool &_isdir,offset_t &_size,CDateTime &_modtime)
     {
         _isdir = isDirectory()==foundYes;
