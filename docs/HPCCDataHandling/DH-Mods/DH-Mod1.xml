@@ -85,9 +85,12 @@
         </listitem>
 
         <listitem>
-          <para>From ECL Watch page, click on the <emphasis
-          role="bold">Upload/download File </emphasis> link in the menu on the
-          left side.</para>
+          <para>From the ECL Watch home page, press the <emphasis
+          role="bold">Files</emphasis> icon link at the top, then press the
+          <emphasis role="bold">Landing Zones</emphasis> button from the
+          sub-menu, and then click on the <emphasis
+          role="bold">Upload</emphasis> action button as illustrated in the
+          following image.</para>
 
           <para><figure>
               <title>Upload/download</title>
@@ -98,19 +101,16 @@
                              vendor="eclwatchSS" />
                 </imageobject>
               </mediaobject>
-            </figure></para>
-
-          <para><phrase> </phrase>Once you click on the Upload/download file
-          link, it will take you to the dropzones and files page, where you
-          can choose to <emphasis role="bold">Browse</emphasis> your machine
-          for a file to upload:</para>
+            </figure>A system file dialog opens. Browse and select the file to
+          upload and then press the <emphasis role="bold">Open</emphasis>
+          button.</para>
 
           <para><figure>
               <title>Dropzones</title>
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="../../images/LZimg04.jpg"
+                  <imagedata fileref="../../images/ECLWA440b.jpg"
                              vendor="eclwatchSS" />
                 </imageobject>
               </mediaobject>
@@ -118,16 +118,14 @@
         </listitem>
 
         <listitem>
-          <para>Press the <emphasis role="bold">Browse</emphasis> button to
-          browse the files on your local machine, select the file to upload
-          and then click <emphasis role="bold">Open</emphasis> button.</para>
-
-          <para>The file you selected should appear in the <emphasis
-          role="bold">Select a file to upload</emphasis> field.</para>
+          <para>Once you choose the file to upload, it will take you to the
+          <emphasis role="bold">File Uploader</emphasis> dialog, where you can
+          choose the landing zone, machine, and/or folder for the file to
+          upload.</para>
         </listitem>
 
         <listitem>
-          <para>Press on <emphasis role="bold">Upload Now</emphasis> to
+          <para>Press the <emphasis role="bold">Start</emphasis> button to
           complete the file upload.</para>
         </listitem>
       </orderedlist>
@@ -359,7 +357,7 @@
                   <row>
                     <entry><emphasis role="bold">Queue</emphasis></entry>
 
-                    <entry>Select the queue. </entry>
+                    <entry>Select the queue.</entry>
                   </row>
 
                   <row>

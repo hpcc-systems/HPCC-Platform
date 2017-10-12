@@ -1497,10 +1497,18 @@ OUTPUT(L);</programlisting></para>
           </listitem>
 
           <listitem>
-            <para>A dialog opens. <emphasis role="bold">Browse</emphasis> your
-            local machine select the file to upload and then press the
-            <emphasis role="bold">Open</emphasis> button. <figure>
-                <title>File Uploader</title>
+            <para>A dialog opens. <emphasis role="bold">Browse</emphasis> to
+            and select the file to upload and then press the <emphasis
+            role="bold">Open</emphasis> button. </para>
+
+            <para>The file you selected should appear in the <emphasis
+            role="bold">File Name</emphasis> field. The data file is named:
+            <emphasis role="bold">2of12.txt</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para><figure>
+                <title>Start File Upload</title>
 
                 <mediaobject>
                   <imageobject>
@@ -1510,14 +1518,8 @@ OUTPUT(L);</programlisting></para>
                 </mediaobject>
               </figure></para>
 
-            <para>The file you selected should appear in the <emphasis
-            role="bold">File Name</emphasis> field. The data file is named:
-            <emphasis role="bold">2of12.txt</emphasis>.</para>
-          </listitem>
-
-          <listitem>
             <para>Press the <emphasis role="bold">Start</emphasis> button to
-            complete the file upload.</para>
+            complete the file upload. </para>
           </listitem>
         </orderedlist>
       </sect2>

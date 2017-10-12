@@ -2569,18 +2569,16 @@ OUTPUT(L);</programlisting></para>
                 </mediaobject>
               </figure></para>
 
-            <para>Once you click on the Upload/download file link, it will
-            take you to the <emphasis role="bold">Dropzones and
-            Files</emphasis> page, where you can choose to <emphasis
-            role="bold">Browse</emphasis> your machine for a file to
+            <para>Once you click on the Upload action button, you can
+            <emphasis role="bold">Browse</emphasis> for a file to
             upload:</para>
 
             <para><figure>
-                <title>Dropzones and Files</title>
+                <title>File Uploader</title>
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/LZimg04.jpg"
+                    <imagedata fileref="images/LZimg04a.jpg"
                                vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
@@ -2590,19 +2588,13 @@ OUTPUT(L);</programlisting></para>
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Press the <emphasis role="bold">Browse</emphasis> button to
-            browse the files on your local machine, select the file to upload
-            and then press the <emphasis role="bold">Open</emphasis>
-            button.</para>
+            <para>Select the file to upload. The file you selected should
+            appear in the <emphasis role="bold">File Name</emphasis> field.
+            The data file is named: <emphasis
+            role="bold">2of12.txt</emphasis>.</para>
 
-            <para>The file you selected should appear in the <emphasis
-            role="bold">Select a file to upload:</emphasis> field. The data
-            file is named: <emphasis role="bold">2of12.txt</emphasis>.</para>
-          </listitem>
-
-          <listitem>
-            <para>Press on <emphasis role="bold">Upload Now</emphasis> to
-            complete the file upload.</para>
+            <para>Verify the file, folders, landing zone information then
+            press the <emphasis role="bold">Start</emphasis> button.</para>
           </listitem>
         </orderedlist>
       </sect2>

@@ -51,15 +51,18 @@
       <para><emphasis role="redbold"></emphasis></para>
     </legalnotice>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems</corpname>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -1112,18 +1115,9 @@ OUTPUT(L);</programlisting></para>
           </listitem>
 
           <listitem>
-            <para>A dialog opens. <emphasis role="bold">Browse</emphasis> your
-            local machine select the file to upload and then press the
-            <emphasis role="bold">Open</emphasis> button. <figure>
-                <title>File Uploader</title>
-
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="images/LZimg04a.jpg"
-                               vendor="eclwatchSS" />
-                  </imageobject>
-                </mediaobject>
-              </figure></para>
+            <para>A dialog opens. <emphasis role="bold">Browse</emphasis> to
+            and select the file to upload and then press the <emphasis
+            role="bold">Open</emphasis> button. </para>
 
             <para>The file you selected should appear in the <emphasis
             role="bold">File Name</emphasis> field. The data file is named:
