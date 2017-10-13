@@ -58,7 +58,12 @@ stop_slaves()
         killall -SIGKILL $slavename > /dev/null
     fi
 
-    rm -f ${PID_DIR}/${slavename}_*.pid > /dev/null
+    if [[ -f ${PID_DIR}/${slavename}_flist ]] ; then
+        for pidfile in $(cat ${PID_DIR}/${slavename}_flist) ; do
+            rm -f ${PID_DIR}/${pidfile} > /dev/null 2>&1
+        done
+        rm -f ${PID_DIR}/${slavename}_flist > /dev/null 2>&1
+    fi
 }
 
 start_slaves()
@@ -113,6 +118,9 @@ start_slaves()
     for slaveip in $(cat $slavesfname); do
         if [[ ${slaveip} = ${ip} ]]; then
             for (( slave=0; slave<${slavespernode}; slave++ )); do
+                if [[ $slave -eq 0 ]] ; then
+                    rm -f ${PID_DIR}/${slavename}_flist > /dev/null 2>&1
+                fi
                 slavenum=$(( ${clusternode} + (${slave} * ${clusternodes}) ))
                 log "$slavename master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth/$hpcc_compname"
                 ./$slavename master=$master:$masterport slave=.:$slaveport slavenum=$slavenum slaveprocessnum=$slave logDir=$logpth/$hpcc_compname 2>/dev/null 1>/dev/null &
@@ -122,8 +130,11 @@ start_slaves()
                     fts=1
                 else
                     log "slave pid $slavepid started"
+                    # could use a unique @@@ in front of ${slavenum} so that rm above in stop_slaves
+                    # does not remove other thor instance pid files accidentally - but this would break preflight
                     PID_NAME="${PID_DIR}/${slavename}_${slavenum}.pid"
                     echo $slavepid > $PID_NAME
+                    echo "${slavename}_${slavenum}.pid" >> ${PID_DIR}/${slavename}_flist
                 fi
                 slaveport=$(( ${slaveport} + ${slaveportinc} ))
             done
