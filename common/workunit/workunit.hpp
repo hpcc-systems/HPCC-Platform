@@ -1037,7 +1037,7 @@ BITMASK_ENUM(WuScopeSourceFlags);
  *
  * returned scopes: matched[true|false] | nested[<depth>] | include[<scope-type>]
  * returned information:
- *                  prop[stat|attr|hint|scope]
+ *                  props[stat|attr|hint|scope]
  *                  stat[<stat-name>] | attr[<attr-name>] | hint[<hint-name>] | measure[<measure-name>]
  */
 class WORKUNIT_API WuScopeFilter
