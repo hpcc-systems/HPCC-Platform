@@ -141,7 +141,7 @@ define([
                     if (item.ClusterName) {
                         queue = ESPQueue.GetTargetCluster(item.ClusterName);
                     } else {
-                        queue = ESPQueue.GetServerJobQueue(item.QueueName);
+                        queue = ESPQueue.GetServerJobQueue(item.ServerName);
                     }
                     queue.updateData(item);
                     queue.set("DisplayName", queue.getDisplayName());
@@ -169,7 +169,7 @@ define([
                     if (item.ClusterName) {
                         queue = ESPQueue.GetTargetCluster(item.ClusterName);
                     } else {
-                        queue = ESPQueue.GetServerJobQueue(item.QueueName);
+                        queue = ESPQueue.GetServerJobQueue(item.ServerName);
                     }
                     var wu = item.Server === "DFUserver" ? ESPDFUWorkunit.Get(item.Wuid) : ESPWorkunit.Get(item.Wuid);
                     wu.updateData(lang.mixin({
