@@ -2454,9 +2454,9 @@ public:
         }
     }
 
-    virtual void createGraph(const char * name, const char *label, WUGraphType type, IPropertyTree *xgmml)
+    virtual void createGraph(const char * name, const char *label, WUGraphType type, IPropertyTree *xgmml, unsigned wfid)
     {
-        CPersistedWorkUnit::createGraph(name, label, type, xgmml);
+        CPersistedWorkUnit::createGraph(name, label, type, xgmml, wfid);
         VStringBuffer xpath("Graphs/Graph[@name='%s']", name);
         noteDirty(xpath, wuGraphsMappings);
     }

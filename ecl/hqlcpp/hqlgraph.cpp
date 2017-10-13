@@ -259,7 +259,7 @@ void LogicalGraphCreator::createLogicalGraph(HqlExprArray & exprs)
     ForEachItemIn(i, exprs)
         createRootGraphActivity(&exprs.item(i));
 //  endSubGraph();
-    wu->createGraph("Logical", NULL, GraphTypeEcl, graph.getClear());
+    wu->createGraph("Logical", NULL, GraphTypeEcl, graph.getClear(), 0);
 }
 
 

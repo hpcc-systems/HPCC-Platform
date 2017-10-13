@@ -198,6 +198,7 @@ interface IConstWUGraphMeta : extends IInterface
     virtual IStringVal & getTypeName(IStringVal & ret) const = 0;
     virtual WUGraphType getType() const = 0;
     virtual WUGraphState getState() const = 0;
+    virtual unsigned getWfid() const = 0;
 };
 
 interface IConstWUGraph : extends IConstWUGraphMeta
@@ -1317,7 +1318,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void deschedule() = 0;
     virtual unsigned addLocalFileUpload(LocalFileUploadType type, const char * source, const char * destination, const char * eventTag) = 0;
     virtual IWUResult * updateGlobalByName(const char * name) = 0;
-    virtual void createGraph(const char * name, const char *label, WUGraphType type, IPropertyTree *xgmml) = 0;
+    virtual void createGraph(const char * name, const char *label, WUGraphType type, IPropertyTree *xgmml, unsigned wfid) = 0;
     virtual IWUQuery * updateQuery() = 0;
     virtual IWUWebServicesInfo * updateWebServicesInfo(bool create) = 0;
     virtual IWUPlugin * updatePluginByName(const char * name) = 0;

@@ -5914,7 +5914,8 @@ bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, HqlQueryContext & query
         ForEachItemIn(i2, graphs)
         {
             GeneratedGraphInfo & cur = graphs.item(i2);
-            wu()->createGraph(cur.name, cur.label, GraphTypeActivities, cur.xgmml.getClear());
+            unsigned wfid = cur.xgmml->getPropInt("@wfid");
+            wu()->createGraph(cur.name, cur.label, GraphTypeActivities, cur.xgmml.getClear(), wfid);
         }
 
         code->processIncludes();

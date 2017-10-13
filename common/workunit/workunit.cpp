@@ -1179,16 +1179,24 @@ private:
         SGraphFirst,
         SGraphEnd,
         SGraphNext,
+
         SSubGraphFirstEdge,
         SSubGraphFirstActivity,
-        SSubGraphFirstSubGraph,
         SSubGraphEnd,
         SSubGraphNext,
+
         SEdgeNext,
         SEdgeEnd,
-        SActivityFirstSubGraph,
+
         SActivityNext,
         SActivityEnd,
+
+        SChildGraphFirstEdge,
+        SChildGraphFirstSubGraph,
+        SChildGraphFirst,
+        SChildGraphNext,
+        SChildGraphEnd,
+
         SDone
     };
     State state = SDone;
@@ -1357,9 +1365,16 @@ private:
             switch (state)
             {
             case SGraph:
-                graphIter->query().getName(StringBufferAdaptor(curScopeName.clear()));
+            {
+                IConstWUGraph & graph = graphIter->query();
+                unsigned wfid = graph.getWfid();
+                curScopeName.clear();
+                if (wfid != 0)
+                    curScopeName.append(WorkflowScopePrefix).append(wfid).append(':');
+                graph.getName(StringBufferAdaptor(curScopeName));
                 scopeType = SSTgraph;
                 return true;
+            }
             case SSubGraph:
                 scopeId.set(SubGraphScopePrefix).append(treeIters.tos().query().getPropInt("@id"));
                 pushScope(scopeId);
@@ -1371,10 +1386,36 @@ private:
                 scopeType = SSTedge;
                 return true;
             case SActivity:
+                if (treeIters.tos().query().getPropInt("att[@name='_kind']/@value") == TAKsubgraph)
+                {
+                    state = SActivityNext;
+                    break;
+                }
                 scopeId.set(ActivityScopePrefix).append(treeIters.tos().query().getPropInt("@id"));
                 pushScope(scopeId);
                 scopeType = SSTactivity;
                 return true;
+            case SChildGraph:
+            {
+                unsigned numIters = treeIters.ordinality();
+                //This should really be implemented by a filter on the node - but it would require _kind/_parentActivity to move to the node tag
+                if (treeIters.tos().query().getPropInt("att[@name='_kind']/@value") != TAKsubgraph)
+                {
+                    state = SChildGraphNext;
+                    break;
+                }
+                unsigned parentActivityId = treeIters.item(numIters-2).query().getPropInt("@id");
+                unsigned parentId = treeIters.tos().query().getPropInt("att[@name='_parentActivity']/@value");
+                if (parentId != parentActivityId)
+                {
+                    state = SChildGraphNext;
+                    break;
+                }
+                scopeId.set(ChildGraphScopePrefix).append(treeIters.tos().query().getPropInt("@id"));
+                pushScope(scopeId);
+                scopeType = SSTchildgraph;
+                return true;
+            }
             //Graph iteration
             case SGraphFirst:
                 if (!graphIter->first())
@@ -1409,6 +1450,19 @@ private:
                     state = SGraphFirstSubGraph;
                 break;
             }
+            case SChildGraphFirstEdge:
+            {
+                Owned<IPropertyTreeIterator> treeIter = treeIters.tos().query().getElements("att/graph/edge");
+                if (treeIter && treeIter->first())
+                {
+                    treeIter.setown(createSortedIterator(*treeIter, compareEdgeNode));
+                    pushIterator(treeIter, SChildGraphFirstSubGraph);
+                    state = SEdge;
+                }
+                else
+                    state = SChildGraphFirstSubGraph;
+                break;
+            }
             case SEdgeEnd:
                 popScope();
                 state = SEdgeNext;
@@ -1432,6 +1486,19 @@ private:
                 }
                 else
                     state = SGraphNext;
+                break;
+            }
+            case SChildGraphFirstSubGraph:
+            {
+                Owned<IPropertyTreeIterator> treeIter = treeIters.tos().query().getElements("att/graph/node");
+                if (treeIter && treeIter->first())
+                {
+                    treeIter.setown(createSortedIterator(*treeIter, compareSubGraphNode));
+                    pushIterator(treeIter, SChildGraphEnd);
+                    state = SSubGraph;
+                }
+                else
+                    state = SChildGraphEnd;
                 break;
             }
             case SSubGraphFirstEdge:
@@ -1464,6 +1531,10 @@ private:
                 popScope();
                 state = SSubGraphNext;
                 break;
+            case SChildGraphEnd:
+                popScope();
+                state = SChildGraphNext;
+                break;
             case SSubGraphNext:
                 if (treeIters.tos().next())
                     state = SSubGraph;
@@ -1480,14 +1551,23 @@ private:
                 else
                     state = popIterator();
                 break;
-            case SActivityFirstSubGraph:
+            case SChildGraphNext:
+                if (treeIters.tos().next())
+                    state = SChildGraph;
+                else
+                    state = popIterator();
+                break;
+            case SChildGraphFirst:
             {
-                Owned<IPropertyTreeIterator> treeIter = treeIters.tos().query().getElements("att/graph/node");
+                unsigned numIters = treeIters.ordinality();
+                IPropertyTreeIterator & graphIter = treeIters.item(numIters-2);
+                Owned<IPropertyTreeIterator> treeIter = graphIter.query().getElements("att/graph/node");
+                //Really want to filter by <att name="_parentActivity" value="<parentid>">
                 if (treeIter && treeIter->first())
                 {
                     treeIter.setown(createSortedIterator(*treeIter, compareSubGraphNode));
-                    pushIterator(treeIter, SActivityNext);
-                    state = SSubGraph;
+                    pushIterator(treeIter, SActivityEnd);
+                    state = SChildGraph;
                 }
                 else
                     state = SActivityEnd;
@@ -1526,6 +1606,8 @@ private:
             state = SGraphFirstEdge;
             break;
         case SChildGraph:
+            state = SChildGraphFirstEdge;
+            break;
         case SSubGraph:
             state = SSubGraphFirstEdge;
             break;
@@ -1533,7 +1615,7 @@ private:
             state = SEdgeEnd;
             break;
         case SActivity:
-            state = SActivityFirstSubGraph;
+            state = SChildGraphFirst;
             break;
         case SDone:
             return false;
@@ -1552,7 +1634,8 @@ private:
             state = SGraphEnd;
             break;
         case SChildGraph:
-            throwUnexpected(); // MORE!
+            state = SChildGraphEnd;
+            break;
         case SSubGraph:
             state = SSubGraphEnd;
             break;
@@ -3498,8 +3581,8 @@ public:
             { return c->addLocalFileUpload(type, source, destination, eventTag); }
     virtual IWUResult * updateGlobalByName(const char * name)
             { return c->updateGlobalByName(name); }
-    virtual void createGraph(const char * name, const char *label, WUGraphType type, IPropertyTree *xgmml)
-            { c->createGraph(name, label, type, xgmml); }
+    virtual void createGraph(const char * name, const char *label, WUGraphType type, IPropertyTree *xgmml, unsigned wfid)
+            { c->createGraph(name, label, type, xgmml, wfid); }
     virtual IWUQuery * updateQuery()
             { return c->updateQuery(); }
     virtual IWUWebServicesInfo * updateWebServicesInfo(bool create)
@@ -9079,7 +9162,7 @@ IConstWUGraph* CLocalWorkUnit::getGraph(const char *qname) const
     return NULL;
 }
 
-void CLocalWorkUnit::createGraph(const char * name, const char *label, WUGraphType type, IPropertyTree *xgmml)
+void CLocalWorkUnit::createGraph(const char * name, const char *label, WUGraphType type, IPropertyTree *xgmml, unsigned wfid)
 {
     CriticalBlock block(crit);
     if (!graphs.length())
@@ -9090,6 +9173,7 @@ void CLocalWorkUnit::createGraph(const char * name, const char *label, WUGraphTy
     q->setName(name);
     q->setLabel(label);
     q->setType(type);
+    q->setWfid(wfid);
     q->setXGMMLTree(xgmml);
     graphs.append(*q);
 }
@@ -9135,6 +9219,11 @@ void CLocalWUGraph::setName(const char *str)
 void CLocalWUGraph::setLabel(const char *str)
 {
     p->setProp("@label", str);
+}
+
+void CLocalWUGraph::setWfid(unsigned wfid)
+{
+    p->setPropInt("@wfid", wfid);
 }
 
 void CLocalWUGraph::setXGMML(const char *str)
@@ -9280,6 +9369,11 @@ IStringVal & CLocalWUGraph::getTypeName(IStringVal &str) const
     if (!str.length())
         str.set("unknown");
     return str;
+}
+
+unsigned CLocalWUGraph::getWfid() const
+{
+    return p->getPropInt("@wfid", 0);
 }
 
 void CLocalWUGraph::setType(WUGraphType _type)

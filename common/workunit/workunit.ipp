@@ -394,7 +394,7 @@ public:
     void deschedule();
     unsigned addLocalFileUpload(LocalFileUploadType type, char const * source, char const * destination, char const * eventTag);
     IWUResult * updateGlobalByName(const char * name);
-    void createGraph(const char * name, const char *label, WUGraphType type, IPropertyTree *xgmml);
+    void createGraph(const char * name, const char *label, WUGraphType type, IPropertyTree *xgmml, unsigned wfid);
     IWUQuery * updateQuery();
     IWUWebServicesInfo* updateWebServicesInfo(bool create);
 
@@ -673,18 +673,20 @@ public:
     IMPLEMENT_IINTERFACE;
     CLocalWUGraph(const CLocalWorkUnit &owner, IPropertyTree *p);
 
-    virtual IStringVal & getXGMML(IStringVal & ret, bool mergeProgress) const;
-    virtual IStringVal & getName(IStringVal & ret) const;
-    virtual IStringVal & getLabel(IStringVal & ret) const;
-    virtual IStringVal & getTypeName(IStringVal & ret) const;
-    virtual WUGraphType getType() const;
-    virtual WUGraphState getState() const;
-    virtual IPropertyTree * getXGMMLTree(bool mergeProgress) const;
-    virtual IPropertyTree * getXGMMLTreeRaw() const;
+    virtual IStringVal & getXGMML(IStringVal & ret, bool mergeProgress) const override;
+    virtual IStringVal & getName(IStringVal & ret) const override;
+    virtual IStringVal & getLabel(IStringVal & ret) const override;
+    virtual IStringVal & getTypeName(IStringVal & ret) const override;
+    virtual WUGraphType getType() const override;
+    virtual WUGraphState getState() const override;
+    virtual unsigned getWfid() const override;
+    virtual IPropertyTree * getXGMMLTree(bool mergeProgress) const override;
+    virtual IPropertyTree * getXGMMLTreeRaw() const override;
 
     void setName(const char *str);
     void setLabel(const char *str);
     void setType(WUGraphType type);
+    void setWfid(unsigned wfid);
     void setXGMML(const char *str);
     void setXGMMLTree(IPropertyTree * tree);
 };
