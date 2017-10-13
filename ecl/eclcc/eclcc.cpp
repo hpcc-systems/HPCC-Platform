@@ -2016,7 +2016,7 @@ void EclCompileInstance::logStats(bool logTimings)
 
     if (logTimings)
     {
-        const WuScopeFilter filter("prop[stat]");
+        const WuScopeFilter filter("props[stat]");
         StatsLogger logger;
         Owned<IConstWUScopeIterator> scopes = &wu->getScopeIterator(filter);
         ForEach(*scopes)
