@@ -2143,6 +2143,8 @@ class CArchivedWUsReader : public CInterface, implements IArchivedWUsReader
         addToFilterString("state", req.getState());
         addToFilterString("timeFrom", req.getStartDate());
         addToFilterString("timeTo", req.getEndDate());
+        addToFilterString("beforeWU", req.getBeforeWU());
+        addToFilterString("afterWU", req.getAfterWU());
         addToFilterString("pageStart", pageFrom);
         addToFilterString("pageSize", pageSize);
         if (sashaServerIP && *sashaServerIP)
@@ -2162,6 +2164,8 @@ class CArchivedWUsReader : public CInterface, implements IArchivedWUsReader
         addToFilterString("state", req.getState());
         addToFilterString("timeFrom", req.getStartDate());
         addToFilterString("timeTo", req.getEndDate());
+        addToFilterString("beforeWU", req.getBeforeWU());
+        addToFilterString("afterWU", req.getAfterWU());
         addToFilterString("pageStart", pageFrom);
         addToFilterString("pageSize", pageSize);
         if (sashaServerIP && *sashaServerIP)
@@ -2173,7 +2177,7 @@ class CArchivedWUsReader : public CInterface, implements IArchivedWUsReader
 
     void initSashaCommand(ISashaCommand* cmd)
     {
-        cmd->setAction(SCA_LIST);
+        cmd->setAction(SCA_LISTSORTED);
         cmd->setOutputFormat("owner,jobname,cluster,state");
         cmd->setOnline(false);
         cmd->setArchived(true);
@@ -2200,6 +2204,10 @@ class CArchivedWUsReader : public CInterface, implements IArchivedWUsReader
             cmd->setAfter(timeFrom.str());
         if (timeTo.length())
             cmd->setBefore(timeTo.str());
+        if (notEmpty(req.getBeforeWU()))
+            cmd->setBeforeWU(req.getBeforeWU());
+        if (notEmpty(req.getAfterWU()))
+            cmd->setAfterWU(req.getAfterWU());
         return;
     }
 
