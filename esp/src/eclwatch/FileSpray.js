@@ -175,6 +175,9 @@ define([
                 items.push(this.userAddedFiles[key]);
             }
         },
+        preRequest: function (request) {
+            request.ECLWatchVisibleOnly = true
+        },
         preProcessRow: function (row) {
             lang.mixin(row, {
                 OS: row.Linux === "true" ? 2 : 0
