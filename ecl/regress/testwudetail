@@ -14,11 +14,13 @@ fi;
 function daliadmin {
     echo ------ daliadmin $1 ------
     echo $daliadmincmd . wuattr $wu $1
-    $daliadmincmd . wuattr $wu $1
+    #$daliadmincmd . wuattr $wu $1
+    $wutool info daliserver=. $wu $1
     echo
     echo
 }
 
+wutool=/home/gavin/buildr/RelWithDebInfo/bin/wutool
 daliadmincmd=/home/gavin/buildr/RelWithDebInfo/bin/daliadmin
 # daliadmincmd=/home/gavin/build/Debug/bin/daliadmin
 #The following should be TimeLocalExecute, but thor needs to start publishing it.
