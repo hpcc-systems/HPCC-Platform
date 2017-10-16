@@ -1,7 +1,7 @@
 <Dataset name='Result 1'>
 </Dataset>
 <Dataset name='Result 2'>
- <Row><result>Pass</result></Row>
+ <Row><result>Fail</result></Row>
 </Dataset>
 <Dataset name='Result 3'>
  <Row><result>Fail</result></Row>
