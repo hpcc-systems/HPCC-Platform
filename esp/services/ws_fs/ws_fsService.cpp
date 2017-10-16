@@ -1819,6 +1819,23 @@ bool CFileSprayEx::onGetDFUExceptions(IEspContext &context, IEspGetDFUExceptions
     return true;
 }
 
+void CFileSprayEx::readAndCheckSpraySourceReq(MemoryBuffer& srcxml, const char* srcIP, const char* srcPath,
+    StringBuffer& sourceIPReq, StringBuffer& sourcePathReq)
+{
+    StringBuffer sourcePath(srcPath);
+    sourceIPReq.set(srcIP);
+    sourceIPReq.trim();
+    sourcePath.trim();
+    if(srcxml.length() == 0)
+    {
+        if (sourceIPReq.isEmpty())
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Source network IP not specified.");
+        if (sourcePath.isEmpty())
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Source path not specified.");
+    }
+    getStandardPosixPath(sourcePathReq, sourcePath.str());
+}
+
 bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspSprayFixedResponse &resp)
 {
     try
@@ -1833,16 +1850,10 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination node group not specified.");
 
         MemoryBuffer& srcxml = (MemoryBuffer&)req.getSrcxml();
-        const char* srcip = req.getSourceIP();
-        const char* srcfile = req.getSourcePath();
-        if(srcxml.length() == 0)
-        {
-            if(!srcip || !*srcip)
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Source network IP not specified.");
-            if(!srcfile || !*srcfile)
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Source file not specified.");
-        }
-
+        StringBuffer sourceIPReq, sourcePathReq;
+        readAndCheckSpraySourceReq(srcxml, req.getSourceIP(), req.getSourcePath(), sourceIPReq, sourcePathReq);
+        const char* srcip = sourceIPReq.str();
+        const char* srcfile = sourcePathReq.str();
         const char* destname = req.getDestLogicalName();
         if(!destname || !*destname)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination file not specified.");
@@ -2015,16 +2026,10 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
             gName.append(destNodeGroup);
 
         MemoryBuffer& srcxml = (MemoryBuffer&)req.getSrcxml();
-        const char* srcip = req.getSourceIP();
-        const char* srcfile = req.getSourcePath();
-        if(srcxml.length() == 0)
-        {
-            if(!srcip || !*srcip)
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Source network IP not specified.");
-            if(!srcfile || !*srcfile)
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Source file not specified.");
-        }
-
+        StringBuffer sourceIPReq, sourcePathReq;
+        readAndCheckSpraySourceReq(srcxml, req.getSourceIP(), req.getSourcePath(), sourceIPReq, sourcePathReq);
+        const char* srcip = sourceIPReq.str();
+        const char* srcfile = sourcePathReq.str();
         const char* destname = req.getDestLogicalName();
         if(!destname || !*destname)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination file not specified.");
@@ -2294,8 +2299,8 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
         PROGLOG("Despray %s", srcname);
         double version = context.getClientVersion();
         const char* destip = req.getDestIP();
-        StringBuffer fnamebuf(req.getDestPath());
-        const char* destfile = fnamebuf.trim().str();
+        StringBuffer destPath;
+        const char* destfile = getStandardPosixPath(destPath, req.getDestPath()).str();
 
         MemoryBuffer& dstxml = (MemoryBuffer&)req.getDstxml();
         if(dstxml.length() == 0)
