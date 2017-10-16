@@ -357,6 +357,8 @@ define([
                 this.updateInput("CopyTargetName", oldValue, newValue);
             } else if (name === "IsProtected") {
                 dom.byId(this.id + "ProtectedImage").src = this.logicalFile.getProtectedImage();
+            } else if (name === "IsCompressed") {
+                dom.byId(this.id + "CompressedImage").src = this.logicalFile.getCompressedImage();
             } else if (name === "Ecl" && newValue) {
             } else if (name === "StateID") {
                 this.summaryWidget.set("iconClass", this.logicalFile.getStateIconClass());

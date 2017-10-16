@@ -316,6 +316,8 @@ define([
                 this.summaryWidget.set("iconClass", this.logicalFile.getStateIconClass());
                 domClass.remove(this.id + "StateIdImage");
                 domClass.add(this.id + "StateIdImage", this.logicalFile.getStateIconClass());
+            } else if (name === "IsCompressed") {
+                dom.byId(this.id + "CompressedImage").src = this.logicalFile.getCompressedImage();
             }
         },
 
