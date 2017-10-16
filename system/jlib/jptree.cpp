@@ -1149,10 +1149,10 @@ void PTree::appendProp(const char *xpath, const char *val)
     }
     else if ('[' == *xpath)
     {
-        aindex_t pos = getChildMatchPos(xpath);
-        if ((aindex_t) -1 == pos)
-            throw MakeIPTException(-1, "appendProp: qualifier unmatched %s", xpath);
-        appendLocal((size_t)strlen(val)+1, val, false);
+        IPropertyTree *qualified = queryPropTree(xpath);
+        if (!qualified)
+            throw MakeIPTException(-1, "addProp: qualifier unmatched %s", xpath);
+        qualified->appendProp(nullptr, val);
     }
     else
     {
@@ -1469,10 +1469,10 @@ void PTree::appendPropBin(const char *xpath, size32_t size, const void *data)
         appendLocal(size, data, true);
     else if ('[' == *xpath)
     {
-        aindex_t pos = getChildMatchPos(xpath);
-        if ((aindex_t) -1 == pos)
-            throw MakeIPTException(-1, "appendPropBin: qualifier unmatched %s", xpath);
-        appendLocal(size, data, true);
+        IPropertyTree *qualified = queryPropTree(xpath);
+        if (!qualified)
+            throw MakeIPTException(-1, "addProp: qualifier unmatched %s", xpath);
+        qualified->appendPropBin(nullptr, size, data);
     }
     else
     {
