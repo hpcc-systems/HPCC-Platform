@@ -2572,6 +2572,12 @@ void PTree::addLocal(size32_t l, const void *data, bool _binary, int pos)
     IPTArrayValue *newValue = new CPTValue(l, data, _binary);
     Owned<IPropertyTree> tree = create(queryName(), newValue);
     PTree *_tree = QUERYINTERFACE(tree.get(), PTree); assertex(_tree); _tree->setParent(this);
+
+    if (_binary)
+        IptFlagSet(_tree->flags, ipt_binary);
+    else
+        IptFlagClr(_tree->flags, ipt_binary);
+
     addingNewElement(*tree, pos);
 
     IPTArrayValue *array;
@@ -2598,11 +2604,6 @@ void PTree::addLocal(size32_t l, const void *data, bool _binary, int pos)
         array->addElement(tree);
     else
         array->setElement(pos, tree);
-
-    if (_binary)
-        IptFlagSet(flags, ipt_binary);
-    else
-        IptFlagClr(flags, ipt_binary);
 }
 
 enum exprType { t_none, t_equality, t_inequality, t_lteq, t_lt, t_gt, t_gteq } tType;
