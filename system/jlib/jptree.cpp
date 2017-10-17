@@ -1305,11 +1305,11 @@ bool PTree::isCompressed(const char *xpath) const
     else
     {
         const char *prop = splitXPathX(xpath);
-        if (prop && '\0' != *prop && !isAttribute(prop))
+        if (!isAttribute(prop))
         {
             IPropertyTree *branch = queryPropTree(xpath);
             if (branch)
-                return branch->isCompressed(prop);
+                return branch->isCompressed(nullptr);
         }
     }
     return false;
@@ -1324,11 +1324,11 @@ bool PTree::isBinary(const char *xpath) const
     else
     {
         const char *prop = splitXPathX(xpath);
-        if (prop && '\0' != *prop && !isAttribute(prop))
+        if (!isAttribute(prop))
         {
             IPropertyTree *branch = queryPropTree(xpath);
             if (branch)
-                return branch->isBinary(NULL);
+                return branch->isBinary(nullptr);
         }
     }
     return false;
