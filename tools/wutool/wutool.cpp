@@ -1076,9 +1076,9 @@ protected:
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         Owned<IWorkUnit> createWu = factory->createWorkUnit("WuTest", NULL, NULL, NULL);
         StringBuffer wuid(createWu->queryWuid());
-        createWu->createGraph("Graph1", "graphLabel", GraphTypeActivities, createPTreeFromXMLString("<graph/>"));
-        createWu->createGraph("Graph2", "graphLabel", GraphTypeActivities, createPTreeFromXMLString("<graph/>"));
-        createWu->createGraph("Graph3", "graphLabel", GraphTypeEcl, createPTreeFromXMLString("<graph/>"));
+        createWu->createGraph("Graph1", "graphLabel", GraphTypeActivities, createPTreeFromXMLString("<graph/>"), 0);
+        createWu->createGraph("Graph2", "graphLabel", GraphTypeActivities, createPTreeFromXMLString("<graph/>"), 1);
+        createWu->createGraph("Graph3", "graphLabel", GraphTypeEcl, createPTreeFromXMLString("<graph/>"), 2);
         createWu->setState(WUStateCompleted);
         createWu->commit();
         createWu.clear();
@@ -1198,7 +1198,7 @@ protected:
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         Owned<IWorkUnit> createWu = factory->createWorkUnit("WuTest", NULL, NULL, NULL);
         StringBuffer wuid(createWu->queryWuid());
-        createWu->createGraph("graph1", "graphLabel", GraphTypeActivities, createPTreeFromXMLString("<graph><node id='1'/></graph>"));
+        createWu->createGraph("graph1", "graphLabel", GraphTypeActivities, createPTreeFromXMLString("<graph><node id='1'/></graph>"), 1);
         createWu->setState(WUStateCompleted);
         createWu->commit();
         createWu.clear();
