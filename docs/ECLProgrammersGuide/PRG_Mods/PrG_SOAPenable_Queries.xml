@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SOAP-enabling_Queries">
-  <title><emphasis role="bold">SOAP-enabling Queries</emphasis></title>
+  <title>SOAP-enabling Queries</title>
 
   <para>Queries destined for use in Roxie are SOAP-enabled first. The required
   ECL code to accomplish this is the STORED workflow service. Roxie queries

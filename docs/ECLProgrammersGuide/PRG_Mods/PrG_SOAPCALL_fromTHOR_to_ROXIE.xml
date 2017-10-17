@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SOAPCALL_from_Thor_to_Roxie">
-  <title><emphasis role="bold">SOAPCALL from Thor to Roxie</emphasis></title>
+  <title>SOAPCALL from Thor to Roxie</title>
 
   <para>Once you have your SOAP-enabled queries tested and deployed to Roxie,
   you need to be able to use them. Many Roxie queries can be launched through

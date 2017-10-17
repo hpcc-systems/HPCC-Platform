@@ -2,7 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="CT_Overview">
-  <title><emphasis role="bold">Overview</emphasis></title>
+  <title>Overview</title>
 
   <para>This manual contains documentation for the set of Client Tools for use
   with the LexisNexis HPCC. These tools include:</para>
@@ -70,7 +70,7 @@
     <title>Documentation Conventions</title>
 
     <sect2 id="ECL_Language">
-      <title><emphasis>ECL Language</emphasis></title>
+      <title>ECL Language</title>
 
       <para>Although ECL is not case-sensitive, ECL reserved keywords and
       built-in functions in this document are always shown in ALL CAPS to make

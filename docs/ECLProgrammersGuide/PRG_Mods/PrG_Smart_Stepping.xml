@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Smart_Stepping">
-  <title><emphasis role="bold">Smart Stepping</emphasis></title>
+  <title>Smart Stepping</title>
 
   <sect2 id="PG_Overview">
     <title>Overview</title>

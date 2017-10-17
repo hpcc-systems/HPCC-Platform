@@ -4,8 +4,7 @@
 <sect1 id="ESDL_Attributes_leading_zero">
   <title>leading_zero(<indexterm>
       <primary>leading_zero</primary>
-    </indexterm><emphasis role="bold">n</emphasis><emphasis
-  role="bold">)</emphasis></title>
+    </indexterm>n)</title>
 
   <para>The <emphasis>leading_zero</emphasis> attribute adds zero(s) to the
   field value to so that the total length is <emphasis>n</emphasis>.</para>

@@ -19,7 +19,7 @@
   </bookinfo>
 
   <chapter id="The_ECL_Ide">
-    <title><emphasis role="bold">The ECL IDE</emphasis></title>
+    <title>The ECL IDE</title>
 
     <sect1 id="ECL_IDE_Introduction" role="nobrk">
       <title>Introduction</title>
@@ -93,7 +93,7 @@
       </sect2>
 
       <sect2 id="Configuration_Files">
-        <title><emphasis>Configuration Files</emphasis></title>
+        <title>Configuration Files</title>
 
         <para>ECL IDE uses configuration files (.CFG) to store the information
         for environments to which it will connect. Create multiple
@@ -738,7 +738,7 @@
       </sect2>
 
       <sect2 id="Login" role="brk">
-        <title><emphasis>Login</emphasis></title>
+        <title>Login</title>
 
         <para>When you start the ECL IDE, the Login window
         displays.<itemizedlist>
@@ -926,7 +926,7 @@
           tree format. Expand any folder branch to see the ECL files within
           it. The IDE supports other languages in addition to ECL, namely
           ESDL, KEL, SALT, and others. To help differentiate the files are
-          color coded according to the type of file they are. </para>
+          color coded according to the type of file they are.</para>
 
           <para><graphic fileref="../../images/CT12.jpg" /></para>
 
@@ -1290,7 +1290,7 @@
       </sect2>
 
       <sect2 id="Orb_Menu">
-        <title><emphasis>Orb Menu</emphasis></title>
+        <title>Orb Menu</title>
 
         <sect3 id="CT_ECLIDE_OrbMenu">
           <title>Orb Menu</title>
@@ -1398,7 +1398,7 @@
       </sect2>
 
       <sect2 id="Ribbon_Tabs">
-        <title><emphasis>Ribbon Tabs</emphasis></title>
+        <title>Ribbon Tabs</title>
 
         <para></para>
 
@@ -2114,7 +2114,7 @@
       </sect2>
 
       <sect2 id="CT_ECLIDE_Pop-Up_Menus">
-        <title><emphasis>Pop-up Menus</emphasis></title>
+        <title>Pop-up Menus</title>
 
         <sect3 id="CT_ECLIDE_WorkUnitPopUpMenu_">
           <title>Workunit Pop-up Menu</title>
@@ -3018,7 +3018,7 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="ECL_Builder_Window" role="brk">
-        <title><emphasis>ECL Builder Window</emphasis></title>
+        <title>ECL Builder Window</title>
 
         <para>This window allows you to edit, build, and run ECL Queries. It
         also shows results and Workunit information for each Workunit created
@@ -3174,7 +3174,7 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="Editing" role="brk">
-        <title><emphasis>Editing</emphasis></title>
+        <title>Editing</title>
 
         <para>The Builder Window also supports editing ECL files.</para>
 
@@ -3229,7 +3229,7 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="Results_Viewer">
-        <title><emphasis>Results Viewer</emphasis></title>
+        <title>Results Viewer</title>
 
         <para>Each result is displayed on a results tab on the workunit
         tab.</para>
@@ -3326,7 +3326,7 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="Graph_Viewer" role="brk">
-        <title><emphasis>Graph Viewer </emphasis></title>
+        <title>Graph Viewer </title>
 
         <para>A workunit’s execution graph is displayed in the Graph
         Tab.</para>
@@ -3360,7 +3360,7 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="ECLWatch_View" role="brk">
-        <title><emphasis>ECL Watch View </emphasis></title>
+        <title>ECL Watch View </title>
 
         <para>A workunit’s Workunit Details page view is displayed in the ECL
         Watch Tab.</para>
@@ -3460,7 +3460,7 @@ ENDMACRO;
       <title>ECL Debugger</title>
 
       <sect2 id="ECL_Debugger_Intro">
-        <title><emphasis>Introduction</emphasis></title>
+        <title>Introduction</title>
 
         <para>The ECL Debugger provides quick and easy access to features
         which show you exactly how your ECL query is working. It is integrated
@@ -3510,7 +3510,7 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="Global_and_Active_Graphs">
-        <title><emphasis>Global and Active Graphs</emphasis></title>
+        <title>Global and Active Graphs</title>
 
         <para>The two graph windows are displayed side by side within the ECL
         IDE.</para>
@@ -3535,7 +3535,7 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="Edges_and_Vertices">
-        <title><emphasis>Edges and Vertices</emphasis></title>
+        <title>Edges and Vertices</title>
 
         <para>The graphs are displayed as a series of edges and
         vertices.</para>
@@ -3557,7 +3557,7 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="Breakpoints">
-        <title><emphasis>Breakpoints</emphasis></title>
+        <title>Breakpoints</title>
 
         <para>Using the ECL Debugger breakpoint feature, the debugging process
         can be paused at any point.</para>
@@ -3644,7 +3644,7 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="Starting_the_ECL_Debugger">
-        <title><emphasis>Starting the ECL Debugger</emphasis></title>
+        <title>Starting the ECL Debugger</title>
 
         <itemizedlist mark="bullet">
           <listitem>
@@ -3675,7 +3675,7 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="Debugger_Menus">
-        <title><emphasis>Debugger Menus</emphasis></title>
+        <title>Debugger Menus</title>
 
         <para>The Home and View menu options are identical to those on the
         main the ECL IDE menu.</para>
@@ -3980,7 +3980,7 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="Stepping_through_a_query">
-        <title><emphasis>Stepping through a query</emphasis></title>
+        <title>Stepping through a query</title>
 
         <itemizedlist mark="bullet">
           <listitem>
@@ -4076,7 +4076,7 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="Setting_Local_Breakpoints">
-        <title><emphasis>Setting local breakpoints</emphasis></title>
+        <title>Setting local breakpoints</title>
 
         <itemizedlist mark="bullet">
           <listitem>
@@ -4115,8 +4115,7 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="Setting_a_breakpoint_line_in_ECL">
-        <title><emphasis>Setting a breakpoint on a line of
-        ECL</emphasis></title>
+        <title>Setting a breakpoint on a line of ECL</title>
 
         <itemizedlist mark="bullet">
           <listitem>

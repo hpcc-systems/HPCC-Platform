@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Indexing_into_SuperFiles">
-  <title><emphasis role="bold">Indexing into SuperFiles</emphasis></title>
+  <title>Indexing into SuperFiles</title>
 
   <sect2 id="SuperFiles_vs_SuperKeys">
     <title>SuperFiles vs. SuperKeys</title>

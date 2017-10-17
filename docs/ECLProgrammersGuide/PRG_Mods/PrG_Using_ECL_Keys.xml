@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Using_ECL_Keys-INDEX_Files">
-  <title><emphasis role="bold">Using ECL Keys (INDEX Files)</emphasis></title>
+  <title>Using ECL Keys (INDEX Files)</title>
 
   <para>The ETL (Extract, Transform, and Load—standard data ingest processing)
   operations in ECL typically operate against all or most of the records in
