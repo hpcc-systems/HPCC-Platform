@@ -588,9 +588,8 @@ ISourceRowPrefetcher * COutputMetaData::createDiskPrefetcher(ICodeContext * ctx,
     ISourceRowPrefetcher * fetcher = defaultCreateDiskPrefetcher(ctx, activityId);
     if (fetcher)
         return fetcher;
-//  Should do something like this, if the flag existed...
-//  if (!getMetaFlags() & MDFhasaliendatatype_or_ifblock)
-//      return new CDefaultPrefetcher(queryRecordAccessor(true));
+    if (queryTypeInfo()->canPrefetch())
+        return new CDefaultPrefetcher(queryRecordAccessor(true));
     return new CSimpleSourceRowPrefetcher(*this, ctx, activityId);
 }
 
