@@ -344,12 +344,13 @@ enum RtlFieldTypeMask
     RFTMhasXpath            = 0x00800000,                   // field has xpath
     RFTMhasInitializer      = 0x01000000,                   // field has initialzer
 
+    RFTMnoprefetch          = 0x08000000,                   // readahead function cannot be derived for this field/record
     RFTMcontainsunknown     = 0x10000000,                   // contains a field of unknown type that we can't process properly
     RFTMinvalidxml          = 0x20000000,                   // cannot be called to generate xml
     RFTMhasxmlattr          = 0x40000000,                   // if specified, then xml output includes an attribute (recursive)
     RFTMnoserialize         = 0x80000000,                   // cannot serialize this typeinfo structure (contains ifblocks, dictionaries or other nasties)
 
-    RFTMinherited           = (RFTMcontainsunknown|RFTMinvalidxml|RFTMhasxmlattr|RFTMnoserialize)    // These flags are recursively set on any parent records too
+    RFTMinherited           = (RFTMnoprefetch|RFTMcontainsunknown|RFTMinvalidxml|RFTMhasxmlattr|RFTMnoserialize)    // These flags are recursively set on any parent records too
 };
 
 //MORE: Can we provide any more useful information about ifblocks  E.g., a pseudo field?  We can add later if actually useful.
@@ -394,6 +395,7 @@ struct RtlTypeInfo : public RtlITypeInfo
 
 // Some inline helper functions to avoid having to interpret the flags.
     inline bool canSerialize() const { return (fieldType & RFTMnoserialize) == 0; }
+    inline bool canPrefetch() const { return (fieldType & RFTMnoprefetch) == 0; }
     inline bool isEbcdic() const { return (fieldType & RFTMebcdic) != 0; }
     inline bool isFixedSize() const { return (fieldType & RFTMunknownsize) == 0; }
     inline bool isLinkCounted() const { return (fieldType & RFTMlinkcounted) != 0; }

@@ -3762,7 +3762,7 @@ unsigned HqlCppTranslator::buildRtlIfBlockField(StringBuffer & instanceName, IHq
     BuildCtx declarectx(*code, declareAtom);
 
     //First generate a pseudo type entry for an ifblock.
-    unsigned fieldType = type_ifblock|RFTMcontainsifblock|RFTMnoserialize|RFTMunknownsize;
+    unsigned fieldType = type_ifblock|RFTMcontainsifblock|RFTMnoserialize|RFTMunknownsize|RFTMnoprefetch;
     {
         unsigned length = 0;
         StringBuffer childTypeName;

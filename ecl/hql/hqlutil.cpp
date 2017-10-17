@@ -9637,8 +9637,9 @@ void getFieldTypeInfo(FieldTypeInfoStruct &out, ITypeInfo *type)
         }
         else
         {
+            out.fieldType |= (RFTMalien|RFTMinvalidxml|RFTMnoserialize|RFTMnoprefetch);
             out.fieldType |= RFTMunknownsize;
-            //can't work out the size of the field - to keep it as unknown for the moment.
+            //can't work out the size of the field - so keep it as unknown for the moment.
             //until the alien field type is supported
         }
     }
@@ -9792,7 +9793,7 @@ void getFieldTypeInfo(FieldTypeInfoStruct &out, ITypeInfo *type)
     case type_transform:
     default:
         out.className = "RtlUnimplementedTypeInfo";
-        out.fieldType |= (RFTMcontainsunknown|RFTMinvalidxml|RFTMnoserialize);
+        out.fieldType |= (RFTMcontainsunknown|RFTMinvalidxml|RFTMnoserialize|RFTMnoprefetch);
         break;
     }
 }
@@ -9812,7 +9813,7 @@ unsigned buildRtlRecordFields(IRtlFieldTypeDeserializer &deserializer, unsigned 
         switch (field->getOperator())
         {
         case no_ifblock:
-            typeFlags |= RFTMnoserialize;
+            typeFlags |= (RFTMnoserialize|RFTMnoprefetch);
             break;
         case no_field:
         {
