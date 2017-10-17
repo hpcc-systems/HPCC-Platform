@@ -6635,26 +6635,29 @@ public:
                 iEvent->newAttribute(name, value.str());
             return;
         }
-        else if ('#'==*name) // binary
+        else if ('#'==*name)
         {
             dbgassertex(retValue && isValueBinary);
             *isValueBinary = false;
-            bool iptValue = 0 == strncmp(name+1, "value", 5); // this is a special IPT JSON prop name, representing a 'complex' value
-            if (iptValue)
+            if (0 == strncmp(name+1, "value", 5)) // this is a special IPT JSON prop name, representing a 'complex' value
             {
-                *isValueBinary = 0 == strncmp(name+6, "bin", 3);
-                if (*isValueBinary)
-                    JBASE64_Decode(value.str(), *retValue);
-                else
+                if ('\0' == *(name+6)) // #value
+                {
                     retValue->swapWith(value);
-                return;
+                    return;
+                }
+                else if (streq(name+6, "bin")) // #valuebin
+                {
+                    *isValueBinary = true;
+                    JBASE64_Decode(value.str(), *retValue);
+                    return;
+                }
             }
         }
 
         iEvent->beginNode(name, startOffset);
         iEvent->beginNodeContent(name);
         iEvent->endNode(name, value.length(), value.str(), false, curOffset);
-
     }
     void readArray(const char *name)
     {
