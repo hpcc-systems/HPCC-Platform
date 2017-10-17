@@ -133,7 +133,7 @@ class CBroadcaster : public CSimpleInterface
             threaded.join();
         }
     // IThreaded
-        virtual void main()
+        virtual void threadmain() override
         {
             try
             {
@@ -206,7 +206,7 @@ class CBroadcaster : public CSimpleInterface
             threaded.join();
         }
     // IThreaded
-        virtual void main()
+        virtual void threadmain() override
         {
             try
             {
@@ -558,7 +558,7 @@ class CMarker
         void start() { threaded.start(); }
         void join() { threaded.join(); }
     // IThreaded
-        virtual void main()
+        virtual void threadmain() override
         {
             chunkUnique = parent.run(startRow, endRow);
         }
@@ -886,7 +886,7 @@ protected:
             blockQueue.enqueue(sendItem); // will block if queue full
         }
     // IThreaded
-        virtual void main()
+        virtual void threadmain() override
         {
             try
             {

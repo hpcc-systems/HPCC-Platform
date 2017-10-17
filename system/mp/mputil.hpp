@@ -63,7 +63,7 @@ public:
         free(name);
     }
 
-    void main(CMessageBuffer &mb)
+    void threadmain(CMessageBuffer &mb)
     {
         if (hasexceptionhandler)
             (parent->*handler)(mb);
@@ -93,15 +93,15 @@ public:
         {
             mb.transferFrom(*(CMessageBuffer *)_mb);
         }
-        void main()
+        virtual void threadmain() override
         {
-            owner->main(mb);
+            owner->threadmain(mb);
         }
-        bool canReuse()
+        virtual bool canReuse() const override
         {
             return true;
         }
-        bool stop()
+        virtual bool stop() override
         {
             return true; 
         }

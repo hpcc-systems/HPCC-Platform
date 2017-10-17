@@ -46,7 +46,7 @@ public:
     unsigned readPacket(HeartBeatPacketHeader &hb, MemoryBuffer &mb);
     void start();
     void stop();
-    void main();
+    virtual void threadmain() override;
 
     virtual unsigned readData(MemoryBuffer &mb) = 0;
     virtual void stopReading() = 0;

@@ -268,7 +268,7 @@ public:
     {
     }
 
-    void init(void *_r)
+    virtual void init(void *_r) override
     {
         client.setown(new CSafeSocket((ISocket *) _r));
     }
@@ -326,7 +326,7 @@ public:
             throw MakeStringException(0, "Malformed request");
     }
 
-    void main()
+    virtual void threadmain() override
     {
         StringBuffer rawText;
         unsigned priority = (unsigned) -2;
@@ -413,12 +413,12 @@ public:
         client->write(&replyLen, sizeof(replyLen));
     }
 
-    bool canReuse()
+    virtual bool canReuse() const override
     {
         return true;
     }
 
-    bool stop()
+    virtual bool stop() override
     {
         ERRLOG("CHThorDebugSocketWorker stopped with queries active");
         return true; 

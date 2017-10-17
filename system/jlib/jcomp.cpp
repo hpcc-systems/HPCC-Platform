@@ -885,17 +885,17 @@ public:
         handle = 0;
         aborted = false;
     }
-    bool canReuse()             { return true; }
-    bool stop()
+    virtual bool canReuse() const override { return true; }
+    virtual bool stop() override
     {
         if (okToAbort)
             interrupt_program(handle, true);
         aborted = true;
         return true;
     }
-    void init(void *_params)    { params.set((CCompilerThreadParam *)_params); }
+    virtual void init(void *_params) override    { params.set((CCompilerThreadParam *)_params); }
 
-    void main()
+    virtual void threadmain() override
     {
         DWORD runcode = 0;
         bool success;

@@ -105,9 +105,9 @@ public:
         started = true;
     }
 
-    void startProducerThread(IThreaded & main)
+    void startProducerThread(IThreaded & mainthread)
     {
-        CThreaded * thread = new CThreaded("ReadAheadThread", &main);
+        CThreaded * thread = new CThreaded("ReadAheadThread", &mainthread);
         threads.append(*thread);
         thread->start();
     }
@@ -314,7 +314,7 @@ public:
     StreamToBlockQueueThread(CStrandJunction & _junction, IRowQueue * _queue, RowBlockAllocator & _allocator)
     : junction(_junction), queue(_queue), stream(NULL), allocator(_allocator) {}
 
-    virtual void main()
+    virtual void threadmain() override
     {
         bool done = false;
         while (!done)
@@ -656,7 +656,7 @@ public:
         alive = true;
     }
 
-    virtual void main()
+    virtual void threadmain() override
     {
         bool done = false;
         while (!done)
@@ -1025,7 +1025,7 @@ public:
         input->stop();
     }
 
-    virtual void main()
+    virtual void threadmain() override
     {
         unsigned curStrand = 0;
         bool done = false;
@@ -1262,8 +1262,8 @@ public:
     {
     }
 
-//IThreaded - main function used to read rows from the strand and add to the output
-    virtual void main()
+//IThreaded - threadmain function used to read rows from the strand and add to the output
+    virtual void threadmain() override
     {
         bool done = false;
         while (!done)

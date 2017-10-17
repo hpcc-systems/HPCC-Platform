@@ -6111,7 +6111,7 @@ IPropertyTree* CWsDeployFileInfo::queryComputersForCloud()
   return pEnvTree->queryPropTree(XML_TAG_HARDWARE);
 }
 
-void CCloudTaskThread::main()
+void CCloudTaskThread::threadmain()
 {
   static Mutex m;
   m.lock();
@@ -6244,7 +6244,7 @@ bool CWsDeployFileInfo::getSubnetIPAddr(IEspContext &context, IEspGetSubnetIPAdd
   return true;
 }
 
-void CWsDeployFileInfo::CLockerAliveThread::main()
+void CWsDeployFileInfo::CLockerAliveThread::threadmain()
 {
   while (!m_quitThread)
   {

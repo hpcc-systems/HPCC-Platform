@@ -52,13 +52,13 @@ public:
     IMPLEMENT_IINTERFACE;
 
     virtual ~CPooledHttpThread();
-    virtual void init(void *param);
-    virtual void main();
-    virtual bool stop()
+    virtual void init(void *param) override;
+    virtual void threadmain() override;
+    virtual bool stop() override
     {
         return true;
     }
-    virtual bool canReuse() { return true; }
+    virtual bool canReuse() const override { return true; }
 
     virtual void setMaxRequestEntityLength(int len) {m_MaxRequestEntityLength = len;}
     virtual int getMaxRequestEntityLength() { return m_MaxRequestEntityLength; }

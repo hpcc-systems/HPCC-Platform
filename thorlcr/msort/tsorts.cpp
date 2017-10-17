@@ -626,7 +626,7 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
             keyIf->queryRowSerializer()->serialize(out, (const byte *)keyRow.get());
         }
     };
-    void main()
+    virtual void threadmain() override
     {
         try
         {

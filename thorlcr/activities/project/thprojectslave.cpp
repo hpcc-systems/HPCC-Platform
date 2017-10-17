@@ -180,7 +180,7 @@ class CPrefetchProjectSlaveActivity : public CSlaveActivity
         {
             blockedSem.signal(); // reader might be stuck
         }
-        void main()
+        virtual void threadmain() override
         {
             for (;;)
             {

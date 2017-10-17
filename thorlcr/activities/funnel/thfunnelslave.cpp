@@ -70,7 +70,7 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
         }
 
 // IThreaded impl.
-        virtual void main()
+        virtual void threadmain() override
         {
             bool started = false;
             IEngineRowStream *inputStream = nullptr;

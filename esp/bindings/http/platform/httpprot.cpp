@@ -484,9 +484,9 @@ CPooledHttpThread::~CPooledHttpThread()
 {
 }
 
-void CPooledHttpThread::main()
+void CPooledHttpThread::threadmain()
 {
-    TimeSection timing("CPooledHttpThread::main()");
+    TimeSection timing("CPooledHttpThread::threadmain()");
     Owned<CEspHttpServer> httpserver;
     
     Owned<ISecureSocket> secure_sock;
@@ -524,18 +524,18 @@ void CPooledHttpThread::main()
     initThreadLocal(sizeof(t), &t);
     try
     {
-        ESP_TIME_SECTION("CPooledHttpThread::main: httpserver->processRequest()");
+        ESP_TIME_SECTION("CPooledHttpThread::threadmain: httpserver->processRequest()");
         httpserver->processRequest();
     }
     catch (IException *e) 
     {
         StringBuffer estr;
-        ERRLOG("Exception(%d, %s) in CPooledHttpThread::main().", e->errorCode(), e->errorMessage(estr).str());
+        ERRLOG("Exception(%d, %s) in CPooledHttpThread::threadmain().", e->errorCode(), e->errorMessage(estr).str());
         e->Release();
     }
     catch(...)
     {
-        ERRLOG("General Exception - in CPooledHttpThread::main().");
+        ERRLOG("General Exception - in CPooledHttpThread::threadmain().");
     }
     clearThreadLocal();
 
@@ -550,12 +550,12 @@ void CPooledHttpThread::main()
     catch (IException *e) 
     {
         StringBuffer estr;
-        ERRLOG("Exception(%d, %s) - CPooledHttpThread::main(), closing socket.", e->errorCode(), e->errorMessage(estr).str());
+        ERRLOG("Exception(%d, %s) - CPooledHttpThread::threadmain(), closing socket.", e->errorCode(), e->errorMessage(estr).str());
         e->Release();
     }
     catch(...)
     {
-        ERRLOG("General Exception - CPooledHttpThread::main(), closing socket.");
+        ERRLOG("General Exception - CPooledHttpThread::threadmain(), closing socket.");
     }
 
 }

@@ -185,7 +185,7 @@ public:
     {
         queryNodeComm().cancel(0, masterSlaveMpTag);
     }
-    virtual void main()
+    virtual void slaveMain()
     {
         rank_t slaveProc = queryNodeGroup().rank()-1;
         unsigned totSlaveProcs = queryNodeClusterWidth();
@@ -220,7 +220,7 @@ public:
                 ~CVerifyThread() { join(); }
                 void start() { threaded.start(); }
                 void join() { threaded.join(); }
-                virtual void main()
+                virtual void threadmain() override
                 {
                     Owned<ICommunicator> comm = jobListener.mpServers.item(channel).createCommunicator(&queryClusterGroup());
                     PROGLOG("verifying mp connection to rest of slaves (from channel=%d)", channel);
@@ -829,7 +829,7 @@ void slaveMain(bool &jobListenerStopped)
 
 #endif
 
-    jobListener.main();
+    jobListener.slaveMain();
 }
 
 void abortSlave()

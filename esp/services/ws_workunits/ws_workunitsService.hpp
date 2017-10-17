@@ -381,20 +381,20 @@ class CClusterQueryStateThreadFactory : public CInterface, public IThreadFactory
     public:
         IMPLEMENT_IINTERFACE;
 
-        void init(void *_param)
+        virtual void init(void *_param) override
         {
             param.setown((CClusterQueryStateParam *)_param);
         }
-        void main()
+        virtual void threadmain() override
         {
             param->doWork();
             param.clear();
         }
-        bool canReuse()
+        virtual bool canReuse() const override
         {
             return true;
         }
-        bool stop()
+        virtual bool stop() override
         {
             return true;
         }

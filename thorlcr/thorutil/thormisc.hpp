@@ -189,7 +189,7 @@ public:
         stop();
         threaded.join();
     }
-    void main()
+    virtual void threadmain() override
     {
         while (running)
         {

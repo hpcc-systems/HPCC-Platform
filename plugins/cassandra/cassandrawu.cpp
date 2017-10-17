@@ -2231,18 +2231,18 @@ public:
         CIArrayOf<CassandraStatement> deleteSearches;
         deleteSecondaries(wuid, deleteSearches);
 
-        CassandraBatch main(CASS_BATCH_TYPE_UNLOGGED);
-        deleteChildren(wuid, main);
-        sessionCache->deleteChildByWuid(wuGraphProgressMappings, wuid, main);
-        sessionCache->deleteChildByWuid(wuGraphStateMappings, wuid, main);
-        sessionCache->deleteChildByWuid(wuGraphRunningMappings, wuid, main);
+        CassandraBatch mainBatch(CASS_BATCH_TYPE_UNLOGGED);
+        deleteChildren(wuid, mainBatch);
+        sessionCache->deleteChildByWuid(wuGraphProgressMappings, wuid, mainBatch);
+        sessionCache->deleteChildByWuid(wuGraphStateMappings, wuid, mainBatch);
+        sessionCache->deleteChildByWuid(wuGraphRunningMappings, wuid, mainBatch);
         // If the partitioning of the main workunits table does not match the partitioning of the other tables, then would be better to
         // execute the deletes of the child tables and the main record as two separate batches.
         CassandraStatement update(sessionCache->prepareStatement("DELETE from workunits where partition=? and wuid=?;"));
         update.bindInt32(0, rtlHash32VStr(wuid, 0) % sessionCache->queryPartitions());
         update.bindString(1, wuid);
-        check(cass_batch_add_statement(main, update));
-        executeBatch(main, "delete wu");
+        check(cass_batch_add_statement(mainBatch, update));
+        executeBatch(mainBatch, "delete wu");
         executeAsync(deleteSearches, "delete wu");
     }
 

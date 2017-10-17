@@ -118,7 +118,7 @@ void CSlaveMessageHandler::stop()
     }
 }
 
-void CSlaveMessageHandler::main()
+void CSlaveMessageHandler::threadmain()
 {
     try
     {
@@ -427,7 +427,7 @@ MemoryBuffer &CMasterActivity::getInitializationData(unsigned slave, MemoryBuffe
     return dst.append(data[slave]);
 }
 
-void CMasterActivity::main()
+void CMasterActivity::threadmain()
 {
     try
     {
@@ -441,13 +441,13 @@ void CMasterActivity::main()
         else
             e2.setown(MakeActivityException(this, e, "Master exception"));
         e->Release();
-        ActPrintLog(e2, "In CMasterActivity::main");
+        ActPrintLog(e2, "In CMasterActivity::threadmain");
         fireException(e2);
     }
     catch (CATCHALL)
     {
         Owned<IException> e = MakeThorFatal(NULL, TE_MasterProcessError, "FATAL: Unknown master process exception kind=%s, id=%" ACTPF "d", activityKindStr(container.getKind()), container.queryId());
-        ActPrintLog(e, "In CMasterActivity::main");
+        ActPrintLog(e, "In CMasterActivity::threadmain");
         fireException(e);
     }
 }
@@ -465,7 +465,7 @@ void CMasterActivity::startProcess(bool async)
         threaded.start();
     }
     else
-        main();
+        threadmain();
 }
 
 bool CMasterActivity::wait(unsigned timeout)
@@ -1807,7 +1807,7 @@ void CJobMaster::pause(bool doAbort)
                 threaded.join();
             }
         // IThreaded
-            virtual void main()
+            virtual void threadmain() override
             {
                 owner.abort(exception);
             }

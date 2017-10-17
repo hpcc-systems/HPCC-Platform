@@ -167,7 +167,7 @@ public:
     }
 
 // IThreaded
-    void main()
+    virtual void threadmain() override
     {
         LOG(MCdebugProgress, thorJob, "Watchdog: thread running");
         gatherAndSend(); // send initial data

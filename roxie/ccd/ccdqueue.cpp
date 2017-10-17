@@ -951,18 +951,18 @@ public:
         busy = false;
         abortJob = false;
     }
-    void init(void *_r) 
+    virtual void init(void *_r) override
     {
         queue = (RoxieQueue *) _r;
         stopped = false;
         busy = false;
         abortJob = false;
     }
-    bool canReuse()
+    virtual bool canReuse() const override
     {
         return true;
     }
-    bool stop()
+    virtual bool stop() override
     {
         stopped = true;
         return true; 
@@ -1275,7 +1275,7 @@ public:
         setActivity(NULL);
     }
 
-    void main()
+    virtual void threadmain() override
     {
         while (!stopped)
         {

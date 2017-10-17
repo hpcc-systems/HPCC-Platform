@@ -4584,14 +4584,14 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
             MemoryBuffer msg;
         };
 
-        void init(void *_params)
+        virtual void init(void *_params) override
         {
             cCommandProcessorParams &params = *(cCommandProcessorParams *)_params;
             client.setown(params.client);
             msg.swapWith(params.msg);
         }
 
-        void main()
+        virtual void threadmain() override
         {
             // idea is that initially we process commands inline then pass over to select handler
             try
@@ -4601,7 +4601,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
             catch (IException *e)
             {
                 // suppress some errors
-                EXCLOG(e,"cCommandProcessor::main");
+                EXCLOG(e,"cCommandProcessor::threadmain");
                 e->Release();
             }
             try
@@ -4611,15 +4611,15 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
             catch (IException *e)
             {
                 // suppress some more errors clearing client
-                EXCLOG(e,"cCommandProcessor::main(2)");
+                EXCLOG(e,"cCommandProcessor::threadmain(2)");
                 e->Release();
             }
         }
-        bool stop()
+        virtual bool stop() override
         {
             return true;
         }
-        bool canReuse()
+        virtual bool canReuse() const override
         {
             return false; // want to free owned socket
         }
@@ -6405,7 +6405,7 @@ protected:
                 threaded.join();
             }
         // IThreaded
-            virtual void main()
+            virtual void threadmain() override
             {
                 DAFSConnectCfg sslCfg = SSLNone;
                 server->run(sslCfg, socket, nullptr);
@@ -6581,7 +6581,7 @@ protected:
                 threaded.join();
             }
             // IThreaded impl.
-            virtual void main()
+            virtual void threadmain() override
             {
                 MilliSleep(1000); // give monitorDirectory a chance to be monitoring
 

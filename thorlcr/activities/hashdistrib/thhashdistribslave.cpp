@@ -406,14 +406,14 @@ protected:
                 target = NULL;
                 compressor.setown(distributor.getCompressor());
             }
-            void init(void *startInfo)
+            virtual void init(void *startInfo) override
             {
                 nextPending = getRandom()%distributor.numnodes;
                 _sendBucket.setown((CSendBucket *)startInfo);
                 target = owner.targets.item(_sendBucket->queryDestination());
                 target->incActiveWriters();
             }
-            void main()
+            virtual void threadmain() override
             {
                 Owned<CSendBucket> sendBucket = _sendBucket.getClear();
                 unsigned dest = sendBucket->queryDestination();
@@ -472,8 +472,8 @@ protected:
                     HDSendPrintLog3("CWriteHandler, now dealing with (b=%d), size=%d", sendBucket->queryDestination(), sendBucket->querySize());
                 }
             }
-            bool canReuse() { return true; }
-            bool stop() { return true; }
+            virtual bool canReuse() const override { return true; }
+            virtual bool stop() override { return true; }
         };
 
         CDistributorBase &owner;
@@ -924,7 +924,7 @@ protected:
             parent->stopRecv();
         }
     // IThreaded impl.
-        virtual void main()
+        virtual void threadmain() override
         {
             parent->recvloop();
             parent->recvloopdone();
@@ -944,7 +944,7 @@ protected:
         void start() { threaded.start(); }
         void join(unsigned timeout=INFINITE) { threaded.join(timeout); }
     // IThreaded impl.
-        virtual void main()
+        virtual void threadmain() override
         {
             parent->sendloop();
         }

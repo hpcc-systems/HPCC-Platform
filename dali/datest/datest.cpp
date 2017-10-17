@@ -1122,12 +1122,12 @@ class TSDSThread : public CInterface, implements IPooledThread
 public:
     IMPLEMENT_IINTERFACE;
 
-    virtual void init(void *param)
+    virtual void init(void *param) override
     {
         path.set((char *) param);
     }
 
-    virtual void main()
+    virtual void threadmain() override
     {
         try
         {
@@ -1146,12 +1146,12 @@ public:
         }
     }
 
-    virtual bool stop()
+    virtual bool stop() override
     {
         return true;
     }
 
-    virtual bool canReuse() { return true; }
+    virtual bool canReuse() const override { return true; }
 };
 
 class TSDSTestPool : public CInterface, implements IThreadFactory
@@ -1449,7 +1449,7 @@ public:
     CStressTestBase(const char *_name, unsigned _occurence) : name(_name), occurence(_occurence)
     {
     }
-    void main()
+    void threadmain()
     {
         PROGLOG("test; %s - start", name.get());
         test();
@@ -1561,16 +1561,16 @@ class CStressPoolFactory : public CInterface, public IThreadFactory
         unsigned delay, test;
     public:
         IMPLEMENT_IINTERFACE;
-        void init(void *startInfo) 
+        virtual void init(void *startInfo) override
         {
             stressTest.set((CStressTestBase *)startInfo);
         }
 
-        void main()
+        virtual void threadmain() override
         {
             try
             {
-                stressTest->main();
+                stressTest->threadmain();
             }
             catch (IException *e)
             {
@@ -1578,11 +1578,11 @@ class CStressPoolFactory : public CInterface, public IThreadFactory
                 EXCLOG(e, s.append(" failure").str());
             }
         }
-        bool canReuse()
+        virtual bool canReuse() const override
         {
             return true;
         }
-        bool stop()
+        virtual bool stop() override
         {
             return true;
         }
@@ -2285,15 +2285,15 @@ public:
 
     TestSDS3TestThread() : threaded("TestSDS3TestThread") { }
     
-    virtual void init(void *param)
+    virtual void init(void *param) override
     {
         SDS3Params *params = (SDS3Params *)param;
         reinitLock = params->reinitLock;
         group = params->group;
     }
-    virtual bool stop() { return true; }
-    virtual bool canReuse() { return true; }
-    virtual void main()
+    virtual bool stop() override { return true; }
+    virtual bool canReuse() const override { return true; }
+    virtual void threadmain() override
     {
         action = getRandom() % 8;
         mode = getRandom() % 2;
@@ -2489,15 +2489,15 @@ void TestNodeSubs()
             IMPLEMENT_IINTERFACE;
 
             CNodeSubThread(CNodeSubPool &_owner) : owner(_owner) { }
-            virtual void init(void *param)
+            virtual void init(void *param) override
             {
             }
-            virtual void main()
+            virtual void threadmain() override
             {
                 owner.test();
             }
-            virtual bool stop() { return true; }
-            virtual bool canReuse() { return true; }
+            virtual bool stop() override { return true; }
+            virtual bool canReuse() const override { return true; }
         };
     public:
         CNodeSubPool()

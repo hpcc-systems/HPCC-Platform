@@ -1233,7 +1233,7 @@ public:
         stop();
         threaded.join();
     }
-    virtual void main()
+    virtual void threadmain() override
     {
         CMessageBuffer mb;
         while (running)

@@ -197,7 +197,7 @@ struct ReplicateFileItem: extends CInterface
         int run()
         {
             try {
-                parent.main();
+                parent.run();
             }
             catch (IException *e) {
                 EXCLOG(e,LOGPFX "Replicate thread error(1)");
@@ -246,7 +246,7 @@ struct ReplicateFileItem: extends CInterface
 
     void done();
 
-    void main()
+    void run()
     {
         StringBuffer tmp;
         const char *lfn = dlfn.get();
@@ -473,7 +473,7 @@ public:
         thread->init(this);
     }
 
-    void main()
+    virtual void threadmain() override
     {
         Owned<INamedQueueConnection> qconn = createNamedQueueConnection(0);
         qchannel.setown(qconn->open(qname));

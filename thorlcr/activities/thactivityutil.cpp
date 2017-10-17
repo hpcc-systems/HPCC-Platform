@@ -171,7 +171,7 @@ public:
                 }
             }
         // IThreaded impl.
-            virtual void main()
+            virtual void threadmain() override
             {
                 owner.doNotify();
             }

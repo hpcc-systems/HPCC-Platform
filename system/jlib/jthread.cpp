@@ -558,7 +558,7 @@ CThreadedPersistent::~CThreadedPersistent()
     athread.join();
 }
 
-void CThreadedPersistent::main()
+void CThreadedPersistent::threadmain()
 {
     for (;;)
     {
@@ -567,7 +567,7 @@ void CThreadedPersistent::main()
             break;
         try
         {
-            owner->main();
+            owner->threadmain();
             // Note we do NOT call the thread reset hook here - these threads are expected to be able to preserve state, I think
         }
         catch (IException *e)
@@ -611,7 +611,7 @@ bool CThreadedPersistent::join(unsigned timeout)
             unsigned expected = s_joining;
             if (state.compare_exchange_strong(expected, s_running)) // if still joining, restore running state
                 return false;
-            // if here, main() set s_ready after timeout and has or will signal
+            // if here, threadmain() set s_ready after timeout and has or will signal
             if (!joinSem.wait(60000)) // should be instant
                 throwUnexpected();
             return true;
@@ -852,7 +852,7 @@ public:
                 char *temp = threadname;    // swap running name and threadname
                 threadname = runningname;
                 runningname = temp;
-                thread->main();
+                thread->threadmain();
                 temp = threadname;  // and back
                 threadname = runningname;
                 runningname = temp;

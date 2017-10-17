@@ -209,7 +209,7 @@ class CWorkUnitWriteLocalActivityMaster : public CWorkUnitWriteMasterBase
                 sem.signal();
             }
         }
-        virtual void main()
+        virtual void threadmain() override
         {
             started = true;
             for (;;)

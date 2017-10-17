@@ -56,7 +56,7 @@ extern jlib_decl unsigned threadLogID();  // for use in logging
 // terminates. Such a function should call on to the previously registered function (if any) - generally you
 // would expect to store that value in thread-local storage.
 // This can be used to ensure that thread-specific objects can be properly destructed.
-// Note that threadpools also call the thread termination hook when each thread's main function terminates,
+// Note that threadpools also call the thread termination hook when each thread's threadmain function terminates,
 // so the hook function should clear any variables if necessary rather than assuming that they will be cleared
 // at thread startup time.
 
@@ -146,7 +146,7 @@ public:
 
 interface IThreaded
 {
-    virtual void main() = 0;
+    virtual void threadmain() = 0;
 protected:
     virtual ~IThreaded() {}
 };
@@ -159,7 +159,7 @@ public:
     inline CThreaded(const char *name, IThreaded *_owner) : Thread(name), owner(_owner) { }
     inline CThreaded(const char *name) : Thread(name) { owner = NULL; }
     inline void init(IThreaded *_owner) { owner = _owner; start(); }
-    virtual int run() { owner->main(); return 1; }
+    virtual int run() { owner->threadmain(); return 1; }
 };
 
 extern jlib_decl void asyncStart(IThreaded & threaded);
@@ -176,7 +176,7 @@ class jlib_decl CThreadedPersistent : public CInterface
         CThreadedPersistent &owner;
     public:
         CAThread(CThreadedPersistent &_owner, const char *name) : Thread(name), owner(_owner) { }
-        virtual int run() { owner.main(); return 1; }
+        virtual int run() { owner.threadmain(); return 1; }
     } athread;
     Owned<IException> exception;
     IThreaded *owner;
@@ -185,7 +185,7 @@ class jlib_decl CThreadedPersistent : public CInterface
     bool halt;
     enum ThreadStates { s_ready, s_running, s_joining };
 
-    void main();
+    void threadmain();
 public:
     CThreadedPersistent(const char *name, IThreaded *_owner);
     ~CThreadedPersistent();
@@ -211,10 +211,10 @@ public:
 interface IPooledThread: extends IInterface                 // base class for deriving pooled thread (alternative to Thread)
 {
 public:
-       virtual void init(void *param)=0;                    // called before main started (from within start)
-       virtual void main()=0;                               // where threads code goes (param is passed from start)
-       virtual bool stop()=0;                               // called to cause main to return, returns false if request rejected
-       virtual bool canReuse()=0;                           // return true if object can be re-used (after stopped), otherwise released
+    virtual void init(void *param) = 0;                    // called before threadmain started (from within start)
+    virtual void threadmain() = 0;                         // where threads code goes (param is passed from start)
+    virtual bool stop() = 0;                               // called to cause threadmain to return, returns false if request rejected
+    virtual bool canReuse() const = 0;                     // return true if object can be re-used (after stopped), otherwise released
 };
 
 interface IThreadFactory: extends IInterface                // factory for creating new pooled instances (called when pool empty)
