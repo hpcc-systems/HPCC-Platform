@@ -1212,4 +1212,170 @@ CPPUNIT_TEST_SUITE_REGISTRATION(JlibMapping);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibMapping, "JlibMapping");
 
 
+class JlibIPTTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(JlibIPTTest);
+        CPPUNIT_TEST(test);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void test()
+    {
+        Owned<IPropertyTree> testTree = createPTreeFromXMLString(
+                "<cpptest attr1='attrval1' attr2='attrval2'>"
+                " <sub1 subattr1='sav1'>sub1val</sub1>"
+                " <sub2 subattr2='sav2'>sub2val</sub2>"
+                " <subX subattr3='sav3'>subXval</subX>"
+                " <item a='1' b='2' c='3' d='4'/>"
+                " <item a='2'/>"
+                " <item a='3'/>"
+                " <array>"
+                "  <valX>x</valX>"
+                "  <valX>x</valX>"
+                "  <valY>y</valY>"
+                "  <valY>y</valY>"
+                "  <valZ>z</valZ>"
+                " </array>"
+                " <binprop bin='1' xsi:type='SOAP-ENC:base64'>CwAAAA==</binprop>"
+                "cpptestval"
+                "</cpptest>");
+        MemoryBuffer mb;
+        mb.reserveTruncate(4*1024+1); // Must be > PTREE_COMPRESS_THRESHOLD (see top of jptree.cpp)
+
+        testTree->addProp("binprop/subbinprop", "nonbinval1");
+        testTree->addPropBin("binprop/subbinprop", mb.length(), mb.toByteArray());
+        testTree->addProp("binprop/subbinprop", "nonbinval2");
+        testTree->addPropBin("binprop/subbinprop", mb.length(), mb.toByteArray());
+
+        // test some sets in prep. for 'get' tests
+        CPPUNIT_ASSERT(testTree->renameProp("subX", "subY"));
+        IPropertyTree *subY = testTree->queryPropTree("subY");
+        CPPUNIT_ASSERT(testTree->renameTree(subY, "sub3"));
+
+        IPropertyTree *subtest = testTree->setPropTree("subtest");
+        subtest = testTree->addPropTree("subtest", createPTree());
+        CPPUNIT_ASSERT(subtest != nullptr);
+        subtest = testTree->queryPropTree("subtest[2]");
+        CPPUNIT_ASSERT(subtest != nullptr);
+        subtest->setProp("str", "str1");
+        subtest->addProp("str", "str2");
+        subtest->appendProp("str[2]", "-more");
+
+        subtest->setPropBool("bool", true);
+        subtest->addPropBool("bool", false);
+
+        subtest->setPropInt("int", 1);
+        subtest->addPropInt("int", 2);
+
+        subtest->setPropInt64("int64", 1);
+        subtest->addPropInt64("int64", 2);
+
+        mb.clear().append("binstr1");
+        subtest->setPropBin("bin", mb.length(), mb.toByteArray());
+        mb.clear().append("binstr2");
+        subtest->addPropBin("bin", mb.length(), mb.toByteArray());
+        mb.clear().append("-more");
+        subtest->appendPropBin("bin[1]", mb.length(), mb.toByteArray());
+
+
+        // position insertion.
+        testTree->addProp("newprop", "v1");
+        testTree->addProp("newprop", "v2");
+        testTree->addProp("newprop[2]", "v3");
+        CPPUNIT_ASSERT(streq("v3", testTree->queryProp("newprop[2]")));
+
+        CPPUNIT_ASSERT(testTree->hasProp("sub1"));
+        CPPUNIT_ASSERT(testTree->hasProp("sub1/@subattr1"));
+        CPPUNIT_ASSERT(testTree->hasProp("sub2/@subattr2"));
+        CPPUNIT_ASSERT(testTree->hasProp("@attr1"));
+        CPPUNIT_ASSERT(!testTree->isBinary("@attr1"));
+        CPPUNIT_ASSERT(!testTree->isBinary("sub1"));
+        CPPUNIT_ASSERT(testTree->isBinary("binprop"));
+        CPPUNIT_ASSERT(!testTree->isCompressed("binprop"));
+        CPPUNIT_ASSERT(!testTree->isBinary("binprop/subbinprop[1]"));
+        CPPUNIT_ASSERT(testTree->isBinary("binprop/subbinprop[2]"));
+        CPPUNIT_ASSERT(!testTree->isCompressed("binprop/subbinprop[3]"));
+        CPPUNIT_ASSERT(testTree->isCompressed("binprop/subbinprop[4]"));
+
+        // testing if subX was renamed correctly
+        CPPUNIT_ASSERT(!testTree->hasProp("subX"));
+        CPPUNIT_ASSERT(!testTree->hasProp("subY"));
+        CPPUNIT_ASSERT(testTree->hasProp("sub3"));
+
+        StringBuffer astr;
+        CPPUNIT_ASSERT(testTree->getProp("sub1", astr));
+        CPPUNIT_ASSERT(streq("sub1val", astr.str()));
+        CPPUNIT_ASSERT(streq("sub2val", testTree->queryProp("sub2")));
+
+        subtest = testTree->queryPropTree("subtest[2]");
+        CPPUNIT_ASSERT(subtest != nullptr);
+
+        CPPUNIT_ASSERT(subtest->getPropBool("bool[1]"));
+        CPPUNIT_ASSERT(!subtest->getPropBool("bool[2]"));
+
+        CPPUNIT_ASSERT(1 == subtest->getPropInt("int[1]"));
+        CPPUNIT_ASSERT(2 == subtest->getPropInt("int[2]"));
+
+        CPPUNIT_ASSERT(1 == subtest->getPropInt64("int64[1]"));
+        CPPUNIT_ASSERT(2 == subtest->getPropInt64("int64[2]"));
+
+        subtest->getPropBin("bin[1]", mb.clear());
+        const char *ptr = (const char *)mb.toByteArray();
+        CPPUNIT_ASSERT(streq("binstr1", ptr)); // NB: null terminator was added at set time.
+        CPPUNIT_ASSERT(streq("-more", ptr+strlen("binstr1")+1)); // NB: null terminator was added at set time.
+        subtest->getPropBin("bin[2]", mb.clear());
+        CPPUNIT_ASSERT(streq("binstr2", mb.toByteArray())); // NB: null terminator was added at set time.
+
+        CPPUNIT_ASSERT(testTree->hasProp("subtest/bin[2]"));
+        CPPUNIT_ASSERT(testTree->removeProp("subtest/bin[2]"));
+        CPPUNIT_ASSERT(!testTree->hasProp("subtest/bin[2]"));
+
+        CPPUNIT_ASSERT(testTree->hasProp("subtest"));
+        CPPUNIT_ASSERT(testTree->removeTree(subtest)); // this is subtest[2]
+        subtest = testTree->queryPropTree("subtest"); // now just 1
+        CPPUNIT_ASSERT(testTree->removeTree(subtest));
+        CPPUNIT_ASSERT(!testTree->hasProp("subtest"));
+
+        IPropertyTree *item3 = testTree->queryPropTree("item[@a='3']");
+        CPPUNIT_ASSERT(nullptr != item3);
+        CPPUNIT_ASSERT(2 == testTree->queryChildIndex(item3));
+
+        CPPUNIT_ASSERT(streq("item", item3->queryName()));
+
+        Owned<IPropertyTreeIterator> iter = testTree->getElements("item");
+        unsigned a=1;
+        ForEach(*iter)
+        {
+            CPPUNIT_ASSERT(a == iter->query().getPropInt("@a"));
+            ++a;
+        }
+
+        Owned<IAttributeIterator> attrIter = testTree->queryPropTree("item[1]")->getAttributes();
+        CPPUNIT_ASSERT(4 == attrIter->count());
+        unsigned i = 0;
+        ForEach(*attrIter)
+        {
+            const char *name = attrIter->queryName();
+            const char *val = attrIter->queryValue();
+            CPPUNIT_ASSERT('a'+i == *(name+1));
+            CPPUNIT_ASSERT('1'+i == *val);
+            ++i;
+        }
+
+        IPropertyTree *array = testTree->queryPropTree("array");
+        CPPUNIT_ASSERT(array != nullptr);
+        CPPUNIT_ASSERT(array->hasChildren());
+        CPPUNIT_ASSERT(3 == array->numUniq());
+        CPPUNIT_ASSERT(5 == array->numChildren());
+
+        CPPUNIT_ASSERT(!testTree->isCaseInsensitive());
+        CPPUNIT_ASSERT(3 == testTree->getCount("sub*"));
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(JlibIPTTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIPTTest, "JlibIPTTest");
+
+
+
 #endif // _USE_CPPUNIT
