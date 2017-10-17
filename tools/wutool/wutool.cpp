@@ -219,7 +219,8 @@ static void process(IConstWorkUnit &w, IProperties *globals, const StringArray &
         if (to.length()==0)
             to.append('.');
         StringAttr wuid(w.queryWuid());
-        if (QUERYINTERFACE(&w, IExtendedWUInterface)->archiveWorkUnit(to.str(), globals->getPropBool("DEL", false), true, globals->getPropBool("DELETERESULTS", false), globals->getPropBool("INCLUDEFILES", false)))
+        IExtendedWUInterface * wuInterface = QUERYINTERFACE(&w, IExtendedWUInterface);
+        if (wuInterface && wuInterface->archiveWorkUnit(to.str(), globals->getPropBool("DEL", false), true, globals->getPropBool("DELETERESULTS", false), globals->getPropBool("INCLUDEFILES", false)))
             printf("archived %s\n", wuid.str());
         else
             printf("archive of %s failed\n", wuid.str());
@@ -292,7 +293,7 @@ int main(int argc, const char *argv[])
             globals->setProp("#action", argv[i]);
         }
     }
-    if (!action)
+    if (!action || !*action)
     {
         usage(nullptr);
         _exit(4);
@@ -381,7 +382,7 @@ int main(int argc, const char *argv[])
         }
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
 #ifdef _USE_CPPUNIT
-        if (action && (stricmp(action, "-selftest")==0))
+        if (stricmp(action, "-selftest")==0)
         {
             StringBuffer testName;
             if (!globals->getProp("test", testName))
@@ -395,13 +396,13 @@ int main(int argc, const char *argv[])
         }
         else
 #endif
-        if (action && (stricmp(action, "validate")==0))
+        if (stricmp(action, "validate")==0)
         {
             bool fix = globals->getPropBool("fix", false);
             unsigned errors = factory->validateRepository(fix);
             printf("%u errors %s\n", errors, (fix && errors) ? "fixed" : "found");
         }
-        else if (action && (stricmp(action, "clear")==0))
+        else if (stricmp(action, "clear")==0)
         {
             if (globals->getPropBool("entire", false) && globals->getPropBool("repository", false))
             {
@@ -411,12 +412,12 @@ int main(int argc, const char *argv[])
             else
                 printf("You need to specify entire=1 and repository=1 to delete entire repository\n");
         }
-        else if (action && (stricmp(action, "initialize")==0))
+        else if (stricmp(action, "initialize")==0)
         {
             factory->createRepository();
             printf("Repository created\n");
         }
-        else if (action && (stricmp(action, "orphans")==0 || stricmp(action, "cleanup")==0))
+        else if (stricmp(action, "orphans")==0 || stricmp(action, "cleanup")==0)
         {
             factory->setTracingLevel(0);
             StringArray killWuids;
@@ -636,8 +637,8 @@ int main(int argc, const char *argv[])
         E->Release();
         ret = 2;
     }
-    closeDllServer();   
-    closeEnvironment(); 
+    closeDllServer();
+    closeEnvironment();
     clientShutdownWorkUnit();
     closedownClientProcess();   // dali client closedown
     if (queryActiveTimer())
