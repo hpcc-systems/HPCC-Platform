@@ -1151,7 +1151,7 @@ void PTree::appendProp(const char *xpath, const char *val)
     {
         IPropertyTree *qualified = queryPropTree(xpath);
         if (!qualified)
-            throw MakeIPTException(-1, "addProp: qualifier unmatched %s", xpath);
+            throw MakeIPTException(-1, "appendProp: qualifier unmatched %s", xpath);
         qualified->appendProp(nullptr, val);
     }
     else
@@ -1471,7 +1471,7 @@ void PTree::appendPropBin(const char *xpath, size32_t size, const void *data)
     {
         IPropertyTree *qualified = queryPropTree(xpath);
         if (!qualified)
-            throw MakeIPTException(-1, "addProp: qualifier unmatched %s", xpath);
+            throw MakeIPTException(-1, "appendPropBin: qualifier unmatched %s", xpath);
         qualified->appendPropBin(nullptr, size, data);
     }
     else
