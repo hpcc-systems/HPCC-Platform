@@ -386,8 +386,8 @@ protected:
     bool optUnordered = false; // is the output specified as unordered?
     unsigned heapFlags;
 
-    mutable __int64 processed;
-    mutable __int64 started;
+    mutable RelaxedAtomic<__int64> processed = {0};
+    mutable RelaxedAtomic<__int64> started = {0};
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -395,8 +395,6 @@ public:
     CRoxieServerActivityFactoryBase(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
         : CActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
     {
-        processed = 0;
-        started = 0;
         dependentCount = 0;
         optParallel = _graphNode.getPropInt("att[@name='parallel']/@value", 0);
         optUnordered = !_graphNode.getPropBool("att[@name='ordered']/@value", true);
@@ -477,16 +475,12 @@ public:
     {
         dbgassertex(!_idx);
         if (_processed)
-        {
-            CriticalBlock b(statsCrit);
             processed += _processed;
-        }
     }
 
     virtual void noteStarted() const
     {
-        CriticalBlock b(statsCrit);
-        started ++;
+        started++;
     }
 
     virtual void noteStarted(unsigned idx) const
@@ -496,12 +490,12 @@ public:
 
     virtual void getEdgeProgressInfo(unsigned output, IPropertyTree &edge) const
     {
-        CriticalBlock b(statsCrit);
         if (output == 0)
         {
             putStatsValue(&edge, "count", "sum", processed);
-            if (started)
-                putStatsValue(&edge, "started", "sum", started);
+            auto _started = started.load();
+            if (_started)
+                putStatsValue(&edge, "started", "sum", _started);
         }
         else
             ERRLOG("unexpected call to getEdgeProcessInfo for output %d in activity %d", output, queryId());
@@ -510,23 +504,22 @@ public:
     virtual void getNodeProgressInfo(IPropertyTree &node) const
     {
         CActivityFactory::getNodeProgressInfo(node);
-        CriticalBlock b(statsCrit);
-        if (started)
-            putStatsValue(&node, "_roxieStarted", "sum", started);
+        auto _started = started.load();
+        if (_started)
+            putStatsValue(&node, "_roxieStarted", "sum", _started);
     }
 
     virtual void resetNodeProgressInfo()
     {
         CActivityFactory::resetNodeProgressInfo();
-        CriticalBlock b(statsCrit);
         processed = 0;
         started = 0;
     }
     virtual void getActivityMetrics(StringBuffer &reply) const
     {
         CActivityFactory::getActivityMetrics(reply);
-        CriticalBlock b(statsCrit);
         putStatsValue(reply, "_roxieStarted", "sum", started);
+        CriticalBlock b(statsCrit);
         putStatsValue(reply, "totalTime", "sum", (unsigned) (mystats.getSerialStatisticValue(StTimeTotalExecute)/1000));
         putStatsValue(reply, "localTime", "sum", (unsigned) (mystats.getSerialStatisticValue(StTimeLocalExecute)/1000));
     }
@@ -719,16 +712,13 @@ public:
 class CRoxieServerMultiOutputFactory : public CRoxieServerActivityFactory
 {
 protected:
-    unsigned numOutputs;
-    unsigned __int64 *processedArray;
-    bool *startedArray;
+    unsigned numOutputs = 0;
+    RelaxedAtomic<__int64> *processedArray = nullptr;
+    RelaxedAtomic<__int64> *startedArray = nullptr;
 
     CRoxieServerMultiOutputFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
         : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
     {
-        numOutputs = 0;
-        processedArray = NULL;
-        startedArray = NULL;
     }
 
     ~CRoxieServerMultiOutputFactory()
@@ -742,8 +732,8 @@ protected:
         numOutputs = num;
         if (!num)
             num = 1; // Even sink activities like to track how many records they process
-        processedArray = new unsigned __int64[num];
-        startedArray = new bool[num];
+        processedArray = new RelaxedAtomic<__int64>[num];
+        startedArray = new RelaxedAtomic<__int64>[num];
         for (unsigned i = 0; i < num; i++)
         {
             processedArray[i] = 0;
@@ -754,7 +744,6 @@ protected:
     virtual void getEdgeProgressInfo(unsigned idx, IPropertyTree &edge) const
     {
         assertex(numOutputs ? idx < numOutputs : idx==0);
-        CriticalBlock b(statsCrit);
         putStatsValue(&edge, "count", "sum", processedArray[idx]);
         putStatsValue(&edge, "started", "sum", startedArray[idx]);
     }
@@ -762,7 +751,6 @@ protected:
     virtual void resetNodeProgressInfo()
     {
         CRoxieServerActivityFactory::resetNodeProgressInfo();
-        CriticalBlock b(statsCrit);
         for (unsigned i = 0; i < numOutputs; i++)
         {
             processedArray[i] = 0;
@@ -773,15 +761,13 @@ protected:
     virtual void noteProcessed(unsigned idx, unsigned _processed) const
      {
          assertex(numOutputs ? idx < numOutputs : idx==0);
-         CriticalBlock b(statsCrit);
          processedArray[idx] += _processed;
      }
 
     virtual void noteStarted(unsigned idx) const
     {
         assertex(numOutputs ? idx < numOutputs : idx==0);
-        CriticalBlock b(statsCrit);
-        startedArray[idx] = true;
+        startedArray[idx]++;
     }
 };
 
