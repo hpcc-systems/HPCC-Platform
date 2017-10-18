@@ -217,6 +217,7 @@ public:
     {
         return getOffset(variableOffsets, numFields);
     }
+    size32_t getRecordSize(const void *data) const;
 
     size32_t getMinRecordSize() const;
     size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in) const;

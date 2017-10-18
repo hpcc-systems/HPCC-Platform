@@ -276,11 +276,13 @@ void RtlRecord::calcRowOffsets(size_t * variableOffsets, const void * _row, unsi
 {
     const byte * row = static_cast<const byte *>(_row);
     unsigned maxVarField = (numFieldsUsed>=numFields) ? numVarFields : whichVariableOffset[numFieldsUsed];
+    size32_t varoffset = 0;
     for (unsigned i = 0; i < maxVarField; i++)
     {
         unsigned fieldIndex = variableFieldIds[i];
-        size_t offset = getOffset(variableOffsets, fieldIndex);
-        size_t fieldSize = queryType(fieldIndex)->size(row + offset, row);
+        size32_t offset = fixedOffsets[fieldIndex] + varoffset;
+        size32_t fieldSize = queryType(fieldIndex)->size(row + offset, row);
+        varoffset += fieldSize;
         variableOffsets[i+1] = offset+fieldSize;
     }
 #ifdef _DEBUG
@@ -371,6 +373,25 @@ const RtlRecord *RtlRecord::queryNested(unsigned fieldId) const
         if (tableIds[i]==fieldId)
             return nestedTables[i];
     return nullptr;
+}
+
+size32_t RtlRecord::getRecordSize(const void *_row) const
+{
+    size32_t size = getFixedSize();
+    if (!size)
+    {
+        const byte * row = static_cast<const byte *>(_row);
+        size32_t varoffset = 0;
+        for (unsigned i = 0; i < numVarFields; i++)
+        {
+            unsigned fieldIndex = variableFieldIds[i];
+            size32_t offset = fixedOffsets[fieldIndex] + varoffset;
+            size32_t fieldSize = queryType(fieldIndex)->size(row + offset, row);
+            varoffset += fieldSize;
+        }
+        size = fixedOffsets[numFields] + varoffset;
+    }
+    return size;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -505,17 +526,7 @@ const RtlRecord &COutputMetaData::queryRecordAccessor(bool expand) const
 
 size32_t COutputMetaData::getRecordSize(const void * data)
 {
-    //Allocate a temporary offset array on the stack to avoid runtime overhead.
-    const RtlRecord &r = queryRecordAccessor(true);
-    size32_t size = r.getFixedSize();
-    if (!size)
-    {
-        unsigned numOffsets = r.getNumVarFields() + 1;
-        size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
-        RtlRow offsetCalculator(r, data, numOffsets, variableOffsets);
-        size = offsetCalculator.getRecordSize();
-    }
-    return size;
+    return queryRecordAccessor(true).getRecordSize(data);
 }
 
 CDeserializedOutputMetaData::CDeserializedOutputMetaData(MemoryBuffer &binInfo)
