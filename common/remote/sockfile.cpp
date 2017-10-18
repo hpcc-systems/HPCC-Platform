@@ -1706,6 +1706,11 @@ public:
         : CRemoteBase(_ep, _filename)
     {
         flags = ((unsigned)IFSHread)|((S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)<<16);
+        if (filename.length()>2 && isPathSepChar(filename[0]) && isShareChar(filename[2]))
+        {
+            VStringBuffer winDriveFilename("%c:%s", filename[1], filename+3);
+            filename.set(winDriveFilename);
+        }
     }
 
     bool exists()
