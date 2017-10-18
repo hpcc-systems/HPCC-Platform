@@ -165,7 +165,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
 
             response.flush(true);
         }
-        virtual void main()
+        virtual void threadmain() override
         {
             sock.setown(ISocket::create(port));
             while (running)
@@ -344,7 +344,7 @@ class CIdleShutdown : public CSimpleInterface, implements IThreaded
 public:
     CIdleShutdown(unsigned _timeout) : timeout(_timeout*60000), threaded("CIdleShutdown") { threaded.init(this); }
     ~CIdleShutdown() { stop(); threaded.join(); }
-    virtual void main()
+    virtual void threadmain() override
     {
         if (!sem.wait(timeout)) // feeling neglected, restarting..
             abortThor(MakeThorException(TE_IdleRestart, "Thor has been idle for %d minutes, restarting", timeout/60000), TEC_Idle, false);
@@ -472,7 +472,7 @@ void CJobManager::run()
             stopped = true;
             queryWorldCommunicator().cancel(NULL, mptag);
         }
-        void main()
+        virtual void threadmain() override
         {
             for (;;)
             {
@@ -991,7 +991,7 @@ class CDaliConnectionValidator : public CSimpleInterface, implements IThreaded
 public:
     CDaliConnectionValidator(unsigned _pollDelay) : threaded("CDaliConnectionValidator") { pollDelay = _pollDelay*1000; stopped = false; threaded.init(this); }
     ~CDaliConnectionValidator() { stop(); threaded.join(); }
-    void main()
+    virtual void threadmain() override
     {
         for (;;)
         {

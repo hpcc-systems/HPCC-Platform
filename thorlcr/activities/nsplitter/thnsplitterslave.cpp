@@ -111,7 +111,7 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
             stopped = true;
         }
         ~CWriter() { stop(); }
-        virtual void main()
+        virtual void threadmain() override
         {
             // NB: This thread will not get started if there was a failure during prepareInput()
             Semaphore writeBlockSem;

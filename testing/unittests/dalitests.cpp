@@ -1116,7 +1116,7 @@ public:
         CNodeSubCommitThread(const char *_xpath, bool _finalDelete) : threaded("CNodeSubCommitThread"), xpath(_xpath), finalDelete(_finalDelete)
         {
         }
-        virtual void main()
+        virtual void threadmain() override
         {
             unsigned mode = RTM_LOCK_WRITE;
             if (finalDelete)
@@ -1847,7 +1847,7 @@ public:
             {
                 threaded.join();
             }
-            virtual void main()
+            virtual void threadmain() override
             {
                 Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(fileName, NULL);
 
@@ -1922,7 +1922,7 @@ public:
             {
                 threaded.join();
             }
-            virtual void main()
+            virtual void threadmain() override
             {
                 Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(fileName, NULL);
 
@@ -2217,11 +2217,11 @@ public:
                 public:
                     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-                    virtual void init(void *param)
+                    virtual void init(void *param) override
                     {
                         filename.set((const char *)param);
                     }
-                    virtual void main()
+                    virtual void threadmain() override
                     {
                         try
                         {
@@ -2232,8 +2232,8 @@ public:
                             PrintExceptionLog(e, NULL);
                         }
                     }
-                    virtual bool stop() { return true; }
-                    virtual bool canReuse() { return true; }
+                    virtual bool stop() override { return true; }
+                    virtual bool canReuse() const override { return true; }
                 };
                 return new CHammerThread();
             }

@@ -429,11 +429,11 @@ public:
         idxStr.append(_idx);
     }
 
-    virtual void init(void *param)
+    virtual void init(void *param) override
     {
         wuid.set((const char *) param);
     }
-    virtual void main()
+    virtual void threadmain() override
     {
         DBGLOG("Compile request processing for workunit %s", wuid.get());
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
@@ -540,11 +540,11 @@ public:
         workunit.clear();
     }
 
-    virtual bool stop()
+    virtual bool stop() override
     {
         return false; // should I try to abort?
     }
-    virtual bool canReuse()
+    virtual bool canReuse() const override
     {
         return true;
     }

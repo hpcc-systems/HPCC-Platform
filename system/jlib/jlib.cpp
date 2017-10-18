@@ -270,7 +270,7 @@ void test2(void)
 #endif
 
 
-int main(void)
+int main(int argc, const char **argv)
 {
 #ifdef _DEBUG
 #ifdef _WIN32

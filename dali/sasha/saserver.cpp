@@ -152,11 +152,11 @@ class CSashaCmdThread : public CInterface, implements IPooledThread
     Owned<ISashaCommand> cmd;
 public:
     IMPLEMENT_IINTERFACE;
-    void init(void *param)
+    virtual void init(void *param) override
     {
         cmd.setown((ISashaCommand *)param);
     }
-    void main()
+    virtual void threadmain() override
     {
         StringAttrArray out;
         StringAttrArray outres;
@@ -182,11 +182,11 @@ public:
         else
             cmd->reply();
     }
-    bool stop() 
+    virtual bool stop() override
     { 
         return true; 
     }
-    bool canReuse() 
+    virtual bool canReuse() const override
     { 
         return false; 
     }
@@ -364,7 +364,7 @@ int main(int argc, const char* argv[])
                 public:
                     CStopThread() : threaded("CStopThread") { threaded.init(this); } 
                     ~CStopThread() { threaded.join(); }
-                    virtual void main()
+                    virtual void threadmain() override
                     {
                         stopSem.wait();
                         if (!stopped)

@@ -1626,8 +1626,8 @@ public:
     PartHandlerThread() : owner(0)
     {
     }
-    virtual void init(void * _owner) { owner = (OWNER *)_owner; }
-    virtual void main()
+    virtual void init(void * _owner) override { owner = (OWNER *)_owner; }
+    virtual void threadmain() override
     {
         try
         {
@@ -1646,13 +1646,13 @@ public:
         }
     }
 
-    virtual bool stop()
+    virtual bool stop() override
     {
         owner->stopThread();
         return true;
     }
 
-    virtual bool canReuse() { return true; }
+    virtual bool canReuse() const override { return true; }
 private:
     OWNER * owner;
 };

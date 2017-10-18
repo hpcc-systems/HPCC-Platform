@@ -429,11 +429,11 @@ public:
             {
             }
 
-            virtual void init(void *param)
+            virtual void init(void *param) override
             {
                 ep.set(*(SocketEndpoint *) param);
             }
-            virtual void main()
+            virtual void threadmain() override
             {
                 unsigned delay = 5000;
                 for (unsigned i = 0; i < BLACKLIST_RETRIES; i++)
@@ -455,12 +455,12 @@ public:
                 }
                 parent.deblacklist(ep);
             }
-            virtual bool stop()
+            virtual bool stop() override
             {
                 stopped.signal();
                 return true;
             }
-            virtual bool canReuse() { return true; }
+            virtual bool canReuse() const override { return true; }
         };
         return new SocketDeblacklister(*this);
     }

@@ -307,7 +307,7 @@ protected:
             else if (cppunitException)
                 throw cppunitException;
         }
-        virtual void main()
+        virtual void threadmain() override
         {
             try
             {

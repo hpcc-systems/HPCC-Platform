@@ -52,7 +52,7 @@ public:
     virtual void serializeStats(MemoryBuffer &mb);
 
 // IThreaded
-    void main();
+    virtual void threadmain() override;
 };
 
 

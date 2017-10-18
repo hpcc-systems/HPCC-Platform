@@ -2034,60 +2034,60 @@ class CDeployTaskThread : public CInterface,
                           implements IDeployTaskThread
 {
 public:
-   IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE;
 
-   CDeployTaskThread()
-   {
-   }
-   virtual ~CDeployTaskThread()
-   {
-   }
+    CDeployTaskThread()
+    {
+    }
+    virtual ~CDeployTaskThread()
+    {
+    }
 
-    void init(void *startInfo) 
+    virtual void init(void *startInfo) override
     {
         m_pTask.set((IDeployTask*)startInfo);
     }
-    void main()
+    virtual void threadmain() override
     {
-      m_pTask->copyFile( m_pTask->getFlags() );
+        m_pTask->copyFile( m_pTask->getFlags() );
 
-      static Mutex m;
-      m.lock();
-      try
-      {
-         m_pTask->getCallback().printStatus(m_pTask);
-      }
-      catch(IException* e)
-      {
-         e->Release();
-      }
-      m.unlock();
+        static Mutex m;
+        m.lock();
+        try
+        {
+            m_pTask->getCallback().printStatus(m_pTask);
+        }
+        catch(IException* e)
+        {
+            e->Release();
+        }
+        m.unlock();
 
-      if (m_pTask && m_pTask->getAbort())
-      {
-         m_pTask->getCallback().printStatus(STATUS_NORMAL, NULL, NULL, NULL, "Aborting, please wait...");
-         throw MakeStringException(0, "Abort");
-      }
-   }
+        if (m_pTask && m_pTask->getAbort())
+        {
+            m_pTask->getCallback().printStatus(STATUS_NORMAL, NULL, NULL, NULL, "Aborting, please wait...");
+            throw MakeStringException(0, "Abort");
+        }
+    }
 
-    bool canReuse()
+    virtual bool canReuse() const override
     {
         return true;
     }
-    bool stop()
+    virtual bool stop() override
     {
         return true;
     }
    
-   virtual IDeployTask* getTask () const     { return m_pTask;     }
-   virtual void setTask (IDeployTask* pTask) { m_pTask.set(pTask); }
+    virtual IDeployTask* getTask () const     { return m_pTask;     }
+    virtual void setTask (IDeployTask* pTask) { m_pTask.set(pTask); }
 
-   virtual bool getAbort() const      { return s_abort;   }
-   virtual void setAbort(bool bAbort) { s_abort = bAbort; }
+    virtual bool getAbort() const      { return s_abort;   }
+    virtual void setAbort(bool bAbort) { s_abort = bAbort; }
    
 private:
-   Owned<IDeployTask> m_pTask;
-   static bool s_abort;
+    Owned<IDeployTask> m_pTask;
+    static bool s_abort;
 };
 
 class CDeployTaskThreadFactory : public CInterface, public IThreadFactory

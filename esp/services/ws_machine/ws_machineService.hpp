@@ -877,21 +877,21 @@ public:
     {
     }
 
-    void init(void *startInfo) 
+    virtual void init(void *startInfo) override
     {
         m_pParam.setown((CWsMachineThreadParam*)startInfo);
     }
-    void main()
+    virtual void threadmain() override
     {
         m_pParam->doWork();
         m_pParam.clear();
     }
 
-    bool canReuse()
+    virtual bool canReuse() const override
     {
         return true;
     }
-    bool stop()
+    virtual bool stop() override
     {
         return true;
     }

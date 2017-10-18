@@ -10855,7 +10855,7 @@ class CRoxieServerStrandedAggregateActivity : public CRoxieServerStrandedActivit
             processed++;
             return rowBuilder.finalizeRowClear(finalSize);
         }
-        virtual void main() override
+        virtual void threadmain() override
         {
             isInputGrouped = true; // gather no row if there are no input rows.
             result.setown(nextRow());

@@ -626,7 +626,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             {
                 return aborted;
             }
-            virtual void main()
+            virtual void threadmain() override
             {
                 try
                 {
@@ -731,7 +731,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                     comm.cancel(RANK_ALL, requestMpTag);
                 }
             }
-            virtual void main()
+            virtual void threadmain() override
             {
                 try
                 {
@@ -1112,7 +1112,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             }
         }
     // IThreaded
-        virtual void main()
+        virtual void threadmain() override
         {
             try
             {
@@ -1493,11 +1493,11 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             {
                 lookupStream.setown(new CKeyLocalLookup(owner.owner));
             }
-            void init(void *param)
+            virtual void init(void *param) override
             {
                 lookupStream->setInput(owner.in);
             }
-            void main()
+            virtual void threadmain() override
             {
                 do
                 {
@@ -1509,8 +1509,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                     owner.lookupQ.enqueue(lookupRow.getClear());
                 } while (!owner.stopped);
             }
-            bool stop() { return false; }
-            bool canReuse() { return true; }
+            virtual bool stop() override { return false; }
+            virtual bool canReuse() const override { return true; }
         };
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 

@@ -177,7 +177,7 @@ class CLoopSlaveActivity : public CLoopSlaveActivityBase
                 stopThread();
             }
         }
-        void main()
+        virtual void threadmain() override
         {
             stopped = false;
             Linked<IRowWriter> writer = smartbuf->queryWriter();

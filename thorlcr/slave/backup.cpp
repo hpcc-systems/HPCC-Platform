@@ -221,7 +221,7 @@ public:
         }
     }
 
-    void main()
+    virtual void threadmain() override
     {
         threaded.adjustPriority(-2);
         for (;;)

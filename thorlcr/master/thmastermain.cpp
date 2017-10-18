@@ -103,7 +103,7 @@ class CRegistryServer : public CSimpleInterface
                 threaded.join();
             }
         }
-        virtual void main()
+        virtual void threadmain() override
         {
             running = true;
             for (;;)

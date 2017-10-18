@@ -480,7 +480,7 @@ public:
         myrank = grp->rank();
     }
 
-    void main()
+    void mainloop()
     {
         CMessageHandler<CPacketStoreServer> handler("CPacketStoreServer",this,&CPacketStoreServer::processMessage);
         stopped = false;
@@ -650,7 +650,7 @@ public:
 void runPacketStoreServer(IGroup *grp)
 {
     CPacketStoreServer server(grp);
-    server.main();
+    server.mainloop();
 }
 
 

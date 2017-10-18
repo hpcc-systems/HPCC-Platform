@@ -384,18 +384,18 @@ public:
     }
 
     //  interface IPooledThread
-    virtual void init(void *)
+    virtual void init(void *) override
     {
         qstart = msTick();
         time(&startTime);
     }
 
-    virtual bool canReuse()
+    virtual bool canReuse() const override
     {
         return true;
     }
 
-    virtual bool stop()
+    virtual bool stop() override
     {
         ERRLOG("RoxieQueryWorker stopped with queries active");
         return true;
@@ -1558,13 +1558,13 @@ public:
     }
 
     //  interface IPooledThread
-    virtual void init(void *_r)
+    virtual void init(void *_r) override
     {
         client.setown(new CSafeSocket((ISocket *) _r));
         ProtocolQueryWorker::init(_r);
     }
 
-    virtual void main()
+    virtual void threadmain() override
     {
         doMain("");
     }

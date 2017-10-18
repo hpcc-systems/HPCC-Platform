@@ -1310,7 +1310,7 @@ public:
         return false;
     }
 // IThreaded
-    void main()
+    virtual void threadmain() override
     {
         for (;;)
         {
@@ -4861,7 +4861,7 @@ class CLightCoalesceThread : implements ICoalesce, public CInterface
     public:
         CThreaded() : Thread("CLightCoalesceThread") { coalesce = NULL; }
         void init(CLightCoalesceThread *_coalesce) { coalesce = _coalesce; start(); }
-        virtual int run() { coalesce->main(); return 1; }
+        virtual int run() { coalesce->threadmain(); return 1; }
     } threaded;
 public:
     IMPLEMENT_IINTERFACE;
@@ -4906,7 +4906,7 @@ public:
     {
         stop();
     }
-    void main()
+    void threadmain()
     {
         unsigned t = 0;
         lastSaveWriteTransactions = SDSManager->writeTransactions;
@@ -8197,11 +8197,11 @@ void CCovenSDSManager::handleNotify(CSubscriberContainerBase *_subscriber, Memor
         public:
             IMPLEMENT_IINTERFACE;
             CNotifyHandler() { INIT_NAMEDCOUNT; }
-            void init(void *startInfo) 
+            virtual void init(void *startInfo) override
             {
                 n.setown((CSubscriberNotifier *)startInfo);
             }
-            void main()
+            virtual void threadmain() override
             {
                 try
                 {
@@ -8214,11 +8214,11 @@ void CCovenSDSManager::handleNotify(CSubscriberContainerBase *_subscriber, Memor
                 }
                 n.clear();
             }
-            bool canReuse()
+            virtual bool canReuse() const override
             {
                 return true;
             }
-            bool stop()
+            virtual bool stop() override
             {
                 return true;
             }
@@ -8521,11 +8521,11 @@ void CCovenSDSManager::startNotification(IPropertyTree &changeTree, CPTStack &st
         {
         public:
             IMPLEMENT_IINTERFACE;
-            void init(void *startInfo) 
+            virtual void init(void *startInfo) override
             {
                 n.set((CSubscriberNotifyScanner *)startInfo);
             }
-            void main()
+            virtual void threadmain() override
             {
                 try
                 {
@@ -8538,11 +8538,11 @@ void CCovenSDSManager::startNotification(IPropertyTree &changeTree, CPTStack &st
                 }
                 n.clear();
             }
-            bool canReuse()
+            virtual bool canReuse() const override
             {
                 return true;
             }
-            bool stop()
+            virtual bool stop() override
             {
                 return true;
             }

@@ -2297,11 +2297,11 @@ class CGraphExecutor : implements IGraphExecutor, public CInterface
                 CGraphExecutorThread()
                 {
                 }
-                void init(void *startInfo)
+                virtual void init(void *startInfo) override
                 {
                     graphInfo.setown((CGraphExecutorGraphInfo *)startInfo);
                 }
-                void main()
+                virtual void threadmain() override
                 {
                     for (;;)
                     {
@@ -2333,8 +2333,8 @@ class CGraphExecutor : implements IGraphExecutor, public CInterface
                         graphInfo.setown(nextGraphInfo.getClear());
                     }
                 }
-                bool canReuse() { return true; }
-                bool stop() { return true; }
+                virtual bool canReuse() const override { return true; }
+                virtual bool stop() override { return true; }
             };
             return new CGraphExecutorThread();
         }

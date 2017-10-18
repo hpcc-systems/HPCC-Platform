@@ -962,7 +962,7 @@ public:
     {
         Owned<IPooledThread> worker = createNew();
         worker->init((void *) query);
-        worker->main();
+        worker->threadmain();
     }
 
     virtual void noteQuery(IHpccProtocolMsgContext *msgctx, const char *peer, bool failed, unsigned bytesOut, unsigned elapsed, unsigned memused, unsigned slavesReplyLen, bool continuationNeeded)
@@ -1072,18 +1072,18 @@ public:
     }
 
     //  interface IPooledThread
-    virtual void init(void *)
+    virtual void init(void *) override
     {
         qstart = msTick();
         time(&startTime);
     }
 
-    virtual bool canReuse()
+    virtual bool canReuse() const override
     {
         return true;
     }
 
-    virtual bool stop()
+    virtual bool stop() override
     {
         ERRLOG("RoxieQueryWorker stopped with queries active");
         return true;
@@ -1136,13 +1136,13 @@ public:
     {
     }
 
-    virtual void init(void *_r)
+    virtual void init(void *_r) override
     {
         wuid.set((const char *) _r);
         RoxieQueryWorker::init(_r);
     }
 
-    virtual void main()
+    virtual void threadmain() override
     {
         assertex(wuid.length());
         bool standalone = *wuid.str()=='-';

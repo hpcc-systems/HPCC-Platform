@@ -73,10 +73,10 @@ void ProcessSlaveActivity::startProcess(bool async)
     if (async)
         threaded.start();
     else
-        main();
+        threadmain();
 }
 
-void ProcessSlaveActivity::main() 
+void ProcessSlaveActivity::threadmain()
 { 
     try
     {
