@@ -41,7 +41,7 @@ EXPORT FsLogicalFileNameRecord := lib_fileservices.FsLogicalFileNameRecord;
  * @field rowcount      Number of rows in the file.
  * @modified            Timestamp when the file was last modified;
  * @owner               The username of the owner who ran the job to create this file.
- * @cluster             The cluster that this file was created on. 
+ * @cluster             The cluster that this file was created on.
  */
 
 EXPORT FsLogicalFileInfoRecord := lib_fileservices.FsLogicalFileInfoRecord;
@@ -923,5 +923,26 @@ EXPORT varstring fPromoteSuperFileList(set of varstring superNames, varstring ad
  */
 EXPORT PromoteSuperFileList(set of varstring superNames, varstring addHead='', boolean delTail=FALSE, boolean createOnlyOne=FALSE, boolean reverse=FALSE) :=
     lib_fileservices.FileServices.PromoteSuperFileList(superNames, addHead, delTail, createOnlyOne, reverse);
+
+/**
+ * Returns the full URL to an ESP server process
+ *
+ * @param username      String containing a username to use for authenticated
+ *                      access to the ESP process; an empty string value
+ *                      indicates that no user authentication is required;
+ *                      OPTIONAL, defaults to an empty string
+ * @param userPW        String containing the password to be used with the
+ *                      user cited in the username argument; if username is
+ *                      empty then this will be ignored; OPTIONAL, defaults
+ *                      to an empty string
+ *
+ * @return              A string containing the full URL (including HTTP scheme
+ *                      and port) to an ESP server process; if more than one
+ *                      process is defined then the first found process will
+ *                      be returned; will return an empty string if an ESP
+ *                      server process cannot be found
+ */
+EXPORT varstring GetEspURL(const varstring username = '', const varstring userPW = '') :=
+    lib_fileservices.FileServices.GetEspURL(username, userPW);
 
 END;
