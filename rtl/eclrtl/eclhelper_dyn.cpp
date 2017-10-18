@@ -28,7 +28,48 @@
 #include "rtldynfield.hpp"
 #include "rtlkey.hpp"
 
-//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------
+
+/**
+* class CDeserializedOutputMetaData
+*
+* An implementation of IOutputMetaData for use with serialized rtlTypeInfo information
+*
+*/
+
+class CDeserializedOutputMetaData : public COutputMetaData
+{
+public:
+    CDeserializedOutputMetaData(MemoryBuffer &binInfo);
+    CDeserializedOutputMetaData(IPropertyTree &jsonInfo);
+    CDeserializedOutputMetaData(const char *json);
+
+    virtual const RtlTypeInfo * queryTypeInfo() const override { return typeInfo; }
+protected:
+    Owned<IRtlFieldTypeDeserializer> deserializer;
+    const RtlTypeInfo *typeInfo = nullptr;
+};
+
+
+CDeserializedOutputMetaData::CDeserializedOutputMetaData(MemoryBuffer &binInfo)
+{
+    deserializer.setown(createRtlFieldTypeDeserializer());
+    typeInfo = deserializer->deserialize(binInfo);
+}
+
+CDeserializedOutputMetaData::CDeserializedOutputMetaData(IPropertyTree &jsonInfo)
+{
+    deserializer.setown(createRtlFieldTypeDeserializer());
+    typeInfo = deserializer->deserialize(jsonInfo);
+}
+
+CDeserializedOutputMetaData::CDeserializedOutputMetaData(const char *json)
+{
+    deserializer.setown(createRtlFieldTypeDeserializer());
+    typeInfo = deserializer->deserialize(json);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
 
 class ECLRTL_API CDynamicDiskReadArg : public CThorDiskReadArg
 {

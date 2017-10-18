@@ -518,25 +518,6 @@ size32_t COutputMetaData::getRecordSize(const void * data)
     return size;
 }
 
-CDeserializedOutputMetaData::CDeserializedOutputMetaData(MemoryBuffer &binInfo)
-{
-    deserializer.setown(createRtlFieldTypeDeserializer());
-    typeInfo = deserializer->deserialize(binInfo);
-}
-
-CDeserializedOutputMetaData::CDeserializedOutputMetaData(IPropertyTree &jsonInfo)
-{
-    deserializer.setown(createRtlFieldTypeDeserializer());
-    typeInfo = deserializer->deserialize(jsonInfo);
-}
-
-CDeserializedOutputMetaData::CDeserializedOutputMetaData(const char *json)
-{
-    deserializer.setown(createRtlFieldTypeDeserializer());
-    typeInfo = deserializer->deserialize(json);
-}
-
-
 class CVariableOutputRowSerializer : public COutputRowSerializer
 {
 public:
