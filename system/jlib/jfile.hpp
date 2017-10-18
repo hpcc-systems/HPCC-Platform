@@ -582,6 +582,8 @@ extern jlib_decl StringBuffer &setPathDrive(StringBuffer &filename,unsigned drvn
 extern jlib_decl unsigned getPathDrive(const char *filename);   // 0=c, 1=d etc filename can be url or local
 extern jlib_decl StringBuffer &swapPathDrive(StringBuffer &filename,unsigned fromdrvnum,unsigned todrvnum,const char *frommask=NULL,const char *tomask=NULL);
 
+extern jlib_decl StringBuffer &getStandardPosixPath(StringBuffer &result, const char *path);
+
 class jlib_decl ExtractedBlobInfo : public CInterface
 {
 public:
