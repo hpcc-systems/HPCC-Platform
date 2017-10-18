@@ -58,7 +58,8 @@ stop_slaves()
         killall -SIGKILL $slavename > /dev/null
     fi
 
-    rm -f ${PID_DIR}/${slavename}_*.pid > /dev/null
+    # need regex here to prevent removing other Thor instance pid files
+    find ${PID_DIR} -maxdepth 1 -type f -regex ".*/${slavename}_[1-9][0-9]*\.pid" -delete > /dev/null 2>&1
 }
 
 start_slaves()
