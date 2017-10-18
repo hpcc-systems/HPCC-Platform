@@ -209,10 +209,6 @@ class CSetKeySegmentMonitor : public CKeySegmentMonitor
 {
 private:
     Owned<IStringSet> set;
-    mutable CriticalSection cacheCrit;
-    mutable bool lastCompareResult;
-    mutable bool hasCompareResult;
-    mutable char *lastCompareValue;
     bool optional;
 
 public:
@@ -220,13 +216,9 @@ public:
     CSetKeySegmentMonitor(MemoryBuffer &mb)
         : CKeySegmentMonitor(mb)
     {
-        lastCompareResult = false;
-        hasCompareResult = false;
         set.setown(deserializeStringSet(mb));
         mb.read(optional);
-        lastCompareValue = new char[size];
     }
-    ~CSetKeySegmentMonitor();
 
 // IKeySegmentMonitor
     virtual bool increment(void *keyval) const;
@@ -362,17 +354,9 @@ IKeySegmentMonitor *CWildKeySegmentMonitor::merge(IKeySegmentMonitor *next) cons
 CSetKeySegmentMonitor::CSetKeySegmentMonitor(bool _optional, IStringSet *_set, unsigned _offset, unsigned _size)
     : set(_set), CKeySegmentMonitor(_offset, _size)
 {
-    lastCompareValue = new char[_size];
-    hasCompareResult = false;
-    lastCompareResult = false;
     optional = _optional;
     hash =  FNV_32_HASHONE_VALUE(hash, (byte) set->isSigned());
     hash =  FNV_32_HASHONE_VALUE(hash, (byte) !set->isBigEndian());
-}
-
-CSetKeySegmentMonitor::~CSetKeySegmentMonitor()
-{
-    delete [] lastCompareValue;
 }
 
 IKeySegmentMonitor *CSetKeySegmentMonitor::clone() const 
@@ -427,16 +411,8 @@ void CSetKeySegmentMonitor::endRange(void *bufptr) const
 
 bool CSetKeySegmentMonitor::matchesBuffer(const void *bufptr) const
 {
-    // MORE - should investigate sometime how much benefit we get from this caching...
-
     char *ptr = ((char *) bufptr) + offset;
-    CriticalBlock b(cacheCrit);
-    if (hasCompareResult && 0 == memcmp(lastCompareValue, ptr, size))
-        return lastCompareResult;
-    lastCompareResult = set->inRange(ptr);
-    memcpy(lastCompareValue, ptr, size);
-    hasCompareResult = true;
-    return lastCompareResult;
+    return set->inRange(ptr);
 }
 
 bool CSetKeySegmentMonitor::isWellKeyed() const
