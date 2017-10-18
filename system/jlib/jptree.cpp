@@ -6623,7 +6623,7 @@ public:
         : PARENT(buf, iEvent, readerOptions)
     {
     }
-    void readValueNotify(const char *name, bool skipAttributes, StringBuffer *retValue, bool *isValueBinary)
+    void readValueNotify(const char *name, bool skipAttributes, StringBuffer *retValue)
     {
         offset_t startOffset = curOffset;
         StringBuffer value;
@@ -6638,27 +6638,19 @@ public:
         }
         else if ('#'==*name)
         {
-            dbgassertex(retValue && isValueBinary);
-            *isValueBinary = false;
-            if (0 == strncmp(name+1, "value", 5)) // this is a special IPT JSON prop name, representing a 'complex' value
+            dbgassertex(retValue);
+            bool iptValue = 0 == strncmp(name+1, "value", 5); // this is a special IPT JSON prop name, representing a 'complex' value
+            if (iptValue)
             {
-                if ('\0' == *(name+6)) // #value
-                {
-                    retValue->swapWith(value);
-                    return;
-                }
-                else if (streq(name+6, "bin")) // #valuebin
-                {
-                    *isValueBinary = true;
-                    JBASE64_Decode(value.str(), *retValue);
-                    return;
-                }
+                retValue->swapWith(value);
+                return;
             }
         }
 
         iEvent->beginNode(name, startOffset);
         iEvent->beginNodeContent(name);
         iEvent->endNode(name, value.length(), value.str(), false, curOffset);
+
     }
     void readArray(const char *name)
     {
@@ -6680,7 +6672,7 @@ public:
                 readObject(name);
                 break;
             default:
-                readValueNotify(name, true, nullptr, nullptr);
+                readValueNotify(name, true, nullptr);
                 break;
             }
             readNext();
@@ -6692,7 +6684,7 @@ public:
             skipWS();
         }
     }
-    void readChild(const char *name, bool skipAttributes, StringBuffer *value, bool *isValueBinary)
+    void readChild(const char *name, bool skipAttributes, StringBuffer *value)
     {
         skipWS();
         switch (nextChar)
@@ -6710,7 +6702,7 @@ public:
             readArray(name);
             break;
         default:
-            readValueNotify(name, skipAttributes, value, isValueBinary);
+            readValueNotify(name, skipAttributes, value);
             break;
         }
     }
@@ -6724,7 +6716,6 @@ public:
         skipWS();
         bool attributesFinalized=false;
         StringBuffer childValue;  // for #value
-        bool isChildValueBinary = false; // for #value
         while ('}' != nextChar)
         {
             StringBuffer tagName;
@@ -6733,7 +6724,7 @@ public:
             //values at top of object with names starting with '@' become ptree attributes
             if (*tagName.str()!='@')
                 attributesFinalized=true;
-            readChild(tagName.str(), attributesFinalized, &childValue.clear(), &isChildValueBinary);
+            readChild(tagName.str(), attributesFinalized, &childValue.clear());
             readNext();
             skipWS();
             if (','==nextChar)
@@ -6742,7 +6733,7 @@ public:
                 error("expected ',' or '}'");
             skipWS();
         }
-        iEvent->endNode(name, childValue.length(), childValue.str(), isChildValueBinary, curOffset);
+        iEvent->endNode(name, childValue.length(), childValue.str(), false, curOffset);
     }
 
     void loadJSON()
@@ -6762,7 +6753,7 @@ public:
                 {
                 case '\"':  //treat named objects like we're in a noroot object
                     readName(tagName.clear());
-                    readChild(tagName.str(), true, nullptr, nullptr);
+                    readChild(tagName.str(), true, nullptr);
                     break;
                 case '{':  //treat unnamed objects like we're in a noroot array
                     readObject("__object__");
