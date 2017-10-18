@@ -5649,7 +5649,7 @@ static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, 
 {
     Owned<IAttributeIterator> it = tree->getAttributes(true);
     bool hasAttributes = it->first();
-    bool complex = (hasAttributes || tree->hasChildren());
+    bool complex = (hasAttributes || tree->hasChildren() || tree->isBinary());
     bool isBinary = tree->isBinary(NULL);
 
     const char *name = tree->queryName();
@@ -5765,7 +5765,7 @@ static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, 
     if (!isNull)
     {
         if (complex)
-            writeJSONNameToStream(out, "#value", (flags & JSON_Format) ? indent+1 : 0, delimit);
+            writeJSONNameToStream(out, isBinary ? "#valuebin" : "#value", (flags & JSON_Format) ? indent+1 : 0, delimit);
         if (isBinary)
             writeJSONBase64ValueToStream(out, thislevelbin.toByteArray(), thislevelbin.length(), delimit);
         else
@@ -6623,7 +6623,7 @@ public:
         : PARENT(buf, iEvent, readerOptions)
     {
     }
-    void readValueNotify(const char *name, bool skipAttributes)
+    void readValueNotify(const char *name, bool skipAttributes, StringBuffer *retValue)
     {
         offset_t startOffset = curOffset;
         StringBuffer value;
@@ -6635,6 +6635,16 @@ public:
             if (!skipAttributes)
                 iEvent->newAttribute(name, value.str());
             return;
+        }
+        else if ('#'==*name)
+        {
+            dbgassertex(retValue);
+            bool iptValue = 0 == strncmp(name+1, "value", 5); // this is a special IPT JSON prop name, representing a 'complex' value
+            if (iptValue)
+            {
+                retValue->swapWith(value);
+                return;
+            }
         }
 
         iEvent->beginNode(name, startOffset);
@@ -6662,7 +6672,7 @@ public:
                 readObject(name);
                 break;
             default:
-                readValueNotify(name, true);
+                readValueNotify(name, true, nullptr);
                 break;
             }
             readNext();
@@ -6674,7 +6684,7 @@ public:
             skipWS();
         }
     }
-    void readChild(const char *name, bool skipAttributes)
+    void readChild(const char *name, bool skipAttributes, StringBuffer *value)
     {
         skipWS();
         switch (nextChar)
@@ -6692,7 +6702,7 @@ public:
             readArray(name);
             break;
         default:
-            readValueNotify(name, skipAttributes);
+            readValueNotify(name, skipAttributes, value);
             break;
         }
     }
@@ -6705,6 +6715,7 @@ public:
         readNext();
         skipWS();
         bool attributesFinalized=false;
+        StringBuffer childValue;  // for #value
         while ('}' != nextChar)
         {
             StringBuffer tagName;
@@ -6713,7 +6724,7 @@ public:
             //values at top of object with names starting with '@' become ptree attributes
             if (*tagName.str()!='@')
                 attributesFinalized=true;
-            readChild(tagName.str(), attributesFinalized);
+            readChild(tagName.str(), attributesFinalized, &childValue.clear());
             readNext();
             skipWS();
             if (','==nextChar)
@@ -6722,7 +6733,7 @@ public:
                 error("expected ',' or '}'");
             skipWS();
         }
-        iEvent->endNode(name, 0, "", false, curOffset);
+        iEvent->endNode(name, childValue.length(), childValue.str(), false, curOffset);
     }
 
     void loadJSON()
@@ -6742,7 +6753,7 @@ public:
                 {
                 case '\"':  //treat named objects like we're in a noroot object
                     readName(tagName.clear());
-                    readChild(tagName.str(), true);
+                    readChild(tagName.str(), true, nullptr);
                     break;
                 case '{':  //treat unnamed objects like we're in a noroot array
                     readObject("__object__");
