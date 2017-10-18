@@ -412,27 +412,6 @@ protected:
     const RtlTypeInfo &typeInfo;
 };
 
-/**
- * class CDeserializedOutputMetaData
- *
- * An implementation of IOutputMetaData for use with serialized rtlTypeInfo information
- *
- */
-
-class ECLRTL_API CDeserializedOutputMetaData : public COutputMetaData
-{
-public:
-    CDeserializedOutputMetaData(MemoryBuffer &binInfo);
-    CDeserializedOutputMetaData(IPropertyTree &jsonInfo);
-    CDeserializedOutputMetaData(const char *json);
-
-    virtual const RtlTypeInfo * queryTypeInfo() const override { return typeInfo; }
-protected:
-    Owned<IRtlFieldTypeDeserializer> deserializer;
-    const RtlTypeInfo *typeInfo = nullptr;
-};
-
-
 class ECLRTL_API CFixedOutputMetaData : public COutputMetaData
 {
 public:
