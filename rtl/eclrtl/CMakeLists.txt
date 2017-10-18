@@ -36,6 +36,7 @@ set (    SRCS
          rtldynfield.cpp 
          rtlint.cpp 
          rtlkey.cpp 
+         rtlnewkey.cpp
          rtlqstr.cpp 
          rtlrank.cpp 
          rtlfield.cpp 
@@ -54,6 +55,7 @@ set (    SRCS
          rtlfield.hpp
          rtlkey2.hpp
          rtlkey.hpp
+         rtlnewkey.hpp
          rtlread_imp.hpp
          rtlrecord.hpp
          rtlsize.hpp

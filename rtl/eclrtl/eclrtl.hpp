@@ -427,7 +427,7 @@ inline unsigned __int64 rtlReadUInt8(const void * data) { return *(unsigned __in
 ECLRTL_API unsigned __int64 rtlReadUInt(const void * data, unsigned length);
 
 //MORE: Change if reverse endian, or if alignment issues.
-inline size32_t rtlReadSize32t(void * data) { return *(const size32_t *)data; }
+inline size32_t rtlReadSize32t(const void * data) { return *(const size32_t *)data; }
 
 inline void rtlWriteInt1(void * data, unsigned value) { *(unsigned char *)data = value; }
 inline void rtlWriteInt2(void * data, unsigned value) { *(unsigned short *)data = value; }

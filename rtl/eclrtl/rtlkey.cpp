@@ -22,6 +22,7 @@
 #include "rtlkey2.hpp"
 #include "eclrtl_imp.hpp"
 #include "rtlrecord.hpp"
+#include "rtlnewkey.hpp"
 
 #define KSM_SET             0x01
 #define KSM_WILD            0x02
@@ -2293,6 +2294,42 @@ ECLRTL_API IStringSet *deserializeStringSet(MemoryBuffer &mb)
     return NULL; // up to caller to check
 };
 
+//---------------------------------------------------------------------------------------------------------------------
+
+class LegacySetCreator : implements ISetCreator
+{
+public:
+    LegacySetCreator(IStringSet & _set, size32_t _minRecordSize, const RtlTypeInfo * _fieldType)
+    : set(_set), minRecordSize(_minRecordSize), fieldType(_fieldType) {}
+
+    virtual void addRange(TransitionMask lowerMask, const StringBuffer & lowerString, TransitionMask upperMask, const StringBuffer & upperString) override
+    {
+        MemoryBufferBuilder lobuilder(lobuffer.clear(), minRecordSize);
+        fieldType->buildUtf8(lobuilder, 0, nullptr, lowerString.length(), lowerString.str());
+
+        MemoryBufferBuilder hibuilder(hibuffer.clear(), minRecordSize);
+        fieldType->buildUtf8(hibuilder, 0, nullptr, upperString.length(), upperString.str());
+
+        set.addRange(lobuffer.toByteArray(), hibuffer.toByteArray());
+        if (!(lowerMask & CMPeq))
+            set.killRange(lobuffer.toByteArray(), lobuffer.toByteArray());
+        if (!(upperMask & CMPeq))
+            set.killRange(hibuffer.toByteArray(), hibuffer.toByteArray());
+    }
+
+protected:
+    IStringSet & set;
+    const RtlTypeInfo *fieldType;
+    size32_t minRecordSize;
+    MemoryBuffer lobuffer;
+    MemoryBuffer hibuffer;
+};
+
+void deserializeSet(IStringSet & set, size32_t minRecordSize, const RtlTypeInfo * fieldType, const char * filter)
+{
+    LegacySetCreator creator(set, minRecordSize, fieldType);
+    deserializeSet(creator, filter);
+}
 
 #ifdef _USE_CPPUNIT
 #include <cppunit/extensions/HelperMacros.h>

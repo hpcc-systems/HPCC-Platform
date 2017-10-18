@@ -413,14 +413,14 @@ void RtlRow::getUtf8(size32_t & resultLen, char * & result, unsigned field) cons
 
 void RtlRow::setRow(const void * _row)
 {
-    row = _row;
+    row = (const byte *)_row;
     if (_row)
         info.calcRowOffsets(variableOffsets, _row);
 }
 
 void RtlRow::setRow(const void * _row, unsigned _numFields)
 {
-    row = _row;
+    row = (const byte *)_row;
     if (_row)
         info.calcRowOffsets(variableOffsets, _row, _numFields);
 }

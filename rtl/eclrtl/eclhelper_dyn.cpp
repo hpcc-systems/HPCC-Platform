@@ -29,20 +29,7 @@
 #include "rtlkey.hpp"
 
 //---------------------------------------------------------------------------
-static void readString(StringBuffer &out, const char * &in)
-{
-    for (;;)
-    {
-        char c = *in++;
-        if (!c)
-            throw MakeStringException(0, "Invalid filter - missing closing '");
-        if (c=='\'')
-            break;
-        if (c=='\\')
-            UNIMPLEMENTED;
-        out.append(c);
-    }
-}
+
 class ECLRTL_API CDynamicDiskReadArg : public CThorDiskReadArg
 {
 public:
@@ -136,52 +123,7 @@ public:
             MemoryBuffer lobuffer;
             MemoryBuffer hibuffer;
             Owned<IStringSet> filterSet = createStringSet(fieldSize);
-            while (*filter)
-            {
-                char startRange = *filter++;
-                if (startRange != '(' && startRange != '[')
-                    throw MakeStringException(0, "Invalid filter string: expected [ or ( at start of range");
-                // Now we expect a constant - type depends on type of field. Assume string or int for now
-                StringBuffer upperString, lowerString;
-                if (*filter=='\'')
-                {
-                    filter++;
-                    readString(lowerString, filter);
-                }
-                else
-                    UNIMPLEMENTED; // lowerInt = readInt(curFilter);
-                if (*filter == ',')
-                {
-                    filter++;
-                    if (*filter=='\'')
-                    {
-                        filter++;
-                        readString(upperString, filter);
-                    }
-                    else
-                        UNIMPLEMENTED; //upperInt = readInt(curFilter);
-                }
-                else
-                    upperString.set(lowerString);
-                char endRange = *filter++;
-                if (endRange != ')' && endRange != ']')
-                    throw MakeStringException(0, "Invalid filter string: expected ] or ) at end of range");
-                if (*filter==',')
-                    filter++;
-                else if (*filter)
-                    throw MakeStringException(0, "Invalid filter string: expected , between ranges");
-                MemoryBufferBuilder lobuilder(lobuffer.clear(), inrec->getMinRecordSize());
-                fieldType->buildUtf8(lobuilder, 0, inrec->queryField(fieldNum), lowerString.length(), lowerString.str());
-
-                MemoryBufferBuilder hibuilder(hibuffer.clear(), inrec->getMinRecordSize());
-                fieldType->buildUtf8(hibuilder, 0, inrec->queryField(fieldNum), upperString.length(), upperString.str());
-
-                filterSet->addRange(lobuffer.toByteArray(), hibuffer.toByteArray());
-                if (startRange=='(')
-                    filterSet->killRange(lobuffer.toByteArray(), lobuffer.toByteArray());
-                if (endRange==')')
-                    filterSet->killRange(hibuffer.toByteArray(), hibuffer.toByteArray());
-            }
+            deserializeSet(*filterSet, inrec->getMinRecordSize(), fieldType, filter);
             filters.append(*filterSet.getClear());
             filterOffsets.append(fieldOffset);
             flags |= TDRkeyed;

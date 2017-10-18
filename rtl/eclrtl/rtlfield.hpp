@@ -32,6 +32,9 @@ The file rtldynfield contains classes which manage instances of these classes wh
 size32_t ECLRTL_API getMinSize(const RtlFieldInfo * const * fields);
 
 // A base implementation of RtlTypeInfo
+// base classes should always implement buildString and buildUtf8 - default implementations of buildInt/buildReal
+// are implemented in terms of them.
+// The helper function buildUtf8ViaString can be used to provide a simple implementation of buildUtf8
 struct ECLRTL_API RtlTypeInfoBase : public RtlTypeInfo
 {
     constexpr inline RtlTypeInfoBase(unsigned _fieldType, unsigned _length) : RtlTypeInfo(_fieldType, _length) {}
@@ -42,8 +45,6 @@ struct ECLRTL_API RtlTypeInfoBase : public RtlTypeInfo
     virtual size32_t toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const override;
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const override;
     virtual size32_t buildNull(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field) const override;
-    virtual size32_t buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const override;
-    virtual size32_t buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const override;
     virtual size32_t buildInt(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, __int64 val) const override;
     virtual size32_t buildReal(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, double val) const override;
 
@@ -59,6 +60,10 @@ struct ECLRTL_API RtlTypeInfoBase : public RtlTypeInfo
 
     virtual size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in, size32_t offset) const override;
     virtual void readAhead(IRowDeserializerSource & in) const override;
+
+protected:
+    size32_t buildUtf8ViaString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const;
+    void getUtf8ViaString(size32_t & resultLen, char * & result, const void * ptr) const;
 };
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -70,11 +75,16 @@ struct ECLRTL_API RtlBoolTypeInfo : public RtlTypeInfoBase
 
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const override;
     virtual size32_t buildInt(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, __int64 val) const override;
+    virtual size32_t buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const override;
+    virtual size32_t buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const override;
     virtual size32_t process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const override;
     virtual size32_t toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const override;
     virtual void getString(size32_t & resultLen, char * & result, const void * ptr) const override;
     virtual void getUtf8(size32_t & resultLen, char * & result, const void * ptr) const override;
     virtual __int64 getInt(const void * ptr) const override;
+    virtual int compare(const byte * left, const byte * right) const override;
+protected:
+    bool getBool(const void * ptr) const;
 };
 
 struct ECLRTL_API RtlRealTypeInfo : public RtlTypeInfoBase
@@ -84,6 +94,8 @@ struct ECLRTL_API RtlRealTypeInfo : public RtlTypeInfoBase
 
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const override;
     virtual size32_t buildReal(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, double val) const override;
+    virtual size32_t buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const override;
+    virtual size32_t buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const override;
     virtual size32_t process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const override;
     virtual size32_t toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const override;
     virtual void getString(size32_t & resultLen, char * & result, const void * ptr) const override;
@@ -91,6 +103,7 @@ struct ECLRTL_API RtlRealTypeInfo : public RtlTypeInfoBase
     virtual __int64 getInt(const void * ptr) const override;
     virtual double getReal(const void * ptr) const override;
     virtual bool isNumeric() const override { return true; }
+    virtual int compare(const byte * left, const byte * right) const override;
 
 private:
     inline double value(const void * self) const;
@@ -104,6 +117,8 @@ struct ECLRTL_API RtlIntTypeInfo : public RtlTypeInfoBase
 
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const override;
     virtual size32_t buildInt(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, __int64 val) const override;
+    virtual size32_t buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const override;
+    virtual size32_t buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const override;
 
     virtual size32_t process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const override;
     virtual size32_t toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const override;
@@ -114,6 +129,7 @@ struct ECLRTL_API RtlIntTypeInfo : public RtlTypeInfoBase
     virtual bool canTruncate() const override;
     virtual bool canExtend(char &fillChar) const override;
     virtual bool isNumeric() const override { return true; }
+    virtual int compare(const byte * left, const byte * right) const override;
 };
 
 struct ECLRTL_API RtlSwapIntTypeInfo : public RtlTypeInfoBase
@@ -123,6 +139,8 @@ struct ECLRTL_API RtlSwapIntTypeInfo : public RtlTypeInfoBase
 
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const override;
     virtual size32_t buildInt(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, __int64 val) const override;
+    virtual size32_t buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const override;
+    virtual size32_t buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const override;
 
     virtual size32_t process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const override;
     virtual size32_t toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const override;
@@ -133,6 +151,7 @@ struct ECLRTL_API RtlSwapIntTypeInfo : public RtlTypeInfoBase
     virtual bool canTruncate() const override;
     virtual bool canExtend(char &fillChar) const override;
     virtual bool isNumeric() const override { return true; }
+    virtual int compare(const byte * left, const byte * right) const override;
 };
 
 struct ECLRTL_API RtlPackedIntTypeInfo : public RtlTypeInfoBase
@@ -144,6 +163,8 @@ struct ECLRTL_API RtlPackedIntTypeInfo : public RtlTypeInfoBase
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const override;
     virtual size32_t buildInt(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, __int64 val) const override;
+    virtual size32_t buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const override;
+    virtual size32_t buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const override;
 
     virtual size32_t process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const override;
     virtual size32_t toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const override;
@@ -154,6 +175,7 @@ struct ECLRTL_API RtlPackedIntTypeInfo : public RtlTypeInfoBase
     virtual __int64 getInt(const void * ptr) const override;
     virtual double getReal(const void * ptr) const override;
     virtual bool isNumeric() const override { return true; }
+    virtual int compare(const byte * left, const byte * right) const override;
 };
 
 struct ECLRTL_API RtlStringTypeInfo : public RtlTypeInfoBase
@@ -176,6 +198,7 @@ struct ECLRTL_API RtlStringTypeInfo : public RtlTypeInfoBase
     virtual __int64 getInt(const void * ptr) const override;
     virtual bool canTruncate() const override { return isFixedSize(); }
     virtual bool canExtend(char &fillChar) const override;
+    virtual int compare(const byte * left, const byte * right) const override;
 };
 
 struct ECLRTL_API RtlDataTypeInfo : public RtlTypeInfoBase
@@ -187,6 +210,7 @@ struct ECLRTL_API RtlDataTypeInfo : public RtlTypeInfoBase
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const override;
     virtual size32_t buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const override;
+    virtual size32_t buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const override;
     virtual size32_t process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const override;
     virtual size32_t toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const override;
     virtual size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in, size32_t offset) const override;
@@ -196,6 +220,7 @@ struct ECLRTL_API RtlDataTypeInfo : public RtlTypeInfoBase
     virtual __int64 getInt(const void * ptr) const override;
     virtual bool canTruncate() const override { return isFixedSize(); }
     virtual bool canExtend(char &fillChar) const override;
+    virtual int compare(const byte * left, const byte * right) const override;
 };
 
 struct ECLRTL_API RtlVarStringTypeInfo : public RtlTypeInfoBase
@@ -207,6 +232,7 @@ struct ECLRTL_API RtlVarStringTypeInfo : public RtlTypeInfoBase
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const override;
     virtual size32_t buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const override;
+    virtual size32_t buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const override;
     virtual size32_t process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const override;
     virtual size32_t toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const override;
     virtual size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in, size32_t offset) const override;
@@ -215,6 +241,7 @@ struct ECLRTL_API RtlVarStringTypeInfo : public RtlTypeInfoBase
     virtual void getUtf8(size32_t & resultLen, char * & result, const void * ptr) const override;
     virtual __int64 getInt(const void * ptr) const override;
     virtual bool canExtend(char &fillChar) const override;
+    virtual int compare(const byte * left, const byte * right) const override;
 };
 
 struct ECLRTL_API RtlQStringTypeInfo : public RtlTypeInfoBase
@@ -226,6 +253,7 @@ struct ECLRTL_API RtlQStringTypeInfo : public RtlTypeInfoBase
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const override;
     virtual size32_t buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const override;
+    virtual size32_t buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const override;
     virtual size32_t process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const override;
     virtual size32_t toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const override;
     virtual size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in, size32_t offset) const override;
@@ -234,6 +262,7 @@ struct ECLRTL_API RtlQStringTypeInfo : public RtlTypeInfoBase
     virtual void getUtf8(size32_t & resultLen, char * & result, const void * ptr) const override;
     virtual __int64 getInt(const void * ptr) const override;
     virtual bool canExtend(char &fillChar) const override;
+    virtual int compare(const byte * left, const byte * right) const override;
 };
 
 struct ECLRTL_API RtlDecimalTypeInfo : public RtlTypeInfoBase
@@ -246,12 +275,14 @@ struct ECLRTL_API RtlDecimalTypeInfo : public RtlTypeInfoBase
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const override;
     virtual size32_t buildNull(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field) const override;
     virtual size32_t buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const override;
+    virtual size32_t buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const override;
     virtual size32_t process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const override;
     virtual size32_t toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const override;
     virtual void getString(size32_t & resultLen, char * & result, const void * ptr) const override;
     virtual void getUtf8(size32_t & resultLen, char * & result, const void * ptr) const override;
     virtual __int64 getInt(const void * ptr) const override;
     virtual double getReal(const void * ptr) const override;
+    virtual int compare(const byte * left, const byte * right) const override;
 
     size32_t calcSize() const;
 };
@@ -262,11 +293,14 @@ struct ECLRTL_API RtlCharTypeInfo : public RtlTypeInfoBase
     virtual void doDelete() const final override { delete this; }
 
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const override;
+    virtual size32_t buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const override;
+    virtual size32_t buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const override;
     virtual size32_t process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const override;
     virtual size32_t toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const override;
     virtual void getString(size32_t & resultLen, char * & result, const void * ptr) const override;
     virtual void getUtf8(size32_t & resultLen, char * & result, const void * ptr) const override;
     virtual __int64 getInt(const void * ptr) const override;
+    virtual int compare(const byte * left, const byte * right) const override;
 };
 
 struct ECLRTL_API RtlUnicodeTypeInfo : public RtlTypeInfoBase
@@ -279,6 +313,7 @@ public:
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const override;
     virtual size32_t buildNull(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field) const override;
+    virtual size32_t buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const override;
     virtual size32_t buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const override;
     virtual size32_t process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const override;
     virtual size32_t toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const override;
@@ -287,6 +322,7 @@ public:
     virtual void getString(size32_t & resultLen, char * & result, const void * ptr) const override;
     virtual void getUtf8(size32_t & resultLen, char * & result, const void * ptr) const override;
     virtual __int64 getInt(const void * ptr) const override;
+    virtual int compare(const byte * left, const byte * right) const override;
 
     virtual const char * queryLocale() const override { return locale; }
 
@@ -303,6 +339,7 @@ public:
     virtual size32_t getMinSize() const override;
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const override;
+    virtual size32_t buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const override;
     virtual size32_t buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const override;
 
     virtual size32_t process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const override;
@@ -312,6 +349,7 @@ public:
     virtual void getString(size32_t & resultLen, char * & result, const void * ptr) const override;
     virtual void getUtf8(size32_t & resultLen, char * & result, const void * ptr) const override;
     virtual __int64 getInt(const void * ptr) const override;
+    virtual int compare(const byte * left, const byte * right) const override;
 
     virtual const char * queryLocale() const override { return locale; }
 
@@ -328,6 +366,7 @@ public:
     virtual size32_t getMinSize() const override;
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const override;
+    virtual size32_t buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const override;
     virtual size32_t buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const override;
     virtual size32_t process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const override;
     virtual size32_t toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const override;
@@ -336,6 +375,7 @@ public:
     virtual void getString(size32_t & resultLen, char * & result, const void * ptr) const override;
     virtual void getUtf8(size32_t & resultLen, char * & result, const void * ptr) const override;
     virtual __int64 getInt(const void * ptr) const override;
+    virtual int compare(const byte * left, const byte * right) const override;
 
     virtual const char * queryLocale() const override { return locale; }
 
@@ -353,6 +393,8 @@ struct ECLRTL_API RtlRecordTypeInfo : public RtlTypeInfoBase
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const override;
     virtual size32_t buildNull(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field) const override;
+    virtual size32_t buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const override;
+    virtual size32_t buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const override;
     virtual size32_t process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const override;
     virtual size32_t toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const override;
     virtual size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in, size32_t offset) const override;
@@ -360,6 +402,7 @@ struct ECLRTL_API RtlRecordTypeInfo : public RtlTypeInfoBase
     virtual void getString(size32_t & resultLen, char * & result, const void * ptr) const override;
     virtual void getUtf8(size32_t & resultLen, char * & result, const void * ptr) const override;
     virtual __int64 getInt(const void * ptr) const override;
+    virtual int compare(const byte * left, const byte * right) const override;
     virtual const RtlFieldInfo * const * queryFields() const override { return fields; }
     virtual bool isScalar() const override { return false; }
 };
@@ -368,6 +411,8 @@ struct ECLRTL_API RtlCompoundTypeInfo : public RtlTypeInfoBase
 {
     constexpr inline RtlCompoundTypeInfo(unsigned _fieldType, unsigned _length, const RtlTypeInfo * _child) : RtlTypeInfoBase(_fieldType, _length), child(_child) {}
 
+    virtual size32_t buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const override;
+    virtual size32_t buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const override;
     virtual void getString(size32_t & resultLen, char * & result, const void * ptr) const override;
     virtual void getUtf8(size32_t & resultLen, char * & result, const void * ptr) const override;
     virtual __int64 getInt(const void * ptr) const override;
@@ -390,6 +435,7 @@ struct ECLRTL_API RtlSetTypeInfo : public RtlCompoundTypeInfo
     virtual size32_t toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const override;
     virtual size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in, size32_t offset) const override;
     virtual void readAhead(IRowDeserializerSource & in) const override;
+    virtual int compare(const byte * left, const byte * right) const override;
 };
 
 struct ECLRTL_API RtlRowTypeInfo : public RtlCompoundTypeInfo
@@ -403,6 +449,7 @@ struct ECLRTL_API RtlRowTypeInfo : public RtlCompoundTypeInfo
     virtual size32_t toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const override;
     virtual size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in, size32_t offset) const override;
     virtual void readAhead(IRowDeserializerSource & in) const override;
+    virtual int compare(const byte * left, const byte * right) const override;
 };
 
 
@@ -418,6 +465,7 @@ struct ECLRTL_API RtlDatasetTypeInfo : public RtlCompoundTypeInfo
     virtual size32_t toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const override;
     virtual size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in, size32_t offset) const override;
     virtual void readAhead(IRowDeserializerSource & in) const override;
+    virtual int compare(const byte * left, const byte * right) const override;
 };
 
 
@@ -436,6 +484,7 @@ struct ECLRTL_API RtlDictionaryTypeInfo : public RtlCompoundTypeInfo
     virtual size32_t toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const override;
     virtual size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in, size32_t offset) const override;
     virtual void readAhead(IRowDeserializerSource & in) const override;
+    virtual int compare(const byte * left, const byte * right) const override;
 };
 
 
@@ -447,6 +496,8 @@ struct ECLRTL_API RtlIfBlockTypeInfo : public RtlTypeInfoBase
     virtual bool getCondition(const byte * selfrow) const = 0;
     virtual size32_t getMinSize() const override;
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
+    virtual size32_t buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const override;
+    virtual size32_t buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const override;
     virtual size32_t process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const override;
     virtual size32_t toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const override;
     virtual size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in, size32_t offset) const override;
@@ -455,6 +506,7 @@ struct ECLRTL_API RtlIfBlockTypeInfo : public RtlTypeInfoBase
     virtual void getUtf8(size32_t & resultLen, char * & result, const void * ptr) const override;
     virtual __int64 getInt(const void * ptr) const override;
     virtual bool isScalar() const override { return false; }
+    virtual int compare(const byte * left, const byte * right) const override;
 
     virtual const RtlFieldInfo * const * queryFields() const override { return fields; }
 };
@@ -465,6 +517,9 @@ struct ECLRTL_API RtlBitfieldTypeInfo : public RtlTypeInfoBase
     constexpr inline RtlBitfieldTypeInfo(unsigned _fieldType, unsigned _length) : RtlTypeInfoBase(_fieldType, _length) {}
     virtual void doDelete() const final override { delete this; }
 
+    virtual size32_t buildInt(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, __int64 val) const override;
+    virtual size32_t buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const override;
+    virtual size32_t buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const override;
     virtual size32_t getMinSize() const override;
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
     virtual size32_t process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const override;
@@ -472,8 +527,10 @@ struct ECLRTL_API RtlBitfieldTypeInfo : public RtlTypeInfoBase
     virtual void getString(size32_t & resultLen, char * & result, const void * ptr) const override;
     virtual void getUtf8(size32_t & resultLen, char * & result, const void * ptr) const override;
     virtual __int64 getInt(const void * ptr) const override;
+    virtual int compare(const byte * left, const byte * right) const override;
 
 protected:
+    size32_t getSize() const;
     __int64 signedValue(const void * self) const;
     unsigned __int64 unsignedValue(const void * self) const;
 };
@@ -485,6 +542,8 @@ struct ECLRTL_API RtlUnimplementedTypeInfo : public RtlTypeInfoBase
 
     virtual size32_t getMinSize() const override;
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
+    virtual size32_t buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const override;
+    virtual size32_t buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const override;
     virtual size32_t process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const override;
     virtual size32_t toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const override;
     virtual size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in, size32_t offset) const override;
@@ -493,6 +552,7 @@ struct ECLRTL_API RtlUnimplementedTypeInfo : public RtlTypeInfoBase
     virtual void getUtf8(size32_t & resultLen, char * & result, const void * ptr) const override;
     virtual __int64 getInt(const void * ptr) const override;
     virtual bool isScalar() const override { return false; }
+    virtual int compare(const byte * left, const byte * right) const override;
 };
 
 /*
