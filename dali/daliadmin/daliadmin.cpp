@@ -80,6 +80,7 @@ void usage(const char *exe)
   printf("\n");
   printf("Logical File meta information commands:\n");
   printf("  dfsfile <logicalname>          -- get meta information for file\n");
+  printf("  setdfspartattr <logicalname> <part> <attribute> [<value>] -- set attribute of a file part to value, or delete the attribute if not provided\n");
   printf("  dfspart <logicalname> <part>   -- get meta information for part num\n");
   printf("  dfscheck                       -- verify dfs file information is valid\n");
   printf("  dfscsv <logicalnamemask>       -- get csv info. for files matching mask\n");
@@ -586,6 +587,51 @@ static void dfspart(const char *lname,IUserDescriptor *userDesc, unsigned partnu
     UnsignedArray partslist;
     partslist.append(partnum);
     dfsfile(lname,userDesc,&partslist);
+}
+
+//=============================================================================
+
+static void setdfspartattr(const char *lname, unsigned partNum, const char *attr, const char *value, IUserDescriptor *userDesc)
+{
+    StringBuffer str;
+    CDfsLogicalFileName lfn;
+    lfn.set(lname);
+    if (lfn.isExternal()) 
+        throw MakeStringException(0, "External file not supported");
+    if (lfn.isForeign()) 
+        throw MakeStringException(0, "Foreign file not supported");
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname, userDesc);
+    if (nullptr == file.get())
+        throw MakeStringException(0, "Could not find file: '%s'", lname);
+    if (file->querySuperFile())
+        throw MakeStringException(0, "Cannot be used on a superfile");
+    if (!partNum || partNum>file->numParts())
+        throw MakeStringException(0, "Invalid part number, must be in the range 1 - %u", file->numParts());
+
+    IDistributedFilePart &part = file->queryPart(partNum-1);
+
+    StringBuffer attrProp("@");
+    attrProp.append(attr);
+
+    part.lockProperties(10000);
+    StringBuffer oldValueSB;
+    const char *oldValue = nullptr;
+    if (part.queryAttributes().getProp(attrProp.str(), oldValueSB))
+        oldValue = oldValueSB.str();
+    if (value)
+    {
+        part.queryAttributes().setProp(attrProp.str(), value);
+        PROGLOG("Set property '%s' to '%s' for file %s, part# %u", attrProp.str(), value, lname, partNum);
+    }
+    else
+    {
+        part.queryAttributes().removeProp(attrProp.str());
+        PROGLOG("Removed property '%s' from file %s, part# %u", attrProp.str(), lname, partNum);
+    }
+    part.unlockProperties();
+
+    if (oldValue)
+        PROGLOG("Prev. value = '%s'", oldValue);
 }
 
 //=============================================================================
@@ -3302,6 +3348,10 @@ int main(int argc, char* argv[])
                     else if (strieq(cmd,"dfspart")) {
                         CHECKPARAMS(2,2);
                         dfspart(params.item(1),userDesc,atoi(params.item(2)));
+                    }
+                    else if (strieq(cmd,"setdfspartattr")) {
+                        CHECKPARAMS(3,4);
+                        setdfspartattr(params.item(1), atoi(params.item(2)), params.item(3), np>3 ? params.item(4) : nullptr, userDesc);
                     }
                     else if (strieq(cmd,"dfscheck")) {
                         CHECKPARAMS(0,0);
