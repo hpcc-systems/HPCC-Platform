@@ -376,14 +376,11 @@
           download the HPCC Platform, Client Tools, and Plugins.</para>
 
           <para>The <emphasis role="bold">Additional Resources</emphasis> link
-          opens a submenu with links to other HPCC
-          Systems<superscript>®</superscript> pages, such as the <emphasis
-          role="bold">Transition Guide</emphasis> for users to transition from
-          using the previous version of HPCC and ECL Watch. <emphasis
-          role="bold">Issue Reporting</emphasis>, <emphasis
-          role="bold">Forums</emphasis>, and the HPCC <emphasis
-          role="bold">Red Book</emphasis> are the other available links.
-          </para>
+          opens a submenu that provides links to areas on the HPCC Systems web
+          site where you can find additional resources, such as the <emphasis
+          role="bold">Red Book</emphasis>, <emphasis role="bold">User
+          Forums</emphasis>, <emphasis role="bold">Issue Reporting</emphasis>,
+          and the <emphasis role="bold">Transition Guide</emphasis>. </para>
 
           <para>The <emphasis role="bold">Configuration</emphasis> link opens
           for viewing the XML version of the configuration file in use on your
