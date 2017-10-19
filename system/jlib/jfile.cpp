@@ -4674,15 +4674,13 @@ void RemoteFilename::setRemotePath(const char * _url,const char *localpath)
         if (localhead.length()==0) { // we don't know so guess
             if (sharehead.length()!=0) {
                 const char *share=sharehead.get();
-                if (sep=='\\') {
+                if (isPathSepChar(sep)) {
                     StringBuffer locstr;
                     if (sharehead.length()>2) {
                         if (isShareChar(share[2]))  {
                             locstr.append(share[1]).append(':');
                             share+=3;
                         }
-                        else  // we haven't a clue!
-                            locstr.append("c:");
                     }
                     else if (sharehead[1]!='$')  // data format
                         locstr.append("c:");
