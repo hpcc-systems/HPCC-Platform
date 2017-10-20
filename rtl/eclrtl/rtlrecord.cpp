@@ -282,8 +282,8 @@ void RtlRecord::calcRowOffsets(size_t * variableOffsets, const void * _row, unsi
         unsigned fieldIndex = variableFieldIds[i];
         size32_t offset = fixedOffsets[fieldIndex] + varoffset;
         size32_t fieldSize = queryType(fieldIndex)->size(row + offset, row);
-        varoffset += fieldSize;
-        variableOffsets[i+1] = offset+fieldSize;
+        varoffset = offset+fieldSize;
+        variableOffsets[i+1] = varoffset;
     }
 #ifdef _DEBUG
     for (unsigned i = maxVarField; i < numVarFields; i++)
@@ -387,7 +387,7 @@ size32_t RtlRecord::getRecordSize(const void *_row) const
             unsigned fieldIndex = variableFieldIds[i];
             size32_t offset = fixedOffsets[fieldIndex] + varoffset;
             size32_t fieldSize = queryType(fieldIndex)->size(row + offset, row);
-            varoffset += fieldSize;
+            varoffset = offset + fieldSize;
         }
         size = fixedOffsets[numFields] + varoffset;
     }
