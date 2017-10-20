@@ -49,12 +49,11 @@ static const char * skipws(const char * str)
 
 class CDummyScopeIterator : public IIterator, public CInterface
 {
-    IXmlScope *parent;
+    Linked<IXmlScope> parent;
 public:
     IMPLEMENT_IINTERFACE;
-    CDummyScopeIterator(IXmlScope *_parent)
+    CDummyScopeIterator(IXmlScope *_parent) : parent(_parent)
     {
-        parent = _parent;
     }
     ~CDummyScopeIterator ()
     {
@@ -1686,9 +1685,8 @@ void HqlLex::checkNextLoop(const YYSTYPE & errpos, bool first, int startLine, in
 #ifdef TIMING_DEBUG
             MTIME_SECTION(timer, "HqlLex::checkNextLoopcond");
 #endif
-            IValue *value = parseConstExpression(errpos, forFilter, subscope,startLine,startCol);
+            Owned<IValue> value = parseConstExpression(errpos, forFilter, subscope,startLine,startCol);
             filtered = !value || !value->getBoolValue();
-            ::Release(value);
         }
         else
             filtered = false;
