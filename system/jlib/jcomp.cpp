@@ -166,54 +166,45 @@ static void doSetCompilerPath(const char * path, const char * includes, const ch
         }
 
 #if defined(__linux__)
-        StringBuffer typeCmd = "type ";
-        typeCmd.append(fname);
+        StringBuffer commandCmd = "command -v ";
+        commandCmd.append(fname);
 
         const unsigned resultLength = 4096;
         char result[resultLength];
 
-        FILE* fp = popen(typeCmd.str(), "r");
+        FILE* fp = popen(commandCmd.str(), "r");
         if (fp != nullptr)
         {
             fgets(result, resultLength - 1, fp);
             pclose(fp);
         }
 #ifdef _DEBUG
-        PrintLog("'%s' command result is: '%s'", typeCmd.str(), result);
+        PrintLog("'%s' command result is: '%s'", commandCmd.str(), result);
 #endif
-        const char* pathStart = strstr(result, PATHSEPSTR);
+        const char* pathStart = strchr(result, PATHSEPCHAR);
         if (pathStart)
-        {
-            // If the PATHSEPSTR changed from "/" to something longer in future
-            assert(strlen(PATHSEPSTR) == 1);
-            // Not a nice solution but we have not strrstr() to search PATHSEPSTR from the end.
-            const char* pathEnd = strrchr(pathStart + 1, PATHSEPSTR[0]);
-            if (pathEnd)
-            {
-                StringBuffer compilerName(CC_NAME[targetCompiler]);
-                dequote(compilerName);
-                fname.clear().append((pathEnd - pathStart + 1), pathStart).append(compilerName);
-            }
-            else
-            {
-                fname.set(pathStart);
-                // Should remove the \n from the end
-                fname.replaceString("\n", nullptr);
-            }
-        }
+            fname.clear().append(pathStart).replaceString("\n", nullptr);
 
         StringBuffer clbin_dir;
-        const char* dir_end = strstr(fname, PATHSEPSTR);
+        const char* dir_end = strrchr(fname.str(), PATHSEPCHAR);
         if(dir_end == nullptr)
             clbin_dir.append(".");
         else
-            clbin_dir.append((dir_end - fname.str()) + 1, fname.str());
+            clbin_dir.append((dir_end - fname.str()), fname.str());
 
         StringBuffer pathenv(clbin_dir.str());
         const char* oldpath = getenv("PATH");
+#ifdef _DEBUG
+        PrintLog("PATH is: '%s'", oldpath);
+#endif
+
         if(oldpath != nullptr && *oldpath != '\0')
             pathenv.append(":").append(oldpath);
+
         setenv("PATH", pathenv.str(), 1);
+
+        if (verbose)
+            PrintLog("PATH set to %s", pathenv.str());
 #endif
     }
     else
