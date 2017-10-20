@@ -202,7 +202,10 @@ enum StatisticKind
     StCycleGenerateCycles,
     StWhenStarted,                      // When a graph/query etc. starts
     StWhenFinished,                     // When a graph stopped
-
+    StNumAnalyseExprs,
+    StNumTransformExprs,
+    StNumUniqueAnalyseExprs,
+    StNumUniqueTransformExprs,
     StMax,
 
     //For any quantity there is potentially the following variants.
