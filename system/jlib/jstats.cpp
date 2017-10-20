@@ -825,6 +825,10 @@ static const StatisticMeta statsMetaData[StMax] = {
     { CYCLESTAT(Generate) },
     { WHENSTAT(Started) },
     { WHENSTAT(Finished) },
+    { NUMSTAT(AnalyseExprs) },
+    { NUMSTAT(TransformExprs) },
+    { NUMSTAT(UniqueAnalyseExprs) },
+    { NUMSTAT(UniqueTransformExprs) },
 };
 
 
