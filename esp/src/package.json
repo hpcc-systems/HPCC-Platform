@@ -27,6 +27,7 @@
     "@hpcc-js/map": "0.0.44",
     "@hpcc-js/other": "0.0.40",
     "clipboard": "1.7.1",
+    "codemirror": "5.31.0",
     "cpx": "1.5.0",
     "css-loader": "0.28.7",
     "dijit": "1.13.0",

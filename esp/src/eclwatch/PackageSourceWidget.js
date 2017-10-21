@@ -28,6 +28,8 @@ define([
     "dijit/layout/ContentPane",
     "dijit/registry",
 
+    "src/CodeMirror",
+
     "hpcc/WsPackageMaps",
 
     "dojo/text!../templates/PackageSourceWidget.html"
@@ -35,6 +37,7 @@ define([
     function (declare, lang, i18n, nlsHPCC, dom, topic,
             _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin,
             BorderContainer, ContentPane, registry,
+            CodeMirror,
             WsPackageMaps, template) {
         return declare("PackageSourceWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
             templateString: template,

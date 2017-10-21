@@ -34,6 +34,8 @@ define([
     "dojox/widget/UpgradeBar",
     "dojox/widget/ColorPicker",
 
+    "src/CodeMirror",
+
     "hpcc/_TabContainerWidget",
     "hpcc/ESPRequest",
     "hpcc/ESPActivity",
@@ -68,6 +70,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domClass, domForm, domStyle, domGeo, cookie, topic, xhr,
                 registry, Tooltip,
                 UpgradeBar, ColorPicker,
+                CodeMirror,
                 _TabContainerWidget, ESPRequest, ESPActivity, WsAccount, WsAccess, WsSMC, WsTopology, GraphWidget, DelayLoadWidget, WsMachine,
                 template) {
 

@@ -32,8 +32,10 @@ function getConfig(env) {
             "@hpcc-js/map": baseUrl + "/node_modules/@hpcc-js/map/dist/map",
             "@hpcc-js/other": baseUrl + "/node_modules/@hpcc-js/other/dist/other",
             "clipboard": baseUrl + "/node_modules/clipboard/dist/clipboard",
+            "codemirror": baseUrl + "/node_modules/codemirror",
+            "crossfilter": baseUrl + "/crossfilter/crossfilter.min",
             "font-awesome": baseUrl + "/node_modules/@hpcc-js/common/font-awesome",
-            "crossfilter": baseUrl + "/crossfilter/crossfilter.min"
+            "tslib": baseUrl + "/node_modules/tslib/tslib"
         },
         packages: [
             {
