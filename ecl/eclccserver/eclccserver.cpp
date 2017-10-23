@@ -331,6 +331,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         if (mainDefinition.length())
             eclccCmd.append(" -main ").append(mainDefinition);
         eclccCmd.append(" --timings");
+        eclccCmd.append(" --nostdinc");
         if (globals->getPropBool("@enableEclccDali", true))
         {
             const char *daliServers = globals->queryProp("@daliServers");
