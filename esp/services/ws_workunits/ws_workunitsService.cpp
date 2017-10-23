@@ -288,6 +288,22 @@ bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IP
     return bAllSuccess;
 }
 
+
+bool doProtectWorkunits(IEspContext& context, StringArray& wuids, IArrayOf<IConstWUActionResult>* results)
+{
+    Owned<IProperties> params(createProperties(true));
+    params->setProp("BlockTillFinishTimer", 0);
+
+    return doAction(context, wuids, CECLWUActions_Protect, params, results);
+}
+bool doUnProtectWorkunits(IEspContext& context, StringArray& wuids, IArrayOf<IConstWUActionResult>* results)
+{
+    Owned<IProperties> params(createProperties(true));
+    params->setProp("BlockTillFinishTimer", 0);
+
+    return doAction(context, wuids, CECLWUActions_Unprotect, params, results);
+}
+
 static void checkUpdateQuerysetLibraries()
 {
     Owned<IRemoteConnection> globalLock = querySDS().connect("/QuerySets/", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
