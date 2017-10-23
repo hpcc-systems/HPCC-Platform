@@ -1,5 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -13,18 +15,12 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
+-->
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
+<section>
+    <title>esp/services/ws_sql</title>
 
-FOREACH ( iFILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/esp_service.xsl
-    ${CMAKE_CURRENT_SOURCE_DIR}/wsecl_onchange.xslt
-    ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wsecl.xsl
-    ${CMAKE_CURRENT_SOURCE_DIR}/plugins.xsl
-    ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_WsSMC.xsl
-    ${CMAKE_CURRENT_SOURCE_DIR}/roxiePlugins.xsl
-    ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_DynamicESDL.xsl
-    ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wslogging.xsl
-    ${CMAKE_CURRENT_SOURCE_DIR}/logging_agent.xsl
-    ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wssql.xsl
-)
-    Install ( FILES ${iFILES} DESTINATION componentfiles/configxml/@temp COMPONENT Runtime )
-ENDFOREACH ( iFILES )
+    <para>
+      The esp/services/ws_sql directory contains the sources for the esp/services/ws_sql library.
+    </para>
+</section>

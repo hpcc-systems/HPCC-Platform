@@ -55,6 +55,7 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_account.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wsecl.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wsecl2.xsd
+    ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wssql.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/GABConfig.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/generic.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/installset.xsd

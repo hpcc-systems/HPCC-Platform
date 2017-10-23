@@ -1,0 +1,343 @@
+/*##############################################################################
+
+    HPCC SYSTEMS software Copyright (C) 2014 HPCC Systems.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
+
+EspInclude(ws_workunits);
+EspInclude(ws_topology);
+
+ESPStruct HPCCColumn
+{
+   string Name;
+   string Type;
+};
+
+ESPStruct HPCCTable
+{
+    string Name;
+    ESParray<ESPstruct HPCCColumn, Column> Columns;
+    string ECL;
+    string Format;
+    string ContentType;
+    string Description;
+    boolean IsKeyed;
+    //string IndexFilePosFieldName;
+    boolean IsSuper;
+    string CsvQuote;
+    string CsvSeparate;
+    string CsvTerminate;
+    string Group;
+    integer MaxRecordSize;
+    string Modified;
+    integer NumParts;
+    string Owner;
+};
+
+ESPstruct OutputDataset
+{
+    string name;
+    ESParray<ESPstruct HPCCColumn, OutParam> OutParams;
+};
+ESPstruct QuerySignature
+{
+    ESParray<ESPstruct HPCCColumn, InParam> InParams;
+    ESParray<ESPstruct OutputDataset, ResultSet> ResultSets;
+};
+
+ESPstruct PublishedQuery
+{
+    string Name;
+    string Id;
+    string Wuid;
+    boolean Suspended;
+    ESPstruct QuerySignature Signature;
+};
+
+ESPStruct QuerySetAliasMap
+{
+    string Id;
+    string Name;
+};
+
+ESPStruct HPCCQuerySet
+{
+    string Name;
+    ESParray<ESPstruct PublishedQuery, QuerySetQuery> QuerySetQueries;
+    ESParray<ESPstruct QuerySetAliasMap, QuerySetAlias> QuerySetAliases;
+};
+
+ESPStruct HPCCTargetCluster
+{
+    string Name;
+    ESParray<ESPstruct PublishedQuery, QuerySetQuery> QuerySetQueries;
+    ESParray<ESPstruct QuerySetAliasMap, QuerySetAlias> QuerySetAliases;
+};
+
+ESPrequest PrepareSQLRequest
+{
+    [rows(28), cols(80)] string SqlText;
+    string TargetCluster; //where should this be compiled
+    [min_ver("3.04")] ESParray<string, AlternateCluster> AlternateClusters; //Although this appears to be a runtime option, in ECL this is a compiletime option.
+    string TargetQuerySet; //pertaining to Stored Proc calls
+    int Wait(-1);
+    //not so sure about this setting result limits in the prepare
+    //int resultLimit(0);
+};
+
+ESPresponse [exceptions_inline] PrepareSQLResponse
+{
+    ESPstruct ECLWorkunit Workunit;
+    string Result;
+};
+
+ESPrequest ExecuteSQLRequest
+{
+    [rows(28), cols(80)] string SqlText;
+    string UserName;
+    string TargetCluster; //where should this compile and execute
+    [min_ver("3.04")] ESParray<string, AlternateCluster> AlternateClusters;
+    string TargetQuerySet; //pertaining to Stored Proc calls
+    boolean SuppressResults(false);
+    boolean SuppressXmlSchema(true);
+    int Wait(-1);
+    int resultLimit(0);
+    int ResultWindowStart(0);
+    int ResultWindowCount(0);
+    [min_ver(3.05)] boolean IgnoreCache(false);
+};
+
+ESPresponse [exceptions_inline] ExecuteSQLResponse
+{
+    string ParentWuId;
+    string Result;
+    ESPstruct ECLWorkunit Workunit;
+    int resultLimit;
+    unsigned ResultWindowStart;
+    unsigned ResultWindowCount;
+};
+
+ESPrequest ExecutePreparedSQLRequest
+{
+    string WuId;
+    string UserName;
+    string TargetCluster; //where should this execute
+    boolean SuppressResults(false);
+    boolean SuppressXmlSchema(true);
+    int Wait(-1);
+    //int resultLimit(0); underlying WU code doesn't allow setting result limits on cloned wu
+    int ResultWindowStart(0);
+    int ResultWindowCount(0);
+    ESParray<ESPstruct NamedValue> Variables;
+};
+
+ESPresponse [exceptions_inline] ExecutePreparedSQLResponse
+{
+    string ParentWuId;
+    string Result;
+    //int resultLimit;
+    unsigned ResultWindowStart;
+    unsigned ResultWindowCount;
+    ESPstruct ECLWorkunit Workunit;
+};
+
+ESPrequest GetDBSystemInfoRequest
+{
+    boolean IncludeAll(true);
+};
+
+ESPresponse [exceptions_inline] GetDBSystemInfoResponse
+{
+    string Name;
+    string FullVersion;
+    string Major;
+    string Minor;
+    string Point;
+    string Project;
+    string Maturity;
+
+    [min_ver("3.01")] string WsSQLFullVersion;
+    [min_ver("3.01")] string WsSQLMajor;
+    [min_ver("3.01")] string WsSQLMinor;
+    [min_ver("3.01")] string WsSQLPoint;
+    [min_ver("3.01")] string WsSQLProject;
+    [min_ver("3.01")] string WsSQLMaturity;
+};
+
+ESPrequest GetDBMetaDataRequest
+{
+    boolean IncludeTables;
+    string  TableFilter;
+    boolean IncludeStoredProcedures;
+    string  QuerySet;
+    boolean IncludeTargetClusters;
+    string  ClusterType; //ALLCLUSTERS | ROOT
+};
+
+ESPresponse [exceptions_inline] GetDBMetaDataResponse
+{
+    ESParray<ESPstruct HPCCTable, Table> Tables;
+    integer TableCount;
+    ESParray<ESPstruct HPCCQuerySet, QuerySet> QuerySets;
+    ESParray<string, ClusterName> ClusterNames;
+};
+
+ESPrequest GetResultsRequest
+{
+    string  WuId;
+    boolean SuppressXmlSchema(true);
+    int     ResultWindowStart(0);
+    int     ResultWindowCount(0);
+};
+
+ESPresponse [exceptions_inline] GetResultsResponse
+{
+    string Result;
+    unsigned ResultWindowStart;
+    unsigned ResultWindowCount;
+    ESPstruct ECLWorkunit Workunit;
+};
+
+ESPrequest EchoRequest
+{
+    string Request;
+};
+
+ESPresponse EchoResponse
+{
+    string Response;
+};
+
+ESPStruct RelatedIndexSet
+{
+    String FileName;
+    ESParray<String, Index> Indexes;
+};
+
+ESPrequest GetRelatedIndexesRequest
+{
+    ESParray<String, FileName> FileNames;
+};
+
+ESPresponse GetRelatedIndexesResponse
+{
+    ESParray<ESPstruct RelatedIndexSet, RelatedIndexSet> RelatedIndexSets;
+};
+
+ESPrequest SetRelatedIndexesRequest
+{
+    ESParray<ESPstruct RelatedIndexSet, RelatedIndexSet> RelatedIndexSets;
+};
+
+ESPresponse SetRelatedIndexesResponse
+{
+    ESParray<ESPstruct RelatedIndexSet, RelatedIndexSet> RelatedIndexSets;
+};
+
+ESPenum HPCCFieldType : string
+{
+    BOOLEAN("BOOLEAN"),
+    INTEGER("INTEGER"),
+    xUNSIGNED("UNSIGNED"),
+    REAL("REAL"),
+    DECIMAL("DECIMAL"),
+    UDECIMAL("UDECIMAL"),
+    xSTRING("STRING"),
+    QSTRING("QSTRING"),
+    UNICODE("UNICODE"),
+    DATA("DATA"),
+    VARSTRING("VARSTRING"),
+    VARUNICODE("VARUNICODE"),
+};
+
+ESPStruct EclFieldType
+{
+    ESPenum HPCCFieldType Type;
+    String Locale;
+    Integer Length;
+    Integer Precision;
+};
+
+ESPStruct EclFieldDeclaration
+{
+    String FieldName;
+    ESPStruct EclFieldType EclFieldType;
+};
+
+ESPstruct DataTypeParam
+{
+    String Name;
+    ESParray<String, Value> Values;
+};
+
+ESPenum HPCCFileType : string
+{
+    FLAT("FLAT"),
+    CSV("CSV"),
+    JSON("JSON"),
+    XML("XML"),
+};
+
+ESPStruct DataType
+{
+    ESPenum HPCCFileType Type;
+    ESParray<ESPstruct DataTypeParam, Param> Params;
+};
+
+ESPStruct DataSourceInfo
+{
+    String SprayedFileName;
+    String LandingZoneIP;
+    String LandingZonePath;
+    String LandingZoneFileName;
+};
+
+ESPrequest CreateTableAndLoadRequest
+{
+    String  TableName;
+    String  TableDescription;
+    Boolean Overwrite;
+    ESParray<ESPstruct EclFieldDeclaration, EclField> EclFields;
+    String  TargetCluster;
+    String  Owner;
+    ESPStruct DataSourceInfo DataSource;
+    ESPStruct DataType DataSourceType;
+    int Wait(-1);
+};
+
+ESPresponse CreateTableAndLoadResponse
+{
+    String TableName;
+    Boolean Success;
+    String EclRecordDefinition;
+    ESPstruct ECLWorkunit Workunit;
+};
+
+ESPservice [version("3.05"), default_client_version("3.05"), auth_feature("DEFERRED"), exceptions_inline("./smc_xslt/exceptions.xslt")] wssql
+{
+    ESPmethod [min_ver("3.03")] CreateTableAndLoad(CreateTableAndLoadRequest, CreateTableAndLoadResponse);
+    ESPmethod [min_ver("3.02")] SetRelatedIndexes(SetRelatedIndexesRequest, SetRelatedIndexesResponse);
+    ESPmethod [min_ver("3.02")] GetRelatedIndexes(GetRelatedIndexesRequest, GetRelatedIndexesResponse);
+    ESPmethod [] PrepareSQL(PrepareSQLRequest, PrepareSQLResponse);
+    ESPmethod [] ExecuteSQL(ExecuteSQLRequest, ExecuteSQLResponse);
+    ESPmethod [] ExecutePreparedSQL(ExecutePreparedSQLRequest, ExecutePreparedSQLResponse);
+    ESPmethod [] GetResults(GetResultsRequest, GetResultsResponse);
+    ESPmethod [] GetDBSystemInfo(GetDBSystemInfoRequest, GetDBSystemInfoResponse);
+    ESPmethod [] GetDBMetaData(GetDBMetaDataRequest, GetDBMetaDataResponse);
+    ESPmethod Echo(EchoRequest, EchoResponse);
+};
+
+SCMexportdef(wssql);
+
+SCMapi(wssql) IClientwssql *createwssqlClient();
