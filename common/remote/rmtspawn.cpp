@@ -217,7 +217,7 @@ ISocket * spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoin
                         LOG(MCdetailDebugInfo, unknownJob, "Failed to connect to correct slave (%d,%d/%d) - try again later",connected,replyTag,slaveTag);
 
                     //Wrong slave listening, need to leave time for the other, don't count as an attempt
-                    MilliSleep(rand() % 5000 + 5000);
+                    MilliSleep(fastRand() % 5000 + 5000);
                 }
                 catch (IException * e)
                 {
@@ -238,7 +238,7 @@ ISocket * spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoin
             LOG(MCdetailDebugInfo, unknownJob, e, s.appendf("Failed to connect to slave (%d) (try again): ", replyTag).str());
             e->Release();
             // No socket listening or contention - try again fairly soon
-            MilliSleep(rand()%400+100);
+            MilliSleep(fastRand()%400+100);
             attempts--;
         }
 
@@ -375,7 +375,7 @@ bool CRemoteParentInfo::sendReply(unsigned version)
             EXCLOG(e, "Failed to create master listener: ");
             e->Release();
         }
-        MilliSleep(rand() % 3000 + 2000);
+        MilliSleep(fastRand() % 3000 + 2000);
     }
 
     return false;

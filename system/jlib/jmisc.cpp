@@ -1008,7 +1008,7 @@ char *mkdtemp(char *_template)
     char * tail = _template + strlen(_template) - 6;
     for (int i = 0; i < 100; i++)
     {
-        snprintf(tail, 7, "%06d", rand());
+        snprintf(tail, 7, "%06d", fastRand());
         if (!_mkdir(_template))
             return _template;
         if (errno != EEXIST)

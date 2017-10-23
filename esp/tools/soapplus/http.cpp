@@ -892,7 +892,7 @@ public:
                         int delay = 0;
                         if(delaymin < delaymax)
                         {
-                            delay = delaymin + (rand() % (delaymax - delaymin));
+                            delay = delaymin + (fastRand() % (delaymax - delaymin));
                         }
                         else
                         {

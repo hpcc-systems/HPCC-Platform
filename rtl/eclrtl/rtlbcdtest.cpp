@@ -178,10 +178,10 @@ protected:
         for (int i = 0; i < 1000; i++)
         {
             // 14-digit numbers, multiplications can't pass 28 digits (32 max)
-            unsigned __int64 val1 = ((__int64) rand() << 16) | rand();
-            unsigned __int64 val2 = ((__int64) rand() << 16) | rand();
-            unsigned __int64 val3 = ((__int64) rand() << 16) | rand();
-            unsigned __int64 val4 = ((__int64) rand() << 16) | rand();
+            unsigned __int64 val1 = ((__int64) fastRand() << 16) | fastRand();
+            unsigned __int64 val2 = ((__int64) fastRand() << 16) | fastRand();
+            unsigned __int64 val3 = ((__int64) fastRand() << 16) | fastRand();
+            unsigned __int64 val4 = ((__int64) fastRand() << 16) | fastRand();
 
             for (int i = 0; i < 2; i++)
             {

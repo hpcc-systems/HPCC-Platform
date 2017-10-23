@@ -909,7 +909,7 @@ public:
             {
                 if (lim > headRegionSize)
                     lim = headRegionSize;
-                return waiting.dequeue(rand() % lim);
+                return waiting.dequeue(fastRand() % lim);
             }
             return waiting.dequeue();
         }

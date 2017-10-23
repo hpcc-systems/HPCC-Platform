@@ -546,8 +546,7 @@ namespace couchbaseembed
                     // use a small loop to retry connections if necessary
                     unsigned int connectAttempt = 0;
                     unsigned int MAX_ATTEMPTS = 10;
-                    // coverity[DC.WEAK_CRYPTO]
-                    useconds_t SLEEP_TIME = 100 + (rand() % 200); // Add jitter to sleep time
+                    useconds_t SLEEP_TIME = 100 + (fastRand() % 200); // Add jitter to sleep time
 
                     while (true)
                     {

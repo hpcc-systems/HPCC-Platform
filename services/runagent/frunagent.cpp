@@ -193,7 +193,7 @@ void cmd_dispatch::action()
                 if (!success)
                 {
                     srand(GetCurrentThreadId()+clock());
-                    MilliSleep((rand() * 3000) / RAND_MAX);
+                    MilliSleep((fastRand() * 3000) / RAND_MAX);
                 }
             }
             else 

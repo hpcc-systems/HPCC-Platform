@@ -28205,7 +28205,7 @@ protected:
         // Random
         for (i=0; i<2000; i++)
         {
-            unsigned r = rand() % 1500;
+            unsigned r = fastRand() % 1500;
             sprintf(input[i], "%04d", r);
             sprintf(output[i], "%04d", r);
         }
