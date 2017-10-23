@@ -198,7 +198,7 @@ public:
         {
             if (mask & CMPeq)
                 return 0;
-            //Lower bound 
+            //Lower bound
             if (mask & CMPgt)
                 return -1;
             //Check against upper bound
@@ -1092,7 +1092,7 @@ public:
         numMatched = 0;
     }
 
-    //Compare the incoming row against the search 
+    //Compare the incoming row against the search
     int compareGE(const RtlRow & row)
     {
         unsigned i;
@@ -1136,7 +1136,7 @@ public:
             }
         }
 
-        //Not sure which 
+        //Not sure which
         for (; i < numFilterFields(); i++)
         {
             int c = queryFilter(i).findCandidateRange(row, matchPos(i));
@@ -1174,7 +1174,7 @@ public:
                 if (i == 0)
                     return UINT_MAX;
                 //caller needs to find a new row that is larger that the current values for fields 0..i
-                //Now need to search for a value if 
+                //Now need to search for a value if
                 //Search for a new candidate value from this filter
                 return i+1;
             }
@@ -1193,7 +1193,7 @@ protected:
 
 protected:
     UnsignedArray matchPositions;
-    unsigned numMatched;
+    unsigned numMatched = 0;
     RowFilter & filter;
 };
 
