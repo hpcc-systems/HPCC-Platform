@@ -1182,6 +1182,15 @@ margin-left:-20px;
     fill: none;
 }
 
+.flat .graph_Graph .graphVertex .common_Icon .common_Shape {
+    fill: #1f77b4;
+    stroke: #1f77b4;
+}
+
+.flat .graph_Graph .graphVertex .common_Icon .common_FAChar .common_Text {
+    fill: white;
+}
+
 .flat .graph_Graph .graphVertex > .subgraph.selected rect {
     stroke:red !important;
 }

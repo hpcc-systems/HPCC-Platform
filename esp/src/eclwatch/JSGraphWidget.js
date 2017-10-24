@@ -27,7 +27,9 @@ define([
     
     "hpcc/WsWorkunits",
     "hpcc/GraphWidget",
-    "hpcc/ESPGraph"
+    "hpcc/ESPGraph",
+
+    "css!font-awesome/css/font-awesome.css"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Evented,
             hpccCommon, hpccGraph, hpccLayout,
             WsWorkunits, GraphWidget, ESPGraph) {
@@ -125,6 +127,7 @@ define([
             this.graphData = new ESPGraph();
             this.graphWidget = new hpccGraph.Graph()
                 .allowDragging(false)
+                .zoomToolbar(false)
             ;
             var context = this;
             this.graphWidget.vertex_click = function (item, event) {
@@ -165,7 +168,11 @@ define([
 
         setMessage: function (msg) {
             if (msg !== this._prevMsg) {
-                this.messageWidget.text(msg).render();
+                this.messageWidget
+                    .text(msg)
+                    .visible(msg ? true : false)
+                    .render()
+                    ;
                 if ((msg && this.graphWidget.visible()) || (!msg && !this.graphWidget.visible())) {
                     this.graphWidget.visible(msg ? false : true).render();
                 }
@@ -450,9 +457,11 @@ define([
                 if (!this.option("vhidespills") || !target.isSpill()) {
                     var label = this.format(labelTpl, item);
                     var tooltip = this.format(tooltipTpl, item);
-                    var slavesTotal = parseInt(item.NumSlaves);
-                    var started = parseInt(item.NumStarted) > 0;
-                    var finished = parseInt(item.NumStopped) === parseInt(item.NumSlaves);
+                    var numSlaves = parseInt(item.NumSlaves);
+                    var numStarts = parseInt(item.NumStarts);
+                    var numStops = parseInt(item.NumStops);
+                    var started = numStarts > 0;
+                    var finished = numStops === numSlaves;
                     var active = started && !finished;
 
                     var strokeDasharray = null;
@@ -479,7 +488,7 @@ define([
                         item.__widget = new hpccGraph.Edge()
                             .sourceVertex(source.__widget)
                             .targetVertex(target.__widget)
-                            .targetMarker("arrowHead")
+                            .targetMarker("arrow")
                             .weight(weight)
                             .strokeDasharray(strokeDasharray)
                         ;
