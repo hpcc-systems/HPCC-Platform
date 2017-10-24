@@ -87,6 +87,8 @@ static const char * EclDefinition =
 "  unicode UnicodeLocaleTranslate(const unicode text, unicode sear, unicode repl) :c,pure,entrypoint='ulUnicodeLocaleTranslate';\n"
 "  boolean UnicodeLocaleStartsWith(const unicode src, unicode pref, string form) :c,pure,entrypoint='ulUnicodeLocaleStartsWith';\n"
 "  boolean UnicodeLocaleEndsWith(const unicode src, const unicode suff, const string form) :c,pure,entrypoint='ulUnicodeLocaleEndsWith';\n"
+"  unicode UnicodeLocaleRemoveSuffix(const unicode src, const unicode suff, const string form) :c,pure,entrypoint='ulUnicodeLocaleRemoveSuffix';\n"
+"  unsigned4 UnicodeLocaleFindCount(const unicode src, const unicode hit, const string form) :c,pure,entrypoint='ulUnicodeLocaleFindCount';\n"
 "END;\n";
 
 static const char * compatibleVersions[] = {
@@ -773,6 +775,17 @@ void normalizationFormCheck(UnicodeString & source, const char * form)
 #endif
 }
 
+static void removeSuffix(UnicodeString & toProcess, UnicodeString const & suf)
+{
+    if (toProcess.isEmpty() || suf.isEmpty())
+    {
+        return;
+    }
+    int32_t last = toProcess.length();
+    int32_t suffixLength = suf.length();
+    toProcess.removeBetween((last - suffixLength), last);
+}
+
 static bool endsWith(UnicodeString const & processed, UnicodeString const & suffix)
 {
     if (processed.isEmpty() || suffix.isEmpty())
@@ -872,6 +885,47 @@ void excludeLastWord(RuleBasedBreakIterator& bi, UnicodeString & toProcess)
     }
     //Called if the string has no words.
     toProcess.removeBetween(0, bi.last());
+}
+
+unsigned findCount(UnicodeString const & source, UnicodeString const  & sought)
+{
+    int32_t matches = 0;
+    if (source.isEmpty() || sought.isEmpty())
+    {
+        return matches;
+    }
+    int32_t idx = 0;
+    int32_t sourceLength = source.countChar32();
+    int32_t soughtLength = sought.countChar32();
+    if (sourceLength < soughtLength)
+    {
+        return matches;
+    }
+    int32_t max = source.length() - (soughtLength - 1);
+    UnicodeString temp;
+    StringCharacterIterator it(source);
+    UChar32 startChar = sought.char32At(0);
+    while (idx < max)
+    {
+        if (it.current32() == startChar)
+        {
+            source.extractBetween(idx, source.moveIndex32(idx, soughtLength), temp);
+            if (!sought.compareCodePointOrder(temp))
+            {
+                matches++;
+                idx = it.move32(soughtLength, CharacterIterator::kCurrent);
+            }
+            else
+            {
+                idx = it.move32(1, CharacterIterator::kCurrent);
+            }
+        }
+        else
+        {
+            idx = it.move32(1, CharacterIterator::kCurrent);
+        }
+    }
+    return matches;
 }
 
 void excludeNthWord(RuleBasedBreakIterator& bi, UnicodeString & source, unsigned n)
@@ -1694,4 +1748,44 @@ UNICODELIB_API bool UNICODELIB_CALL ulUnicodeLocaleEndsWith(unsigned srcLen, UCh
         normalizationFormCheck(suf, form);
     }
     return endsWith(pro, suf);
+}
+
+UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleRemoveSuffix(unsigned & tgtLen, UChar * & tgt, unsigned srcLen, UChar const * src, unsigned suffLen, UChar const * suff, unsigned formLen, char const * form)
+{
+    UnicodeString pro(src, srcLen);
+    UnicodeString suf(suff, suffLen);
+    suf.trim();
+    if (formLen == 3 || formLen == 4)
+    {
+        normalizationFormCheck(pro, form);
+        normalizationFormCheck(suf, form);
+    }
+    if (endsWith(pro, suf))
+    {
+        removeSuffix(pro, suf);
+    }
+    if (pro.length() > 0)
+    {
+        tgtLen = pro.length();
+        tgt = (UChar *)CTXMALLOC(parentCtx, tgtLen * 2);
+        pro.extract(0, tgtLen, tgt);
+    }
+    else
+    {
+        tgtLen = 0;
+        tgt = 0;
+    }
+}
+
+UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleFindCount(unsigned srcLen, UChar const * src, unsigned hitLen, UChar const * hit, unsigned formLen, char const * form)
+{
+    UnicodeString source(src, srcLen);
+    UnicodeString sought(hit, hitLen);
+    if (formLen == 3 || formLen == 4)
+    {
+        normalizationFormCheck(source, form);
+        normalizationFormCheck(sought, form);
+    }
+    int32_t matches = findCount(source, sought);
+    return matches;
 }
