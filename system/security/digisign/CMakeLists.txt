@@ -52,7 +52,7 @@ target_link_libraries (
         jlib
     )
 
-if (USE_ZLIB)s
+if (USE_ZLIB)
       target_link_libraries (
           digisign
           ${ZLIB_LIBRARIES}

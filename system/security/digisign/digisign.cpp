@@ -204,7 +204,7 @@ public:
             throw MakeStringException(-1, "digiVerify:EVP_DigestVerifyUpdate: %s", buff);
         }
 
-        int match = EVP_DigestVerifyFinal(RSAVerifyCtx, (const unsigned char *)decodedSig.str(), decodedSig.length());
+        int match = EVP_DigestVerifyFinal(RSAVerifyCtx, (unsigned char *)decodedSig.str(), decodedSig.length());
         EVP_PKEY_free(pubKey);
         EVP_MD_CTX_destroy(RSAVerifyCtx);//cleans up digest context ctx
         return match == 1;
