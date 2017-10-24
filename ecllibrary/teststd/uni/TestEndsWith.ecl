@@ -77,7 +77,7 @@ EXPORT TestEndsWith := MODULE
     UNICODE t1 := TRANSFER(r1, UNICODE);
     DATA r2 := x'c700';
     UNICODE t2 := TRANSFER(r2, UNICODE);
-    EXPORT Test43 := ASSERT(Uni.EndsWith(t1,t2,'NFKC') = TRUE);
+    EXPORT Test43 := ASSERT(Uni.EndsWith(t1,t2,U'NFKC') = TRUE);
     DATA r1 := x'43002703';
     UNICODE t1 := TRANSFER(r1, UNICODE);
     DATA r2 := x'c700';
