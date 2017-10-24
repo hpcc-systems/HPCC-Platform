@@ -281,14 +281,14 @@ define([
                 var context = this;
                 this.query.refresh().then(function (response) {
                     var graphs = [];
-                    if (lang.exists("GraphIds.Item", context.query)) {
-                        arrayUtil.forEach(context.query.GraphIds.Item, function (item, idx) {
+                    if (lang.exists("WUGraphs.ECLGraph", context.query)) {
+                        arrayUtil.forEach(context.query.WUGraphs.ECLGraph, function (item, idx) {
                             var graph = {
-                                Name: item,
+                                Name: item.Name,
                                 Label: "",
                                 Completed: "",
                                 Time: 0,
-                                Type: ""
+                                Type: item.Type
                             };
                             graphs.push(graph);
                         });
