@@ -4,12 +4,13 @@ define([
   "dojo/_base/array",
   "dojo/_base/Deferred",
 
-  "@hpcc-js/composite",
-
+  "@hpcc-js/chart",
+  "@hpcc-js/other",
+  
   "./DojoD3",
   "./Mapping"
 ], function (declare, lang, arrayUtil, Deferred,
-    hpccComposite,
+    hpccChart, hpccOther,
     DojoD3, Mapping) {
     return declare([Mapping, DojoD3], {
         mapping: {
@@ -32,11 +33,29 @@ define([
 
         renderTo: function (_target) {
             var deferred = new Deferred();
-            this.chart = new hpccComposite.MultiChart()
-                .chartType(this._chartType)
-                .target(_target.domNodeID)
-            ;
-            deferred.resolve(this.chart);
+            switch (this._chartType) {
+                case "BUBBLE":
+                    this.chart = new hpccChart.Bubble()
+                        .target(_target.domNodeID)
+                    ;
+                    deferred.resolve(this.chart);
+                    break;
+                case "PIE":
+                    this.chart = new hpccChart.Pie()
+                        .target(_target.domNodeID)
+                    ;
+                    deferred.resolve(this.chart);
+                    break;
+                case "WORD_CLOUD":
+                        this.chart = new hpccOther.WordCloud()
+                            .target(_target.domNodeID)
+                        ;
+                        deferred.resolve(this.chart);
+                    break;
+                default:
+                    console.log("Invalid visualization:  " + this._chartType)
+                    deferred.resolve(null);
+            }
             return deferred.promise;
         },
 

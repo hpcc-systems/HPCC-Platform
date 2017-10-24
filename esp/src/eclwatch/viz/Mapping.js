@@ -200,7 +200,7 @@
 
         getFieldMapping: function (id, datasetID) {
             var dataset = this.datasets.get(datasetID);
-            return dataset.getFieldMapping(id);
+            return dataset.getFieldMapping(id) || id;
         },
 
         //  Data  ---

@@ -57,6 +57,9 @@ define([
                     console.log("Invalid visualization:  " + this._chartType)
                     deferred.resolve(null);
             }
+            if (this.chart) {
+                this.chart._topoJsonFolder = require.toUrl("@hpcc-js/TopoJSON");
+            }    
             return deferred.promise;
         },
 
