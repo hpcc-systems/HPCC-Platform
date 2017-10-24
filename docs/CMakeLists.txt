@@ -80,7 +80,7 @@ add_subdirectory(VisualizingECL)
 # Docs automation
 if (DOCS_AUTO)
    add_subdirectory(XMLGeneration)
-   add_subdirectory(UsingConfigManager)
+   add_subdirectory(ConfigureHPCC)
 endif()
 
 

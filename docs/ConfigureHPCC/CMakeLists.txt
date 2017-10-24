@@ -25,7 +25,7 @@ ENDFOREACH()
 # commented out per issue # HPCC-10267
 #
 #
-DOCBOOK_TO_PDF( ${FO_XSL} UsingConfigManager.xml "UsingConfigManager")
+DOCBOOK_TO_PDF( ${FO_XSL} ConfigureHPCC.xml "ConfigureHPCC")
 #
 #
 ########################################################################
@@ -34,7 +34,7 @@ IF(MAKE_DOCS)
   SET(HELP_DEPENDENCIES)
   GET_PROPERTY(Current_Targets GLOBAL PROPERTY DOC_TARGETS)
   FOREACH(T ${Current_Targets})
-    IF("${T}" MATCHES ".*UsingConfigManager.*")
+    IF("${T}" MATCHES ".*ConfigureHPCC.*")
       LIST(APPEND HELP_DEPENDENCIES  ${T})
      ENDIF()
   ENDFOREACH()
