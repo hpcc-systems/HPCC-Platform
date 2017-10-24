@@ -142,6 +142,15 @@ jlib_decl int rand_r(unsigned int *seed);
 
 #endif
 
+inline int fastRand()
+{
+    // rand() causes Coverity can issue a 'WEAK_CRYPTO' warning, but we only use fastRand() where deemed safe to do so.
+
+    // coverity[DC.WEAK_CRYPTO]
+    return rand();
+}
+
+
 interface IShuffledIterator: extends IInterface
 {
     virtual void seed(unsigned seedval)=0;  // ony required for repeatability

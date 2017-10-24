@@ -560,7 +560,7 @@ void TransferServer::appendTransformed(unsigned chunkIndex, ITransformer * input
                 MilliSleep(delay*(getRandom()%100)/50);
         }
 #ifdef _WIN32
-        if (gpfFrequency && ((rand() % gpfFrequency) == 0))
+        if (gpfFrequency && ((fastRand() % gpfFrequency) == 0))
         {
             LOG(MCdebugInfo, unknownJob, "About to crash....");
             *(char *)0 = 0;
@@ -597,7 +597,7 @@ void TransferServer::deserializeAction(MemoryBuffer & msg, unsigned action)
     msg.read(isSafeMode);
 
     srand((unsigned)get_cycles_now());
-    int adjust = (rand() * rand() * rand()) % updateFrequency - (updateFrequency/2);
+    int adjust = fastRand() % updateFrequency - (updateFrequency/2);
     lastTick = msTick() + adjust;
 
     StringBuffer localFilename;

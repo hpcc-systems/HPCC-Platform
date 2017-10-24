@@ -1137,8 +1137,8 @@ public:
                 throw MakeStringException(-1, "Failed to connect to path %s", path.get());
             IPropertyTree *root = conn->queryRoot();
 
-            root->setPropInt("TTestProp1", rand());
-            root->setPropInt("TTestProp2", rand());
+            root->setPropInt("TTestProp1", fastRand());
+            root->setPropInt("TTestProp2", fastRand());
         }
         catch (IException *e)
         {
@@ -1316,7 +1316,7 @@ public:
     {
         for (;;)
         {
-            conn->queryRoot()->setPropInt("testprop", rand()*100);
+            conn->queryRoot()->setPropInt("testprop", fastRand()*100);
             conn->commit();
             if (id1)
             {
@@ -1816,7 +1816,7 @@ public:
         srand( (unsigned)time( NULL ) );
         try
         {
-            unsigned extra = rand()%2 ? RTM_LOCK_SUB : 0;
+            unsigned extra = fastRand()%2 ? RTM_LOCK_SUB : 0;
             Owned<IRemoteConnection> conn2 = querySDS().connect(path, myProcessSession(), RTM_CREATE_QUERY|RTM_LOCK_WRITE|extra, 1000);
         }
         catch (IException *e)
@@ -1886,7 +1886,7 @@ void TestSubLocks()
     unsigned i;
     for (i=0; i<num; i++)
     {
-        CSubTest * t = new CSubTest(paths.item(rand()%paths.ordinality()));
+        CSubTest * t = new CSubTest(paths.item(fastRand()%paths.ordinality()));
         threads.append(* t);
     }
     PrintLog("joining");
