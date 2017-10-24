@@ -52,7 +52,7 @@
   </bookinfo>
 
   <chapter id="ECL_Compiler">
-    <title><emphasis role="bold">ECL Compiler</emphasis></title>
+    <title>ECL Compiler</title>
 
     <para>The ECL Compiler is the compiler component of the High Performance
     Computing Cluster (HPCC). It is embedded and included when you install the
@@ -117,8 +117,7 @@
          ***END OF COMMENT***   --></para>
 
     <sect1 id="Stand-Alone-ECL-Compiler">
-      <title><emphasis>Using the ECL Compiler as a Stand Alone option
-      </emphasis></title>
+      <title>Using the ECL Compiler as a Stand Alone option </title>
 
       <para>The ECL Compiler is normally used through the ECL IDE or Eclipse
       using the ECL plugin for Eclipse, however, you can use the ECL Compiler

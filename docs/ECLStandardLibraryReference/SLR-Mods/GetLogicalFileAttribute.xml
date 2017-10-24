@@ -35,8 +35,8 @@
           size, clusterName, directory, owner, description, ECL, partmask,
           numparts, name, modified, format, job, checkSum, kind, csvSeparate,
           csvTerminate, headerLength, footerLength, rowTag, workunit,
-          accessed, maxRecordSize, csvQuote, blockCompressed, compressedSize,
-          fileCrc, formatCrc, or protected. The value is
+          accessed, expireDays, maxRecordSize, csvQuote, blockCompressed,
+          compressedSize, fileCrc, formatCrc, or protected. The value is
           case-sensitive.</entry>
         </row>
 
@@ -84,6 +84,7 @@ OUTPUT(STD.File.GetLogicalFileAttribute(file,'footerLength'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'rowtag'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'workunit'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'accessed'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'expireDays'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'maxRecordSize'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'csvQuote'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'blockCompressed'));

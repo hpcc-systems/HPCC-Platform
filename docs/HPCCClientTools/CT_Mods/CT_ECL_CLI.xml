@@ -19,7 +19,7 @@
   </bookinfo>
 
   <chapter id="ECL_CLI">
-    <title><emphasis role="bold">ECL Command Line Interface</emphasis></title>
+    <title>ECL Command Line Interface</title>
 
     <sect1 id="The_ECL_Command_Syntax" role="nobrk">
       <title>The ECL Command Syntax</title>

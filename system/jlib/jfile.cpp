@@ -151,6 +151,24 @@ StringBuffer &swapPathDrive(StringBuffer &filename,unsigned fromdrvnum,unsigned 
     return filename;
 }
 
+StringBuffer &getStandardPosixPath(StringBuffer &result, const char *path)
+{
+    result.set(path);
+    const char *s = result.trim().replace('\\', '/').str();
+    bool startWithPathSepChar = isPathSepChar(s[0]);
+    if (startWithPathSepChar)
+        s++;
+
+    if (*s && ((s[1]==':') || isShareChar(s[1])))
+    {
+        char c = tolower(s[0]);
+        if (!startWithPathSepChar)
+            result.insert(0, '/');
+        result.setCharAt(1, c);
+        result.setCharAt(2, '$');
+    }
+    return result;
+}
 
 const char *pathTail(const char *path)
 {

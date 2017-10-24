@@ -111,6 +111,7 @@ define([
             this.replicateTargetSelect = registry.byId(this.id + "ReplicateCluster");
             this.replicateSourceLogicalFile = registry.byId(this.id + "ReplicateSourceLogicalFile");
             this.replicateDropDown = registry.byId(this.id + "ReplicateDropDown");
+            this.desprayIPSelect = registry.byId(this.id + "DesprayTargetIPAddress");
             var context = this;
             var origOnOpen = this.desprayTooltiopDialog.onOpen;
             this.desprayTooltiopDialog.onOpen = function () {
@@ -118,18 +119,40 @@ define([
                     context.desprayTargetSelect.init({
                         DropZones: true,
                         callback: function (value, item) {
-                            context.updateInput("DesprayTargetIPAddress", null, item.machine.Netaddress);
-                            context.updateInput("DesprayTargetName", null, context.logicalFile.getLeaf());
-                            if (context.desprayTargetPath) {
-                                context.desprayTargetPath.reset();
-                                context.desprayTargetPath._dropZoneTarget = item;
-                                context.desprayTargetPath.defaultValue = context.desprayTargetPath.get("value");
-                                context.desprayTargetPath.loadDropZoneFolders();
+                            if (context.desprayIPSelect) {
+                                context.desprayIPSelect.defaultValue = context.desprayIPSelect.get("value");
+                                context.desprayIPSelect.loadDropZoneMachines(value);
+                                targetRow = item;
                             }
                         }
                     });
                 }
                 origOnOpen.apply(context.desprayTooltiopDialog, arguments);
+
+                if (!context.desprayIPSelect.initalized) {
+                    var pathSepChar;
+                    context.desprayIPSelect.init({
+                        DropZoneMachines: true,
+                        callback: function (value, row) {
+                            var path = targetRow.machine.Directory.indexOf("\\");
+                            targetRow.machine.Name = value
+                            targetRow.machine.Netaddress = value
+                            if (context.desprayTargetPath) {
+                                context.desprayTargetPath._dropZoneTarget = targetRow;
+                                if (path > -1) {
+                                    context.desprayTargetPath.defaultValue = "\\"
+                                    pathSepChar = "\\"
+                                    context.pathSepCharG = "\\"
+                                } else {
+                                    context.desprayTargetPath.defaultValue = "/"
+                                    pathSepChar = "/";
+                                    context.pathSepCharG = "/"
+                                }
+                                context.desprayTargetPath.loadDropZoneFolders(pathSepChar);
+                            }
+                        }
+                    });
+                }
             }
             this.desprayTargetPath = registry.byId(this.id + "DesprayTargetPath");
             this.fileBelongsToWidget = registry.byId(this.id + "_FileBelongs");

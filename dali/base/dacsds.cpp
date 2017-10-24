@@ -210,7 +210,7 @@ void CRemoteConnection::rollback()
             virtual bool applyChild(IPropertyTree &parent, IPropertyTree &_child, bool &levelBreak)
             {
                 CClientRemoteTree &child = (CClientRemoteTree &)_child;
-                if (child.queryState())
+                if (!child.queryServerId() || child.queryState())
                 {
                     ((CClientRemoteTree &)parent).clearChildren(); // wipe children - SDS will lazy fetch them again as needed.
                     levelBreak = true;

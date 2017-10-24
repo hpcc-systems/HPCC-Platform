@@ -40,15 +40,18 @@
       <para></para>
     </legalnotice>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -257,10 +260,10 @@
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/EditDistanceWithinRadius.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
-    
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/EncodeBase64.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
-    
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/EndsWith.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
@@ -356,7 +359,7 @@
   </chapter>
 
   <chapter id="MetaphoneSupport">
-    <title>Metaphone Support</title>
+    <title><emphasis>Metaphone Support</emphasis></title>
 
     <para>These functions provide a means to implement Double Metaphone or
     Metaphone 3 phonetic encoding or fuzzy-match algorithms which return a
@@ -377,8 +380,10 @@
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/DateDataTypes.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/TimeDataTypes.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/Year.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
@@ -387,28 +392,34 @@
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/Day.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
-   <xi:include href="ECLStandardLibraryReference/SLR-Mods/Hour.xml"
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Hour.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
-   <xi:include href="ECLStandardLibraryReference/SLR-Mods/Minute.xml"
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Minute.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
-   <xi:include href="ECLStandardLibraryReference/SLR-Mods/Second.xml"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />                
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Second.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/DateFromParts.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/TimeFromParts.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/IsLeapYear.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/IsDateLeapYear.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
-                
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/IsValidDate.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/IsValidTime.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/IsValidGregorianDate.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
@@ -423,6 +434,7 @@
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/Today.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/CurrentDate.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 

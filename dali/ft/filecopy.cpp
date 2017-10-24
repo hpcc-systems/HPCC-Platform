@@ -465,29 +465,32 @@ FileSizeThread::FileSizeThread(FilePartInfoArray & _queue, CriticalSection & _cs
 
 bool FileSizeThread::wait(unsigned timems)
 {
-    while (!sem.wait(timems))   { // report every time
-        if (!cur.get())
-            continue;       // window here?
-        cur->Link();
-        RemoteFilename *rfn=NULL;
-        if (copy) {
-            if (!cur->mirrorFilename.isNull())
-                rfn = &cur->mirrorFilename;
+    while (!sem.wait(timems))
+    { // report every time
+        StringBuffer rfn;
+        {
+            CriticalBlock lock(cs);
+            if (cur.get())
+            {
+                if (copy)
+                {
+                    if (!cur->mirrorFilename.isNull())
+                        cur->mirrorFilename.getRemotePath(rfn);
+                }
+                else
+                {
+                    cur->filename.getRemotePath(rfn);
+                }
+            }
         }
-        else {
-            rfn = &cur->filename;
-        }
-        if (rfn) {
-            StringBuffer url;
-            WARNLOG("Waiting for file: %s",rfn->getRemotePath(url).str());
-            cur->Release();
+        if (!rfn.isEmpty())
+        {
+            WARNLOG("Waiting for file: %s",rfn.str());
             return false;
         }
-        cur->Release();
     }
     sem.signal(); // if called again
     return true;
-
 }
 
 int FileSizeThread::run()
@@ -497,17 +500,20 @@ int FileSizeThread::run()
         RemoteFilename remoteFilename;
         for (;;)
         {
-            cur.clear();
-            cs.enter();
-            if (queue.ordinality())
-                cur.setown(&queue.popGet());
-            cs.leave();
+            {
+                CriticalBlock lock(cs);
+                cur.clear();
+                if (queue.ordinality())
+                    cur.setown(&queue.popGet());
+            }
 
             if (!cur.get())
                 break;
             copy=0;
-            for (copy = 0;copy<2;copy++) {
-                if (copy) {
+            for (copy = 0;copy<2;copy++)
+            {
+                if (copy)
+                {
                     if (cur->mirrorFilename.isNull())
                         continue;  // not break
                     remoteFilename.set(cur->mirrorFilename);
@@ -516,8 +522,10 @@ int FileSizeThread::run()
                     remoteFilename.set(cur->filename);
                 OwnedIFile thisFile = createIFile(remoteFilename);
                 offset_t thisSize = thisFile->size();
-                if (thisSize == -1) {
-                    if (errorIfMissing) {
+                if (thisSize == -1)
+                {
+                    if (errorIfMissing)
+                    {
                         StringBuffer s;
                         throwError1(DFTERR_CouldNotOpenFile, remoteFilename.getRemotePath(s).str());
                     }
@@ -527,7 +535,8 @@ int FileSizeThread::run()
                 if (isCompressed)
                 {
                     Owned<IFileIO> io = createCompressedFileReader(thisFile); //check succeeded?
-                    if (!io) {
+                    if (!io)
+                    {
                         StringBuffer s;
                         throwError1(DFTERR_CouldNotOpenCompressedFile, remoteFilename.getRemotePath(s).str());
                     }
@@ -536,11 +545,12 @@ int FileSizeThread::run()
                 cur->size = thisSize;
                 break;
             }
-            if (copy==1) { // need to set primary
+            if (copy==1)
+            { // need to set primary
+                CriticalBlock lock(cs);
                 cur->mirrorFilename.set(cur->filename);
                 cur->filename.set(remoteFilename);
             }
-            cur.clear();
         }
     }
     catch (IException * e)

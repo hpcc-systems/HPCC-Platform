@@ -1,28 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE sect1
-  PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="GetHostName">
-   <title>
-      <emphasis role="bold">GetHostName</emphasis>
-   </title>
-   <para>
-      <emphasis>result</emphasis>
-      <emphasis role="bold"> :=
-        STD.System.Util.GetHostName<indexterm>
+  <title>GetHostName</title>
+
+  <para><emphasis>result</emphasis> <emphasis role="bold"> :=
+  STD.System.Util.GetHostName<indexterm>
       <primary>STD.System.Util.GetHostName</primary>
-    </indexterm>
-    <indexterm>
+    </indexterm> <indexterm>
       <primary>System.Util.GetHostName</primary>
-    </indexterm>
-    <indexterm>
+    </indexterm> <indexterm>
       <primary>Util.GetHostName</primary>
-    </indexterm>
-    <indexterm>
+    </indexterm> <indexterm>
       <primary>GetHostName</primary>
-    </indexterm>(</emphasis>
-      <emphasis> ip </emphasis>
-      <emphasis role="bold">);</emphasis>
-   </para>
+    </indexterm>(</emphasis> <emphasis> ip </emphasis> <emphasis
+  role="bold">);</emphasis></para>
+
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
       <colspec colwidth="80.50pt" />
@@ -31,27 +24,29 @@
 
       <tbody>
         <row>
-          
+          <entry><emphasis>ip</emphasis></entry>
 
-
-   <entry>
-      <emphasis>ip</emphasis> </entry><entry>A null-terminated string containing the
-        IP address of the remote machine.</entry>
+          <entry>A null-terminated string containing the IP address of the
+          remote machine.</entry>
         </row>
+
         <row>
-   <entry>Return:<emphasis> </emphasis></entry><entry>GetHostName returns returns a
-        VARSTRING (null-terminated) value.</entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-
+          <entry>GetHostName returns returns a VARSTRING (null-terminated)
+          value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
-   <para>The <emphasis role="bold">GetHostName </emphasis>function does a
-        reverse DNS lookup to return the host name for the machine at the
-        specified <emphasis>ip</emphasis> address.</para>
-   <para>Example:</para>
-   <programlisting format="linespecific">IP   := '10.150.254.6';
+
+  <para>The <emphasis role="bold">GetHostName </emphasis>function does a
+  reverse DNS lookup to return the host name for the machine at the specified
+  <emphasis>ip</emphasis> address.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IP   := '10.150.254.6';
    
 OUTPUT(STD.System.Util.GetHostName(IP));
 </programlisting>

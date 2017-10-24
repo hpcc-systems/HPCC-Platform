@@ -44,19 +44,6 @@ if(NOT "${DESTDIR}" STREQUAL "")
     add_custom_target(configure_directories
         DEPENDS ${dirlist})
 
-    add_custom_command(
-        OUTPUT  ${HOME_DIR}/${RUNTIME_USER}/.ssh/authorized_keys
-                ${HOME_DIR}/${RUNTIME_USER}/.ssh/id_rsa.pub
-                ${HOME_DIR}/${RUNTIME_USER}/.ssh/id_rsa
-        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/configure_keys.sh
-        COMMENT "Attempting to generate ssh keys if not present"
-        WORKING_DIRECTORY ${HOME_DIR}/${RUNTIME_USER}/.ssh
-        VERBATIM)
-    add_custom_target(configure_ssh_keys
-        DEPENDS ${HOME_DIR}/${RUNTIME_USER}/.ssh/authorized_keys
-                ${HOME_DIR}/${RUNTIME_USER}/.ssh/id_rsa.pub
-                ${HOME_DIR}/${RUNTIME_USER}/.ssh/id_rsa)
-    
     add_custom_command(OUTPUT ${CONFIG_DIR}/${ENV_XML_FILE}
         COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/${ENV_XML_FILE} ${CONFIG_DIR}
         DEPENDS configure_directories ${CMAKE_CURRENT_BINARY_DIR}/environment.xml)
@@ -90,8 +77,7 @@ if(NOT "${DESTDIR}" STREQUAL "")
                 ${INIT_PATH}/dafilesrv)
 
     add_custom_target(configure ALL
-        DEPENDS configure_ssh_keys
-                configure_directories
+        DEPENDS configure_directories
                 configure_environment_xml
                 configure_environment_conf
                 configure_genenvrules_conf

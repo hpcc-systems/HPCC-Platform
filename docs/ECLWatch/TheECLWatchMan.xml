@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book xml:base="../">
   <title>Using ECL Watch</title>
@@ -362,19 +362,25 @@
           messages. You can filter this page by checking the boxes at the
           bottom of the tab. A copy facility is also provided.</para>
 
-          <para>The <emphasis role="bold">Transition Guide</emphasis> link
-          opens a new browser tab to the page where you can find more
-          information about transitioning from using the previous version of
-          HPCC and ECL Watch.</para>
+          <para>The <emphasis role="bold">Release Notes</emphasis> link opens
+          a new browser tab to the HPCC release notes page where you can find
+          more release specific information about the contents of each version
+          of HPCC.</para>
+
+          <para>The <emphasis role="bold">Documentation</emphasis> link opens
+          a new browser tab to the HPCC documentation page, where you can view
+          and download the HPCC system documentation.</para>
+
+          <para>The <emphasis role="bold">Downloads</emphasis> link opens a
+          new browser tab to the HPCC downloads page, where you can find and
+          download the HPCC Platform, Client Tools, and Plugins.</para>
 
           <para>The <emphasis role="bold">Additional Resources</emphasis> link
-          opens submenu with links to the HPCC
-          Systems<superscript>®</superscript> <emphasis
-          role="bold">Downloads</emphasis> page, where you can browse and
-          download additional HPCC resources. It also has links to <emphasis
-          role="bold">Issue Reporting</emphasis>, <emphasis
-          role="bold">Forums</emphasis>, and the HPCC <emphasis
-          role="bold">Red Book</emphasis>.</para>
+          opens a submenu that provides links to areas on the HPCC Systems web
+          site where you can find additional resources, such as the <emphasis
+          role="bold">Red Book</emphasis>, <emphasis role="bold">User
+          Forums</emphasis>, <emphasis role="bold">Issue Reporting</emphasis>,
+          and the <emphasis role="bold">Transition Guide</emphasis>. </para>
 
           <para>The <emphasis role="bold">Configuration</emphasis> link opens
           for viewing the XML version of the configuration file in use on your

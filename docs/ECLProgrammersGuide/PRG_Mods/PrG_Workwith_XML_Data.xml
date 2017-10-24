@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Working_with_XML_Data">
-  <title><emphasis role="bold">Working with XML Data</emphasis></title>
+  <title>Working with XML Data</title>
 
   <para>Data is not always handed to you in nice, easy-to-work-with,
   fixed-length flat files; it comes in many forms. One form growing in usage

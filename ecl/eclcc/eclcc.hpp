@@ -103,7 +103,7 @@ const char * const helpText[] = {
 #endif
     "!   --nogpg       Do not run gpg to check signatures on signed code",
     "    --nosourcepath Compile as if the source came from stdin",
-    "!   --nostdinc    Do not include the current directory in -I",
+    "?!  --nostdinc    Do not include the current directory in -I",
 #ifndef _WIN32
     "!   -pch          Generate precompiled header for eclinclude4.hpp",
 #endif

@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Using_SuperKeys">
-  <title><emphasis role="bold">Using SuperKeys</emphasis></title>
+  <title>Using SuperKeys</title>
 
   <para>A SuperFile whose sub-files are INDEXes (not DATASETs) is a SuperKey.
   As described previously in the <emphasis>Indexing Into SuperFiles</emphasis>
@@ -19,8 +19,8 @@
   operation for a payload key is the half-keyed JOIN, that also becomes the
   primary SuperKey operational use.</para>
 
-  <para>Both SuperFiles and SuperKeys may be used in Thor or Roxie operations.
-  </para>
+  <para>Both SuperFiles and SuperKeys may be used in Thor or Roxie
+  operations.</para>
 
   <para>The following attribute definitions used by the code examples in this
   article are declared in the DeclareData MODULE structure attribute:</para>

@@ -112,7 +112,7 @@ define([
 
         _doDownload: function (zip) {
             var base = new ESPBase();
-            var name = this.params.getLogDirectory() + "/" + this.logTargetSelect.get("value");
+            var name = "//" + this.params.getNetaddress() + this.params.getLogDirectory() + "/" + this.logTargetSelect.get("value");
             var type = "tpcomp_log";
             window.open(base.getBaseURL("WsTopology") + "/SystemLog?Name=" + name + "&Type=" + type + "&Zip=" + zip, "_blank");
         },

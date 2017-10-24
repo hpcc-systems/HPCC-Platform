@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Using_the_GROUP_Function">
-  <title><emphasis role="bold">Using the GROUP Function</emphasis></title>
+  <title>Using the GROUP Function</title>
 
   <para>The GROUP function provides important functionality when processing
   very large datasets. The basic concept is that the GROUP function will break

@@ -124,7 +124,7 @@ define([
                     context.desprayTargetSelect.init({
                         DropZones: true,
                         callback: function (value, item) {
-                             if (context.desprayIPSelect) {
+                            if (context.desprayIPSelect) {
                                 context.desprayIPSelect.defaultValue = context.desprayIPSelect.get("value");
                                 context.desprayIPSelect.loadDropZoneMachines(value);
                                 targetRow = item;
@@ -158,7 +158,6 @@ define([
                         }
                     });
                 }
-                origOnOpen.apply(context.desprayTooltipDialog, arguments);
             }
             this.desprayTargetPath = registry.byId(this.id + "DesprayTargetPath");
             this.desprayGrid = registry.byId(this.id + "DesprayGrid");

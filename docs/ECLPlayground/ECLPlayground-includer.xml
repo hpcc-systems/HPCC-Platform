@@ -62,7 +62,7 @@
   </bookinfo>
 
   <chapter id="ECLPlaygroundChap">
-    <title><emphasis>ECL Playground</emphasis></title>
+    <title>ECL Playground</title>
 
     <para>This manual covers the ECL Playground which is a component found in
     ECL Watch.</para>

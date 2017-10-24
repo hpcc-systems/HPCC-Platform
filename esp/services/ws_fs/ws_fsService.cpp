@@ -1813,6 +1813,23 @@ bool CFileSprayEx::onGetDFUExceptions(IEspContext &context, IEspGetDFUExceptions
     return true;
 }
 
+void CFileSprayEx::readAndCheckSpraySourceReq(MemoryBuffer& srcxml, const char* srcIP, const char* srcPath,
+    StringBuffer& sourceIPReq, StringBuffer& sourcePathReq)
+{
+    StringBuffer sourcePath(srcPath);
+    sourceIPReq.set(srcIP);
+    sourceIPReq.trim();
+    sourcePath.trim();
+    if(srcxml.length() == 0)
+    {
+        if (sourceIPReq.isEmpty())
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Source network IP not specified.");
+        if (sourcePath.isEmpty())
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Source path not specified.");
+    }
+    getStandardPosixPath(sourcePathReq, sourcePath.str());
+}
+
 bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspSprayFixedResponse &resp)
 {
     try
@@ -1827,16 +1844,10 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination node group not specified.");
 
         MemoryBuffer& srcxml = (MemoryBuffer&)req.getSrcxml();
-        const char* srcip = req.getSourceIP();
-        const char* srcfile = req.getSourcePath();
-        if(srcxml.length() == 0)
-        {
-            if(!srcip || !*srcip)
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Source network IP not specified.");
-            if(!srcfile || !*srcfile)
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Source file not specified.");
-        }
-
+        StringBuffer sourceIPReq, sourcePathReq;
+        readAndCheckSpraySourceReq(srcxml, req.getSourceIP(), req.getSourcePath(), sourceIPReq, sourcePathReq);
+        const char* srcip = sourceIPReq.str();
+        const char* srcfile = sourcePathReq.str();
         const char* destname = req.getDestLogicalName();
         if(!destname || !*destname)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination file not specified.");
@@ -2011,16 +2022,10 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
             gName.append(destNodeGroup);
 
         MemoryBuffer& srcxml = (MemoryBuffer&)req.getSrcxml();
-        const char* srcip = req.getSourceIP();
-        const char* srcfile = req.getSourcePath();
-        if(srcxml.length() == 0)
-        {
-            if(!srcip || !*srcip)
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Source network IP not specified.");
-            if(!srcfile || !*srcfile)
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Source file not specified.");
-        }
-
+        StringBuffer sourceIPReq, sourcePathReq;
+        readAndCheckSpraySourceReq(srcxml, req.getSourceIP(), req.getSourcePath(), sourceIPReq, sourcePathReq);
+        const char* srcip = sourceIPReq.str();
+        const char* srcfile = sourcePathReq.str();
         const char* destname = req.getDestLogicalName();
         if(!destname || !*destname)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination file not specified.");
@@ -2222,7 +2227,7 @@ void CFileSprayEx::getDropZoneInfoByIP(double clientVersion, const char* ip, con
         destFileOut.set(destFileIn);
 
     if (!ip || !*ip)
-        throw MakeStringExceptionDirect(ECLWATCH_INVALID_IP, "Network address must be specified for a dropzone!");
+        throw MakeStringExceptionDirect(ECLWATCH_INVALID_IP, "Network address must be specified for a drop zone!");
 
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
     Owned<IConstEnvironment> constEnv = factory->openEnvironment();
@@ -2235,7 +2240,16 @@ void CFileSprayEx::getDropZoneInfoByIP(double clientVersion, const char* ip, con
         destFile.set(destFileIn);
         Owned<IConstDropZoneInfo> dropZone = constEnv->getDropZoneByAddressPath(ip, destFile.str());
         if (!dropZone)
-            throw MakeStringException(ECLWATCH_DROP_ZONE_NOT_FOUND, "Dropzone not found for network address %s.", ip);
+        {
+            if (constEnv->isDropZoneRestrictionEnabled())
+                throw MakeStringException(ECLWATCH_DROP_ZONE_NOT_FOUND, "No drop zone configured for '%s' and '%s'. Check your system drop zone configuration.", ip, destFile.str());
+            else
+            {
+                LOG(MCdebugInfo, unknownJob, "No drop zone configured for '%s' and '%s'. Check your system drop zone configuration.", ip, destFile.str());
+                return;
+            }
+        }
+
 
         SCMStringBuffer directory, maskBuf;
         dropZone->getDirectory(directory);
@@ -2249,7 +2263,15 @@ void CFileSprayEx::getDropZoneInfoByIP(double clientVersion, const char* ip, con
 
     Owned<IConstDropZoneInfoIterator> dropZoneItr = constEnv->getDropZoneIteratorByAddress(ip);
     if (dropZoneItr->count() < 1)
-        throw MakeStringException(ECLWATCH_DROP_ZONE_NOT_FOUND, "Dropzone not found for network address %s.", ip);
+    {
+        if (constEnv->isDropZoneRestrictionEnabled())
+            throw MakeStringException(ECLWATCH_DROP_ZONE_NOT_FOUND, "Drop zone not found for network address '%s'. Check your system drop zone configuration.", ip);
+        else
+        {
+            LOG(MCdebugInfo, unknownJob, "Drop zone not found for network address '%s'. Check your system drop zone configuration.", ip);
+            return;
+        }
+    }
 
     bool dzFound = false;
     ForEach(*dropZoneItr)
@@ -2272,10 +2294,23 @@ void CFileSprayEx::getDropZoneInfoByIP(double clientVersion, const char* ip, con
                 umask.set(dropZoneUMask.str());
         }
         else
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "> 1 dropzones found for network address %s.", ip);
+        {
+            if (constEnv->isDropZoneRestrictionEnabled())
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "> 1 drop zones found for network address '%s'.", ip);
+            else
+            {
+                LOG(MCdebugInfo, unknownJob, "> 1 drop zones found for network address '%s'.", ip);
+                return;
+            }
+        }
     }
     if (!dzFound)
-        throw MakeStringException(ECLWATCH_DROP_ZONE_NOT_FOUND, "No valid dropzone found for network address %s.", ip);
+    {
+        if (constEnv->isDropZoneRestrictionEnabled())
+            throw MakeStringException(ECLWATCH_DROP_ZONE_NOT_FOUND, "No valid drop zone found for network address '%s'. Check your system drop zone configuration.", ip);
+        else
+            LOG(MCdebugInfo, unknownJob, "No valid drop zone found for network address '%s'. Check your system drop zone configuration.", ip);
+    }
 }
 
 bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDesprayResponse &resp)
@@ -2292,8 +2327,8 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
         PROGLOG("Despray %s", srcname);
         double version = context.getClientVersion();
         const char* destip = req.getDestIP();
-        StringBuffer fnamebuf(req.getDestPath());
-        const char* destfile = fnamebuf.trim().str();
+        StringBuffer destPath;
+        const char* destfile = getStandardPosixPath(destPath, req.getDestPath()).str();
 
         MemoryBuffer& dstxml = (MemoryBuffer&)req.getDstxml();
         if(dstxml.length() == 0)

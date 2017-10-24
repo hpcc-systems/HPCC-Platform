@@ -4,9 +4,8 @@
 <sect1 id="ESDL_Attributes_ecl_null">
   <title>ecl_null <indexterm>
       <primary>ecl_null</primary>
-    </indexterm>(<emphasis role="bold">n</emphasis><emphasis role="bold"> |
-  </emphasis><emphasis role="bold">string</emphasis><emphasis
-  role="bold">)</emphasis></title>
+    </indexterm>(n |
+  string)</title>
 
   <para>The <emphasis>ecl_null </emphasis>attribute tells ESP to remove the
   field altogether if the field's value is <emphasis>n</emphasis> or

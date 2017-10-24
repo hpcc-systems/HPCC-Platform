@@ -2,9 +2,9 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Attributes_version">
-  <title><emphasis role="bold">version <indexterm>
+  <title>version <indexterm>
       <primary>version</primary>
-    </indexterm>and default_client_version</emphasis></title>
+    </indexterm>and default_client_version</title>
 
   <para><indexterm>
       <primary>default_client_version</primary>

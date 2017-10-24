@@ -51,6 +51,9 @@ public:
 
 class CFileSprayEx : public CFileSpray
 {
+    void readAndCheckSpraySourceReq(MemoryBuffer& srcxml, const char* srcIP, const char* srcPath,
+        StringBuffer& sourceIPReq, StringBuffer& sourcePathReq);
+
 public:
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
     virtual void setContainer(IEspContainer * container)

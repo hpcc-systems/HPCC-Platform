@@ -441,11 +441,15 @@ public:
 
     void appendOptPath(StringBuffer &cmdLine, const char opt, const char *path)
     {
-        if (!path || !*path)
+        if (!path)
             return;
-        if (*path==';')
+        while (*path==ENVSEPCHAR)
             path++;
-        cmdLine.append(" -").append(opt).append(path);
+        if (!*path)
+            return;
+        cmdLine.append(" \"-").append(opt); //quote perfore opt, pipeprocess will build full argv without quotes
+        cmdLine.append(path);
+        cmdLine.append('"');
     }
 
     void buildCmd(StringBuffer &cmdLine)
@@ -456,6 +460,10 @@ public:
             cmdLine.append(" -legacy");
         if (cmd.optCheckDirty)
             cmdLine.append(" -checkDirty");
+        if (cmd.optFastSyntax)
+            cmdLine.append(" --fastsyntax");
+        if (cmd.optNoStdInc)
+            cmdLine.append(" --nostdinc");
         if (cmd.optDebug)
             cmdLine.append(" -g");
         appendOptPath(cmdLine, 'I', cmd.optImpPath.str());
@@ -688,6 +696,10 @@ eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvItera
     if (iter.matchFlag(optLegacy, ECLOPT_LEGACY) || iter.matchFlag(optLegacy, ECLOPT_LEGACY_DASH))
         return EclCmdOptionMatch;
     if (iter.matchFlag(optCheckDirty, ECLOPT_CHECKDIRTY))
+        return EclCmdOptionMatch;
+    if (iter.matchFlag(optFastSyntax, ECLOPT_FAST_SYNTAX))
+        return EclCmdOptionMatch;
+    if (iter.matchFlag(optNoStdInc, ECLOPT_NO_STD_INC))
         return EclCmdOptionMatch;
     if (iter.matchFlag(optDebug, ECLOPT_DEBUG) || iter.matchFlag(optDebug, ECLOPT_DEBUG_DASH))
         return EclCmdOptionMatch;

@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Query_Libraries">
-  <title><emphasis role="bold">Query Libraries</emphasis></title>
+  <title>Query Libraries</title>
 
   <para>A Query Library is a set of attributes, packaged together in a self
   contained unit, which allows the code to be shared between different

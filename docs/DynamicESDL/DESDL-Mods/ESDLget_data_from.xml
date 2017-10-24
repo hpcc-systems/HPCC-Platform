@@ -2,7 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Attributes_get_data_from">
-  <title><emphasis role="bold">get_data_from</emphasis></title>
+  <title>get_data_from</title>
 
   <para><indexterm>
       <primary>get_data_from</primary>
@@ -22,11 +22,11 @@
 
   <para>In the example above, the query returns the data in Var1 then the
   service puts the data into the Var2 field and sends that in the response to
-  the client. </para>
+  the client.</para>
 
   <para>In this example both Var1 and Var2 are in the response to the client.
   Typically, Var1 and Var2 are in non-overlapping versions so only one will be
-  in the response depending on the version specified. </para>
+  in the response depending on the version specified.</para>
 
   <para>Since the get_data_from attribute supports complex data types, such as
   an ESPstruct, the fields do not have to be limited to string types.</para>
