@@ -1512,7 +1512,7 @@ interface IExtendedWUInterface
     virtual bool archiveWorkUnit(const char *base,bool del,bool ignoredllerrors,bool deleteOwned,bool exportAssociatedFiles) = 0;
     virtual IPropertyTree *getUnpackedTree(bool includeProgress) const = 0;
     virtual IPropertyTree *queryPTree() const = 0;
-    
+    virtual IPropertyTree *exportTree(bool unpack, bool includeProgress, bool hidePasswords) const = 0;
 };
 
 //Do not mark this as WORKUNIT_API - all functions are inline, and it causes windows link errors

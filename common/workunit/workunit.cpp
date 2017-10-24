@@ -3457,6 +3457,8 @@ public:
             { return queryExtendedWU(c)->queryPTree(); }
     virtual IPropertyTree *getUnpackedTree(bool includeProgress) const
             { return queryExtendedWU(c)->getUnpackedTree(includeProgress); }
+    virtual IPropertyTree *exportTree(bool unpack, bool includeProgress, bool hidePasswords) const
+            { return queryExtendedWU(c)->exportTree(unpack, includeProgress, hidePasswords); }
     virtual bool archiveWorkUnit(const char *base,bool del,bool deldll,bool deleteOwned,bool exportAssociatedFiles)
             { return queryExtendedWU(c)->archiveWorkUnit(base,del,deldll,deleteOwned,exportAssociatedFiles); }
     virtual unsigned queryFileUsage(const char *filename) const
@@ -5644,6 +5646,45 @@ public:
 };
 //==========================================================================================
 
+static void removePasswordParameters(IPropertyTree * const workunit, IPropertyTree *parametersNode)
+{
+    Owned<IPropertyTreeIterator> elems = parametersNode->getElements("*");
+    ICopyArrayOf<IPTree> parametersArray;
+    ForEach(*elems)
+        parametersArray.append(elems->query());
+    ForEachItemIn(p, parametersArray)
+    {
+        IPropertyTree &paramNode = parametersArray.item(p);
+        const char *paramName = paramNode.queryName();
+        VStringBuffer xpath("Variables/Variable[@name='%s']/Format/@password", paramName);
+        if (workunit->getPropBool(xpath))
+        {
+            parametersNode->removeTree(&paramNode);
+            Owned<IPTree> dummyParam = createPTree(paramName);
+            dummyParam->setProp(nullptr, "****");
+            parametersNode->addPropTree(dummyParam.getClear());
+        }
+    }
+}
+
+static void removePrivateInfo(IPropertyTree *workunit)
+{
+    workunit->removeProp("@token");
+    if (workunit->hasProp("Variables/Variable/Format/@password"))
+    {
+        IPropertyTree *parametersNode = workunit->queryPropTree("Parameters");
+        if (parametersNode)
+            removePasswordParameters(workunit, parametersNode);
+        Owned<IPropertyTreeIterator> elems = workunit->getElements("Variables/*[Format/@password]");
+        ForEach(*elems)
+        {
+            IPropertyTree &variableNode = elems->query();
+            variableNode.removeProp("Value");
+            variableNode.removeProp("xmlValue");
+        }
+    }
+}
+
 CLocalWorkUnit::CLocalWorkUnit(ISecManager *secmgr, ISecUser *secuser)
 {
     clearCached(false);
@@ -5808,22 +5849,6 @@ IJlibDateTime & CLocalWorkUnit::getTimeScheduled(IJlibDateTime &val) const
     return val; 
 }
 
-bool modifyAndWriteWorkUnitXML(char const * wuid, StringBuffer & buf, StringBuffer & extra, IFileIO * fileio)
-{
-    // kludge in extra chunks of XML such as GraphProgress and GeneratedDlls
-    if(extra.length())
-    {
-        size32_t l = (size32_t)strlen(wuid);
-        size32_t p = buf.length()-l-4; // bit of a kludge
-        assertex(memcmp(buf.str()+p+2,wuid,l)==0);
-        StringAttr tail(buf.str()+p);
-        buf.setLength(p);
-        buf.append(extra);
-        buf.append(tail);
-    }
-    return (fileio->write(0,buf.length(),buf.str()) == buf.length());
-}
-
 bool CLocalWorkUnit::archiveWorkUnit(const char *base, bool del, bool ignoredllerrors, bool deleteOwned, bool exportAssociatedFiles)
 {
     CriticalBlock block(crit);
@@ -5841,22 +5866,15 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base, bool del, bool ignoredlle
     if (!fileio)
         return false;
 
-    StringBuffer buf;
-    exportWorkUnitToXML(this, buf, false, false, true);
-
-    StringBuffer extraWorkUnitXML;
+    Owned<IPTree> exportedWorkUnitTree = exportTree(false, false, true);
     Owned<IPTree> graphProgress = getGraphProgressTree();
     if (graphProgress)
-    {
-        toXML(graphProgress,extraWorkUnitXML,1,XML_Format);
-        graphProgress.clear();
-    }
+        exportedWorkUnitTree->addPropTree(graphProgress.getClear());
 
     Owned<IConstWUQuery> q = getQuery();
     if (!q)
     {
-        if (!modifyAndWriteWorkUnitXML(wuid, buf, extraWorkUnitXML, fileio))
-           return false;
+        saveXML(*fileio, exportedWorkUnitTree, 1, XML_Format);
         if (del)
         {
             if (getState()==WUStateUnknown)
@@ -5962,10 +5980,9 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base, bool del, bool ignoredlle
     }
     iter.clear();
     if (generatedDlls->numChildren())
-        toXML(generatedDlls, extraWorkUnitXML, 1, XML_Format);
+        exportedWorkUnitTree->addPropTree(generatedDlls.getClear());
 
-    if (!modifyAndWriteWorkUnitXML(wuid, buf, extraWorkUnitXML, fileio))
-       return false;
+    saveXML(*fileio, exportedWorkUnitTree, 1, XML_Format);
 
     if (del)
     {
@@ -9001,56 +9018,22 @@ unsigned CLocalWorkUnit::getApplicationValueCount() const
     
 }
 
-StringBuffer &appendPTreeOpenTag(StringBuffer &s, IPropertyTree *tree, const char *name, unsigned indent, bool hidePasswords)
-{
-    appendXMLOpenTag(s, name, NULL, false);
-    Owned<IAttributeIterator> attrs = tree->getAttributes(true);
-    if (attrs->first())
-    {
-        unsigned attributeindent = indent + (size32_t) strlen(name);
-        unsigned count = attrs->count();
-        bool doindent = false;
-        ForEach(*attrs)
-        {
-            if (hidePasswords && streq(attrs->queryName(), "@token"))
-                continue;
-            if (doindent)
-                s.append('\n').appendN(attributeindent, ' ');
-            else if (count > 3)
-                doindent = true;
-            appendXMLAttr(s, attrs->queryName()+1, attrs->queryValue());
-        }
-    }
-    s.append('>');
-    return s;
-}
-
 IStringVal &CLocalWorkUnit::getXmlParams(IStringVal &str, bool hidePasswords) const
 {
     CriticalBlock block(crit);
-    IPropertyTree *paramTree = p->queryPropTree("Parameters");
-    if (!paramTree)
+    IPropertyTree *tree = p->queryPropTree("Parameters");
+    if (!tree)
         return str;
-
-    StringBuffer xml;
-    if (!hidePasswords)
-        toXML(paramTree, xml);
-    else
+    Owned<IPropertyTree> paramTree;
+    if (p->hasProp("Variables/Variable/Format/@password"))
     {
-        appendPTreeOpenTag(xml.append(' '), paramTree, "Parameters", 0, false).append('\n');
-
-        Owned<IPropertyTreeIterator> elems = paramTree->getElements("*");
-        ForEach(*elems)
-        {
-            const char *paramname = elems->query().queryName();
-            VStringBuffer xpath("Variables/Variable[@name='%s']/Format/@password", paramname);
-            if (p->getPropBool(xpath))
-                appendXMLTag(xml.append("  "), paramname, "***").append('\n');
-            else
-                toXML(&elems->query(), xml, 2);
-        }
-        appendXMLCloseTag(xml.append(' '), "Parameters").append('\n');
+        paramTree.setown(createPTreeFromIPT(tree));
+        removePasswordParameters(p, paramTree);
     }
+    else
+        paramTree.set(tree);
+    StringBuffer xml;
+    toXML(paramTree, xml);
     str.set(xml);
     return str;
 }
@@ -11048,98 +11031,13 @@ extern WORKUNIT_API ILocalWorkUnit * createLocalWorkUnit(const char *xml)
     return ret;
 }
 
-void exportWorkUnitToXMLWithHiddenPasswords(IPropertyTree *p, IIOStream &out, unsigned extraXmlFlags)
-{
-    const char *name = p->queryName();
-    if (!name)
-        name = "__unnamed__";
-    StringBuffer temp;
-    writeStringToStream(out, appendPTreeOpenTag(temp, p, name, 1, true));
-
-    Owned<IPropertyTreeIterator> elems = p->getElements("*", iptiter_sort);
-    ForEach(*elems)
-    {
-        IPropertyTree &elem = elems->query();
-        if (streq(elem.queryName(), "Parameters"))
-        {
-            writeStringToStream(out, appendPTreeOpenTag(temp.clear().append(' '), &elem, "Parameters", 2, false).append('\n'));
-            Owned<IPropertyTreeIterator> params = elem.getElements("*", iptiter_sort);
-            ForEach(*params)
-            {
-                IPropertyTree &param = params->query();
-                const char *paramname = param.queryName();
-                VStringBuffer xpath("Variables/Variable[@name='%s']/Format/@password", paramname);
-                if (p->getPropBool(xpath))
-                    writeStringToStream(out, appendXMLTag(temp.clear().append("  "), paramname, "****").append('\n'));
-                else
-                {
-                    toXML(&param, out, 2, XML_Format|XML_SortTags|extraXmlFlags);
-                }
-            }
-            writeStringToStream(out, appendXMLCloseTag(temp.clear().append(' '), "Parameters").append('\n'));
-        }
-        else if (streq(elem.queryName(), "Variables"))
-        {
-            writeStringToStream(out, appendPTreeOpenTag(temp.clear().append(' '), &elem, "Variables", 2, false).append('\n'));
-            Owned<IPropertyTreeIterator> vars = elem.getElements("*", iptiter_sort);
-            ForEach(*vars)
-            {
-                Owned<IPropertyTree> var = LINK(&vars->query());
-                if (var->getPropBool("Format/@password"))
-                {
-                    var.setown(createPTreeFromIPT(var)); //copy and remove password values
-                    var->removeProp("Value");
-                    var->removeProp("xmlValue");
-                }
-                toXML(var, out, 2, XML_Format|XML_SortTags|extraXmlFlags);
-            }
-            writeStringToStream(out, appendXMLCloseTag(temp.clear().append(' '), "Variables").append('\n'));
-        }
-        else
-            toXML(&elem, out, 1, XML_Format|XML_SortTags|extraXmlFlags);
-    }
-    writeStringToStream(out, appendXMLCloseTag(temp.clear(), name));
-}
-
-StringBuffer &exportWorkUnitToXMLWithHiddenPasswords(IPropertyTree *p, StringBuffer &str)
-{
-    class CAdapter : public CInterface, implements IIOStream
-    {
-        StringBuffer &out;
-    public:
-        IMPLEMENT_IINTERFACE;
-        CAdapter(StringBuffer &_out) : out(_out) { }
-        virtual void flush() { }
-        virtual size32_t read(size32_t len, void * data) { UNIMPLEMENTED; return 0; }
-        virtual size32_t write(size32_t len, const void * data) { out.append(len, (const char *)data); return len; }
-    } adapter(str);
-    exportWorkUnitToXMLWithHiddenPasswords(p->queryBranch(NULL), adapter, 0);
-    return str;
-}
-
-void exportWorkUnitToXMLFileWithHiddenPasswords(IPropertyTree *p, const char *filename, unsigned extraXmlFlags)
-{
-    OwnedIFile ifile = createIFile(filename);
-    OwnedIFileIO ifileio = ifile->open(IFOcreate);
-    Owned<IIOStream> stream = createIOStream(ifileio);
-    exportWorkUnitToXMLWithHiddenPasswords(p->queryBranch(NULL), *stream, extraXmlFlags);
-}
-
 extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool unpack, bool includeProgress, bool hidePasswords)
 {
-    // MORE - queryPTree isn't really safe without holding CLocalWorkUnit::crit - really need to move these functions into CLocalWorkunit
     const IExtendedWUInterface *ewu = queryExtendedWU(wu);
     if (ewu)
     {
-        Linked<IPropertyTree> p;
-        if (unpack||includeProgress)
-            p.setown(ewu->getUnpackedTree(includeProgress));
-        else
-            p.set(ewu->queryPTree());
-        if (hidePasswords)
-            return exportWorkUnitToXMLWithHiddenPasswords(p, str);
-        else
-            return toXML(p, str, 0, XML_Format|XML_SortTags);
+        Owned<IPropertyTree> p = ewu->exportTree(unpack, includeProgress, hidePasswords);
+        return toXML(p, str, 0, XML_Format|XML_SortTags);
     }
     else
         return str.append("Unrecognized workunit format");
@@ -11150,13 +11048,7 @@ extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const
     const IExtendedWUInterface *ewu = queryExtendedWU(wu);
     if (ewu)
     {
-        Linked<IPropertyTree> p;
-        if (unpack||includeProgress)
-            p.setown(ewu->getUnpackedTree(includeProgress));
-        else
-            p.set(ewu->queryPTree());
-        if (hidePasswords)
-            return exportWorkUnitToXMLFileWithHiddenPasswords(p, filename, extraXmlFlags);
+        Owned<IPropertyTree> p = ewu->exportTree(unpack, includeProgress, hidePasswords);
         if (splitStats)
         {
             StringBuffer statsFilename;
@@ -11532,6 +11424,19 @@ unsigned __int64 CLocalWorkUnit::getAbortTimeStamp() const
 {
     CriticalBlock block(crit);
     return p->getPropInt64("Tracing/AbortTimeStamp", 0);
+}
+
+IPropertyTree *CLocalWorkUnit::exportTree(bool unpack, bool includeProgress, bool hidePasswords) const
+{
+    CriticalBlock block(crit);
+    Owned<IPropertyTree> workUnitTree;
+    if (unpack||includeProgress)
+        workUnitTree.setown(getUnpackedTree(includeProgress));
+    else
+        workUnitTree.setown(createPTreeFromIPT(queryPTree()));
+    if (hidePasswords)
+        removePrivateInfo(workUnitTree);
+    return workUnitTree.getClear();
 }
 
 #if 0

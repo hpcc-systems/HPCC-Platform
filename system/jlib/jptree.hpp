@@ -105,6 +105,9 @@ interface jlib_decl IPropertyTree : extends serializable
     virtual IPropertyTree *setPropTree(const char *xpath) = 0;
     virtual IPropertyTree *addPropTree(const char *xpath) = 0;
 
+    virtual IPropertyTree *addPropTree(IPropertyTree *val) = 0;
+    virtual IPropertyTree *setPropTree(IPropertyTree *val) = 0;
+
     virtual bool removeProp(const char *xpath) = 0;
     virtual bool removeTree(IPropertyTree *child) = 0;
     virtual aindex_t queryChildIndex(IPropertyTree *child) = 0;
