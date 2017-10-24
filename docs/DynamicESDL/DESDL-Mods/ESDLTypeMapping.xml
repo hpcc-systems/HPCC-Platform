@@ -2,8 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Data_ECLTypeMapping">
-  <title><emphasis role="bold">ESDL, XSD, and ECL Type
-  Mapping</emphasis></title>
+  <title>ESDL, XSD, and ECL Type Mapping</title>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="3">

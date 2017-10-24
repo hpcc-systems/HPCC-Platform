@@ -2,8 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Complex_Roxie_Query_Techniques">
-  <title><emphasis role="bold">Complex Roxie Query
-  Techniques</emphasis></title>
+  <title>Complex Roxie Query Techniques</title>
 
   <para>The ECL coding techniques used in Roxie queries can be quite complex,
   making use of multiple keys, payload keys, half-keyed JOINs, the KEYDIFF

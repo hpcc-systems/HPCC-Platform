@@ -4,8 +4,7 @@
 <sect1 id="ESDL_Attributes_ecl_name">
   <title>ecl_name <indexterm>
       <primary>ecl_name</primary>
-    </indexterm>("<emphasis role="bold">name</emphasis><emphasis
-  role="bold">")</emphasis></title>
+    </indexterm>("name")</title>
 
   <para>The <emphasis>ecl_name</emphasis> attribute specifies the field name
   in generated ECL code. By default, the field name in ECL is the same as the

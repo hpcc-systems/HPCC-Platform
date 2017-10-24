@@ -61,7 +61,7 @@
   </bookinfo>
 
   <chapter id="Working_with_Data">
-    <title><emphasis role="bold">Working with Data</emphasis></title>
+    <title>Working with Data</title>
 
     <sect1 id="Working_with_data_Intro" role="nobrk">
       <title>Introduction</title>
@@ -1147,7 +1147,7 @@ IMDB.KevinBaconNumberSets.doCounts;</programlisting></para>
   </chapter>
 
   <chapter id="Next_Steps">
-    <title><emphasis role="bold">Next Steps</emphasis></title>
+    <title>Next Steps</title>
 
     <para>Now that you have successfully processed the data and established
     links, what's next?</para>

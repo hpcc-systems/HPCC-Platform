@@ -4,8 +4,7 @@
 <sect1 id="ESDL_Attributes_ecl_type">
   <title>ecl_type <indexterm>
       <primary>ecl_type</primary>
-    </indexterm>("<emphasis role="bold">type</emphasis><emphasis
-  role="bold">")</emphasis></title>
+    </indexterm>("type")</title>
 
   <para>The <emphasis>ecl_type</emphasis> attribute defines the field type in
   ECL.</para>

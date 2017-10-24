@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Controlling_Roxie_Queries">
-  <title><emphasis role="bold">Controlling Roxie Queries</emphasis></title>
+  <title>Controlling Roxie Queries</title>
 
   <para>There are several ECL functions that are designed specifically to help
   optimize queries for execution on Roxie. These include PRELOAD, ALLNODES,

@@ -4,8 +4,7 @@
 <sect1 id="ESDL_Attributes_ecl_max_len">
   <title>ecl_max_len <indexterm>
       <primary>ecl_max_len</primary>
-    </indexterm>(<emphasis role="bold">n</emphasis><emphasis
-  role="bold">)</emphasis></title>
+    </indexterm>(n)</title>
 
   <para>This <emphasis>ecl_max_len</emphasis> attribute tells the ECL
   generator to use ECL <emphasis>maxlength </emphasis>instead of the regular

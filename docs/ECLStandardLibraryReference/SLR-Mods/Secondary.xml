@@ -2,7 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Secondary">
-  <title><emphasis role="bold">Secondary</emphasis></title>
+  <title>Secondary</title>
 
   <para><emphasis role="bold">STD.Metaphone.Secondary<indexterm>
       <primary>Std.Metaphone.Secondary</primary>

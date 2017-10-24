@@ -19,7 +19,7 @@
   </bookinfo>
 
   <chapter id="Command_Line_DFU">
-    <title><emphasis role="bold">Command Line DFU</emphasis></title>
+    <title>Command Line DFU</title>
 
     <sect1 id="Command_Line_InterfaceDFU" role="nobrk">
       <title>Command Line Interface</title>

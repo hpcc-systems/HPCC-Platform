@@ -804,8 +804,8 @@
 
           <programlisting>  /bin/su - hpcc -c "/opt/HPCCSystems/bin/start_backupnode thor400_7s" &amp; </programlisting>
 
-          <para><emphasis role="bold">Backupnode run regularly</emphasis>
-          </para>
+          <para><emphasis role="bold">Backupnode run
+          regularly</emphasis></para>
 
           <para>To run backupnode regularly you could use cron. For example,
           you may want a crontab entry (to backup thor400_7s) set to run at
@@ -921,11 +921,16 @@
         name, such as esp.log which is a short cut to the latest current log
         file for that component.</para>
 
+        <!-- # JIRA 18201 #-->
+
         <para>Understanding the log files, and what is normally reported in
         the log files, helps in troubleshooting the HPCC system.</para>
 
         <para>As part of routine maintenance you may want to backup, archive,
-        and remove the older log files.</para>
+        and remove the older log files. Some log files can grow quite large
+        and you should be mindful of available disk space where the system
+        writes out its log files. It could prove to be helpful to separate
+        your log file directory from your OS or component file system.</para>
       </sect2>
 
       <sect2 id="SysAdm_AccessLogFiles">
@@ -1754,7 +1759,7 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
       </sect2>
 
       <sect2 id="virtual-thor-slaves">
-        <title><emphasis role="strong">Virtual Thor slaves</emphasis></title>
+        <title>Virtual Thor slaves</title>
 
         <para><indexterm>
             <primary>Virtual Thor slaves</primary>
