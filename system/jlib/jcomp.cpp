@@ -59,8 +59,8 @@
 #define BASE_ADDRESS "0x00480000"
 //#define BASE_ADDRESS        "0x10000000"
 
-static const char * CC_NAME[] =   { "\"#" PATHSEPSTR "bin" PATHSEPSTR "cl.bat\"",   "\"#" PATHSEPSTR "bin" PATHSEPSTR "g++\"" };
-static const char * LINK_NAME[] = { "\"#" PATHSEPSTR "bin" PATHSEPSTR "link.bat\"", "\"#" PATHSEPSTR "bin" PATHSEPSTR "g++\"" };
+static const char * CC_NAME[] =   { "\"#" PATHSEPSTR "bin" PATHSEPSTR "cl.bat\"",   "\"g++\"" };
+static const char * LINK_NAME[] = { "\"#" PATHSEPSTR "bin" PATHSEPSTR "link.bat\"", "\"g++\"" };
 static const char * LIB_DIR[] = { "\"#\\lib\"", "\"#/lib\"" };
 static const char * LIB_OPTION_PREFIX[] = { "", "-Wl," };
 static const char * USE_LIBPATH_FLAG[] = { "/libpath:\"", "-L" };
@@ -131,7 +131,7 @@ static void doSetCompilerPath(const char * path, const char * includes, const ch
         PrintLog("Include directory set to %s", includes);
         PrintLog("Library directory set to %s", libs);
     }
-    compilerRoot.set(path ? path : targetCompiler==GccCppCompiler ? "/usr" : ".\\CL");
+    compilerRoot.set(path ? path : targetCompiler==GccCppCompiler ? "" : ".\\CL");
     stdIncludes.set(includes);
     stdLibs.clear();
     for (;;)
@@ -149,6 +149,9 @@ static void doSetCompilerPath(const char * path, const char * includes, const ch
             break;
         libs++;
     }
+#ifdef _DEBUG
+    PrintLog("Path is: %s", path);
+#endif
     StringBuffer fname;
     if (path)
     {
@@ -163,18 +166,45 @@ static void doSetCompilerPath(const char * path, const char * includes, const ch
         }
 
 #if defined(__linux__)
+        StringBuffer commandCmd = "command -v ";
+        commandCmd.append(fname);
+
+        const unsigned resultLength = 4096;
+        char result[resultLength];
+
+        FILE* fp = popen(commandCmd.str(), "r");
+        if (fp != nullptr)
+        {
+            fgets(result, resultLength - 1, fp);
+            pclose(fp);
+        }
+#ifdef _DEBUG
+        PrintLog("'%s' command result is: '%s'", commandCmd.str(), result);
+#endif
+        const char* pathStart = strchr(result, PATHSEPCHAR);
+        if (pathStart)
+            fname.clear().append(pathStart).replaceString("\n", nullptr);
+
         StringBuffer clbin_dir;
-        const char* dir_end = strrchr(fname, '/');
-        if(dir_end == NULL)
+        const char* dir_end = strrchr(fname.str(), PATHSEPCHAR);
+        if(dir_end == nullptr)
             clbin_dir.append(".");
         else
-            clbin_dir.append((dir_end - fname.str()) + 1, fname.str());
-        
+            clbin_dir.append((dir_end - fname.str()), fname.str());
+
         StringBuffer pathenv(clbin_dir.str());
         const char* oldpath = getenv("PATH");
-        if(oldpath != NULL && *oldpath != '\0')
-        pathenv.append(":").append(oldpath);
+#ifdef _DEBUG
+        PrintLog("PATH is: '%s'", oldpath);
+#endif
+
+        if(oldpath != nullptr && *oldpath != '\0')
+            pathenv.append(":").append(oldpath);
+
         setenv("PATH", pathenv.str(), 1);
+
+        if (verbose)
+            PrintLog("PATH set to %s", pathenv.str());
 #endif
     }
     else
@@ -255,7 +285,7 @@ CppCompiler::CppCompiler(const char * _coreName, const char * _sourceDir, const 
     setDebug(false);
     setDebugLibrary(false);
 #endif
-    
+
     setDirectoryPrefix(sourceDir, _sourceDir);
     setDirectoryPrefix(targetDir, _targetDir);
     maxCompileThreads = 1;
@@ -348,7 +378,7 @@ void CppCompiler::addInclude(const char * paths)
 
 void CppCompiler::addLinkOption(const char * option)
 {
-    if (option && *option)	
+    if (option && *option)
         linkerOptions.append(' ').append(LIB_OPTION_PREFIX[targetCompiler]).append(option);
 }
 
@@ -486,7 +516,7 @@ bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, Semapho
         cmdline.append(" ").append(LIBFLAG_RELEASE[targetCompiler]);
 
     _addInclude(cmdline, stdIncludes);
-    
+
     if (targetCompiler == Vs6CppCompiler)
     {
         if (targetDir.get())
@@ -505,7 +535,7 @@ bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, Semapho
             getObjectName(cmdline, filename);
         cmdline.append("\"");
     }
-    
+
     StringBuffer expanded;
     expandRootDirectory(expanded, cmdline);
     StringBuffer logFile;
@@ -757,9 +787,9 @@ void CppCompiler::setDebugLibrary(bool debug)
     useDebugLibrary = debug;
 }
 
-void CppCompiler::setCreateExe(bool _createExe) 
-{ 
-    createDLL = !_createExe; 
+void CppCompiler::setCreateExe(bool _createExe)
+{
+    createDLL = !_createExe;
 }
 
 
