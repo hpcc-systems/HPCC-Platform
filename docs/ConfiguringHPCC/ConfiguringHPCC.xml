@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book xml:base="../">
   <bookinfo>
-    <title>HPCC Configuration Manager</title>
+    <title>Configuring the HPCC System</title>
 
     <mediaobject>
       <imageobject>

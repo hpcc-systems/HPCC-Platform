@@ -1,4 +1,4 @@
-################################################################################
+﻿################################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +25,7 @@ ENDFOREACH()
 # commented out per issue # HPCC-10267
 #
 #
-DOCBOOK_TO_PDF( ${FO_XSL} UsingConfigManager.xml "UsingConfigManager")
+DOCBOOK_TO_PDF( ${FO_XSL} ConfiguringHPCC.xml "ConfiguringHPCC")
 #
 #
 ########################################################################
@@ -34,10 +34,10 @@ IF(MAKE_DOCS)
   SET(HELP_DEPENDENCIES)
   GET_PROPERTY(Current_Targets GLOBAL PROPERTY DOC_TARGETS)
   FOREACH(T ${Current_Targets})
-    IF("${T}" MATCHES ".*UsingConfigManager.*")
+    IF("${T}" MATCHES ".*ConfiguringHPCC.*")
       LIST(APPEND HELP_DEPENDENCIES  ${T})
      ENDIF()
   ENDFOREACH()
 
-  DOCBOOK_TO_HTML(${ECLIPSE_HTML_XSL} "${CMAKE_CURRENT_BINARY_DIR}/UsingConfigManager.xml" ${PORTAL_HTML_DIR}/UsingConfigManager  "using_configmgr_html" "${HPCC_SOURCE_DIR}/docs/common/eclipsehelp.css" "")
+  DOCBOOK_TO_HTML(${ECLIPSE_HTML_XSL} "${CMAKE_CURRENT_BINARY_DIR}/ConfiguringHPCC.xml" ${PORTAL_HTML_DIR}/ConfiguringHPCC  "configuringHPCC_html" "${HPCC_SOURCE_DIR}/docs/common/eclipsehelp.css" "")
 ENDIF(MAKE_DOCS)

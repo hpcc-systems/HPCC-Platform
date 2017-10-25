@@ -1,4 +1,4 @@
-################################################################################
+﻿################################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -80,7 +80,7 @@ add_subdirectory(VisualizingECL)
 # Docs automation
 if (DOCS_AUTO)
    add_subdirectory(XMLGeneration)
-   add_subdirectory(UsingConfigManager)
+   add_subdirectory(ConfiguringHPCC)
 endif()
 
 
