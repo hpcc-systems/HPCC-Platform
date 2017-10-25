@@ -638,6 +638,8 @@ public:
     virtual IPropertyTree *addPropTree(const char *xpath, IPropertyTree *val) override;
     virtual IPropertyTree *setPropTree(const char *xpath) override { return setPropTree(xpath, create()); }
     virtual IPropertyTree *addPropTree(const char *xpath) override { return addPropTree(xpath, create()); }
+    virtual IPropertyTree *setPropTree(IPropertyTree *val) override { return setPropTree(val->queryName(), val); }
+    virtual IPropertyTree *addPropTree(IPropertyTree *val) override { return addPropTree(val->queryName(), val); }
     virtual bool removeTree(IPropertyTree *child) override;
     virtual bool removeProp(const char *xpath) override;
     virtual aindex_t queryChildIndex(IPropertyTree *child) override;

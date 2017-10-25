@@ -326,6 +326,7 @@ public:
     virtual unsigned calculateHash(unsigned prevHash);
     virtual void copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool all);
     virtual IPropertyTree *queryPTree() const;
+    virtual IPropertyTree *exportTree(bool unpack, bool includeProgress, bool hidePasswords) const;
     virtual unsigned queryFileUsage(const char *filename) const;
     virtual IConstWUFileUsageIterator * getFieldUsage() const;
     virtual bool getFieldUsageArray(StringArray & filenames, StringArray & columnnames, const char * clusterName) const;
