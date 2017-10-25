@@ -19,6 +19,8 @@
 #include "jlib.hpp"
 #include "jthread.hpp"
 
+#include "rtlcommon.hpp"
+
 #include "roxie.hpp"
 #include "roxiehelper.hpp"
 #include "ccdprotocol.hpp"

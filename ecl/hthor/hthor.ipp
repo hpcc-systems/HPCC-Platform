@@ -38,6 +38,7 @@
 #include "thorcommon.ipp"
 #include "roxielmj.hpp"
 #include "eclrtl_imp.hpp"
+#include "rtlcommon.hpp"
 #include "rtlds_imp.hpp"
 #include "rtlread_imp.hpp"
 #include "rtlrecord.hpp"

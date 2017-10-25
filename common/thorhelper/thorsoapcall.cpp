@@ -19,6 +19,8 @@
 #include "jqueue.tpp"
 #include "jisem.hpp"
 
+#include "rtlformat.hpp"
+
 #include "thorxmlread.hpp"
 #include "thorxmlwrite.hpp"
 #include "thorcommon.ipp"

@@ -48,6 +48,7 @@
 #include "rtlfield.hpp"
 #include "rtlrecord.hpp"
 #include "rtlds_imp.hpp"
+#include "rtlformat.hpp"
 #include "rmtfile.hpp"
 
 

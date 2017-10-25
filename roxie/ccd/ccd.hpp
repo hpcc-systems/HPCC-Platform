@@ -30,6 +30,7 @@
 #include "roxie.hpp"
 #include "roxiedebug.ipp"
 #include "eclrtl.hpp"
+#include "rtlformat.hpp"
 #include "workunit.hpp"
 #include "layouttrans.hpp"
 

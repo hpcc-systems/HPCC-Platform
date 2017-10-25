@@ -18,6 +18,7 @@
 #ifndef ROXIEHELPER_HPP
 #define ROXIEHELPER_HPP
 
+#include "rtlformat.hpp"
 #include "thorherror.h"
 #include "thorxmlwrite.hpp"
 #include "roxiehelper.ipp"

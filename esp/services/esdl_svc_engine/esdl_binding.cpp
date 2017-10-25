@@ -22,6 +22,8 @@
 #include "wsexcept.hpp"
 #include "httpclient.hpp"
 
+#include "rtlformat.hpp"
+
 //for dali communication
 #include "daclient.hpp"
 #include "dalienv.hpp"

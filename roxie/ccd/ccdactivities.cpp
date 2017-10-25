@@ -32,6 +32,7 @@
 #include "rtlkey.hpp"
 #include "eclrtl_imp.hpp"
 #include "rtlread_imp.hpp"
+#include "rtlcommon.hpp"
 
 #include "jhtree.hpp"
 #include "jlog.hpp"

@@ -1352,4 +1352,3 @@ extern ECLRTL_API IRowStream * transformRecord(IEngineRowAllocator * resultAlloc
     else
         return stream.getClear();
 }
-

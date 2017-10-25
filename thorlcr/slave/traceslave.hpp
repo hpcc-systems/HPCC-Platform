@@ -31,6 +31,7 @@
 #include <stddef.h>
 #include <thmem.hpp>
 #include <thorxmlwrite.hpp>
+#include <rtlformat.hpp>
 
 interface IThorDebug : extends IInterface
 {

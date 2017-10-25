@@ -45,6 +45,8 @@
 #include "fvdatasource.hpp"
 #include "fvresultset.ipp"
 
+#include "rtlformat.hpp"
+
 #include "package.h"
 
 #ifdef _USE_ZLIB
