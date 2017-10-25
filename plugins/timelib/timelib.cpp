@@ -553,6 +553,11 @@ TIMELIB_API unsigned int TIMELIB_CALL tlGetDayOfWeek(short year, unsigned short 
 
 //------------------------------------------------------------------------------
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+#endif
+
 TIMELIB_API void TIMELIB_CALL tlDateToString(size32_t &__lenResult, char* &__result, unsigned int date, const char* format)
 {
     __result = NULL;  // Return blank string on error
@@ -624,6 +629,10 @@ TIMELIB_API void TIMELIB_CALL tlSecondsToString(size32_t &__lenResult, char* &__
         memcpy(__result, buffer, __lenResult);
     }
 }
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 //------------------------------------------------------------------------------
 

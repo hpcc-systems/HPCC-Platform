@@ -198,7 +198,7 @@ public:
     inline void add(TYPE * x, aindex_t pos)     { PointerArray::add(x, pos); }
     inline void append(TYPE * x)                { PointerArray::append(x); }
     inline aindex_t bAdd(TYPE * & newItem, PointerOfCompareFunc f, bool & isNew) { return PointerArray::bAdd(*(void * *)&newItem, (CompareFunc)f, isNew); }
-    inline aindex_t bSearch(const TYPE * & key, PointerOfCompareFunc f) const    { return PointerArray:: bSearch(*(const void * *)&key, (CompareFunc)f); }
+    inline aindex_t bSearch(const TYPE * & key, PointerOfCompareFunc f) const    { return PointerArray:: bSearch(*(void * const *)&key, (CompareFunc)f); }
     inline aindex_t find(TYPE * x) const        { return PointerArray::find(x); }
     inline TYPE **getArray(aindex_t pos = 0)    { return (TYPE **)PointerArray::getArray(pos); }
     inline TYPE **detach()                      { return (TYPE **)PointerArray::detach(); }
@@ -218,8 +218,8 @@ class ConstPointerArrayOf : public ConstPointerArray
 public:
     inline void add(TYPE * x, aindex_t pos)     { ConstPointerArray::add(x, pos); }
     inline void append(TYPE * x)                { ConstPointerArray::append(x); }
-    inline aindex_t bAdd(TYPE * & newItem, PointerOfCompareFunc f, bool & isNew) { return ConstPointerArray::bAdd(*(void * *)&newItem, (CompareFunc)f, isNew); }
-    inline aindex_t bSearch(const TYPE * & key, PointerOfCompareFunc f) const    { return ConstPointerArray:: bSearch(*(const void * *)&key, (CompareFunc)f); }
+    inline aindex_t bAdd(TYPE * & newItem, PointerOfCompareFunc f, bool & isNew) { return ConstPointerArray::bAdd(*(const void * *)&newItem, (CompareFunc)f, isNew); }
+    inline aindex_t bSearch(const TYPE * & key, PointerOfCompareFunc f) const    { return ConstPointerArray:: bSearch(*(void * const *)&key, (CompareFunc)f); }
     inline aindex_t find(TYPE * x) const        { return ConstPointerArray::find(x); }
     inline TYPE **getArray(aindex_t pos = 0)    { return (TYPE **)ConstPointerArray::getArray(pos); }
     inline TYPE **detach()                      { return (TYPE **)ConstPointerArray::detach(); }

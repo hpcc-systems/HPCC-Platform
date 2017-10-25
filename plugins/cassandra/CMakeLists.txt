@@ -66,7 +66,7 @@ if(USE_CASSANDRA)
   set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS FALSE)
   set(_SAVE_CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   if(NOT WIN32)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-format-nonliteral") # Work around cassandra build error
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-format-nonliteral -Wno-implicit-fallthrough") # Work around cassandra build error
   endif()
   set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cpp-driver/cmake/modules/")
   add_subdirectory(cpp-driver ${PROJECT_BINARY_DIR}/cassandra)

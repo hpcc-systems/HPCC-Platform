@@ -4016,7 +4016,7 @@ protected:
             c++;
         }
     }
-    void error(const char *msg=NULL, bool giveContext=true, PTreeReadExcptCode code=PTreeRead_syntax)
+    [[noreturn]] void error(const char *msg=NULL, bool giveContext=true, PTreeReadExcptCode code=PTreeRead_syntax)
     {
         StringBuffer context;
         if (giveContext)
