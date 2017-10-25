@@ -22,6 +22,14 @@ define([
 
     "dijit/registry",
 
+    "crossfilter",
+
+    "@hpcc-js/common",
+    "@hpcc-js/chart", 
+    "@hpcc-js/layout",
+    "@hpcc-js/tree",
+    "@hpcc-js/other",
+    
     "hpcc/_Widget",
     "hpcc/WsWorkunits",
 
@@ -33,6 +41,8 @@ define([
     "dijit/form/Select"
 ], function (declare, lang, i18n, nlsHPCC, on,
             registry,
+            crossfilter,
+            hpccCommon, hpccChart, hpccLayout, hpccTree, hpccOther,
             _Widget, WsWorkunits,
             template) {
     return declare("WUStatsWidget", [_Widget], {
@@ -84,131 +94,122 @@ define([
                 return;
 
             var context = this;
-            function requireWidget() {
-                require(["src/other/Comms", "src/composite/MegaChart", "src/layout/Surface", "src/tree/SunburstPartition", "src/other/Table", "crossfilter"], function (Comms, MegaChart, Surface, SunburstPartition, Table, crossfilterXXX) {
-                    function CFGroup(crossfilter, dimensionID, targetID) {
-                        this.targetID = targetID;
-                        this.dimensionID = dimensionID;
-                        this.dimension = crossfilter.dimension(function (d) { return d[dimensionID]; });
-                        this.group = this.dimension.group().reduceSum(function (d) { return d.RawValue; });
+            function CFGroup(crossfilter, dimensionID, targetID) {
+                this.targetID = targetID;
+                this.dimensionID = dimensionID;
+                this.dimension = crossfilter.dimension(function (d) { return d[dimensionID]; });
+                this.group = this.dimension.group().reduceSum(function (d) { return d.RawValue; });
 
-                        this.widget = new MegaChart()
-                            .target(targetID)
-                            .title(dimensionID)
-                            .titleFontFamily("Verdana")
-                            .columns([dimensionID, "Total"])
-                            .chartType("C3_PIE")
-                        ;
+                this.scopes = new hpccTree.SunburstPartition();
+                this.scopesSurface = new hpccLayout.Surface()
+                    .target(this.id + "Scope")
+                    .title("Scope")
+                    .widget(this.scopes)
+                ;
 
-                        this.filter = null;
-                        var context = this;
-                        this.widget.click = function (row, column) {
-                            if (context.filter === row[dimensionID]) {
-                                context.filter = null;
-                            } else {
-                                context.filter = row[dimensionID];
-                            }
-                            context.dimension.filter(context.filter);
-                            context.click(row, column);
-                            context.render();
-                        };
-                    }
-                    CFGroup.prototype.click = function (row, column) {
-                    }
-                    CFGroup.prototype.resetFilter = function () {
-                        this.filter = null;
-                        this.dimension.filter(null);
-                    }
-                    CFGroup.prototype.render = function () {
-                        this.widget
-                            .title(this.dimensionID + (this.filter ? " (" + this.filter + ")" : ""))
-                            .data(this.group.all().map(function (row) {
-                                return [row.key, row.value];
-                            }))
-                            .render()
-                        ;
-                    }
-
-                    context.stats = crossfilter([]);
-                    context.summaryByKind = context.stats.dimension(function (d) { return d.Kind; });
-                    context.groupByKind = context.summaryByKind.group().reduceCount();
-
-                    context.select = registry.byId(context.id + "Kind");
-                    var prevKind = "";
-                    context.select.on("change", function (newValue) {
-                        if (prevKind !== newValue) {
-                            context.pieCreatorType.resetFilter();
-                            context.pieScopeType.resetFilter();
-                            context.prevScope = null;
-                            context.summaryByScope.filterAll();
-                            context.summaryByKind.filter(newValue);
-                            context.doRender(context.select);
-                            prevKind = newValue;
-                        }
-                    });
-
-                    context.pieCreatorType = new CFGroup(context.stats, "CreatorType", context.id + "CreatorType");
-                    context.pieCreatorType.click = function (row, column) {
-                        context.doRender(context.pieCreatorType);
-                    }
-
-                    context.pieScopeType = new CFGroup(context.stats, "ScopeType", context.id + "ScopeType");
-                    context.pieScopeType.click = function (row, column) {
-                        context.doRender(context.pieScopeType);
-                    }
-
-                    context.summaryByScope = context.stats.dimension(function (d) { return d.Scope; });
-                    context.groupByScope = context.summaryByScope.group().reduceSum(function (d) { return d.RawValue; });
-
-                    context.scopes = new SunburstPartition();
-                    context.scopesSurface = new Surface()
-                        .target(context.id + "Scope")
-                        .title("Scope")
-                        .widget(context.scopes)
+                this.widgetChart = new hpccChart.Pie()
+                    .columns([dimensionID, "Total"])
                     ;
+                this.widget = new hpccLayout.Surface()
+                    .target(targetID)
+                    .title(dimensionID)
+                    .widget(this.widgetChart)
+                ;
 
+                this.filter = null;
+                var context = this;
+                this.widgetChart.click = function (row, column) {
+                    if (context.filter === row[dimensionID]) {
+                        context.filter = null;
+                    } else {
+                        context.filter = row[dimensionID];
+                    }
+                    context.dimension.filter(context.filter);
+                    context.click(row, column);
+                    context.render();
+                };
+            }
+            CFGroup.prototype.click = function (row, column) {
+            }
+            CFGroup.prototype.resetFilter = function () {
+                this.filter = null;
+                this.dimension.filter(null);
+            }
+            CFGroup.prototype.render = function () {
+                this.widgetChart
+                    .data(this.group.all().map(function (row) {
+                        return [row.key, row.value];
+                    }))
+                ;
+                this.widget
+                    .title(this.dimensionID + (this.filter ? " (" + this.filter + ")" : ""))
+                    .resize()
+                    .render()
+                ;
+            }
+
+            this.stats = crossfilter([]);
+            this.summaryByKind = this.stats.dimension(function (d) { return d.Kind; });
+            this.groupByKind = this.summaryByKind.group().reduceCount();
+
+            this.select = registry.byId(this.id + "Kind");
+            var prevKind = "";
+            this.select.on("change", function (newValue) {
+                if (prevKind !== newValue) {
+                    context.pieCreatorType.resetFilter();
+                    context.pieScopeType.resetFilter();
                     context.prevScope = null;
-                    context.scopes.click = SunburstPartition.prototype.debounce(function (row, column) {
-                        if (row.id === "") {
-                            context.prevScope = null;
-                            context.summaryByScope.filter(null);
-                        } else if (context.prevScope === row.id) {
-                            context.prevScope = null;
-                            context.summaryByScope.filter(null);
-                        } else {
-                            context.prevScope = row.id;
-                            context.summaryByScope.filter(function (d) {
-                                return d.indexOf(context.prevScope + ":") === 0;
-                            });
-                        }
-                        context.doRender(context.scopes);
-                    }, 250);
+                    context.summaryByScope.filterAll();
+                    context.summaryByKind.filter(newValue);
+                    context.doRender(context.select);
+                    prevKind = newValue;
+                }
+            });
 
-                    context.bar = new MegaChart()
-                        .target(context.id + "Stats")
-                        .titleFontFamily("Verdana")
-                        .chartType("BAR")
-                    ;
-
-                    context.doRefreshData();
-                });
+            this.pieCreatorType = new CFGroup(this.stats, "CreatorType", this.id + "CreatorType");
+            this.pieCreatorType.click = function (row, column) {
+                context.doRender(context.pieCreatorType);
             }
 
-            if (dojoConfig.vizDebug) {
-                requireWidget();
-            } else {
-                require(["dist-amd/hpcc-viz"], function () {
-                    require(["dist-amd/hpcc-viz-common"], function () {
-                        require(["dist-amd/hpcc-viz-api"], function () {
-                            require(["dist-amd/hpcc-viz-layout"], function () {
-                                require(["dist-amd/hpcc-viz-chart", "dist-amd/hpcc-viz-google", "dist-amd/hpcc-viz-c3chart", "dist-amd/hpcc-viz-amchart", "dist-amd/hpcc-viz-other", "dist-amd/hpcc-viz-tree", "dist-amd/hpcc-viz-composite"], function () {
-                                    requireWidget();
-                                });
-                            });
-                        });
+            this.pieScopeType = new CFGroup(this.stats, "ScopeType", this.id + "ScopeType");
+            this.pieScopeType.click = function (row, column) {
+                context.doRender(context.pieScopeType);
+            }
+
+            this.summaryByScope = this.stats.dimension(function (d) { return d.Scope; });
+            this.groupByScope = this.summaryByScope.group().reduceSum(function (d) { return d.RawValue; });
+
+            this.scopes = new hpccTree.SunburstPartition();
+            this.scopesSurface = new hpccLayout.Surface()
+                .target(this.id + "Scope")
+                .title("Scope")
+                .widget(this.scopes)
+            ;
+
+            this.prevScope = null;
+            this.scopes.click = hpccCommon.Utility.debounce(function (row, column) {
+                if (row.id === "") {
+                    context.prevScope = null;
+                    context.summaryByScope.filter(null);
+                } else if (context.prevScope === row.id) {
+                    context.prevScope = null;
+                    context.summaryByScope.filter(null);
+                } else {
+                    context.prevScope = row.id;
+                    context.summaryByScope.filter(function (d) {
+                        return d.indexOf(context.prevScope + ":") === 0;
                     });
-                });
-            }
+                }
+                context.doRender(context.scopes);
+            }, 250);
+
+            this.barChart = new hpccChart.Bar();
+            this.bar = new hpccLayout.Surface()
+                .target(this.id + "Stats")
+                .widget(this.barChart)
+            ;
+
+            this.doRefreshData();
         },
 
         formatTree: function (data, label) {
@@ -318,15 +319,14 @@ define([
                 return item;
             }).join(", ") || "Unknown";
             statsLabel += (scopeData[0] ? " (" + scopeData[0].Measure + ")" : "");
-            this.bar
-                .title(statsLabel)
+            this.barChart
                 .columns(["Stat", statsLabel])
                 .data(statsData)
-                .render(function (d) {
-                    if (d._content && d._content._chart && d._content._chart.legendShow) {
-                        d._content._chart.legendShow(false);
-                    }
-                })
+            ;
+            this.bar
+                .title(statsLabel)
+                .resize()
+                .render()
             ;
         },
 
