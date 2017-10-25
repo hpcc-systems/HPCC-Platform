@@ -5811,15 +5811,23 @@ IJlibDateTime & CLocalWorkUnit::getTimeScheduled(IJlibDateTime &val) const
 bool modifyAndWriteWorkUnitXML(char const * wuid, StringBuffer & buf, StringBuffer & extra, IFileIO * fileio)
 {
     // kludge in extra chunks of XML such as GraphProgress and GeneratedDlls
-    if(extra.length())
+    if (extra.length())
     {
+        const char *bufStart = buf.str();
+        const char *bufPtr = bufStart+buf.length();
+        while (bufStart != bufPtr)
+        {
+            --bufPtr;
+            if (!isspace(*bufPtr))
+                break;
+        }
+        assertex('>' == *bufPtr);
         size32_t l = (size32_t)strlen(wuid);
-        size32_t p = buf.length()-l-4; // bit of a kludge
-        assertex(memcmp(buf.str()+p+2,wuid,l)==0);
-        StringAttr tail(buf.str()+p);
-        buf.setLength(p);
-        buf.append(extra);
-        buf.append(tail);
+        assertex(bufPtr-bufStart > l+2); // e.g. at least </W20171111-111111>
+        bufPtr -= l+2; // skip back over </wuid
+        assertex(0 == memcmp(bufPtr, "</", 2) );
+        assertex(0 == memcmp(bufPtr+2, wuid, l));
+        buf.insert(bufPtr-bufStart, extra);
     }
     return (fileio->write(0,buf.length(),buf.str()) == buf.length());
 }
