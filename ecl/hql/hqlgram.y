@@ -1008,6 +1008,10 @@ goodObject
                             OwnedHqlExpr value = $2.getExpr();
                             $$.setExpr(parser->convertToOutOfLineFunction($2.pos, value), $1);
                         }
+    | INLINE goodObject
+                        {
+                            $$.inherit($2);
+                        }
     ;
 
 goodTypeObject
