@@ -1224,28 +1224,33 @@ public:
         }
         if (optFilename.isEmpty())
         {
-            StringBuffer name("./backup_queryset_");
+            StringBuffer name("./queryset_backup_");
             name.append(optTarget);
             if (optActiveOnly)
                 name.append("_activeonly_");
             CDateTime dt;
             dt.setNow();
             dt.getString(name, true);
+            name.replace(':', '_').append(".xml");
+            optFilename.set(name);
         }
         if (!EclCmdCommon::finalizeOptions(globals))
             return false;
         return true;
     }
 
-    void saveAsFile(const MemoryBuffer &mb, const char *filepath)
+    void saveAsFile(const char *s, const char *filepath)
     {
+        if (!s || !*s)
+            return;
+
         Owned<IFile> file = createIFile(filepath);
         Owned<IFileIO> io = file->open(IFOcreaterw);
 
         fprintf(stdout, "\nWriting to file %s\n", file->queryFilename());
 
         if (io.get())
-            io->write(0, mb.length(), mb.toByteArray());
+            io->write(0, strlen(s), s);
         else
             fprintf(stderr, "\nFailed to create file %s\n", file->queryFilename());
     }
@@ -1275,13 +1280,13 @@ public:
                 fprintf(stderr, "\nError decompressing response\n");
                 return 1;
             }
-            decompressed.append('\0');
             if (optFilename.length())
-                saveAsFile(decompressed, optFilename);
+                saveAsFile(decompressed.toByteArray(), optFilename);
             else
             {
+                decompressed.append('\0');
                 fputs(decompressed.toByteArray(), stdout); //for piping
-                fputs("\n", stdout); //for piping
+                fputs("\n", stdout);
             }
         }
         return ret;
@@ -1329,7 +1334,7 @@ public:
                 if (optDestQuerySet.isEmpty())
                     optDestQuerySet.set(arg);
                 else if (optFilename.isEmpty())
-                        optFilename.set(arg);
+                    optFilename.set(arg);
                 else
                 {
                     fprintf(stderr, "\nunrecognized argument %s\n", arg);

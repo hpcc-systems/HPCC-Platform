@@ -2895,6 +2895,13 @@ bool CWsWorkunitsEx::onWUQuerysetImport(IEspContext &context, IEspWUQuerysetImpo
         if (!target || !*target)
             throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Target not specified");
 
+        Owned <IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
+        if (!clusterInfo)
+            throw MakeStringException(ECLWATCH_CANNOT_RESOLVE_CLUSTER_NAME, "Target not found");
+
+        if (req.getCopyFiles() && clusterInfo->getPlatform()!=RoxieCluster)
+            throw MakeStringException(ECLWATCH_INVALID_ACTION, "Copy files option only supported for Roxie");
+
         MemoryBuffer &mb = const_cast<MemoryBuffer &>(req.getData()); //for efficiency, content of request shouldn't matter after
         if (req.getCompressed())
         {
@@ -2927,24 +2934,20 @@ bool CWsWorkunitsEx::onWUQuerysetImport(IEspContext &context, IEspWUQuerysetImpo
         SCMStringBuffer process;
         if (req.getCopyFiles())
         {
-            Owned <IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
-            if (clusterInfo && clusterInfo->getPlatform()==RoxieCluster)
-            {
-                clusterInfo->getRoxieProcess(process);
-                if (!process.length())
-                    throw MakeStringException(ECLWATCH_INVALID_CLUSTER_INFO, "DFS process cluster not found for destination target %s", target);
-                unsigned updateFlags = 0;
-                if (req.getOverwriteDfs())
-                    updateFlags |= (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM | DALI_UPDATEF_SUPERFILES);
-                if (req.getUpdateCloneFrom())
-                    updateFlags |= DALI_UPDATEF_CLONE_FROM;
-                if (req.getUpdateSuperFiles())
-                    updateFlags |= DALI_UPDATEF_SUPERFILES;
-                if (req.getAppendCluster())
-                    updateFlags |= DALI_UPDATEF_APPEND_CLUSTER;
+            clusterInfo->getRoxieProcess(process); //checked if roxie when copying files above
+            if (!process.length())
+                throw MakeStringException(ECLWATCH_INVALID_CLUSTER_INFO, "DFS process cluster not found for destination target %s", target);
+            unsigned updateFlags = 0;
+            if (req.getOverwriteDfs())
+                updateFlags |= (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM | DALI_UPDATEF_SUPERFILES);
+            if (req.getUpdateCloneFrom())
+                updateFlags |= DALI_UPDATEF_CLONE_FROM;
+            if (req.getUpdateSuperFiles())
+                updateFlags |= DALI_UPDATEF_SUPERFILES;
+            if (req.getAppendCluster())
+                updateFlags |= DALI_UPDATEF_APPEND_CLUSTER;
 
-                cloner.enableFileCloning(updateFlags, req.getDfsServer(), process.str(), req.getSourceProcess(), req.getAllowForeignFiles());
-            }
+            cloner.enableFileCloning(updateFlags, req.getDfsServer(), process.str(), req.getSourceProcess(), req.getAllowForeignFiles());
         }
 
         if (req.getActiveOnly())
