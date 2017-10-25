@@ -70,7 +70,7 @@ define([
         var countdown = COUNTDOWN;
         var confirmLogoutDialog = new Dialog({
             title: "You are about to be logged out",
-            content: "Due to inactivity, you will be logged out of your ECL Watch session in 3 minutes. This will close any sessions open in other tabs for this envrionment. Click on \'Continue Working\' to extend your session or click on \'Log Out\' to exit.",
+            content: "You will be logged out of all ECL Watch sessions in 3 minutes due to inactivity.",
             style: "width: 350px;padding:10px;",
             closable: false,
             draggable: false

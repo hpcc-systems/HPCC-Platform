@@ -166,7 +166,7 @@ define({root:
     Downloads: "Downloads",
     DownloadToCSV: "Download to CSV",
     DropZone: "Drop Zone",
-    DueToInctivity: "Due to inactivity, you will be logged out of your ECL Watch session in 3 minutes. This will close any sessions open in other tabs for this environment. Click on \'Continue Working\' to extend your session or click on \'Log Out\' to exit.",
+    DueToInctivity: "You will be logged out of all ECL Watch sessions in 3 minutes due to inactivity.",
     Duration: "Duration",
     DynamicNoServicesFound: "No services found",
     EBCDIC: "EBCDIC",
