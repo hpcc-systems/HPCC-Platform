@@ -1704,7 +1704,7 @@ void EclCC::generateOutput(EclCompileInstance & instance)
                 if (optCheckDirty)
                 {
                     Owned<IPipeProcess> pipe = createPipeProcess();
-                    if (!pipe->run("git", "git describe --tags --dirty --long", ".", false, true, false, 0, false))
+                    if (!pipe->run("git", "git describe --always --tags --dirty --long", ".", false, true, false, 0, false))
                     {
                         WARNLOG("Failed to run git describe");
                     }
