@@ -2555,7 +2555,10 @@ FILESERVICES_API char * FILESERVICES_CALL fsGetEspURL(const char *username, cons
                                             credentials.setf("%s@", username);
 
                                         if (streq(instanceAddress.str(),"."))
-                                            instanceAddress = fsfResolveHostName(instanceAddress.str());
+                                        {
+                                            SocketEndpoint ep(instanceAddress.str());
+                                            ep.getIpText(instanceAddress.clear());
+                                        }
 
                                         espURL.setf("%s://%s%s:%d", bindingProtocol.str(), credentials.str(), instanceAddress.str(), espBindingIter->query().getPropInt("@port",8010));
 
