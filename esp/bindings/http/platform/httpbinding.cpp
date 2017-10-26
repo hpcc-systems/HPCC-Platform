@@ -359,11 +359,11 @@ void EspHttpBinding::readAuthDomainCfg(IPropertyTree* procCfg)
         //Considering possible network delay, serverSessionTimeoutMinutes should be greater than clientSessionTimeoutMinutes.
         int serverSessionTimeoutMinutes = authDomainTree->getPropInt("@serverSessionTimeoutMinutes", 0);
         if ((serverSessionTimeoutMinutes < 0) || (clientSessionTimeoutMinutes < 0))
-            serverSessionTimeoutMinutes = ESP_SESSION_NEVER_TIMEOUT;
+            serverSessionTimeoutSeconds = ESP_SESSION_NEVER_TIMEOUT;
         else
-            serverSessionTimeoutMinutes = serverSessionTimeoutMinutes * 60;
-        if (serverSessionTimeoutMinutes < clientSessionTimeoutSeconds)
-            serverSessionTimeoutMinutes = 2 * clientSessionTimeoutSeconds;
+            serverSessionTimeoutSeconds = serverSessionTimeoutMinutes * 60;
+        if (serverSessionTimeoutSeconds < clientSessionTimeoutSeconds)
+            serverSessionTimeoutSeconds = 2 * clientSessionTimeoutSeconds;
 
         //The @unrestrictedResources contains URLs which may be used before a user is authenticated.
         //For example, an icon file on the login page.
