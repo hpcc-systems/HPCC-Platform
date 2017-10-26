@@ -20,6 +20,8 @@
 s := service
    string dumpRecordType(virtual record val) : eclrtl,pure,library='eclrtl',entrypoint='dumpRecordType',fold;
    string dumpRecordTypeNF(virtual record val) : eclrtl,pure,library='eclrtl',entrypoint='dumpRecordType';
+   data serializeRecordType(virtual record val) : eclrtl,pure,library='eclrtl',entrypoint='serializeRecordType',fold;
+   data serializeRecordTypeNF(virtual record val) : eclrtl,pure,library='eclrtl',entrypoint='serializeRecordType';
 end;
 
 rr := record
@@ -58,3 +60,10 @@ nf := s.dumpRecordTypeNF(d[1]);  // not folded
 f;
 nf;
 f = nf;
+
+fd := s.serializeRecordType(d[1]);     // folded
+nfd := s.serializeRecordTypeNF(d[1]);  // not folded
+
+fd;
+nfd;
+fd = nfd;
