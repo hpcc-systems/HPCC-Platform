@@ -1228,7 +1228,7 @@ protected:
         ret = wu->getRunningGraph(s, subid);
         ASSERT(!ret);
 
-        Owned<IWUGraphStats> progress = wu->updateStats("graph1", SCThthor, queryStatisticsComponentName(), 1);
+        Owned<IWUGraphStats> progress = wu->updateStats("graph1", SCThthor, queryStatisticsComponentName(), 0, 1);
         IStatisticGatherer & stats = progress->queryStatsBuilder();
         {
             StatsSubgraphScope subgraph(stats, 1);

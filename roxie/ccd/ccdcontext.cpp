@@ -1435,7 +1435,7 @@ public:
         if (debugContext)
             debugContext->checkBreakpoint(DebugStateGraphStart, NULL, graphName);
         if (workUnit)
-            graphStats.setown(workUnit->updateStats(graph->queryName(), SCTroxie, queryStatisticsComponentName(), 0));
+            graphStats.setown(workUnit->updateStats(graph->queryName(), SCTroxie, queryStatisticsComponentName(), 0, 0));
     }
 
     virtual void endGraph(unsigned __int64 startTimeStamp, cycle_t startCycles, bool aborting)

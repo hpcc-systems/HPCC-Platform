@@ -169,13 +169,22 @@ void doDescheduleWorkkunit(char const * wuid)
  * Graph progress support
  */
 
-CWuGraphStats::CWuGraphStats(IPropertyTree *_progress, StatisticCreatorType _creatorType, const char * _creator, const char * _rootScope, unsigned _id)
+CWuGraphStats::CWuGraphStats(IPropertyTree *_progress, StatisticCreatorType _creatorType, const char * _creator, unsigned wfid, const char * _rootScope, unsigned _id)
     : progress(_progress), creatorType(_creatorType), creator(_creator), id(_id)
 {
-    StatisticScopeType scopeType = SSTgraph;
-    StatsScopeId rootScopeId;
-    verifyex(rootScopeId.setScopeText(_rootScope));
-    collector.setown(createStatisticsGatherer(_creatorType, _creator, rootScopeId));
+    StatsScopeId graphScopeId;
+    verifyex(graphScopeId.setScopeText(_rootScope));
+
+    if (wfid)
+    {
+        StatsScopeId rootScopeId(SSTworkflow,wfid);
+        collector.setown(createStatisticsGatherer(_creatorType, _creator, rootScopeId));
+        collector->beginScope(graphScopeId);
+    }
+    else
+    {
+        collector.setown(createStatisticsGatherer(_creatorType, _creator, graphScopeId));
+    }
 }
 
 void CWuGraphStats::beforeDispose()
@@ -284,6 +293,11 @@ protected:
                 tag = "node";
                 id += strlen(SubGraphScopePrefix);
                 break;
+            case SSTchildgraph:
+            case SSTworkflow:
+            case SSTgraph:
+                // SSTworkflow and SSTgraph may be safely ignored.  They are not required to produce the statistics.
+                continue;
             case SSTfunction:
                 //MORE:Should function scopes be included in the graph scope somehow, and if so how?
                 continue;
@@ -2936,8 +2950,8 @@ extern IConstWorkUnitInfo *createConstWorkUnitInfo(IPropertyTree &p)
 class CDaliWuGraphStats : public CWuGraphStats
 {
 public:
-    CDaliWuGraphStats(IRemoteConnection *_conn, StatisticCreatorType _creatorType, const char * _creator, const char * _rootScope, unsigned _id)
-        : CWuGraphStats(LINK(_conn->queryRoot()), _creatorType, _creator, _rootScope, _id), conn(_conn)
+    CDaliWuGraphStats(IRemoteConnection *_conn, StatisticCreatorType _creatorType, const char * _creator, unsigned _wfid, const char * _rootScope, unsigned _id)
+        : CWuGraphStats(LINK(_conn->queryRoot()), _creatorType, _creator, _wfid, _rootScope, _id), conn(_conn)
     {
     }
 protected:
@@ -3229,9 +3243,9 @@ public:
             }
         }
     }
-    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned subgraph) const
+    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph) const override
     {
-        return new CDaliWuGraphStats(getWritableProgressConnection(graphName), creatorType, creator, graphName, subgraph);
+        return new CDaliWuGraphStats(getWritableProgressConnection(graphName), creatorType, creator, _wfid, graphName, subgraph);
     }
 
 protected:
@@ -3493,8 +3507,8 @@ public:
             { c->setGraphState(graphName, state); }
     virtual void setNodeState(const char *graphName, WUGraphIDType nodeId, WUGraphState state) const
             { c->setNodeState(graphName, nodeId, state); }
-    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned subgraph) const
-            { return c->updateStats(graphName, creatorType, creator, subgraph); }
+    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph) const override
+            { return c->updateStats(graphName, creatorType, creator, _wfid, subgraph); }
     virtual void clearGraphProgress() const
             { c->clearGraphProgress(); }
     virtual IStringVal & getAbortBy(IStringVal & str) const
@@ -9214,9 +9228,9 @@ void CLocalWorkUnit::setNodeState(const char *graphName, WUGraphIDType nodeId, W
 {
     throwUnexpected();   // Should only be used for persisted workunits
 }
-IWUGraphStats *CLocalWorkUnit::updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned subgraph) const
+IWUGraphStats *CLocalWorkUnit::updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph) const
 {
-    return new CWuGraphStats(LINK(p), creatorType, creator, graphName, subgraph);
+    return new CWuGraphStats(LINK(p), creatorType, creator, _wfid, graphName, subgraph);
 }
 
 void CLocalWUGraph::setName(const char *str)
@@ -12737,9 +12751,14 @@ extern WORKUNIT_API void descheduleWorkunit(char const * wuid)
         doDescheduleWorkkunit(wuid);
 }
 
-extern WORKUNIT_API void updateWorkunitTimeStat(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * description, unsigned __int64 value)
+extern WORKUNIT_API void updateWorkunitTimeStat(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * description, unsigned __int64 value, unsigned wfid)
 {
-    wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, description, value, 1, 0, StatsMergeReplace);
+    StringBuffer scopestr;
+    if (wfid && scope && *scope)
+        scopestr.append(WorkflowScopePrefix).append(wfid).append(":").append(scope);
+    else
+        scopestr.set(scope);
+    wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scopestr, kind, description, value, 1, 0, StatsMergeReplace);
 }
 
 class WuTimingUpdater : implements ITimeReportInfo
@@ -12774,9 +12793,15 @@ extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, StatisticScopeTyp
 }
 
 
-extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind)
+extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, unsigned wfid)
 {
-    wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
+    StringBuffer scopestr;
+    if (wfid && scope && *scope)
+        scopestr.append(WorkflowScopePrefix).append(wfid).append(":").append(scope);
+    else
+        scopestr.set(scope);
+
+    wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scopestr, kind, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
 }
 
 
@@ -12815,6 +12840,11 @@ public:
     virtual void beginEdgeScope(unsigned id, unsigned oid)
     {
         StatsScopeId scopeId(SSTedge, id, oid);
+        beginScope(scopeId);
+    }
+    virtual void beginChildGraphScope(unsigned id)
+    {
+        StatsScopeId scopeId(SSTchildgraph, id);
         beginScope(scopeId);
     }
     virtual void endScope()
