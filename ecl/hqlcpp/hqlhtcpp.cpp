@@ -3574,7 +3574,7 @@ bool HqlCppTranslator::buildMetaPrefetcherClass(BuildCtx & ctx, IHqlExpression *
     return ok;
 }
 
-IHqlExpression * HqlCppTranslator::getRtlFieldKey(IHqlExpression * expr, IHqlExpression * rowRecord)
+IHqlExpression * HqlCppTranslator::getRtlFieldKey(IHqlExpression * expr, IHqlExpression * rowRecord, bool &isPayload)
 {
     /*
     Most field information is context independent - which make life much easier, there are a few exceptions though:
@@ -3584,19 +3584,28 @@ IHqlExpression * HqlCppTranslator::getRtlFieldKey(IHqlExpression * expr, IHqlExp
                  Theoretically with an inline record definition for a field it might be possible to make an ifblock dependent on something other than the most
                  immediate parent record, but it would be extremely pathological, and probably wouldn't work in lots of other ways.
     */
-
+    isPayload = false;
     bool contextDependent = false;
     LinkedHqlExpr extra = rowRecord;
     switch  (expr->getOperator())
     {
     case no_field:
+    {
+        ColumnToOffsetMap * map = queryRecordOffsetMap(rowRecord, false);
+        AColumnInfo * root = map->queryRootColumn();
+        AColumnInfo * columnInfo = root->lookupColumn(expr);
+
+        if (columnInfo->isPayloadField())
+        {
+            isPayload = true;
+            contextDependent = true;
+        }
         switch (expr->queryType()->getTypeCode())
         {
         case type_bitfield:
             {
-                ColumnToOffsetMap * map = queryRecordOffsetMap(rowRecord, false);
                 AColumnInfo * root = map->queryRootColumn();
-                CBitfieldInfo * resolved = static_cast<CBitfieldInfo *>(root->lookupColumn(expr));
+                CBitfieldInfo * resolved = static_cast<CBitfieldInfo *>(columnInfo);
                 assertex(resolved);
                 unsigned offset = resolved->queryBitfieldOffset();
                 bool isLastBitfield = resolved->queryIsLastBitfield();
@@ -3617,6 +3626,7 @@ IHqlExpression * HqlCppTranslator::getRtlFieldKey(IHqlExpression * expr, IHqlExp
             break;
         }
         break;
+    }
     case no_ifblock:
         contextDependent = true;
         break;
@@ -3629,7 +3639,10 @@ IHqlExpression * HqlCppTranslator::getRtlFieldKey(IHqlExpression * expr, IHqlExp
 
 unsigned HqlCppTranslator::buildRtlField(StringBuffer & instanceName, IHqlExpression * field, IHqlExpression * rowRecord)
 {
-    OwnedHqlExpr fieldKey = getRtlFieldKey(field, rowRecord);
+    bool isPayload = false;
+    OwnedHqlExpr fieldKey = getRtlFieldKey(field, rowRecord, isPayload);
+    if (field->hasAttribute(_payload_Atom))
+        isPayload = true;
 
     BuildCtx declarectx(*code, declareAtom);
     HqlExprAssociation * match = declarectx.queryMatchExpr(fieldKey);
@@ -3645,7 +3658,7 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer & instanceName, IHqlExpres
     unsigned fieldFlags = 0;
     if (field->getOperator() == no_ifblock)
     {
-        typeFlags = buildRtlIfBlockField(name, field, rowRecord);
+        typeFlags = buildRtlIfBlockField(name, field, rowRecord, isPayload);
     }
     else
     {
@@ -3691,7 +3704,10 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer & instanceName, IHqlExpres
             if (checkXpathIsNonScalar(xpathName))
                 fieldFlags |= RFTMhasnonscalarxpath;
         }
-
+        if (isPayload)
+        {
+            fieldFlags |= RFTMispayloadfield;
+        }
         StringBuffer lowerName;
         lowerName.append(field->queryName()).toLowerCase();
 
@@ -3756,7 +3772,7 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer & instanceName, IHqlExpres
 }
 
 
-unsigned HqlCppTranslator::buildRtlIfBlockField(StringBuffer & instanceName, IHqlExpression * ifblock, IHqlExpression * rowRecord)
+unsigned HqlCppTranslator::buildRtlIfBlockField(StringBuffer & instanceName, IHqlExpression * ifblock, IHqlExpression * rowRecord, bool isPayload)
 {
     StringBuffer typeName, s;
     BuildCtx declarectx(*code, declareAtom);
@@ -3802,8 +3818,10 @@ unsigned HqlCppTranslator::buildRtlIfBlockField(StringBuffer & instanceName, IHq
     name.append("rf").append(++nextFieldId);
 
     //Now generate a pseudo field for the ifblock
-    s.clear().append("const RtlFieldStrInfo ").append(name).append("(NULL, NULL,&").append(typeName).append(");");
-
+    s.clear().append("const RtlFieldStrInfo ").append(name).append("(NULL, NULL,&").append(typeName);
+    if (isPayload)
+        s.append(',').appendf("0x%x", RFTMispayloadfield);
+    s.append(");");
     BuildCtx fieldctx(declarectx);
     fieldctx.setNextPriority(TypeInfoPrio);
     fieldctx.addQuoted(s);

@@ -322,6 +322,9 @@ public:
 const char xpathCompoundSeparatorChar = (char)1;
 
 //fieldType is a compound field....
+
+// NOTE - do not change these values - they are stored in serialized type structures e.g. in index metadata
+
 enum RtlFieldTypeMask
 {
     RFTMkind                = 0x000000ff,                   // values are defined in deftype.hpp
@@ -338,6 +341,7 @@ enum RtlFieldTypeMask
 
     RFTMinifblock           = 0x00004000,                   // on fields only, field is inside an ifblock (not presently generated)
     RFTMdynamic             = 0x00008000,                   // Reserved for use by RtlRecord to indicate structure needs to be deleted
+    RFTMispayloadfield      = 0x00010000,                   // on fields only, field is in payload portion of index or dictionary
 
     // These flags are used in the serialized info only
     RFTMserializerFlags     = 0x01f00000,                   // Mask to remove from saved values

@@ -45,6 +45,7 @@ public:
     virtual bool hasFixedOffset() = 0;
     virtual bool isConditional() = 0;
     virtual bool isFixedSize() = 0;
+    virtual bool isPayloadField() const = 0;
     virtual AColumnInfo * lookupColumn(IHqlExpression * search) = 0;
     virtual ITypeInfo * queryType() const = 0;
     virtual bool requiresTemp() = 0;
