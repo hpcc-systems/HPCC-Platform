@@ -124,6 +124,12 @@ extern ECLRTL_API MemoryBuffer &dumpTypeInfo(MemoryBuffer &ret, const RtlTypeInf
 extern ECLRTL_API void dumpRecordType(size32_t & __lenResult, char * & __result, IOutputMetaData &  metaVal);
 
 /**
+ * Serialize metadata of supplied record to DATA.
+ *
+ */
+extern ECLRTL_API void serializeRecordType(size32_t & __lenResult, void * & __result, IOutputMetaData &  metaVal);
+
+/**
  * Extract a field from a record via dynamic column number
  *
  */

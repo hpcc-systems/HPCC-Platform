@@ -27,6 +27,9 @@
 #include "rtlembed.hpp"
 
 //#define TRACE_TRANSLATION
+#define VALIDATE_TYPEINFO_HASHES
+
+#define RTLTYPEINFO_FORMAT_1   80   // In case we ever want to support more than one format
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -437,7 +440,13 @@ public:
      */
      static MemoryBuffer &serialize(MemoryBuffer &out, const RtlTypeInfo *type, bool applyBias)
      {
+         int oldEnd = out.setEndian(__LITTLE_ENDIAN);
          CRtlFieldTypeBinSerializer s(out);
+         byte format = RTLTYPEINFO_FORMAT_1;
+         out.append(format);
+         DelayedMarker<hash64_t> hash(out);
+         DelayedSizeMarker size(out);
+         size32_t pos = out.length();
          if (applyBias)
          {
              IndexBiasTranslator translator(type);
@@ -445,6 +454,9 @@ public:
          }
          else
              s.serializeType(type);
+         size.write();
+         hash.write(rtlHash64Data(size.size(), out.toByteArray()+pos, 0));
+         out.setEndian(oldEnd);
          return out;
      }
 private:
@@ -492,7 +504,7 @@ private:
         if (fields)
             fieldType |= RFTMhasFields;
         out.append(fieldType);
-        out.append(type->length);
+        out.appendPacked(type->length);
         if (fieldType & RFTMhasLocale)
             out.append(locale);
         if (child)
@@ -629,23 +641,49 @@ public:
      * <p>
      * Do not call more than once.
      *
-     * @param  buf Binary information to be deserialized, as created by CRtlFieldTypeSerializer
+     * @param  buf Binary serialized typeinfo to be deserialized, as created by CRtlFieldTypeSerializer
      * @return Deserialized type object
      */
     virtual const RtlTypeInfo *deserialize(MemoryBuffer &buf) override
     {
         assertex(!base);
         unsigned nextTypeNum = 0;
-        while (buf.remaining())
+        int oldEndian = buf.setEndian(__LITTLE_ENDIAN);
+        try
         {
-            if (base)
+            byte format;
+            buf.read(format);
+            if (format != RTLTYPEINFO_FORMAT_1)
+                throw MakeStringException(0, "Invalid type info (%d) in CRtlFieldTypeDeserializer::deserialize", format);
+            hash64_t hash;
+            buf.read(hash);
+            size32_t size;
+            buf.read(size);
+#ifdef VALIDATE_TYPEINFO_HASHES
+            hash64_t expected = rtlHash64Data(size, buf.readDirect(0), 0);
+            if (expected != hash)
+                throw MakeStringException(0, "Invalid type info hash in CRtlFieldTypeDeserializer::deserialize");
+#endif
+            size32_t endpos = buf.getPos() + size;
+            while (buf.getPos() < endpos)
             {
-                addType(base, nextTypeNum++);
-                base = nullptr;  // in case of exceptions...
+                if (base)
+                {
+                    addType(base, nextTypeNum++);
+                    base = nullptr;  // in case of exceptions...
+                }
+                base = deserializeType(buf);
             }
-            base = deserializeType(buf);
+            if (buf.getPos()!=endpos)
+                throw MakeStringException(0, "Invalid type info (incorrect size data) in CRtlFieldTypeDeserializer::deserialize");
+            buf.setEndian(oldEndian);
+            return base;
         }
-        return base;
+        catch(...)
+        {
+            buf.setEndian(oldEndian);
+            throw;
+        }
     }
 
     virtual const RtlTypeInfo *addType(FieldTypeInfoStruct &info, const ITypeInfo *type) override
@@ -777,7 +815,7 @@ private:
     {
         FieldTypeInfoStruct info;
         type.read(info.fieldType);
-        type.read(info.length);
+        type.readPacked(info.length);
         if (info.fieldType & RFTMhasLocale)
         {
             const char *locale;
@@ -857,6 +895,14 @@ extern ECLRTL_API StringBuffer &dumpTypeInfo(StringBuffer &ret, const RtlTypeInf
 extern ECLRTL_API MemoryBuffer &dumpTypeInfo(MemoryBuffer &ret, const RtlTypeInfo *t, bool useBias)
 {
     return CRtlFieldTypeBinSerializer::serialize(ret, t, useBias);
+}
+
+extern ECLRTL_API void serializeRecordType(size32_t & __lenResult, void * & __result, IOutputMetaData &  metaVal)
+{
+    MemoryBuffer ret;
+    CRtlFieldTypeBinSerializer::serialize(ret, metaVal.queryTypeInfo(), false);
+    __lenResult = ret.length();
+    __result = ret.detach();
 }
 
 extern ECLRTL_API void dumpRecordType(size32_t & __lenResult,char * & __result,IOutputMetaData &metaVal)
