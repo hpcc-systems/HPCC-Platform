@@ -3118,8 +3118,11 @@ void WsWuHelpers::submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, con
             IConstNamedValue &item = debugs->item(i);
             const char *name = item.getName();
             const char *value = item.getValue();
-            if (!name || !*name || *name=='-')
+            if (!name || !*name)
                 continue;
+            StringBuffer expanded;
+            if (*name=='-')
+                name=expanded.append("eclcc").append(name).str();
             if (!value)
             {
                 size_t len = strlen(name);

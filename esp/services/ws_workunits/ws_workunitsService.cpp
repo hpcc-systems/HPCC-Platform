@@ -557,10 +557,15 @@ bool CWsWorkunitsEx::onWUUpdate(IEspContext &context, IEspWUUpdateRequest &req, 
 
         ForEachItemIn(di, req.getDebugValues())
         {
-            IConstDebugValue& item = req.getDebugValues().item(di);
+            IConstDebugValue& item=req.getDebugValues().item(di);
             const char *debugName = item.getName();
-            if (notEmpty(debugName) && *debugName!='-')
-                wu->setDebugValue(item.getName(), item.getValue(), true);
+            if (notEmpty(debugName))
+            {
+                StringBuffer expanded;
+                if (*debugName=='-')
+                    debugName=expanded.append("eclcc").append(debugName).str();
+                wu->setDebugValue(debugName, item.getValue(), true);
+            }
         }
 
         ForEachItemIn(ai, req.getApplicationValues())
@@ -1177,8 +1182,13 @@ bool CWsWorkunitsEx::onWUSyntaxCheckECL(IEspContext &context, IEspWUSyntaxCheckR
         {
             IConstDebugValue& item=req.getDebugValues().item(di);
             const char *debugName = item.getName();
-            if (notEmpty(debugName) && *debugName!='-')
-                wu->setDebugValue(item.getName(), item.getValue(), true);
+            if (notEmpty(debugName))
+            {
+                StringBuffer expanded;
+                if (*debugName=='-')
+                    debugName=expanded.append("eclcc").append(debugName).str();
+                wu->setDebugValue(debugName, item.getValue(), true);
+            }
         }
 
         wu.setQueryText(req.getECL());
