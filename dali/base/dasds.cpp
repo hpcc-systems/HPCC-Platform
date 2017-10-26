@@ -1713,11 +1713,11 @@ public:
 
     void noteChange(PDState _local, PDState _state) { local = _local; state = _state; }
 
-    void addChildBranch(CBranchChange &child) { children.append(child); }
+    void addChildBranch(CBranchChange &child) { changedChildren.append(child); }
 
     const void *queryFindParam() const { return (const void *) &tree; }
 
-    CBranchChangeChildren children;
+    CBranchChangeChildren changedChildren;
     Linked<CRemoteTreeBase> tree;
     PDState local, state; // change info
 };
@@ -8405,7 +8405,7 @@ public:
             }
             else
             {
-                if (0 == changes.children.ordinality())
+                if (0 == changes.changedChildren.ordinality())
                 {
                     ForEachItemInRev(s, subs)
                     {
@@ -8426,9 +8426,13 @@ public:
                 }
                 else
                 {
-                    ForEachItemIn (c, changes.children)
+                    /* NB: scan the changes in reverse, so that new values proceed recorded delete changes
+                     * This ensures that a tree that has been deleted but replaced with a new tree will
+                     * cause a notification of the new value in favour of the delete.
+                     */
+                    ForEachItemInRev (c, changes.changedChildren)
                     {
-                        CBranchChange &childChange = changes.children.item(c);
+                        CBranchChange &childChange = changes.changedChildren.item(c);
                         PushPop pp(stack, *childChange.tree);
                         size32_t parentLength = xpath.length();
                         xpath.append('/').append(childChange.tree->queryName());
@@ -8498,9 +8502,13 @@ public:
                 }
             }
         }
-        ForEachItemIn(c, changes.children)
+        /* NB: scan the changes in reverse, so that new values proceed recorded delete changes
+         * This ensures that a tree that has been deleted but replaced with a new tree will
+         * cause a notification of the new value in favour of the delete.
+         */
+        ForEachItemInRev(c, changes.changedChildren)
         {
-            CBranchChange &childChanges = changes.children.item(c);
+            CBranchChange &childChanges = changes.changedChildren.item(c);
             size32_t parentLength = xpath.length();
             xpath.append('/').append(childChanges.tree->queryName());
             CSubscriberArray pruned;
