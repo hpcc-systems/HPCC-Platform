@@ -2505,7 +2505,7 @@ public:
             serverId = 0;
         }
     }
-    virtual bool removeTree(IPropertyTree *_child)
+    virtual bool removeTree(IPropertyTree *_child) override
     {
         if (!_child)
             return false;
@@ -2518,31 +2518,31 @@ public:
         return true;
     }
 
-    virtual bool isOrphaned() const { return IptFlagTst(flags, ipt_ext5); }
+    virtual bool isOrphaned() const override { return IptFlagTst(flags, ipt_ext5); }
 
-    virtual void setServerId(__int64 _serverId)
+    virtual void setServerId(__int64 _serverId) override
     {
         if (serverId && serverId != _serverId)
             WARNLOG("Unexpected - client server id mismatch in %s, id=%" I64F "x", queryName(), _serverId);
         CRemoteTreeBase::setServerId(_serverId);
     }
 
-    virtual CSubscriberContainerList *getSubscribers(const char *xpath, CPTStack &stack)
+    virtual CSubscriberContainerList *getSubscribers(const char *xpath, CPTStack &stack) override
     {
         return SDSManager->getSubscribers(xpath, stack);
     }
 
-    IPropertyTree *create(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false)
+    IPropertyTree *create(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false) override
     {
         return new CServerRemoteTree(name, value, children);
     }
 
-    IPropertyTree *create(MemoryBuffer &mb)
+    IPropertyTree *create(MemoryBuffer &mb) override
     {
         return new CServerRemoteTree(mb);
     }
 
-    virtual void createChildMap() { children = new COrphanHandler(); }
+    virtual void createChildMap() override { children = new COrphanHandler(); }
 
     inline bool testExternalCandidate()
     {
@@ -2612,7 +2612,7 @@ public:
         mb.append(STIInfo);
     }
 
-    virtual void deserializeSelfRT(MemoryBuffer &src)
+    virtual void deserializeSelfRT(MemoryBuffer &src) override
     {
         CRemoteTreeBase::deserializeSelfRT(src);
         assertex(!isnocase());
@@ -2620,13 +2620,13 @@ public:
         src.read(STIInfo);
     }
 
-    virtual void removingElement(IPropertyTree *tree, unsigned pos)
+    virtual void removingElement(IPropertyTree *tree, unsigned pos) override
     {
         COrphanHandler::setOrphans(*(CServerRemoteTree *)tree, true);       
         CRemoteTreeBase::removingElement(tree, pos);
     }
 
-    virtual bool isCompressed(const char *xpath=NULL) const
+    virtual bool isCompressed(const char *xpath=NULL) const override
     {
         if (isAttribute(xpath)) return false;
         if (CRemoteTreeBase::isCompressed(xpath)) return true;
@@ -2635,7 +2635,7 @@ public:
         return child->hasProp(EXT_ATTR);
     }
 
-    bool getProp(const char *xpath, StringBuffer &ret) const
+    bool getProp(const char *xpath, StringBuffer &ret) const override
     {
         if (xpath)
             return CRemoteTreeBase::getProp(xpath, ret);

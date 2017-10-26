@@ -28,6 +28,7 @@
 #include "keybuild.hpp"
 #include "thbufdef.hpp"
 #include "backup.hpp"
+#include "rtldynfield.hpp"
 
 #define SINGLEPART_KEY_TRANSFER_SIZE 0x10000
 #define FEWWARNCAP 10
@@ -201,16 +202,15 @@ public:
         if(!metadata) metadata.setown(createPTree("metadata"));
         metadata->setProp("_record_ECL", helper->queryRecordECL());
 
-        void * layoutMetaBuff;
-        size32_t layoutMetaSize;
-        if(helper->getIndexLayout(layoutMetaSize, layoutMetaBuff))
+        if (helper->queryOutputMeta() && helper->queryOutputMeta()->queryTypeInfo())
         {
-            metadata->setPropBin("_record_layout", layoutMetaSize, layoutMetaBuff);
-            rtlFree(layoutMetaBuff);
+            MemoryBuffer out;
+            dumpTypeInfo(out, helper->queryOutputMeta()->queryTypeInfo(), true);
+            metadata->setPropBin("_rtlType", out.length(), out.toByteArray());
         }
     }
 
-    void close(IPartDescriptor &partDesc, unsigned &crc, bool addMeta=false)
+    void close(IPartDescriptor &partDesc, unsigned &crc)
     {
         StringBuffer partFname;
         getPartFilename(partDesc, 0, partFname);
@@ -218,14 +218,7 @@ public:
         try
         {
             if (builder)
-            {
-                if (addMeta && metadata)
-                {
-                    builder->finish(metadata, &crc);
-                }
-                else
-                    builder->finish(&crc);
-            }
+                builder->finish(metadata, &crc);
         }
         catch (IException *_e)
         {
@@ -365,10 +358,10 @@ public:
                 }
                 catch (CATCHALL)
                 {
-                    close(*partDesc, partCrc, true);
+                    close(*partDesc, partCrc);
                     throw;
                 }
-                close(*partDesc, partCrc, true);
+                close(*partDesc, partCrc);
                 stop();
             }
             else
@@ -423,10 +416,10 @@ public:
                 }
                 catch (CATCHALL)
                 {
-                    close(*partDesc, partCrc, isLocal && !buildTlk && 1 == node);
+                    close(*partDesc, partCrc);
                     throw;
                 }
-                close(*partDesc, partCrc, isLocal && !buildTlk && 1 == node);
+                close(*partDesc, partCrc);
                 stop();
 
                 ActPrintLog("INDEXWRITE: Wrote %" RCPF "d records", processed & THORDATALINK_COUNT_MASK);
@@ -494,12 +487,12 @@ public:
                                 CNodeInfo &info = tlkRows.item(idx);
                                 builder->processKeyData((char *)info.value, info.pos, info.size);
                             }
-                            close(*tlkDesc, tlkCrc, true);
+                            close(*tlkDesc, tlkCrc);
                         }
                         catch (CATCHALL)
                         {
                             abortSoon = true;
-                            close(*tlkDesc, tlkCrc, true);
+                            close(*tlkDesc, tlkCrc);
                             removeFiles(*partDesc);
                             throw;
                         }

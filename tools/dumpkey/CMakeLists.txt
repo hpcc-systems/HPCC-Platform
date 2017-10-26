@@ -31,8 +31,10 @@ set (    SRCS
 
 include_directories ( 
          ./../../system/jhtree 
-         ./../../rtl/eclrtl 
+         ./../../rtl/include
+         ./../../rtl/eclrtl
          ./../../system/include 
+         ./../../common/thorhelper 
          ./../../system/jlib 
     )
 
@@ -41,7 +43,9 @@ ADD_DEFINITIONS( -D_CONSOLE )
 HPCC_ADD_EXECUTABLE ( dumpkey ${SRCS} )
 install ( TARGETS dumpkey RUNTIME DESTINATION ${EXEC_DIR} )
 
-target_link_libraries ( dumpkey 
+target_link_libraries ( dumpkey
+         eclrtl
+         thorhelper
          jlib
          jhtree
     )

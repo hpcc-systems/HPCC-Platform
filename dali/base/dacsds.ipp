@@ -296,7 +296,7 @@ class CClientRemoteTree : implements ITrackChanges, public CRemoteTreeBase
 public:
     CClientRemoteTree(CRemoteConnection &conn, CPState _state=CPS_Unchanged);
     CClientRemoteTree(const char *name, IPTArrayValue *value, ChildMap *children, CRemoteConnection &conn, CPState _state=CPS_Unchanged);
-    void beforeDispose();
+    virtual void beforeDispose() override;
     void resetState(unsigned state, bool sub=false);
     inline bool queryStateChanges() const { return serverId && connection.queryStateChanges(); }
     inline unsigned queryState() { return state; }
@@ -306,8 +306,8 @@ public:
     IPropertyTree *collateData();
     void clearCommitChanges(MemoryBuffer *mb=NULL);
 
-    virtual void Link() const;
-    virtual bool Release() const;
+    virtual void Link() const override;
+    virtual bool Release() const override;
 
     virtual void deserializeSelfRT(MemoryBuffer &mb) override;
     virtual void deserializeChildrenRT(MemoryBuffer &src) override;

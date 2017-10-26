@@ -48,6 +48,7 @@
 #include "eclagent.ipp"
 #include "roxierowbuff.hpp"
 #include "ftbase.ipp"
+#include "rtldynfield.hpp"
 
 #define EMPTY_LOOP_LIMIT 1000
 
@@ -1123,10 +1124,7 @@ void CHThorIndexWriteActivity::execute()
             }
             reccount++;
         }
-        if(metadata)
-            builder->finish(metadata,&fileCrc);
-        else
-            builder->finish(&fileCrc);
+        builder->finish(metadata, &fileCrc);
         out->flush();
         out.clear();
     }
@@ -1186,11 +1184,6 @@ void CHThorIndexWriteActivity::execute()
     properties.setProp("@owner", agent.queryWorkUnit()->queryUser());
     properties.setProp("@workunit", agent.queryWorkUnit()->queryWuid());
     properties.setProp("@job", agent.queryWorkUnit()->queryJobName());
-#if 0
-    IRecordSize * irecsize = helper.queryDiskRecordSize();
-    if(irecsize && (irecsize->isFixedSize()))
-        properties.setPropInt("@recordSize", irecsize->getFixedSize());
-#endif
     char const * rececl = helper.queryRecordECL();
     if(rececl && *rececl)
         properties.setProp("ECL", rececl);
@@ -1209,6 +1202,7 @@ void CHThorIndexWriteActivity::execute()
 
     properties.setPropInt("@fileCrc", fileCrc);
     properties.setPropInt("@formatCrc", helper.getFormatCrc());
+    // Legacy record layout info
     void * layoutMetaBuff;
     size32_t layoutMetaSize;
     if(helper.getIndexLayout(layoutMetaSize, layoutMetaBuff))
@@ -1216,6 +1210,14 @@ void CHThorIndexWriteActivity::execute()
         properties.setPropBin("_record_layout", layoutMetaSize, layoutMetaBuff);
         rtlFree(layoutMetaBuff);
     }
+    // New record layout info
+    if (helper.queryOutputMeta() && helper.queryOutputMeta()->queryTypeInfo())
+    {
+        MemoryBuffer out;
+        dumpTypeInfo(out, helper.queryOutputMeta()->queryTypeInfo(), true);
+        properties.setPropBin("_rtlType", out.length(), out.toByteArray());
+    }
+
     StringBuffer lfn;
     Owned<IDistributedFile> dfile = NULL;
     if (!agent.queryResolveFilesLocally())
@@ -1279,12 +1281,11 @@ void CHThorIndexWriteActivity::buildLayoutMetadata(Owned<IPropertyTree> & metada
     if(!metadata) metadata.setown(createPTree("metadata"));
     metadata->setProp("_record_ECL", helper.queryRecordECL());
 
-    void * layoutMetaBuff;
-    size32_t layoutMetaSize;
-    if(helper.getIndexLayout(layoutMetaSize, layoutMetaBuff))
+    if (helper.queryOutputMeta() && helper.queryOutputMeta()->queryTypeInfo())
     {
-        metadata->setPropBin("_record_layout", layoutMetaSize, layoutMetaBuff);
-        rtlFree(layoutMetaBuff);
+        MemoryBuffer out;
+        dumpTypeInfo(out, helper.queryOutputMeta()->queryTypeInfo(), true);
+        metadata->setPropBin("_rtlType", out.length(), out.toByteArray());
     }
 }
 

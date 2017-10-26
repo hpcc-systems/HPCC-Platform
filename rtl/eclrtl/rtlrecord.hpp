@@ -192,6 +192,8 @@ protected:
 
 class FieldNameToFieldNumMap;
 
+class IfBlockInfo;
+
 class ECLRTL_API RtlRecord
 {
 public:
@@ -212,7 +214,6 @@ public:
         return fixedOffsets[field] + variableOffsets[whichVariableOffset[field]];
     }
 
-
     size_t getRecordSize(size_t * variableOffsets) const
     {
         return getOffset(variableOffsets, numFields);
@@ -225,11 +226,14 @@ public:
 
     inline unsigned getNumFields() const { return numFields; }
     inline unsigned getNumVarFields() const { return numVarFields; }
+    inline unsigned getNumIfBlocks() const { return numIfBlocks > 0; }
     inline const RtlFieldInfo * queryField(unsigned field) const { return fields[field]; }
+    const RtlFieldInfo * queryOriginalField(unsigned field) const;
     inline const RtlTypeInfo * queryType(unsigned field) const { return fields[field]->type; }
     const char * queryName(unsigned field) const;
     unsigned getFieldNum(const char *fieldName) const;
     const RtlRecord *queryNested(unsigned field) const;
+    static bool excluded(const RtlFieldInfo *field, const byte *row, byte *conditions);
 protected:
     size_t * fixedOffsets;         // fixed portion of the field offsets + 1 extra
     unsigned * whichVariableOffset;// which variable offset should be added to the fixed
@@ -238,10 +242,12 @@ protected:
     unsigned numFields;
     unsigned numVarFields;
     unsigned numTables;
+    unsigned numIfBlocks;
     const RtlFieldInfo * const * fields;
     const RtlFieldInfo * const * originalFields;
     const RtlRecord **nestedTables;
     const char **names;
+    const IfBlockInfo **ifblocks;
     mutable const FieldNameToFieldNumMap *nameMap;
 };
 

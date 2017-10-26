@@ -198,7 +198,9 @@ interface IKeyManager : public IInterface, extends IIndexReadContext
 
     virtual const byte *queryKeyBuffer(offset_t & fpos) = 0; //if using RLT: fpos is the translated value, so correct in a normal row
     virtual offset_t queryFpos() = 0; //if using RLT: this is the untranslated fpos, so correct as the part number in TLK but not in a normal row
-    virtual unsigned queryRecordSize() = 0;
+    virtual unsigned __int64 querySequence() = 0;
+    virtual size32_t queryRowSize() = 0;     // Size of current row as returned by queryKeyBuffer()
+    virtual unsigned queryRecordSize() = 0;  // Max size
 
     virtual bool lookup(bool exact) = 0;
     virtual unsigned __int64 getCount() = 0;

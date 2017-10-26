@@ -190,6 +190,12 @@ public:
         assertex(pos <= SELF::used);
         return &head[pos];
     }
+    MEMBER * detach()
+    {
+        MEMBER * head = (MEMBER *)SELF::_head;
+        SELF::_init();
+        return head;
+    }
     void sort(CompareFunc cf)
     {
         SELF::_doSort(sizeof(MEMBER), (StdCompare)cf);

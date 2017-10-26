@@ -27,7 +27,6 @@
 #include "roxiedebug.hpp"
 
 #define MAX_FETCH_LOOKAHEAD 1000
-#define IGNORE_FORMAT_CRC_MISMATCH_WHEN_NO_METADATA
 
 using roxiemem::IRowManager;
 using roxiemem::OwnedRoxieRow;
@@ -95,15 +94,7 @@ IRecordLayoutTranslator * getRecordLayoutTranslator(IDefRecordMeta const * activ
     IPropertyTree const & props = df->queryAttributes();
     MemoryBuffer diskMetaBuff;
     if(!props.getPropBin("_record_layout", diskMetaBuff))
-#ifdef IGNORE_FORMAT_CRC_MISMATCH_WHEN_NO_METADATA
-    {
-        WARNLOG("On reading index %s, formatCRC mismatch ignored because file had no record layout metadata and so assumed old", df->queryLogicalName());
-        return NULL;
-    }
-#else
         throw MakeStringException(0, "Unable to recover from record layout mismatch for index %s: no record layout metadata in file", df->queryLogicalName());
-#endif
-
     try
     {
         if(cache)

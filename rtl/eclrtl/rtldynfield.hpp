@@ -37,7 +37,7 @@ public:
     const RtlTypeInfo *childType = nullptr;
     const RtlFieldInfo * * fieldsArray = nullptr;
 
-    const RtlTypeInfo *createRtlTypeInfo() const;
+    const RtlTypeInfo *createRtlTypeInfo(IThorIndexCallback *_callback) const;
 };
 
 interface ITypeInfo;
@@ -111,11 +111,11 @@ interface IDynamicTransform : public IInterface
 
 extern ECLRTL_API const IDynamicTransform *createRecordTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo);
 
-extern ECLRTL_API IRtlFieldTypeDeserializer *createRtlFieldTypeDeserializer();
+extern ECLRTL_API IRtlFieldTypeDeserializer *createRtlFieldTypeDeserializer(IThorIndexCallback *callback);
 
 extern ECLRTL_API StringBuffer &dumpTypeInfo(StringBuffer &ret, const RtlTypeInfo *t);
 
-extern ECLRTL_API MemoryBuffer &dumpTypeInfo(MemoryBuffer &ret, const RtlTypeInfo *t);
+extern ECLRTL_API MemoryBuffer &dumpTypeInfo(MemoryBuffer &ret, const RtlTypeInfo *t, bool useBias);
 
 /**
  * Serialize metadata of supplied record to JSON, and return it to ECL caller as a string. Used for testing serializer.

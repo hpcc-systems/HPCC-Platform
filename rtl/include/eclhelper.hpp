@@ -333,8 +333,11 @@ enum RtlFieldTypeMask
     RFTMunknownsize         = 0x00000400,                   // if set, the field is unknown size - and length is the maximum length
 
     RFTMalien               = 0x00000800,                   // this is the physical format of a user defined type, if unknown size we can't calculate it
-    RFTMcontainsifblock     = 0x00000800,                   // contains an if block - if set on a record then it contains ifblocks, so can't work out field offsets.
     RFTMhasnonscalarxpath   = 0x00001000,                   // field xpath contains multiple node, and is not therefore usable for naming scalar fields
+    RFTMbiased              = 0x00002000,                   // type is stored with a bias
+
+    RFTMinifblock           = 0x00004000,                   // on fields only, field is inside an ifblock (not presently generated)
+    RFTMdynamic             = 0x00008000,                   // Reserved for use by RtlRecord to indicate structure needs to be deleted
 
     // These flags are used in the serialized info only
     RFTMserializerFlags     = 0x01f00000,                   // Mask to remove from saved values
@@ -348,7 +351,7 @@ enum RtlFieldTypeMask
     RFTMcontainsunknown     = 0x10000000,                   // contains a field of unknown type that we can't process properly
     RFTMinvalidxml          = 0x20000000,                   // cannot be called to generate xml
     RFTMhasxmlattr          = 0x40000000,                   // if specified, then xml output includes an attribute (recursive)
-    RFTMnoserialize         = 0x80000000,                   // cannot serialize this typeinfo structure (contains ifblocks, dictionaries or other nasties)
+    RFTMnoserialize         = 0x80000000,                   // cannot serialize this typeinfo structure (contains dictionaries or other nasties)
 
     RFTMinherited           = (RFTMnoprefetch|RFTMcontainsunknown|RFTMinvalidxml|RFTMhasxmlattr|RFTMnoserialize)    // These flags are recursively set on any parent records too
 };
@@ -399,6 +402,7 @@ struct RtlTypeInfo : public RtlITypeInfo
     inline bool isEbcdic() const { return (fieldType & RFTMebcdic) != 0; }
     inline bool isFixedSize() const { return (fieldType & RFTMunknownsize) == 0; }
     inline bool isLinkCounted() const { return (fieldType & RFTMlinkcounted) != 0; }
+    inline bool isSigned() const { return (fieldType & RFTMunsigned) == 0; }
     inline bool isUnsigned() const { return (fieldType & RFTMunsigned) != 0; }
     inline unsigned getDecimalDigits() const { return (length & 0xffff); }
     inline unsigned getDecimalPrecision() const { return (length >> 16); }
@@ -435,9 +439,13 @@ struct RtlFieldInfo
 
     inline bool hasNonScalarXpath() const { return (flags & RFTMhasnonscalarxpath) != 0; }
 
+    inline bool omitable() const
+    {
+        return (flags & RFTMinifblock)!=0;
+    }
     inline bool isFixedSize() const 
     { 
-        return type->isFixedSize(); 
+        return type->isFixedSize();
     }
     inline size32_t size(const byte * self, const byte * selfrow) const 
     { 

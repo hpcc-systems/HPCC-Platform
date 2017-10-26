@@ -4465,6 +4465,7 @@ IDefRecordElement * RecordMetaCreator::createIfBlock(IHqlExpression * cur, IHqlE
             return NULL;
         break;
     default:
+//        EclIR::dump_ir(cond);
         return NULL;
     }
 
@@ -9813,7 +9814,7 @@ unsigned buildRtlRecordFields(IRtlFieldTypeDeserializer &deserializer, unsigned 
         switch (field->getOperator())
         {
         case no_ifblock:
-            typeFlags |= (RFTMnoserialize|RFTMnoprefetch);
+            typeFlags |= (RFTMunknownsize|RFTMnoprefetch);
             break;
         case no_field:
         {

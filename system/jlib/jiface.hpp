@@ -270,10 +270,20 @@ CLASS::beforeDispose()
 
 typedef class CInterface * CInterfacePtr;
 
+// Two versions of this macro - with and without override
+// until such time as we have completely switched over to using override consistently
+// otherwise it's hard to use the override consistency check error effectively.
+
 #define IMPLEMENT_IINTERFACE_USING(x)                                                   \
     virtual void Link(void) const       { x::Link(); }                     \
     virtual bool Release(void) const    { return x::Release(); }
 
 #define IMPLEMENT_IINTERFACE    IMPLEMENT_IINTERFACE_USING(CInterface)
+
+#define IMPLEMENT_IINTERFACE_O_USING(x)                                                   \
+    virtual void Link(void) const override { x::Link(); }                     \
+    virtual bool Release(void) const override    { return x::Release(); }
+
+#define IMPLEMENT_IINTERFACE_O    IMPLEMENT_IINTERFACE_O_USING(CInterface)
 
 #endif

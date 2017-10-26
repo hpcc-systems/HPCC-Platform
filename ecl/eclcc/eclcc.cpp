@@ -2127,6 +2127,8 @@ IHqlExpression *EclCC::lookupDFSlayout(const char *filename, IErrorReceiver &err
                     else
                     {
                         diskRecord.set(diskRecord->queryBody());  // Remove location info - it's meaningless
+                        // MORE - if we already have the payload size info from the parsing of the ECL (we should, for all files built since 2017)
+                        // then don't parse _record_layout (which we expect to remove, eventually).
                         if (dfsFile->queryAttributes().hasProp("_record_layout"))
                         {
                             MemoryBuffer mb;

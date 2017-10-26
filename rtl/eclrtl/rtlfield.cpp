@@ -432,7 +432,7 @@ void RtlIntTypeInfo::getString(size32_t & resultLen, char * & result, const void
     if (isUnsigned())
         rtlUInt8ToStrX(resultLen, result,  rtlReadUInt(ptr, length));
     else
-        rtlInt8ToStrX(resultLen, result,  rtlReadInt(ptr, length));
+        rtlInt8ToStrX(resultLen, result, rtlReadInt(ptr, length));
 }
 
 void RtlIntTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
@@ -443,7 +443,7 @@ void RtlIntTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void *
 __int64 RtlIntTypeInfo::getInt(const void * ptr) const
 {
     if (isUnsigned())
-         return rtlReadUInt(ptr, length);
+        return rtlReadUInt(ptr, length);
     else
         return rtlReadInt(ptr, length);
 }
@@ -491,6 +491,97 @@ bool RtlIntTypeInfo::canExtend(char &fillChar) const
 #endif
 }
 
+
+//-------------------------------------------------------------------------------------------------------------------
+
+size32_t RtlFileposTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
+{
+    throwUnexpected();  // This is only expected to be used for reading at present
+}
+
+size32_t RtlFileposTypeInfo::buildInt(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, __int64 val) const
+{
+    throwUnexpected();  // This is only expected to be used for reading at present
+}
+
+size32_t RtlFileposTypeInfo::buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const
+{
+    throwUnexpected();  // This is only expected to be used for reading at present
+}
+
+size32_t RtlFileposTypeInfo::buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const
+{
+    throwUnexpected();  // This is only expected to be used for reading at present
+}
+
+size32_t RtlFileposTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
+{
+    assertex(callback);
+    if (isUnsigned())
+        target.processUInt(callback->getFilePosition(nullptr), field);
+    else
+        target.processInt(callback->getFilePosition(nullptr), field);
+    return length;
+}
+
+size32_t RtlFileposTypeInfo::toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const
+{
+    assertex(callback);
+    if (isUnsigned())
+        target.outputUInt(callback->getFilePosition(nullptr), length, queryScalarXPath(field));
+    else
+        target.outputInt(callback->getFilePosition(nullptr), length, queryScalarXPath(field));
+    return length;
+}
+
+void RtlFileposTypeInfo::getString(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    assertex(callback);
+    if (isUnsigned())
+        rtlUInt8ToStrX(resultLen, result, callback->getFilePosition(nullptr));
+    else
+        rtlInt8ToStrX(resultLen, result, callback->getFilePosition(nullptr));
+}
+
+void RtlFileposTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    getString(resultLen, result, ptr);
+}
+
+__int64 RtlFileposTypeInfo::getInt(const void * ptr) const
+{
+    assertex(callback);
+    return (__int64) callback->getFilePosition(nullptr);
+}
+
+double RtlFileposTypeInfo::getReal(const void * ptr) const
+{
+    assertex(callback);
+    if (isUnsigned())
+        return (double) (__uint64) callback->getFilePosition(nullptr);
+    else
+        return (double) (__int64) callback->getFilePosition(nullptr);
+}
+
+bool RtlFileposTypeInfo::canTruncate() const
+{
+    return false;
+}
+
+bool RtlFileposTypeInfo::canExtend(char &fillChar) const
+{
+    return false;
+}
+
+void RtlFileposTypeInfo::setCallback(IThorIndexCallback *_callback)
+{
+    callback = _callback;
+}
+
+int RtlFileposTypeInfo::compare(const byte * left, const byte * right) const
+{
+    throwUnexpected();  // Not needed and unimplementable
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -567,7 +658,7 @@ double RtlSwapIntTypeInfo::getReal(const void * ptr) const
     if (isUnsigned())
         return (double) rtlReadSwapUInt(ptr, length);
     else
-        return (double) rtlReadSwapInt(ptr, length);
+        return (double) (rtlReadSwapInt(ptr, length));
 }
 
 int RtlSwapIntTypeInfo::compare(const byte * left, const byte * right) const
@@ -603,6 +694,116 @@ bool RtlSwapIntTypeInfo::canExtend(char &fillChar) const
     fillChar = 0;
     return true;
 #endif
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+// Should be renamed to keyedint - unsigned as well as signed cases here.
+
+size32_t RtlKeyedIntTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
+{
+    __int64 val = isUnsigned() ? (__int64) source.getUnsignedResult(field) : source.getSignedResult(field);
+    return buildInt(builder, offset, field, val);
+}
+
+size32_t RtlKeyedIntTypeInfo::buildInt(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, __int64 val) const
+{
+    builder.ensureCapacity(length+offset, queryName(field));
+    if (isUnsigned())
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+        rtlWriteSwapInt(builder.getSelf() + offset, val, length);
+#else
+        rtlWriteInt(builder.getSelf() + offset, val, length);
+#endif
+    else
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+        rtlWriteSwapInt(builder.getSelf() + offset, addBias(val, length), length);
+#else
+        rtlWriteInt(builder.getSelf() + offset, addBias(val, length), length);
+#endif
+    offset += length;
+    return offset;
+}
+
+size32_t RtlKeyedIntTypeInfo::buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const
+{
+    return buildInt(builder, offset, field, rtlStrToInt8(size, value));
+}
+
+size32_t RtlKeyedIntTypeInfo::buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const
+{
+    size32_t size = rtlUtf8Length(len, value);
+    return buildInt(builder, offset, field, rtlStrToInt8(size, value));
+}
+
+size32_t RtlKeyedIntTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
+{
+    if (isUnsigned())
+        target.processUInt(getUInt(self), field);
+    else
+        target.processInt(getInt(self), field);
+    return length;
+}
+
+size32_t RtlKeyedIntTypeInfo::toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const
+{
+    if (isUnsigned())
+        target.outputUInt(getUInt(self), length, queryScalarXPath(field));
+    else
+        target.outputInt(getInt(self), length, queryScalarXPath(field));
+    return length;
+}
+
+void RtlKeyedIntTypeInfo::getString(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    if (isUnsigned())
+        rtlUInt8ToStrX(resultLen, result, getUInt(ptr));
+    else
+        rtlInt8ToStrX(resultLen, result, getInt(ptr));
+}
+
+void RtlKeyedIntTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    getString(resultLen, result, ptr);
+}
+
+__int64 RtlKeyedIntTypeInfo::getInt(const void * ptr) const
+{
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    if (isUnsigned())
+        return rtlReadSwapUInt(ptr, length);
+    else
+        return removeBias(rtlReadSwapUInt(ptr, length), length);
+#else
+    if (isUnsigned())
+        return rtlReadUInt(ptr, length);
+    else
+        return removeBias(rtlReadInt(ptr, length), length);
+#endif
+}
+
+double RtlKeyedIntTypeInfo::getReal(const void * ptr) const
+{
+    if (isUnsigned())
+        return (double) getUInt(ptr);
+    else
+        return (double) getInt(ptr);
+}
+
+int RtlKeyedIntTypeInfo::compare(const byte * left, const byte * right) const
+{
+    // The whole point of biased ints is that we can do this:
+    return memcmp(left, right, length);
+}
+
+unsigned __int64 RtlKeyedIntTypeInfo::addBias(__int64 value, unsigned length)
+{
+    return value + ((unsigned __int64)1 << (length*8-1));
+}
+
+__int64 RtlKeyedIntTypeInfo::removeBias(unsigned __int64 value, unsigned length)
+{
+    return value - ((unsigned __int64)1 << (length*8-1));
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -3249,6 +3450,15 @@ int RtlIfBlockTypeInfo::compare(const byte * left, const byte * right) const
         return -1;
     else
         return 0;
+}
+
+bool RtlDynamicIfBlockTypeInfo::getCondition(const byte * selfrow) const
+{
+#ifdef _DEBUG
+    // Temporary code to help my testing, until proper implementation available
+    return selfrow[3] != 2;
+#endif
+    UNIMPLEMENTED;
 }
 
 

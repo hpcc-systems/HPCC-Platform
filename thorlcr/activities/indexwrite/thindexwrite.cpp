@@ -25,6 +25,7 @@
 #include "ctfile.hpp"
 #include "eclrtl.hpp"
 #include "thorfile.hpp"
+#include "rtldynfield.hpp"
 
 class IndexWriteActivityMaster : public CMasterActivity
 {
@@ -168,12 +169,20 @@ public:
         const char *rececl= helper->queryRecordECL();
         if (rececl&&*rececl)
             props.setProp("ECL", rececl);
+        // Legacy record layout info
         void * layoutMetaBuff;
         size32_t layoutMetaSize;
         if(helper->getIndexLayout(layoutMetaSize, layoutMetaBuff))
         {
             props.setPropBin("_record_layout", layoutMetaSize, layoutMetaBuff);
             rtlFree(layoutMetaBuff);
+        }
+        // New record layout info
+        if (helper->queryOutputMeta() && helper->queryOutputMeta()->queryTypeInfo())
+        {
+            MemoryBuffer out;
+            dumpTypeInfo(out, helper->queryOutputMeta()->queryTypeInfo(), true);
+            props.setPropBin("_rtlType", out.length(), out.toByteArray());
         }
         mpTag = container.queryJob().allocateMPTag();
         mpTag2 = container.queryJob().allocateMPTag();

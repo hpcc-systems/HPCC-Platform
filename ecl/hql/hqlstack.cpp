@@ -249,7 +249,7 @@ int FuncCallStack::push(ITypeInfo* argType, IHqlExpression* curParam)
 int FuncCallStack::pushMeta(ITypeInfo *type)
 {
     if (!deserializer)
-        deserializer.setown(createRtlFieldTypeDeserializer());
+        deserializer.setown(createRtlFieldTypeDeserializer(nullptr));
     const RtlTypeInfo *typeInfo = buildRtlType(*deserializer.get(), type);
     CDynamicOutputMetaData * meta = new CDynamicOutputMetaData(* static_cast<const RtlRecordTypeInfo *>(typeInfo));
     metas.append(*meta);
