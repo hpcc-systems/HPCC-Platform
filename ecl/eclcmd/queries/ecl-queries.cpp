@@ -18,6 +18,7 @@
 #include "jlog.hpp"
 #include "jfile.hpp"
 #include "jargv.hpp"
+#include "jflz.hpp"
 
 #include "build-config.h"
 
@@ -1177,6 +1178,322 @@ private:
     bool optDontAppendCluster = false; //Undesirable but here temporarily because DALI may have locking issues
 };
 
+class EclCmdQueriesExport : public EclCmdCommon
+{
+public:
+    EclCmdQueriesExport()
+    {
+    }
+    virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)
+    {
+        if (iter.done())
+            return EclCmdOptionNoMatch;
+
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (*arg!='-')
+            {
+                if (optTarget.isEmpty())
+                    optTarget.set(arg);
+                else
+                {
+                    fprintf(stderr, "\nunrecognized argument %s\n", arg);
+                    return EclCmdOptionNoMatch;
+                }
+                continue;
+            }
+            if (iter.matchOption(optFilename, ECLOPT_OUTPUT) || iter.matchOption(optFilename, ECLOPT_OUTPUT_S))
+                continue;
+            if (iter.matchFlag(optActiveOnly, ECLOPT_ACTIVE_ONLY))
+                continue;
+            if (iter.matchFlag(optProtect, ECLOPT_PROTECT))
+                continue;
+            eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
+            if (ind != EclCmdOptionMatch)
+                return ind;
+        }
+        return EclCmdOptionMatch;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (optTarget.isEmpty())
+        {
+            fputs("Target must be specified.\n", stderr);
+            return false;
+        }
+        if (optFilename.isEmpty())
+        {
+            StringBuffer name("./queryset_backup_");
+            name.append(optTarget);
+            if (optActiveOnly)
+                name.append("_activeonly_");
+            CDateTime dt;
+            dt.setNow();
+            dt.getString(name, true);
+            name.replace(':', '_').append(".xml");
+            optFilename.set(name);
+        }
+        if (!EclCmdCommon::finalizeOptions(globals))
+            return false;
+        return true;
+    }
+
+    void saveAsFile(const char *s, const char *filepath)
+    {
+        if (!s || !*s)
+            return;
+
+        Owned<IFile> file = createIFile(filepath);
+        Owned<IFileIO> io = file->open(IFOcreaterw);
+
+        fprintf(stdout, "\nWriting to file %s\n", file->queryFilename());
+
+        if (io.get())
+            io->write(0, strlen(s), s);
+        else
+            fprintf(stderr, "\nFailed to create file %s\n", file->queryFilename());
+    }
+
+    virtual int processCMD()
+    {
+        Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
+        Owned<IClientWUQuerysetExportRequest> req = client->createWUQuerysetExportRequest();
+        req->setTarget(optTarget);
+        req->setActiveOnly(optActiveOnly);
+        req->setCompress(true);
+        req->setProtect(optProtect);
+
+        Owned<IClientWUQuerysetExportResponse> resp = client->WUQuerysetExport(req);
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
+        if (ret == 0)
+        {
+            if (!resp->getData().length())
+            {
+                fprintf(stderr, "\nEmpty Queryset returned\n");
+                return 1;
+            }
+            MemoryBuffer decompressed;
+            fastLZDecompressToBuffer(decompressed, const_cast<MemoryBuffer &>(resp->getData())); //unfortunate need for const_cast
+            if (!decompressed.length())
+            {
+                fprintf(stderr, "\nError decompressing response\n");
+                return 1;
+            }
+            if (optFilename.length())
+                saveAsFile(decompressed.toByteArray(), optFilename);
+            else
+            {
+                decompressed.append('\0');
+                fputs(decompressed.toByteArray(), stdout); //for piping
+                fputs("\n", stdout);
+            }
+        }
+        return ret;
+    }
+
+    virtual void usage()
+    {
+        fputs("\nUsage:\n"
+            "\n"
+            "The 'queries export' command saves backup information about a given queryset.\n"
+            "\n"
+            "ecl queries export <target> [options]\n\n"
+            " Options:\n"
+            "   <target>               Name of target cluster to export from\n"
+            "   -O,--output=<file>     Filename to save exported backup information to (optional)\n"
+            "   --active-only          Only include active queries in the exported queryset\n"
+            "   --protect              Protect the workunits for the included queries\n"
+            " Common Options:\n",
+            stdout);
+        EclCmdCommon::usage();
+    }
+private:
+    StringAttr optTarget;
+    StringAttr optFilename;
+    bool optActiveOnly = false;
+    bool optProtect = false;
+};
+
+class EclCmdQueriesImport : public EclCmdCommon
+{
+public:
+    EclCmdQueriesImport()
+    {
+    }
+    virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)
+    {
+        if (iter.done())
+            return EclCmdOptionNoMatch;
+
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (*arg!='-')
+            {
+                if (optDestQuerySet.isEmpty())
+                    optDestQuerySet.set(arg);
+                else if (optFilename.isEmpty())
+                    optFilename.set(arg);
+                else
+                {
+                    fprintf(stderr, "\nunrecognized argument %s\n", arg);
+                    return EclCmdOptionNoMatch;
+                }
+                continue;
+            }
+            if (iter.matchOption(optQueries, ECLOPT_QUERIES))
+                continue;
+            if (iter.matchOption(optDaliIP, ECLOPT_DALIIP))
+                continue;
+            if (iter.matchOption(optSourceProcess, ECLOPT_SOURCE_PROCESS))
+                continue;
+            if (iter.matchFlag(optCloneActiveState, ECLOPT_CLONE_ACTIVE_STATE))
+                continue;
+            if (iter.matchFlag(optDontCopyFiles, ECLOPT_DONT_COPY_FILES))
+                continue;
+            if (iter.matchFlag(optAllQueries, ECLOPT_ALL))
+                continue;
+            if (iter.matchFlag(optReplace, ECLOPT_REPLACE))
+                continue;
+            if (iter.matchFlag(optAllowForeign, ECLOPT_ALLOW_FOREIGN))
+                continue;
+            if (iter.matchFlag(optOverwrite, ECLOPT_OVERWRITE)||iter.matchFlag(optOverwrite, ECLOPT_OVERWRITE_S))
+                continue;
+            if (iter.matchFlag(optUpdateSuperfiles, ECLOPT_UPDATE_SUPER_FILES))
+                continue;
+            if (iter.matchFlag(optUpdateCloneFrom, ECLOPT_UPDATE_CLONE_FROM))
+                continue;
+            if (iter.matchFlag(optDontAppendCluster, ECLOPT_DONT_APPEND_CLUSTER))
+                continue;
+            eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
+            if (ind != EclCmdOptionMatch)
+                return ind;
+        }
+        return EclCmdOptionMatch;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (!EclCmdCommon::finalizeOptions(globals))
+            return false;
+        if (optFilename.isEmpty() || optDestQuerySet.isEmpty())
+        {
+            fputs("Target and file name must both be specified.\n", stderr);
+            return false;
+        }
+        content.loadFile(optFilename, false);
+        return true;
+    }
+
+    virtual int processCMD()
+    {
+        Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
+        Owned<IClientWUQuerysetImportRequest> req = client->createWUQuerysetImportRequest();
+
+        MemoryBuffer compressed;
+        fastLZCompressToBuffer(compressed, content.length()+1, content.str());
+        req->setCompressed(true);
+        req->setData(compressed);
+
+        req->setReplace(optReplace);
+        req->setActiveOnly(!optAllQueries);
+        req->setQueryMask(optQueries);
+        req->setTarget(optDestQuerySet);
+        req->setDfsServer(optDaliIP);
+        req->setSourceProcess(optSourceProcess);
+        req->setActivation(optCloneActiveState ? CQuerysetImportActivation_ImportedActive : CQuerysetImportActivation_None);
+        req->setOverwriteDfs(optOverwrite);
+        req->setUpdateSuperFiles(optUpdateSuperfiles);
+        req->setUpdateCloneFrom(optUpdateCloneFrom);
+        req->setAppendCluster(!optDontAppendCluster);
+        req->setCopyFiles(!optDontCopyFiles);
+        req->setAllowForeignFiles(optAllowForeign);
+        req->setIncludeFileErrors(true);
+
+        Owned<IClientWUQuerysetImportResponse> resp = client->WUQuerysetImport(req);
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
+        if (outputQueryFileCopyErrors(resp->getFileErrors()))
+            ret = 1;
+
+        StringArray &imported = resp->getImportedQueries();
+        fputs("Queries Imported:\n", stdout);
+        if (!imported.length())
+            fputs("  none\n\n", stdout);
+        else
+        {
+            ForEachItemIn(i, imported)
+                fprintf(stdout, "  %s\n", imported.item(i));
+            fputs("\n", stdout);
+        }
+        StringArray &existing = resp->getExistingQueries();
+        fputs("Queries already on destination target:\n", stdout);
+        if (!existing.length())
+            fputs("  none\n\n", stdout);
+        else
+        {
+            ForEachItemIn(i, existing)
+                fprintf(stdout, "  %s\n", existing.item(i));
+            fputs("\n", stdout);
+        }
+        StringArray &missing = resp->getMissingWuids();
+        fputs("Missing workunits:\n", stdout);
+        if (!missing.length())
+            fputs("  none\n\n", stdout);
+        else
+        {
+            ForEachItemIn(i, missing)
+                fprintf(stdout, "  %s\n", missing.item(i));
+            fputs("\n", stdout);
+        }
+        return ret;
+    }
+    virtual void usage()
+    {
+        fputs("\nUsage:\n"
+            "\n"
+            "The 'queries import' command imports the contents of a queryset exported to disk.\n"
+            "\n"
+            "By default only active queries will be imported.  Use --all to import all queries.\n"
+            "\n"
+            "ecl queries import <target> <file> [--clone-active-state][--replace]\n"
+
+            "ecl queries import roxie1 queryset.xml\n"
+            "\n"
+            " Options:\n"
+            "   <target>               Target cluster to import queries to\n"
+            "   --all                  Copy both active and inactive queries\n"
+            "   --replace              Replace entire existing queryset\n"
+            "   --queries              Filter query ids to select for import\n"
+            "   --no-files             Do not copy DFS file information for referenced files\n"
+            "   --daliip=<ip>          Remote Dali DFS to use for copying file information\n"
+            "   --source-process       Process cluster to copy files from\n"
+            "   --clone-active-state   Make copied queries active if active on source\n"
+            "   -O, --overwrite        Completely replace existing DFS file information (dangerous)\n"
+            "   --update-super-files   Update local DFS super-files if remote DALI has changed\n"
+            "   --update-clone-from    Update local clone from location if remote DALI has changed\n"
+            "   --dont-append-cluster  Only use to avoid locking issues due to adding cluster to file\n"
+            "   --allow-foreign        Do not fail if foreign files are used in query (roxie)\n"
+            " Common Options:\n",
+            stdout);
+        EclCmdCommon::usage();
+    }
+private:
+    StringBuffer content;
+    StringAttr optFilename;
+    StringAttr optQueries;
+    StringAttr optDestQuerySet;
+    StringAttr optDaliIP;
+    StringAttr optSourceProcess;
+    bool optReplace = false;
+    bool optCloneActiveState = false;
+    bool optOverwrite = false;
+    bool optUpdateSuperfiles = false;
+    bool optUpdateCloneFrom = false;
+    bool optDontAppendCluster = false; //Undesirable but here temporarily because DALI may have locking issues
+    bool optDontCopyFiles = false;
+    bool optAllowForeign = false;
+    bool optAllQueries = false;
+};
 IEclCommand *createEclQueriesCommand(const char *cmdname)
 {
     if (!cmdname || !*cmdname)
@@ -1193,6 +1510,10 @@ IEclCommand *createEclQueriesCommand(const char *cmdname)
         return new EclCmdQueriesCopyQueryset();
     if (strieq(cmdname, "recreate"))
         return new EclCmdQueriesRecreate();
+    if (strieq(cmdname, "export"))
+        return new EclCmdQueriesExport();
+    if (strieq(cmdname, "import"))
+        return new EclCmdQueriesImport();
     return NULL;
 }
 
@@ -1217,6 +1538,8 @@ public:
             "      copy         copy a query from one target cluster to another\n"
             "      copy-set     copy queries from one target cluster to another\n"
             "      recreate     recompiles query into a new workunit\n"
+            "      export       export queryset information for backup\n"
+            "      import       import queryset information from backup file\n"
         );
     }
 };

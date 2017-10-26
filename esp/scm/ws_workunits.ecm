@@ -1626,6 +1626,62 @@ ESPresponse [exceptions_inline] WUMultiQuerySetDetailsResponse
     ESParray<ESPstruct WUQuerySetDetail> Querysets;
 };
 
+ESPrequest WUQuerysetExportRequest
+{
+    string  Target;
+    bool Compress(true);
+    bool ActiveOnly(false);
+    bool Protect(false);
+};
+
+ESPresponse [exceptions_inline] WUQuerysetExportResponse
+{
+    string Target;
+    bool Compressed;
+    binary Data;
+};
+
+ESPenum QuerysetImportActivation : string
+{
+    None("None"),
+    ImportedActive("ActivateImportedActive")
+};
+
+
+ESPrequest WUQuerysetImportRequest
+{
+    string Target;
+    string QueryMask;
+    bool Replace(false);
+    bool ActiveOnly(false);
+    ESPenum QuerysetImportActivation Activation;
+    bool Compressed(true);
+    binary Data;
+
+    bool AllowForeignFiles(true);
+
+    string DfsServer;
+    bool CopyFiles(true);
+    bool OverwriteDfs(false);
+    string SourceProcess;
+    bool UpdateSuperFiles(false); //usually wouldn't be needed, packagemap referencing superfiles?
+    bool UpdateCloneFrom(false); //explicity wan't to change where roxie will grab from
+    bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
+    bool IncludeFileErrors(false);
+};
+
+ESPresponse [exceptions_inline] WUQuerysetImportResponse
+{
+    string  Target;
+    bool ClearedExisting(true);
+    bool Success(false);
+
+    ESParray<string, QueryId> ImportedQueries;
+    ESParray<string, QueryId> ExistingQueries;
+    ESParray<string, QueryId> MissingWuids;
+    ESParray<ESPStruct LogicalFileError, File> FileErrors;
+};
+
 ESPrequest [nil_remove] WUUpdateQueryEntryRequest
 {
     string QuerySet;
@@ -1933,7 +1989,7 @@ ESPresponse [exceptions_inline, nil_remove] WUGetNumFileToCopyResponse
 
 ESPservice [
     auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
-    version("1.70"), default_client_version("1.70"),
+    version("1.71"), default_client_version("1.71"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
@@ -1997,6 +2053,8 @@ ESPservice [
     ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/WUQuerysetQueries.xslt")] WUQuerysetDetails(WUQuerySetDetailsRequest, WUQuerySetDetailsResponse);
     ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/WUQueryDetails.xslt")] WUQueryDetails(WUQueryDetailsRequest, WUQueryDetailsResponse);
     ESPmethod [cache_seconds(60)] WUMultiQuerysetDetails(WUMultiQuerySetDetailsRequest, WUMultiQuerySetDetailsResponse);
+    ESPmethod [min_ver("1.71")] WUQuerysetImport(WUQuerysetImportRequest, WUQuerysetImportResponse);
+    ESPmethod [min_ver("1.71")] WUQuerysetExport(WUQuerysetExportRequest, WUQuerysetExportResponse);
     ESPmethod WUQuerysetQueryAction(WUQuerySetQueryActionRequest, WUQuerySetQueryActionResponse);
     ESPmethod WUQuerysetAliasAction(WUQuerySetAliasActionRequest, WUQuerySetAliasActionResponse);
     ESPmethod WUQuerysetCopyQuery(WUQuerySetCopyQueryRequest, WUQuerySetCopyQueryResponse);
