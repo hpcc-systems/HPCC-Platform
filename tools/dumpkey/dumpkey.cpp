@@ -160,6 +160,7 @@ int main(int argc, const char **argv)
                 Owned<IPropertyTree> metadata = index->getMetadata();
                 Owned<IOutputMetaData> diskmeta;
                 Owned<IOutputMetaData> translatedmeta;
+                ArrayOf<const RtlFieldInfo *> deleteFields;
                 ArrayOf<const RtlFieldInfo *> fields;  // Note - the lifetime of the array needs to extend beyond the lifetime of outmeta. The fields themselves are shared with diskmeta, and do not need to be released.
                 Owned<IOutputMetaData> outmeta;
                 Owned<IHThorIndexReadArg> helper;
@@ -186,26 +187,50 @@ int main(int argc, const char **argv)
                     metadata->getPropBin("_rtlType", layoutBin);
                     diskmeta.setown(createTypeInfoOutputMetaData(layoutBin, &callback));
                     writer.setown(new SimpleOutputWriter);
+                    const RtlRecord &inrec = diskmeta->queryRecordAccessor(true);
+                    size32_t minRecSize = 0;
                     if (globals->hasProp("fields"))
                     {
                         StringArray fieldNames;
                         fieldNames.appendList(globals->queryProp("fields"), ",");
-                        const RtlRecord &inrec = diskmeta->queryRecordAccessor(true);
-                        size32_t minRecSize = 0;
                         ForEachItemIn(idx, fieldNames)
                         {
                             unsigned fieldNum = inrec.getFieldNum(fieldNames.item(idx));
                             if (fieldNum == (unsigned) -1)
                                 throw MakeStringException(0, "Requested output field '%s' not found", fieldNames.item(idx));
-                            fields.append(inrec.queryOriginalField(fieldNum));
-                            minRecSize += inrec.queryType(fieldNum)->getMinSize();
+                            const RtlFieldInfo *field = inrec.queryOriginalField(fieldNum);
+                            if (field->type->getType() == type_filepos)
+                            {
+                                // We can't just use the original source field in this case (as output record does not have a special filepos)
+                                // So instead, create a field in the target with the original type.
+                                field = new RtlFieldStrInfo(field->name, field->xpath, field->type->queryChildType());
+                                deleteFields.append(field);
+                            }
+                            fields.append(field);
+                            minRecSize += field->type->getMinSize();
                         }
-                        fields.append(nullptr);
-                        outRecType = new RtlRecordTypeInfo(type_record, minRecSize, fields.getArray(0));
-                        outmeta.setown(new CDynamicOutputMetaData(*outRecType));
                     }
                     else
+                    {
+                        // Copy all fields from the source record
+                        unsigned numFields = inrec.getNumFields();
+                        for (unsigned idx = 0; idx < numFields;idx++)
+                        {
+                            const RtlFieldInfo *field = inrec.queryOriginalField(idx);
+                            if (field->type->getType() == type_filepos)
+                            {
+                                // See above - filepos field in source needs special treatment
+                                field = new RtlFieldStrInfo(field->name, field->xpath, field->type->queryChildType());
+                                deleteFields.append(field);
+                            }
+                            fields.append(field);
+                            minRecSize += field->type->getMinSize();
+                        }
                         outmeta.set(diskmeta);
+                    }
+                    fields.append(nullptr);
+                    outRecType = new RtlRecordTypeInfo(type_record, minRecSize, fields.getArray(0));
+                    outmeta.setown(new CDynamicOutputMetaData(*outRecType));
                     helper.setown(createIndexReadArg(keyName, diskmeta.getLink(), outmeta.getLink(), count, 0, (uint64_t) -1));
                     helper->setCallback(&callback);
                     if (filters.ordinality())
@@ -256,6 +281,10 @@ int main(int argc, const char **argv)
                 }
                 if (outRecType)
                     outRecType->doDelete();
+                ForEachItemIn(idx, deleteFields)
+                {
+                    delete deleteFields.item(idx);
+                }
             }
         }
         catch (IException *E)

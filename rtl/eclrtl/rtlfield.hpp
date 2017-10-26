@@ -140,6 +140,7 @@ struct ECLRTL_API RtlFileposTypeInfo : public RtlTypeInfoBase
     {}
     virtual void doDelete() const final override { delete this; }
 
+    virtual size32_t getMinSize() const override;
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const override;
     virtual size32_t buildInt(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, __int64 val) const override;
     virtual size32_t buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const override;
