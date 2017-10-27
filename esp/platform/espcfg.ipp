@@ -101,12 +101,35 @@ struct esp_option
     { }
 };
 
+class CSessionCleaner : public Thread
+{
+    bool       stopping = false;;
+    Semaphore  sem;
+
+    StringAttr espSessionSDSPath;
+    int        checkSessionTimeoutSeconds; //the duration to clean timed out sesssions
+
+public:
+    CSessionCleaner(const char* _espSessionSDSPath, int _checkSessionTimeoutSeconds) : Thread("CSessionCleaner"),
+        espSessionSDSPath(_espSessionSDSPath), checkSessionTimeoutSeconds(_checkSessionTimeoutSeconds) { }
+
+    virtual ~CSessionCleaner()
+    {
+        stopping = true;
+        sem.signal();
+        join();
+    }
+
+    virtual int run();
+};
+
 class CEspConfig : public CInterface, implements IInterface 
 {
 private:
     Owned<IPropertyTree> m_envpt;
     Owned<IPropertyTree> m_cfg;
     Owned<IProperties> m_inputs;
+    Owned<CSessionCleaner> m_sessionCleaner;
 
     StringBuffer m_process;
     StringBuffer m_computer;
