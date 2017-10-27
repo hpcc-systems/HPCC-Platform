@@ -423,7 +423,7 @@ void WsWuInfo::doGetTimers(IArrayOf<IEspECLTimer>& timers)
     WuScopeFilter filter(timerFilterText);
     Owned<IConstWUScopeIterator> it = &cw->getScopeIterator(filter);
     ForEach(*it)
-        it->playProperties(PTstatistics, visitor);
+        it->playProperties(visitor);
 
     visitor.addSummary();
 }
@@ -474,7 +474,7 @@ unsigned WsWuInfo::getTimerCount()
         WuScopeFilter filter(timerFilterText);
         Owned<IConstWUScopeIterator> it = &cw->getScopeIterator(filter);
         ForEach(*it)
-            it->playProperties(PTstatistics, visitor);
+            it->playProperties(visitor);
     }
     catch(IException* e)
     {
@@ -867,7 +867,7 @@ void WsWuInfo::getGraphTimingData(IArrayOf<IConstECLTimingData> &timingData)
     WuScopeFilter filter("stype[subgraph],stat[TimeElapsed],nested[0]");
     Owned<IConstWUScopeIterator> it = &cw->getScopeIterator(filter);
     ForEach(*it)
-        it->playProperties(PTstatistics, visitor);
+        it->playProperties(visitor);
 }
 
 
@@ -1639,7 +1639,7 @@ void WsWuInfo::getStats(const WuScopeFilter & filter, const StatisticsFilter& st
     FilteredStatisticsVisitor visitor(*this, createDescriptions, statistics, statsFilter);
     Owned<IConstWUScopeIterator> it = &cw->getScopeIterator(filter);
     ForEach(*it)
-        it->playProperties(PTstatistics, visitor);
+        it->playProperties(visitor);
 }
 
 bool WsWuInfo::getFileSize(const char* fileName, const char* IPAddress, offset_t& fileSize)

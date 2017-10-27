@@ -2654,7 +2654,7 @@ static void dumpWorkunitAttr(IConstWorkUnit * workunit, const WuScopeFilter & fi
     ForEach(*iter)
     {
         printf("<scope scope='%s' type='%s'>\n", iter->queryScope(), queryScopeTypeName(iter->getScopeType()));
-        iter->playProperties(PTall, dumper);
+        iter->playProperties(dumper);
         printf("</scope>\n");
     }
 

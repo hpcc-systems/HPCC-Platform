@@ -1125,8 +1125,8 @@ interface IConstWUScopeIterator : extends IScmIterator
     virtual StatisticScopeType getScopeType() const = 0;
 
     //Provide information about all stats, attributes and hints
-    //MORE: should allow a mask to indicate which information is reported
-    virtual void playProperties(WuPropertyTypes whichProperties, IWuScopeVisitor & visitor) = 0;
+    //whichProperties can be used to further restrict the output as a subset of the scope filter.
+    virtual void playProperties(IWuScopeVisitor & visitor, WuPropertyTypes whichProperties = PTall) = 0;
 
     //Return true if the stat is present, if found and update the value - queryStat() wrapper is generally easier to use.
     virtual bool getStat(StatisticKind kind, unsigned __int64 & value) const = 0;

@@ -2020,7 +2020,7 @@ void EclCompileInstance::logStats(bool logTimings)
         StatsLogger logger;
         Owned<IConstWUScopeIterator> scopes = &wu->getScopeIterator(filter);
         ForEach(*scopes)
-            scopes->playProperties(PTall, logger);
+            scopes->playProperties(logger);
     }
 }
 
