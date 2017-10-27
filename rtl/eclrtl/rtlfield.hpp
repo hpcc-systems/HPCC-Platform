@@ -138,6 +138,9 @@ struct ECLRTL_API RtlFileposTypeInfo : public RtlTypeInfoBase
     constexpr inline RtlFileposTypeInfo(unsigned _fieldType, unsigned _length, const RtlTypeInfo *_child, IThorIndexCallback *_callback)
     : RtlTypeInfoBase(_fieldType, _length), child(_child), callback(_callback)
     {}
+    constexpr inline RtlFileposTypeInfo(unsigned _fieldType, unsigned _length, const RtlTypeInfo *_child)
+    : RtlTypeInfoBase(_fieldType, _length), child(_child), callback(nullptr)
+    {}
     virtual void doDelete() const final override { delete this; }
 
     virtual size32_t getMinSize() const override;

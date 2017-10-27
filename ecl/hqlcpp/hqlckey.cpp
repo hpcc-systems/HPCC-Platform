@@ -1259,7 +1259,7 @@ void KeyedJoinInfo::splitFilter(IHqlExpression * filter, SharedHqlExpr & keyTarg
 
 void HqlCppTranslator::buildKeyedJoinExtra(ActivityInstance & instance, IHqlExpression * expr, KeyedJoinInfo * info)
 {
-    //virtual IOutputMetaData * queryDiskRecordSize() = 0;  // Excluding fpos and sequence
+    //virtual IOutputMetaData * queryDiskRecordSize() = 0;
     if (info->isFullJoin())
         buildMetaMember(instance.classctx, info->queryRawRhs(), false, "queryDiskRecordSize");
 
@@ -1316,8 +1316,18 @@ void HqlCppTranslator::buildKeyJoinIndexReadHelper(ActivityInstance & instance, 
     //virtual const char * getIndexFileName() = 0;
     buildFilenameFunction(instance, instance.startctx, "getIndexFileName", info->queryKeyFilename(), hasDynamicFilename(info->queryKey()));
 
-    //virtual IOutputMetaData * queryIndexRecordSize() = 0; //Excluding fpos and sequence
-    buildMetaMember(instance.classctx, info->queryRawKey(), false, "queryIndexRecordSize");
+    //virtual IOutputMetaData * queryIndexRecordSize() = 0;
+    LinkedHqlExpr indexExpr = info->queryOriginalKey();
+    OwnedHqlExpr serializedRecord;
+    if (indexExpr->hasAttribute(_payload_Atom))
+        serializedRecord.setown(notePayloadFields(indexExpr->queryRecord(), numPayloadFields(indexExpr)));
+    else
+        serializedRecord.set(indexExpr->queryRecord());
+    serializedRecord.setown(getSerializedForm(serializedRecord, diskAtom));
+
+    bool hasFilePosition = getBoolAttribute(indexExpr, filepositionAtom, true);
+    serializedRecord.setown(createMetadataIndexRecord(serializedRecord, hasFilePosition));
+    buildMetaMember(instance.classctx, serializedRecord, false, "queryIndexRecordSize");
 
     //virtual void createSegmentMonitors(IIndexReadContext *ctx, const void *lhs) = 0;
     info->buildMonitors(instance.startctx);

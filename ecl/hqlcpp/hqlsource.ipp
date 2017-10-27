@@ -274,5 +274,6 @@ public:
 //---------------------------------------------------------------------------
 
 unsigned getProjectCount(IHqlExpression * expr);
+IHqlExpression * createMetadataIndexRecord(IHqlExpression * record, bool hasInternalFilePosition);
 
 #endif

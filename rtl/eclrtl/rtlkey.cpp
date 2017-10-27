@@ -810,7 +810,7 @@ public:
     CNewVarOffsetKeySegmentMonitor(IKeySegmentMonitor * _base, unsigned _offset, unsigned _fieldIdx)
     : CIndirectKeySegmentMonitor(_base, 0), fieldIdx(_fieldIdx)
     {
-        assert(_offset = 0);   // We no longer use partial size for offset
+        assert(_offset == 0);   // We no longer use partial size for offset
     }
 
     CNewVarOffsetKeySegmentMonitor(MemoryBuffer &mb)

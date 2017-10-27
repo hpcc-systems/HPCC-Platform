@@ -1693,7 +1693,7 @@ struct IHThorKeyedJoinBaseArg : public IHThorArg
 
     // Inside the indexRead remote activity:
     virtual const char * getIndexFileName() = 0;
-    virtual IOutputMetaData * queryIndexRecordSize() = 0; //Excluding fpos and sequence
+    virtual IOutputMetaData * queryIndexRecordSize() = 0;
     virtual void createSegmentMonitors(IIndexReadContext *ctx, const void *lhs) = 0;
     virtual bool indexReadMatch(const void * indexRow, const void * inputRow, unsigned __int64 keyedFpos, IBlobProvider * blobs) = 0;
     virtual unsigned getJoinLimit() = 0;                                        // if a key joins more than this limit no records are output (0 = no limit)

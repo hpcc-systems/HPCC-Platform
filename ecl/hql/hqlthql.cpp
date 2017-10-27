@@ -3012,6 +3012,9 @@ StringBuffer &HqltHql::getTypeString(ITypeInfo * i, StringBuffer &s)
     case type_table:
 //  case type_groupedtable:
         break;
+    case type_filepos:
+        getTypeString(i->queryChildType(), s);
+        break;
     default:
         ITypeInfo * original = queryModifier(i, typemod_original);
         IHqlExpression * originalExpr = NULL;

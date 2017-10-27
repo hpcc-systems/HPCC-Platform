@@ -6474,7 +6474,7 @@ IHqlExpression *notePayloadFields(IHqlExpression *record, unsigned payloadCount)
             break;
         case no_field:
         case no_ifblock:
-            fields.replace(*appendOwnedOperand(cur, createAttribute(_payload_Atom)), idx);
+            fields.replace(*appendOwnedOperand(cur, createAttribute(_payload_Atom)), idx); // MORE - should we mark contained fields too?
             payloadCount--;
             break;
         }
@@ -9669,6 +9669,16 @@ void getFieldTypeInfo(FieldTypeInfoStruct &out, ITypeInfo *type)
         if (!type->isSigned())
             out.fieldType |= RFTMunsigned;
         break;
+    case type_keyedint:
+        out.className = "RtlKeyedIntTypeInfo";
+        if (!type->isSigned())
+            out.fieldType |= RFTMunsigned;
+        break;
+    case type_filepos:
+        out.className = "RtlFileposTypeInfo";
+        if (!type->isSigned())
+            out.fieldType |= RFTMunsigned;
+        break;
     case type_swapint:
         out.className = "RtlSwapIntTypeInfo";
         if (!type->isSigned())
@@ -9940,7 +9950,9 @@ const RtlTypeInfo *buildRtlType(IRtlFieldTypeDeserializer &deserializer, ITypeIn
         }
     case type_dictionary:
         return nullptr;  // MORE - does this leak?
+    case type_filepos:
     case type_set:
+    case type_keyedint:
         info.childType = buildRtlType(deserializer, type->queryChildType());
         break;
     }
