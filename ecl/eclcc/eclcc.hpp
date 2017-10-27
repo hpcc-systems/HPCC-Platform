@@ -85,6 +85,7 @@ const char * const helpText[] = {
     "!   -Dname=value  Override the definition of a global attribute 'name'",
     "!   --deny=all    Disallow use of all named features not specifically allowed using --allow",
     "!   --deny=str    Disallow use of named feature",
+    "?!  --fastsyntax  Delay expanding functions when parsing.  May speed up processing for some queries",
     "    -help, --help Display this message",
     "    -help -v      Display verbose help message",
     "!   -internal     Run internal tests",
