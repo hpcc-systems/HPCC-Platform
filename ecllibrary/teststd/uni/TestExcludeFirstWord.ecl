@@ -36,7 +36,7 @@ EXPORT TestExcludeFirstWord := MODULE
     EXPORT Test16 := ASSERT(Uni.ExcludeFirstWord(U'Cambió las niñas')+U'!' = U'las niñas!');
     //Check action on a string containing Chinese characters.
     //Translation: "I am a computer"
-    EXPORT Test17 := ASSERT(Uni.ExcludeFirstWord(U'我是電腦')+U'!' = U'電腦!');
+    EXPORT Test17 := ASSERT(((integer)Uni.Version() < 50) OR Uni.ExcludeFirstWord(U'我是電腦')+U'!' = U'電腦!'); // Chinese dictionary based iterators added in ICU 50
     //Check action on a string containing Modern Greek characters.
     //Translation: "Do you come here often?"
     EXPORT Test18 := ASSERT(Uni.ExcludeFirstWord(U' Έρχεσαι συχνά εδώ; ')+U'!' = U'συχνά εδώ; !');

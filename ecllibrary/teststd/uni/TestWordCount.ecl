@@ -36,7 +36,7 @@ EXPORT TestWordCount := MODULE
     EXPORT Test16 := ASSERT(Uni.WordCount(U'El difunto cambió las niñas') = 5);
     //Check action on a string containing Chinese characters.
     //Translation: "I am a computer"
-    EXPORT Test17 := ASSERT(Uni.WordCount(U'我是電腦') = 2);
+    EXPORT Test17 := ASSERT(((integer)Uni.Version() < 50) OR Uni.WordCount(U'我是電腦') = 2); // Chinese dictionary based iterators added in ICU 50
     //Check action on a string containing Modern Greek characters.
     //Translation: "Do you come here often?"
     EXPORT Test18 := ASSERT(Uni.WordCount(U' Έρχεσαι συχνά εδώ; ') = 3);

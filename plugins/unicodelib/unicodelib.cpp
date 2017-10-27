@@ -87,6 +87,7 @@ static const char * EclDefinition =
 "  unicode UnicodeLocaleTranslate(const unicode text, unicode sear, unicode repl) :c,pure,entrypoint='ulUnicodeLocaleTranslate';\n"
 "  boolean UnicodeLocaleStartsWith(const unicode src, unicode pref, string form) :c,pure,entrypoint='ulUnicodeLocaleStartsWith';\n"
 "  boolean UnicodeLocaleEndsWith(const unicode src, const unicode suff, const string form) :c,pure,entrypoint='ulUnicodeLocaleEndsWith';\n"
+"  string UnicodeVersion():c,pure,entrypoint='ulUnicodeVersion';\n"
 "END;\n";
 
 static const char * compatibleVersions[] = {
@@ -1694,4 +1695,15 @@ UNICODELIB_API bool UNICODELIB_CALL ulUnicodeLocaleEndsWith(unsigned srcLen, UCh
         normalizationFormCheck(suf, form);
     }
     return endsWith(pro, suf);
+}
+
+UNICODELIB_API void UNICODELIB_CALL ulUnicodeVersion(unsigned & tgtLen, char * & tgt)
+{
+    char version[U_MAX_VERSION_STRING_LENGTH];
+    UVersionInfo versionInfo;
+    u_getVersion(versionInfo);
+    u_versionToString(versionInfo, version);
+    tgtLen = strlen(version);
+    tgt = (char *)CTXMALLOC(parentCtx, tgtLen);
+    memcpy(tgt, version, tgtLen);
 }

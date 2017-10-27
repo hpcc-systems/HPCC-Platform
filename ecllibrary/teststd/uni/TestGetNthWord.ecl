@@ -65,7 +65,7 @@ EXPORT TestGetNthWord := MODULE
     EXPORT Test42 := ASSERT(Uni.GetNthWord(U'El difunto cambió las niñas',5)+U'!' = U'niñas!');
     //Check action on a string containing Chinese characters
     //Translation: "I am a computer" --> "computer"
-    EXPORT Test43 := ASSERT(Uni.GetNthWord(U'我是電腦',2)+U'!' = U'電腦!');
+    EXPORT Test43 := ASSERT(((integer)Uni.Version() < 50) OR Uni.GetNthWord(U'我是電腦',2)+U'!' = U'電腦!'); // Chinese dictionary based iterators added in ICU 50
     //Check action on a string containing Modern Greek characters
     //Translation: "Do you come here often?" --> "often"
     EXPORT Test44 := ASSERT(Uni.GetNthWord(U' Έρχεσαι συχνά εδώ; ',2)+U'!' = U'συχνά!');
