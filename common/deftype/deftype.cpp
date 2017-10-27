@@ -1915,6 +1915,11 @@ static ITypeInfo * commonUpType(CHashedTypeInfo * candidate)
     return match;
 }
 
+extern DEFTYPE_API ITypeInfo *makeFilePosType(ITypeInfo *basetype)
+{
+    assertex(basetype);
+    return commonUpType(new CFilePosTypeInfo(basetype));
+}
 
 extern DEFTYPE_API ITypeInfo *makeDecimalType(unsigned digits, unsigned prec, bool isSigned)
 {

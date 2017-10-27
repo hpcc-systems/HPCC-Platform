@@ -3691,6 +3691,8 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer & instanceName, IHqlExpres
             if (checkXpathIsNonScalar(xpathName))
                 fieldFlags |= RFTMhasnonscalarxpath;
         }
+        if (field->hasAttribute(_payload_Atom))
+            fieldFlags |= RFTMispayloadfield;
 
         StringBuffer lowerName;
         lowerName.append(field->queryName()).toLowerCase();
@@ -3935,6 +3937,7 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
             arguments.append(",&").append(lookupHelperName.str());
             break;
         }
+    case type_filepos:
     case type_set:
         arguments.append(",&");
         childType = buildRtlType(arguments, type->queryChildType());
@@ -9941,6 +9944,7 @@ void HqlCppTranslator::buildRecordEcl(BuildCtx & subctx, IHqlExpression * record
 void HqlCppTranslator::buildFormatCrcFunction(BuildCtx & ctx, const char * name, IHqlExpression * dataset, IHqlExpression * expr, unsigned payloadDelta)
 {
     IHqlExpression * payload = expr ? expr->queryAttribute(_payload_Atom) : NULL;
+    // MORE - do we need to keep this consistent - if so will have to trim out the originals and the filepos
     OwnedHqlExpr exprToCrc = getSerializedForm(dataset->queryRecord(), diskAtom);
 
     unsigned payloadSize = 1;

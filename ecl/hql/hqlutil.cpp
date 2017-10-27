@@ -9669,6 +9669,11 @@ void getFieldTypeInfo(FieldTypeInfoStruct &out, ITypeInfo *type)
         if (!type->isSigned())
             out.fieldType |= RFTMunsigned;
         break;
+    case type_filepos:
+        out.className = "RtlFileposTypeInfo";
+        if (!type->isSigned())
+            out.fieldType |= RFTMunsigned;
+        break;
     case type_swapint:
         out.className = "RtlSwapIntTypeInfo";
         if (!type->isSigned())
@@ -9940,6 +9945,7 @@ const RtlTypeInfo *buildRtlType(IRtlFieldTypeDeserializer &deserializer, ITypeIn
         }
     case type_dictionary:
         return nullptr;  // MORE - does this leak?
+    case type_filepos:
     case type_set:
         info.childType = buildRtlType(deserializer, type->queryChildType());
         break;
