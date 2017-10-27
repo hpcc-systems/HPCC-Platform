@@ -494,6 +494,11 @@ bool RtlIntTypeInfo::canExtend(char &fillChar) const
 
 //-------------------------------------------------------------------------------------------------------------------
 
+size32_t RtlFileposTypeInfo::getMinSize() const
+{
+    return 0;  // because they take up no space in the index record. Odd but this seems to be the cleanest way to handle
+}
+
 size32_t RtlFileposTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
 {
     throwUnexpected();  // This is only expected to be used for reading at present

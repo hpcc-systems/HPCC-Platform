@@ -1071,7 +1071,7 @@ private:
                 size_t sourceOffset = sourceRow.getOffset(matchField);
                 const byte *source = sourceRec + sourceOffset;
                 size_t copySize = sourceRow.getSize(matchField);
-                if (copySize == 0)  // Field is missing because of an ifblock - use default value
+                if (copySize == 0 && (match.matchType & match_inifblock))  // Field is missing because of an ifblock - use default value
                 {
                     offset = type->buildNull(builder, offset, field);
                 }
@@ -1256,6 +1256,7 @@ private:
         // This code COULD move into rtlfield.cpp?
         switch(destType->getType())
         {
+        case type_filepos:
         case type_boolean:
         case type_int:
         case type_swapint:
@@ -1441,7 +1442,7 @@ private:
                         }
                     }
                 }
-                else if (type->fieldType==sourceType->fieldType)
+                else if (type->fieldType==sourceType->fieldType && type->fieldType != type_filepos)
                 {
                     if (type->length==sourceType->length)
                     {
