@@ -74,7 +74,7 @@
     EXPORT Test42 := ASSERT(Uni.ExcludeNthWord(U'El difunto cambió las niñas',5)+U'!' = U'El difunto cambió las !');
     //Check action on a string containing Chinese characters.
     //Translation: "I am a computer" --> "I am"
-    EXPORT Test43 := ASSERT(Uni.ExcludeNthWord(U'我是電腦',2)+U'!' = U'我是!');
+    EXPORT Test43 := ASSERT(((integer)Uni.Version() < 50) OR Uni.ExcludeNthWord(U'我是電腦',2)+U'!' = U'我是!'); // Chinese dictionary based iterators added in ICU 50
     //Check action on a string containing Modern Greek characters.
     //Translation: "Do you come here often?" --> "come here often?"
     EXPORT Test44 := ASSERT(Uni.ExcludeNthWord(U' Έρχεσαι συχνά εδώ; ',1)+U'!' = U'συχνά εδώ; !');
