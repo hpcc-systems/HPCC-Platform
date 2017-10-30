@@ -187,7 +187,7 @@ static IConstEnvironment * openDaliEnvironment()
 {
     if (daliClientActive())
     {
-        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
         return factory->openEnvironment();
     }
     return NULL;

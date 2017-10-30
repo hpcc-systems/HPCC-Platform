@@ -924,21 +924,17 @@ void FileSprayer::beforeTransfer()
     throttleNicSpeed = options->getPropInt(ANthrottle, 0);
     if (throttleNicSpeed == 0 && !usePullOperation() && targets.ordinality() == 1 && sources.ordinality() > 1)
     {
-        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-        if (factory) {
-            Owned<IConstEnvironment> env = factory->openEnvironment();
-            if (env) {
-                StringBuffer ipText;
-                targets.item(0).filename.queryIP().getIpText(ipText);
-                Owned<IConstMachineInfo> machine = env->getMachineByAddress(ipText.str());
-                if (machine)
-                {
-                    if (machine->getOS() == MachineOsW2K)
-                    {
-                        throttleNicSpeed = machine->getNicSpeedMbitSec();
-                        LOG(MCdebugInfo, job, "Throttle target speed to %dMbit/sec", throttleNicSpeed);
-                    }
-                }
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
+        Owned<IConstEnvironment> env = factory->openEnvironment();
+        StringBuffer ipText;
+        targets.item(0).filename.queryIP().getIpText(ipText);
+        Owned<IConstMachineInfo> machine = env->getMachineByAddress(ipText.str());
+        if (machine)
+        {
+            if (machine->getOS() == MachineOsW2K)
+            {
+                throttleNicSpeed = machine->getNicSpeedMbitSec();
+                LOG(MCdebugInfo, job, "Throttle target speed to %dMbit/sec", throttleNicSpeed);
             }
         }
     }

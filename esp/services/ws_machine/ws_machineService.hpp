@@ -812,7 +812,6 @@ private:
     StringBuffer m_sTestStr2;
     bool m_useDefaultHPCCInit;
 
-    Owned<IEnvironmentFactory>  m_envFactory;
     Owned<IPropertyTree>        m_processFilters;
     Owned<IThreadPool>          m_threadPool;
     int                         m_threadPoolSize;

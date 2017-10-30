@@ -179,7 +179,6 @@ private:
     void getDefFile(IUserDescriptor* udesc, const char* FileName,StringBuffer& returnStr);
     void xsltTransformer(const char* xsltPath,StringBuffer& source,StringBuffer& returnStr);
     bool checkFileContent(IEspContext &context, IUserDescriptor* udesc, const char * logicalName, const char * cluster);
-    void getRoxieClusterConfig(char const * clusterType, char const * clusterName, char const * processName, StringBuffer& netAddress, int& port);
     bool checkRoxieQueryFilesOnDelete(IEspDFUArrayActionRequest &req, StringArray& roxieQueries);
     bool DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &req, IEspDFUArrayActionResponse &resp);
 

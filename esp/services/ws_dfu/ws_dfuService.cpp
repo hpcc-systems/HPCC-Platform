@@ -81,11 +81,8 @@ short days[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
 CThorNodeGroup* CThorNodeGroupCache::readNodeGroup(const char* _groupName)
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (!env)
-        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
-
     Owned<IPropertyTree> root = &env->getPTree();
     Owned<IPropertyTreeIterator> it= root->getElements("Software/ThorCluster");
     ForEach(*it)
@@ -4926,63 +4923,6 @@ bool CWsDfuEx::onEraseHistory(IEspContext &context, IEspEraseHistoryRequest &req
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
-}
-
-void CWsDfuEx::getRoxieClusterConfig(char const * clusterType, char const * clusterName, char const * processName, StringBuffer& netAddress, int& port)
-{
-#if 0
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-    Owned<IConstEnvironment> environment = factory->openEnvironment();
-    Owned<IPropertyTree> pRoot = &environment->getPTree();
-#else
-    CTpWrapper dummy;
-    Owned<IPropertyTree> pRoot = dummy.getEnvironment("");
-    if (!pRoot)
-        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO,"Failed to get environment information.");
-#endif
-
-    StringBuffer xpath;
-    xpath.appendf("Software/%s[@name='%s']", clusterType, clusterName);
-
-    IPropertyTree* pCluster = pRoot->queryPropTree( xpath.str() );
-    if (!pCluster)
-        throw MakeStringException(ECLWATCH_CLUSTER_NOT_IN_ENV_INFO, "'%s %s' is not defined!", clusterType, clusterName);
-
-    xpath.clear().append(processName);
-    xpath.append("@computer");
-    const char* computer = pCluster->queryProp(xpath.str());
-    if (!computer || strlen(computer) < 1)
-        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_INFO, "'%s %s: %s' is not defined!", clusterType, clusterName, processName);
-
-    xpath.clear().append(processName);
-    xpath.append("@port");
-    const char* portStr = pCluster->queryProp(xpath.str());
-    port = ROXIE_SERVER_PORT;
-    if (portStr && *portStr)
-    {
-        port = atoi(portStr);
-    }
-
-#if 0
-    Owned<IConstMachineInfo> pMachine = environment->getMachine(computer);
-    if (pMachine)
-    {
-        SCMStringBuffer scmNetAddress;
-        pMachine->getNetAddress(scmNetAddress);
-        netAddress = scmNetAddress.str();
-    }
-#else
-    xpath.clear().appendf("Hardware/Computer[@name=\"%s\"]", computer);
-    IPropertyTree* pMachine = pRoot->queryPropTree( xpath.str() );
-    if (pMachine)
-    {
-        const char* addr = pMachine->queryProp("@netAddress");
-        if (addr && *addr)
-            netAddress.append(addr);
-    }
-#endif
-
-    return;
 }
 
 //////////////////////HPCC Browser//////////////////////////

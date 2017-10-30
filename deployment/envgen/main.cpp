@@ -373,7 +373,7 @@ int main(int argc, char** argv)
       env.appendf("<" XML_HEADER ">\n<!-- Generated with envgen on ip %s -->\n", thisip.str());
       env.append(envXml);
       
-      Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+      Owned<IEnvironmentFactory> factory = getEnvironmentFactory(false);
       Owned<IConstEnvironment>  constEnv = factory->loadLocalEnvironment(env);
       validateEnv(constEnv);
 

@@ -273,7 +273,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
   StringBuffer envXML;
   toXML(pEnv, envXML);
 
-  Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+  Owned<IEnvironmentFactory> factory = getEnvironmentFactory(false);
   m_pEnvironment.setown(factory->loadLocalEnvironment(envXML));
   m_pConstEnvironment.set(m_pEnvironment);
 
