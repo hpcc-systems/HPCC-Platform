@@ -206,10 +206,9 @@ public:
             unsigned i = 1;
             for (;;)
             {
-                str.append(item(i).queryName());
+                str.append(item(i).queryName()).append('/');
                 if (++i >= ordinality())
                     break;
-                str.append('/');
             }
         }
         return str;

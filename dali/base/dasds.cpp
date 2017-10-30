@@ -689,6 +689,11 @@ public:
         const MemoryAttr &ma = subscriber->queryData();
         MemoryBuffer mb(ma.length(), ma.get());
         mb.read(xpath);
+        if (xpath.length() && ('/' != xpath.get()[xpath.length()-1]))
+        {
+            StringBuffer _xpath(xpath);
+            xpath.set(_xpath.append('/'));
+        }
         mb.read(sub);
         if (mb.remaining()) // remaining
             mb.read(sendValue);
@@ -8313,7 +8318,7 @@ public:
             {
                 if ('\0' == *head)
                     return subCommitExact; // absolute match
-                else if (!wild && '/' != *head) // e.g. change=/a/bc, subscriber=/a/b
+                else if (!wild && '/' != *(head-1)) // e.g. change=/a/bc, subscriber=/a/b
                     return subCommitNone;
                 return subCommitBelow; // e.g. change=/a/b/c, subscriber=/a/b
             }
@@ -8431,7 +8436,7 @@ public:
                         CBranchChange &childChange = changes.children.item(c);
                         PushPop pp(stack, *childChange.tree);
                         size32_t parentLength = xpath.length();
-                        xpath.append('/').append(childChange.tree->queryName());
+                        xpath.append(childChange.tree->queryName()).append('/');
                         CSubscriberArray _pruned;
                         scanAll(state, childChange, stack, _pruned);
                         ForEachItemIn(i, _pruned) subs.append(*LINK(&_pruned.item(i)));
@@ -8502,7 +8507,7 @@ public:
         {
             CBranchChange &childChanges = changes.children.item(c);
             size32_t parentLength = xpath.length();
-            xpath.append('/').append(childChanges.tree->queryName());
+            xpath.append(childChanges.tree->queryName()).append('/');
             CSubscriberArray pruned;
             scan(childChanges, stack, pruned);
             ForEachItemIn(i, pruned) subs.append(*LINK(&pruned.item(i)));
