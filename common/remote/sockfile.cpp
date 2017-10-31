@@ -5970,7 +5970,7 @@ public:
 
         MemoryBuffer cursorMb;
         if (requestTree->getPropBin("cursorBin", cursorMb))
-            cursorMb.setEndian(BIG_ENDIAN);
+            cursorMb.setEndian(__BIG_ENDIAN);
 
         Owned<IRemoteActivity> outputActivity;
         OpenFileInfo fileInfo;
@@ -6043,7 +6043,7 @@ public:
                 if (!eoi)
                 {
                     MemoryBuffer cursorMb;
-                    cursorMb.setEndian(BIG_ENDIAN);
+                    cursorMb.setEndian(__BIG_ENDIAN);
                     outputActivity->serializeCursor(cursorMb);
                     responseTree->setPropBin("cursorBin", cursorMb.length(), cursorMb.toByteArray());
                 }

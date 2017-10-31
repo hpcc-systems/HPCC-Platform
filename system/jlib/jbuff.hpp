@@ -251,7 +251,7 @@ private:
 
 // Utility class, to back patch a scalar into current position
 template <class CLASS>
-class jlib_decl DelayedMarker
+class DelayedMarker
 {
 protected:
     MemoryBuffer &mb;
@@ -274,7 +274,7 @@ public:
 };
 
 // Utility class, to back patch a size into current position
-class jlib_decl DelayedSizeMarker : private DelayedMarker<size32_t>
+class DelayedSizeMarker : private DelayedMarker<size32_t>
 {
     typedef DelayedMarker<size32_t> PARENT;
 public:
