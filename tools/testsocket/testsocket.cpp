@@ -281,7 +281,7 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
         }
 
         MemoryBuffer mb;
-        mb.setEndian(BIG_ENDIAN);
+        mb.setEndian(__BIG_ENDIAN);
         char *mem = (char *)mb.reserveTruncate(len+1);
         char * t = mem;
         size32_t sendlen = len;
