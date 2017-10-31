@@ -88,15 +88,17 @@ if(LIBMEMCACHEDCORE_LIBRARY STREQUAL "LIBMEMCACHEDCORE_LIBRARY-NOTFOUND"
         add_dependencies(libmemcached generate-libmemcached)
         add_dependencies(libmemcachedutil generate-libmemcached)
 
-        install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${CMAKE_BINARY_DIR}:${CMAKE_BINARY_DIR}/build-libmemcached/libmemcached/.libs\")")
-        install(PROGRAMS
-            ${CMAKE_BINARY_DIR}/build-libmemcached/libmemcached/.libs/libmemcached.so
-            ${CMAKE_BINARY_DIR}/build-libmemcached/libmemcached/.libs/libmemcached.so.11
-            ${CMAKE_BINARY_DIR}/build-libmemcached/libmemcached/.libs/libmemcached.so.11.0.0
-            ${CMAKE_BINARY_DIR}/build-libmemcached/libmemcached/.libs/libmemcachedutil.so
-            ${CMAKE_BINARY_DIR}/build-libmemcached/libmemcached/.libs/libmemcachedutil.so.2
-            ${CMAKE_BINARY_DIR}/build-libmemcached/libmemcached/.libs/libmemcachedutil.so.2.0.0
-            DESTINATION lib)
+        if(PLATFORM)
+            install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${CMAKE_BINARY_DIR}:${CMAKE_BINARY_DIR}/build-libmemcached/libmemcached/.libs\")")
+            install(PROGRAMS
+                ${CMAKE_BINARY_DIR}/build-libmemcached/libmemcached/.libs/libmemcached.so
+                ${CMAKE_BINARY_DIR}/build-libmemcached/libmemcached/.libs/libmemcached.so.11
+                ${CMAKE_BINARY_DIR}/build-libmemcached/libmemcached/.libs/libmemcached.so.11.0.0
+                ${CMAKE_BINARY_DIR}/build-libmemcached/libmemcached/.libs/libmemcachedutil.so
+                ${CMAKE_BINARY_DIR}/build-libmemcached/libmemcached/.libs/libmemcachedutil.so.2
+                ${CMAKE_BINARY_DIR}/build-libmemcached/libmemcached/.libs/libmemcachedutil.so.2.0.0
+                DESTINATION lib)
+        endif()
     endif()
 
     set(LIBMEMCACHEDCORE_LIBRARY $<TARGET_FILE:libmemcached>)
