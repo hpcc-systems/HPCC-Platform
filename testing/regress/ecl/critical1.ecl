@@ -53,7 +53,7 @@ processInput(dataset(rawRecord) inFile, string outFileName) := FUNCTION
     updateIds := OUTPUT(newIds,,newIdFileName);
     extendSuper := Std.File.AddSuperFile(idFileName, newIdFileName);
 
-    result := SEQUENTIAL(InitializeSuperFile, updateIds, extendSuper): CRITICAL('critical_test');
+    result := SEQUENTIAL(InitializeSuperFile, updateIds, extendSuper): CRITICAL('critical_test', LABEL('Special critical section'));
 
     RETURN result;
 END;

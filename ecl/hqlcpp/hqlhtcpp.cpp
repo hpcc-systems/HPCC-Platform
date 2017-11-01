@@ -7720,14 +7720,6 @@ void HqlCppTranslator::doBuildStmtSetResult(BuildCtx & ctx, IHqlExpression * exp
     else
         value.set(expr->queryChild(0));
 
-    if (matchesConstantValue(seq, ResultSequenceStored) || matchesConstantValue(seq, ResultSequencePersist))
-    {
-        StringBuffer text;
-        text.append("Create ");
-        getStoredDescription(text, seq, name, true);
-        graphLabel.set(text.str());
-    }
-
     if (insideChildQuery(ctx))
     {
         StringBuffer description;
@@ -7804,9 +7796,6 @@ void HqlCppTranslator::doBuildStmtSetResult(BuildCtx & ctx, IHqlExpression * exp
 
     if (cluster)
         popCluster(subctx);
-
-    if (matchesConstantValue(seq, ResultSequenceStored) || matchesConstantValue(seq, ResultSequencePersist))
-        graphLabel.clear();
 }
 
 static bool isFilePersist(IHqlExpression * expr)
@@ -18184,6 +18173,7 @@ void HqlCppTranslator::buildWorkflow(WorkflowArray & workflow)
         WorkflowItem & action = workflow.item(idx);
         HqlExprArray & exprs = action.queryExprs();
         unsigned wfid = action.queryWfid();
+        graphLabel.set(action.queryGraphLabel());
 
         optimizePersists(exprs);
         bool isEmpty = exprs.ordinality() == 0;

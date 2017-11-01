@@ -481,19 +481,21 @@ class WorkflowItem : public CInterface
 {
     friend class WorkflowTransformer;
 public:
-    WorkflowItem(unsigned _wfid, node_operator _workflowOp) : wfid(_wfid), workflowOp(_workflowOp) { }
+    WorkflowItem(unsigned _wfid, node_operator _workflowOp, const char * _label) : wfid(_wfid), workflowOp(_workflowOp), label(_label) { }
     WorkflowItem(IHqlExpression * _function);
 
     bool isFunction() const { return function != NULL; }
     IHqlExpression * getFunction() const;
     unsigned queryWfid() const { return wfid; }
     HqlExprArray & queryExprs() { return exprs; }
+    const char * queryGraphLabel() const { return label ? label.str() : nullptr; }
 
 private:
     LinkedHqlExpr function;
     HqlExprArray exprs;
     UnsignedArray dependencies;
     unsigned wfid;
+    StringBuffer label;
     node_operator workflowOp;
 };
 

@@ -234,6 +234,7 @@ IAtom * jobTempAtom;
 IAtom * jsonAtom;
 IAtom * keepAtom;
 IAtom * keyedAtom;
+IAtom * labelAtom;
 IAtom * labeledAtom;
 IAtom * languageAtom;
 IAtom * lastAtom;
@@ -692,6 +693,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(json);
     MAKEATOM(keep);
     MAKEATOM(keyed);
+    MAKEATOM(label);
     MAKEATOM(labeled);
     MAKEATOM(language);
     MAKEATOM(last);

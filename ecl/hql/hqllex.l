@@ -779,6 +779,7 @@ KEYPATCH            { RETURNSYM(KEYPATCH); }
 KEYUNICODE          { RETURNSYM(KEYUNICODE); }
 LABELED             { RETURNSYM(LABELED); }
 LABELLED            { RETURNSYM(LABELED); }
+LABEL               { RETURNSYM(LABEL); }
 LAST                { RETURNSYM(LAST); }
 LEFT                { RETURNSYM(LEFT); }
 LENGTH              { RETURNSYM(LENGTH); }
