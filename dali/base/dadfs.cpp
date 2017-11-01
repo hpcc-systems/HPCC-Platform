@@ -1249,7 +1249,7 @@ static bool scopePermissionsAvail = true;
 static SecAccessFlags getScopePermissions(const char *scopename,IUserDescriptor *user,unsigned auditflags)
 {  // scope must be normalized already
     SecAccessFlags perms = SecAccess_Full;
-    if (scopePermissionsAvail && scopename && *scopename && (*scopename != '.' || scopename[1])) {
+    if (scopePermissionsAvail && scopename && *scopename) {
         if (!user)
         {
 #ifdef NULL_DALIUSER_STACKTRACE
