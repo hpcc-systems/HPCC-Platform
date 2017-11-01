@@ -530,4 +530,7 @@ interface ILockInfoCollection : extends IInterface
 extern da_decl ILockInfoCollection *createLockInfoCollection();
 extern da_decl ILockInfoCollection *deserializeLockInfoCollection(MemoryBuffer &mb);
 
+extern da_decl void setPageCacheTimeoutMilliSeconds(unsigned timeoutSeconds);
+extern da_decl void setMaxPageCacheItems(unsigned _maxPageCacheItems);
+
 #endif

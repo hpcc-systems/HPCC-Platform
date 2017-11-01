@@ -22,6 +22,7 @@
 #include "ws_accessService.hpp"
 #include "exception_util.hpp"
 #include "dasess.hpp"
+#include "dautils.hpp"
 
 #include <set>
 
@@ -176,6 +177,12 @@ void Cws_accessEx::init(IPropertyTree *cfg, const char *process, const char *ser
         m_rawbasedns.append(*onedn.getLink());
     }
 
+    xpath.setf("Software/EspProcess[@name=\"%s\"]/@PageCacheTimeoutSeconds", process);
+    if (cfg->hasProp(xpath.str()))
+        setPageCacheTimeoutMilliSeconds(cfg->getPropInt(xpath.str()));
+    xpath.setf("Software/EspProcess[@name=\"%s\"]/@MaxPageCacheItems", process);
+    if (cfg->hasProp(xpath.str()))
+        setMaxPageCacheItems(cfg->getPropInt(xpath.str()));
 }
 
 CLdapSecManager* Cws_accessEx::queryLDAPSecurityManager(IEspContext &context)

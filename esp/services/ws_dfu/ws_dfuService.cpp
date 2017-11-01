@@ -147,7 +147,14 @@ void CWsDfuEx::init(IPropertyTree *cfg, const char *process, const char *service
     if (streq(disableUppercaseTranslation.str(), "true"))
         m_disableUppercaseTranslation = true;
 
-    xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/NodeGroupCacheMinutes", process, service);
+    xpath.setf("Software/EspProcess[@name=\"%s\"]/@PageCacheTimeoutSeconds", process);
+    if (cfg->hasProp(xpath.str()))
+        setPageCacheTimeoutMilliSeconds(cfg->getPropInt(xpath.str()));
+    xpath.setf("Software/EspProcess[@name=\"%s\"]/@MaxPageCacheItems", process);
+    if (cfg->hasProp(xpath.str()))
+        setMaxPageCacheItems(cfg->getPropInt(xpath.str()));
+
+    xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/NodeGroupCacheMinutes", process, service);
     int timeout = cfg->getPropInt(xpath.str(), -1);
     if (timeout > -1)
         nodeGroupCacheTimeout = (unsigned) timeout*60*1000;

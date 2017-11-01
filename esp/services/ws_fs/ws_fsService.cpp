@@ -127,7 +127,14 @@ void CFileSprayEx::init(IPropertyTree *cfg, const char *process, const char *ser
         }
     }
 
-    xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/MonitorQueueLabel", process, service);
+    xpath.setf("Software/EspProcess[@name=\"%s\"]/@PageCacheTimeoutSeconds", process);
+    if (cfg->hasProp(xpath.str()))
+        setPageCacheTimeoutMilliSeconds(cfg->getPropInt(xpath.str()));
+    xpath.setf("Software/EspProcess[@name=\"%s\"]/@MaxPageCacheItems", process);
+    if (cfg->hasProp(xpath.str()))
+        setMaxPageCacheItems(cfg->getPropInt(xpath.str()));
+
+    xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/MonitorQueueLabel", process, service);
     cfg->getProp(xpath.str(), m_MonitorQueueLabel);
 
     directories.set(cfg->queryPropTree("Software/Directories"));
