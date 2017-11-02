@@ -1737,60 +1737,68 @@ public:
     }
     void testGroups()
     {
-        SocketEndpointArray epa;
-        SocketEndpoint ep;
-        Owned<IGroup> grp;
-        ep.set("10.150.10.80");
-        epa.append(ep);
-        testGrp(epa);
-        ep.set("10.150.10.81");
-        epa.append(ep);
-        testGrp(epa);
-        ep.set("10.150.10.82");
-        epa.append(ep);
-        testGrp(epa);
-        ep.set("10.150.10.83:111");
-        epa.append(ep);
-        testGrp(epa);
-        ep.set("10.150.10.84:111");
-        epa.append(ep);
-        testGrp(epa);
-        ep.set("10.150.10.84:111");
-        epa.append(ep);
-        testGrp(epa);
-        ep.set("10.150.10.84:111");
-        epa.append(ep);
-        testGrp(epa);
-        ep.set("10.150.10.84:111");
-        epa.append(ep);
-        testGrp(epa);
-        ep.set("10.150.10.85:111");
-        epa.append(ep);
-        testGrp(epa);
-        ep.set("10.150.10.86:111");
-        epa.append(ep);
-        testGrp(epa);
-        ep.set("10.150.10.87");
-        epa.append(ep);
-        testGrp(epa);
-        ep.set("10.150.10.87");
-        epa.append(ep);
-        testGrp(epa);
-        ep.set("10.150.10.88");
-        epa.append(ep);
-        testGrp(epa);
-        ep.set("10.150.11.88");
-        epa.append(ep);
-        testGrp(epa);
-        ep.set("10.173.10.88");
-        epa.append(ep);
-        testGrp(epa);
-        ep.set("10.173.10.88:22222");
-        epa.append(ep);
-        testGrp(epa);
-        ep.set("192.168.10.88");
-        epa.append(ep);
-        testGrp(epa);
+        try
+        {
+            SocketEndpointArray epa;
+            SocketEndpoint ep;
+            Owned<IGroup> grp;
+            ep.set("10.150.10.80");
+            epa.append(ep);
+            testGrp(epa);
+            ep.set("10.150.10.81");
+            epa.append(ep);
+            testGrp(epa);
+            ep.set("10.150.10.82");
+            epa.append(ep);
+            testGrp(epa);
+            ep.set("10.150.10.83:111");
+            epa.append(ep);
+            testGrp(epa);
+            ep.set("10.150.10.84:111");
+            epa.append(ep);
+            testGrp(epa);
+            ep.set("10.150.10.84:111");
+            epa.append(ep);
+            testGrp(epa);
+            ep.set("10.150.10.84:111");
+            epa.append(ep);
+            testGrp(epa);
+            ep.set("10.150.10.84:111");
+            epa.append(ep);
+            testGrp(epa);
+            ep.set("10.150.10.85:111");
+            epa.append(ep);
+            testGrp(epa);
+            ep.set("10.150.10.86:111");
+            epa.append(ep);
+            testGrp(epa);
+            ep.set("10.150.10.87");
+            epa.append(ep);
+            testGrp(epa);
+            ep.set("10.150.10.87");
+            epa.append(ep);
+            testGrp(epa);
+            ep.set("10.150.10.88");
+            epa.append(ep);
+            testGrp(epa);
+            ep.set("10.150.11.88");
+            epa.append(ep);
+            testGrp(epa);
+            ep.set("10.173.10.88");
+            epa.append(ep);
+            testGrp(epa);
+            ep.set("10.173.10.88:22222");
+            epa.append(ep);
+            testGrp(epa);
+            ep.set("192.168.10.88");
+            epa.append(ep);
+            testGrp(epa);
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, "testGrps failure");
+            throw;
+        }
     }
 
     void testDFSDel()
@@ -1872,38 +1880,46 @@ public:
     {
         Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user); // disabled, auto-commit
 
-        if (dir.exists("regress::rename::other1",user,false,false))
-            ASSERT(dir.removeEntry("regress::rename::other1", user) && "Can't remove 'regress::rename::other1'");
-        if (dir.exists("regress::rename::other2",user,false,false))
-            ASSERT(dir.removeEntry("regress::rename::other2", user) && "Can't remove 'regress::rename::other2'");
+        try
+        {
+            if (dir.exists("regress::rename::other1",user,false,false))
+                ASSERT(dir.removeEntry("regress::rename::other1", user) && "Can't remove 'regress::rename::other1'");
+            if (dir.exists("regress::rename::other2",user,false,false))
+                ASSERT(dir.removeEntry("regress::rename::other2", user) && "Can't remove 'regress::rename::other2'");
 
-        setupDFS(logctx, "rename");
+            setupDFS(logctx, "rename");
 
-        try {
-            logctx.CTXLOG("Renaming 'regress::rename::sub1 to 'sub2' with auto-commit, should fail");
-            dir.renamePhysical("regress::rename::sub1", "regress::rename::sub2", user, transaction);
-            ASSERT(0 && "Renamed to existing file should have failed!");
-            return;
-        } catch (IException *e) {
-            // Expecting exception
-            e->Release();
+            try {
+                logctx.CTXLOG("Renaming 'regress::rename::sub1 to 'sub2' with auto-commit, should fail");
+                dir.renamePhysical("regress::rename::sub1", "regress::rename::sub2", user, transaction);
+                ASSERT(0 && "Renamed to existing file should have failed!");
+                return;
+            } catch (IException *e) {
+                // Expecting exception
+                e->Release();
+            }
+
+            logctx.CTXLOG("Renaming 'regress::rename::sub1 to 'other1' with auto-commit");
+            dir.renamePhysical("regress::rename::sub1", "regress::rename::other1", user, transaction);
+            ASSERT(dir.exists("regress::rename::other1", user, true, false) && "Renamed to other failed");
+
+            logctx.CTXLOG("Renaming 'regress::rename::sub2 to 'other2' and rollback");
+            transaction->start();
+            dir.renamePhysical("regress::rename::sub2", "regress::rename::other2", user, transaction);
+            transaction->rollback();
+            ASSERT(!dir.exists("regress::rename::other2", user, true, false) && "Renamed to other2 when it shouldn't");
+
+            logctx.CTXLOG("Renaming 'regress::rename::sub2 to 'other2' and commit");
+            transaction->start();
+            dir.renamePhysical("regress::rename::sub2", "regress::rename::other2", user, transaction);
+            transaction->commit();
+            ASSERT(dir.exists("regress::rename::other2", user, true, false) && "Renamed to other failed");
         }
-
-        logctx.CTXLOG("Renaming 'regress::rename::sub1 to 'other1' with auto-commit");
-        dir.renamePhysical("regress::rename::sub1", "regress::rename::other1", user, transaction);
-        ASSERT(dir.exists("regress::rename::other1", user, true, false) && "Renamed to other failed");
-
-        logctx.CTXLOG("Renaming 'regress::rename::sub2 to 'other2' and rollback");
-        transaction->start();
-        dir.renamePhysical("regress::rename::sub2", "regress::rename::other2", user, transaction);
-        transaction->rollback();
-        ASSERT(!dir.exists("regress::rename::other2", user, true, false) && "Renamed to other2 when it shouldn't");
-
-        logctx.CTXLOG("Renaming 'regress::rename::sub2 to 'other2' and commit");
-        transaction->start();
-        dir.renamePhysical("regress::rename::sub2", "regress::rename::other2", user, transaction);
-        transaction->commit();
-        ASSERT(dir.exists("regress::rename::other2", user, true, false) && "Renamed to other failed");
+        catch (IException *e)
+        {
+            EXCLOG(e, "testDFSRename failure");
+            throw;
+        }
 
         try {
             logctx.CTXLOG("Renaming 'regress::rename::sub3 to 'sub3' with auto-commit, should fail");
@@ -1915,10 +1931,20 @@ public:
             e->Release();
         }
 
-        // To make sure renamed files are cleaned properly
-        printf("Renaming 'regress::rename::other2 to 'sub2' on auto-commit\n");
-        dir.renamePhysical("regress::rename::other2", "regress::rename::sub2", user, transaction);
-        ASSERT(dir.exists("regress::rename::sub2", user, true, false) && "Renamed from other2 failed");
+        try
+        {
+            // To make sure renamed files are cleaned properly
+            printf("Renaming 'regress::rename::other2 to 'sub2' on auto-commit\n");
+            dir.renamePhysical("regress::rename::other2", "regress::rename::sub2", user, transaction);
+            ASSERT(dir.exists("regress::rename::sub2", user, true, false) && "Renamed from other2 failed");
+
+            transaction.clear();
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, "testDFSRename(2) failure");
+            throw;
+        }
     }
 
     void testDFSClearAdd()
