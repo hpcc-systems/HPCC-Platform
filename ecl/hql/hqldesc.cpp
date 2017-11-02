@@ -94,6 +94,103 @@ static void setNonZeroPropInt(IPropertyTree * tree, const char * path, int value
         tree->setPropInt(path, value);
 }
 
+static void expandRecordSymbolsMeta(IPropertyTree *, IHqlExpression *);
+
+void expandType(IPropertyTree * def, ITypeInfo * type)
+{
+    type_t tc = type->getTypeCode();
+    switch (tc)
+    {
+        case type_record:
+        {
+            def->setProp("@type", "record");
+            ITypeInfo * original = queryModifier(type, typemod_original);
+            if (original)
+            {
+                IHqlExpression * expr = (IHqlExpression *)original->queryModifierExtra();
+                setFullNameProp(def, "@fullname", expr);
+                def->setProp("@name", str(expr->queryId()));
+
+            }
+            else
+            {
+                def->setPropBool("@unnamed", true);
+                IHqlExpression * record = queryExpression(type);
+                expandRecordSymbolsMeta(def, record);
+            }
+            break;
+        }
+        case type_scope:
+        {
+            IHqlExpression * original = queryExpression(type);
+            if (original->hasAttribute(interfaceAtom))
+            {
+                def->setProp("@type", "interface");
+            }
+            else
+            {
+                def->setProp("@type", "module");
+            }
+            setFullNameProp(def, "@fullname", original);
+            def->setProp("@name", str(original->queryId()));
+            break;
+        }
+        case type_table:
+        case type_groupedtable:
+        case type_dictionary:
+        {
+            def->setProp("@type", type->queryTypeName());
+            IPropertyTree * childtype = def->addPropTree("Type");
+            expandType(childtype, type->queryChildType()->queryChildType());
+            break;
+        }
+        case type_function:
+        {
+            IHqlExpression * params = (IHqlExpression * )((IFunctionTypeExtra *)type->queryModifierExtra())->queryParameters();
+            IPropertyTree * ptree = def->addPropTree("Params");
+            ForEachChild(i, params)
+            {
+                IPropertyTree * ptype = ptree->addPropTree("Type");
+                expandType(ptype, params->queryChild(i)->queryType());
+            }
+        }
+        case type_set:
+        case type_row:
+        case type_pattern:
+        case type_rule:
+        case type_token:
+        case type_transform:
+        case type_pointer:
+        case type_array:
+        {
+            def->setProp("@type", type->queryTypeName());
+            if (type->queryChildType())
+            {
+                IPropertyTree * childtype = def->addPropTree("Type");
+                expandType(childtype, type->queryChildType());
+            }
+            break;
+        }
+        case type_none:
+        case type_ifblock:
+        case type_alias:
+        case type_blob:
+            throwUnexpected();
+            break;
+        case type_class:
+            def->setProp("@type", "class");
+            def->setProp("@class", type->queryTypeName());
+            break;
+        default:
+        {
+            StringBuffer s;
+            type->getECLType(s);
+            def->setProp("@type", s.str());
+            break;
+        }
+    }
+}
+
 static void expandRecordSymbolsMeta(IPropertyTree * metaTree, IHqlExpression * record)
 {
     ForEachChild(i, record)
@@ -109,9 +206,8 @@ static void expandRecordSymbolsMeta(IPropertyTree * metaTree, IHqlExpression * r
             {
                 IPropertyTree * field = metaTree->addPropTree("Field");
                 field->setProp("@name", str(cur->queryId()));
-                StringBuffer ecltype;
-                cur->queryType()->getECLType(ecltype);
-                field->setProp("@type", ecltype);
+                IPropertyTree * typeTree = field->addPropTree("Type");
+                expandType(typeTree, cur->queryType());
                 break;
             }
         case no_ifblock:
@@ -139,11 +235,11 @@ void expandScopeMeta(IPropertyTree * meta, IHqlExpression * expr)
 
     if (expr->hasAttribute(interfaceAtom))
     {
-        meta->setProp("Type", "interface");
+        meta->setProp("@type", "interface");
     }
     else
     {
-        meta->setProp("Type", "module");
+        meta->setProp("@type", "module");
     }
 
     IPropertyTree* scopes = meta->addPropTree("Parents");
@@ -168,6 +264,8 @@ void expandParamMeta(IPropertyTree * meta, IHqlExpression * cur)
 {
     IPropertyTree * param = meta->addPropTree("Param");
     param->setProp("@name", str(cur->queryId()));
+    IPropertyTree * typeTree = param->addPropTree("Type");
+    expandType(typeTree, cur->queryType());
 }
 
 void expandFunctionMeta(IPropertyTree * meta, IHqlExpression * expr)
@@ -186,30 +284,34 @@ void expandFunctionMeta(IPropertyTree * meta, IHqlExpression * expr)
         {
             expandScopeMeta(meta, child);
         }
+        return;
     }
     else if (expr->isTransform())
     {
-        meta->setProp("Type", "transform");
-        StringBuffer ecltype;
-        ecltype.append(queryOriginalRecord(expr)->queryName());
-        meta->setProp("Return", ecltype);
+        meta->setProp("@type", "transform");
+        IPropertyTree * returnTree = meta->addPropTree("Type");
+        expandType(returnTree, expr->queryType()->queryChildType()->queryChildType());
+        return;
     }
     else if (isEmbedFunction(expr))
     {
-        meta->setProp("Type", "embed");
+        meta->setProp("@type", "embed");
     }
     else if (expr->isMacro())
     {
-        meta->setProp("Type", "macro");
+        meta->setProp("@type", "macro");
     }
     else if (expr->isType())
     {
-        meta->setProp("Type", "type");
+        meta->setProp("@type", "type");
     }
     else
     {
-        meta->setProp("Type", "function");
+        meta->setProp("@type", "function");
     }
+
+    IPropertyTree * returnTree = meta->addPropTree("Type");
+    expandType(returnTree, expr->queryType()->queryChildType());
 }
 
 void expandSymbolMeta(IPropertyTree * metaTree, IHqlExpression * expr, InheritType ihType)
@@ -269,12 +371,12 @@ void expandSymbolMeta(IPropertyTree * metaTree, IHqlExpression * expr, InheritTy
         }
         else if (expr->isRecord())
         {
-            def->setProp("Type", "record");
+            def->setProp("@type", "record");
             expandRecordSymbolsMeta(def, expr);
         }
         else if (expr->isType())
         {
-            def->setProp("Type", "type");
+            def->setProp("@type", "type");
         }
         else if (isImport(expr))
         {
@@ -282,7 +384,9 @@ void expandSymbolMeta(IPropertyTree * metaTree, IHqlExpression * expr, InheritTy
         }
         else
         {
-            def->setProp("Type", "attribute");
+            def->setProp("@type", "attribute");
+            IPropertyTree * returnTree = def->addPropTree("Type");
+            expandType(returnTree, expr->queryType());
         }
     }
 }
