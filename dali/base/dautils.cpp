@@ -41,6 +41,7 @@
 
 #define EXTERNAL_SCOPE      "file"
 #define FOREIGN_SCOPE       "foreign"
+#define SELF_SCOPE          "."
 #define SDS_DFS_ROOT        "Files" // followed by scope/name
 #define SDS_RELATIONSHIPS_ROOT  "Files/Relationships"
 #define SDS_CONNECT_TIMEOUT  (1000*60*60*2)     // better than infinite
@@ -402,7 +403,6 @@ void normalizeNodeName(const char *node, unsigned len, SocketEndpoint &ep, bool 
 void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool strict)
 {
     // NB: If !strict(default) allows spaces to exist either side of scopes (no idea why would want to permit that, but preserving for bwrd compat.)
-    StringBuffer str;
     StringBuffer nametmp;
     const char *ct = nullptr;
     bool wilddetected = false;
@@ -457,55 +457,76 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
         }
     }
     if (!*name)
-        name = ".::_blank_";
-    s=strstr(name,"::");
-    if (s)
     {
-        if (s==name) // JCS: meaning name leads with "::", would have thought should be treated as invalid
-            str.append('.');
-        else
-        {
-            normalizeScope(name, name, s-name, str, strict);
-            bool isForeign = 0 == stricmp(str.str(),FOREIGN_SCOPE);
-            if (isForeign) // normalize node
-            {
-                const char *s1 = s+2;
-                const char *ns1 = strstr(s1,"::");
-                if (ns1)
-                {
-                    normalizeNodeName(s1, ns1-s1, foreignep, strict);
-                    if (!foreignep.isNull())
-                    {
-                        foreignep.getUrlStr(str.append("::"));
-                        s = ns1;
-                        localpos = str.length()+2;
-                    }
-                }
-            }
-        }
-        for (;;)
-        {
-            s+=2;
-            const char *ns = strstr(s,"::");
-            if (!ns)
-                break;
-            str.append("::");
-            normalizeScope(name, s, ns-s, str, strict);
-            s = ns;
-        }
+        name = ".::_blank_";
+        tailpos = 3;
+        res.set(name);
     }
     else
     {
-        s = name;
-        str.append(".");
+        StringBuffer str;
+        s=strstr(name,"::");
+        if (s)
+        {
+            bool skipScope = false;
+            unsigned scopeStart = 0;
+            if (s==name) // JCS: meaning name leads with "::", would have thought should be treated as invalid
+                str.append('.');
+            else
+            {
+                normalizeScope(name, name, s-name, str, strict);
+                if (strieq(FOREIGN_SCOPE, str)) // normalize node
+                {
+                    const char *s1 = s+2;
+                    const char *ns1 = strstr(s1,"::");
+                    if (ns1)
+                    {
+                        normalizeNodeName(s1, ns1-s1, foreignep, strict);
+                        if (!foreignep.isNull())
+                        {
+                            foreignep.getUrlStr(str.append("::"));
+                            s = ns1;
+                            localpos = str.length()+2;
+                        }
+                    }
+                }
+                else if (streq(SELF_SCOPE, str) && selfScopeTranslation)
+                    skipScope = true;
+            }
+            for (;;)
+            {
+                s+=2;
+                const char *ns = strstr(s,"::");
+                if ((ns || str.length()>1) && skipScope && selfScopeTranslation)
+                {
+                    str.setLength(scopeStart);
+                    skipScope = false;
+                }
+                else
+                    str.append("::");
+                if (!ns)
+                    break;
+                scopeStart = str.length();
+                normalizeScope(name, s, ns-s, str, strict);
+                unsigned scopeLen = str.length()-scopeStart;
+                if ((1 == scopeLen) && (*SELF_SCOPE == str.charAt(str.length()-1)) && selfScopeTranslation)
+                    skipScope = true;
+                s = ns;
+            }
+        }
+        else
+        {
+            s = name;
+            str.append(".::");
+        }
+        tailpos = str.length();
+        normalizeScope(name, s, strlen(name)-(s-name), str, strict);
+        unsigned scopeLen = str.length()-tailpos;
+        if ((1 == scopeLen) && (*SELF_SCOPE == str.charAt(str.length()-1)))
+            throw MakeStringException(-1, "Logical filename cannot end with scope \".\"");
+        str.toLowerCase();
+        res.set(str);
     }
-    str.append("::");
-    tailpos = str.length();
-    if (strstr(s,"::")!=nullptr)
-        ERRLOG("Tail contains '::'!");
-    normalizeScope(name, s, strlen(name)-(s-name), str, strict);
-    str.toLowerCase();
-    res.set(str);
 }
 
 bool CDfsLogicalFileName::normalizeExternal(const char * name, StringAttr &res, bool strict)

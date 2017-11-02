@@ -103,6 +103,7 @@ void usage(const char *exe)
   printf("  dfscompratio <logicalname>      -- returns compression ratio of file\n");
   printf("  dfsscopes <mask>                -- lists logical scopes (mask = * for all)\n");
   printf("  cleanscopes                     -- remove empty scopes\n");
+  printf("  normalizefilenames [<logicalnamemask>] -- normalize existing logical filenames that match, e.g. .::.::scope::.::name -> scope::name\n");
   printf("  dfsreplication <clustermask> <logicalnamemask> <redundancy-count> [dryrun] -- set redundancy for files matching mask, on specified clusters only\n");
   printf("  holdlock <logicalfile> <read|write> -- hold a lock to the logical-file until a key is pressed");
   printf("\n");
@@ -1800,6 +1801,56 @@ static void cleanscopes(IUserDescriptor *user)
     }
 }
 
+static void normalizeFileNames(IUserDescriptor *user, const char *name)
+{
+    if (!name)
+        name = "*";
+    Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator(name, user, true, true);
+    ForEach(*iter)
+    {
+        IPropertyTree &attr = iter->query();
+        const char *lfn = attr.queryProp("@name");
+        CDfsLogicalFileName dlfn;
+        dlfn.enableSelfScopeTranslation(false);
+        dlfn.set(lfn);
+
+        Owned<IDistributedFile> dFile;
+        try
+        {
+            dFile.setown(queryDistributedFileDirectory().lookup(dlfn, user, true, false, false, nullptr, 30000)); // 30 sec timeout
+            if (!dFile)
+                WARNLOG("Could not find file lfn = %s", dlfn.get());
+        }
+        catch (IException *e)
+        {
+            if (SDSExcpt_LockTimeout != e->errorCode())
+                throw;
+            VStringBuffer msg("Connecting to '%s'", lfn);
+            EXCLOG(e, msg.str());
+            e->Release();
+        }
+        if (dFile)
+        {
+            CDfsLogicalFileName newDlfn;
+            newDlfn.set(lfn);
+            if (!streq(newDlfn.get(), dlfn.get()))
+            {
+                PROGLOG("File: '%s', renaming to: '%s'", dlfn.get(), newDlfn.get());
+                try
+                {
+                    dFile->rename(newDlfn.get(), user);
+                }
+                catch (IException *e)
+                {
+                    VStringBuffer msg("Failure to rename file '%s'", lfn);
+                    EXCLOG(e, msg.str());
+                    e->Release();
+                }
+            }
+        }
+    }
+}
+
 //=============================================================================
 
 static void listworkunits(const char *test, const char *min, const char *max)
@@ -3440,6 +3491,10 @@ int main(int argc, char* argv[])
                     else if (strieq(cmd,"cleanscopes")) {
                         CHECKPARAMS(0,0);
                         cleanscopes(userDesc);
+                    }
+                    else if (strieq(cmd,"normalizefilenames")) {
+                        CHECKPARAMS(0,1);
+                        normalizeFileNames(userDesc, np>0 ? params.item(1) : nullptr);
                     }
                     else if (strieq(cmd,"listworkunits")) {
                         CHECKPARAMS(0,3);
