@@ -111,7 +111,7 @@ interface IFinalRoxieInput : extends IInputBase
 
     inline void stopall()
     {
-        for (int i = 0; i < numConcreteOutputs(); i++)
+        for (unsigned i = 0; i < numConcreteOutputs(); i++)
             queryConcreteOutputStream(i)->stop();
     }
 };

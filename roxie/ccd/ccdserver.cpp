@@ -8449,10 +8449,10 @@ public:
                 anyThisGroup = false;
                 curQuantile = 0;
                 curIndex = 0;
-                curIndexExtra = (numDivisions-1) / 2;   // to ensure correctly rounded up
+                curIndexExtra = (unsigned)((numDivisions-1) / 2);   // to ensure correctly rounded up
                 prevIndex = curIndex-1; // Ensure it doesn't match
-                skipSize = (sorted.ordinality() / numDivisions);
-                skipExtra = (sorted.ordinality() % numDivisions);
+                skipSize = (unsigned)(sorted.ordinality() / numDivisions);
+                skipExtra = (unsigned)(sorted.ordinality() % numDivisions);
             }
 
             if (isQuantileIncluded(curQuantile))

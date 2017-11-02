@@ -2203,7 +2203,7 @@ static unsigned readOptValue(const char * start, const char * end, unsigned dft,
     if (start == end)
         return dft;
     char * next;
-    unsigned value = strtoll(start, &next, 10);
+    unsigned value = (unsigned)strtoll(start, &next, 10);
     if (next != end)
         throw makeStringExceptionV(0, "Unexpected characters in %s option '%s'", type, next);
     return value;
@@ -2215,7 +2215,7 @@ static unsigned readValue(const char * start, const char * type)
         throw makeStringExceptionV(0, "Expected a value for the %s option", type);
 
     char * next;
-    unsigned value = strtoll(start, &next, 10);
+    unsigned value = (unsigned)strtoll(start, &next, 10);
     if (*next != '\0')
         throw makeStringExceptionV(0, "Unexpected characters in %s option '%s'", type, next);
     return value;
@@ -5836,8 +5836,8 @@ bool modifyAndWriteWorkUnitXML(char const * wuid, StringBuffer & buf, StringBuff
                 break;
         }
         assertex('>' == *bufPtr);
-        size32_t l = (size32_t)strlen(wuid);
-        assertex(bufPtr-bufStart > l+2); // e.g. at least </W20171111-111111>
+        size_t l = strlen(wuid);
+        assertex((size_t)(bufPtr-bufStart) > l+2); // e.g. at least </W20171111-111111>
         bufPtr -= l+2; // skip back over </wuid
         assertex(0 == memcmp(bufPtr, "</", 2) );
         assertex(0 == memcmp(bufPtr+2, wuid, l));

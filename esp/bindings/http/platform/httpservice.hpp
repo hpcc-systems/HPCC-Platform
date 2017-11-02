@@ -69,7 +69,7 @@ protected:
 
     bool m_viewConfig;
     int m_MaxRequestEntityLength;
-    int lastSessionCleanUpTime = 0;
+    time_t lastSessionCleanUpTime = 0;
 
     int unsupported();
     EspHttpBinding* getBinding();

@@ -106,7 +106,7 @@ public:
     const char* getEnvironmentXPaths(int idx) const
     {
         assert(idx >= 0);
-        assert(m_strArrayEnvXPaths.length() > idx);
+        assert(m_strArrayEnvXPaths.length() > (unsigned)idx);
         return m_strArrayEnvXPaths.item(idx);
     }
 

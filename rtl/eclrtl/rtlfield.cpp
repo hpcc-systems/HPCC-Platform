@@ -3116,8 +3116,8 @@ size32_t RtlDatasetTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializer
         }
         else
         {
-            offset_t startOffset = offset + sizeof(size32_t);
-            offset_t nextOffset = startOffset;
+            size32_t startOffset = offset + sizeof(size32_t);
+            size32_t nextOffset = startOffset;
             offset_t endOffset = in.beginNested();
             while (in.finishedNested(endOffset))
                 nextOffset = child->deserialize(builder, in, nextOffset);

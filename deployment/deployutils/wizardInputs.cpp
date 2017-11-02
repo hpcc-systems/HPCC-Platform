@@ -34,7 +34,7 @@ CInstDetails::CInstDetails(StringBuffer compName, const StringArray &ipAssigned)
 {
     m_ipAssigned.clear();
 
-    for (int i = 0; i < ipAssigned.ordinality(); i++)
+    for (unsigned i = 0; i < ipAssigned.ordinality(); i++)
     {
         m_ipAssigned.append(ipAssigned.item(i));
     }
@@ -1282,7 +1282,7 @@ StringArray& CWizardInputs::getIpAddrMap(const char* buildSetName)
 {
     if (buildSetName && *buildSetName)
     {
-        for (int i = 0; i < m_arrBuildSetsWithAssignedIPs.ordinality(); i++)
+        for (unsigned i = 0; i < m_arrBuildSetsWithAssignedIPs.ordinality(); i++)
         {
             if (stricmp(buildSetName, m_arrBuildSetsWithAssignedIPs.item(i)) == 0)
             {
