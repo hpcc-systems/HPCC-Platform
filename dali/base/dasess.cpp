@@ -2010,8 +2010,8 @@ class CUserDescriptor: implements IUserDescriptor, public CInterface
 {
     StringAttr username;
     StringAttr passwordenc;
-    MemoryBuffer sessionToken;//ESP session token
-    MemoryBuffer signature;//user's digital Signature
+    unsigned sessionToken;//ESP session token
+    StringBuffer signature;//user's digital Signature
 public:
     IMPLEMENT_IINTERFACE;
     StringBuffer &getUserName(StringBuffer &buf)
@@ -2023,13 +2023,13 @@ public:
         decrypt(buf,passwordenc);
         return buf;
     }
-    const MemoryBuffer *querySessionToken()
+    unsigned querySessionToken()
     {
-        return &sessionToken;
+        return sessionToken;
     }
-    const MemoryBuffer *querySignature()
+    const char * querySignature()
     {
-        return &signature;
+        return signature.str();
     }
     virtual void set(const char *name,const char *password)
     {
@@ -2038,17 +2038,17 @@ public:
         encrypt(buf,password);
         passwordenc.set(buf.str());
     }
-    void set(const char *_name, const char *_password, const MemoryBuffer *_sessionToken, const MemoryBuffer *_signature)
+    void set(const char *_name, const char *_password, unsigned _sessionToken, const char  *_signature)
     {
         set(_name, _password);
-        sessionToken.clear().append(_sessionToken);
+        sessionToken = _sessionToken;
         signature.clear().append(_signature);
     }
     virtual void clear()
     {
         username.clear();
         passwordenc.clear();
-        sessionToken.clear();
+        sessionToken = 0;
         signature.clear();
     }
     void serialize(MemoryBuffer &mb)
@@ -2058,7 +2058,7 @@ public:
     void serializeExtra(MemoryBuffer &mb)
     {
         if (queryDaliServerVersion().compare("3.14") >= 0)
-            mb.append(sessionToken.length()).append(sessionToken).append(signature.length()).append(signature);
+            mb.append((unsigned)sizeof(sessionToken)).append(sessionToken).append(signature.length()).append(signature);
     }
     void deserialize(MemoryBuffer &mb)
     {
@@ -2071,13 +2071,13 @@ public:
             size32_t len = 0;
             mb.read(len);
             if (len)
-                sessionToken.append(len, mb.readDirect(len));
+                mb.readDirect(sessionToken);
 
             if (mb.remaining() > 0)
             {
                 mb.read(len);
                 if (len)
-                    signature.append(len, mb.readDirect(len));
+                    signature.append(len, (const char *)mb.readDirect(len));
             }
         }
     }
