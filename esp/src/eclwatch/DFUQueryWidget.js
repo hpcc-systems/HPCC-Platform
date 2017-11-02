@@ -109,6 +109,7 @@ define([
             this.desprayTargetSelect = registry.byId(this.id + "DesprayTargetSelect");
             this.desprayIPSelect = registry.byId(this.id + "DesprayTargetIPAddress");
             this.desprayTooltipDialog = registry.byId(this.id + "DesprayTooltipDialog");
+            this.desprayRelativePath = registry.byId(this.id + "DesprayRelativePath");
             this.addToSuperfileTargetName = registry.byId(this.id + "AddToSuperfileTargetName")
             this.createNewSuperRadio = registry.byId(this.id + "CreateNewSuperRadio");
             this.addToSuperfileTargetAppendRadio = registry.byId(this.id + "AddToSuperfileTargetAppend");
@@ -124,7 +125,9 @@ define([
                     context.desprayTargetSelect.init({
                         DropZones: true,
                         callback: function (value, item) {
+                            context.desprayTargetPath.reset();
                             if (context.desprayIPSelect) {
+                                context.desprayRelativePath.set("value", item.machine.Directory);
                                 context.desprayIPSelect.defaultValue = context.desprayIPSelect.get("value");
                                 context.desprayIPSelect.loadDropZoneMachines(value);
                                 targetRow = item;
@@ -139,9 +142,11 @@ define([
                     context.desprayIPSelect.init({
                         DropZoneMachines: true,
                         callback: function (value, row) {
+                            context.desprayTargetPath.reset();
                             var path = targetRow.machine.Directory.indexOf("\\");
                             targetRow.machine.Name = value
                             targetRow.machine.Netaddress = value
+                            context.desprayRelativePath.set("value", targetRow.machine.Directory + context.desprayTargetPath.get("value"));
                             if (context.desprayTargetPath) {
                                 context.desprayTargetPath._dropZoneTarget = targetRow;
                                 if (path > -1) {
@@ -155,6 +160,14 @@ define([
                                 }
                                 context.desprayTargetPath.loadDropZoneFolders(pathSepChar);
                             }
+                            context.desprayTargetPath.on("change", function() {
+                                context.desprayRelativePath.set("value", "");
+                                context.desprayRelativePath.set("value", targetRow.machine.Directory + context.desprayTargetPath.get("value"));
+                            });
+                            context.desprayTargetPath.on("keyup", function() {
+                                context.desprayRelativePath.set("value", "");
+                                context.desprayRelativePath.set("value", targetRow.machine.Directory + context.desprayTargetPath.get("value"));
+                            });
                         }
                     });
                 }
