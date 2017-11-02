@@ -40,8 +40,8 @@ private:
     StringBuffer    m_Peer;
     SecUserStatus   m_status;
     Owned<IProperties> m_parameters;
-    MemoryBuffer    m_sessionToken;
-    MemoryBuffer    m_signature;
+    unsigned        m_sessionToken;
+    StringBuffer    m_signature;
 
     CriticalSection crit;
 public:
@@ -214,24 +214,24 @@ public:
         return m_pw.str();
     }
 
-    void setSessionToken(const MemoryBuffer * const token)
+    void setSessionToken(unsigned token)
     {
-        m_sessionToken.clear().append(token);
+        m_sessionToken = token;
     }
 
-    const MemoryBuffer & getSessionToken()
+    unsigned getSessionToken()
     {
         return m_sessionToken;
     }
 
-    void setSignature(const MemoryBuffer * const signature)
+    void setSignature(const char * signature)
     {
         m_signature.clear().append(signature);
     }
 
-    const MemoryBuffer & getSignature()
+    const char * getSignature()
     {
-        return m_signature;
+        return m_signature.str();
     }
 
     virtual unsigned getUserID()
@@ -257,6 +257,8 @@ public:
         destination.setFqdn(getFqdn());
         destination.setPeer(getPeer());
         destination.credentials().setPassword(credentials().getPassword());
+        destination.credentials().setSignature(credentials().getSignature());
+        destination.credentials().setSessionToken(credentials().getSessionToken());
         CDateTime tmpTime;
         destination.setPasswordExpiration(getPasswordExpiration(tmpTime));
         destination.setStatus(getStatus());
