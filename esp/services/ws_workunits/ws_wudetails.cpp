@@ -320,7 +320,9 @@ void WUDetails::buildWuScopeFilter(IConstWUScopeFilter & requestScopeFilter, ICo
 {
     wuScopeFilter.addFilter(filter);
     wuScopeFilter.setDepth(0, requestScopeFilter.getMaxDepth());
-    wuScopeFilter.setMeasure(propertiesToReturn.getMeasure());
+    const char * measure = propertiesToReturn.getMeasure();
+    if (measure && *measure)
+        wuScopeFilter.setMeasure(measure);
     wuScopeFilter.setIncludeNesting(nestedFilter.getDepth());
     wuScopeFilter.setIncludeMatch(scopeOptions.getIncludeMatchedScopesInResults());
 
