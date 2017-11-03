@@ -1713,29 +1713,29 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
     HqlExprAssociation(activeActivityMarkerExpr),
     translator(_translator), classctx(ctx), startctx(ctx), createctx(ctx), nestedctx(ctx), onstartctx(ctx), numChildQueries(0)
 {
-    dataset.set(_dataset);
+    activityExpr.set(_dataset);
     kind = _kind;
 
-    node_operator op = dataset->getOperator();
-    isGrouped = isGroupedActivity(dataset);
-    isLocal = !isGrouped && isLocalActivity(dataset) && localChangesActivity(dataset) && !translator.targetHThor();
+    node_operator op = activityExpr->getOperator();
+    isGrouped = isGroupedActivity(activityExpr);
+    isLocal = !isGrouped && isLocalActivity(activityExpr) && localChangesActivity(activityExpr) && !translator.targetHThor();
     implementationClassName = NULL;
 
     activityArgName.set(_activityArgName);
 
-    IHqlExpression * outputDataset = dataset;
+    IHqlExpression * outputDataset = activityExpr;
     if (outputDataset->isAction() && (getNumChildTables(outputDataset) == 1))
-        outputDataset = dataset->queryChild(0);
+        outputDataset = activityExpr->queryChild(0);
 
     if (translator.targetRoxie())
     {
-        if ((op == no_output) && dataset->hasAttribute(_spill_Atom) && queryRealChild(dataset, 1))
-            outputDataset = dataset->queryChild(0);
+        if ((op == no_output) && activityExpr->hasAttribute(_spill_Atom) && queryRealChild(activityExpr, 1))
+            outputDataset = activityExpr->queryChild(0);
     }
     if ((op == no_setgraphresult) && translator.queryOptions().minimizeActivityClasses)
-        outputDataset = dataset->queryChild(0);
+        outputDataset = activityExpr->queryChild(0);
 
-    bool removeXpath = dataset->hasAttribute(noXpathAtom) || (op == no_output && translator.queryOptions().removeXpathFromOutput);
+    bool removeXpath = activityExpr->hasAttribute(noXpathAtom) || (op == no_output && translator.queryOptions().removeXpathFromOutput);
 
     LinkedHqlExpr record = queryRecord(outputDataset);
     if (removeXpath)
@@ -1750,7 +1750,7 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
     instanceName.set(s.clear().append("iAc").append(activityId).str());
     argsName.set(s.clear().append("oAc").append(activityId).str());
 
-    OwnedHqlExpr boundName = createVariable(instanceName, dataset->getType());
+    OwnedHqlExpr boundName = createVariable(instanceName, activityExpr->getType());
     isMember = false;
     instanceIsLocal = false;
     classStmt = NULL;
@@ -1778,7 +1778,7 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
     if (parentExtract)
     {
         GraphLocalisation localisation = parentExtract->queryLocalisation();
-        activityLocalisation = translator.isAlwaysCoLocal() ? GraphCoLocal : queryActivityLocalisation(dataset, optimizeParentAccess);
+        activityLocalisation = translator.isAlwaysCoLocal() ? GraphCoLocal : queryActivityLocalisation(activityExpr, optimizeParentAccess);
         if (activityLocalisation == GraphNoAccess)
             isNoAccess = true;
         else if (activityLocalisation == GraphNeverAccess)
@@ -1814,14 +1814,14 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
     {
         if (executedRemotely)
         {
-            GraphLocalisation localisation = queryActivityLocalisation(dataset, optimizeParentAccess);
+            GraphLocalisation localisation = queryActivityLocalisation(activityExpr, optimizeParentAccess);
             if ((kind == TAKsimpleaction) || (localisation == GraphNeverAccess) || (localisation == GraphNoAccess))
                 executedRemotely = false;
         }
     }
 
     if (!parentExtract && (translator.getTargetClusterType() == RoxieCluster))
-        executedRemotely = isNonLocal(dataset, false);
+        executedRemotely = isNonLocal(activityExpr, false);
 
     unsigned containerId = 0;
     if (containerActivity)
@@ -1830,7 +1830,7 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
         containerId = containerActivity->activityId;
     }
 
-    table = new ThorBoundActivity(dataset, boundName, activityId, containerId, translator.curSubGraphId(ctx), kind);
+    table = new ThorBoundActivity(activityExpr, boundName, activityId, containerId, translator.curSubGraphId(ctx), kind);
     table->setActive(this);
 }
 
@@ -2078,7 +2078,7 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
         graphNode->setProp("@label", graphLabel ? graphLabel.get() : label.str());
     }
 
-    IHqlExpression * cur = dataset;
+    IHqlExpression * cur = activityExpr;
     for (;;)
     {
         IHqlExpression * body = cur->queryBody(true);
@@ -2103,7 +2103,7 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
 #ifdef _DEBUG
 //    assertex(dataset->isAction() == isActivitySink(kind));
 #endif
-    if (dataset->isAction())
+    if (activityExpr->isAction())
     {
         if (alwaysExecuted)
             markSubGraphAsRoot(parentGraphNode);
@@ -2117,17 +2117,17 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
         addAttributeBool("coLocal", true);
     if (isNoAccess)
         addAttributeBool("noAccess", true);
-    if (dataset->hasAttribute(parallelAtom))
-        addAttributeInt("parallel", getIntValue(queryAttributeChild(dataset, parallelAtom, 0), -1));
-    if (hasOrderedAttribute(dataset))
-        addAttributeBool("ordered", isOrdered(dataset), true);
-    if (dataset->hasAttribute(algorithmAtom))
-        addAttribute("algorithm", queryAttributeChild(dataset, algorithmAtom, 0));
+    if (activityExpr->hasAttribute(parallelAtom))
+        addAttributeInt("parallel", getIntValue(queryAttributeChild(activityExpr, parallelAtom, 0), -1));
+    if (hasOrderedAttribute(activityExpr))
+        addAttributeBool("ordered", isOrdered(activityExpr), true);
+    if (activityExpr->hasAttribute(algorithmAtom))
+        addAttribute("algorithm", queryAttributeChild(activityExpr, algorithmAtom, 0));
 
     if (!options.obfuscateOutput)
     {
         if (graphEclText.length() == 0)
-            toECL(dataset->queryBody(), graphEclText, false, true);
+            toECL(activityExpr->queryBody(), graphEclText, false, true);
 
         elideString(graphEclText, MAX_GRAPH_ECL_LENGTH);
         if (options.showEclInGraph)
@@ -2138,47 +2138,47 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
 
         if (options.showSeqInGraph)
         {
-            IHqlExpression * selSeq = querySelSeq(dataset);
+            IHqlExpression * selSeq = querySelSeq(activityExpr);
             if (selSeq)
                 addAttributeInt("selSeq", selSeq->querySequenceExtra());
         }
 
-
-        if (options.showMetaInGraph)
+        if (options.showMetaInGraph || generateMetaFromInput)
         {
+            IHqlExpression * source = generateMetaFromInput ? activityExpr->queryChild(0) : activityExpr.get();
             StringBuffer s;
             if (translator.targetThor())
             {
-                IHqlExpression * distribution = queryDistribution(dataset);
+                IHqlExpression * distribution = queryDistribution(source);
                 if (distribution && distribution->queryName() != localAtom)
                     addAttribute("metaDistribution", getExprECL(distribution, s.clear(), true).str());
             }
 
-            IHqlExpression * grouping = queryGrouping(dataset);
+            IHqlExpression * grouping = queryGrouping(source);
             if (grouping)
                 addAttribute("metaGrouping", getExprECL(grouping, s.clear(), true).str());
 
             if (translator.targetThor())
             {
-                IHqlExpression * globalSortOrder = queryGlobalSortOrder(dataset);
+                IHqlExpression * globalSortOrder = queryGlobalSortOrder(source);
                 if (globalSortOrder)
                     addAttribute("metaGlobalSortOrder", getExprECL(globalSortOrder, s.clear(), true).str());
             }
 
-            IHqlExpression * localSortOrder = queryLocalUngroupedSortOrder(dataset);
+            IHqlExpression * localSortOrder = queryLocalUngroupedSortOrder(source);
             if (localSortOrder)
                 addAttribute("metaLocalSortOrder", getExprECL(localSortOrder, s.clear(), true).str());
 
-            IHqlExpression * groupSortOrder = queryGroupSortOrder(dataset);
+            IHqlExpression * groupSortOrder = queryGroupSortOrder(source);
             if (groupSortOrder)
                 addAttribute("metaGroupSortOrder", getExprECL(groupSortOrder, s.clear(), true).str());
         }
 
         if (options.noteRecordSizeInGraph)
         {
-            LinkedHqlExpr record = dataset->queryRecord();
-            if (!record && (getNumChildTables(dataset) == 1))
-                record.set(dataset->queryChild(0)->queryRecord());
+            LinkedHqlExpr record = activityExpr->queryRecord();
+            if (!record && (getNumChildTables(activityExpr) == 1))
+                record.set(activityExpr->queryChild(0)->queryRecord());
             if (record)
             {
                 //In Thor the serialized record is the interesting value, so include that in the graph
@@ -2190,15 +2190,15 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
             }
         }
 
-        if (options.showRecordCountInGraph && !dataset->isAction())
+        if (options.showRecordCountInGraph && !activityExpr->isAction())
         {
             StringBuffer text;
-            getRecordCountText(text, dataset);
+            getRecordCountText(text, activityExpr);
             addAttribute("predictedCount", text);
         }
     }
 
-    processAnnotations(dataset);
+    processAnnotations(activityExpr);
 }
 
 void ActivityInstance::moveDefinitionToHeader()
@@ -10246,6 +10246,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
 
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKindexwrite, expr, "IndexWrite");
+    instance->generateMetaFromInput = true;
     buildActivityFramework(instance, isRoot);
 
     buildInstancePrefix(instance);
@@ -10508,6 +10509,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
         else if (xmlAttr)
             instance->addBaseClass("IHThorXmlWriteExtra", true);
     }
+    instance->generateMetaFromInput = true;
 
     buildActivityFramework(instance, isRoot && !isInternalSeq(seq));
 
@@ -12291,7 +12293,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
             associateLocalJoinTransformFlags(func.ctx, "flags", dataset1, no_left, selSeq);
             associateLocalJoinTransformFlags(func.ctx, "flags", dataset2, no_right, selSeq);
 
-            buildTransformBody(func.ctx, transform, dataset1, dataset2, instance->dataset, selSeq);
+            buildTransformBody(func.ctx, transform, dataset1, dataset2, instance->activityExpr, selSeq);
             break;
         }
     case no_denormalizegroup:
@@ -12303,7 +12305,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
 
             func.ctx.addQuotedLiteral("const byte * * rows = (const byte * *) _rows;");
 
-            BoundRow * selfCursor = buildTransformCursors(func.ctx, transform, dataset1, dataset2, instance->dataset, selSeq);
+            BoundRow * selfCursor = buildTransformCursors(func.ctx, transform, dataset1, dataset2, instance->activityExpr, selSeq);
             bindRows(func.ctx, no_right, selSeq, expr->queryAttribute(_rowsid_Atom), dataset2, "numRows", "rows", options.mainRowsAreLinkCounted);
             doBuildTransformBody(func.ctx, transform, selfCursor);
             break;
@@ -12319,7 +12321,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         associateLocalJoinTransformFlags(func.ctx, "flags", dataset1, no_left, selSeq);
         associateLocalJoinTransformFlags(func.ctx, "flags", dataset2, no_right, selSeq);
 
-        buildTransformBody(func.ctx, onFail->queryChild(0), dataset1, dataset2, instance->dataset, selSeq);
+        buildTransformBody(func.ctx, onFail->queryChild(0), dataset1, dataset2, instance->activityExpr, selSeq);
     }
 
     // The collate function is used to work out which side to read from or if we have a potentially matching record
@@ -14649,7 +14651,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNormalize(BuildCtx & ctx, IHql
 
         IHqlExpression * counter = queryAttributeChild(expr, _countProject_Atom, 0);
         associateCounter(func.ctx, counter, "counter");
-        buildTransformBody(func.ctx, transform, dataset, NULL, instance->dataset, selSeq);
+        buildTransformBody(func.ctx, transform, dataset, NULL, instance->activityExpr, selSeq);
     }
 
     buildInstanceSuffix(instance);
@@ -14801,7 +14803,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNormalizeChild(BuildCtx & ctx,
 
         IHqlExpression * counter = queryAttributeChild(expr, _countProject_Atom, 0);
         associateCounter(func.ctx, counter, "counter");
-        buildTransformBody(func.ctx, transform, dataset, childDataset, instance->dataset, selSeq);
+        buildTransformBody(func.ctx, transform, dataset, childDataset, instance->activityExpr, selSeq);
     }
 
     buildInstanceSuffix(instance);
@@ -15149,7 +15151,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityProject(BuildCtx & ctx, IHqlEx
             buildReturnRecordSize(func.ctx, selfCursor);
         }
         else
-            buildTransformBody(func.ctx, transform, dataset, NULL, instance->dataset, selSeq);
+            buildTransformBody(func.ctx, transform, dataset, NULL, instance->activityExpr, selSeq);
     }
 
     if (filterConditions.ordinality() || transformContainsSkip(transform))
@@ -16723,7 +16725,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityQuantile(BuildCtx & ctx, IHqlE
         MemberFunction func(*this, instance->startctx, "virtual size32_t transform(ARowBuilder & crSelf, const void * _left, unsigned __int64 counter) override");
         if (counter)
             associateCounter(func.ctx, counter, "counter");
-        buildTransformBody(func.ctx, transform, dataset, NULL, instance->dataset, selSeq);
+        buildTransformBody(func.ctx, transform, dataset, NULL, instance->activityExpr, selSeq);
     }
 
     buildClearRecordMember(instance->createctx, "", dataset);
@@ -17032,7 +17034,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityTempTable(BuildCtx & ctx, IHql
     {
         MemberFunction func(*this, instance->startctx, "virtual size32_t getRow(ARowBuilder & crSelf, __uint64 row) override");
         ensureRowAllocated(func.ctx, "crSelf");
-        BoundRow * selfCursor = bindSelf(func.ctx, instance->dataset, "crSelf");
+        BoundRow * selfCursor = bindSelf(func.ctx, instance->activityExpr, "crSelf");
         IHqlExpression * self = selfCursor->querySelector();
         OwnedHqlExpr clearAction;
 
@@ -17184,7 +17186,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCreateRow(BuildCtx & ctx, IHql
 // Ignoring row argument, since engines will stop at numRows(), which is 1
         MemberFunction func(*this, instance->startctx, "virtual size32_t getRow(ARowBuilder & crSelf, __uint64 row) override");
         ensureRowAllocated(func.ctx, "crSelf");
-        BoundRow * selfCursor = bindSelf(func.ctx, instance->dataset, "crSelf");
+        BoundRow * selfCursor = bindSelf(func.ctx, instance->activityExpr, "crSelf");
         IHqlExpression * self = selfCursor->querySelector();
 
         if (isDataset)
@@ -17250,7 +17252,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityInlineTable(BuildCtx & ctx, IH
         associateSkipReturnMarker(func.ctx, queryZero(), NULL);
 
         ensureRowAllocated(func.ctx, "crSelf");
-        BoundRow * selfCursor = bindSelf(func.ctx, instance->dataset, "crSelf");
+        BoundRow * selfCursor = bindSelf(func.ctx, instance->activityExpr, "crSelf");
         IHqlExpression * self = selfCursor->querySelector();
 
         if (maxRows)
@@ -17302,10 +17304,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCountTransform(BuildCtx & ctx,
         // size32_t getRow()
         MemberFunction func(*this, instance->startctx, "virtual size32_t getRow(ARowBuilder & crSelf, __uint64 row) override");
         ensureRowAllocated(func.ctx, "crSelf");
-        BoundRow * selfCursor = bindSelf(func.ctx, instance->dataset, "crSelf");
+        BoundRow * selfCursor = bindSelf(func.ctx, instance->activityExpr, "crSelf");
         IHqlExpression * self = selfCursor->querySelector();
         associateCounter(func.ctx, counter, "(row+1)");
-        buildTransformBody(func.ctx, transform, NULL, NULL, instance->dataset, self);
+        buildTransformBody(func.ctx, transform, NULL, NULL, instance->activityExpr, self);
     }
 
     // unsigned numRows() - count is guaranteed by lexer
@@ -18640,7 +18642,7 @@ void HqlCppTranslator::buildActivityFramework(ActivityInstance * instance, bool 
     instance->createGraphNode(activeGraph->xgmml, alwaysExecuted);
     if (options.trackDuplicateActivities)
     {
-        IHqlExpression * search = instance->dataset;
+        IHqlExpression * search = instance->activityExpr;
         node_operator op = search->getOperator();
         if ((op != no_select) && (op != no_workunit_dataset))
         {
