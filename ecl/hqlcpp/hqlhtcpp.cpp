@@ -18813,13 +18813,8 @@ bool HqlCppTranslator::recordContainsIfBlock(IHqlExpression * record)
 
 void HqlCppTranslator::buildRowAccessors()
 {
-    HashIterator iter(recordMap);
-    ForEach(iter)
-    {
-        ColumnToOffsetMap * map = static_cast<ColumnToOffsetMap *>(&iter.query());
-        buildRowAccessor(map);
-    }
-
+    for (auto& map : recordMap)
+        buildRowAccessor(&map);
 }
 
 void HqlCppTranslator::buildRowAccessor(ColumnToOffsetMap * map)
