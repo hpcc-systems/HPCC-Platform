@@ -75,6 +75,9 @@ protected:
     inline unsigned  doFind(const void * findParam) const
       { return doFind(getHashFromFindParam(findParam), findParam); }
 
+    unsigned firstIdx() const { return validIdx(0); }
+    unsigned validIdx(unsigned i) const;
+
 private:
     bool             doAdd(void *, bool);
     void             doDeleteElement(unsigned);
@@ -111,6 +114,21 @@ protected:
 template <class ET, class FP>
 class SuperHashTableOf : public SuperHashTable
 {
+    typedef SuperHashTableOf<ET, FP> SELF;
+    friend class ConstHashItem;
+    class ConstHashItem
+    {
+    public:
+        ConstHashItem(const SELF & _self, unsigned _idx) : self(_self), idx(_idx) {}
+
+        ET & operator * () const { return self.element(idx); }
+        bool operator != (const ConstHashItem & other) const { return &self != &other.self || idx != other.idx; }
+        ConstHashItem & operator ++ () { idx = self.validIdx(idx+1); return *this; }
+    private:
+        const SELF & self;
+        unsigned idx;
+    };
+
   public:
     SuperHashTableOf(void) : SuperHashTable() {}
     SuperHashTableOf(unsigned initsize) : SuperHashTable(initsize) {}
@@ -134,6 +152,13 @@ class SuperHashTableOf : public SuperHashTable
       { return SuperHashTable::remove((const void *)(fp)); }
     inline bool      removeExact(ET * et)
       { return SuperHashTable::removeExact(et); }
+
+    ConstHashItem begin() const { return ConstHashItem(*this, firstIdx()); }
+    ConstHashItem end() const { return ConstHashItem(*this, SELF::tablesize); }
+
+  private:
+    ET & element(unsigned idx) const { return *static_cast<ET *>(this->table[idx]); }
+
 };
 
 // Macro to provide find method taking reference instead of pointer

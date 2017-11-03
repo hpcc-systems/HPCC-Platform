@@ -936,6 +936,7 @@ class CHqlExternalDatasetCall: public CHqlExternalCall, implements IHqlDataset
 #ifdef THREAD_SAFE_SYMBOLS
 class SymbolTable
 {
+    typedef MapXToMyClass<IAtom *, IAtom *, IHqlExpression> MAP;
 public:
     inline void setValue(IAtom * name, IHqlExpression * value)
     {
@@ -984,9 +985,27 @@ public:
         return map.count();
     }
 
+    MAP::ConstHashItem begin() const { return map.begin(); }
+    MAP::ConstHashItem end() const { return map.end(); }
+
 protected:
-    MapXToMyClass<IAtom *, IAtom *, IHqlExpression> map;
+    MAP map;
     mutable CriticalSection cs;
+};
+
+class SymbolTableLock
+{
+public:
+    SymbolTableLock(SymbolTable & _table) : table(_table)
+    {
+        table.lock();
+    }
+    ~SymbolTableLock()
+    {
+        table.unlock();
+    }
+protected:
+    SymbolTable & table;
 };
 
 class SymbolTableIterator : public HashIterator
@@ -1015,6 +1034,14 @@ public:
     }
 };
 typedef HashIterator SymbolTableIterator;
+class SymbolTableLock
+{
+public:
+    SymbolTableLock(SymbolTable &) {}
+    ~SymbolTableLock() {}
+};
+
+
 #endif
 
 inline IHqlExpression * lookupSymbol(SymbolTable & symbols, IIdAtom * searchName, bool sharedOK)
