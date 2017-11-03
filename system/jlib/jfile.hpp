@@ -80,7 +80,7 @@ interface ICopyFileProgress
 class RemoteFilename;
 
 enum fileBool { foundNo = false, foundYes = true, notFound = 2 };
-typedef enum { SD_nosort, SD_byname, SD_bynameNC, SD_bydate, SD_bysize }  SortDirectoryMode;
+typedef enum { SD_nosort, SD_byname, SD_bynameNC, SD_bydate, SD_bysize } SortDirectoryMode;
 
 interface IFile :extends IInterface
 {
@@ -109,7 +109,7 @@ interface IFile :extends IInterface
 // Directory functions
     virtual bool createDirectory() = 0;
     virtual IDirectoryIterator *directoryFiles(const char *mask=NULL,bool sub=false,bool includedirs=false)=0;
-    virtual IDirectoryIterator *directoryFilesSorted(SortDirectoryMode mode, bool rev, const char *mask=NULL,bool sub=false,bool includedirs=false)=0;
+    virtual IDirectoryIterator *directoryFilesSorted(SortDirectoryMode mode, bool rev, const char *mask=NULL, bool sub=false, bool includedirs=false)=0;
     virtual IDirectoryDifferenceIterator *monitorDirectory(
                                   IDirectoryIterator *prev=NULL,    // in (NULL means use current as baseline)
                                   const char *mask=NULL,

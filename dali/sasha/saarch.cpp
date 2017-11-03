@@ -88,20 +88,15 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
     class CWUData : public CInterface
     {
     public:
-        IMPLEMENT_IINTERFACE_USING(CInterface);
-
-        CWUData() { };
-
         CDateTime modifiedTime;
         Owned<IPropertyTree> wuTree;
     };
 
-    class CWUReader : public CInterface
+    class CArchivedWUReader : public CSimpleInterface
     {
-        StringAttr owner, cluster, jobName, state, priority, eclContains, fileRead, fileWritten, cmdName;
         StringBuffer mask, fromDT, toDT, fromDir, toDir, afterWU;
-        bool dfu, hasWUSOutput, outputModifiedTime, outputXML;
-        MemoryBuffer WUSbuf; //Not sure what this is.
+        bool hasWUSOutput, outputModifiedTime, outputXML;
+        ISashaCommand* cmd;
 
         void getMasks(const char *beforeWU, const char *afterWU, StringBuffer &dirMask, StringBuffer &fileMask)
         {
@@ -192,29 +187,39 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
         }
         bool checkFilters(IPropertyTree *t)
         {
+            const char *owner = cmd->queryOwner();
+            const char *cluster = cmd->queryCluster();
+            const char *jobName = cmd->queryJobName();
+            const char *state = cmd->queryState();
+            const char *priority = cmd->queryPriority();
+            const char *eclContains = cmd->queryEclContains();
+            const char *fileRead = cmd->queryFileRead();
+            const char *fileWritten = cmd->queryFileWritten();
+            const char *cmdName = cmd->queryDfuCmdName();
+
             //The following code is a clone of the pre-existing code.
             StringBuffer path, val;
-            if (!owner.isEmpty() && (!t->getProp("@submitID", val.clear()) || !WildMatch(val.str(), owner.get(), true)))
+            if (!isEmptyString(owner) && (!t->getProp("@submitID", val.clear()) || !WildMatch(val.str(), owner, true)))
                 return false;
-            if (!state.isEmpty() && (!t->getProp(dfu?"Progress/@state":"@state", val.clear()) || !WildMatch(val.str(), state.get(), true)))
+            if (!isEmptyString(state) && (!t->getProp(cmd->getDFU()?"Progress/@state":"@state", val.clear()) || !WildMatch(val.str(), state, true)))
                 return false;
-            if (!cluster.isEmpty() && (!t->getProp("@clusterName", val.clear()) || !WildMatch(val.str(), cluster.get(), true)))
+            if (!isEmptyString(cluster) && (!t->getProp("@clusterName", val.clear()) || !WildMatch(val.str(), cluster, true)))
                 return false;
-            if (!jobName.isEmpty() && (!t->getProp("@jobName", val.clear()) || !WildMatch(val.str(), jobName.get(), true)))
+            if (!isEmptyString(jobName) && (!t->getProp("@jobName", val.clear()) || !WildMatch(val.str(), jobName, true)))
                 return false;
-            if (!cmdName.isEmpty() && (!t->getProp("@command", val.clear()) || !WildMatch(val.str(), cmdName.get(), true)))
+            if (!isEmptyString(cmdName) && (!t->getProp("@command", val.clear()) || !WildMatch(val.str(), cmdName, true)))
                 return false;
-            if (!priority.isEmpty() && (!t->getProp("@priorityClass", val.clear()) || !WildMatch(val.str(), priority.get(), true)))
+            if (!isEmptyString(priority) && (!t->getProp("@priorityClass", val.clear()) || !WildMatch(val.str(), priority, true)))
                 return false;
-            if (!fileRead.isEmpty() && !t->hasProp(path.setf("FilesRead/File[@name=~?\"%s\"]", fileRead.get()).str()))
+            if (!isEmptyString(fileRead) && !t->hasProp(path.setf("FilesRead/File[@name=~?\"%s\"]", fileRead).str()))
                 return false;
-            if (!fileWritten.isEmpty() && !t->hasProp(path.setf("Files/File[@name=~?\"%s\"]", fileWritten.get()).str()))
+            if (!isEmptyString(fileWritten) && !t->hasProp(path.setf("Files/File[@name=~?\"%s\"]", fileWritten).str()))
                 return false;
-            if (!eclContains.isEmpty() && !t->hasProp(path.setf("Query[Text=~?\"*%s*\"]", eclContains.get()).str()))
+            if (!isEmptyString(eclContains) && !t->hasProp(path.setf("Query[Text=~?\"*%s*\"]", eclContains).str()))
                 return false;
             return true;
         }
-        bool setOutput(ISashaCommand *cmd, StringArray &outputFields, IPropertyTree *wuTree, CDateTime &modifiedTime)
+        bool addOutput(StringArray &outputFields, IPropertyTree *wuTree, CDateTime &modifiedTime, MemoryBuffer &WUSbuf)
         {
             if (hasWUSOutput)
             { //cmd->getAction()==SCA_WORKUNIT_SERVICES_GET
@@ -267,34 +272,35 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
         }
 
     public:
-        IMPLEMENT_IINTERFACE_USING(CInterface);
 
-        CWUReader(ISashaCommand *cmd, const char *_mask)
+        CArchivedWUReader(ISashaCommand *_cmd, const char *_mask)
         {
+            cmd = _cmd;
             mask.set(_mask);
-            owner.set(cmd->queryOwner());
-            cluster.set(cmd->queryCluster());
-            jobName.set(cmd->queryJobName());
-            state.set(cmd->queryState());
-            priority.set(cmd->queryPriority());
-            eclContains.set(cmd->queryEclContains());
-            fileRead.set(cmd->queryFileRead());
-            fileWritten.set(cmd->queryFileWritten());
-            cmdName.set(cmd->queryDfuCmdName());
-
-            dfu = cmd->getDFU();
             hasWUSOutput = cmd->getAction()==SCA_WORKUNIT_SERVICES_GET;
             outputModifiedTime = cmd->getAction()==SCA_LISTDT;
             outputXML = cmd->getAction()==SCA_GET;
 
             //In WUiterate(), the queryAfter() is used as fromDT and the queryBefore() is used as toDT.
-            mkDateCompare(dfu, cmd->queryAfter(), fromDT, '0');
-            mkDateCompare(dfu, cmd->queryBefore(), toDT, '9');
+            mkDateCompare(cmd->getDFU(), cmd->queryAfter(), fromDT, '0');
+            mkDateCompare(cmd->getDFU(), cmd->queryBefore(), toDT, '9');
         }
-        void getWUs(ISashaCommand *cmd, const char *beforeWU, const char *afterWU, unsigned numWUs)
+        void getWUs()
         {
+            const char *owner = cmd->queryOwner();
+            const char *cluster = cmd->queryCluster();
+            const char *jobName = cmd->queryJobName();
+            const char *state = cmd->queryState();
+            const char *priority = cmd->queryPriority();
+            const char *eclContains = cmd->queryEclContains();
+            const char *fileRead = cmd->queryFileRead();
+            const char *fileWritten = cmd->queryFileWritten();
+            const char *cmdName = cmd->queryDfuCmdName();
+            const char *beforeWU = cmd->queryBeforeWU();
+            const char *afterWU = cmd->queryAfterWU();
+            unsigned numWUs = cmd->getLimit();
             StringBuffer path;
-            if (dfu)
+            if (cmd->getDFU())
                 getLdsPath("Archive/DFUWorkUnits", path);
             else
                 getLdsPath("Archive/WorkUnits", path);
@@ -309,6 +315,7 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
             bool checkBeforeOrAfterWU = !isEmptyString(beforeWU) || !isEmptyString(afterWU);
             bool sortInc = !isEmptyString(beforeWU) && isEmptyString(afterWU);
 
+            MemoryBuffer WUSbuf; //Not sure what this is.
             if (hasWUSOutput)
                 cmd->setWUSresult(WUSbuf);  // swap in/out (in case ever do multiple)
 
@@ -333,9 +340,10 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
                     const char *wuid = output.str();
    
                     Owned<IPropertyTree> wuTree;
-                    if (outputXML || hasWUSOutput || !isEmptyString(outputFormat) || !owner.isEmpty() || !state.isEmpty() || !cluster.isEmpty() ||
-                        !jobName.isEmpty() || !cmdName.isEmpty() || !priority.isEmpty() || !fileRead.isEmpty() ||
-                        !fileWritten.isEmpty() || !eclContains.isEmpty())
+                    if (outputXML || hasWUSOutput || !isEmptyString(outputFormat) || !isEmptyString(owner)
+                        || !isEmptyString(state) || !isEmptyString(cluster) || !isEmptyString(jobName)
+                        || !isEmptyString(cmdName) || !isEmptyString(priority) || !isEmptyString(fileRead)
+                        || !isEmptyString(fileWritten) || !isEmptyString(eclContains))
                     {
                         try
                         {
@@ -367,7 +375,7 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
                         if (outputModifiedTime)
                             fileIterator->getModifiedTime(dt);
 
-                        if (!setOutput(cmd, outputFields, wuTree, dt))
+                        if (!addOutput(outputFields, wuTree, dt, WUSbuf))
                         {
                             overflowed = true;
                             break;
@@ -385,7 +393,7 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
                 ForEachItemInRev(i, wus)
                 {
                     CWUData &wuData = wus.item(i);
-                    if (!setOutput(cmd, outputFields, wuData.wuTree, wuData.modifiedTime))  //Log an error?
+                    if (!addOutput(outputFields, wuData.wuTree, wuData.modifiedTime, WUSbuf))  //Log an error?
                         break;
                 }
             }
@@ -395,10 +403,10 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
         }
     };
 
-    Owned<CWUReader> reader = new CWUReader(cmd, mask);
-    if (!cmd->getOnline())
-        reader->getWUs(cmd, cmd->queryBeforeWU(), cmd->queryAfterWU(), cmd->getLimit());
-    else
+    Owned<CArchivedWUReader> reader = new CArchivedWUReader(LINK(cmd), mask);
+    if (cmd->getArchived())
+        reader->getWUs();
+    if (cmd->getOnline())
     {//The following code is from the pre-existing code.
         bool dfu = cmd->getDFU();
         const char *beforedt = cmd->queryBefore();
