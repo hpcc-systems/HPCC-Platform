@@ -251,10 +251,12 @@
             </mediaobject>
           </figure></para>
 
-        <para>You can search ECL Workunits, DFU Workunits, Logical Files, and
-        Queries using the global search box. The global search box also
-        supports using wildcards. To limit or filter your search results you
-        can use keywords as displayed in the empty search box.</para>
+        <para>You can search DFU Workunits, ECL Workunits, Logical Files, and
+        Queries using the global search box. The global search excludes ECL
+        code by default. To search for ECL code within workunits use the
+        <emphasis role="bold">ecl: </emphasis>keyword. For example,
+        ecl:SOAPCALL. To limit or filter your search results you can use
+        keywords as displayed in the empty search box.</para>
 
         <para><variablelist>
             <varlistentry>
@@ -267,7 +269,7 @@
             </varlistentry>
 
             <varlistentry>
-              <term>wuid:</term>
+              <term>wuid:.</term>
 
               <listitem>
                 <para>Preface the search string with
@@ -280,7 +282,7 @@
 
               <listitem>
                 <para>Preface the search string with <emphasis>ecl:</emphasis>
-                to search only the ECL workunits.</para>
+                to search ECL code in the workunits.</para>
               </listitem>
             </varlistentry>
 
@@ -302,7 +304,11 @@
                 queries.</para>
               </listitem>
             </varlistentry>
-          </variablelist>Examples of using the global search:</para>
+          </variablelist></para>
+
+        <para>The global search box also supports using wildcards.</para>
+
+        <para>Examples of using the global search:</para>
 
         <para>Enter <emphasis>W201510*</emphasis> into the search box, and it
         will return all of the workunits from October 2015.</para>
@@ -380,7 +386,7 @@
           site where you can find additional resources, such as the <emphasis
           role="bold">Red Book</emphasis>, <emphasis role="bold">User
           Forums</emphasis>, <emphasis role="bold">Issue Reporting</emphasis>,
-          and the <emphasis role="bold">Transition Guide</emphasis>. </para>
+          and the <emphasis role="bold">Transition Guide</emphasis>.</para>
 
           <para>The <emphasis role="bold">Configuration</emphasis> link opens
           for viewing the XML version of the configuration file in use on your
