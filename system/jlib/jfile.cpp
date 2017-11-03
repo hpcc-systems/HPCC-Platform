@@ -6755,3 +6755,87 @@ timestamp_type getTimeStamp(IFile * file)
     file->getTime(nullptr, &modified, nullptr);
     return modified.getTimeStamp();
 }
+
+class CSortedDirectoryIterator : public CSimpleInterfaceOf<IDirectoryIterator>
+{
+    CIArrayOf<CDirectoryEntry> sortedFiles;
+    CDirectoryEntry *curDirectoryEntry = nullptr;
+    unsigned        sortedFileCount = 0;
+    unsigned        sortedFileIndex = 0;
+    Owned<IFile>    cur;
+    bool            curIsDir = false;
+
+public:
+    CSortedDirectoryIterator(IDirectoryIterator &itr, SortDirectoryMode mode, bool rev, bool includedirs)
+    {
+        sortDirectory(sortedFiles, itr, mode, rev, includedirs);
+        sortedFileCount = sortedFiles.length();
+    }
+
+    //IIteratorOf
+    virtual bool first() override
+    {
+        sortedFileIndex = 0;
+        return next();
+    }
+    virtual bool next() override
+    {
+        if (sortedFileIndex >= sortedFileCount)
+        {
+            cur.clear();
+            curDirectoryEntry = nullptr;
+            return false;
+        }
+
+        curDirectoryEntry = &sortedFiles.item(sortedFileIndex);
+        cur.setown(createIFile(curDirectoryEntry->file->queryFilename()));
+        curIsDir = curDirectoryEntry->isdir;
+        sortedFileIndex++;
+        return true;
+    }
+    virtual bool isValid() override { return cur != nullptr; }
+    virtual IFile &query() override { return *cur; }
+
+    //IDirectoryIterator
+    virtual bool isDir() override { return curIsDir; }
+    virtual StringBuffer &getName(StringBuffer &buf) override
+    {
+        if (curDirectoryEntry)
+            return buf.set(curDirectoryEntry->name.get());
+        return buf;
+    }
+
+    virtual __int64 getFileSize() override
+    {
+        return curDirectoryEntry ? curDirectoryEntry->size : -1;
+    }
+
+    virtual bool getModifiedTime(CDateTime &ret) override
+    {
+        if (!curDirectoryEntry)
+            return false;
+        ret = curDirectoryEntry->modifiedTime;
+        return true;
+    }
+};
+
+IDirectoryIterator *getSortedDirectoryIterator(IFile *directory, SortDirectoryMode mode, bool rev, const char *mask, bool sub, bool includedirs)
+{
+    if (!directory || !directory->isDirectory())
+        throw MakeStringException(-1, "Invalid IFile input in getSortedDirectoryIterator()");
+
+    Owned<IDirectoryIterator> files = directory->directoryFiles(mask, sub, includedirs);
+    if (SD_nosort == mode)
+        return files;
+    return new CSortedDirectoryIterator(*files, mode, rev, includedirs);
+}
+
+IDirectoryIterator *getSortedDirectoryIterator(const char *dirName, SortDirectoryMode mode, bool rev, const char *mask, bool sub, bool includedirs)
+{
+    if (isEmptyString(dirName))
+        throw MakeStringException(-1, "Invalid dirName input in getSortedDirectoryIterator()");
+
+    Owned<IFile> dir = createIFile(dirName); 
+    return getSortedDirectoryIterator(dir, mode, rev, mask, sub, includedirs);
+}
+
