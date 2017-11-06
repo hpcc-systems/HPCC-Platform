@@ -197,10 +197,7 @@ bool IndexDataSource::init()
         values.append(*set);
     }
 
-    fileposFieldType = diskMeta->queryType(diskMeta->numColumns()-1);
-    assertex(fileposFieldType && fileposFieldType->isInteger());
-
-    //Now gather all the 
+    diskMeta->patchIndexFileposition(); // Now returned as a bigendian field on the end of the row
 
     //Default cursor if no filter is applied
     applyFilter();
@@ -307,26 +304,11 @@ bool IndexDataSource::getNextRow(MemoryBuffer & out, bool extractRow)
                 }
                 else
                 {
-                    unsigned fileposSize = fileposFieldType->getSize();
-    //              unsigned thisSize = manager->queryRecordSize();             // Should be possible - needs a new function to call cursor->getSize()
                     offset_t filepos;
                     const byte * thisRow = manager->queryKeyBuffer(filepos);
-                    unsigned thisSize = diskMeta->getRecordSize(thisRow) - fileposSize;
+                    unsigned thisSize = diskMeta->getRecordSize(thisRow);
                     void * temp = out.reserve(thisSize);
                     memcpy(temp, thisRow, thisSize);
-
-                    //Append the fileposition, in the correct size/endianness
-                    assertex(sizeof(filepos) >= 8);
-
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-                    void * data = &filepos;
-#else
-                    void * data = (byte *)&filepos + sizeof(filepos) - fileposSize;
-#endif
-                    if (fileposFieldType->isSwappedEndian())
-                        out.appendSwap(fileposSize, data);
-                    else
-                        out.append(fileposSize, data);
                 }
             }
             return true;
@@ -446,7 +428,7 @@ bool IndexDataSource::addFilter(unsigned column, unsigned matchLen, unsigned siz
 
 void IndexDataSource::applyFilter()
 {
-    manager.setown(createLocalKeyManager(tlk, tlk->keySize(), NULL));
+    manager.setown(createLocalKeyManager(tlk, 0, NULL));
     ForEachItemIn(i, values)
     {
         IStringSet & cur = values.item(i);

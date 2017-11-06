@@ -81,6 +81,7 @@ interface jhtree_decl IKeyIndex : public IKeyIndexBase
     virtual IPropertyTree * getMetadata() = 0;
     virtual unsigned getNodeSize() = 0;
     virtual const IFileIO *queryFileIO() const = 0;
+    virtual bool hasSpecialFileposition() const = 0;
 };
 
 interface IKeyArray : extends IInterface

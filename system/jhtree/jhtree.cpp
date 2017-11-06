@@ -639,14 +639,6 @@ public:
                 assertex(keyedSize==ki->keyedSize());
                 assertex(keySize==ki->keySize());
             }
-            if (eclKeySize && (0 == (ki->getFlags() & HTREE_VARSIZE)) && (eclKeySize != keySize))
-            {
-                StringBuffer err;
-                err.appendf("Key size mismatch - key file (%s) indicates record size should be %d, but ECL declaration was %d", keyName.get(), keySize, eclKeySize);
-                IException *e = MakeStringExceptionDirect(1000, err.str());
-                EXCLOG(e, err.str());
-                throw e;
-            }
         }
     }
 
@@ -1613,9 +1605,15 @@ void CKeyIndex::dumpNode(FILE *out, offset_t pos, unsigned count, bool isRaw)
     ::dumpNode(out, node, keySize(), count, isRaw);
 }
 
+bool CKeyIndex::hasSpecialFileposition() const
+{
+    return keyHdr->hasSpecialFileposition();
+}
+
 size32_t CKeyIndex::keySize()
 {
-    return keyHdr->getMaxKeyLength();
+    size32_t fileposSize = keyHdr->hasSpecialFileposition() ? 8 : 0;
+    return keyHdr->getMaxKeyLength() + fileposSize;
 }
 
 size32_t CKeyIndex::keyedSize()
@@ -2091,6 +2089,7 @@ public:
     virtual IPropertyTree * getMetadata() { return checkOpen().getMetadata(); }
     virtual unsigned getNodeSize() { return checkOpen().getNodeSize(); }
     virtual const IFileIO *queryFileIO() const override { return iFileIO; } // NB: if not yet opened, will be null
+    virtual bool hasSpecialFileposition() const { return realKey ? realKey->hasSpecialFileposition() : false; }
 };
 
 extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IFileIO &iFileIO, bool isTLK, bool preloadAllowed)
@@ -2369,6 +2368,7 @@ class CKeyMerger : public CKeyLevelManager
     unsigned *mergeheap;
     unsigned numkeys;
     unsigned activekeys;
+    unsigned compareSize = 0;
     IArrayOf<IKeyCursor> cursorArray;
     PointerArray bufferArray;
     PointerArray fixedArray;
@@ -2392,7 +2392,9 @@ class CKeyMerger : public CKeyLevelManager
     {
         const char *c1 = buffers[mergeheap[a]];
         const char *c2 = buffers[mergeheap[b]];
-        int ret = memcmp(c1+sortFieldOffset, c2+sortFieldOffset, keySize-sortFieldOffset); // NOTE - compare whole key not just keyed part.
+        //Backwards compatibility - do not compare the fileposition field, even if it would be significant.
+        //int ret = memcmp(c1+sortFieldOffset, c2+sortFieldOffset, keySize-sortFieldOffset); // NOTE - compare whole key not just keyed part.
+        int ret = memcmp(c1+sortFieldOffset, c2+sortFieldOffset, compareSize-sortFieldOffset); // NOTE - compare whole key not just keyed part.
         if (!ret && sortFieldOffset)
             ret = memcmp(c1, c2, sortFieldOffset);
         return ret;
@@ -2646,6 +2648,7 @@ public:
                 throw MakeStringException(0, "Invalid key size 0 in key %s", ki->queryFileName());
             keyedSize = ki->keyedSize();
             numkeys = _keyset->numParts();
+            compareSize = keySize - (ki->hasSpecialFileposition() ? sizeof(offset_t) : 0);
         }
         else
             numkeys = 0;

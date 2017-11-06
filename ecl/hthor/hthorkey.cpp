@@ -744,11 +744,12 @@ void CHThorIndexReadActivityBase::verifyIndex(IKeyIndex * idx)
     keySize = idx->keySize();
     if (eclKeySize.isFixedSize())
     {
+        unsigned fileposSize = idx->hasSpecialFileposition() ? sizeof(offset_t) : 0;
         if(layoutTrans)
             layoutTrans->checkSizes(df->queryLogicalName(), eclKeySize.getFixedSize(), keySize);
         else
-            if (keySize != eclKeySize.getFixedSize())
-                throw MakeStringException(0, "Key size mismatch reading index %s: index indicates size %u, ECL indicates size %u", df->queryLogicalName(), keySize, eclKeySize.getFixedSize());
+            if (keySize != eclKeySize.getFixedSize() + fileposSize)
+                throw MakeStringException(0, "Key size mismatch reading index %s: index indicates size %u, ECL indicates size %u", df->queryLogicalName(), keySize, eclKeySize.getFixedSize() + fileposSize);
     }
 }
 
@@ -4050,11 +4051,12 @@ protected:
     {
         if (eclKeySize.isFixedSize())
         {
+            unsigned fileposSize = idx->hasSpecialFileposition() ? sizeof(offset_t) : 0;
             if(trans)
                 trans->checkSizes(f->queryLogicalName(), eclKeySize.getFixedSize(), idx->keySize());
             else
-                if(idx->keySize() != eclKeySize.getFixedSize())
-                    throw MakeStringException(1002, "Key size mismatch on key %s: key file indicates record size should be %u, but ECL declaration was %u", f->queryLogicalName(), idx->keySize(), eclKeySize.getFixedSize());
+                if(idx->keySize() != eclKeySize.getFixedSize() + fileposSize)
+                    throw MakeStringException(1002, "Key size mismatch on key %s: key file indicates record size should be %u, but ECL declaration was %u", f->queryLogicalName(), idx->keySize(), eclKeySize.getFixedSize() + fileposSize);
         }
     }
 
