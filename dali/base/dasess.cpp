@@ -2058,7 +2058,7 @@ public:
     void serializeExtra(MemoryBuffer &mb)
     {
         if (queryDaliServerVersion().compare("3.14") >= 0)
-            mb.append((unsigned)sizeof(sessionToken)).append(sessionToken).append(signature.length()).append(signature);
+            mb.append(sessionToken).append(signature.length()).append(signature);
     }
     void deserialize(MemoryBuffer &mb)
     {
@@ -2068,13 +2068,10 @@ public:
     {
         if (mb.remaining() > 0)
         {
-            size32_t len = 0;
-            mb.read(len);
-            if (len)
-                mb.readDirect(sessionToken);
-
+            mb.read((unsigned &)sessionToken);
             if (mb.remaining() > 0)
             {
+                unsigned len = 0;
                 mb.read(len);
                 if (len)
                     signature.append(len, (const char *)mb.readDirect(len));
