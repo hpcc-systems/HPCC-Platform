@@ -407,7 +407,7 @@ IHqlExpression * HqlCppCaseInfo::buildIndexedMap(BuildCtx & ctx, const CHqlBound
     HqlExprArray values;
     IHqlExpression * dft = queryActiveTableSelector();  // value doesn't matter as long as it will not occur
     __int64 lower = getIntValue(lowerTableBound, 0);
-    unsigned num = (getIntValue(upperTableBound, 0)-lower)+1;
+    unsigned num = (unsigned)((getIntValue(upperTableBound, 0)-lower)+1);
 
     CHqlBoundExpr indexExpr;
     switch (compareTypeCode)

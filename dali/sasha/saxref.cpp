@@ -381,7 +381,6 @@ struct cDirDesc
     {
         unsigned nf;
         unsigned pf;
-        unsigned xn;
         StringAttr mask;
         const char *fn = decodeName(drv,name,node,numnodes,mask,pf,nf);
         bool misplaced = !grp.queryNode(pf).endpoint().equals(ep);

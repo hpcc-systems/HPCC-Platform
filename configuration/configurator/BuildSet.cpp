@@ -162,7 +162,7 @@ void CBuildSetManager::setBuildSetArray(const StringArray &strArray)
 {
     m_buildSetArray.kill();
 
-    for (int idx = 0; idx < strArray.length(); idx++)
+    for (unsigned idx = 0; idx < strArray.length(); idx++)
     {
         Owned<CBuildSet> pBSet = new CBuildSet(nullptr, strArray.item(idx), nullptr, strArray.item(idx));
         assert (pBSet != nullptr);
@@ -170,7 +170,7 @@ void CBuildSetManager::setBuildSetArray(const StringArray &strArray)
     }
 }
 
-const char* CBuildSetManager::getBuildSetSchema(int index) const
+const char* CBuildSetManager::getBuildSetSchema(unsigned index) const
 {
     assert(index < m_buildSetArray.length());
     if (index < m_buildSetArray.length())

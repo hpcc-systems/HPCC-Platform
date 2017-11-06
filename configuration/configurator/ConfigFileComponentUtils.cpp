@@ -24,11 +24,6 @@ CConfigFileComponentUtils::CConfigFileComponentUtils()
     UNIMPLEMENTED;
 }
 
-CConfigFileComponentUtils::~CConfigFileComponentUtils()
-{
-    UNIMPLEMENTED;
-}
-
 void CConfigFileComponentUtils::getAvailableComponets(StringArray& compArray) const
 {
     UNIMPLEMENTED;

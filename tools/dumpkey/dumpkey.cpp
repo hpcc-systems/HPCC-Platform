@@ -179,7 +179,7 @@ int main(int argc, const char **argv)
                     }
                     Linked<IKeyManager> manager;
                 } callback(manager);
-                unsigned count = globals->getPropInt("recs", 1);
+                unsigned __int64 count = globals->getPropInt("recs", 1);
                 const RtlRecordTypeInfo *outRecType = nullptr;
                 if (metadata && metadata->hasProp("_rtlType"))
                 {

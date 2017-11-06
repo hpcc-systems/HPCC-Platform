@@ -8953,7 +8953,7 @@ IHqlExpression * DFSLayoutTransformer::createTransformed(IHqlExpression * expr)
                 unsigned dfsPayload = 0;
                 if (payload)
                 {
-                    dfsPayload = getIntValue(payload->queryChild(0));
+                    dfsPayload = (unsigned)getIntValue(payload->queryChild(0));
                     dfsLayout.setown(removeAttribute(dfsLayout, _payload_Atom));
                 }
 

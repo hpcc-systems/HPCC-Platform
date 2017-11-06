@@ -990,7 +990,7 @@ EspHttpBinding* CEspHttpServer::getEspHttpBinding(EspAuthRequest& authReq)
         return espHttpBinding;
     }
 
-    for (unsigned index=0; index<ordinality; index++)
+    for (unsigned index=0; index<(unsigned)ordinality; index++)
     {
         CEspBindingEntry *entry = m_apport->queryBindingItem(index);
         EspHttpBinding* lbind = (entry) ? dynamic_cast<EspHttpBinding*>(entry->queryBinding()) : nullptr;
