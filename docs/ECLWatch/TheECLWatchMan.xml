@@ -380,7 +380,7 @@
           site where you can find additional resources, such as the <emphasis
           role="bold">Red Book</emphasis>, <emphasis role="bold">User
           Forums</emphasis>, <emphasis role="bold">Issue Reporting</emphasis>,
-          and the <emphasis role="bold">Transition Guide</emphasis>. </para>
+          and the <emphasis role="bold">Transition Guide</emphasis>.</para>
 
           <para>The <emphasis role="bold">Configuration</emphasis> link opens
           for viewing the XML version of the configuration file in use on your
@@ -1555,29 +1555,45 @@
       <sect2 id="USING_Dynamic_ESDL">
         <title>Using Dynamic ESDL</title>
 
-        <para>Click on the triangle icon next to the ESP process to expand and
-        display the DESDL services. Select the desired DESDL service from the
-        navigator pane.</para>
+        <para>In order to use this interface choose an ESP service from the
+        service list. Click on the triangle icon next to the ESP process to
+        expand and display the DESDL services. Select the desired DESDL
+        service from the navigator pane.</para>
 
         <para>The selected service's information displays on the <emphasis
         role="bold">Summary</emphasis> tab to the right.</para>
 
-        <para>Select the <emphasis role="bold">Binding</emphasis> tab to
-        display the ESDL definition in XML format and the configuration
-        information. Press the Definition button to view the XML.</para>
-
         <para><figure>
-            <title>Dynamic ESDL Binding Definition</title>
+            <title>Dynamic ESDL Summary</title>
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/DESDL02.jpg" />
+                <imagedata fileref="images/DESDL08.jpg" />
               </imageobject>
             </mediaobject>
           </figure></para>
 
-        <para>You can select ESP Services and assign them an interface (an
-        ESDL Definition) and configure each available method.</para>
+        <sect3>
+          <title>Viewing the binding information</title>
+
+          <para>If the selected service contains an ESDL binding, you can
+          select the binding tab to view the binding definition (the service
+          interface) and the configuration information.</para>
+
+          <para>Select the <emphasis role="bold">Binding</emphasis> tab then
+          press the <emphasis role="bold">Definition</emphasis> button to
+          display the ESDL definition in XML format.</para>
+
+          <para><figure>
+              <title>Dynamic ESDL Binding Definition</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/DESDL02.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </sect3>
 
         <sect3 id="Configure_ESDL_Bindings">
           <title>Configuring ESDL Bindings</title>
@@ -1587,8 +1603,9 @@
           binding.</para>
 
           <para>Press the <emphasis role="bold">Configuration</emphasis>
-          button to view or edit the method configurations. The methods are
-          configured by adding or editing these attributes. <figure>
+          button to view or edit the <emphasis role="bold">Method
+          Configurations</emphasis>. Press <emphasis
+          role="bold">Save</emphasis> when finished. <figure>
               <title>Dynamic EDSL Binding Configuration</title>
 
               <mediaobject>
@@ -1597,61 +1614,13 @@
                 </imageobject>
               </mediaobject>
             </figure></para>
-
-          <para><emphasis role="bold">To Add an attribute:</emphasis></para>
-
-          <para><orderedlist>
-              <listitem>
-                <para>Expand the target method configuration attributes (if
-                there are more than one methods) and display the attributes
-                and values.</para>
-              </listitem>
-
-              <listitem>
-                <para>Check the box next to the method to modify.</para>
-              </listitem>
-
-              <listitem>
-                <para>Press the Add Attribute(s) button. This opens an
-                <emphasis role="bold">Add attributes/values</emphasis>
-                dialog.</para>
-              </listitem>
-
-              <listitem>
-                <para>Enter the Attribute and Value to the method,</para>
-              </listitem>
-
-              <listitem>
-                <para>Press the Save button.</para>
-              </listitem>
-            </orderedlist><emphasis role="bold">To Remove attributes and
-          values</emphasis>:.</para>
-
-          <para><orderedlist>
-              <listitem>
-                <para>Check the box next to the method to modify.</para>
-              </listitem>
-
-              <listitem>
-                <para>Select the box for the desired attribute (and value) to
-                remove.</para>
-              </listitem>
-
-              <listitem>
-                <para>Press the <emphasis role="bold">Remove
-                Attribute(s)</emphasis> button. This removes the
-                attribute.</para>
-              </listitem>
-            </orderedlist></para>
-
-          <para>If a configuration does not have a binding, you can add a
-          binding.</para>
         </sect3>
 
         <sect3>
           <title>Add a Binding</title>
 
-          <para>To add a service binding to an
+          <para>If a configuration does not have a binding, you can add a
+          binding. To add a service binding to an
           <emphasis>unconfigured</emphasis> ESP Service. Select the
           unconfigured ESP service, then press the enabled <emphasis
           role="bold">Add Binding</emphasis> button.</para>
