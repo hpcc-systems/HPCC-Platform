@@ -237,7 +237,7 @@ ESPStruct [nil_remove] ECLWorkunit
     [min_ver("1.30")] bool IsPausing(false);
     [min_ver("1.30")] bool ThorLCR(false);
     [min_ver("1.01")] int EventSchedule;
-    [min_ver("1.02")] bool HaveSubGraphTimings;
+    [min_ver("1.02"), depr_ver("1.71")] bool HaveSubGraphTimings;
     [min_ver("1.28"), depr_ver("1.53")] string TotalThorTime;
     [min_ver("1.53")] string TotalClusterTime;
     [min_ver("1.59")] string AbortBy;
