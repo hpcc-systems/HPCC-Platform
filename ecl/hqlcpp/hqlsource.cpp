@@ -501,11 +501,11 @@ static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IH
             }
             else
             {
-                OwnedHqlExpr hozed = getHozedKeyValue(cur);
-                if (hozed->queryType() == cur->queryType())
+                Owned<ITypeInfo> hozedType = getHozedKeyType(cur);
+                if (hozedType == cur->queryType())
                     newField = LINK(cur);
                 else
-                    newField = createField(cur->queryId(), hozed->getType(), extractFieldAttrs(cur));
+                    newField = createField(cur->queryId(), hozedType.getClear(), extractFieldAttrs(cur));
             }
         }
 

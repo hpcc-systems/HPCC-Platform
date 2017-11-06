@@ -237,6 +237,7 @@ public:
 
 
 unsigned getVirtualFieldSize(IHqlExpression * record);
+ITypeInfo * getHozedKeyType(IHqlExpression * expr);
 IHqlExpression * getHozedKeyValue(IHqlExpression * _value);
 IHqlExpression * getHozedBias(ITypeInfo * type);
 IHqlExpression * convertIndexPhysical2LogicalValue(IHqlExpression * cur, IHqlExpression * physicalSelect, bool allowTranslate);

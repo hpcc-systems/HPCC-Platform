@@ -10006,10 +10006,8 @@ static void createOutputIndexRecord(HqlMapTransformer & mapper, HqlExprArray & f
                 }
                 else
                 {
-                    OwnedHqlExpr select = createSelectExpr(getActiveTableSelector(), LINK(cur));
-                    OwnedHqlExpr value = getHozedKeyValue(select);
-                    ITypeInfo * newType = value->getType();
-                    newField = createField(cur->queryId(), newType, NULL, extractFieldAttrs(cur));
+                    ITypeInfo * hozedType = getHozedKeyType(cur);
+                    newField = createField(cur->queryId(), hozedType, NULL, extractFieldAttrs(cur));
 
                     //Now set up the mappings for ifblocks
                     OwnedHqlExpr selfSelect = createSelectExpr(LINK(querySelfReference()), LINK(cur));
