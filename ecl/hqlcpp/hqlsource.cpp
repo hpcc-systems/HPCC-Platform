@@ -471,10 +471,12 @@ static IHqlExpression * mapIfBlock(HqlMapTransformer & mapper, IHqlExpression * 
 }
 
 
-static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IHqlExpression * tableExpr, IHqlExpression * record, bool hasInternalFileposition, bool allowTranslate)
+static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IHqlExpression * tableExpr, IHqlExpression * record, bool hasInternalFileposition, unsigned payloadFields, bool allowTranslate)
 {
     HqlExprArray physicalFields;
     unsigned max = record->numChildren() - (hasInternalFileposition ? 1 : 0);
+    unsigned firstPayload = firstPayloadField(record, payloadFields);
+
     for (unsigned idx=0; idx < max; idx++)
     {
         IHqlExpression * cur = record->queryChild(idx);
@@ -485,7 +487,7 @@ static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IH
         else if (cur->getOperator() == no_ifblock)
             physicalFields.append(*mapIfBlock(mapper, cur));
         else if (cur->getOperator() == no_record)
-            physicalFields.append(*createPhysicalIndexRecord(mapper, tableExpr, cur, false, allowTranslate));
+            physicalFields.append(*createPhysicalIndexRecord(mapper, tableExpr, cur, false, 0, allowTranslate));
         else if (cur->hasAttribute(blobAtom))
         {
             newField = createField(cur->queryId(), makeIntType(8, false), NULL, NULL);
@@ -495,6 +497,8 @@ static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IH
             OwnedHqlExpr select = createSelectExpr(LINK(tableExpr), LINK(cur));
             if (!allowTranslate)
                 newField = LINK(cur);
+#if 0
+// isInPayload returns true so this is dead
             else if (cur->isDatarow() && !isInPayload())
             {
                 //MORE: Mappings for ifblocks using self.a.b (!)
@@ -505,6 +509,7 @@ static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IH
                 newField = createField(cur->queryId(), newRecord->getType(), args);
             }
             else
+#endif
             {
                 //This should support other non serialized formats.  E.g., link counted strings. 
                 //Simplest would be to move getSerializedForm code + call that first.
@@ -526,6 +531,8 @@ static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IH
 
         if (newField)
         {
+            if (idx >= firstPayload)
+                newField = createField(newField->queryId(), newField->getType(), createComma(extractFieldAttrs(newField), createAttribute(_payload_Atom)));
             physicalFields.append(*newField);
             if (cur != newField)
             {
@@ -537,7 +544,12 @@ static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IH
             }
         }
     }
-
+    if (hasInternalFileposition)
+    {
+        // Need to do something about the field that mapped into the filepos (or we lose it)
+        IHqlExpression * cur = record->queryChild(record->numChildren()-1);
+        physicalFields.append(*createField(cur->queryId(), makeFilePosType(cur->getType()), createComma(extractFieldAttrs(cur), createAttribute(_payload_Atom))));
+    }
     return createRecord(physicalFields);
 }
 
@@ -555,16 +567,13 @@ IHqlExpression * HqlCppTranslator::convertToPhysicalIndex(IHqlExpression * table
 
     HqlMapTransformer mapper;
     bool hasFileposition = getBoolAttribute(tableExpr, filepositionAtom, true);
-    IHqlExpression * diskRecord = createPhysicalIndexRecord(mapper, tableExpr, record, hasFileposition, true);
-
     unsigned payload = numPayloadFields(tableExpr);
     assertex(payload || !hasFileposition);
-    unsigned newPayload = hasFileposition ? payload-1 : payload;
+    IHqlExpression * diskRecord = createPhysicalIndexRecord(mapper, tableExpr, record, hasFileposition, payload, true);
+
     HqlExprArray args;
     unwindChildren(args, tableExpr);
     args.replace(*diskRecord, 1);
-    removeAttribute(args, _payload_Atom);
-    args.append(*createAttribute(_payload_Atom, getSizetConstant(newPayload)));
     args.append(*createAttribute(_original_Atom, LINK(tableExpr)));
 
     //remove the preload attribute and replace with correct value

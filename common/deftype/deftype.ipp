@@ -559,6 +559,24 @@ protected:
     Owned<ITypeInfo>    basetype;
 };
 
+class CFilePosTypeInfo : public CBasedTypeInfo
+{
+public:
+    CFilePosTypeInfo(ITypeInfo * _basetype) : CBasedTypeInfo(_basetype, 0) {}
+    virtual type_t getTypeCode() const { return type_filepos; };
+
+    // Only used for generation of type information so no need to fully implement these
+    virtual bool isInteger()                    { return true; };
+    virtual bool isScalar()                     { return true; }
+    virtual bool isSigned()                     { return basetype->isSigned(); }
+    virtual unsigned getStringLen()             { return basetype->getStringLen(); }
+    virtual unsigned getDigits()                { return basetype->getDigits(); }
+    virtual const char *queryTypeName()         { return "filepos"; }
+    virtual ITypeInfo * queryPromotedType()     { return basetype->queryPromotedType(); }
+    virtual StringBuffer &getECLType(StringBuffer & out) { return out.append("filepos"); }
+    virtual unsigned getCrc()                   { return basetype->getCrc(); }
+};
+
 class CPackedIntTypeInfo : public CBasedTypeInfo
 {
 public:
