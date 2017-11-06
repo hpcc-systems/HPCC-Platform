@@ -24,6 +24,12 @@ ESPenum DFUArrayActions : string
     AddToSuperfile("Add To Superfile"),
 };
 
+ESPenum DFUDefFileFormat : string
+{
+    xml("xml"),
+    def("def"),
+};
+
 ESPStruct SpaceItem
 {
     string Name;
@@ -310,7 +316,7 @@ ESPrequest []
 DFUDefFileRequest
 {
     string Name;
-    string Format;
+    ESPenum DFUDefFileFormat Format;
 };
 
 ESPresponse
