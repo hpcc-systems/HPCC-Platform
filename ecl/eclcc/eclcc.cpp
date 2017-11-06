@@ -1863,7 +1863,7 @@ static void checkForOverlappingPaths(const char * path)
         if (hasPrefix(next, prev, filenamesAreCaseSensitive))
         {
             if (!streq(next, prev))
-                throw MakeStringException(99, "Include paths -I '%s' and '%s' overlap", prev, next);
+                fprintf(stderr, "Warning: Include paths -I '%s' and '%s' overlap\n", prev, next);
         }
     }
 }
