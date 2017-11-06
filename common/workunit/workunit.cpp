@@ -821,7 +821,7 @@ protected:
         return true;
     }
 
-    virtual void playProperties(WuPropertyTypes whichProperties, IWuScopeVisitor & visitor) override
+    virtual void playProperties(IWuScopeVisitor & visitor, WuPropertyTypes whichProperties) override
     {
         if ((whichProperties & PTstatistics))
         {
@@ -1101,7 +1101,7 @@ public:
         return statistics.item(curIndex).getScopeType();
     }
 
-    virtual void playProperties(WuPropertyTypes whichProperties, IWuScopeVisitor & visitor) override
+    virtual void playProperties(IWuScopeVisitor & visitor, WuPropertyTypes whichProperties) override
     {
         if (whichProperties & PTstatistics)
         {
@@ -1266,7 +1266,7 @@ public:
         return scopeType;
     }
 
-    virtual void playProperties(WuPropertyTypes whichProperties, IWuScopeVisitor & visitor) override
+    virtual void playProperties(IWuScopeVisitor & visitor, WuPropertyTypes whichProperties) override
     {
         switch (scopeType)
         {
@@ -1796,14 +1796,14 @@ public:
         return iters.item(firstMatchIter).getScopeType();
     }
 
-    virtual void playProperties(WuPropertyTypes whichProperties, IWuScopeVisitor & visitor) override
+    virtual void playProperties(IWuScopeVisitor & visitor, WuPropertyTypes whichProperties) override
     {
         VisitorMapper mappedVisitor(filter, visitor);
         whichProperties &= filter.properties;
         ForEachItemIn(i, iters)
         {
             if (iterMatchesCurrentScope(i))
-                iters.item(i).playProperties(whichProperties, mappedVisitor);
+                iters.item(i).playProperties(mappedVisitor, whichProperties);
         }
     }
 
@@ -12810,7 +12810,7 @@ void aggregateStatistic(StatsAggregation & result, IConstWorkUnit * wu, const Wu
     SimpleReferenceAggregator aggregator(search, result);
     Owned<IConstWUScopeIterator> it = &wu->getScopeIterator(filter);
     ForEach(*it)
-        it->playProperties(PTstatistics, aggregator);
+        it->playProperties(aggregator);
 }
 
 

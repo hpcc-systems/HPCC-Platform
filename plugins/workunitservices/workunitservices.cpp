@@ -567,7 +567,7 @@ WORKUNITSERVICES_API void wsWorkunitTimeStamps(ICodeContext *ctx, size32_t & __l
         Owned<IConstWUScopeIterator> iter = &wu->getScopeIterator(filter);
         ForEach(*iter)
         {
-            iter->playProperties(PTstatistics, visitor);
+            iter->playProperties(visitor);
         }
     }
     __lenResult = mb.length();
@@ -678,7 +678,7 @@ WORKUNITSERVICES_API void wsWorkunitTimings( ICodeContext *ctx, size32_t & __len
         Owned<IConstWUScopeIterator> iter = &wu->getScopeIterator(filter);
         ForEach(*iter)
         {
-            iter->playProperties(PTstatistics, visitor);
+            iter->playProperties(visitor);
         }
     }
     __lenResult = mb.length();

@@ -289,7 +289,7 @@ void WUDetails::processRequest(IEspWUDetailsRequest &req, IEspWUDetailsResponse 
         assertex(scope);
 
         wuDetailsVisitor.noteScopeType(scopeType);
-        iter->playProperties(PTall, wuDetailsVisitor);
+        iter->playProperties(wuDetailsVisitor);
 
         Owned<IEspWUResponseScope> respScope = createWUResponseScope("","");
         if (includeScope)
