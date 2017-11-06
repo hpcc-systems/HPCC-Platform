@@ -1130,16 +1130,26 @@ public:
             };
             Owned<CSubscriber> subscriber;
             SubscriptionId id;
+            StringAttr xpath;
         public:
-            CSubscriberContainer(StringBuffer &result, const char *xpath, bool sub)
+            CSubscriberContainer(StringBuffer &result, const char *_xpath, bool sub) : xpath(_xpath)
             {
                 subscriber.setown(new CSubscriber(result, xpath, sub));
                 id = querySDS().subscribe(xpath, *subscriber, sub, !sub);
-                PROGLOG("Subscribed to %s", xpath);
+                PROGLOG("Subscribed to %s", xpath.get());
             }
             ~CSubscriberContainer()
             {
-                querySDS().unsubscribe(id);
+                try
+                {
+                    querySDS().unsubscribe(id);
+                }
+                catch (IException *e)
+                {
+                    VStringBuffer msg("Unsubscribing from : '%s'", xpath.get());
+                    EXCLOG(e, msg.str());
+                    e->Release();
+                }
             }
         };
         Owned<IRemoteConnection> conn = querySDS().connect("/", myProcessSession(), RTM_LOCK_WRITE, INFINITE);
