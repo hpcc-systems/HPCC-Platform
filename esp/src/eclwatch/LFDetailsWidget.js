@@ -381,6 +381,9 @@ define([
             } else if (name === "IsProtected") {
                 dom.byId(this.id + "ProtectedImage").src = this.logicalFile.getProtectedImage();
             } else if (name === "Ecl" && newValue) {
+                this.setDisabled(this.id + "_Source", false);
+                this.setDisabled(this.id + "_DEF", false);
+                this.setDisabled(this.id + "_XML", false);
             } else if (name === "StateID") {
                 this.summaryWidget.set("iconClass", this.logicalFile.getStateIconClass());
                 domClass.remove(this.id + "StateIdImage");
@@ -389,9 +392,12 @@ define([
             } else if (name === "Superfiles") {
                 this.fileBelongsToWidget.set("title", this.i18n.Superfile + " (" + newValue.DFULogicalFile.length + ")");
                 var superOwner = [];
-                for (var i = 0; newValue.DFULogicalFile.length; ++i) {
-                    superOwner.push(newValue.DFULogicalFile[i].Name);
-                    this.updateInput("SuperOwner", oldValue, superOwner);
+                if (newValue.DFULogicalFile.length > 0) {
+                    this.setDisabled(this.id + "_FileBelongs", false);
+                    for (var i = 0; newValue.DFULogicalFile.length; ++i) {
+                        superOwner.push(newValue.DFULogicalFile[i].Name);
+                        this.updateInput("SuperOwner", oldValue, superOwner);
+                    }
                 }
             } else if (name === "__hpcc_changedCount" && newValue > 0) {
                 this.refreshActionState();
