@@ -3632,7 +3632,7 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
    return true;
 }
 
-void getScheduledWUs(IEspContext &context, const char *stateReq, const char *serverName, const char *eventName, IArrayOf<IEspScheduledWU> & results)
+void getScheduledWUs(IEspContext &context, const char *stateReq, const char *jobNameReq, const char *serverName, const char *eventName, IArrayOf<IEspScheduledWU> & results)
 {
     double version = context.getClientVersion();
     if (notEmpty(serverName))
@@ -3654,33 +3654,39 @@ void getScheduledWUs(IEspContext &context, const char *stateReq, const char *ser
                     it->getWuid(wuid);
                     if (wuid.length())
                     {
-                        bool match = false;
+                        bool match = true;
                         unsigned stateID = WUStateUnknown;
                         StringBuffer jobName, owner;
                         SCMStringBuffer state;
                         try
                         {
                             Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
-                            if (!cw && (!stateReq || !*stateReq))
-                            	match = true;
-                            else if (cw)
+                            if (cw)
                             {
-                                if ((cw->getState() == WUStateScheduled) && cw->aborting())
-                                {
-                                    stateID = WUStateAborting;
-                                    state.set("aborting");
-                                }
+                                jobName.set(cw->queryJobName());
+                                owner.set(cw->queryUser());
+                            }
+
+                            if (!isEmptyString(jobNameReq) && (jobName.isEmpty() || !WildMatch(jobName.str(), jobNameReq, true)))
+                                match =  false;
+                            else if (!isEmptyString(stateReq))
+                            {
+                                if (!cw)
+                                    match =  false;
                                 else
                                 {
-                                    stateID = cw->getState();
-                                    state.set(cw->queryStateDesc());
-                                }
-
-                                if (!stateReq || !*stateReq || strieq(stateReq, state.str()))
-                                {
-                                    match = true;
-                                    jobName.set(cw->queryJobName());
-                                    owner.set(cw->queryUser());
+                                    if ((cw->getState() == WUStateScheduled) && cw->aborting())
+                                    {
+                                        stateID = WUStateAborting;
+                                        state.set("aborting");
+                                    }
+                                    else
+                                    {
+                                        stateID = cw->getState();
+                                        state.set(cw->queryStateDesc());
+                                    }
+                                    if (!strieq(stateReq, state.str()))
+                                        match =  false;
                                 }
                             }
                         }
@@ -3688,6 +3694,7 @@ void getScheduledWUs(IEspContext &context, const char *stateReq, const char *ser
                         {
                             EXCLOG(e, "Get scheduled WUs");
                             e->Release();
+                            match =  false;
                         }
                         if (!match)
                         {
@@ -3759,10 +3766,10 @@ bool CWsWorkunitsEx::onWUShowScheduled(IEspContext &context, IEspWUShowScheduled
                 continue;
 
             if(isEmpty(clusterName))
-                getScheduledWUs(context, state, iclusterName, eventName, results);
+                getScheduledWUs(context, state, req.getJobName(), iclusterName, eventName, results);
             else if (strieq(clusterName, iclusterName))
             {
-                getScheduledWUs(context, state, clusterName, eventName, results);
+                getScheduledWUs(context, state, req.getJobName(), clusterName, eventName, results);
                 resp.setClusterSelected(i+1);
             }
 

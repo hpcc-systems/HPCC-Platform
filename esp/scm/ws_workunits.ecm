@@ -1215,6 +1215,7 @@ ESPrequest [nil_remove] WUShowScheduledRequest
     string PushEventName("");
     string PushEventText("");
     [min_ver("1.51")] string State("");
+    [min_ver("1.71")] string JobName("");
 };
 
 ESPStruct [nil_remove] ScheduledWU
