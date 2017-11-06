@@ -153,6 +153,7 @@ void expandType(IPropertyTree * def, ITypeInfo * type)
                 IPropertyTree * ptype = ptree->addPropTree("Type");
                 expandType(ptype, params->queryChild(i)->queryType());
             }
+            //fallthrough
         }
         case type_set:
         case type_row:
