@@ -471,7 +471,7 @@ static IHqlExpression * mapIfBlock(HqlMapTransformer & mapper, IHqlExpression * 
 }
 
 
-static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IHqlExpression * tableExpr, IHqlExpression * record, bool hasInternalFileposition, bool allowTranslate)
+static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IHqlExpression * record, bool hasInternalFileposition)
 {
     HqlExprArray physicalFields;
     unsigned max = record->numChildren() - (hasInternalFileposition ? 1 : 0);
@@ -485,42 +485,27 @@ static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IH
         else if (cur->getOperator() == no_ifblock)
             physicalFields.append(*mapIfBlock(mapper, cur));
         else if (cur->getOperator() == no_record)
-            physicalFields.append(*createPhysicalIndexRecord(mapper, tableExpr, cur, false, allowTranslate));
+            physicalFields.append(*createPhysicalIndexRecord(mapper, cur, false));
         else if (cur->hasAttribute(blobAtom))
         {
             newField = createField(cur->queryId(), makeIntType(8, false), NULL, NULL);
         }
         else
         {
-            OwnedHqlExpr select = createSelectExpr(LINK(tableExpr), LINK(cur));
-            if (!allowTranslate)
-                newField = LINK(cur);
-            else if (cur->isDatarow() && !isInPayload())
+            //This should support other non serialized formats.  E.g., link counted strings.
+            //Simplest would be to move getSerializedForm code + call that first.
+            if (cur->hasAttribute(_linkCounted_Atom) || cur->isDatarow())
             {
-                //MORE: Mappings for ifblocks using self.a.b (!)
-                HqlMapTransformer childMapper;
-                OwnedHqlExpr newRecord = createPhysicalIndexRecord(childMapper, select, cur->queryRecord(), false, allowTranslate);
-                HqlExprArray args;
-                unwindChildren(args, cur);
-                newField = createField(cur->queryId(), newRecord->getType(), args);
+                newField = getSerializedForm(cur, diskAtom);
+                assertex(newField != cur || cur->isDatarow());
             }
             else
             {
-                //This should support other non serialized formats.  E.g., link counted strings. 
-                //Simplest would be to move getSerializedForm code + call that first.
-                if (cur->hasAttribute(_linkCounted_Atom) || cur->isDatarow())
-                {
-                    newField = getSerializedForm(cur, diskAtom);
-                    assertex(newField != cur || cur->isDatarow());
-                }
+                OwnedHqlExpr hozed = getHozedKeyValue(cur);
+                if (hozed->queryType() == cur->queryType())
+                    newField = LINK(cur);
                 else
-                {
-                    OwnedHqlExpr hozed = getHozedKeyValue(select);
-                    if (hozed->queryType() == select->queryType())
-                        newField = LINK(cur);
-                    else
-                        newField = createField(cur->queryId(), hozed->getType(), extractFieldAttrs(cur));
-                }
+                    newField = createField(cur->queryId(), hozed->getType(), extractFieldAttrs(cur));
             }
         }
 
@@ -555,7 +540,7 @@ IHqlExpression * HqlCppTranslator::convertToPhysicalIndex(IHqlExpression * table
 
     HqlMapTransformer mapper;
     bool hasFileposition = getBoolAttribute(tableExpr, filepositionAtom, true);
-    IHqlExpression * diskRecord = createPhysicalIndexRecord(mapper, tableExpr, record, hasFileposition, true);
+    IHqlExpression * diskRecord = createPhysicalIndexRecord(mapper, record, hasFileposition);
 
     unsigned payload = numPayloadFields(tableExpr);
     assertex(payload || !hasFileposition);
