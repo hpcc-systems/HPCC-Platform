@@ -253,7 +253,7 @@
 
         <para>You can search DFU Workunits, ECL Workunits, Logical Files, and
         Queries using the global search box. The global search excludes ECL
-        code by default. To search for ECL code within workunits use the
+        code by default. To search for ECL code within workunits, use the
         <emphasis role="bold">ecl: </emphasis>keyword. For example,
         ecl:SOAPCALL. To limit or filter your search results you can use
         keywords as displayed in the empty search box.</para>
