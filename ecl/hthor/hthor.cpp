@@ -305,7 +305,7 @@ private:
     virtual void getTempFilename(StringAttr & out) const
     {
         StringBuffer buff;
-        agent.getTempfileBase(buff).appendf(".cluster_write_%p.%" I64F "d_%u", this, (__int64)GetCurrentThreadId(), GetCurrentProcessId());
+        agent.getTempfileBase(buff).append(PATHSEPCHAR).appendf("cluster_write_%p.%" I64F "d_%u", this, (__int64)GetCurrentThreadId(), GetCurrentProcessId());
         out.set(buff.str());
     }
 };
@@ -3979,7 +3979,7 @@ bool CHThorGroupSortActivity::sortAndSpillRows()
     if(!diskMerger)
     {
         StringBuffer fbase;
-        agent.getTempfileBase(fbase).appendf(".spill_sort_%p", this);
+        agent.getTempfileBase(fbase).append(PATHSEPCHAR).appendf("spill_sort_%p", this);
         PROGLOG("SORT: spilling to disk, filename base %s", fbase.str());
         class CHThorRowLinkCounter : implements IRowLinkCounter, public CSimpleInterface
         {

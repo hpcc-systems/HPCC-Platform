@@ -624,7 +624,7 @@ StringBuffer & EclAgent::getTempfileBase(StringBuffer & buff)
 const char *EclAgent::queryTemporaryFile(const char *fname)
 {
     StringBuffer tempfilename;
-    getTempfileBase(tempfilename).append('.').append(fname);
+    getTempfileBase(tempfilename).append(PATHSEPCHAR).append(fname);
     CriticalBlock crit(tfsect);
     ForEachItemIn(idx, tempFiles)
     {
@@ -640,7 +640,7 @@ const char *EclAgent::queryTemporaryFile(const char *fname)
 const char *EclAgent::noteTemporaryFile(const char *fname)
 {
     StringBuffer tempfilename;
-    getTempfileBase(tempfilename).append('.').append(fname);
+    getTempfileBase(tempfilename).append(PATHSEPCHAR).append(fname);
     CriticalBlock crit(tfsect);
     tempFiles.append(tempfilename.str());
     return tempFiles.item(tempFiles.length()-1);
