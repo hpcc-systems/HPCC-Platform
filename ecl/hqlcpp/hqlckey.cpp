@@ -110,10 +110,9 @@ bool isKeyableType(ITypeInfo * type)
 }
 
 
-IHqlExpression * getHozedKeyValue(IHqlExpression * _value)
+ITypeInfo * getHozedKeyType(IHqlExpression * expr)
 {
-    HqlExprAttr value = _value;
-    Linked<ITypeInfo> type = _value->queryType()->queryPromotedType();
+    Linked<ITypeInfo> type = expr->queryType();
 
     type_t tc = type->getTypeCode();
     switch (tc)
@@ -125,11 +124,7 @@ IHqlExpression * getHozedKeyValue(IHqlExpression * _value)
     case type_int:
     case type_swapint:
         if (type->isSigned())
-        {
             type.setown(makeIntType(type->getSize(), false));
-            value.setown(ensureExprType(value, type));
-            value.setown(createValue(no_add, LINK(type), LINK(value), getHozedBias(type)));
-        }
         if ((type->getTypeCode() == type_littleendianint) && (type->getSize() != 1))
             type.setown(makeSwapIntType(type->getSize(), false));
         break;
@@ -150,7 +145,31 @@ IHqlExpression * getHozedKeyValue(IHqlExpression * _value)
         break;
     }
 
-    return ensureExprType(value, type);
+    return type.getClear();
+}
+
+
+IHqlExpression * getHozedKeyValue(IHqlExpression * _value)
+{
+    HqlExprAttr value = _value;
+    Linked<ITypeInfo> type = _value->queryType()->queryPromotedType();
+    Owned<ITypeInfo> hozedType = getHozedKeyType(value);
+
+    type_t tc = type->getTypeCode();
+    switch (tc)
+    {
+    case type_int:
+    case type_swapint:
+        if (type->isSigned())
+        {
+            type.setown(makeIntType(type->getSize(), false));
+            value.setown(ensureExprType(value, type));
+            value.setown(createValue(no_add, LINK(type), LINK(value), getHozedBias(type)));
+        }
+        break;
+    }
+
+    return ensureExprType(value, hozedType);
 }
 
 
