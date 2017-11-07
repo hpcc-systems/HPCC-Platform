@@ -343,6 +343,7 @@ enum {
     RFCreadfilteredindex,
     RFCreadfilteredindexcount,
     RFCreadfilteredindexblob,
+    RFCmaxnormal,
     RFCStreamRead = '{',
     RFCmax,
     RFCunknown = 255 // 0 would have been more sensible, but can't break backward compatibility
@@ -399,9 +400,14 @@ const char *RFCStrings[] =
 };
 static const char *getRFCText(RemoteFileCommandType cmd)
 {
-    if (cmd > RFCmax)
-        cmd = RFCmax;
-    return RFCStrings[cmd];
+    if (cmd==RFCStreamRead)
+        return "RFCStreamRead";
+    else
+    {
+        if (cmd > RFCmaxnormal)
+            cmd = RFCmaxnormal;
+        return RFCStrings[cmd];
+    }
 }
 
 static const char *getRFSERRText(unsigned err)
