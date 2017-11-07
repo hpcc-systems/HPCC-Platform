@@ -1198,7 +1198,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 
         CKeyLocalLookup(CKeyedJoinSlave &_owner) : owner(_owner), indexReadFieldsRow(_owner.indexInputAllocator)
         {
-            tlkManager.setown(owner.keyHasTlk ? createLocalKeyManager(nullptr, owner.fixedRecordSize, nullptr) : nullptr);
+            tlkManager.setown(owner.keyHasTlk ? createLocalKeyManager(nullptr, nullptr) : nullptr);
 
             if (owner.getKeyManagers(partKeyManagers)) // true signifies that dealing with a local mergable set of index parts
                 currentPartKeyManager = &partKeyManagers.item(0);
@@ -1588,14 +1588,14 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             {
                 bool allowRemote = getOptBool("remoteKeyFilteringEnabled");
                 bool forceRemote = allowRemote ? getOptBool("forceDafilesrv") : false; // can only force remote, if forceDafilesrv and remoteKeyFilteringEnabled are enabled.
-                klManager.setown(createKeyManager(filename, fixedRecordSize, crc, lfile, allowRemote, forceRemote));
+                klManager.setown(createKeyManager(filename, crc, lfile, allowRemote, forceRemote));
                 keyManagers.append(*klManager.getClear());
             }
         }
         if (localMergedKey)
         {
             dbgassertex(0 == keyManagers.ordinality());
-            keyManagers.append(*createKeyMerger(partKeySet, fixedRecordSize, 0, nullptr));
+            keyManagers.append(*createKeyMerger(partKeySet, 0, nullptr));
             return true;
         }
         else

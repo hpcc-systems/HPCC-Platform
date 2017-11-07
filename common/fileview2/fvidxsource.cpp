@@ -428,7 +428,7 @@ bool IndexDataSource::addFilter(unsigned column, unsigned matchLen, unsigned siz
 
 void IndexDataSource::applyFilter()
 {
-    manager.setown(createLocalKeyManager(tlk, 0, NULL));
+    manager.setown(createLocalKeyManager(tlk, NULL));
     ForEachItemIn(i, values)
     {
         IStringSet & cur = values.item(i);

@@ -228,9 +228,9 @@ interface IKeyManager : public IInterface, extends IIndexReadContext
     virtual bool lookupSkip(const void *seek, size32_t seekGEOffset, size32_t seeklen) = 0;
 };
 
-extern jhtree_decl IKeyManager *createLocalKeyManager(IKeyIndex * _key, unsigned rawSize, IContextLogger *ctx);
-extern jhtree_decl IKeyManager *createKeyMerger(IKeyIndexSet * _key, unsigned rawSize, unsigned sortFieldOffset, IContextLogger *ctx);
-extern jhtree_decl IKeyManager *createSingleKeyMerger(IKeyIndex * _onekey, unsigned rawSize, unsigned sortFieldOffset, IContextLogger *ctx);
+extern jhtree_decl IKeyManager *createLocalKeyManager(IKeyIndex * _key, IContextLogger *ctx);
+extern jhtree_decl IKeyManager *createKeyMerger(IKeyIndexSet * _key, unsigned sortFieldOffset, IContextLogger *ctx);
+extern jhtree_decl IKeyManager *createSingleKeyMerger(IKeyIndex * _onekey, unsigned sortFieldOffset, IContextLogger *ctx);
 
 class KLBlobProviderAdapter : implements IBlobProvider
 {

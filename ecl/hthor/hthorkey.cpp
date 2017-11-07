@@ -467,7 +467,7 @@ bool CHThorIndexReadActivityBase::doPreopenLimitFile(unsigned __int64 & count, u
         {
             Owned<IKeyIndex> tlk = openKeyFile(df->queryPart(num));
             verifyIndex(tlk);
-            Owned<IKeyManager> tlman = createLocalKeyManager(tlk, keySize, NULL);
+            Owned<IKeyManager> tlman = createLocalKeyManager(tlk, NULL);
             initManager(tlman);
             while(tlman->lookup(false) && (count<=limit))
             {
@@ -503,7 +503,7 @@ IKeyIndex * CHThorIndexReadActivityBase::doPreopenLimitPart(unsigned __int64 & r
         verifyIndex(kidx);
     if (limit != (unsigned) -1)
     {
-        Owned<IKeyManager> kman = createLocalKeyManager(kidx, keySize, NULL);
+        Owned<IKeyManager> kman = createLocalKeyManager(kidx, NULL);
         initManager(kman);
         result += kman->checkCount(limit-result);
     }
@@ -604,7 +604,7 @@ void CHThorIndexReadActivityBase::initManager(IKeyManager *manager)
 
 void CHThorIndexReadActivityBase::initPart()                                    
 { 
-    klManager.setown(createLocalKeyManager(keyIndex, keySize, NULL));
+    klManager.setown(createLocalKeyManager(keyIndex, NULL));
     initManager(klManager);     
     callback.setManager(klManager);
 }
@@ -634,7 +634,7 @@ bool CHThorIndexReadActivityBase::firstMultiPart()
     if(!tlk)
         openTlk();
     verifyIndex(tlk);
-    tlManager.setown(createLocalKeyManager(tlk, keySize, NULL));
+    tlManager.setown(createLocalKeyManager(tlk, NULL));
     initManager(tlManager);
     nextPartNumber = 0;
     return nextMultiPart();
@@ -864,7 +864,7 @@ bool CHThorIndexReadActivity::nextPart()
 {
     if(keyIndexCache && (seekGEOffset || localSortKey))
     {
-        klManager.setown(createKeyMerger(keyIndexCache, keySize, seekGEOffset, NULL));
+        klManager.setown(createKeyMerger(keyIndexCache, seekGEOffset, NULL));
         keyIndexCache.clear();
         initManager(klManager);
         callback.setManager(klManager);
@@ -3118,7 +3118,7 @@ public:
             //Owned<IRecordLayoutTranslator> 
             trans.setown(owner.getLayoutTranslator(&f));
             owner.verifyIndex(&f, index, trans);
-            Owned<IKeyManager> manager = createLocalKeyManager(index, index->keySize(), NULL);
+            Owned<IKeyManager> manager = createLocalKeyManager(index, NULL);
             if(trans)
                 manager->setLayoutTranslator(trans);
             managers.append(*manager.getLink());
@@ -3159,7 +3159,7 @@ void KeyedLookupPartHandler::openPart()
     if(manager)
         return;
     Owned<IKeyIndex> index = openKeyFile(*part);
-    manager.setown(createLocalKeyManager(index, index->keySize(), NULL));
+    manager.setown(createLocalKeyManager(index, NULL));
     IRecordLayoutTranslator * trans = tlk->queryRecordLayoutTranslator();
     if(trans)
         manager->setLayoutTranslator(trans);
@@ -3239,7 +3239,7 @@ public:
             {
                 Owned<IKeyIndex> index = openKeyFile(f.queryPart(0));
                 owner.verifyIndex(&f, index, trans);
-                manager.setown(createLocalKeyManager(index, index->keySize(), NULL));
+                manager.setown(createLocalKeyManager(index, NULL));
             }
             else
             {
@@ -3252,7 +3252,7 @@ public:
                     parts->addIndex(index.getLink());
                 }
                 owner.verifyIndex(&f, index, trans);
-                manager.setown(createKeyMerger(parts, index->keySize(), 0, NULL));
+                manager.setown(createKeyMerger(parts, 0, nullptr));
             }
             if(trans)
                 manager->setLayoutTranslator(trans);
