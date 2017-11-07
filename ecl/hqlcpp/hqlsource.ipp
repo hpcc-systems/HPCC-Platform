@@ -188,7 +188,7 @@ protected:
     void expandSelects(IHqlExpression * expr, IHqlSimpleScope * expandedScope, IHqlExpression * keySelector, IHqlExpression * expandedSelector);;
     bool extractOrFilter(KeyConditionInfo & matches, IHqlExpression * filter, KeyedKind keyedKind);
     void generateFormatWrapping(StringBuffer & createMonitorText, IHqlExpression * selector, IHqlExpression * expandedSelector, unsigned curOffset);
-    void generateOffsetWrapping(StringBuffer & createMonitorText, IHqlExpression * selector, unsigned curOffset);
+    void generateOffsetWrapping(StringBuffer & createMonitorText, IHqlExpression * selector);
     IHqlExpression * getMonitorValueAddress(BuildCtx & ctx, IHqlExpression * value);
     IHqlExpression * getRangeLimit(ITypeInfo * fieldType, IHqlExpression * lengthExpr, IHqlExpression * value, int whichBoundary);
     IHqlExpression * invertTransforms(IHqlExpression * left, IHqlExpression * right);

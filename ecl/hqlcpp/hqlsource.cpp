@@ -4490,7 +4490,7 @@ void MonitorExtractor::buildKeySegmentExpr(BuildMonitorState & buildState, KeySe
         if (selectorInfo.expandNeeded || selectorInfo.isComputed)
             generateFormatWrapping(createMonitorText, selectorInfo.selector, selectorInfo.expandedSelector, buildState.curOffset);
         else if (selectorInfo.mapOffset)
-            generateOffsetWrapping(createMonitorText, selectorInfo.selector, buildState.curOffset);
+            generateOffsetWrapping(createMonitorText, selectorInfo.selector);
 
         appendCtx->addQuotedF("%s->append(%s);", buildState.listName, createMonitorText.str());
     }
@@ -4542,11 +4542,11 @@ interface IKeySegmentFormatTranslator : public IInterface
 };
 */
 
-void MonitorExtractor::generateOffsetWrapping(StringBuffer & createMonitorText, IHqlExpression * selector, unsigned curOffset)
+void MonitorExtractor::generateOffsetWrapping(StringBuffer & createMonitorText, IHqlExpression * selector)
 {
     unsigned curFieldIdx = getFieldNumber(tableExpr->queryNormalizedSelector(), selector);
     StringBuffer s;
-    s.clear().append("createNewVarOffsetKeySegmentMonitor(").append(createMonitorText).append(",").append(curOffset).append(",").append(curFieldIdx).append(")");
+    s.clear().append("createNewVarOffsetKeySegmentMonitor(").append(createMonitorText).append(",").append(curFieldIdx).append(")");
     createMonitorText.swapWith(s);
 }
 

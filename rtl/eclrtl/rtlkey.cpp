@@ -807,10 +807,9 @@ protected:
 class CNewVarOffsetKeySegmentMonitor : public CIndirectKeySegmentMonitor
 {
 public:
-    CNewVarOffsetKeySegmentMonitor(IKeySegmentMonitor * _base, unsigned _offset, unsigned _fieldIdx)
+    CNewVarOffsetKeySegmentMonitor(IKeySegmentMonitor * _base, unsigned _fieldIdx)
     : CIndirectKeySegmentMonitor(_base, 0), fieldIdx(_fieldIdx)
     {
-        assert(_offset == 0);   // We no longer use partial size for offset
     }
 
     CNewVarOffsetKeySegmentMonitor(MemoryBuffer &mb)
@@ -1271,9 +1270,9 @@ ECLRTL_API IKeySegmentMonitor *createDummyKeySegmentMonitor(unsigned _offset, un
 //  return new CDummyKeySegmentMonitor(_offset, _size, isSigned, isLittleEndian);
 }
 
-ECLRTL_API IKeySegmentMonitor *createNewVarOffsetKeySegmentMonitor(IKeySegmentMonitor * base, unsigned offset, unsigned fieldIdx)
+ECLRTL_API IKeySegmentMonitor *createNewVarOffsetKeySegmentMonitor(IKeySegmentMonitor * base, unsigned fieldIdx)
 {
-    return new CNewVarOffsetKeySegmentMonitor(base, offset, fieldIdx);
+    return new CNewVarOffsetKeySegmentMonitor(base, fieldIdx);
 }
 
 ECLRTL_API IKeySegmentMonitor *createTranslatedKeySegmentMonitor(IKeySegmentMonitor * base, unsigned offset, IKeySegmentFormatTranslator * translator)
