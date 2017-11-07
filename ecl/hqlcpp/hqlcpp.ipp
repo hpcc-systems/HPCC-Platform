@@ -1056,12 +1056,12 @@ public:
            { return bindTableCursor(ctx, dataset, bound, no_none, NULL); }
 
 
-    IHqlExpression * getRtlFieldKey(IHqlExpression * expr, IHqlExpression * ownerRecord);
+    IHqlExpression * getRtlFieldKey(IHqlExpression * expr, IHqlExpression * ownerRecord, bool &isPayload);
     unsigned buildRtlField(StringBuffer & instanceName, IHqlExpression * field, IHqlExpression * rowRecord);
     unsigned buildRtlType(StringBuffer & instanceName, ITypeInfo * type);
     unsigned buildRtlRecordFields(StringBuffer & instanceName, IHqlExpression * record, IHqlExpression * rowRecord);
     unsigned expandRtlRecordFields(StringBuffer & fieldListText, IHqlExpression * record, IHqlExpression * rowRecord);
-    unsigned buildRtlIfBlockField(StringBuffer & instanceName, IHqlExpression * ifblock, IHqlExpression * rowRecord);
+    unsigned buildRtlIfBlockField(StringBuffer & instanceName, IHqlExpression * ifblock, IHqlExpression * rowRecord, bool isPayload);
 
     void buildMetaInfo(MetaInstance & instance);
     IHqlExpression * buildMetaParameter(IHqlExpression * arg);

@@ -979,6 +979,11 @@ bool CMemberInfo::hasFixedOffset()
     return !hasVarOffset;
 }
 
+bool CMemberInfo::isPayloadField() const
+{
+    return isPayload;
+}
+
 bool CMemberInfo::isConditional()
 { 
     if (container)
@@ -1010,7 +1015,11 @@ bool CMemberInfo::requiresTemp()
 void CMemberInfo::setOffset(bool _hasVarOffset)
 {
     hasVarOffset = _hasVarOffset;
+}
 
+void CMemberInfo::setPayload(bool _isPayload)
+{
+    isPayload = _isPayload;
 }
 
 AColumnInfo * CMemberInfo::lookupColumn(IHqlExpression * search)
@@ -3085,7 +3094,10 @@ ColumnToOffsetMap::ColumnToOffsetMap(IHqlExpression * _key, IHqlExpression * _re
 
 void ColumnToOffsetMap::init(RecordOffsetMap & map)
 {
-    expandRecord(record, &root, map);
+    IHqlExpression * payloadAttr = record->queryAttribute(_payload_Atom);
+    if (payloadAttr)
+        payloadCount = (unsigned)getIntValue(payloadAttr->queryChild(0));
+    expandRecord(record, &root, map, payloadCount);
 }
 
 
@@ -3096,7 +3108,7 @@ void ColumnToOffsetMap::completeActiveBitfields()
     packer.reset();
 }
 
-CMemberInfo * ColumnToOffsetMap::addColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map)
+CMemberInfo * ColumnToOffsetMap::addColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map, bool isPayload)
 {
     CMemberInfo * created = NULL;
     switch (column->getOperator())
@@ -3109,13 +3121,13 @@ CMemberInfo * ColumnToOffsetMap::addColumn(CContainerInfo * container, IHqlExpre
         break;
     case no_record:
         completeActiveBitfields();
-        return expandRecord(column, container, map);
+        return expandRecord(column, container, map, 0);
     case no_ifblock:
         {
             completeActiveBitfields();
             CIfBlockInfo * next = new CIfBlockInfo(container, prior, column);
             next->setOffset(!fixedSizeRecord);
-            expandRecord(column->queryChild(1), next, map);
+            expandRecord(column->queryChild(1), next, map, 0);
             created = next;
             containsIfBlock = true;
         }
@@ -3128,7 +3140,7 @@ CMemberInfo * ColumnToOffsetMap::addColumn(CContainerInfo * container, IHqlExpre
             if (translateVirtuals && column->hasAttribute(virtualAtom) && (column->queryType()->getSize() != UNKNOWN_LENGTH))
                 created = new CVirtualColumnInfo(container, prior, column);
             else
-                created = createColumn(container, column, map);
+                created = createColumn(container, column, map, isPayload);
             break;
         }
     }
@@ -3189,7 +3201,7 @@ void ColumnToOffsetMap::buildAccessor(StringBuffer & accessorName, HqlCppTransla
 }
 
 
-CMemberInfo * ColumnToOffsetMap::createColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map)
+CMemberInfo * ColumnToOffsetMap::createColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map, bool isPayload)
 {
     ITypeInfo * type = column->queryType();
     ITypeInfo * promoted = type->queryPromotedType();
@@ -3237,7 +3249,7 @@ CMemberInfo * ColumnToOffsetMap::createColumn(CContainerInfo * container, IHqlEx
             else
             {
                 CRecordInfo * next = new CRecordInfo(container, prior, column);
-                expandRecord(column->queryRecord(), next, map);
+                expandRecord(column->queryRecord(), next, map, 0);
                 created = next;
             }
             break;
@@ -3315,7 +3327,10 @@ CMemberInfo * ColumnToOffsetMap::createColumn(CContainerInfo * container, IHqlEx
         }
     }
     if (created)
+    {
         created->setOffset(isFixedOffset);
+        created->setPayload(isPayload);
+    }
     return created;
 }
 
@@ -3358,16 +3373,32 @@ bool ColumnToOffsetMap::isMaxSizeSpecified()
     return !cachedDefaultMaxSizeUsed;
 }
 
-CMemberInfo * ColumnToOffsetMap::expandRecord(IHqlExpression * record, CContainerInfo * container, RecordOffsetMap & map)
+CMemberInfo * ColumnToOffsetMap::expandRecord(IHqlExpression * record, CContainerInfo * container, RecordOffsetMap & map, unsigned payloadFields)
 {
     assertex(record->getOperator() == no_record);
     unsigned max = record->numChildren();
     unsigned idx;
+    unsigned firstPayloadField = max;
     bool fixedSize = true;
     prior = NULL;
+    if (payloadFields)
+    {
+        unsigned payloadSeen = 0;
+        while (firstPayloadField)
+        {
+            firstPayloadField--;
+            IHqlExpression *child = record->queryChild(firstPayloadField);
+            if (!child->isAttribute())
+            {
+                payloadSeen++;
+                if (payloadSeen == payloadFields)
+                    break;
+            }
+        }
+    }
     for (idx = 0; idx < max; idx++)
     {
-        CMemberInfo * created = addColumn(container, record->queryChild(idx), map);
+        CMemberInfo * created = addColumn(container, record->queryChild(idx), map, idx >= firstPayloadField);
         if (created)
         {
             if (!created->isFixedSize())
@@ -3387,7 +3418,7 @@ DynamicColumnToOffsetMap::DynamicColumnToOffsetMap(unsigned _maxRecordSize) : Co
 
 void DynamicColumnToOffsetMap::addColumn(IHqlExpression * column, RecordOffsetMap & map)
 {
-    CMemberInfo * created = ColumnToOffsetMap::addColumn(&root, column, map);
+    CMemberInfo * created = ColumnToOffsetMap::addColumn(&root, column, map, false);
     if (created)
     {
         if (!created->isFixedSize())
@@ -3453,7 +3484,7 @@ CsvColumnToOffsetMap::CsvColumnToOffsetMap(IHqlExpression * _record, unsigned _m
     encoding = _encoding;
 }
 
-CMemberInfo * CsvColumnToOffsetMap::createColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map)
+CMemberInfo * CsvColumnToOffsetMap::createColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map, bool isPayload)
 {
     CMemberInfo * created = NULL;
 
@@ -3463,7 +3494,7 @@ CMemberInfo * CsvColumnToOffsetMap::createColumn(CContainerInfo * container, IHq
     case type_row:
         {
             Owned<CRecordInfo> next = new CRecordInfo(container, prior, column);
-            expandRecord(column->queryRecord(), next, map);
+            expandRecord(column->queryRecord(), next, map, 0);
             created = next.getClear();
             break;
         }
@@ -3486,7 +3517,7 @@ XmlColumnToOffsetMap::XmlColumnToOffsetMap(IHqlExpression * _record, unsigned _m
 {
 }
 
-CMemberInfo * XmlColumnToOffsetMap::createColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map)
+CMemberInfo * XmlColumnToOffsetMap::createColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map, bool isPayload)
 {
     CMemberInfo * created = NULL;
     ITypeInfo * type = column->queryType();
@@ -3495,7 +3526,7 @@ CMemberInfo * XmlColumnToOffsetMap::createColumn(CContainerInfo * container, IHq
     case type_row:
         {
             CRecordInfo * next = new CRecordInfo(container, prior, column);
-            expandRecord(column->queryRecord(), next, map);
+            expandRecord(column->queryRecord(), next, map, 0);
             created = next;
             break;
         }

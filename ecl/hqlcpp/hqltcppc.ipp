@@ -77,6 +77,7 @@ public:
     virtual void buildAddress(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound);
     virtual void buildOffset(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound);
     virtual bool hasFixedOffset();
+    virtual bool isPayloadField() const override;
     virtual AColumnInfo * lookupColumn(IHqlExpression * search);
     virtual bool requiresTemp();
 
@@ -116,6 +117,7 @@ public:
     IHqlExpression * makeConditional(HqlCppTranslator & translator, BuildCtx & ctx, BoundRow * row, IHqlExpression * value);
 
     void setOffset(bool _hasVarOffset);     // to avoid loads of arguments to constructor
+    void setPayload(bool _isPayload);       // to avoid loads of arguments to constructor
 
 protected:
     virtual ITypeInfo * queryPhysicalType();
@@ -145,6 +147,7 @@ protected:
     unsigned            seq; // For fields the sequence number, for root container the maximum seq so far
     bool                hasVarOffset;
     bool                isOffsetCached;
+    bool                isPayload = false;
 };
 
 
@@ -574,9 +577,9 @@ public:
     void buildAccessor(StringBuffer & accessorName, HqlCppTranslator & translator, BuildCtx & declarectx, IHqlExpression * selector);
 
 protected:
-    virtual CMemberInfo * addColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map);
-    virtual CMemberInfo * createColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map);
-    CMemberInfo * expandRecord(IHqlExpression * record, CContainerInfo * container, RecordOffsetMap & map);
+    virtual CMemberInfo * addColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map, bool isPayload);
+    virtual CMemberInfo * createColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map, bool isPayload);
+    CMemberInfo * expandRecord(IHqlExpression * record, CContainerInfo * container, RecordOffsetMap & map, unsigned payloadFields);
     void completeActiveBitfields();
     void ensureMaxSizeCached();
 
@@ -590,6 +593,7 @@ protected:
     unsigned packing;
     unsigned defaultMaxRecordSize;
     unsigned cachedMaxSize;
+    unsigned payloadCount = 0;
     bool cachedDefaultMaxSizeUsed;
     bool fixedSizeRecord;
     bool translateVirtuals;
@@ -646,8 +650,8 @@ class HQLCPP_API CsvColumnToOffsetMap : public ColumnToOffsetMap
 public:
     CsvColumnToOffsetMap(IHqlExpression * record, unsigned _maxRecordSize, bool _translateVirtuals, IAtom * _encoding);
 
-    virtual MapFormat getFormat()                   { return MapFormatCsv; }
-    virtual CMemberInfo * createColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map);
+    virtual MapFormat getFormat() override                  { return MapFormatCsv; }
+    virtual CMemberInfo * createColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map, bool isPayload) override;
 
 protected:
     IAtom * encoding;
@@ -659,7 +663,7 @@ public:
     XmlColumnToOffsetMap(IHqlExpression * record, unsigned _maxRecordSize, bool _translateVirtuals);
 
     virtual MapFormat getFormat()                   { return MapFormatXml; }
-    virtual CMemberInfo * createColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map);
+    virtual CMemberInfo * createColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map, bool isPayload) override;
 };
 
 //---------------------------------------------------------------------------
