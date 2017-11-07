@@ -96,10 +96,18 @@ int main(int argc, const char **argv)
         else
             files.append(argv[i]);
     }
-    StringBuffer logname("dumpkey.");
-    logname.append(GetCachedHostName()).append(".");
-    StringBuffer lf;
-    openLogFile(lf, logname.append("log").str());
+    try
+    {
+        StringBuffer logname("dumpkey.");
+        logname.append(GetCachedHostName()).append(".");
+        StringBuffer lf;
+        openLogFile(lf, logname.append("log").str());
+    }
+    catch (IException *E)
+    {
+        // Silently ignore failure to open logfile.
+        E->Release();
+    }
     ForEachItemIn(idx, files)
     {
         try
