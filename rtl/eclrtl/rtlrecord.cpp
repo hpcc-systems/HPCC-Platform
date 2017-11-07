@@ -162,7 +162,7 @@ static unsigned expandNestedRows(unsigned idx, const char *prefix, const RtlFiel
             if (isIfBlock)
             {
                 nestIfBlock = new IfBlockInfo(*cur, inIfBlock, ifblocks.ordinality());
-                ifblocks.append(inIfBlock);
+                ifblocks.append(nestIfBlock);
             }
             const RtlFieldInfo * const * nested = type->queryFields();
             if (nested)
