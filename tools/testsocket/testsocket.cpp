@@ -361,7 +361,7 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
                 StringBuffer xml;
                 if (responseTree)
                 {
-                    if (echoResults)
+                    if (echoResults && response)
                     {
                         fputs(response, stdout);
                         fflush(stdout);
