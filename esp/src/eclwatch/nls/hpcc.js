@@ -751,6 +751,7 @@ define({root:
     User: "User",
     UserDetails: "User Details",
     UserID: "User ID",
+    UserLogin: "Please log in using your username only",
     Username: "Username",
     UserName: "User Name",
     UserPermissions: "User Permissions",
