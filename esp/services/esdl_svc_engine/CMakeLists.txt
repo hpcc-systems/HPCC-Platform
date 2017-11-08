@@ -28,6 +28,7 @@ set (   SRCS
         esdl_binding.cpp
         esdl_svc_engine_plugin.cpp
         esdl_svc_engine.cpp
+        esdl_store.cpp
     )
 
 include_directories (
