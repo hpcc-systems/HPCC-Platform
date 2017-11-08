@@ -1107,7 +1107,7 @@ public:
     }
     void testSDSSubs2()
     {
-        class CSubscriberContainer : public CSimpleInterface
+        class CSubscriberContainer : public CInterface
         {
             class CSubscriber : public CSimpleInterfaceOf<ISDSSubscription>
             {
@@ -1137,7 +1137,7 @@ public:
                 id = querySDS().subscribe(xpath, *subscriber, sub, !sub);
                 PROGLOG("Subscribed to %s", xpath);
             }
-            ~CSubscriberContainer()
+            virtual void beforeDispose() override
             {
                 querySDS().unsubscribe(id);
             }
