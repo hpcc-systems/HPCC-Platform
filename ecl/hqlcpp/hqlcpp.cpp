@@ -1799,7 +1799,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.optimizeSortAllFieldsStrict,"optimizeSortAllFieldsStrict",false),
         DebugOption(options.alwaysReuseGlobalSpills,"alwaysReuseGlobalSpills",true),
         DebugOption(options.forceAllDatasetsParallel,"forceAllDatasetsParallel",false),  // Purely for regression testing.
-        DebugOption(options.embeddedWarningsAsErrors,"embeddedWarningsFatal",true),
+        DebugOption(options.embeddedWarningsAsErrors,"embeddedWarningsAreFatal",true),
         DebugOption(options.optimizeCriticalFunctions,"optimizeCriticalFunctions",true),
         DebugOption(options.addLikelihoodToGraph,"addLikelihoodToGraph", true),
         DebugOption(options.varFieldAccessorThreshold,"varFieldAccessorThreshold",3),   // Generate accessor classes for rows with #variable width fields >= threshold
