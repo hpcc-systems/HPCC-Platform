@@ -265,6 +265,9 @@ int CEspHttpServer::processRequest()
         ctx->setHTTPMethod(method.str());
         ctx->setServiceMethod(methodName.str());
 
+        if(strieq(method.str(), OPTIONS_METHOD))
+            return onOptions();
+
         bool isSoapPost=(stricmp(method.str(), POST_METHOD) == 0 && m_request->isSoapMessage());
         if (!isSoapPost)
         {
@@ -442,10 +445,6 @@ int CEspHttpServer::processRequest()
             // authenticate optional groups
             if (authenticateOptionalFailed(*ctx,thebinding))
                 throw createEspHttpException(401,"Unauthorized Access","Unauthorized Access");
-
-
-            if(strieq(method.str(), OPTIONS_METHOD))
-                return onOptions();
 
             checkSetCORSAllowOrigin(m_request, m_response);
 
