@@ -135,7 +135,7 @@ public:
     ABoundActivity  * getBoundActivity();
     bool isChildActivity()                          { return (containerActivity != NULL); }
     bool         isExternal();
-    inline bool isAction() { return dataset->isAction(); }
+    inline bool isAction() { return activityExpr->isAction(); }
     void noteChildQuery()                           { numChildQueries++; }
     void         setLocal(bool value=true)          { isLocal = value; }
     void         setGrouped(bool value=true)        { isGrouped = value; }
@@ -185,7 +185,7 @@ public:
     unsigned     activityId;
     unsigned     numChildQueries;
     ThorActivityKind kind;
-    HqlExprAttr  dataset;
+    HqlExprAttr  activityExpr;
     LinkedHqlExpr sourceFileSequence;
     StringAttr   activityArgName;
     StringAttr   className;
@@ -207,6 +207,7 @@ public:
     bool         isLocal;
     bool         isGrouped;
     bool         hasChildActivity;
+    bool         generateMetaFromInput = false;
     GraphLocalisation activityLocalisation;
     ActivityInstance * containerActivity;
     Owned<ParentExtract> parentExtract;
