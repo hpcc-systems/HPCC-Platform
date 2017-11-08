@@ -348,9 +348,6 @@ int CEspHttpServer::processRequest()
                     thebinding=dynamic_cast<EspHttpBinding*>(m_defaultBinding.get());
             }
 
-            if(strieq(method.str(), OPTIONS_METHOD))
-                return onOptions();
-
             checkSetCORSAllowOrigin(m_request, m_response);
 
             if (thebinding!=NULL)
