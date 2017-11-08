@@ -259,6 +259,9 @@ int CEspHttpServer::processRequest()
         const char *userid=ctx->queryUserId();
         ESPLOG(LogMin, "%s %s, from %s@%s", method.str(), m_request->getPath(pathStr).str(), (userid) ? userid : "unknown", m_request->getPeer(peerStr).str());
 
+        if(strieq(method.str(), OPTIONS_METHOD))
+            return onOptions();
+
         authState = checkUserAuth();
         if ((authState == authTaskDone) || (authState == authFailed))
             return 0;
@@ -344,9 +347,6 @@ int CEspHttpServer::processRequest()
                 if (!thebinding && m_defaultBinding)
                     thebinding=dynamic_cast<EspHttpBinding*>(m_defaultBinding.get());
             }
-
-            if(strieq(method.str(), OPTIONS_METHOD))
-                return onOptions();
 
             checkSetCORSAllowOrigin(m_request, m_response);
 
