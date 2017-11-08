@@ -5139,6 +5139,14 @@ IHqlExpression * removeOperand(IHqlExpression * expr, IHqlExpression * operand)
     return expr->clone(args);
 }
 
+extern HQL_API IHqlExpression * removeChild(IHqlExpression * expr, unsigned child)
+{
+    HqlExprArray args;
+    unwindChildren(args, expr);
+    args.remove(child);
+    return expr->clone(args);
+}
+
 IHqlExpression * removeChildOp(IHqlExpression * expr, node_operator op)
 {
     HqlExprArray args;

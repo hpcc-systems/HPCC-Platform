@@ -9956,19 +9956,26 @@ void HqlCppTranslator::buildRecordEcl(BuildCtx & subctx, IHqlExpression * record
 }
 
 
-void HqlCppTranslator::buildFormatCrcFunction(BuildCtx & ctx, const char * name, IHqlExpression * dataset, IHqlExpression * expr, unsigned payloadDelta)
+void HqlCppTranslator::buildFormatCrcFunction(BuildCtx & ctx, const char * name, bool removeFilepos, IHqlExpression * dataset, IHqlExpression * expr, unsigned payloadDelta)
 {
     IHqlExpression * payload = expr ? expr->queryAttribute(_payload_Atom) : NULL;
     // MORE - do we need to keep this consistent - if so will have to trim out the originals and the filepos
     OwnedHqlExpr exprToCrc = getSerializedForm(dataset->queryRecord(), diskAtom);
 
-    unsigned payloadSize = 1;
+    unsigned payloadSize = getBoolAttribute(expr, filepositionAtom, true) ? 1 : 0;
     if (payload)
-        payloadSize = (unsigned)getIntValue(payload->queryChild(0)) + payloadDelta;
+        payloadSize = (unsigned)getIntValue(payload->queryChild(0));
 
     //FILEPOSITION(FALSE) means we have counted 1 too many in the payload
-    if (!getBoolAttribute(expr, filepositionAtom, true))
-        payloadSize--;
+    if (getBoolAttribute(expr, filepositionAtom, true) && removeFilepos)
+    {
+        assertex(payloadSize);
+        //Backward compatibility - remove the fileposition field from the CRC
+        HqlExprArray args;
+        unwindChildren(args, exprToCrc);
+        args.pop();
+        exprToCrc.setown(exprToCrc->clone(args));
+    }
 
     exprToCrc.setown(createComma(exprToCrc.getClear(), getSizetConstant(payloadSize)));
 
@@ -10372,7 +10379,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
 
     OwnedHqlExpr rawRecord;
     doBuildIndexOutputTransform(instance->startctx, record, rawRecord, hasFileposition, expr->queryAttribute(maxLengthAtom));
-    buildFormatCrcFunction(instance->classctx, "getFormatCrc", rawRecord, expr, 0);
+    buildFormatCrcFunction(instance->classctx, "getFormatCrc", false, rawRecord, expr, 0);
 
     if (compressAttr && compressAttr->hasAttribute(rowAtom))
     {
@@ -10673,7 +10680,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
         if (!pipe)
         {
             OwnedHqlExpr noVirtualRecord = removeVirtualAttributes(dataset->queryRecord());
-            buildFormatCrcFunction(instance->classctx, "getFormatCrc", noVirtualRecord, NULL, 0);
+            buildFormatCrcFunction(instance->classctx, "getFormatCrc", false, noVirtualRecord, NULL, 0);
         }
 
         bool grouped = isGrouped(dataset);

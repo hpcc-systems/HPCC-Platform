@@ -1477,13 +1477,13 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedJoinOrDenormalize(BuildCt
     //virtual unsigned getKeepLimit()
     doBuildJoinRowLimitHelper(*instance, rowlimit, info.queryKeyFilename(), implicitLimit);
 
-    buildFormatCrcFunction(instance->classctx, "getIndexFormatCrc", info.queryRawKey(), info.queryRawKey(), 1);
+    buildFormatCrcFunction(instance->classctx, "getIndexFormatCrc", true, info.queryRawKey(), info.queryRawKey(), 1);
     if (info.isFullJoin())
     {
         //Remove virtual attributes from the record, so the crc will be compatible with the disk read record
         //can occur with a (highly unusual) full keyed join to a persist file... (see indexread14.ecl)
         OwnedHqlExpr noVirtualRecord = removeVirtualAttributes(info.queryRawRhs()->queryRecord());
-        buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", noVirtualRecord, NULL, 0);
+        buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", false, noVirtualRecord, NULL, 0);
         buildEncryptHelper(instance->startctx, info.queryFile()->queryAttribute(encryptAtom), "getFileEncryptKey");
     }
 
@@ -1597,7 +1597,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedDistribute(BuildCtx & ctx
 
     doCompareLeftRight(instance->nestedctx, "CompareRowKey", leftDs, rightDs, joinInfo.queryLeftReq(), normalizedRight);
 
-    buildFormatCrcFunction(instance->classctx, "getFormatCrc", info.queryRawKey(), info.queryRawKey(), 1);
+    buildFormatCrcFunction(instance->classctx, "getFormatCrc", true, info.queryRawKey(), info.queryRawKey(), 1);
     buildSerializedLayoutMember(instance->classctx, indexRecord, "getIndexLayout", numKeyedFields);
 
     OwnedHqlExpr matchExpr = info.getMatchExpr(true);

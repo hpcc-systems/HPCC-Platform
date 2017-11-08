@@ -408,23 +408,18 @@ static void createPhysicalLogicalAssigns(HqlExprArray & assigns, IHqlExpression 
             {
                 OwnedHqlExpr target = createSelectExpr(LINK(self), LINK(cur));
                 OwnedHqlExpr newValue;
-                if (idx2  == fileposIndex)
-                    newValue.setown(getFilepos(diskDataset, false));
-                else
+                IHqlExpression * curPhysical = nextDiskField(diskRecord, diskIndex);
+                OwnedHqlExpr physicalSelect = createSelectExpr(LINK(diskDataset), LINK(curPhysical));
+                if (cur->isDatarow() && !cur->hasAttribute(blobAtom) && (!isInPayload() || (physicalSelect->queryType() != target->queryType())))
                 {
-                    IHqlExpression * curPhysical = nextDiskField(diskRecord, diskIndex);
-                    OwnedHqlExpr physicalSelect = createSelectExpr(LINK(diskDataset), LINK(curPhysical));
-                    if (cur->isDatarow() && !cur->hasAttribute(blobAtom) && (!isInPayload() || (physicalSelect->queryType() != target->queryType())))
-                    {
-                        HqlExprArray subassigns;
-                        OwnedHqlExpr childSelf = createSelector(no_self, cur, NULL);
-                        createPhysicalLogicalAssigns(subassigns, childSelf, curPhysical->queryRecord(), cur->queryRecord(), physicalSelect, false, NotFound);
-                        OwnedHqlExpr transform = createValue(no_transform, makeTransformType(cur->queryRecord()->getType()), subassigns);
-                        newValue.setown(createRow(no_createrow, transform.getClear()));
-                    }
-                    else
-                        newValue.setown(convertIndexPhysical2LogicalValue(cur, physicalSelect, allowTranslate));
+                    HqlExprArray subassigns;
+                    OwnedHqlExpr childSelf = createSelector(no_self, cur, NULL);
+                    createPhysicalLogicalAssigns(subassigns, childSelf, curPhysical->queryRecord(), cur->queryRecord(), physicalSelect, false, NotFound);
+                    OwnedHqlExpr transform = createValue(no_transform, makeTransformType(cur->queryRecord()->getType()), subassigns);
+                    newValue.setown(createRow(no_createrow, transform.getClear()));
                 }
+                else
+                    newValue.setown(convertIndexPhysical2LogicalValue(cur, physicalSelect, allowTranslate && (idx2 != fileposIndex)));
 
                 if (newValue)
                     assigns.append(*createAssign(target.getClear(), newValue.getClear()));
@@ -524,11 +519,20 @@ static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IH
             }
         }
     }
-    if (hasInternalFileposition && createKeyedTypes)
+    if (hasInternalFileposition)
     {
-        IHqlExpression * cur = record->queryChild(record->numChildren()-1);
-        IHqlExpression *fposField = createField(cur->queryId(), makeFilePosType(cur->getType()), nullptr, extractFieldAttrs(cur));
-        physicalFields.append(*fposField);
+        if (createKeyedTypes)
+        {
+            IHqlExpression * cur = record->queryChild(record->numChildren()-1);
+            IHqlExpression *fposField = createField(cur->queryId(), makeFilePosType(cur->getType()), nullptr, extractFieldAttrs(cur));
+            physicalFields.append(*fposField);
+        }
+        else
+        {
+            IHqlExpression * cur = record->queryChild(record->numChildren()-1);
+            IHqlExpression *fposField = createField(cur->queryId(), makeSwapIntType(8, false), nullptr, extractFieldAttrs(cur));
+            physicalFields.append(*fposField);
+        }
     }
 
     return createRecord(physicalFields);
@@ -559,12 +563,11 @@ IHqlExpression * HqlCppTranslator::convertToPhysicalIndex(IHqlExpression * table
 
     unsigned payload = numPayloadFields(tableExpr);
     assertex(payload || !hasFileposition);
-    unsigned newPayload = hasFileposition ? payload-1 : payload;
     HqlExprArray args;
     unwindChildren(args, tableExpr);
     args.replace(*diskRecord, 1);
     removeAttribute(args, _payload_Atom);
-    args.append(*createAttribute(_payload_Atom, getSizetConstant(newPayload)));
+    args.append(*createAttribute(_payload_Atom, getSizetConstant(payload)));
     args.append(*createAttribute(_original_Atom, LINK(tableExpr)));
 
     //remove the preload attribute and replace with correct value
@@ -2380,9 +2383,17 @@ void SourceBuilder::buildGlobalGroupAggregateHelpers(IHqlExpression * expr)
 
     //virtual void processRows(void * self, size32_t srcLen, const void * src) = 0;
     {
+        OwnedHqlExpr newTableExpr = LINK(tableExpr);
+        if (isKey(tableExpr))
+        {
+            IHqlExpression * record = tableExpr->queryRecord();
+            OwnedHqlExpr newRecord = removeChild(record, record->numChildren()-1);
+            newTableExpr.setown(replaceChild(tableExpr, 1, newRecord));
+        }
+
         MemberFunction func(translator, instance->startctx, "virtual void processRows(size32_t srcLen, const void * _left, IHThorGroupAggregateCallback * callback) override");
         func.ctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
-        OwnedHqlExpr ds = createVariable("left", makeReferenceModifier(tableExpr->getType()));
+        OwnedHqlExpr ds = createVariable("left", makeReferenceModifier(newTableExpr->getType()));
         OwnedHqlExpr len = createVariable("srcLen", LINK(sizetType));
         OwnedHqlExpr fullDs = createTranslated(ds, len);
 
@@ -2757,7 +2768,7 @@ void DiskReadBuilderBase::buildMembers(IHqlExpression * expr)
     {
         //Spill files can still have virtual attributes in their physical records => remove them.
         OwnedHqlExpr noVirtualRecord = removeVirtualAttributes(physicalRecord);
-        translator.buildFormatCrcFunction(instance->classctx, "getFormatCrc", noVirtualRecord, NULL, 0);
+        translator.buildFormatCrcFunction(instance->classctx, "getFormatCrc", false, noVirtualRecord, NULL, 0);
     }
 
     buildLimits(instance->startctx, expr, instance->activityId); 
@@ -6281,8 +6292,6 @@ public:
     IndexReadBuilderBase(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
         : SourceBuilder(_translator, _tableExpr, _nameExpr), monitors(_tableExpr, _translator, -(int)numPayloadFields(_tableExpr), false)
     { 
-        fpos.setown(getFilepos(tableExpr, false));
-        lfpos.setown(getFilepos(tableExpr, true));
     }
 
     virtual void buildMembers(IHqlExpression * expr);
@@ -6338,7 +6347,7 @@ void IndexReadBuilderBase::buildMembers(IHqlExpression * expr)
 
     buildKeyedLimitHelper(expr);
 
-    translator.buildFormatCrcFunction(instance->classctx, "getFormatCrc", tableExpr, tableExpr, 1);
+    translator.buildFormatCrcFunction(instance->classctx, "getFormatCrc", true, tableExpr, tableExpr, 1);
     IHqlExpression * originalKey = queryAttributeChild(tableExpr, _original_Atom, 0);
     translator.buildSerializedLayoutMember(instance->classctx, originalKey->queryRecord(), "getIndexLayout", numKeyedFields(originalKey));
 
@@ -6644,9 +6653,13 @@ void IndexAggregateBuilder::buildMembers(IHqlExpression * expr)
     }
 
     {
+        IHqlExpression * record = tableExpr->queryRecord();
+        OwnedHqlExpr newRecord = removeChild(record, record->numChildren()-1);
+        OwnedHqlExpr newTableExpr = replaceChild(tableExpr, 1, newRecord);
+
         MemberFunction func(translator, instance->startctx, "virtual void processRows(ARowBuilder & crSelf, size32_t srcLen, const void * _left) override");
         func.ctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
-        OwnedHqlExpr ds = createVariable("left", makeReferenceModifier(tableExpr->getType()));
+        OwnedHqlExpr ds = createVariable("left", makeReferenceModifier(newTableExpr->getType()));
         OwnedHqlExpr len = createVariable("srcLen", LINK(sizetType));
         OwnedHqlExpr fullDs = createTranslated(ds, len);
 
@@ -7248,7 +7261,7 @@ void FetchBuilder::buildMembers(IHqlExpression * expr)
     case no_json:
         break;
     default:
-        translator.buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", physicalRecord, NULL, 0);
+        translator.buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", false, physicalRecord, NULL, 0);
         break;
     }
 

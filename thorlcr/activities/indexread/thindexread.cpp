@@ -167,8 +167,9 @@ protected:
                 tlk->reset();
                 while (tlk->lookup(false))
                 {
-                    if (tlk->queryFpos())
-                        performPartLookup.replace(true, (aindex_t)(super?super->numSubFiles(true)*(tlk->queryFpos()-1)+superSubIndex:tlk->queryFpos()-1));
+                    offset_t node = extractFpos(tlk);
+                    if (node)
+                        performPartLookup.replace(true, (aindex_t)(super?super->numSubFiles(true)*(node-1)+superSubIndex:node-1));
                 }
             }
             if (!super||!iter->next())

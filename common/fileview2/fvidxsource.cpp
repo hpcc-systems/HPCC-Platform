@@ -304,8 +304,7 @@ bool IndexDataSource::getNextRow(MemoryBuffer & out, bool extractRow)
                 }
                 else
                 {
-                    offset_t filepos;
-                    const byte * thisRow = manager->queryKeyBuffer(filepos);
+                    const byte * thisRow = manager->queryKeyBuffer();
                     unsigned thisSize = diskMeta->getRecordSize(thisRow);
                     void * temp = out.reserve(thisSize);
                     memcpy(temp, thisRow, thisSize);
@@ -451,7 +450,7 @@ void IndexDataSource::applyFilter()
         manager->reset();
         while (manager->lookup(false))
         {
-            offset_t node = manager->queryFpos();
+            offset_t node = extractFpos(manager);
             if (node)
                 matchingParts.append((unsigned)(node-1));
         }

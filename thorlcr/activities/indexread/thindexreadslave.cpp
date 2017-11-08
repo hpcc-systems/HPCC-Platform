@@ -68,7 +68,6 @@ protected:
     {
     protected:
         IKeyManager *keyManager;
-        offset_t filepos;
     public:
         TransformCallback() { keyManager = NULL; };
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface)
@@ -76,14 +75,13 @@ protected:
     //IThorIndexCallback
         virtual unsigned __int64 getFilePosition(const void *row)
         {
-            return filepos;
+            throwUnexpected();
         }
         virtual byte *lookupBlob(unsigned __int64 id) 
         { 
             size32_t dummy;
             return (byte *) keyManager->loadBlob(id, dummy); 
         }
-        offset_t & getFPosRef() { return filepos; }
         void setManager(IKeyManager *_keyManager)
         {
             finishedRow();
@@ -143,7 +141,7 @@ protected:
             if (currentManager->lookup(true))
             {
                 noteStats(currentManager->querySeeks(), currentManager->queryScans());
-                ret = (const void *)currentManager->queryKeyBuffer(callback.getFPosRef());
+                ret = (const void *)currentManager->queryKeyBuffer();
             }
             if (ret || keyMergerManager)
                 break;
@@ -358,7 +356,7 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
         if (!currentManager->lookupSkip(rawSeek, seekGEOffset, seekSize))
             return NULL;
         noteStats(currentManager->querySeeks(), currentManager->queryScans());
-        const byte *row = currentManager->queryKeyBuffer(callback.getFPosRef());
+        const byte *row = currentManager->queryKeyBuffer();
 #ifdef _DEBUG
         if (memcmp(row + seekGEOffset, rawSeek, seekSize) < 0)
             assertex("smart seek failure");
@@ -721,7 +719,7 @@ public:
                     {
                         ++progress;
                         noteStats(keyManager.querySeeks(), keyManager.queryScans());
-                        helper->processRow(keyManager.queryKeyBuffer(callback.getFPosRef()), this);
+                        helper->processRow(keyManager.queryKeyBuffer(), this);
                         callback.finishedRow();
                     }
                     clearManager();
@@ -839,7 +837,7 @@ public:
                         if (!l)
                             break;
                         ++progress;
-                        totalCount += helper->numValid(keyManager.queryKeyBuffer(callback.getFPosRef()));
+                        totalCount += helper->numValid(keyManager.queryKeyBuffer());
                         callback.finishedRow();
                         if ((totalCount > choosenLimit))
                             break;
