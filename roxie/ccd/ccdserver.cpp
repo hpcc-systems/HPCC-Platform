@@ -26448,7 +26448,7 @@ public:
         isLocal = _graphNode.getPropBool("att[@name='local']/@value") && queryFactory.queryChannel()!=0;
         isSimple = isLocal;
         rtlDataAttr indexLayoutMeta;
-        size32_t indexLayoutSize;
+        size32_t indexLayoutSize = 0;
         if(!helper->getIndexLayout(indexLayoutSize, indexLayoutMeta.refdata()))
             assertex(indexLayoutSize== 0);
         MemoryBuffer m;

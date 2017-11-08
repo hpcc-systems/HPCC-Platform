@@ -1425,6 +1425,7 @@ protected:
                 line.append("u");
             line.append(irText);
             return;
+        case type_filepos:
         case type_int:
         case type_swapint:
             {
@@ -1863,9 +1864,11 @@ id_t ExpressionIRPlayer::doProcessType(ITypeInfo * type)
         case type_event:
         case type_null:
         case type_void:
+        case type_filepos:
         case type_sortlist:
         case type_any:
             break;
+        case type_keyedint:
         case type_int:
         case type_swapint:
         case type_real:

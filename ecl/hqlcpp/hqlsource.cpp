@@ -471,7 +471,7 @@ static IHqlExpression * mapIfBlock(HqlMapTransformer & mapper, IHqlExpression * 
 }
 
 
-static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IHqlExpression * record, bool hasInternalFileposition)
+static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IHqlExpression * record, bool hasInternalFileposition, bool createKeyedTypes)
 {
     HqlExprArray physicalFields;
     unsigned max = record->numChildren() - (hasInternalFileposition ? 1 : 0);
@@ -485,7 +485,7 @@ static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IH
         else if (cur->getOperator() == no_ifblock)
             physicalFields.append(*mapIfBlock(mapper, cur));
         else if (cur->getOperator() == no_record)
-            physicalFields.append(*createPhysicalIndexRecord(mapper, cur, false));
+            physicalFields.append(*createPhysicalIndexRecord(mapper, cur, false, createKeyedTypes));
         else if (cur->hasAttribute(blobAtom))
         {
             newField = createField(cur->queryId(), makeIntType(8, false), NULL, NULL);
@@ -504,8 +504,10 @@ static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IH
                 Owned<ITypeInfo> hozedType = getHozedKeyType(cur);
                 if (hozedType == cur->queryType())
                     newField = LINK(cur);
+                else if (createKeyedTypes)
+                    newField = createField(cur->queryId(), makeKeyedType(hozedType.getClear()), nullptr, extractFieldAttrs(cur));
                 else
-                    newField = createField(cur->queryId(), hozedType.getClear(), extractFieldAttrs(cur));
+                    newField = createField(cur->queryId(), hozedType.getClear(), nullptr, extractFieldAttrs(cur));
             }
         }
 
@@ -522,9 +524,22 @@ static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IH
             }
         }
     }
+    if (hasInternalFileposition && createKeyedTypes)
+    {
+        IHqlExpression * cur = record->queryChild(record->numChildren()-1);
+        IHqlExpression *fposField = createField(cur->queryId(), makeFilePosType(cur->getType()), nullptr, extractFieldAttrs(cur));
+        physicalFields.append(*fposField);
+    }
 
     return createRecord(physicalFields);
 }
+
+IHqlExpression * createMetadataIndexRecord(IHqlExpression * record, bool hasInternalFilePosition)
+{
+    HqlMapTransformer mapper;
+    return createPhysicalIndexRecord(mapper, record, hasInternalFilePosition, true);
+}
+
 
 IHqlExpression * HqlCppTranslator::convertToPhysicalIndex(IHqlExpression * tableExpr)
 {
@@ -540,7 +555,7 @@ IHqlExpression * HqlCppTranslator::convertToPhysicalIndex(IHqlExpression * table
 
     HqlMapTransformer mapper;
     bool hasFileposition = getBoolAttribute(tableExpr, filepositionAtom, true);
-    IHqlExpression * diskRecord = createPhysicalIndexRecord(mapper, record, hasFileposition);
+    IHqlExpression * diskRecord = createPhysicalIndexRecord(mapper, record, hasFileposition, false);
 
     unsigned payload = numPayloadFields(tableExpr);
     assertex(payload || !hasFileposition);
@@ -1985,14 +2000,39 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
 
         if (tableExpr && (activityKind < TAKchildread || activityKind > TAKchildthroughnormalize))
         {
-            if (fieldInfo.hasVirtualsOrDeserialize())
+            switch (activityKind)
             {
-                OwnedHqlExpr diskTable = createDataset(no_anon, LINK(physicalRecord));
-                translator.buildMetaMember(instance->classctx, diskTable, false, "queryDiskRecordSize");
-            }
-            else
-                translator.buildMetaMember(instance->classctx, tableExpr, isGrouped(tableExpr), "queryDiskRecordSize");
+            case TAKindexread:
+            case TAKindexnormalize:
+            case TAKindexaggregate:
+            case TAKindexcount:
+            case TAKindexgroupaggregate:
+            case TAKindexexists:
+            {
+                LinkedHqlExpr indexExpr = queryAttributeChild(tableExpr, _original_Atom, 0);
+                OwnedHqlExpr serializedRecord;
+                if (indexExpr->hasAttribute(_payload_Atom))
+                    serializedRecord.setown(notePayloadFields(indexExpr->queryRecord(), numPayloadFields(indexExpr)));
+                else
+                    serializedRecord.set(indexExpr->queryRecord());
+                serializedRecord.setown(getSerializedForm(serializedRecord, diskAtom));
 
+                bool hasFilePosition = getBoolAttribute(indexExpr, filepositionAtom, true);
+                serializedRecord.setown(createMetadataIndexRecord(serializedRecord, hasFilePosition));
+                translator.buildMetaMember(instance->classctx, serializedRecord, false, "queryDiskRecordSize");
+                break;
+            }
+            default:
+                if (fieldInfo.hasVirtualsOrDeserialize())
+                {
+                    OwnedHqlExpr diskTable = createDataset(no_anon, LINK(physicalRecord));
+                    translator.buildMetaMember(instance->classctx, diskTable, false, "queryDiskRecordSize");
+                }
+                else
+                {
+                    translator.buildMetaMember(instance->classctx, tableExpr, isGrouped(tableExpr), "queryDiskRecordSize");
+                }
+            }
         }
     }
     else
@@ -4450,7 +4490,7 @@ void MonitorExtractor::buildKeySegmentExpr(BuildMonitorState & buildState, KeySe
         if (selectorInfo.expandNeeded || selectorInfo.isComputed)
             generateFormatWrapping(createMonitorText, selectorInfo.selector, selectorInfo.expandedSelector, buildState.curOffset);
         else if (selectorInfo.mapOffset)
-            generateOffsetWrapping(createMonitorText, selectorInfo.selector, buildState.curOffset);
+            generateOffsetWrapping(createMonitorText, selectorInfo.selector);
 
         appendCtx->addQuotedF("%s->append(%s);", buildState.listName, createMonitorText.str());
     }
@@ -4502,11 +4542,11 @@ interface IKeySegmentFormatTranslator : public IInterface
 };
 */
 
-void MonitorExtractor::generateOffsetWrapping(StringBuffer & createMonitorText, IHqlExpression * selector, unsigned curOffset)
+void MonitorExtractor::generateOffsetWrapping(StringBuffer & createMonitorText, IHqlExpression * selector)
 {
     unsigned curFieldIdx = getFieldNumber(tableExpr->queryNormalizedSelector(), selector);
     StringBuffer s;
-    s.clear().append("createNewVarOffsetKeySegmentMonitor(").append(createMonitorText).append(",").append(curOffset).append(",").append(curFieldIdx).append(")");
+    s.clear().append("createNewVarOffsetKeySegmentMonitor(").append(createMonitorText).append(",").append(curFieldIdx).append(")");
     createMonitorText.swapWith(s);
 }
 

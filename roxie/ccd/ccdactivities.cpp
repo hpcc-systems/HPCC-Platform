@@ -3109,7 +3109,7 @@ public:
     void init(IHThorIndexReadBaseArg * helper, IPropertyTree &graphNode)
     {
         rtlDataAttr indexLayoutMeta;
-        size32_t indexLayoutSize;
+        size32_t indexLayoutSize = 0;
         if(!helper->getIndexLayout(indexLayoutSize, indexLayoutMeta.refdata()))
             assertex(indexLayoutSize== 0);
         MemoryBuffer m;
@@ -4634,7 +4634,7 @@ public:
     {
         Owned<IHThorKeyedJoinArg> helper = (IHThorKeyedJoinArg *) helperFactory();
         rtlDataAttr indexLayoutMeta;
-        size32_t indexLayoutSize;
+        size32_t indexLayoutSize = 0;
         if(!helper->getIndexLayout(indexLayoutSize, indexLayoutMeta.refdata()))
             assertex(indexLayoutSize== 0);
         MemoryBuffer m;

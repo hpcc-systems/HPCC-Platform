@@ -180,7 +180,7 @@ ECLRTL_API IKeySegmentMonitor *createSingleLittleSignedKeySegmentMonitor(bool op
 ECLRTL_API IKeySegmentMonitor *createSingleLittleKeySegmentMonitor(bool optional, unsigned offset, unsigned size, const void * value);
 
 //takes over ownership of base
-ECLRTL_API IKeySegmentMonitor *createNewVarOffsetKeySegmentMonitor(IKeySegmentMonitor * base, unsigned offset, unsigned fieldIdx);
+ECLRTL_API IKeySegmentMonitor *createNewVarOffsetKeySegmentMonitor(IKeySegmentMonitor * base, unsigned fieldIdx);
 
 //takes over ownership of both arguments
 ECLRTL_API IKeySegmentMonitor *createTranslatedKeySegmentMonitor(IKeySegmentMonitor * base, unsigned offset, IKeySegmentFormatTranslator * translator);
