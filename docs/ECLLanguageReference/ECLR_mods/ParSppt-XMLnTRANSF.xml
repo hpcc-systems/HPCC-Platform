@@ -77,7 +77,7 @@ END;
 
 books := PARSE(d,line,rform,XML('library/book'));
 
-OUTPUT(books)
+OUTPUT(books);
 
 //*******************************************
 /* The following XML can be parsed using XMLPROJECT
