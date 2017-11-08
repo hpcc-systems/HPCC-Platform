@@ -9760,7 +9760,6 @@ void getFieldTypeInfo(FieldTypeInfoStruct &out, ITypeInfo *type)
     case type_dictionary:
         {
             out.className = "RtlDictionaryTypeInfo";
-            out.fieldType |= RFTMnoserialize;
             if (hasLinkCountedModifier(type))
             {
                 out.fieldType |= RFTMlinkcounted;

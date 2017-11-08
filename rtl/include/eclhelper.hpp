@@ -355,7 +355,7 @@ enum RtlFieldTypeMask
     RFTMcontainsunknown     = 0x10000000,                   // contains a field of unknown type that we can't process properly
     RFTMinvalidxml          = 0x20000000,                   // cannot be called to generate xml
     RFTMhasxmlattr          = 0x40000000,                   // if specified, then xml output includes an attribute (recursive)
-    RFTMnoserialize         = 0x80000000,                   // cannot serialize this typeinfo structure (contains dictionaries or other nasties)
+    RFTMnoserialize         = 0x80000000,                   // cannot serialize this typeinfo structure (contains aliens or other nasties)
 
     RFTMinherited           = (RFTMnoprefetch|RFTMcontainsunknown|RFTMinvalidxml|RFTMhasxmlattr|RFTMnoserialize)    // These flags are recursively set on any parent records too
 };
@@ -390,6 +390,7 @@ interface RtlITypeInfo
     virtual size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in, size32_t offset) const = 0;
     virtual void readAhead(IRowDeserializerSource & in) const = 0;
     virtual int compare(const byte * left, const byte * right) const = 0;
+    virtual unsigned hash(const byte * left, unsigned inHash) const = 0;
 protected:
     ~RtlITypeInfo() = default;  // we can't use a virtual destructor as we want constexpr constructors.
 };
