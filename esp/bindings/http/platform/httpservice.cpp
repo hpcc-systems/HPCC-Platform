@@ -1012,7 +1012,7 @@ EspAuthState CEspHttpServer::preCheckAuth(EspAuthRequest& authReq)
     if (!isAuthRequiredForBinding(authReq))
     {
         if (authReq.authBinding->getDomainAuthType() == AuthUserNameOnly)
-            handleUserNameOnlyMode(authReq);
+            return handleUserNameOnlyMode(authReq);
         return authSucceeded;
     }
 
@@ -1055,17 +1055,17 @@ EspAuthState CEspHttpServer::preCheckAuth(EspAuthRequest& authReq)
     return authUnknown;
 }
 
-void CEspHttpServer::handleUserNameOnlyMode(EspAuthRequest& authReq)
+EspAuthState CEspHttpServer::handleUserNameOnlyMode(EspAuthRequest& authReq)
 {
     if (authReq.authBinding->isDomainAuthResources(authReq.httpPath.str()))
-        return;//Give the permission to send out some pages used for getUserName page.
+        return authSucceeded;//Give the permission to send out some pages used for getUserName page.
 
     StringBuffer userName;
     readCookie(USER_NAME_COOKIE, userName);
     if (!userName.isEmpty())
     {
         authReq.ctx->setUserID(userName.str());
-        return;
+        return authSucceeded;
     }
 
     const char* userNameIn = (authReq.requestParams) ? authReq.requestParams->queryProp("username") : NULL;
@@ -1073,7 +1073,7 @@ void CEspHttpServer::handleUserNameOnlyMode(EspAuthRequest& authReq)
     {
         //Display a GetUserName (similar to login) page to get a user name.
         askUserLogin(authReq);
-        return;
+        return authFailed;
     }
 
     //We just got the user name. Let's add it into cookie for future use.
@@ -1083,6 +1083,7 @@ void CEspHttpServer::handleUserNameOnlyMode(EspAuthRequest& authReq)
     readCookie(SESSION_START_URL_COOKIE, urlCookie);
     clearCookie(SESSION_START_URL_COOKIE);
     m_response->redirect(*m_request, urlCookie.isEmpty() ? "/" : urlCookie.str());
+    return authSucceeded;
 }
 
 bool CEspHttpServer::isAuthRequiredForBinding(EspAuthRequest& authReq)
