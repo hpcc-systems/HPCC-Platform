@@ -184,7 +184,7 @@ private:
     void serializeMe(const RtlTypeInfo *type)
     {
         if (!type->canSerialize())
-            throw makeStringException(MSGAUD_user, 1000, "DICTIONARY type structures cannot be serialized");
+            throw makeStringException(MSGAUD_user, 1000, "This type structure cannot be serialized");
         addPropHex("fieldType", type->fieldType);
         addProp("length", type->length);
         addPropNonEmpty("locale", type->queryLocale());
@@ -492,7 +492,7 @@ private:
     void serializeMe(const RtlTypeInfo *type)
     {
         if (!type->canSerialize())
-            throw makeStringException(MSGAUD_user, 1000, "DICTIONARY type structures cannot be serialized");
+            throw makeStringException(MSGAUD_user, 1000, "This type structure cannot be serialized");
         unsigned fieldType = type->fieldType;
         const char *locale = type->queryLocale();
         if (locale && *locale)

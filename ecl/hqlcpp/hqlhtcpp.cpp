@@ -3938,18 +3938,10 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
         }
     case type_table:
     case type_groupedtable:
-        {
-            arguments.append(",&");
-            childType = buildRtlType(arguments, ::queryRecordType(type));
-            break;
-        }
     case type_dictionary:
         {
             arguments.append(",&");
             childType = buildRtlType(arguments, ::queryRecordType(type));
-            StringBuffer lookupHelperName;
-            buildDictionaryHashClass(::queryRecord(type), lookupHelperName);
-            arguments.append(",&").append(lookupHelperName.str());
             break;
         }
     case type_filepos:
@@ -5596,7 +5588,6 @@ void HqlCppTranslator::buildHashOfExprsClass(BuildCtx & ctx, const char * name, 
     buildHashClass(ctx, name, hash, dataset);
 }
 
-
 void HqlCppTranslator::buildDictionaryHashClass(IHqlExpression *record, StringBuffer &funcName)
 {
     BuildCtx declarectx(*code, declareAtom);
@@ -5606,52 +5597,60 @@ void HqlCppTranslator::buildDictionaryHashClass(IHqlExpression *record, StringBu
         match->queryExpr()->toString(funcName);
     else
     {
+        unsigned id = getConsistentUID(record);
+        OwnedHqlExpr keyRecord = getDictionaryKeyRecord(record);
+        OwnedHqlExpr searchRecord = getDictionarySearchRecord(record);
+        StringBuffer keyRecName;
+        buildRtlType(keyRecName, keyRecord->queryType());
+
         StringBuffer lookupHelperName;
-        appendUniqueId(lookupHelperName.append("lu"), getConsistentUID(record));
+        appendUniqueId(lookupHelperName.append("lu"), id);
 
         BuildCtx classctx(declarectx);
         classctx.setNextPriority(TypeInfoPrio);
 
-        IHqlStmt * classStmt = beginNestedClass(classctx, lookupHelperName, "IHThorHashLookupInfo");
-        OwnedHqlExpr searchRecord = getDictionarySearchRecord(record);
-        OwnedHqlExpr keyRecord = getDictionaryKeyRecord(record);
+        IHqlStmt * classStmt = beginNestedClass(classctx, lookupHelperName, "CHThorHashLookupInfo");
+        StringBuffer constructor;
+        getMemberClassName(constructor, lookupHelperName);
+        constructor.append("() : CHThorHashLookupInfo(").append(keyRecName).append(") {}");
+        classctx.addQuoted(constructor.str());
 
-        HqlExprArray keyedSourceFields;
-        HqlExprArray keyedDictFields;
-        OwnedHqlExpr source = createDataset(no_null, LINK(searchRecord));
-        DatasetReference sourceRef(source, no_none, NULL);
-        OwnedHqlExpr dict = createDataset(no_null, LINK(record));
-        DatasetReference dictRef(dict, no_none, NULL);
-
-        ForEachChild(idx, searchRecord)
+        if (searchRecord != keyRecord)
         {
-            IHqlExpression *child = searchRecord->queryChild(idx);
-            if (!child->isAttribute())
-                keyedSourceFields.append(*createSelectExpr(LINK(source->queryNormalizedSelector()), LINK(child)));
+            HqlExprArray keyedSourceFields;
+            HqlExprArray keyedDictFields;
+            OwnedHqlExpr source = createDataset(no_null, LINK(searchRecord));
+            DatasetReference sourceRef(source, no_none, NULL);
+            OwnedHqlExpr dict = createDataset(no_null, LINK(record));
+            DatasetReference dictRef(dict, no_none, NULL);
+
+            ForEachChild(idx, searchRecord)
+            {
+                IHqlExpression *child = searchRecord->queryChild(idx);
+                if (!child->isAttribute())
+                    keyedSourceFields.append(*createSelectExpr(LINK(source->queryNormalizedSelector()), LINK(child)));
+            }
+            ForEachChild(idx2, keyRecord)
+            {
+                IHqlExpression *child = keyRecord->queryChild(idx2);
+                if (!child->isAttribute())
+                    keyedDictFields.append(*createSelectExpr(LINK(dict->queryNormalizedSelector()), LINK(child)));
+            }
+            OwnedHqlExpr keyedSourceList = createValueSafe(no_sortlist, makeSortListType(NULL), keyedSourceFields);
+            OwnedHqlExpr keyedDictList = createValueSafe(no_sortlist, makeSortListType(NULL), keyedDictFields);
+
+            buildHashOfExprsClass(classctx, "HashLookup", keyedSourceList, sourceRef, false);
+
+            OwnedHqlExpr seq = createDummySelectorSequence();
+            OwnedHqlExpr leftSelect = createSelector(no_left, source, seq);
+            OwnedHqlExpr rightSelect = createSelector(no_right, dict, seq);
+            IHqlExpression * left = sourceRef.mapCompound(keyedSourceList, leftSelect);
+            IHqlExpression * right = dictRef.mapCompound(keyedDictList, rightSelect);
+            OwnedHqlExpr compare = createValue(no_order, LINK(signedType), left, right);
+
+            buildCompareMemberLR(classctx, "CompareLookup", compare, source, dict, seq);
+            endNestedClass(classStmt);
         }
-        ForEachChild(idx2, keyRecord)
-        {
-            IHqlExpression *child = keyRecord->queryChild(idx2);
-            if (!child->isAttribute())
-                keyedDictFields.append(*createSelectExpr(LINK(dict->queryNormalizedSelector()), LINK(child)));
-        }
-        OwnedHqlExpr keyedSourceList = createValueSafe(no_sortlist, makeSortListType(NULL), keyedSourceFields);
-        OwnedHqlExpr keyedDictList = createValueSafe(no_sortlist, makeSortListType(NULL), keyedDictFields);
-
-        buildHashOfExprsClass(classctx, "HashLookup", keyedSourceList, sourceRef, false);
-        buildHashOfExprsClass(classctx, "Hash", keyedDictList, dictRef, false);
-
-        OwnedHqlExpr seq = createDummySelectorSequence();
-        OwnedHqlExpr leftSelect = createSelector(no_left, source, seq);
-        OwnedHqlExpr rightSelect = createSelector(no_right, dict, seq);
-        IHqlExpression * left = sourceRef.mapCompound(keyedSourceList, leftSelect);
-        IHqlExpression * right = dictRef.mapCompound(keyedDictList, rightSelect);
-        OwnedHqlExpr compare = createValue(no_order, LINK(signedType), left, right);
-
-        buildCompareMemberLR(classctx, "CompareLookup", compare, source, dict, seq);
-        buildCompareMember(classctx, "Compare", keyedDictList, dictRef);
-        endNestedClass(classStmt);
-
         if (queryOptions().spanMultipleCpp)
         {
             createAccessFunctions(funcName, declarectx, BuildCtx::NormalPrio, "IHThorHashLookupInfo", lookupHelperName);
