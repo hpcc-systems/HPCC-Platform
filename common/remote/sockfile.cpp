@@ -2921,7 +2921,6 @@ class CRemoteKeyManager : public CSimpleInterfaceOf<IKeyManager>
     MemoryBuffer rowDataBuffer;
     MemoryBuffer keyCursorMb;        // used for continuation
     unsigned __int64 totalGot = 0;
-    size32_t keySize = 0;
     size32_t currentSize = 0;
     offset_t currentFpos = 0;
     const byte *currentRow = nullptr;
@@ -2940,6 +2939,7 @@ class CRemoteKeyManager : public CSimpleInterfaceOf<IKeyManager>
         Linked<CRemoteFileIO> remoteIO = QUERYINTERFACE(iFileIO.get(), CRemoteFileIO);
         assertex(remoteIO);
         initSendBuffer(sendBuffer);
+        size32_t keySize = 0; // backward compatibility - now ignored
         sendBuffer.append(cmd).append(remoteIO->getHandle()).append(filename).append(keySize);
         if (segmentMonitors)
             segs.serialize(sendBuffer);
@@ -2971,7 +2971,7 @@ class CRemoteKeyManager : public CSimpleInterfaceOf<IKeyManager>
         else
         {
             Owned<IKeyIndex> keyIndex = createKeyIndex(filename, crc, *delayedFile, false, false);
-            directKM.setown(createLocalKeyManager(keyIndex, keySize, nullptr));
+            directKM.setown(createLocalKeyManager(keyIndex, nullptr));
             return false;
         }
         return true;
@@ -2988,7 +2988,7 @@ class CRemoteKeyManager : public CSimpleInterfaceOf<IKeyManager>
         return count;
     }
 public:
-    CRemoteKeyManager(const char *_filename, unsigned _keySize, unsigned _crc, IDelayedFile *_delayedFile) : filename(_filename), keySize(_keySize), crc(_crc), delayedFile(_delayedFile)
+    CRemoteKeyManager(const char *_filename, unsigned _crc, IDelayedFile *_delayedFile) : filename(_filename), crc(_crc), delayedFile(_delayedFile)
     {
     }
     ~CRemoteKeyManager()
@@ -3305,21 +3305,21 @@ public:
     }
 };
 
-IKeyManager *createRemoteKeyManager(const char *filename, unsigned keySize, unsigned crc, IDelayedFile *delayedFile)
+IKeyManager *createRemoteKeyManager(const char *filename, unsigned crc, IDelayedFile *delayedFile)
 {
-    return new CRemoteKeyManager(filename, keySize, crc, delayedFile);
+    return new CRemoteKeyManager(filename, crc, delayedFile);
 }
 
-IKeyManager *createKeyManager(const char *filename, unsigned keySize, unsigned crc, IDelayedFile *delayedFile, bool allowRemote, bool forceRemote)
+IKeyManager *createKeyManager(const char *filename, unsigned crc, IDelayedFile *delayedFile, bool allowRemote, bool forceRemote)
 {
     RemoteFilename rfn;
     rfn.setRemotePath(filename);
     if (forceRemote || (allowRemote && !rfn.isLocal()))
-        return createRemoteKeyManager(filename, keySize, crc, delayedFile);
+        return createRemoteKeyManager(filename, crc, delayedFile);
     else
     {
         Owned<IKeyIndex> keyIndex = createKeyIndex(filename, crc, *delayedFile, false, false);
-        return createLocalKeyManager(keyIndex, keySize, nullptr);
+        return createLocalKeyManager(keyIndex, nullptr);
     }
 }
 
@@ -4797,7 +4797,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
         return numRecs;
     }
 
-    IKeyManager *prepKey(int handle, const char *keyname, unsigned keySize, SegMonitorList *segs)
+    IKeyManager *prepKey(int handle, const char *keyname, SegMonitorList *segs)
     {
         OpenFileInfo fileInfo;
         if (!lookupFileIOHandle(handle, fileInfo, of_key))
@@ -4811,7 +4811,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
             VStringBuffer errStr("Error opening key file : %s", keyname);
             throw createDafsException(RFSERR_KeyIndexFailed, errStr.str());
         }
-        Owned<IKeyManager> keyManager = createLocalKeyManager(index, keySize, nullptr);
+        Owned<IKeyManager> keyManager = createLocalKeyManager(index, nullptr);
         if (segs)
         {
             keyManager->setSegmentMonitors(*segs);
@@ -4825,16 +4825,16 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
     {
         int handle;
         StringBuffer keyName;
-        size32_t keySize;
+        size32_t keySize; // backward comp
         mb.read(handle).read(keyName).read(keySize);
         if (segmentMonitors)
         {
             SegMonitorList segs;
             segs.deserialize(mb);
-            return prepKey(handle, keyName, keySize, &segs);
+            return prepKey(handle, keyName, &segs);
         }
         else
-            return prepKey(handle, keyName, keySize, nullptr);
+            return prepKey(handle, keyName, nullptr);
     }
 
     class cCommandProcessor: public CInterface, implements IPooledThread

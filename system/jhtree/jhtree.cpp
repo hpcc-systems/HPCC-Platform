@@ -395,7 +395,6 @@ protected:
     offset_t lookupFpos;
     unsigned keySize;       // size of key record including payload
     unsigned keyedSize;     // size of non-payload part of key
-    unsigned eclKeySize;    // size of output record according to ecl
     unsigned numsegs;
     bool matched;
     bool eof;
@@ -554,7 +553,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CKeyLevelManager(IKeyIndex * _key, unsigned _eclKeySize, IContextLogger *_ctx)
+    CKeyLevelManager(IKeyIndex * _key, IContextLogger *_ctx)
     {
         ctx = _ctx;
         numsegs = 0;
@@ -562,7 +561,6 @@ public:
         keyCursor = NULL;
         keySize = 0;
         keyedSize = 0;
-        eclKeySize = _eclKeySize;
         started = false;
         setKey(_key);
         seeks = 0;
@@ -638,14 +636,6 @@ public:
             {
                 assertex(keyedSize==ki->keyedSize());
                 assertex(keySize==ki->keySize());
-            }
-            if (eclKeySize && (0 == (ki->getFlags() & HTREE_VARSIZE)) && (eclKeySize != keySize))
-            {
-                StringBuffer err;
-                err.appendf("Key size mismatch - key file (%s) indicates record size should be %d, but ECL declaration was %d", keyName.get(), keySize, eclKeySize);
-                IException *e = MakeStringExceptionDirect(1000, err.str());
-                EXCLOG(e, err.str());
-                throw e;
             }
         }
     }
@@ -1613,9 +1603,15 @@ void CKeyIndex::dumpNode(FILE *out, offset_t pos, unsigned count, bool isRaw)
     ::dumpNode(out, node, keySize(), count, isRaw);
 }
 
+bool CKeyIndex::hasSpecialFileposition() const
+{
+    return keyHdr->hasSpecialFileposition();
+}
+
 size32_t CKeyIndex::keySize()
 {
-    return keyHdr->getMaxKeyLength();
+    size32_t fileposSize = keyHdr->hasSpecialFileposition() ? sizeof(offset_t) : 0;
+    return keyHdr->getMaxKeyLength() + fileposSize;
 }
 
 size32_t CKeyIndex::keyedSize()
@@ -2091,6 +2087,7 @@ public:
     virtual IPropertyTree * getMetadata() { return checkOpen().getMetadata(); }
     virtual unsigned getNodeSize() { return checkOpen().getNodeSize(); }
     virtual const IFileIO *queryFileIO() const override { return iFileIO; } // NB: if not yet opened, will be null
+    virtual bool hasSpecialFileposition() const { return realKey ? realKey->hasSpecialFileposition() : false; }
 };
 
 extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IFileIO &iFileIO, bool isTLK, bool preloadAllowed)
@@ -2369,6 +2366,7 @@ class CKeyMerger : public CKeyLevelManager
     unsigned *mergeheap;
     unsigned numkeys;
     unsigned activekeys;
+    unsigned compareSize = 0;
     IArrayOf<IKeyCursor> cursorArray;
     PointerArray bufferArray;
     PointerArray fixedArray;
@@ -2392,7 +2390,9 @@ class CKeyMerger : public CKeyLevelManager
     {
         const char *c1 = buffers[mergeheap[a]];
         const char *c2 = buffers[mergeheap[b]];
-        int ret = memcmp(c1+sortFieldOffset, c2+sortFieldOffset, keySize-sortFieldOffset); // NOTE - compare whole key not just keyed part.
+        //Backwards compatibility - do not compare the fileposition field, even if it would be significant.
+        //int ret = memcmp(c1+sortFieldOffset, c2+sortFieldOffset, keySize-sortFieldOffset); // NOTE - compare whole key not just keyed part.
+        int ret = memcmp(c1+sortFieldOffset, c2+sortFieldOffset, compareSize-sortFieldOffset); // NOTE - compare whole key not just keyed part.
         if (!ret && sortFieldOffset)
             ret = memcmp(c1, c2, sortFieldOffset);
         return ret;
@@ -2458,14 +2458,14 @@ class CKeyMerger : public CKeyLevelManager
     }
 
 public:
-    CKeyMerger(IKeyIndexSet *_keyset, size32_t _eclKeySize, unsigned _sortFieldOffset, IContextLogger *_ctx) : CKeyLevelManager(NULL, _eclKeySize, _ctx), sortFieldOffset(_sortFieldOffset)
+    CKeyMerger(IKeyIndexSet *_keyset, unsigned _sortFieldOffset, IContextLogger *_ctx) : CKeyLevelManager(NULL, _ctx), sortFieldOffset(_sortFieldOffset)
     {
         segs.setMergeBarrier(sortFieldOffset);
         init();
         setKey(_keyset);
     }
 
-    CKeyMerger(IKeyIndex *_onekey, size32_t _eclKeySize, unsigned _sortFieldOffset, IContextLogger *_ctx) : CKeyLevelManager(NULL, _eclKeySize, _ctx), sortFieldOffset(_sortFieldOffset)
+    CKeyMerger(IKeyIndex *_onekey, unsigned _sortFieldOffset, IContextLogger *_ctx) : CKeyLevelManager(NULL, _ctx), sortFieldOffset(_sortFieldOffset)
     {
         segs.setMergeBarrier(sortFieldOffset);
         init();
@@ -2646,6 +2646,7 @@ public:
                 throw MakeStringException(0, "Invalid key size 0 in key %s", ki->queryFileName());
             keyedSize = ki->keyedSize();
             numkeys = _keyset->numParts();
+            compareSize = keySize - (ki->hasSpecialFileposition() ? sizeof(offset_t) : 0);
         }
         else
             numkeys = 0;
@@ -2961,14 +2962,14 @@ public:
     }
 };
 
-extern jhtree_decl IKeyManager *createKeyMerger(IKeyIndexSet * _keys, unsigned _rawSize, unsigned _sortFieldOffset, IContextLogger *_ctx)
+extern jhtree_decl IKeyManager *createKeyMerger(IKeyIndexSet * _keys, unsigned _sortFieldOffset, IContextLogger *_ctx)
 {
-    return new CKeyMerger(_keys, _rawSize, _sortFieldOffset, _ctx);
+    return new CKeyMerger(_keys, _sortFieldOffset, _ctx);
 }
 
-extern jhtree_decl IKeyManager *createSingleKeyMerger(IKeyIndex * _onekey, unsigned _rawSize, unsigned _sortFieldOffset, IContextLogger *_ctx)
+extern jhtree_decl IKeyManager *createSingleKeyMerger(IKeyIndex * _onekey, unsigned _sortFieldOffset, IContextLogger *_ctx)
 {
-    return new CKeyMerger(_onekey, _rawSize, _sortFieldOffset, _ctx);
+    return new CKeyMerger(_onekey, _sortFieldOffset, _ctx);
 }
 
 class CKeyIndexSet : implements IKeyIndexSet, public CInterface
@@ -2996,9 +2997,9 @@ extern jhtree_decl IKeyIndexSet *createKeyIndexSet()
     return new CKeyIndexSet;
 }
 
-extern jhtree_decl IKeyManager *createLocalKeyManager(IKeyIndex *key, unsigned _rawSize, IContextLogger *_ctx)
+extern jhtree_decl IKeyManager *createLocalKeyManager(IKeyIndex *key, IContextLogger *_ctx)
 {
-    return new CKeyLevelManager(key, _rawSize, _ctx);
+    return new CKeyLevelManager(key, _ctx);
 }
 
 class CKeyArray : implements IKeyArray, public CInterface
@@ -3049,7 +3050,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
             Owned<IKeyIndexSet> keyset = createKeyIndexSet();
             keyset->addIndex(index1.getClear());
             keyset->addIndex(index2.getClear());
-            Owned <IKeyManager> tlk1 = createKeyMerger(keyset, maxSize, 7, NULL);
+            Owned <IKeyManager> tlk1 = createKeyMerger(keyset, 7, NULL);
             Owned<IStringSet> sset1 = createStringSet(7);
             sset1->addRange("0000003", "0000003");
             sset1->addRange("0000005", "0000006");
@@ -3086,7 +3087,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
             ASSERT(!tlk1->lookup(true)); 
             ASSERT(!tlk1->lookup(true)); 
 
-            Owned <IKeyManager> tlk2 = createKeyMerger(NULL, maxSize, 7, NULL);
+            Owned <IKeyManager> tlk2 = createKeyMerger(NULL, 7, NULL);
             tlk2->setKey(keyset);
             tlk2->deserializeCursorPos(mb);
             tlk2->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 7));
@@ -3102,7 +3103,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
             ASSERT(!tlk2->lookup(true)); 
             ASSERT(!tlk2->lookup(true)); 
 
-            Owned <IKeyManager> tlk3 = createKeyMerger(NULL, maxSize, 7, NULL);
+            Owned <IKeyManager> tlk3 = createKeyMerger(NULL, 7, NULL);
             tlk3->setKey(keyset);
             tlk3->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 7));
             tlk3->append(createKeySegmentMonitor(false, sset2.getLink(), 7, 3));
@@ -3115,7 +3116,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
             ASSERT(!tlk3->lookupSkip("081", 7, 3)); 
             ASSERT(!tlk3->lookup(true)); 
 
-            Owned <IKeyManager> tlk4 = createKeyMerger(NULL, maxSize, 7, NULL);
+            Owned <IKeyManager> tlk4 = createKeyMerger(NULL, 7, NULL);
             tlk4->setKey(keyset);
             tlk4->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 7));
             tlk4->append(createKeySegmentMonitor(false, sset3.getLink(), 7, 3));
@@ -3240,14 +3241,14 @@ protected:
         {
             unsigned maxSize = (variable && blobby) ? 18 : 10;
             Owned <IKeyIndex> index1 = createKeyIndex("keyfile1.$$$", 0, false, false);
-            Owned <IKeyManager> tlk1 = createLocalKeyManager(index1, maxSize, NULL);
+            Owned <IKeyManager> tlk1 = createLocalKeyManager(index1, NULL);
             Owned<IStringSet> sset1 = createStringSet(10);
             sset1->addRange("0000000001", "0000000100");
             tlk1->append(createKeySegmentMonitor(false, sset1.getClear(), 0, 10));
             tlk1->finishSegmentMonitors();
             tlk1->reset();
 
-            Owned <IKeyManager> tlk1a = createLocalKeyManager(index1, maxSize, NULL);
+            Owned <IKeyManager> tlk1a = createLocalKeyManager(index1, NULL);
             Owned<IStringSet> sset1a = createStringSet(8);
             sset1a->addRange("00000000", "00000001");
             tlk1a->append(createKeySegmentMonitor(false, sset1a.getClear(), 0, 8));
@@ -3280,7 +3281,7 @@ protected:
 
 
             Owned <IKeyIndex> index2 = createKeyIndex("keyfile2.$$$", 0, false, false);
-            Owned <IKeyManager> tlk2 = createLocalKeyManager(index2, maxSize, NULL);
+            Owned <IKeyManager> tlk2 = createLocalKeyManager(index2, NULL);
             Owned<IStringSet> sset2 = createStringSet(10);
             sset2->addRange("0000000001", "0000000100");
             ASSERT(sset2->numValues() == 65536);
@@ -3295,7 +3296,7 @@ protected:
                 both->addIndex(index1.getLink());
                 both->addIndex(index2.getLink());
                 Owned<IStringSet> sset3 = createStringSet(10);
-                tlk3.setown(createKeyMerger(NULL, maxSize, 0, NULL));
+                tlk3.setown(createKeyMerger(NULL, 0, NULL));
                 tlk3->setKey(both);
                 sset3->addRange("0000000001", "0000000100");
                 tlk3->append(createKeySegmentMonitor(false, sset3.getClear(), 0, 10));
@@ -3303,7 +3304,7 @@ protected:
                 tlk3->reset();
             }
 
-            Owned <IKeyManager> tlk2a = createLocalKeyManager(index2, maxSize, NULL);
+            Owned <IKeyManager> tlk2a = createLocalKeyManager(index2, NULL);
             Owned<IStringSet> sset2a = createStringSet(10);
             sset2a->addRange("0000000048", "0000000048");
             ASSERT(sset2a->numValues() == 1);
@@ -3311,7 +3312,7 @@ protected:
             tlk2a->finishSegmentMonitors();
             tlk2a->reset();
 
-            Owned <IKeyManager> tlk2b = createLocalKeyManager(index2, maxSize, NULL);
+            Owned <IKeyManager> tlk2b = createLocalKeyManager(index2, NULL);
             Owned<IStringSet> sset2b = createStringSet(10);
             sset2b->addRange("0000000047", "0000000049");
             ASSERT(sset2b->numValues() == 3);
@@ -3319,7 +3320,7 @@ protected:
             tlk2b->finishSegmentMonitors();
             tlk2b->reset();
 
-            Owned <IKeyManager> tlk2c = createLocalKeyManager(index2, maxSize, NULL);
+            Owned <IKeyManager> tlk2c = createLocalKeyManager(index2, NULL);
             Owned<IStringSet> sset2c = createStringSet(10);
             sset2c->addRange("0000000047", "0000000047");
             tlk2c->append(createKeySegmentMonitor(false, sset2c.getClear(), 0, 10));

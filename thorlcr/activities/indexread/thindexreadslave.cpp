@@ -246,7 +246,7 @@ public:
             if ((localKey && partDescs.ordinality()>1) || seekGEOffset) // for now at least, no remote key support if stepping or merging
             {
                 Owned<IKeyIndex> keyIndex = createKeyIndex(filePath, crc, *lfile, false, false);
-                klManager.setown(createLocalKeyManager(keyIndex, fixedDiskRecordSize, nullptr));
+                klManager.setown(createLocalKeyManager(keyIndex, nullptr));
                 if (!keyIndexSet)
                     keyIndexSet.setown(createKeyIndexSet());
                 keyIndexSet->addIndex(keyIndex.getClear());
@@ -255,7 +255,7 @@ public:
             {
                 bool allowRemote = getOptBool("remoteKeyFilteringEnabled");
                 bool forceRemote = allowRemote ? getOptBool("forceDafilesrv") : false; // can only force remote, if forceDafilesrv and remoteKeyFilteringEnabled are enabled.
-                klManager.setown(createKeyManager(filePath, fixedDiskRecordSize, crc, lfile, allowRemote, forceRemote));
+                klManager.setown(createKeyManager(filePath, crc, lfile, allowRemote, forceRemote));
             }
             keyManagers.append(*klManager.getClear());
         }
@@ -505,7 +505,7 @@ public:
                 steppingMeta.init(rawMeta, hasPostFilter);
         }
         if (keyIndexSet)
-            keyMergerManager.setown(createKeyMerger(keyIndexSet, fixedDiskRecordSize, seekGEOffset, NULL));
+            keyMergerManager.setown(createKeyMerger(keyIndexSet, seekGEOffset, nullptr));
     }
 
 // IThorDataLink

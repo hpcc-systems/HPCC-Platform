@@ -123,6 +123,7 @@ public:
     void addFileposition();
     void addGrouping();
     void addVirtualField(const char * name, const char * xpath, ITypeInfo * type);
+    void patchIndexFileposition();
 
     void extractKeyedInfo(UnsignedArray & offsets, TypeInfoArray & types);
     unsigned fixedSize() { return minRecordSize; }

@@ -22791,7 +22791,7 @@ public:
                                     if ((indexHelper.getFlags() & TIRcountkeyedlimit) != 0)
                                     {
                                         Owned<IKeyManager> countKey;
-                                        countKey.setown(createLocalKeyManager(thisKey, 0, this));
+                                        countKey.setown(createLocalKeyManager(thisKey, this));
                                         countKey->setLayoutTranslator(translators->item(fileNo));
                                         createSegmentMonitors(countKey);
                                         unsigned __int64 count = countKey->checkCount(keyedLimit);
@@ -22806,11 +22806,11 @@ public:
                             }
                             if (seekGEOffset && !thisKey->isTopLevelKey())
                             {
-                                tlk.setown(createSingleKeyMerger(thisKey, 0, seekGEOffset, this));
+                                tlk.setown(createSingleKeyMerger(thisKey, seekGEOffset, this));
                             }
                             else
                             {
-                                tlk.setown(createLocalKeyManager(thisKey, 0, this));
+                                tlk.setown(createLocalKeyManager(thisKey, this));
                                 tlk->setLayoutTranslator(translators->item(fileNo));
                             }
                             createSegmentMonitors(tlk);
@@ -23070,9 +23070,9 @@ public:
             keySet.setown(createKeyIndexSet());
             keySet->addIndex(LINK(key));
             if (owner.seekGEOffset)
-                tlk.setown(createKeyMerger(keySet, 0, owner.seekGEOffset, &owner));
+                tlk.setown(createKeyMerger(keySet, owner.seekGEOffset, &owner));
             else
-                tlk.setown(createLocalKeyManager(keySet->queryPart(0), 0, &owner));
+                tlk.setown(createLocalKeyManager(keySet->queryPart(0), &owner));
             tlk->setLayoutTranslator(trans);
             owner.indexHelper.createSegmentMonitors(tlk);
             tlk->finishSegmentMonitors();
@@ -23482,7 +23482,7 @@ public:
         unsigned __int64 result = 0;
         for (unsigned i = 0; i < numParts; i++)
         {
-            Owned<IKeyManager> countTlk = createLocalKeyManager(keyIndexSet->queryPart(i), 0, this);
+            Owned<IKeyManager> countTlk = createLocalKeyManager(keyIndexSet->queryPart(i), this);
             countTlk->setLayoutTranslator(translators->item(i));
             indexHelper.createSegmentMonitors(countTlk);
             countTlk->finishSegmentMonitors();
@@ -23514,12 +23514,12 @@ public:
             }
             if (numParts > 1 || seekGEOffset)
             {
-                tlk.setown(createKeyMerger(keyIndexSet, 0, seekGEOffset, this));
+                tlk.setown(createKeyMerger(keyIndexSet, seekGEOffset, this));
                 // note that we don't set up translator because we don't support it. If that ever changes...
             }
             else
             {
-                tlk.setown(createLocalKeyManager(keyIndexSet->queryPart(0), 0, this));
+                tlk.setown(createLocalKeyManager(keyIndexSet->queryPart(0), this));
                 tlk->setLayoutTranslator(translators->item(0));
             }
             indexHelper.createSegmentMonitors(tlk);
@@ -25284,7 +25284,7 @@ public:
     CRoxieServerFullKeyedJoinHead(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, IKeyArray * _keySet, TranslatorArray *_translators, IOutputMetaData *_indexReadMeta, IJoinProcessor *_joinHandler, bool _isLocal)
         : CRoxieServerActivity(_ctx, _factory, _probeManager),
           helper((IHThorKeyedJoinArg &)basehelper), 
-          tlk(createLocalKeyManager(NULL, 0, this)),
+          tlk(createLocalKeyManager(NULL, this)),
           translators(_translators),
           keySet(_keySet),
           remote(_ctx, this, _remoteId, 0, helper, *this, true, true),
@@ -26179,7 +26179,7 @@ public:
         IOutputMetaData *_indexReadMeta, unsigned _joinFlags, bool _isSimple, bool _isLocal)
         : CRoxieServerKeyedJoinBase(_ctx, _factory, _probeManager, _remoteId, _joinFlags, false, _isSimple, _isLocal),
           indexReadMeta(_indexReadMeta),
-          tlk(createLocalKeyManager(NULL, 0, this)),
+          tlk(createLocalKeyManager(NULL, this)),
           keySet(_keySet),
           translators(_translators)
     {

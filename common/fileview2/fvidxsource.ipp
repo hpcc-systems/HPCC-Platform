@@ -80,7 +80,6 @@ protected:
     HqlExprAttr diskRecord;
     Owned<IDistributedFile> df;
     Linked<FVDataSource> original;
-    ITypeInfo * fileposFieldType;
     unsigned __int64 totalRows;
     unsigned __int64 nextRowToRead;
     unsigned keyedSize;

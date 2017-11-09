@@ -164,7 +164,7 @@ int main(int argc, const char **argv)
             }
             else
             {
-                Owned<IKeyManager> manager = createLocalKeyManager(index, key_size, NULL);
+                Owned<IKeyManager> manager = createLocalKeyManager(index, NULL);
                 Owned<IPropertyTree> metadata = index->getMetadata();
                 Owned<IOutputMetaData> diskmeta;
                 Owned<IOutputMetaData> translatedmeta;
