@@ -724,7 +724,14 @@ public:
         Owned<IRoxieDaliHelper> daliHelper = connectToDali();
         bool onlyLocal = fileNameServiceDali.isEmpty();
         bool onlyDFS = !resolveLocally() && !onlyLocal;
-        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, NULL, onlyLocal, onlyDFS, true);
+
+        IUserDescriptor *user = NULL;
+        if (wu)
+            user = wu->queryUserDescriptor();//ad-hoc mode
+        else if (daliHelper)
+            user = daliHelper->queryUserDescriptor();//predeployed query mode
+
+        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, user, onlyLocal, onlyDFS, true);
         if (!ldFile)
             throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s", fileName.str());
         return createRoxieWriteHandler(daliHelper, ldFile.getClear(), clusters);
