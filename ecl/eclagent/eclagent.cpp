@@ -1980,6 +1980,25 @@ void EclAgent::doProcess()
             w->deleteTempFiles(NULL, false, deleteJobTemps);
             if (deleteJobTemps)
                 w->deleteTemporaries();
+            deleteTempFiles();
+            StringBuffer jobTempDir;
+            getTempfileBase(jobTempDir);
+            OwnedIFile dir = createIFile(jobTempDir);
+            StringBuffer rmMsg;
+            unsigned errCode = 0;
+            try
+            {
+               if (!dir->remove())
+                    rmMsg.append("Failed to remove temporary directory: ").append(jobTempDir.str());
+            }
+            catch (IException *e)
+            {
+                errCode = e->errorCode();
+                e->errorMessage(rmMsg);
+                e->Release();
+            }
+            if (rmMsg.length())
+                WARNLOG(errCode, "%s", rmMsg.str());
         }
 
         if (globals->getPropBool("DUMPFINALWU", false))
