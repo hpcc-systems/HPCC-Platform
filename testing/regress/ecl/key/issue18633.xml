@@ -1,0 +1,5 @@
+<Dataset name='Result 1'>
+ <Row><errormessage>Fields with errors   </errormessage><rulecnt>2</rulecnt></Row>
+ <Row><errormessage>Fields without errors</errormessage><rulecnt>0</rulecnt></Row>
+ <Row><errormessage>Length was not in:1..</errormessage><rulecnt>1</rulecnt></Row>
+</Dataset>
