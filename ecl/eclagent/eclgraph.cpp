@@ -872,7 +872,7 @@ void EclSubGraph::updateProgress(IStatisticGatherer &progress)
 {
     OwnedPtr<StatsScopeBlock> subGraph;
     OwnedPtr<StatsScopeBlock> activityScope;
-    if ((isChildGraph || isLoopBody) && parentActivityId != owner->parentActivityId)
+    if ((isChildGraph || isLoopBody) && owner && parentActivityId != owner->parentActivityId)
     {
         activityScope.setown(new StatsActivityScope(progress, parentActivityId));
         subGraph.setown(new StatsChildGraphScope(progress, id));
