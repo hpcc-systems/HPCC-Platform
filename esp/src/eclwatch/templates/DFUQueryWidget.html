@@ -119,13 +119,14 @@
                     <div id="${id}DesprayDropDown" data-dojo-type="dijit.form.DropDownButton">
                         <span>${i18n.Despray}</span>
                         <div id="${id}DesprayTooltipDialog" data-dojo-type="dijit.TooltipDialog">
-                            <div id="${id}DesprayForm" style="width: 460px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                            <div id="${id}DesprayForm" style="width: 600px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
                                 <div data-dojo-type="dijit.Fieldset">
                                     <legend>${i18n.Target}</legend>
                                     <div data-dojo-type="hpcc.TableContainer">
                                         <input id="${id}DesprayTargetSelect" title="${i18n.DropZone}:" name="destGroup" style="width: 100%;" data-dojo-type="TargetSelectWidget" />
                                         <input id="${id}DesprayTargetIPAddress" title="${i18n.IPAddress}:" name="destIP" style="width: 100%;" required="true" data-dojo-props="trim: true" data-dojo-type="TargetSelectWidget" />
-                                        <input id="${id}DesprayTargetPath" title="${i18n.Path}:" name="destPath" required="false" style="width: 100%;" data-dojo-props="trim: true, readonly: false" data-dojo-type="TargetComboBoxWidget" />
+                                        <input id="${id}DesprayRelativePath" title="${i18n.TargetPath}:" style="width: 100%;" data-dojo-props="readonly: true, disabled:true" data-dojo-type="dijit.form.SimpleTextarea"/>
+                                        <input id="${id}DesprayTargetPath" title="${i18n.Subpath}:" name="destPath" required="false" style="width: 100%;" data-dojo-props="trim: true, readonly: false" data-dojo-type="TargetComboBoxWidget" />
                                         <input id="${id}DesprayTargetSplitPrefix" title="${i18n.SplitPrefix}:" name="splitprefix" style="width: 100%;" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
                                     </div>
                                     <div id="${id}DesprayGrid" data-dojo-type="SelectionGridWidget">

@@ -62,13 +62,14 @@
                     <div id="${id}DesprayDropDown" data-dojo-type="dijit.form.DropDownButton">
                         <span>${i18n.Despray}</span>
                         <div id="${id}DesprayTooltipDialog" data-dojo-type="dijit.TooltipDialog">
-                            <div id="${id}DesprayForm" style="width: 460px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                            <div id="${id}DesprayForm" style="width: 600px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
                                 <div data-dojo-type="dijit.Fieldset">
                                     <legend>${i18n.Target}</legend>
                                     <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
                                         <input id="${id}DesprayTargetSelect" title="${i18n.DropZone}:" name="destGroup" colspan="2" style="width: 100%;" data-dojo-type="TargetSelectWidget" />
                                         <input id="${id}DesprayTargetIPAddress" title="${i18n.IPAddress}:" name="destIP" style="width: 100%;" required="true" data-dojo-props="trim: true" data-dojo-type="TargetSelectWidget" />
-                                        <input id="${id}DesprayTargetPath" title="${i18n.Path}:" name="destPath" colspan="2" required="false" style="width: 100%;" data-dojo-props="trim: true" data-dojo-type="TargetComboBoxWidget" />
+                                        <input id="${id}DesprayRelativePath" title="${i18n.TargetPath}:" style="width: 100%;" colspan="2" data-dojo-props="readonly: true, disabled:true" data-dojo-type="dijit.form.SimpleTextarea"/>
+                                        <input id="${id}DesprayTargetPath" title="${i18n.Subpath}:" name="destPath" colspan="2" required="false" style="width: 100%;" data-dojo-props="trim: true" data-dojo-type="TargetComboBoxWidget" />
                                         <input id="${id}DesprayTargetName" title="${i18n.TargetName}:" colspan="2" required="true" style="width: 100%;" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
                                         <input id="${id}DesprayTargetSplitPrefix" title="${i18n.SplitPrefix}:" name="splitprefix" colspan="2" style="width: 100%;" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
                                     </div>
