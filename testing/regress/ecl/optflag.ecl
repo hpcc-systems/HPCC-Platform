@@ -15,28 +15,30 @@
     limitations under the License.
 ############################################################################## */
 
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
 #onwarning(4523, ignore);
 #onwarning(4522, ignore);
 
-d := dataset('regress::no::such::file', {string10 f}, FLAT, OPT);
+d := dataset(prefix + 'no_such_file', {string10 f}, FLAT, OPT);
 output(d);
 count(d);
 output(d(f='NOT'));
 count(d(f='NOT'));
 
-p := PRELOAD(dataset('regress::no::such::file::either', {string10 f}, FLAT, OPT));
+p := PRELOAD(dataset(prefix + 'no_such_file_either', {string10 f}, FLAT, OPT));
 output(p);
 count(p);
 output(p(f='NOT'));
 count(p(f='NOT'));
 
-p2 := PRELOAD(dataset('regress::no::such::file::again', {string10 f}, FLAT, OPT), 2);
+p2 := PRELOAD(dataset(prefix + 'no_such_file_again', {string10 f}, FLAT, OPT), 2);
 output(p2);
 count(p2);
 output(p2(f='NOT'));
 count(p2(f='NOT'));
 
-i := INDEX(d,{f},{},'regress::nor::this', OPT);
+i := INDEX(d,{f},{},prefix + 'nor_this', OPT);
 output(i);
 count(i);
 output(i(f='NOT'));

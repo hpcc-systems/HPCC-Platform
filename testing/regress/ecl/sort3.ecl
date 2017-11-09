@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+import $.setup;
+prefix := setup.Files(false, false).IndexPrefix;
+
 r1 := { unsigned id };
 MyRec := RECORD
     UNSIGNED2 uv;
@@ -46,8 +49,8 @@ sequential(
     output(SORT(SomeFile, (unsigned1)uv,sv,uv)), // can be unstable
     output(SORT(SomeFile, trim(sv),uv)), // can be unstable
     output(SORT(SomeFile, (string20)sv,(unsigned4)uv)), // can be unstable
-    buildindex(NOFOLD(SomeFile), { uv }, { SomeFile }, 'REGRESS:dummyIndex1',overwrite);
-    buildindex(NOFOLD(p), { uv }, { p }, 'REGRESS:dummyIndex2',overwrite);
+    buildindex(NOFOLD(SomeFile), { uv }, { SomeFile }, prefix + 'dummyIndex1',overwrite);
+    buildindex(NOFOLD(p), { uv }, { p }, prefix + 'dummyIndex2',overwrite);
     output(SORT(s2, (integer2)uv));
     output('done')
 );    

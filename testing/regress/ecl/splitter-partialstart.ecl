@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
+
 //noRoxie
 //nolocal
 
@@ -36,8 +39,8 @@ p2 := PROJECT(ds, TRANSFORM(rec, SELF.id := LEFT.id*3; SELF := LEFT));
 gc1 := 0 : STORED('gc1');
 ifp2 := IF(gc1=1, p2);
 
-fname1 := '~regress::splitout1';
-fname2 := '~regress::splitout2';
+fname1 := prefix + 'splitout1';
+fname2 := prefix + 'splitout2';
 SEQUENTIAL(
  PARALLEL(
   OUTPUT(p1, , fname1, OVERWRITE, UPDATE);

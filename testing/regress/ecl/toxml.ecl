@@ -16,7 +16,10 @@
 ############################################################################## */
 
 //UseStandardFiles
-TOXMLPREFIX := '~REGRESS::' + __PLATFORM__ + '::RESULT::';
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
+
+TOXMLPREFIX := prefix + __PLATFORM__ + '_RESULT_';
 
 phoneRecord := 
             RECORD

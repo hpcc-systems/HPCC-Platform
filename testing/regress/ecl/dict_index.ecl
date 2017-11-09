@@ -1,5 +1,7 @@
 //nothor
 //noroxie
+import $.setup;
+prefix := setup.Files(false, false).IndexPrefix;
 d := dataset(
   [{ '1', '2',
     [{ '3' => '4'},
@@ -13,7 +15,7 @@ d := dataset(
   }],
    { string1 a, string1 b, dictionary({string1 c1=>string1 c2}) c, string1 d });
 
-i := index(d, {a,b}, {c,d}, 'test::dict');
+i := index(d, {a,b}, {c,d}, prefix+'dict');
 
 recordof(d) t(d L, i R) := TRANSFORM
   self := R;

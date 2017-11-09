@@ -18,7 +18,8 @@
 // Testing various indexes that might present tricky cases for remote projection/filtering
 
 import ^ as root;
-prefix := #IFDEFINED(root.prefix, '~regress::key::badidx');
+import $.setup;
+prefix := setup.Files(false, false).IndexPrefix;
 
 simple_rec := RECORD
   unsigned4 u4;

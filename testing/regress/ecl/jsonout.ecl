@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
+
 phoneRecord :=
             RECORD
 string5         areaCode{xpath('@areaCode')};
@@ -58,15 +61,15 @@ namesTable := dataset([
         {'Halliday','Abigail', 1, 2, '09876',654321,false,'','',false,[{'The cat in the hat','Suess'},{'Wolly the sheep',''}], ['Red','Yellow']}
         ], personRecord);
 
-output(namesTable,,'REGRESS::TEMP::output_object_namedArray.json',overwrite, json);
-readObjectNamedArray := dataset(DYNAMIC('REGRESS::TEMP::output_object_namedArray.json'), personRecord, json('Row'));
+output(namesTable,,prefix + 'output_object_namedArray.json',overwrite, json);
+readObjectNamedArray := dataset(DYNAMIC(prefix + 'output_object_namedArray.json'), personRecord, json('Row'));
 output(readObjectNamedArray, named('ObjectNamedArray'));
 
-output(namesTable,,'REGRESS::TEMP::output_array.json',overwrite, json('', heading('[', ']')));
-readArrayOfRows := dataset(DYNAMIC('REGRESS::TEMP::output_array.json'), personRecord, json(''));
+output(namesTable,,prefix + 'output_array.json',overwrite, json('', heading('[', ']')));
+readArrayOfRows := dataset(DYNAMIC(prefix + 'output_array.json'), personRecord, json(''));
 output(readArrayOfRows, named('ArrayOfRows'));
 
-output(namesTable,,'REGRESS::TEMP::output_noroot.json',overwrite, json('', heading('','')));
-readNoRootRows := dataset(DYNAMIC('REGRESS::TEMP::output_noroot.json'), personRecord, json('', NOROOT));
+output(namesTable,,prefix + 'output_noroot.json',overwrite, json('', heading('','')));
+readNoRootRows := dataset(DYNAMIC(prefix + 'output_noroot.json'), personRecord, json('', NOROOT));
 output(readNoRootRows, named('noRootRows'));
 
