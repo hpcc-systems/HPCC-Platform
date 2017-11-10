@@ -624,7 +624,7 @@ public:
     virtual void processBeginSet(const RtlFieldInfo * field, bool &isAll)
     {
         nextField(field);
-        isAll = false;  // No concept of an 'all' set in Python
+        isAll = false;  // No concept of an 'all' set in R
         Rcpp::List childrec = ::Rcpp::as<Rcpp::List>(elem);  // MORE - is converting it to a list inefficient? Keeps the code simpler!
         stack.append(*new ListState(childrec, field));
     }
