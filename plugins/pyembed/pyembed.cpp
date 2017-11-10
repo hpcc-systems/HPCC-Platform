@@ -1720,3 +1720,19 @@ extern DECL_EXPORT bool syntaxCheck(const char *script)
 }
 
 } // namespace
+
+// For back compatibility we also answer to the name "pyembed"...
+
+namespace pyembed {
+
+extern DECL_EXPORT IEmbedContext* getEmbedContext()
+{
+    return new py2embed::Python27EmbedContext;
+}
+
+extern DECL_EXPORT bool syntaxCheck(const char *script)
+{
+    return true; // MORE
+}
+
+} // namespace
