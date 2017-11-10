@@ -2003,7 +2003,7 @@ public:
             return createDirectoryIterator("",""); // NULL iterator
 
         CRemoteDirectoryIterator *ret = new CRemoteDirectoryIterator(ep, filename);
-        byte stream=1;
+        byte stream = (sub || !mask || containsFileWildcard(mask)) ? 1 : 0; // no point in streaming if mask without wildcards or sub, as will only be <= 1 match.
 
         Owned<CEndpointCS> crit = dirCSTable->getCrit(ep); // NB dirCSTable doesn't own, last reference will remove from table
         CriticalBlock block(*crit);
@@ -2015,7 +2015,7 @@ public:
             sendRemoteCommand(sendBuffer, replyBuffer);
             if (ret->appendBuf(replyBuffer))
                 break;
-            stream = 2;
+            stream = 2; // NB: will never get here if streaming was (if stream==0 above)
         }
         return ret;
     }
@@ -5282,36 +5282,72 @@ public:
         bool sub;
         byte stream = 0;
         msg.read(name).read(mask).read(includedir).read(sub);
-        if (msg.remaining()>=sizeof(byte)) {
+        if (msg.remaining()>=sizeof(byte))
+        {
             msg.read(stream);
             if (stream==1)
                 client.opendir.clear();
         }
-
         if (TF_TRACE)
-            PROGLOG("GetDir,  '%s', '%s'",name.get(),mask.get());
-        Owned<IFile> dir=createIFile(name);
+            PROGLOG("GetDir,  '%s', '%s', stream='%u'",name.get(),mask.get(),stream);
+        if (!stream && !containsFileWildcard(mask))
+        {
+            // if no streaming, and mask contains no wildcard, it is much more efficient to get the info without a directory iterator!
+            StringBuffer fullFilename(name);
+            addPathSepChar(fullFilename).append(mask);
+            Owned<IFile> iFile = createIFile(fullFilename);
+            if (!iFile->exists())
+            {
+                reply.append((unsigned)RFSERR_GetDirFailed);
+                return false;
+            }
+            else
+            {
+                reply.append((unsigned)RFEnoerror);
+                // NB: This must preserve same serialization format as CRemoteDirectoryIterator::serialize produces for 1 file.
+                byte b=1;
+                reply.append(b);
+                bool isDir = foundYes == iFile->isDirectory();
+                reply.append(isDir);
+                reply.append(isDir ? 0 : iFile->size());
+                CDateTime dt;
+                iFile->getTime(nullptr, &dt, nullptr);
+                dt.serialize(reply);
+                reply.append(iFile->queryFilename());
+                b = 0;
+                reply.append(b);
+                return true;
+            }
+        }
+        else
+        {
+            Owned<IFile> dir=createIFile(name);
 
-        Owned<IDirectoryIterator> iter;
-        if (stream>1)
-            iter.set(client.opendir);
-        else {
-            iter.setown(dir->directoryFiles(mask.length()?mask.get():NULL,sub,includedir));
-            if (stream != 0)
-                client.opendir.set(iter);
-        }
-        if (!iter) {
-            reply.append((unsigned)RFSERR_GetDirFailed);
-            return false;
-        }
-        reply.append((unsigned)RFEnoerror);
-        if (CRemoteDirectoryIterator::serialize(reply,iter,stream?0x100000:0,stream<2)) {
-            if (stream != 0)
-                client.opendir.clear();
-        }
-        else {
-            bool cont=true;
-            reply.append(cont);
+            Owned<IDirectoryIterator> iter;
+            if (stream>1)
+                iter.set(client.opendir);
+            else
+            {
+                iter.setown(dir->directoryFiles(mask.length()?mask.get():NULL,sub,includedir));
+                if (stream != 0)
+                    client.opendir.set(iter);
+            }
+            if (!iter)
+            {
+                reply.append((unsigned)RFSERR_GetDirFailed);
+                return false;
+            }
+            reply.append((unsigned)RFEnoerror);
+            if (CRemoteDirectoryIterator::serialize(reply,iter,stream?0x100000:0,stream<2))
+            {
+                if (stream != 0)
+                    client.opendir.clear();
+            }
+            else
+            {
+                bool cont=true;
+                reply.append(cont);
+            }
         }
         return true;
     }
