@@ -2691,6 +2691,25 @@ const char * queryCurrentProcessPath()
     return processPath.str();
 }
 
+bool getPackageFolder(StringBuffer & path)
+{
+    StringBuffer folder;
+    splitDirTail(queryCurrentProcessPath(), folder);
+    removeTrailingPathSepChar(folder);
+    if (folder.length())
+    {
+        StringBuffer foldersFolder;
+        splitDirTail(folder.str(), foldersFolder);
+        if (foldersFolder.length())
+        {
+            path = foldersFolder;
+            return true;
+        }
+    }
+    return false;
+}
+
+
 inline bool isOctChar(char c) 
 { 
     return (c>='0' && c<'8'); 

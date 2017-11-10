@@ -385,7 +385,15 @@ extern jlib_decl bool queryDafsSecSettings(DAFSConnectCfg *_connectMethod,
 extern jlib_decl const char * matchConfigurationDirectoryEntry(const char *path,const char *mask,StringBuffer &name, StringBuffer &component, StringBuffer &instance);
 extern jlib_decl bool replaceConfigurationDirectoryEntry(const char *path,const char *frommask,const char *tomask,StringBuffer &out);
 
-extern jlib_decl const char *queryCurrentProcessPath(); 
+extern jlib_decl const char *queryCurrentProcessPath();
+
+/**
+ * Locate the 'package home' directory - normally /opt/HPCCSystems - by detecting the current executable's location
+ *
+ * @param path     Returns the package home location
+ * @return         True if the home directory was located
+ */
+extern jlib_decl bool getPackageFolder(StringBuffer & path);
 
 extern jlib_decl int parseCommandLine(const char * cmdline, MemoryBuffer &mb, const char** &argvout); // parses cmdline into argvout returning arg count (mb used as buffer)
 

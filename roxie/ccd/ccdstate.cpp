@@ -2853,6 +2853,7 @@ IRoxieQueryPackageManagerSet *globalPackageSetManager = NULL;
 
 extern void loadPlugins()
 {
+    DBGLOG("Preloading plugins from %s", pluginDirectory.str());
     if (pluginDirectory.length())
     {
         plugins = new SafePluginMap(&PluginCtx, traceLevel >= 1);

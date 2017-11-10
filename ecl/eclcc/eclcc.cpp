@@ -163,24 +163,6 @@ static bool extractOption(StringAttr & option, IProperties * globals, const char
     return ret;
 }
 
-static bool getPackageFolder(StringBuffer & path)
-{
-    StringBuffer folder;
-    splitDirTail(queryCurrentProcessPath(), folder);
-    removeTrailingPathSepChar(folder);
-    if (folder.length())
-    {
-        StringBuffer foldersFolder;
-        splitDirTail(folder.str(), foldersFolder);
-        if (foldersFolder.length())
-        {
-            path = foldersFolder;
-            return true;
-        }
-    }
-    return false;
-}
-
 static bool getHomeFolder(StringBuffer & homepath)
 {
     if (!getHomeDir(homepath))
