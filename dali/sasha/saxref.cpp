@@ -344,8 +344,7 @@ struct cDirDesc
         unsigned pf;
         StringAttr mask;
         const char *fn = decodeName(drv,name,node,numnodes,mask,pf,nf);
-        bool misplaced = !grp.queryNode(pf).endpoint().equals(ep);
-
+        bool misplaced = nf!=grp.ordinality() || pf>=grp.ordinality() || !grp.queryNode(pf).endpoint().equals(ep);
         cFileDesc *file = files.find(fn,false);
         if (!file) {
             if (!mem)
@@ -368,9 +367,9 @@ struct cDirDesc
             mp->init(drv,pf,node,numnodes);
             mp->next = file->misplaced;
             file->misplaced = mp;
-
+            // NB: still perform setpresent() below, so that later 'orphan' and 'found' scanning can spot the part as orphaned or part of a found file.
         }
-        else if (file->setpresent(drv,pf)) {
+        if (file->setpresent(drv,pf)) {
             ERRLOG(LOGPFX "Duplicate file with mismatched tail (%d) %s",pf,name);
             file = NULL;
         }
@@ -383,7 +382,7 @@ struct cDirDesc
         unsigned pf;
         StringAttr mask;
         const char *fn = decodeName(drv,name,node,numnodes,mask,pf,nf);
-        bool misplaced = !grp.queryNode(pf).endpoint().equals(ep);
+        bool misplaced = nf!=grp.ordinality() || pf>=grp.ordinality() || !grp.queryNode(pf).endpoint().equals(ep);
         cFileDesc *file = files.find(fn,false);
         if (file) {
             if (misplaced) {
