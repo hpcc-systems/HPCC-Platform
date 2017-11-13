@@ -181,7 +181,7 @@ class ECLcmd(Shell):
                         eclfile.diff = ("%3d. Test: %s\n") % (eclfile.taskId, eclfile.getBaseEclRealName())
                         eclfile.diff += data
                     test = True
-                elif (res['state'] == 'failed') and (('error' in data) or ('exception' in data.lower())):
+                elif (res['state'] == 'failed'):
                     eclfile.diff = ("%3d. Test: %s\n") % (eclfile.taskId, eclfile.getBaseEclRealName())
                     eclfile.diff += repr(data)
                     test = False
