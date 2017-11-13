@@ -621,6 +621,7 @@ extern DLLSERVER_API void getAdditionalPluginsPath(StringBuffer &pluginsPath, co
     // We only add the additional plugins if the plugins path already includes the default plugins location
     StringBuffer base(_base);
     removeTrailingPathSepChar(base);
+    removeTrailingPathSepChar(pluginsPath);
     StringBuffer defaultLocation(base);
     defaultLocation.append(PATHSEPSTR "plugins");
     StringArray paths;
