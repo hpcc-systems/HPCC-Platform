@@ -85,7 +85,7 @@
 
             <xsl:call-template name="addEnvironmentInfo"/>
 
-            <xsl:if test="./Authentication/@method='ldap' or ./Authentication/@method='ldaps'">
+            <xsl:if test="./Authentication/@method='ldap' or ./Authentication/@method='ldaps' or ./Authentication/@method='secmgrPlugin'">
               <xsl:value-of disable-output-escaping="yes" select="$break" />
               <xsl:value-of disable-output-escaping="yes" select="$indent" />
               <xsl:value-of disable-output-escaping="yes" select="$indent" />
