@@ -1107,31 +1107,73 @@ public:
     }
     void testSDSSubs2()
     {
+        class CResult
+        {
+            Semaphore sem;
+            StringBuffer resultString;
+            CriticalSection crit;
+        public:
+            CResult()
+            {
+            }
+            void add(const char *message)
+            {
+                CriticalBlock b(crit);
+                if (resultString.length())
+                    resultString.append("|");
+                resultString.append(message);
+                sem.signal();
+            }
+            Semaphore &querySem() { return sem; }
+            void clear() { resultString.clear(); }
+            bool wait(unsigned numExpected)
+            {
+                for (unsigned t=0; t<numExpected; t++)
+                {
+                    if (!sem.wait(5000))
+                        return false;
+                }
+                return true;
+            }
+            StringBuffer &getResultsClear(StringBuffer &ret)
+            {
+                StringArray array;
+                array.appendList(resultString, "|");
+                resultString.clear();
+                array.sortAscii();
+                ForEachItemIn(r, array)
+                {
+                    if (ret.length())
+                        ret.append("|");
+                    ret.append(array.item(r));
+                }
+                return ret;
+            }
+        } result;
         class CSubscriberContainer : public CInterface
         {
             class CSubscriber : public CSimpleInterfaceOf<ISDSSubscription>
             {
                 StringAttr xpath;
                 bool sub;
-                StringBuffer &result;
+                CResult &result;
             public:
-                CSubscriber(StringBuffer &_result, const char *_xpath, bool _sub) : result(_result), xpath(_xpath), sub(_sub)
+                CSubscriber(CResult &_result, const char *_xpath, bool _sub) : result(_result), xpath(_xpath), sub(_sub)
                 {
                 }
                 virtual void notify(SubscriptionId id, const char *_xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
                 {
                     PROGLOG("CSubscriber notified path=%s for subscriber=%s, sub=%s", _xpath, xpath.get(), sub?"true":"false");
-                    if (result.length())
-                        result.append("|");
-                    result.append(xpath);
+                    StringBuffer message(xpath);
                     if (!sub && valueLen)
-                        result.append(",").append(valueLen, (const char *)valueData);
+                        message.append(",").append(valueLen, (const char *)valueData);
+                    result.add(message);
                 }
             };
             Owned<CSubscriber> subscriber;
             SubscriptionId id;
         public:
-            CSubscriberContainer(StringBuffer &result, const char *xpath, bool sub)
+            CSubscriberContainer(CResult &result, const char *xpath, bool sub)
             {
                 subscriber.setown(new CSubscriber(result, xpath, sub));
                 id = querySDS().subscribe(xpath, *subscriber, sub, !sub);
@@ -1149,7 +1191,6 @@ public:
         daRegress->setPropTree("TestSub2", tree.getClear());
         conn->commit();
 
-        StringBuffer result;
         Owned<CSubscriberContainer> sub1 = new CSubscriberContainer(result, "/DAREGRESS/TestSub2/a", true);
         Owned<CSubscriberContainer> sub2 = new CSubscriberContainer(result, "/DAREGRESS/TestSub2/a/b1", false);
         Owned<CSubscriberContainer> sub3 = new CSubscriberContainer(result, "/DAREGRESS/TestSub2/a/b2", false);
@@ -1157,8 +1198,6 @@ public:
         Owned<CSubscriberContainer> sub5 = new CSubscriberContainer(result, "/DAREGRESS/TestSub2/a/b3", true);
         Owned<CSubscriberContainer> sub6 = new CSubscriberContainer(result, "/DAREGRESS/TestSub2/a/b4", false);
         Owned<CSubscriberContainer> sub7 = new CSubscriberContainer(result, "/DAREGRESS/TestSub2/a/b4/sub", false);
-
-        MilliSleep(1000);
 
         StringArray expectedResults;
         expectedResults.append("/DAREGRESS/TestSub2/a");
@@ -1179,7 +1218,6 @@ public:
 
         ForEachItemIn(p, props)
         {
-            result.clear(); // filled by subscriber notifications
             const char *cmd = props.item(p);
             const char *propPath=cmd+2;
             switch (*cmd)
@@ -1208,27 +1246,24 @@ public:
             }
             conn->commit();
 
-            MilliSleep(100); // time for notifications to come through
-
-            PROGLOG("Checking results");
-            StringArray resultArray;
-            resultArray.appendList(result, "|");
-            result.clear();
-            resultArray.sortAscii();
-            ForEachItemIn(r, resultArray)
-            {
-                if (result.length())
-                    result.append("|");
-                result.append(resultArray.item(r));
-            }
             const char *expectedResult = expectedResults.item(p);
-            if (0 == strcmp(expectedResult, result))
+            StringArray expectedResultArray;
+            expectedResultArray.appendList(expectedResult, "|"); // just to get #
+            if (!result.wait(expectedResultArray.ordinality()))
+            {
+                VStringBuffer errMsg("Timeout waiting for subcription notificaitons, where expected result = '%s',", expectedResult);
+                CPPUNIT_ASSERT_MESSAGE(errMsg.str(), 0);
+            }
+            StringBuffer results;
+            result.getResultsClear(results);
+            PROGLOG("Checking results");
+            if (0 == strcmp(expectedResult, results))
                 PROGLOG("testSDSSubs2 [ %s ]: MATCH", cmd);
             else
             {
                 VStringBuffer errMsg("testSDSSubs2 [ %s ]: MISMATCH", cmd);
                 errMsg.newline().append("Expected: ").append(expectedResult);
-                errMsg.newline().append("Got: ").append(result);
+                errMsg.newline().append("Got: ").append(results);
                 PROGLOG("%s", errMsg.str());
                 CPPUNIT_ASSERT_MESSAGE(errMsg.str(), 0);
             }
