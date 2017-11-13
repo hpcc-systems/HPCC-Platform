@@ -24,6 +24,7 @@
 #include "dalienv.hpp"
 #include "dadfs.hpp"
 #include "daaudit.hpp"
+#include "dautils.hpp"
 #include "exception_util.hpp"
 #include "wujobq.hpp"
 #include "eventqueue.hpp"
@@ -372,6 +373,13 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
     awusCacheMinutes = AWUS_CACHE_MIN_DEFAULT;
     VStringBuffer xpath("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/AWUsCacheMinutes", process, service);
     cfg->getPropInt(xpath.str(), awusCacheMinutes);
+
+    xpath.setf("Software/EspProcess[@name=\"%s\"]/@PageCacheTimeoutSeconds", process);
+    if (cfg->hasProp(xpath.str()))
+        setPageCacheTimeoutMilliSeconds(cfg->getPropInt(xpath.str()));
+    xpath.setf("Software/EspProcess[@name=\"%s\"]/@MaxPageCacheItems", process);
+    if (cfg->hasProp(xpath.str()))
+        setMaxPageCacheItems(cfg->getPropInt(xpath.str()));
 
     xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/serverForArchivedECLWU/@netAddress", process, service);
     if (cfg->hasProp(xpath.str()))

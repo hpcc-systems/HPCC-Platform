@@ -1912,11 +1912,23 @@ IRemoteConnection *getSortedElements( const char *basexpath,
 //==================================================================================
 
 #define PAGE_CACHE_TIMEOUT (1000*60*10)
+#define MAX_PAGE_CACHE_ITEMS 1000
+static unsigned pageCacheTimeoutMilliSeconds = PAGE_CACHE_TIMEOUT;
+void setPageCacheTimeoutMilliSeconds(unsigned timeoutSeconds)
+{
+    pageCacheTimeoutMilliSeconds = 1000 * timeoutSeconds;
+}
+
+static unsigned maxPageCacheItems = MAX_PAGE_CACHE_ITEMS;
+void setMaxPageCacheItems(unsigned _maxPageCacheItems)
+{
+    maxPageCacheItems = _maxPageCacheItems;
+}
 
 class CTimedCacheItem: public CInterface
 {
 protected: friend class CTimedCache;
-    unsigned due;
+    unsigned due = 0;
     StringAttr owner;
 public:
     DALI_UID hint;
@@ -1924,7 +1936,6 @@ public:
         : owner(_owner)
     {
         hint = queryCoven().getUniqueId();
-        due = msTick()+PAGE_CACHE_TIMEOUT;
     }
 };
 
@@ -1949,16 +1960,26 @@ class CTimedCache
 
     unsigned check()
     {
+        /* The items are ordered, such that oldest items are at the start.
+        This method scans through from oldest to newest until the current
+        item's "due" time has not expired. It then removes all up to that
+        point, i.e. those that have expired, and returns the timing 
+        difference between now and the next due time. */
+        unsigned expired = 0;
         unsigned res = (unsigned)-1;
         unsigned now = msTick();
-        ForEachItemInRev(i,items) {
+        ForEachItemIn(i, items)
+        {
             CTimedCacheItem &item = items.item(i);
-            unsigned t = item.due-now;
-            if ((int)t<=0)
-                items.remove(i);
-            else if (t<res)
-                res = t;
+            if (item.due > now)
+            {
+                res = item.due - now;
+                break;
+            }
+            expired++;
         }
+        if (expired > 0)
+            items.removen(0, expired);
         return res;
     }
 
@@ -1998,7 +2019,9 @@ public:
         if (!item)
             return 0;
         CriticalBlock block(sect);
-        item->due = msTick()+PAGE_CACHE_TIMEOUT;
+        if ((maxPageCacheItems > 0) && (maxPageCacheItems == items.length()))
+            items.remove(0);
+        item->due = msTick() + pageCacheTimeoutMilliSeconds;
         items.append(*item);
         DALI_UID ret = item->hint;
         sem.signal();
@@ -2097,15 +2120,17 @@ IRemoteConnection *getElementsPaged( IElementsPager *elementsPager,
 {
     if ((pagesize==0) || !elementsPager)
         return NULL;
+    if (maxPageCacheItems > 0)
     {
         CriticalBlock block(pagedElementsCacheSect);
-        if (!pagedElementsCache) {
+        if (!pagedElementsCache)
+        {
             pagedElementsCache = new CTimedCache;
             pagedElementsCache->start();
         }
     }
     Owned<CPECacheElem> elem;
-    if (hint&&*hint)
+    if (hint && *hint && (maxPageCacheItems > 0))
     {
         elem.setown(QUERYINTERFACE(pagedElementsCache->get(owner,*hint),CPECacheElem)); // NB: removes from cache in process, added back at end
         if (elem)
@@ -2171,7 +2196,8 @@ IRemoteConnection *getElementsPaged( IElementsPager *elementsPager,
     IRemoteConnection *ret = NULL;
     if (elem->conn)
         ret = elem->conn.getLink();
-    if (hint) {
+    if (hint && (maxPageCacheItems > 0))
+    {
         *hint = elem->hint;
         pagedElementsCache->add(elem.getClear());
     }
