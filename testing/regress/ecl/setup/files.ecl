@@ -18,6 +18,7 @@
 //skip type==setup TBD
 
 import $.TS;
+import ^ as root;
 
 //define constants
 EXPORT files(boolean multiPart, boolean useLocal, boolean useTranslation = false) := module
@@ -40,34 +41,37 @@ SHARED STRING EmptyString := '' : STORED('dummy');
 SHARED STRING EmptyString := '';
 #end
 
-EXPORT STRING filePrefix := MAP(
+SHARED STRING _filePrefix := '~regress::'+ MAP(
         multiPart => 'multi',
-        'single') + EmptyString;
+        'single') + '::' + EmptyString;
 
 //Yuk cannot use MAP because that creates a string6        
-EXPORT STRING indexPrefix := IF(multiPart AND useLocal, 'local', 
+SHARED STRING _indexPrefix := '~regress::'+ IF(multiPart AND useLocal, 'local', 
                              IF(multiPart, 'multi',
-                             'single')) + EmptyString;
-        
-EXPORT DG_FileOut           := '~REGRESS::' + filePrefix + '::DG_';
-EXPORT DG_IndexOut           := '~REGRESS::' + indexPrefix + '::DG_';
-EXPORT DG_ParentFileOut     := '~REGRESS::' + filePrefix + '::DG_Parent.d00';
-EXPORT DG_ParentFileOutGrouped     := '~REGRESS::' + filePrefix + '::DG_ParentGrouped.d00';
-EXPORT DG_ChildFileOut      := '~REGRESS::' + filePrefix + '::DG_Child.d00';
-EXPORT DG_GrandChildFileOut := '~REGRESS::' + filePrefix + '::DG_GrandChild.d00';
-EXPORT DG_FetchFileName     := '~REGRESS::' + filePrefix + '::C.DG_FetchFile';
-EXPORT DG_FetchFilePreloadName := '~REGRESS::' + filePrefix + '::C.DG_FetchFilePreload';
-EXPORT DG_FetchFilePreloadIndexedName := '~REGRESS::' + filePrefix + '::C.DG_FetchFilePreloadIndexed';
-EXPORT DG_FetchIndex1Name   := '~REGRESS::' + indexPrefix + '::DG_FetchIndex1';
-EXPORT DG_FetchTransIndexName   := '~REGRESS::' + indexPrefix + '::DG_FetchTransIndex';
-EXPORT DG_FetchIndexDiffName:= '~REGRESS::' + indexPrefix + '::DG_FetchIndexDiff';
-EXPORT DG_KeyDiffIndex1Name   := '~REGRESS::' + indexPrefix + '::DG_KeyDiffIndex1';
-EXPORT DG_KeyDiffIndex2Name   := '~REGRESS::' + indexPrefix + '::DG_KeyDiffIndex2';
+                             'single')) + '::' + EmptyString;
 
-EXPORT DG_DsFilename        := '~REGRESS::' + filePrefix + '::SerialLibraryDs';
-EXPORT DG_DictFilename      := '~REGRESS::' + filePrefix + '::SerialLibraryDict';
-EXPORT DG_DictKeyFilename   := '~REGRESS::' + indexPrefix + '::SerialLibraryKeyDict';
-EXPORT DG_BookKeyFilename   := '~REGRESS::' + indexPrefix + '::SerialBookKey';
+EXPORT filePrefix := #IFDEFINED(root.filePrefix, _filePrefix);
+EXPORT indexPrefix := #IFDEFINED(root.filePrefix, _indexPrefix);
+        
+EXPORT DG_FileOut              := filePrefix + 'DG_';
+EXPORT DG_IndexOut             := indexPrefix + 'DG_';
+EXPORT DG_ParentFileOut        := filePrefix + 'DG_Parent.d00';
+EXPORT DG_ParentFileOutGrouped := filePrefix + 'DG_ParentGrouped.d00';
+EXPORT DG_ChildFileOut         := filePrefix + 'DG_Child.d00';
+EXPORT DG_GrandChildFileOut    := filePrefix + 'DG_GrandChild.d00';
+EXPORT DG_FetchFileName        := filePrefix + 'C.DG_FetchFile';
+EXPORT DG_FetchFilePreloadName := filePrefix + 'C.DG_FetchFilePreload';
+EXPORT DG_FetchFilePreloadIndexedName := filePrefix + 'C.DG_FetchFilePreloadIndexed';
+EXPORT DG_FetchIndex1Name      := indexPrefix + 'DG_FetchIndex1';
+EXPORT DG_FetchTransIndexName  := indexPrefix + 'DG_FetchTransIndex';
+EXPORT DG_FetchIndexDiffName   := indexPrefix + 'DG_FetchIndexDiff';
+EXPORT DG_KeyDiffIndex1Name    := indexPrefix + 'DG_KeyDiffIndex1';
+EXPORT DG_KeyDiffIndex2Name    := indexPrefix + 'DG_KeyDiffIndex2';
+
+EXPORT DG_DsFilename        := filePrefix + 'SerialLibraryDs';
+EXPORT DG_DictFilename      := filePrefix + 'SerialLibraryDict';
+EXPORT DG_DictKeyFilename   := indexPrefix + 'SerialLibraryKeyDict';
+EXPORT DG_BookKeyFilename   := indexPrefix + 'SerialBookKey';
 
 //record structures
 EXPORT DG_FetchRecord := RECORD
@@ -181,8 +185,8 @@ EXPORT SET OF STRING3 DG_MONTHS := ['JAN','FEB','MAR','APR','MAY','JUN','JUL','A
 
 //----------------------------- Text search definitions ----------------------------------
 
-EXPORT NameWordIndex() := '~REGRESS::' + indexPrefix + '::wordIndex' + IF(useLocal, '_Local', '');
-EXPORT NameSearchIndex      := '~REGRESS::' + indexPrefix + '::searchIndex';
+EXPORT NameWordIndex() := indexPrefix + 'wordIndex' + IF(useLocal, '_Local', '');
+EXPORT NameSearchIndex := indexPrefix + 'searchIndex';
 EXPORT getWordIndex() := INDEX(TS.textSearchIndex, NameWordIndex());
 EXPORT getSearchIndex() := INDEX(TS.textSearchIndex, NameSearchIndex);
 EXPORT getSearchSuperIndex() := INDEX(TS.textSearchIndex, '{' + NameSearchIndex + ',' + NameWordIndex() + '}');

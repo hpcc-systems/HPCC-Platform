@@ -1,4 +1,6 @@
-﻿
+﻿import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
+
 //Sample data
 rec := record
 	string s1;
@@ -9,4 +11,4 @@ ds0 := dataset([{'xxx','yyy'},{'xx,x','y,yy'},{'zzz','z'}],rec);
 ds0;
 
 //Save dataset to file with heading option
-output(ds0,,'~thor::jas::testout',csv(heading,SEPARATOR(','),quote('"')),overwrite,expire);
+output(ds0,,prefix+'jas_testout',csv(heading,SEPARATOR(','),quote('"')),overwrite,expire);

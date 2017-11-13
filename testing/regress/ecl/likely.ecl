@@ -17,8 +17,10 @@
 
 //nohthor
 //noroxie
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
 
-PeopleFileName := 'regress::thor::people';
+PeopleFileName := prefix + 'people_likely';
 
 // GENERATE People Dataset
 Layout_Person := RECORD

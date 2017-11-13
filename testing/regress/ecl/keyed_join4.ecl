@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
 //noroxie
 
 import std.system.thorlib;
@@ -54,23 +56,23 @@ donorm1 := NORMALIZE(dodist,perNode,normFunc(LEFT,COUNTER,0));
 donorm2 := NORMALIZE(dodist,perNode,normFunc(LEFT,COUNTER,p2offset));
 
 writedata := PARALLEL(
-OUTPUT(donorm1+donorm2, ,'regress::kjsuper::sub1sub2', OVERWRITE),
-OUTPUT(donorm1, ,'regress::kjsuper::sub1', OVERWRITE), // generation means they will be globally sorted
-OUTPUT(donorm2, ,'regress::kjsuper::sub2', OVERWRITE)  // generation means they will be globally sorted
+OUTPUT(donorm1+donorm2, ,prefix + 'kjsuper_sub1sub2', OVERWRITE),
+OUTPUT(donorm1, ,prefix + 'kjsuper_sub1', OVERWRITE), // generation means they will be globally sorted
+OUTPUT(donorm2, ,prefix + 'kjsuper_sub2', OVERWRITE)  // generation means they will be globally sorted
 );
 
-d1d2 := DATASET('regress::kjsuper::sub1sub2', recvfp, FLAT);
-d1 := DATASET('regress::kjsuper::sub1', recvfp, FLAT);
-d2 := DATASET('regress::kjsuper::sub2', recvfp, FLAT);
+d1d2 := DATASET(prefix + 'kjsuper_sub1sub2', recvfp, FLAT);
+d1 := DATASET(prefix + 'kjsuper_sub1', recvfp, FLAT);
+d2 := DATASET(prefix + 'kjsuper_sub2', recvfp, FLAT);
 
  
 writeindexes := PARALLEL(
-BUILDINDEX(d1d2, { key }, { payload }, 'regress::kjsuper::index', OVERWRITE),
-BUILDINDEX(SORTED(d1, key, payload), { key }, { payload }, 'regress::kjsuper::subindex1', OVERWRITE), // generation means they will be globally sorted
-BUILDINDEX(SORTED(d2, key, payload), { key }, { payload }, 'regress::kjsuper::subindex2', OVERWRITE)  // generation means they will be globally sorted
+BUILDINDEX(d1d2, { key }, { payload }, prefix + 'kjsuper_index', OVERWRITE),
+BUILDINDEX(SORTED(d1, key, payload), { key }, { payload }, prefix + 'kjsuper_subindex1', OVERWRITE), // generation means they will be globally sorted
+BUILDINDEX(SORTED(d2, key, payload), { key }, { payload }, prefix + 'kjsuper_subindex2', OVERWRITE)  // generation means they will be globally sorted
 );
 
-sifilename := 'regress::superindex';
+sifilename := prefix + 'superindex';
 
 
 iRec := RECORD
@@ -81,11 +83,11 @@ payloadRec := RECORD
 END; 
 
 dummyds := DATASET([], recvfp);
-i  := INDEX(dummyds, iRec, payloadRec, 'regress::kjsuper::index');
-i1 := INDEX(dummyds, iRec, payloadRec, 'regress::kjsuper::subindex1');
-i2 := INDEX(dummyds, iRec, payloadRec, 'regress::kjsuper::subindex2');
+i  := INDEX(dummyds, iRec, payloadRec, prefix + 'kjsuper_index');
+i1 := INDEX(dummyds, iRec, payloadRec, prefix + 'kjsuper_subindex1');
+i2 := INDEX(dummyds, iRec, payloadRec, prefix + 'kjsuper_subindex2');
 superi := INDEX(dummyds, iRec, payloadRec, sifilename);
-opti  := INDEX(dummyds, iRec, payloadRec, 'regress::kjsuper::fake', OPT);
+opti  := INDEX(dummyds, iRec, payloadRec, prefix + 'kjsuper_fake', OPT);
 
 
 conditionalDelete(string lfn) := FUNCTION
@@ -94,17 +96,17 @@ END;
 
 doclean := SEQUENTIAL(
 IF (FileServices.FileExists(sifilename), fileservices.DeleteSuperFile(sifilename)),
-conditionalDelete('regress::kjsuper::subindex1'),
-conditionalDelete('regress::kjsuper::subindex2'),
-conditionalDelete('regress::kjsuper::sub1'),
-conditionalDelete('regress::kjsuper::sub2')
+conditionalDelete(prefix + 'kjsuper_subindex1'),
+conditionalDelete(prefix + 'kjsuper_subindex2'),
+conditionalDelete(prefix + 'kjsuper_sub1'),
+conditionalDelete(prefix + 'kjsuper_sub2')
 );
 
 
 makesuper := SEQUENTIAL(
 fileservices.createsuperfile(sifilename),
-fileservices.addsuperfile(sifilename, 'regress::kjsuper::subindex1'),
-fileservices.addsuperfile(sifilename, 'regress::kjsuper::subindex2')
+fileservices.addsuperfile(sifilename, prefix + 'kjsuper_subindex1'),
+fileservices.addsuperfile(sifilename, prefix + 'kjsuper_subindex2')
 );
 
 

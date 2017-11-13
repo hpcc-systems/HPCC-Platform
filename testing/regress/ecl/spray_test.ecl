@@ -16,6 +16,8 @@
 ############################################################################## */
 
 import Std.File AS FileServices;
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
 
 // This is not an engine test, but a DFU.
 // Doesn't matter much which engine does it, so we restrict to only one
@@ -51,26 +53,26 @@ allPeople := DATASET([ {'foo', 10, 1},
             ,Layout_Person);
 
 #if (sprayFixed)
-    sprayPrepFileName := '~REGRESS::spray_prep_fixed';
+    sprayPrepFileName := prefix + 'spray_prep_fixed';
     desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input_fixed';
-    sprayOutFileName := '~REGRESS::spray_test_fixed';
+    sprayOutFileName := prefix + 'spray_test_fixed';
     dsSetup := allPeople;
 #else
     #if (sprayEmpty)
-        sprayPrepFileName := '~REGRESS::spray_prep_empty';
+        sprayPrepFileName := prefix + 'spray_prep_empty';
         desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input_empty';
-        sprayOutFileName := '~REGRESS::spray_test_empty';
+        sprayOutFileName := prefix + 'spray_test_empty';
         dsSetup := empty;
     #else
-        sprayPrepFileName := '~REGRESS::spray_prep';
+        sprayPrepFileName := prefix + 'spray_prep';
         desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input';
-        sprayOutFileName := '~REGRESS::spray_test';
+        sprayOutFileName := prefix + 'spray_test';
         dsSetup := allPeople;
     #end
 #end
 
 //  Create a small logical file
-setup := output(dsSetup, , sprayPrepFileName, CSV, OVERWRITE);
+setupFile := output(dsSetup, , sprayPrepFileName, CSV, OVERWRITE);
 
 rec := RECORD
   string result;
@@ -156,7 +158,7 @@ END;
 
 
 SEQUENTIAL(
-  setup,
+  setupFile,
   desprayOut,
   sprayOut,
   output(compareDatasets(dsSetup,ds))

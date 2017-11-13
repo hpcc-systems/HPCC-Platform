@@ -1,13 +1,3 @@
-<Warning><Code>4523</Code><Filename>indexsubstring.ecl</Filename><Line>55</Line><Source>eclcc</Source><Message>Neither LIMIT() nor CHOOSEN() supplied for index read on  'TST::postcode.key'</Message></Warning>
-<Warning><Code>4523</Code><Filename>indexsubstring.ecl</Filename><Line>56</Line><Source>eclcc</Source><Message>Neither LIMIT() nor CHOOSEN() supplied for index read on  'TST::postcode.key'</Message></Warning>
-<Warning><Code>4523</Code><Filename>indexsubstring.ecl</Filename><Line>57</Line><Source>eclcc</Source><Message>Neither LIMIT() nor CHOOSEN() supplied for index read on  'TST::postcode.key'</Message></Warning>
-<Warning><Code>4523</Code><Filename>indexsubstring.ecl</Filename><Line>58</Line><Source>eclcc</Source><Message>Neither LIMIT() nor CHOOSEN() supplied for index read on  'TST::postcode.key'</Message></Warning>
-<Warning><Code>4523</Code><Filename>indexsubstring.ecl</Filename><Line>59</Line><Source>eclcc</Source><Message>Neither LIMIT() nor CHOOSEN() supplied for index read on  'TST::postcode.key'</Message></Warning>
-<Warning><Code>4523</Code><Filename>indexsubstring.ecl</Filename><Line>60</Line><Source>eclcc</Source><Message>Neither LIMIT() nor CHOOSEN() supplied for index read on  'TST::postcode.key'</Message></Warning>
-<Warning><Code>4523</Code><Filename>indexsubstring.ecl</Filename><Line>64</Line><Source>eclcc</Source><Message>Neither LIMIT() nor CHOOSEN() supplied for index read on  'TST::postcode.key'</Message></Warning>
-<Warning><Code>4523</Code><Filename>indexsubstring.ecl</Filename><Line>65</Line><Source>eclcc</Source><Message>Neither LIMIT() nor CHOOSEN() supplied for index read on  'TST::postcode.key'</Message></Warning>
-<Warning><Code>4523</Code><Filename>indexsubstring.ecl</Filename><Line>66</Line><Source>eclcc</Source><Message>Neither LIMIT() nor CHOOSEN() supplied for index read on  'TST::postcode.key'</Message></Warning>
-<Warning><Code>4523</Code><Filename>indexsubstring.ecl</Filename><Line>67</Line><Source>eclcc</Source><Message>Neither LIMIT() nor CHOOSEN() supplied for index read on  'TST::postcode.key'</Message></Warning>
 <Dataset name='Result 1'>
 </Dataset>
 <Dataset name='Result 2'>

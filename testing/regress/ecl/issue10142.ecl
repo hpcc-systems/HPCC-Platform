@@ -16,9 +16,12 @@
 ############################################################################## */
 
 IMPORT STD;
-sf1 := '~data::test::sf';
-path1 := '~data::name1';
-path2 := '~data::name2';
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
+
+sf1 := prefix + 'test_sf';
+path1 := prefix + 'sf_name1';
+path2 := prefix + 'sf_name2';
 
 nRecord := RECORD
     STRING20 name;

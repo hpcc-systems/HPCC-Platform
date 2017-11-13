@@ -15,6 +15,8 @@
     limitations under the License.
 ###############################################################################*/
 import Std;
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
 
 //noroxie
 //nohthor
@@ -27,7 +29,7 @@ taggedRecord := RECORD(rawRecord)
     unsigned8 id;
 END;
 
-idFileName := 'test::ids';
+idFileName := prefix+'ids';
 
 // Create superfile and initialize with first id number
 InitializeSuperFile := FUNCTION
@@ -68,7 +70,7 @@ sortedds_cnt := COUNT(sortedds);
 
 SEQUENTIAL(
     EVALUATE(datasetOutsideCritical),
-    processInput(datasetOutsideCritical, 'test::tagged'),
+    processInput(datasetOutsideCritical, prefix+'tagged'),
     OUTPUT(sortedds_cnt-dedupds_cnt,NAMED('DuplicateIdCount') ), // This should be zero
     Std.File.DeleteSuperFile(idFileName)
 );

@@ -16,6 +16,8 @@
 ############################################################################## */
 
 import Std.File AS FileServices;
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
 
 // This is not an engine test, but a DFU.
 // Doesn't matter much which engine does it, so we restrict to only one
@@ -45,19 +47,19 @@ END;
 header := DATASET([{'Id', 'Field1', 'Field2', 'Field3', 'Field4'}], Layout);
 
 #if (isTerminated)
-    sprayPrepFileName := '~REGRESS::spray_prep_terminated';
+    sprayPrepFileName := prefix + 'spray_prep_terminated';
     // Create a one record CSV logical file with terminator a the end
-    setup := output(header, , sprayPrepFileName, CSV, OVERWRITE);
+    setupFile := output(header, , sprayPrepFileName, CSV, OVERWRITE);
 
     desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input_terminated';
-    sprayOutFileName := '~REGRESS::spray_test_terminated';
+    sprayOutFileName := prefix + 'spray_test_terminated';
 #else
-    sprayPrepFileName := '~REGRESS::spray_prep_not_terminated';
+    sprayPrepFileName := prefix + 'spray_prep_not_terminated';
     // Create a one record CSV logical file without terminator a the end
-    setup := output(header, , sprayPrepFileName, CSV(TERMINATOR('')), OVERWRITE);
+    setupFile := output(header, , sprayPrepFileName, CSV(TERMINATOR('')), OVERWRITE);
 
     desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input_not_terminated';
-    sprayOutFileName := '~REGRESS::spray_test_not_terminated';
+    sprayOutFileName := prefix + 'spray_test_not_terminated';
 #end
 
 rec := RECORD
@@ -127,7 +129,7 @@ END;
 
 
 SEQUENTIAL(
-    setup,
+    setupFile,
     desprayOut,
     sprayOut,
     output(compareDatasets(header,ds)),

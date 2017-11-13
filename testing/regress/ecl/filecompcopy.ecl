@@ -15,6 +15,8 @@
     limitations under the License.
 ##############################################################################*/
 
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
 //noroxie 
 //skip nodfu       
 
@@ -63,11 +65,11 @@ rec fillRow(rec L, unsigned4 c) := transform
 
 outdata := NORMALIZE(one_per_node, numrecs, fillRow(LEFT, counter));  
 
-copiedcmp1 := DATASET('nhtest::testfile_exp_copy_cmp', rec, flat, __compressed__);
-copiedcmp2 := DATASET('nhtest::testfile_cmp_copy_cmp', rec, flat, __compressed__);
-copiedcmp3 := DATASET('nhtest::testfile_cmp_copy_cmp2', rec, flat, __compressed__);
-copiedcmp4 := DATASET('nhtest::testfile_cmp_copy_cmp3', rec, flat, __compressed__);
-copiedexp := DATASET('nhtest::testfile_cmp_copy_exp', rec, flat);
+copiedcmp1 := DATASET(prefix + 'testfile_exp_copy_cmp', rec, flat, __compressed__);
+copiedcmp2 := DATASET(prefix + 'testfile_cmp_copy_cmp', rec, flat, __compressed__);
+copiedcmp3 := DATASET(prefix + 'testfile_cmp_copy_cmp2', rec, flat, __compressed__);
+copiedcmp4 := DATASET(prefix + 'testfile_cmp_copy_cmp3', rec, flat, __compressed__);
+copiedexp := DATASET(prefix + 'testfile_cmp_copy_exp', rec, flat);
 
 unsigned compareDatasets(dataset(rec) ds1,dataset(rec) ds2) := FUNCTION
    RETURN COUNT(JOIN(SORTED(ds1,(unsigned4)seq),SORTED(ds2,(unsigned4)seq),(unsigned4)left.seq=(unsigned4)right.seq,FULL ONLY,LOCAL));
@@ -75,14 +77,14 @@ END;
 
 
 sequential (
-  OUTPUT(outdata,,'nhtest::testfile_exp',overwrite),
-  OUTPUT(outdata,,'nhtest::testfile_cmp',overwrite,__compressed__),
+  OUTPUT(outdata,,prefix + 'testfile_exp',overwrite),
+  OUTPUT(outdata,,prefix + 'testfile_cmp',overwrite,__compressed__),
   
 // test copy expanded to compressed  
 
-  FileServices.Copy('nhtest::testfile_exp',                 // sourceLogicalName
+  FileServices.Copy(prefix + 'testfile_exp',                 // sourceLogicalName
             '',                         // destinationGroup
-            'nhtest::testfile_exp_copy_cmp',            // destinationLogicalName
+            prefix + 'testfile_exp_copy_cmp',            // destinationLogicalName
             ,                           // sourceDali
             5*60*1000,                      // timeOut 
             ,                               // espServerIpPort
@@ -95,9 +97,9 @@ sequential (
 
 // test copy compressed to compressed  
 
-  FileServices.Copy('nhtest::testfile_cmp',                 // sourceLogicalName
+  FileServices.Copy(prefix + 'testfile_cmp',                 // sourceLogicalName
             '',                         // destinationGroup
-            'nhtest::testfile_cmp_copy_cmp',            // destinationLogicalName
+            prefix + 'testfile_cmp_copy_cmp',            // destinationLogicalName
             ,                           // sourceDali
             5*60*1000,                      // timeOut 
             ,                               // espServerIpPort
@@ -110,9 +112,9 @@ sequential (
 
 // test copy compressed to compressed with preservecompression flag
 
-FileServices.Copy('nhtest::testfile_cmp',   // sourceLogicalName
+FileServices.Copy(prefix + 'testfile_cmp',   // sourceLogicalName
             '',                             // destinationGroup
-            'nhtest::testfile_cmp_copy_cmp2', // destinationLogicalName
+            prefix + 'testfile_cmp_copy_cmp2', // destinationLogicalName
             ,                               // sourceDali
             5*60*1000,                      // timeOut
             ,                               // espServerIpPort
@@ -126,9 +128,9 @@ FileServices.Copy('nhtest::testfile_cmp',   // sourceLogicalName
 
 // test copy compressed to compressed without preservecompression flag
 
-FileServices.Copy('nhtest::testfile_cmp',   // sourceLogicalName
+FileServices.Copy(prefix + 'testfile_cmp',   // sourceLogicalName
             '',                             // destinationGroup
-            'nhtest::testfile_cmp_copy_cmp3', // destinationLogicalName
+            prefix + 'testfile_cmp_copy_cmp3', // destinationLogicalName
             ,                               // sourceDali
             5*60*1000,                      // timeOut
             ,                               // espServerIpPort
@@ -139,9 +141,9 @@ FileServices.Copy('nhtest::testfile_cmp',   // sourceLogicalName
 
 // test copy compressed to expanded  
 
-  FileServices.Copy('nhtest::testfile_cmp',                 // sourceLogicalName
+  FileServices.Copy(prefix + 'testfile_cmp',                 // sourceLogicalName
             '',                         // destinationGroup
-            'nhtest::testfile_cmp_copy_exp',            // destinationLogicalName
+            prefix + 'testfile_cmp_copy_exp',            // destinationLogicalName
             ,                           // sourceDali
             5*60*1000,                      // timeOut 
             ,                               // espServerIpPort

@@ -16,6 +16,8 @@
 ##############################################################################*/
 
 import Std.File;
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
 
 // Following gh-622's recipe
 rec := RECORD
@@ -38,12 +40,12 @@ small_rec trans(rec r) := TRANSFORM
 END;
 
 // In Thor, this created a file that could not be replicated
-ds2 := PROJECT(ds, trans(LEFT)) : PERSIST('~REGRESS::PersistReplicate', SINGLE);
+ds2 := PROJECT(ds, trans(LEFT)) : PERSIST(prefix + 'PersistReplicate', SINGLE);
 o2 := OUTPUT(ds2);
 
 // Now, replicate
-r1 := File.Replicate('~REGRESS::PersistReplicate');
+r1 := File.Replicate(prefix + 'PersistReplicate');
 
-del1 := File.DeleteLogicalFile('~REGRESS::PersistReplicate', true);
+del1 := File.DeleteLogicalFile(prefix + 'PersistReplicate', true);
 
 sequential(del1, o1, o2, r1);

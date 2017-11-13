@@ -15,7 +15,11 @@
     limitations under the License.
 ############################################################################## */
 
-#option ('warnOnImplicitReadLimit', true);
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
+
+#onwarning (4522, ignore);
+#onwarning (4523, ignore);
 
 //version multiPart=false
 
@@ -39,13 +43,13 @@ postcodes := DATASET([{'KT19 1AA'}, {'KT19 1AB'}, {'KT19 1AC'}, {'KT19 1AD'},
                       {'KT60 2AB'}, {'KT60 3DE'}, {'KT60 4FG'}, {'KT60 5HI'},
                       {'KT3'}, {'KT4'},{'KT50'}], {string8 postcode});
 
-outputraw := OUTPUT(postcodes,,'TST::postcodes', OVERWRITE);
+outputraw := OUTPUT(postcodes,,prefix + 'postcodes', OVERWRITE);
 
 
-Rawfile := DATASET('TST::postcodes', { string8 postcode, UNSIGNED8
+Rawfile := DATASET(prefix + 'postcodes', { string8 postcode, UNSIGNED8
                                       __filepos {virtual(fileposition)}}, FLAT);
 
-INDX_Postcode := INDEX(Rawfile, {postcode, __filepos}, 'TST::postcode.key');
+INDX_Postcode := INDEX(Rawfile, {postcode, __filepos}, prefix + 'postcode.key');
 BuildIndexOp := BUILDINDEX(INDX_Postcode, OVERWRITE);
 
 SET OF STRING4 PartialPostcode:= ['KT19','KT40','KT3 ','KT20 1AEEE','KT50','KT60 3DE'];

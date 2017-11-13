@@ -16,6 +16,8 @@
 ############################################################################## */
 
 import Std.File AS FileServices;
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
 
 // This is not an engine test, but a DFU.
 // Doesn't matter much which engine does it, so we restrict to only one
@@ -33,9 +35,9 @@ Layout_Person := RECORD
   BOOLEAN good;
 END;
 
-sprayPrepFileName := '~REGRESS::spray_prep';
+sprayPrepFileName := prefix + 'spray_prep';
 desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input';
-sprayOutFileName := '~REGRESS::spray_test';
+sprayOutFileName := prefix + 'spray_test';
 
 allPeople := DATASET([ {'foo', 10, 1},
                        {'bar', 12, 0},
@@ -103,7 +105,7 @@ c2 := CATCH(NOFOLD(p2), ONFAIL(TRANSFORM(rec,
 
 
 ClusterName := 'mythor';
-DestFile := '~regress::spray_expire.txt';
+DestFile := prefix + 'spray_expire.txt';
 ESPportIP := 'http://127.0.0.1:8010/FileSpray';
 
 expireDaysOut1 := 9;

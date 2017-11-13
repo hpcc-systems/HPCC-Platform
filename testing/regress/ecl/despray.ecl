@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################# */
 
+import $.setup;
+prefix := setup.Files(false, false).IndexPrefix;
+
 //nothor
 
 import Std.File AS FileServices;
@@ -31,15 +34,15 @@ allPeople := DATASET([ {1,'Fred','Smith'},
                        {2,'Joe','Blow'},
                        {3,'Jane','Smith'}],Layout_Person);
 
-//  Outputs  ---
-setup := output(allPeople, , '~persons', OVERWRITE);
-
 import * from lib_fileservices;
 
 SrcAddrIp := '.';
 SrcAddrLocalhost := 'localhost';
 File := 'persons';
-SourceFile := '~::' + File;
+SourceFile := prefix + File;
+
+//  Outputs  ---
+setupPeople := output(allPeople, , SourceFile, OVERWRITE);
 
 ClusterName := 'mythor';
 
@@ -243,7 +246,7 @@ c10 := CATCH(NOFOLD(p10), ONFAIL(TRANSFORM(rec,
 #end
 
 SEQUENTIAL(
-  setup,
+  setupPeople,
   PARALLEL(
     o2,
     o3,

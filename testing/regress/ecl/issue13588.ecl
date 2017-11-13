@@ -15,7 +15,11 @@
     limitations under the License.
 ############################################################################## */
 
-#option ('warnOnImplicitReadLimit', true);
+#onwarning (4522, ignore);
+#onwarning (4523, ignore);
+
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
 
 xRec := RECORD
     integer x;
@@ -36,6 +40,6 @@ ds := DATASET([
         {1,{2,'gavin',[{1},{2}]}},
         {2,{3,'john',[{-1},{-5}]}}], rowRecord);
 
-i := INDEX(ds, { id }, { ds }, 'REGRESS::TEMP::ISSUE13588');
+i := INDEX(ds, { id }, { ds }, prefix + 'TEMP_ISSUE13588');
 BUILD(i,OVERWRITE);
 OUTPUT(i,OVERWRITE);

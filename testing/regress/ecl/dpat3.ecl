@@ -19,19 +19,13 @@ IMPORT * FROM lib_parselib;
 
 r := record
   string10000 line;
-//  unsigned integer8 __filepos { virtual(fileposition)};
   end;
-dp := dataset('~thor_data50::in::ktext',r,csv(separator('')));
 
 r roll(r le, r ri) := transform
   self.line := trim(le.line)+' '+trim(ri.line);
   end;
 
-//d := choosen(rollup(dp,right.line[4]<>':',roll(left,right)), 200);
-
-//d := dataset([{'Ge 34:2 And when Shechem the son of Hamor the Hivite, prince of the country, saw her, he took her, and lay with her, and defiled her.'}],r);
-
- d := dataset([
+d := dataset([
 {'Ge 34:2 And when Shechem the son of Hamor the Hivite, prince of the country, saw her, he took her, and lay with her, and defiled her.'},
 {'Ge 36:10 These are the names of Esaus sons; Eliphaz the son of Adah the wife of Esau, Reuel the son of Bashemath the wife of Esau.'},
 {'Ge 34:2 And when Shechem the son of Hamor the Hivite, prince of the country, saw her, he took her, and lay with her, and defiled her.'}],r);
@@ -57,28 +51,8 @@ results :=
         string tree := 'Tree: '+parseLib.getParseTree();
     end;
 
-outfile1 := PARSE(d,line,progeny,results,scan all,matched(Name));// : persist('kjv::relationships');
+outfile1 := PARSE(d,line,progeny,results,scan all,matched(Name));
 
-//output(d);
-/*results switch(results le) := transform
-  self.le := le.ri;
-  self.ri := le.le;
-  self := le;
-  end;
-
-kids := project(outfile1(childphrase<>''),switch(left));
-
-p_claims := outfile1(parentphrase<>'')+kids ;
-
-results2 := record
-  string parent := p_claims.le;
-  string child := p_claims.ri;
-  unsigned4 cnt := count(group);
-  end;
-
-t := table(p_claims,results2,le,ri);*/
-
-//output(t); 
 count(outfile1);
 output(choosen(outfile1,1000));
 
