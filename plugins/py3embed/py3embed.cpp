@@ -268,6 +268,16 @@ public:
             return;
         }
 #endif
+#ifndef _WIN32
+        // We need to ensure all symbols in the python3.x so are loaded - due to bugs in some distro's python installations
+        // However this will likely break python2.
+        // Therefore on systems where both are present, do NOT do this - people using centos systems that suffer from issue
+        // https://bugs.centos.org/view.php?id=6063 will need to choose which version of python plugin to install but not both
+
+        StringBuffer modname, py2modname;
+        if  (findLoadedModule(modname, "libpython3.") && !findLoadedModule(py2modname, "libpython2."))
+            pythonLibrary = dlopen(modname.str(), RTLD_NOW|RTLD_GLOBAL);
+#endif
         // Initialize the Python Interpreter
         Py_Initialize();
         const wchar_t *argv[] = { nullptr };
