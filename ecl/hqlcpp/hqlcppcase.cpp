@@ -466,7 +466,7 @@ IHqlExpression * HqlCppCaseInfo::buildIndexedMap(BuildCtx & ctx, const CHqlBound
             if (replaceIndex >= num)
                 translator.reportWarning(CategoryIgnored, HQLWRN_CaseCanNeverMatch, "CASE entry %d can never match the test condition", replaceIndex);
             else
-                values.replace(*LINK(mapTo),replaceIndex);
+                values.replace(*ensureExprType(mapTo, resultType),replaceIndex);
         }
 
         //Now replace the placeholders with the default values.
@@ -1137,7 +1137,7 @@ bool HqlCppCaseInfo::canBuildArrayLookup(const CHqlBoundExpr & test)
         }
     }
 
-    if (condType->isInteger())
+    if (condType->isInteger() && !isUnknownSize(resultType))
     {
         unsigned __int64 range = getIntValue(highestCompareExpr, 0) - getIntValue(lowestCompareExpr, 0) + 1;
         if (pairs.ordinality() * 100 >= range  * RANGE_DENSITY_THRESHOLD)
