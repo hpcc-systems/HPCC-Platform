@@ -103,6 +103,7 @@ class CWsEclService : public CInterface,
 {
 public:
     MapStringToMyClass<ISmartSocketFactory> connMap;
+    Owned<IPropertyTree> xsltConfig = createPTree("XsltConfig");
     StringArray targets;
     StringAttr auth_method;
     StringAttr portal_URL;
@@ -145,7 +146,8 @@ public:
     }
     
     virtual void setXslProcessor(IInterface * xslp){}
-    
+    inline IPropertyTree *queryXsltConfig(){return wsecl ? wsecl->xsltConfig : nullptr;}
+
     StringBuffer &generateNamespace(IEspContext &context, CHttpRequest* request, const char *serv, const char *method, StringBuffer &ns);
 
     virtual int getQualifiedNames(IEspContext& ctx, MethodInfoArray & methods){return 0;}

@@ -330,7 +330,7 @@ class CLibXslTransform : public CInterface, implements IXslTransform
 public:
     IMPLEMENT_IINTERFACE;
 
-    CLibXslTransform();
+    CLibXslTransform(IPropertyTree *cfg);
     ~CLibXslTransform();
     virtual int transform();
     virtual int transform(StringBuffer &s);
@@ -406,6 +406,7 @@ public:
     void clearMessages(){messages.clear();}
 
 public:
+    Owned<IPropertyTree> xslConfig;
     Owned<IProperties> xslParameters;
     Owned<CLibXsltSource> xslSrc;
     Owned<CLibXmlSource> xmlSrc;
@@ -418,11 +419,13 @@ public:
     void *userData;
 };
 
-CLibXslTransform::CLibXslTransform()
+CLibXslTransform::CLibXslTransform(IPropertyTree *cfg)
 {
     userData = NULL;
     msgfn.setown(createExternalFunction("message", libxsltCustomMessageHandler));
     setExternalFunction(SEISINT_XSLTEXT_NAMESPACE, msgfn, true);
+    if (cfg)
+        xslConfig.set(cfg);
 }
 
 CLibXslTransform::~CLibXslTransform()
@@ -529,6 +532,16 @@ int CLibXslTransform::transform(xmlChar **xmlbuff, int &len)
     if (!ctxt)
         throw MakeStringException(XSLERR_CouldNotCreateTransform, "Failed creating libxslt Transform Context");
     ctxt->_private = this;
+    if (xslConfig)
+    {
+        ctxt->maxTemplateDepth = xslConfig->getPropInt("xsltMaxDepth", 100000);
+        ctxt->maxTemplateVars = xslConfig->getPropInt("xsltMaxVars", 1000000);
+    }
+    else
+    {
+        ctxt->maxTemplateDepth = 100000; //we use some very highly nested stylesheets
+        ctxt->maxTemplateVars = 1000000;
+    }
 
     HashIterator h(functions);
     ForEach (h)
@@ -696,7 +709,7 @@ public:
 
     CLibXslProcessor();
     ~CLibXslProcessor();
-    virtual IXslTransform *createXslTransform();
+    virtual IXslTransform *createXslTransform(IPropertyTree *cfg);
     virtual int execute(IXslTransform *pITransform);
 
     virtual int setDefIncludeHandler(IIncludeHandler* handler){includeHandler.set(handler); return 0;}
@@ -741,9 +754,9 @@ extern IXslProcessor* getXslProcessor()
     return LINK(&xslProcessor);
 }
 
-IXslTransform *CLibXslProcessor::createXslTransform()
+IXslTransform *CLibXslProcessor::createXslTransform(IPropertyTree *cfg)
 {
-    return new CLibXslTransform();
+    return new CLibXslTransform(cfg);
 }
 
 int CLibXslProcessor::execute(IXslTransform *pITransform)
