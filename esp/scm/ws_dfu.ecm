@@ -75,12 +75,15 @@ ESPStruct DFUPart
     [depr_ver("1.23")] string ActualSize;
     string Ip;
     string Partsize;
+    [min_ver("1.38")] int64 PartSizeInt64;
 };
 
 ESPStruct DFUFileStat
 {
     string MinSkew;
     string MaxSkew;
+    [min_ver("1.38")] int64 MinSkewInt64;
+    [min_ver("1.38")] int64 MaxSkewInt64;
 };
 
 ESPStruct [nil_remove] DFUFilePartsOnCluster
@@ -111,9 +114,12 @@ ESPStruct [nil_remove] DFUFileDetail
     string Dir;
     string PathMask;
     string Filesize;
+    [min_ver("1.38")] int64 FileSizeInt64;
     [depr_ver("1.23")] string ActualSize;
     string RecordSize;
     string RecordCount;
+    [min_ver("1.38")] int64 RecordSizeInt64;
+    [min_ver("1.38")] int64 RecordCountInt64;
     string Wuid;
     string Owner;
     [depr_ver("1.25")] string Cluster;
@@ -159,6 +165,11 @@ ESPStruct DFUSpaceItem
     string LargestSize;
     string SmallestFile;
     string SmallestSize;
+    [min_ver("1.38")] int64 NumOfFilesInt64;
+    [min_ver("1.38")] int64 NumOfFilesUnknownInt64;
+    [min_ver("1.38")] int64 TotalSizeInt64;
+    [min_ver("1.38")] int64 LargestSizeInt64;
+    [min_ver("1.38")] int64 SmallestSizeInt64;
 };
 
 ESPStruct DFUActionInfo
@@ -774,7 +785,7 @@ ESPresponse [exceptions_inline, nil_remove] EraseHistoryResponse
 //  ===========================================================================
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.37"),
+    version("1.38"),
     noforms,
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {
