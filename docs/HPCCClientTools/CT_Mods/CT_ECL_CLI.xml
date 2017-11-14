@@ -2257,8 +2257,7 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
                 <row>
                   <entry>target</entry>
 
-                  <entry>The target the query you wish to recreate is
-                  in</entry>
+                  <entry>The target cluster to import queries to</entry>
                 </row>
 
                 <row>
@@ -2305,14 +2304,14 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
                 </row>
 
                 <row>
-                  <entry>--clone-active-state </entry>
+                  <entry>--clone-active-state</entry>
 
-                  <entry>Make copied queries active if active on source
-                  </entry>
+                  <entry>Make copied queries active if active on
+                  source</entry>
                 </row>
 
                 <row>
-                  <entry>-O, --overwrite </entry>
+                  <entry>-O, --overwrite</entry>
 
                   <entry>Completely replace existing DFS file information
                   (dangerous)</entry>
