@@ -75,6 +75,7 @@ public:
     void initResultChildTags()
     {
         resultChildTags.setValue("Dataset", true);
+        resultChildTags.setValue("Tracing", true);
         resultChildTags.setValue("Exception", true);
         resultChildTags.setValue("Warning", true);
         resultChildTags.setValue("Alert", true);

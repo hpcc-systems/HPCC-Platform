@@ -521,31 +521,28 @@ public:
         }
     }
 
-    void toXML(StringBuffer &out)
-    {
-        out.append("<Log><Category>").append(getCategoryString(category)).append("</Category>");
-        out.append("<Channel>").append(channel).append("</Channel>");
-        out.append("<Time>").append(time/1000).append('.').appendf("%03d", time % 1000).append("</Time>");
-        if (prefix)
-        {
-            out.append("<Prefix>");
-            encodeXML(prefix, out);
-            out.append("</Prefix>");
-        }
-        if (text)
-        {
-            out.append("<Text>");
-            encodeXML(text, out);
-            out.append("</Text>");
-        }
-        out.append("</Log>\n");
-    }
-
     void outputXML(IXmlStreamFlusher &out)
     {
         StringBuffer b;
-        toXML(b);
+        Owned<IXmlWriterExt> writer = createIXmlWriterExt(0, 0, NULL, WTStandard);
+        writeXML(*writer);
+        b.append(writer->str()); //flush can detach pointer
         out.flushXML(b, true);
+    }
+
+    void writeXML(IXmlWriter &writer)
+    {
+        writer.outputBeginNested("Log", true);
+        writer.outputCString(getCategoryString(category), "Category");
+        writer.outputUInt(channel, sizeof(channel), "Channel");
+        StringBuffer s;
+        s.append(time/1000).append('.').appendf("%03d", time % 1000);
+        writer.outputCString(s, "Time");
+        if (prefix)
+            writer.outputCString(prefix, "Prefix");
+        if (text)
+            writer.outputCString(text, "Text");
+        writer.outputEndNested("Log");
     }
 
 };
@@ -590,6 +587,17 @@ public:
         {
             log.item(idx).outputXML(out);
         }
+    };
+
+    void writeXML(IXmlWriter &writer)
+    {
+        CriticalBlock b(crit);
+        writer.outputBeginArray("Log");
+        ForEachItemIn(idx, log)
+        {
+            log.item(idx).writeXML(writer);
+        }
+        writer.outputEndArray("Log");
     };
 
     virtual void CTXLOGa(TracingCategory category, const char *prefix, const char *text) const

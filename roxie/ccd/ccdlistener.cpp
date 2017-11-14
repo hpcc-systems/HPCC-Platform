@@ -1467,6 +1467,15 @@ public:
         if (logctx)
             logctx->outputXML(out);
     }
+    virtual void writeLogXML(IXmlWriter &writer)
+    {
+        if (logctx)
+        {
+            writer.outputBeginNested("Tracing", true);
+            logctx->writeXML(writer);
+            writer.outputEndNested("Tracing");
+        }
+    }
 
     virtual unsigned getQueryPriority()
     {
@@ -1654,6 +1663,12 @@ public:
         if (!(flags & HPCC_PROTOCOL_NATIVE))
         {
             ctx->process();
+            if (msgctx->getIntercept())
+            {
+                Owned<IXmlWriter> logwriter = protocol->writeAppendContent(nullptr);
+                msgctx->writeLogXML(*logwriter);
+            }
+
             protocol->finalize(idx);
             memused += ctx->getMemoryUsage();
             slavesReplyLen += ctx->getSlavesReplyLen();

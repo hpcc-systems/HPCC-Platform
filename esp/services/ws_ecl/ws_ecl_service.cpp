@@ -558,7 +558,16 @@ static void buildReqXml(StringArray& parentTypes, IXmlType* type, StringBuffer& 
             else
                 attrval = attr->getSampleValue(s);
             if (attrval)
-                appendXMLAttr(out, attr->queryName(), attrval);
+                appendXMLAttr(out, attr->queryName(), attrval, nullptr, true);
+        }
+        if (flags & REQSF_ROOT)
+        {
+            bool log = reqTree->getPropBool("@log", false);
+            if (log)
+                appendXMLAttr(out, "log", "true", nullptr, true);
+            int tracelevel = reqTree->getPropInt("@traceLevel", -1);
+            if (tracelevel >= 0)
+                out.appendf(" traceLevel=\"%d\"", tracelevel);
         }
         out.append('>');
 
@@ -1463,6 +1472,10 @@ int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttp
     xform->setParameter("formOptionsAccess", "1");
     xform->setParameter("includeSoapTest", "1");
     xform->setParameter("useTextareaForStringArray", "1");
+
+    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(wuinfo.qsetname);
+    bool isRoxie = clusterInfo && (clusterInfo->getPlatform() == RoxieCluster);
+    xform->setParameter("includeRoxieOptions", isRoxie ? "1" : "0");
 
     // set the prop noDefaultValue param
     IProperties* props = context.queryRequestParameters();
