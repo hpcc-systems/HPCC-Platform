@@ -283,12 +283,14 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                 const char* unrestrictedResources = authcfg->queryProp("@getUserNameUnrestrictedResources");
                 if (!isEmptyString(unrestrictedResources))
                     readUnrestrictedResources(unrestrictedResources);
+                else
+                    readUnrestrictedResources(DEFAULT_UNRESTRICTED_RESOURCES);
 
                 const char* getUserNameURL = authcfg->queryProp("@getUserNameURL");
                 if (!isEmptyString(getUserNameURL))
                     loginURL.set(getUserNameURL);
                 else
-                    loginURL.set(DEFAULT_LOGIN_URL);
+                    loginURL.set(DEFAULT_GET_USER_NAME_URL);
                 domainAuthType = AuthUserNameOnly;
             }
         }
