@@ -43,12 +43,13 @@ define([
     "hpcc/DelayLoadWidget",
     "hpcc/ESPUtil",
     "hpcc/FilterDropDownWidget",
-    "hpcc/ws_machine"
+    "hpcc/ws_machine",
+    "hpcc/Utility"
 
 ], function (declare, i18n, nlsHPCC, on, dom, domConstruct, lang,
                 CheckBox, TextBox, ValidationTextBox, registry, ToggleButton, Select, ToolbarSeparator, ContentPane,
                 tree, selector,
-                GridDetailsWidget, PreflightDetailsWidget, RequestInformationWidget, ESPRequest, ESPTopology, TopologyDetailsWidget, DelayLoadWidget, ESPUtil, FilterDropDownWidget, WsMachine) {
+                GridDetailsWidget, PreflightDetailsWidget, RequestInformationWidget, ESPRequest, ESPTopology, TopologyDetailsWidget, DelayLoadWidget, ESPUtil, FilterDropDownWidget, WsMachine, Utility) {
     return declare("TopologyWidget", [GridDetailsWidget], {
 
         i18n: nlsHPCC,
@@ -164,7 +165,7 @@ define([
         resetFilter: function () {
             this.filter.filterForm.reset();
             this.filter.filterDropDown.set("label", this.i18n.MachineInformation);
-            this.filter.iconFilter.src = dojoConfig.getImageURL("noFilter1.png");
+            this.filter.iconFilter.src = Utility.getImageURL("noFilter1.png");
             this.filter.disable(true);
         },
 
@@ -296,7 +297,7 @@ define([
                             return false;
                         },
                         formatter: function (_id, row) {
-                            return "<img src='" + dojoConfig.getImageURL(row.getIcon()) + "'/>&nbsp;" + row.getLabel();
+                            return "<img src='" + Utility.getImageURL(row.getIcon()) + "'/>&nbsp;" + row.getLabel();
                         }
                     })
                 ]

@@ -55,6 +55,7 @@ define([
     "dijit/TooltipDialog",
     "dijit/form/ValidationTextBox",
     "dijit/form/CheckBox",
+    "dijit/form/NumberTextBox",
     "dijit/Fieldset",
 
     "hpcc/TableContainer"
@@ -325,7 +326,7 @@ define([
                         NodeGroup: this.logicalFile.NodeGroup,
                         Name: this.logicalFile.Name
                     });
-                 } else if (currSel.id == this.fileHistoryWidget.id) {
+                 } else if (currSel.id === this.fileHistoryWidget.id) {
                     this.fileHistoryWidget.init({
                         Name: this.logicalFile.Name
                     });

@@ -26,9 +26,10 @@ define([
     "hpcc/FileSpray",
     "hpcc/ESPUtil",
     "hpcc/ESPRequest",
-    "hpcc/ESPResult"
+    "hpcc/ESPResult",
+    "hpcc/Utility",
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, Observable, topic,
-    FileSpray, ESPUtil, ESPRequest, ESPResult) {
+    FileSpray, ESPUtil, ESPRequest, ESPResult, Utility) {
 
     var i18n = nlsHPCC;
 
@@ -255,9 +256,9 @@ define([
         },
         getProtectedImage: function () {
             if (this.isProtected) {
-                return dojoConfig.getImageURL("locked.png");
+                return Utility.getImageURL("locked.png");
             }
-            return dojoConfig.getImageURL("unlocked.png");
+            return Utility.getImageURL("unlocked.png");
         },
         getStateIconClass: function () {
             switch (this.State) {
@@ -285,25 +286,25 @@ define([
         getStateImage: function () {
             switch (this.State) {
                 case 1:
-                    return dojoConfig.getImageURL("workunit_warning.png");
+                    return Utility.getImageURL("workunit_warning.png");
                 case 2:
-                    return dojoConfig.getImageURL("workunit_submitted.png");
+                    return Utility.getImageURL("workunit_submitted.png");
                 case 3:
-                    return dojoConfig.getImageURL("workunit_running.png");
+                    return Utility.getImageURL("workunit_running.png");
                 case 4:
-                    return dojoConfig.getImageURL("workunit_failed.png");
+                    return Utility.getImageURL("workunit_failed.png");
                 case 5:
-                    return dojoConfig.getImageURL("workunit_failed.png");
+                    return Utility.getImageURL("workunit_failed.png");
                 case 6:
-                    return dojoConfig.getImageURL("workunit_completed.png");
+                    return Utility.getImageURL("workunit_completed.png");
                 case 7:
-                    return dojoConfig.getImageURL("workunit_running.png");
+                    return Utility.getImageURL("workunit_running.png");
                 case 8:
-                    return dojoConfig.getImageURL("workunit_aborting.png");
+                    return Utility.getImageURL("workunit_aborting.png");
                 case 999:
-                    return dojoConfig.getImageURL("workunit_deleted.png");
+                    return Utility.getImageURL("workunit_deleted.png");
             }
-            return dojoConfig.getImageURL("workunit.png");
+            return Utility.getImageURL("workunit.png");
         }
     });
 

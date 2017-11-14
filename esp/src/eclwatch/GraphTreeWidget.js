@@ -45,6 +45,7 @@ define([
     "hpcc/ESPWorkunit",
     "hpcc/TimingTreeMapWidget",
     "hpcc/WsWorkunits",
+    "hpcc/Utility",
 
     "dojo/text!../templates/GraphTreeWidget.html",
 
@@ -63,7 +64,7 @@ define([
             registry, Dialog, Menu, MenuItem, MenuSeparator, CheckedMenuItem,
             entities,
             tree,
-            _Widget, GraphWidget, JSGraphWidget, ESPUtil, ESPWorkunit, TimingTreeMapWidget, WsWorkunits,
+            _Widget, GraphWidget, JSGraphWidget, ESPUtil, ESPWorkunit, TimingTreeMapWidget, WsWorkunits, Utility,
             template) {
 
     return declare("GraphTreeWidget", [_Widget], {
@@ -71,7 +72,7 @@ define([
         baseClass: "GraphTreeWidget",
         i18n: nlsHPCC,
 
-        graphType: dojoConfig.isPluginInstalled() ? "GraphWidget" : "JSGraphWidget",
+        graphType: Utility.isPluginInstalled() ? "GraphWidget" : "JSGraphWidget",
         graphName: "",
         wu: null,
         global: null,
@@ -597,15 +598,15 @@ define([
                         return false;
                     },
                     formatter: function (_id, row) {
-                        var img = dojoConfig.getImageURL("file.png");
+                        var img = Utility.getImageURL("file.png");
                         var label = _id + " - ";
                         switch (row._globalType) {
                             case "Graph":
-                                img = dojoConfig.getImageURL("server.png");
+                                img = Utility.getImageURL("server.png");
                                 label = context.params.GraphName + " (" + row._children.length + ")";
                                 break;
                             case "Cluster":
-                                img = dojoConfig.getImageURL("folder.png");
+                                img = Utility.getImageURL("folder.png");
                                 label += context.i18n.Subgraph + " (" + row._children.length + ")";
                                 break;
                             case "Vertex":
@@ -636,7 +637,7 @@ define([
                 {
                     label: this.i18n.ID, field: "id", width: 54,
                     formatter: function (_id, row) {
-                        var img = dojoConfig.getImageURL("folder.png");
+                        var img = Utility.getImageURL("folder.png");
                         return "<img src='" + img + "'/>&nbsp;" + _id;
                     }
                 }
@@ -653,7 +654,7 @@ define([
                 {
                     label: this.i18n.ID, field: "id", width: 54,
                     formatter: function (_id, row) {
-                        var img = dojoConfig.getImageURL("file.png");
+                        var img = Utility.getImageURL("file.png");
                         return "<img src='" + img + "'/>&nbsp;" + _id;
                     }
                 },
@@ -703,7 +704,7 @@ define([
             }
         },
 
-        _syncSelectionFrom: dojoConfig.debounce(function (sourceControlOrGlobalIDs) {
+        _syncSelectionFrom: Utility.debounce(function (sourceControlOrGlobalIDs) {
             this.inSyncSelectionFrom = true;
             var sourceControl = sourceControlOrGlobalIDs instanceof Array ? null : sourceControlOrGlobalIDs;
             var selectedGlobalIDs = sourceControlOrGlobalIDs instanceof Array ? sourceControlOrGlobalIDs : [];

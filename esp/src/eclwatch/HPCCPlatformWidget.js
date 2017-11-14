@@ -70,6 +70,15 @@ define([
                 UpgradeBar, ColorPicker,
                 _TabContainerWidget, ESPRequest, ESPActivity, WsAccount, WsAccess, WsSMC, WsTopology, GraphWidget, DelayLoadWidget, WsMachine,
                 template) {
+
+    declare("HPCCColorPicker", [ColorPicker], {
+        _underlay: "/esp/files/eclwatch/img/underlay.png",
+        _hueUnderlay: "/esp/files/eclwatch/img/hue.png",
+        _pickerPointer: "/esp/files/eclwatch/img/pickerPointer.png",
+        _huePickerPointer: "/esp/files/eclwatch/img/hueHandle.png",
+        _huePickerPointerAlly: "/esp/files/eclwatch/img/hueHandleA11y.png"
+    });
+
     return declare("HPCCPlatformWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "HPCCPlatformWidget",

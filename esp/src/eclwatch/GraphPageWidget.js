@@ -37,6 +37,7 @@ define([
     "hpcc/ESPWorkunit",
     "hpcc/TimingTreeMapWidget",
     "hpcc/WsWorkunits",
+    "hpcc/Utility",
 
     "dojo/text!../templates/GraphPageWidget.html",
 
@@ -55,14 +56,14 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, dom, domConstruct, on, html,
             registry, Dialog,
             entities,
-            _Widget, GraphWidget, JSGraphWidget, ESPUtil, ESPWorkunit, TimingTreeMapWidget, WsWorkunits,
+            _Widget, GraphWidget, JSGraphWidget, ESPUtil, ESPWorkunit, TimingTreeMapWidget, WsWorkunits, Utility,
             template) {
     return declare("GraphPageWidget", [_Widget], {
         templateString: template,
         baseClass: "GraphPageWidget",
         i18n: nlsHPCC,
 
-        graphType: dojoConfig.isPluginInstalled() ? "GraphWidget" : "JSGraphWidget",
+        graphType: Utility.isPluginInstalled() ? "GraphWidget" : "JSGraphWidget",
         borderContainer: null,
         rightBorderContainer: null,
         graphName: "",
@@ -570,7 +571,7 @@ define([
                 {
                     label: this.i18n.ID, field: "id", width: 54,
                     formatter: function (_id, row) {
-                        var img = dojoConfig.getImageURL("folder.png");
+                        var img = Utility.getImageURL("folder.png");
                         return "<img src='" + img + "'/>&nbsp;" + _id;
                     }
                 }
@@ -587,7 +588,7 @@ define([
                 {
                     label: this.i18n.ID, field: "id", width: 54,
                     formatter: function (_id, row) {
-                        var img = dojoConfig.getImageURL("file.png");
+                        var img = Utility.getImageURL("file.png");
                         return "<img src='" + img + "'/>&nbsp;" + _id;
                     }
                 },
@@ -620,7 +621,7 @@ define([
             }
         },
 
-        _syncSelectionFrom: dojoConfig.debounce(function (sourceControl) {
+        _syncSelectionFrom: Utility.debounce(function (sourceControl) {
             this.inSyncSelectionFrom = true;
             var selectedGlobalIDs = [];
 

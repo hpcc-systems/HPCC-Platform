@@ -267,6 +267,7 @@ define([
                 });
                 this.wu.refresh();
             }
+            
             this.infoGridWidget.init(params);
             this.checkIfClustersAllowed();
             this.checkThorLogStatus();

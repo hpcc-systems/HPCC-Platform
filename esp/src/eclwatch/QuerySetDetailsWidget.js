@@ -35,6 +35,7 @@ define([
     "hpcc/ESPQuery",
     "hpcc/_TabContainerWidget",
     "hpcc/DelayLoadWidget",
+    "hpcc/Utility",
 
     "dojo/text!../templates/QuerySetDetailsWidget.html",
 
@@ -52,7 +53,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, dom, domAttr, all, arrayUtil,
                 registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                ESPQuery, _TabContainerWidget, DelayLoadWidget,
+                ESPQuery, _TabContainerWidget, DelayLoadWidget, Utility,
                 template) {
     return declare("QuerySetDetailsWidget", [_TabContainerWidget], {
         templateString: template,
@@ -214,11 +215,11 @@ define([
             if (name === "Wuid") {
                 this.workunitsTab.set("title", newValue);
             } else if (name === "Suspended") {
-                dom.byId(this.id + "SuspendImg").src = newValue ? dojoConfig.getImageURL("suspended.png") : "";
+                dom.byId(this.id + "SuspendImg").src = newValue ? Utility.getImageURL("suspended.png") : "";
             } else if (name === "Activated") {
-                dom.byId(this.id + "ActiveImg").src = newValue ? dojoConfig.getImageURL("active.png") : "";
+                dom.byId(this.id + "ActiveImg").src = newValue ? Utility.getImageURL("active.png") : "";
             } else if (name === "SuspendedReason" && newValue === "cluster"){
-                dom.byId(this.id + "SuspendCluster").src = dojoConfig.getImageURL("error-icon.png");
+                dom.byId(this.id + "SuspendCluster").src = Utility.getImageURL("error-icon.png");
             } else if (name === "CountGraphs" && newValue) {
                 this.graphsTab.set("title", this.i18n.Graphs + " (" + newValue + ")");
             } else if (name === "graphs") {
@@ -275,10 +276,10 @@ define([
                 if (lang.exists("ClusterQueryState.length", newValue)) {
                     var checkIfSuspended = false;
                     if (newValue.ClusterQueryState[0].MixedNodeStates === true) {
-                        dom.byId(this.id + "SuspendCluster").src = dojoConfig.getImageURL("mixwarn.png");
+                        dom.byId(this.id + "SuspendCluster").src = Utility.getImageURL("mixwarn.png");
                         checkIfSuspended = true;
                     } else if (newValue.ClusterQueryState[0].State === "Suspended") {
-                        dom.byId(this.id + "SuspendCluster").src = dojoConfig.getImageURL("errwarn.png");
+                        dom.byId(this.id + "SuspendCluster").src = Utility.getImageURL("errwarn.png");
                         checkIfSuspended = true;
                     }
                     this.suspended.set("checked", checkIfSuspended);

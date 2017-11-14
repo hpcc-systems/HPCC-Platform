@@ -32,12 +32,13 @@ define([
     "hpcc/ESPLogicalFile",
     "hpcc/DelayLoadWidget",
     "hpcc/TimingTreeMapWidget",
-    "hpcc/ESPUtil"
+    "hpcc/ESPUtil",
+    "hpcc/Utility",
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, has,
                 Button,
                 selector,
-                GridDetailsWidget, ESPWorkunit, ESPQuery, ESPLogicalFile, DelayLoadWidget, TimingTreeMapWidget, ESPUtil) {
+                GridDetailsWidget, ESPWorkunit, ESPQuery, ESPLogicalFile, DelayLoadWidget, TimingTreeMapWidget, ESPUtil, Utility) {
     return declare("GraphsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 
@@ -113,7 +114,7 @@ define([
         },
 
         getStateImageHTML: function (row) {
-            return dojoConfig.getImageHTML(this.getStateImageName(row));
+            return Utility.getImageHTML(this.getStateImageName(row));
         },
 
         createGrid: function (domID) {
@@ -126,7 +127,7 @@ define([
                     });
                 }
             }).placeAt(this.widget.Open.domNode, "after");
-            if (dojoConfig.isPluginInstalled() && !this.isIE8) {
+            if (Utility.isPluginInstalled() && !this.isIE8) {
                 this.openNativeMode = new Button({
                     label: this.i18n.OpenNativeMode,
                     onClick: function (event) {
