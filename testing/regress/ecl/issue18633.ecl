@@ -39,3 +39,14 @@ END;
 dsScrubs := NORMALIZE(dsTest, 3, xNorm(LEFT, COUNTER));
 
 OUTPUT(dsScrubs);
+
+z(string x) := '?' + x;
+
+dsTest2 := DATASET([2, 0, 1, 3, 4, 7], { unsigned id});
+
+{ string msg } xNorm2(INTEGER c) := TRANSFORM
+      SELF.msg := CASE(c, 1=>'One', 2=>'Two', 4=>'Four', 5=>'Five', z('?'));
+END;
+
+dsScrubs2 := PROJECT(nofold(dsTest2), xNorm2(LEFT.id));
+OUTPUT(dsScrubs2);
