@@ -235,11 +235,14 @@ void CHThorActivityBase::updateProgressForOther(IStatisticGatherer &progress, un
 
 void CHThorActivityBase::updateProgressForOther(IStatisticGatherer &progress, unsigned otherActivity, unsigned otherSubgraph, unsigned whichOutput, unsigned __int64 numProcessed) const
 {
-    StatsEdgeScope scope(progress, otherActivity, whichOutput);
-    progress.addStatistic(StNumRowsProcessed, numProcessed);
-    progress.addStatistic(StNumStarts, 1);  // wrong for an activity in a subquery
-    progress.addStatistic(StNumStops, 1);
-    progress.addStatistic(StNumSlaves, 1);  // MORE: A bit pointless for an hthor graph
+    if (numProcessed)
+    {
+        StatsEdgeScope scope(progress, otherActivity, whichOutput);
+        progress.addStatistic(StNumRowsProcessed, numProcessed);
+        progress.addStatistic(StNumStarts, 1);  // wrong for an activity in a subquery
+        progress.addStatistic(StNumStops, 1);
+        progress.addStatistic(StNumSlaves, 1);  // MORE: A bit pointless for an hthor graph
+    }
 }
 
 ILocalEclGraphResults * CHThorActivityBase::resolveLocalQuery(__int64 graphId)
