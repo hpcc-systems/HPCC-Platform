@@ -413,9 +413,9 @@ define([
         },
         getCompressedImage: function () {
             if (this.IsCompressed) {
-                return dojoConfig.getImageURL("compressed.png");
+                return Utility.getImageURL("compressed.png");
             }
-            return dojoConfig.getImageURL("");
+            return Utility.getImageURL("");
         },
         isDeleted: function () {
             return this.StateID === 999;
