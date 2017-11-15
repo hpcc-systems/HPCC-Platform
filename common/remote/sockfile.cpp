@@ -2134,6 +2134,7 @@ public:
     {
         flags &= ~(IFSHfull|IFSHread);
         flags |= (unsigned)(shmode&(IFSHfull|IFSHread));
+        flags |= IFSHset;
     }
 
     unsigned short getShareMode()
@@ -2324,20 +2325,28 @@ public:
         // then also send sMode, cFlags
         unsigned short sMode = parent->getShareMode();
         unsigned short cFlags = parent->getCreateFlags();
-        switch ((compatIFSHmode)_compatmode)
+        if (!(sMode & IFSHset))
         {
-            case compatIFSHnone:
-                sMode = IFSHnone;
-                break;
-            case compatIFSHread:
-                sMode = IFSHread;
-                break;
-            case compatIFSHwrite:
-                sMode = IFSHfull;
-                break;
-            case compatIFSHall:
-                sMode = IFSHfull;
-                break;
+            // share mode not explicitly set, match backward compatibility ...
+            switch ((compatIFSHmode)_compatmode)
+            {
+                case compatIFSHnone:
+                    sMode = IFSHnone;
+                    break;
+                case compatIFSHread:
+                    sMode = IFSHread;
+                    break;
+                case compatIFSHwrite:
+                    sMode = IFSHfull;
+                    break;
+                case compatIFSHall:
+                    sMode = IFSHfull;
+                    break;
+            }
+        }
+        else
+        {
+            sMode &= ~IFSHset;
         }
         sendBuffer.append((RemoteFileCommandType)RFCopenIO).append(localname).append((byte)_mode).append((byte)_compatmode).append((byte)_extraFlags).append(sMode).append(cFlags);
         parent->sendRemoteCommand(sendBuffer, replyBuffer);
