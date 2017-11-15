@@ -1812,7 +1812,7 @@ bool WsWuInfo::getResourceInfo(StringArray &viewnames, StringArray &urls, unsign
         return true;
     try
     {
-        Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false);
+        Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false, nullptr);
         if (wv)
         {
             if (flags & WUINFO_IncludeResultsViewNames)
@@ -1836,7 +1836,7 @@ unsigned WsWuInfo::getResourceURLCount()
 {
     try
     {
-        Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false);
+        Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false, nullptr);
         if (wv)
             return wv->getResourceURLCount();
     }
@@ -2125,7 +2125,7 @@ void WsWuInfo::getWorkunitResTxt(MemoryBuffer& buf)
 
 IConstWUQuery* WsWuInfo::getEmbeddedQuery()
 {
-    Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false);
+    Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false, nullptr);
     if (wv)
         return wv->getEmbeddedQuery();
 

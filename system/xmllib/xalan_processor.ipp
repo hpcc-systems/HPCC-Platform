@@ -590,7 +590,7 @@ public:
 
     CXslProcessor();
     ~CXslProcessor();
-    virtual IXslTransform *createXslTransform();
+    virtual IXslTransform *createXslTransform(IPropertyTree *cfg = nullptr);
     virtual int execute(IXslTransform *pITransform);
 
     virtual int setDefIncludeHandler(IIncludeHandler* handler){inch.set(handler); return 0;}

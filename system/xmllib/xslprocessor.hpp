@@ -112,7 +112,7 @@ public:
 
 interface XMLLIB_API IXslProcessor : public IInterface
 {
-    virtual IXslTransform *createXslTransform() = 0;
+    virtual IXslTransform *createXslTransform(IPropertyTree *cfg = nullptr) = 0;
  
     // execute - runs the transformation placing the results in the specified output location
     //

@@ -295,6 +295,11 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
     }
 
     translator = new wsEclTypeTranslator();
+
+    Owned<IPropertyTreeIterator> xsltProps = serviceTree->getElements("xslt*");
+    ForEach(*xsltProps)
+        xsltConfig->addPropTree(xsltProps->query().queryName(), LINK(&xsltProps->query()));
+
     return true;
 }
 
@@ -491,7 +496,7 @@ static void splitLookupInfo(IProperties *parms, const char *&s, StringBuffer &wu
 void CWsEclBinding::xsltTransform(const char* xml, unsigned int len, const char* xslFileName, IProperties *params, StringBuffer& ret)
 {
     Owned<IXslProcessor> proc  = getXslProcessor();
-    Owned<IXslTransform> trans = proc->createXslTransform();
+    Owned<IXslTransform> trans = proc->createXslTransform(queryXsltConfig());
 
     trans->setXmlSource(xml, len);
 
@@ -880,7 +885,7 @@ int CWsEclBinding::getWsEclLinks(IEspContext &context, CHttpRequest* request, CH
     xml.append("</links>");
 
     Owned<IXslProcessor> xslp = getXslProcessor();
-    Owned<IXslTransform> xform = xslp->createXslTransform();
+    Owned<IXslTransform> xform = xslp->createXslTransform(queryXsltConfig());
     xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/wsecl3_links.xslt").str());
     xform->setXmlSource(xml.str(), xml.length());
 
@@ -1400,7 +1405,7 @@ int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttp
         ws->getText("description", infoSv);
     }
 
-    Owned<IWuWebView> web = createWuWebView(*wu, wuinfo.qsetname.get(), wuinfo.queryname.get(), getCFD(), true);
+    Owned<IWuWebView> web = createWuWebView(*wu, wuinfo.qsetname.get(), wuinfo.queryname.get(), getCFD(), true, queryXsltConfig());
     if (web)
     {
         if (!help.length())
@@ -1444,7 +1449,7 @@ int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttp
     formxml.append("</CustomViews>");
     formxml.append("</FormInfo>");
 
-    Owned<IXslTransform> xform = xslp->createXslTransform();
+    Owned<IXslTransform> xform = xslp->createXslTransform(queryXsltConfig());
 
     StringBuffer xslfile(getCFD());
     if (box)
@@ -1664,7 +1669,7 @@ int CWsEclBinding::getXmlTestForm(IEspContext &context, CHttpRequest* request, C
     getEspUrlParams(context,params,excludes);
 
     Owned<IXslProcessor> xslp = getXslProcessor();
-    Owned<IXslTransform> xform = xslp->createXslTransform();
+    Owned<IXslTransform> xform = xslp->createXslTransform(queryXsltConfig());
     xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/wsecl3_xmltest.xsl").str());
 
     StringBuffer srcxml;
@@ -1732,7 +1737,7 @@ int CWsEclBinding::getJsonTestForm(IEspContext &context, CHttpRequest* request, 
     StringBuffer header("Content-Type: application/json; charset=UTF-8");
 
     Owned<IXslProcessor> xslp = getXslProcessor();
-    Owned<IXslTransform> xform = xslp->createXslTransform();
+    Owned<IXslTransform> xform = xslp->createXslTransform(queryXsltConfig());
     xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/wsecl3_jsontest.xsl").str());
 
     StringBuffer encodedMsg;
@@ -1878,7 +1883,7 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
     //don't wait indefinitely, in case submitted to an inactive queue wait max + 5 mins
     if (!async && waitForWorkUnitToComplete(wuid.str(), wsecl->workunitTimeout))
     {
-        Owned<IWuWebView> web = createWuWebView(wuid.str(), wsinfo.qsetname.get(), wsinfo.queryname.get(), getCFD(), true);
+        Owned<IWuWebView> web = createWuWebView(wuid.str(), wsinfo.qsetname.get(), wsinfo.queryname.get(), getCFD(), true, queryXsltConfig());
         if (!web)
         {
             DBGLOG("WS-ECL failed to create WuWebView for workunit %s", wuid.str());
@@ -1897,7 +1902,7 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
     {
         if (!async)
             DBGLOG("WS-ECL request timed out, WorkUnit %s", wuid.str());
-        Owned<IWuWebView> web = createWuWebView(wuid.str(), wsinfo.qsetname.get(), wsinfo.queryname.get(), getCFD(), true);
+        Owned<IWuWebView> web = createWuWebView(wuid.str(), wsinfo.qsetname.get(), wsinfo.queryname.get(), getCFD(), true, queryXsltConfig());
         web->createWuidResponse(out, flags);
     }
 
@@ -2009,7 +2014,7 @@ int CWsEclBinding::onSubmitQueryOutput(IEspContext &context, CHttpRequest* reque
             else
             {
                 IConstWorkUnit *wu = wsinfo.ensureWorkUnit();
-                Owned<IWuWebView> web = createWuWebView(*wu, wsinfo.qsetname.get(), wsinfo.queryname.get(), getCFD(), true);
+                Owned<IWuWebView> web = createWuWebView(*wu, wsinfo.qsetname.get(), wsinfo.queryname.get(), getCFD(), true, queryXsltConfig());
                 if (web.get())
                     web->expandResults(roxieresp.str(), output, xmlflags);
             }
@@ -2052,7 +2057,7 @@ int CWsEclBinding::onSubmitQueryOutputView(IEspContext &context, CHttpRequest* r
     if (strieq(clustertype.str(), "roxie"))
     {
         sendRoxieRequest(wsinfo.qsetname.get(), soapmsg, output, status, wsinfo.queryname, false, "text/xml");
-        Owned<IWuWebView> web = createWuWebView(*wu, wsinfo.qsetname.get(), wsinfo.queryname.get(), getCFD(), true);
+        Owned<IWuWebView> web = createWuWebView(*wu, wsinfo.qsetname.get(), wsinfo.queryname.get(), getCFD(), true, queryXsltConfig());
         if (!view)
             web->applyResultsXSLT(xsltfile.str(), output.str(), html);
         else
@@ -2284,7 +2289,7 @@ int CWsEclBinding::getRestURL(IEspContext *ctx, CHttpRequest *request, CHttpResp
             appendXMLCloseTag(xml, "resturl");
 
             Owned<IXslProcessor> xslp = getXslProcessor();
-            Owned<IXslTransform> xform = xslp->createXslTransform();
+            Owned<IXslTransform> xform = xslp->createXslTransform(queryXsltConfig());
             xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/wsecl3_url.xslt").str());
             xform->setXmlSource(xml.str(), xml.length());
 
@@ -2781,7 +2786,7 @@ int CWsEclBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* respo
             else
             {
                 WsEclWuInfo wsinfo(wuid.str(), target.str(), queryname.str(), ctx->queryUserId(), ctx->queryPassword());
-                Owned<IWuWebView> web = createWuWebView(*wsinfo.ensureWorkUnit(), wsinfo.qsetname.get(), wsinfo.queryname.get(), getCFD(), true);
+                Owned<IWuWebView> web = createWuWebView(*wsinfo.ensureWorkUnit(), wsinfo.qsetname.get(), wsinfo.queryname.get(), getCFD(), true, queryXsltConfig());
                 if (web.get())
                     web->expandResults(output.str(), soapresp, xmlflags);
             }
