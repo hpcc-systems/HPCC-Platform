@@ -34,6 +34,4 @@ perl -pe "
 
 cd "$SRCDIR"
 
-cp -r "$SRCDIR/build/." "$DISTDIR"
-
 echo "EclWatch:  Build complete"

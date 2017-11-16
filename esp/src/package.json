@@ -4,7 +4,7 @@
   "description": "'ECL Watch' Web interface for HPCC Platform.",
   "scripts": {
     "clean": "rimraf ./build && rimraf ./lib",
-    "lint":"jshint ./eclwatch",
+    "lint": "jshint ./eclwatch",
     "copy-res-es6-promise": "cpx \"./node_modules/es6-promise/dist/es6-promise.auto.min.js\" ./build/node_modules/es6-promise/dist/",
     "copy-res-eclwatch-img": "cpx \"./eclwatch/img/**/*.{png,jpg,gif}\" ./build/eclwatch/img/",
     "copy-res-eclwatch-ecl": "cpx \"./eclwatch/ecl/**/*.*\" ./build/eclwatch/ecl/",
@@ -14,7 +14,7 @@
     "compile": "tsc",
     "bundle": "node node_modules/webpack/bin/webpack.js --config webpack.config.js",
     "build": "npm run copy-res && npm run compile && npm run bundle",
-    "test": "npm run lint"    
+    "test": "npm run lint"
   },
   "main": "src/stub.js",
   "dependencies": {},
@@ -26,31 +26,30 @@
     "@hpcc-js/layout": "0.0.40",
     "@hpcc-js/map": "0.0.44",
     "@hpcc-js/other": "0.0.40",
-    "cpx":  "1.5.0",
+    "cpx": "1.5.0",
     "css-loader": "0.28.7",
     "dijit": "1.13.0",
     "dojo": "1.13.0",
     "dojo-themes": "1.13.0",
     "dojo-util": "1.13.0",
-    "dojo-webpack-plugin": "2.1.4",
+    "dojo-webpack-plugin": "2.2.0",
     "dojox": "1.13.0",
     "es6-promise": "4.1.1",
     "font-awesome": "4.7.0",
+    "file-loader": "1.1.5",
     "jshint": "2.9.4",
-    "less": "2.7.2",
-    "less-loader": "2.2.3",
     "rimraf": "2.6.2",
     "style-loader": "0.19.0",
     "tslib": "1.8.0",
     "typescript": "2.5.3",
     "url-loader": "0.6.2",
-    "webpack": "3.6.0",
-    "webpack-bundle-analyzer": "2.9.0"
+    "webpack": "3.8.1",
+    "webpack-bundle-analyzer": "2.9.1"
   },
   "author": "HPCC Systems",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/hpcc-systems/HPCC-Platform"
-  }  
+  }
 }

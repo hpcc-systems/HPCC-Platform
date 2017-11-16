@@ -53,12 +53,12 @@ module.exports = {
         new webpack.NormalModuleReplacementPlugin(/^dojox\/gfx\/renderer!/, "dojox/gfx/canvas"),
         new webpack.NormalModuleReplacementPlugin(
             /^css!/, function (data) {
-                data.request = data.request.replace(/^css!/, "!style-loader!css-loader!less-loader!")
+                data.request = data.request.replace(/^css!/, "!style-loader!css-loader!")
             }
         ),
         new webpack.NormalModuleReplacementPlugin(
             /^xstyle\/css!/, function (data) {
-                data.request = data.request.replace(/^xstyle\/css!/, "!style-loader!css-loader!less-loader!")
+                data.request = data.request.replace(/^xstyle\/css!/, "!style-loader!css-loader!")
             }
         ),
         new webpack.optimize.CommonsChunkPlugin({
