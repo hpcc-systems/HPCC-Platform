@@ -2646,7 +2646,17 @@ private:
 
             Owned<IDistributedFile> publishFile = queryDistributedFileDirectory().createNew(desc); // MORE - we'll create this earlier if we change the locking paradigm
             publishFile->setAccessedTime(modifiedTime);
-            publishFile->attach(dFile->queryLogicalName(), activity ? activity->queryUserDescriptor() : UNKNOWN_USER);
+            IUserDescriptor * userdesc = NULL;
+            if (activity)
+                userdesc = activity->queryUserDescriptor();
+            else
+            {
+                Owned<IRoxieDaliHelper> daliHelper = connectToDali(false);
+                if (daliHelper)
+                    userdesc = daliHelper->queryUserDescriptor();//predeployed query mode
+            }
+
+            publishFile->attach(dFile->queryLogicalName(), userdesc);
             // MORE should probably write to the roxielocalstate too in case Dali is down next time I look...
         }
     }
