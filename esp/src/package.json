@@ -4,7 +4,7 @@
   "description": "'ECL Watch' Web interface for HPCC Platform.",
   "scripts": {
     "clean": "rimraf ./build && rimraf ./lib",
-    "lint":"jshint ./eclwatch",
+    "lint": "jshint ./eclwatch",
     "copy-res-es6-promise": "cpx \"./node_modules/es6-promise/dist/es6-promise.auto.min.js\" ./build/node_modules/es6-promise/dist/",
     "copy-res-eclwatch-img": "cpx \"./eclwatch/img/**/*.{png,jpg,gif}\" ./build/eclwatch/img/",
     "copy-res-eclwatch-ecl": "cpx \"./eclwatch/ecl/**/*.*\" ./build/eclwatch/ecl/",
@@ -14,7 +14,7 @@
     "compile": "tsc",
     "bundle": "node node_modules/webpack/bin/webpack.js --config webpack.config.js",
     "build": "npm run copy-res && npm run compile && npm run bundle",
-    "test": "npm run lint"    
+    "test": "npm run lint"
   },
   "main": "src/stub.js",
   "dependencies": {},
@@ -26,7 +26,7 @@
     "@hpcc-js/layout": "0.0.40",
     "@hpcc-js/map": "0.0.44",
     "@hpcc-js/other": "0.0.40",
-    "cpx":  "1.5.0",
+    "cpx": "1.5.0",
     "css-loader": "0.28.7",
     "dijit": "1.13.0",
     "dojo": "1.13.0",
@@ -52,5 +52,5 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/hpcc-systems/HPCC-Platform"
-  }  
+  }
 }
