@@ -499,9 +499,9 @@ protected:
                 extraFlags = IFEnocache;
             ifileio = ifile->open(IFOcreate, extraFlags);
 
-#if 0
+#if 0 // for testing default and explicitly set share mode to Windows dafilesrv
             if (server != NULL)
-                ifile->setShareMode((IFSHmode)IFSHfull);
+                ifile->setShareMode((IFSHmode)IFSHread);
 #endif
 
             try
