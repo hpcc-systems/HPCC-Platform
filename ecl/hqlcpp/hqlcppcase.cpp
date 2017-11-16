@@ -426,6 +426,7 @@ IHqlExpression * HqlCppCaseInfo::buildIndexedMap(BuildCtx & ctx, const CHqlBound
         translator.ensureSimpleExpr(ctx, indexExpr);
 
     OwnedHqlExpr mapped;
+    OwnedHqlExpr castDefaultValue = ensureExprType(defaultValue, resultType);
     ITypeInfo * retType = resultType;
     //if num == pairs.ordinality() and all results are identical, avoid the table lookup.
     if (allResultsMatch && (num == pairs.ordinality()))
@@ -473,7 +474,7 @@ IHqlExpression * HqlCppCaseInfo::buildIndexedMap(BuildCtx & ctx, const CHqlBound
         for (idx = 0; idx < num; idx++)
         {
             if (&values.item(idx) == dft)
-                values.replace(*defaultValue.getLink(),idx);
+                values.replace(*LINK(castDefaultValue),idx);
         }
 
         // use a var string type to get better C++ generated...
@@ -1137,6 +1138,9 @@ bool HqlCppCaseInfo::canBuildArrayLookup(const CHqlBoundExpr & test)
         }
     }
 
+#if 0
+    //Currently removed because it revealed inconsistencies in the implementation - HPCC-18745
+    //is opened to address that later.
     if (condType->isInteger() && !isUnknownSize(resultType))
     {
         unsigned __int64 range = getIntValue(highestCompareExpr, 0) - getIntValue(lowestCompareExpr, 0) + 1;
@@ -1148,6 +1152,7 @@ bool HqlCppCaseInfo::canBuildArrayLookup(const CHqlBoundExpr & test)
             return true;
         }
     }
+#endif
 
     return false;
 }
