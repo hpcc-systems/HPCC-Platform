@@ -730,6 +730,15 @@ protected:
         if (!beginCollection(*collection))
             return false;
 
+        // When workflow is root element, it is just a container.  Ignore the workflow element here
+        // as WorkUnitStatisticsScopeIterator will produce workflow scope - don't want duplicates.
+        // (Note: workflow element never contains stats).
+        if (collection->queryScopeType() == SSTworkflow)
+        {
+            if (!next())
+                return false;
+        }
+
         //The root element of a collection is a graph - but it is only there to nest the subgraphs in.
         //Do not iterate it as a separate element - unless it has some stats.
         IStatisticCollection & curCollection = collections.tos();
