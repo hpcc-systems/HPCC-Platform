@@ -1224,6 +1224,7 @@ bool CAndMergeJoinProcessor::findCandidates(const void * seekValue, unsigned num
         return false;
 
     const bool inputsMustMatchEquality = (numEqualFields == numExternalEqualFields);
+    PreservedRow savedRow(inputAllocator);
     const void * equalValue;
     unsigned firstInput = 0;
     if (inputsMustMatchEquality && allInputsAreOuterInputs)
@@ -1252,7 +1253,6 @@ bool CAndMergeJoinProcessor::findCandidates(const void * seekValue, unsigned num
             return false;
         }
 
-        PreservedRow savedRow(inputAllocator);
         unsigned matchCount = 0;
         clearMatches();
         if (matchedCompletely)
