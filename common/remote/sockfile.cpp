@@ -1962,9 +1962,12 @@ public:
         catch (IDAFS_Exception *e)
         {
             if (e->errorCode() == RFSERR_InvalidCommand)
+            {
                 WARNLOG("umask setFilePermissions (0%o) not supported on remote server", fPerms);
+                e->Release();
+            }
             else
-                throw e;
+                throw;
         }
 
     }
