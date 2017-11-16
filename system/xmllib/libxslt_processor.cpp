@@ -532,6 +532,8 @@ int CLibXslTransform::transform(xmlChar **xmlbuff, int &len)
     if (!ctxt)
         throw MakeStringException(XSLERR_CouldNotCreateTransform, "Failed creating libxslt Transform Context");
     ctxt->_private = this;
+
+#if LIBXSLT_VERSION >= 10127  //the context variables maxTemplateDepth and maxTemplateVars were added in libxslt version 1.1.27
     if (xslConfig)
     {
         ctxt->maxTemplateDepth = xslConfig->getPropInt("xsltMaxDepth", 100000);
@@ -542,6 +544,7 @@ int CLibXslTransform::transform(xmlChar **xmlbuff, int &len)
         ctxt->maxTemplateDepth = 100000; //we use some very highly nested stylesheets
         ctxt->maxTemplateVars = 1000000;
     }
+#endif
 
     HashIterator h(functions);
     ForEach (h)
