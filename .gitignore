@@ -4,3 +4,5 @@ externals/
 ln/
 .cproject
 node_modules
+esp/src/lib
+esp/src/build

@@ -36,7 +36,8 @@ define([
 
     "css!hpcc/css/ecl.css",
     "css!dojo-themes/flat/flat.css",
-    "css!hpcc/css/hpcc.css",
+    "css!hpcc/css/hpcc.css"
+
 ], function (fx, dom, domStyle, ioQuery, ready, lang, arrayUtil, topic, xhr, cookie,
             Dialog, Button,
             ESPUtil, Utility,
