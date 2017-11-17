@@ -147,27 +147,27 @@ public:
             MemoryBuffer hibuffer;
             Owned<IStringSet> filterSet = createStringSet(fieldSize);
             deserializeSet(*filterSet, inrec.getMinRecordSize(), fieldType, filter);
-            aindex_t found = filterOffsets.bSearch(fieldOffset, compareOffsets);
-            if (found==NotFound)
+            while (filters.length()<=fieldNum)
             {
-                bool isNew;
-                unsigned insertPos = filterOffsets.bAdd(fieldOffset, compareOffsets, isNew);
-                dbgassertex(isNew);
-                filters.add(*filterSet.getClear(), insertPos);
+                filters.append(nullptr);
+                filterOffsets.append(offsetCalculator.getOffset(filters.length()));
+                filterOffsets.append(offsetCalculator.getSize(filters.length()));
             }
-            else
-            {
-                filterSet.setown(filters.item(found).unionSet(filterSet));// Debatable - would intersect be more appropriate?
-                filters.replace(*filterSet.getClear(), found);
-            }
+            IStringSet *prev = filters.item(fieldNum);
+            if (prev)
+                filterSet.setown(prev->unionSet(filterSet)); // Debatable - would intersect be more appropriate?
+            filters.replace(filterSet.getClear(), fieldNum);
+            filterOffsets.replace(fieldOffset, fieldOffset); // MORE - probably refactor this in  a bit
+            filterSizes.replace(fieldSize, fieldSize); // MORE - probably refactor this in  a bit
         }
     }
     void createSegmentMonitors(IIndexReadContext *irc)
     {
         ForEachItemIn(idx, filters)
         {
-            IStringSet &filter = filters.item(idx);
-            irc->append(createKeySegmentMonitor(false, LINK(&filter), filterOffsets.item(idx), filter.getSize()));
+            IStringSet *filter = filters.item(idx);
+            if (filter)
+                irc->append(createKeySegmentMonitor(false, LINK(filter), idx, filterOffsets.item(idx), filter->getSize()));
         }
     }
     void createSegmentMonitorsWithWild(IIndexReadContext *irc, unsigned keySize)
@@ -175,20 +175,27 @@ public:
         unsigned lastOffset = 0;
         ForEachItemIn(idx, filters)
         {
-            IStringSet &filter = filters.item(idx);
+            IStringSet *filter = filters.item(idx);
             unsigned offset =  filterOffsets.item(idx);
-            unsigned size = filter.getSize();
-            if (offset > lastOffset)
-                irc->append(createWildKeySegmentMonitor(lastOffset, offset-lastOffset));
-            irc->append(createKeySegmentMonitor(false, LINK(&filter), offset, size));
-            lastOffset = offset+size;
+            unsigned size =  filterSizes.item(idx);
+            if (filter)
+            {
+                assertex(size = filter->getSize());
+                irc->append(createKeySegmentMonitor(false, LINK(filter), idx, offset, size));
+            }
+            else
+                irc->append(createWildKeySegmentMonitor(idx, offset, size)); // MORE - move this logic to irc::append ?
         }
+        // MORE - trailing wild needs adding
+        /*
         if (keySize > lastOffset)
             irc->append(createWildKeySegmentMonitor(lastOffset, keySize-lastOffset));
+            */
     }
 protected:
-    IArrayOf<IStringSet> filters;
+    IPointerArrayOf<IStringSet> filters;
     UnsignedArray filterOffsets;
+    UnsignedArray filterSizes;
     const RtlRecord &inrec;
 };
 

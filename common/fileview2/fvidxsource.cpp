@@ -433,7 +433,7 @@ void IndexDataSource::applyFilter()
     {
         IStringSet & cur = values.item(i);
         bool extend = true; // almost certainly better
-        manager->append(createKeySegmentMonitor(extend, LINK(&cur), keyedOffsets.item(i), fieldSize(i)));
+        manager->append(createKeySegmentMonitor(extend, LINK(&cur), i, keyedOffsets.item(i), fieldSize(i)));
     }
     manager->finishSegmentMonitors();
 

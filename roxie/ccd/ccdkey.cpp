@@ -269,11 +269,13 @@ public:
         ForEach(*fields)
         {
             IPropertyTree &field = fields->query();
+            unsigned fieldNum = field.getPropInt("@fieldNum", -1);
+            assertex(fieldNum != (unsigned) -1);
             unsigned offset = field.getPropInt("@offset", 0);
             unsigned size = field.getPropInt("@size", 0);
             bool isSigned = field.getPropBool("@isSigned", false);
             bool isLittleEndian = field.getPropBool("@isLittleEndian", false);
-            append(createDummyKeySegmentMonitor(offset, size, isSigned, isLittleEndian));
+            append(createDummyKeySegmentMonitor(fieldNum, offset, size, isSigned, isLittleEndian));
         }
     }
 
@@ -326,7 +328,7 @@ public:
 #endif
         ForEachItemIn(idx, segMonitors)
         {
-            int ret = segMonitors.item(idx).docompareraw(l, r);
+            int ret = segMonitors.item(idx).docompare(l, r);
             if (ret)
                 return ret;
         }
@@ -386,7 +388,7 @@ public:
         ForEachItemIn(idx, segMonitors)
         {
             IKeySegmentMonitor &item = segMonitors.item(idx);
-            ret.pad(indent+1).appendf("<Field offset='%d' size='%d' isSigned='%d' isLittleEndian='%d'/>\n", item.getOffset(), item.getSize(), item.isSigned(), item.isLittleEndian());
+            ret.pad(indent+1).appendf("<Field fieldNum='%d' offset='%d' size='%d' isSigned='%d' isLittleEndian='%d'/>\n", item.getFieldIdx(), item.getOffset(), item.getSize(), item.isSigned(), item.isLittleEndian());
         }
         ret.pad(indent).append("</FieldSet>\n");
         return ret;
@@ -979,8 +981,7 @@ class InMemoryIndexManager : implements IInMemoryIndexManager, public CInterface
             ForEachItemIn(idx, m)
             {
                 IKeySegmentMonitor &seg = m.item(idx);
-                xml.appendf("<Field offset='%d' size='%d' isSigned='%d' isLittleEndian='%d'/>\n", seg.getOffset(), seg.getSize(), seg.isSigned(), seg.isLittleEndian());
-//              xml.appendf("<Field offset='%d' size='%d' flags='%d'/>\n", seg.getOffset(), seg.getSize(), seg.getFlags());
+                xml.appendf("<Field fieldNum='%d' offset='%d' size='%d' isSigned='%d' isLittleEndian='%d'/>\n", seg.getFieldIdx(), seg.getOffset(), seg.getSize(), seg.isSigned(), seg.isLittleEndian());
             }
             xml.append("</FieldSet>\n");
         }
@@ -1307,11 +1308,12 @@ public:
             {
                 // MORE - we could share them, then comparison would be faster (pointer compare)
                 IKeySegmentMonitor &seg = perfect.item(idx);
+                unsigned fieldNum = seg.getFieldIdx();
                 unsigned offset = seg.getOffset();
                 unsigned size = seg.getSize();
                 bool isSigned = seg.isSigned();
                 bool isLittleEndian = seg.isLittleEndian();
-                newEntry->append(*createDummyKeySegmentMonitor(offset, size, isSigned, isLittleEndian));
+                newEntry->append(*createDummyKeySegmentMonitor(fieldNum, offset, size, isSigned, isLittleEndian));
             }
             tracked[a] = newEntry;
             hits[a] = noteHits ? noteHits : 1;
@@ -2054,14 +2056,14 @@ protected:
         di.load(testarray, sizeof(testarray), &x, 1);
         unsigned searchval = 1;
         InMemoryIndex order;
-        order.append(createSingleKeySegmentMonitor(false, 0, sizeof(unsigned), &searchval));
+        order.append(createSingleKeySegmentMonitor(false, 0, 0, sizeof(unsigned), &searchval));
         di.setBuilding();
         di.resort(order);
         InMemoryIndexManager indexes(false, "test1");
         indexes.append(*LINK(&di));
 
         Owned<IInMemoryIndexCursor> d = indexes.createCursor(dummy);
-        d->append(createSingleKeySegmentMonitor(false, 0, sizeof(unsigned), &searchval));
+        d->append(createSingleKeySegmentMonitor(false, 0, 0, sizeof(unsigned), &searchval));
         d->selectKey();
         d->reset();
         ASSERT(d->nextMatch()==&testarray[0]);
@@ -2070,7 +2072,7 @@ protected:
 
         d.setown(indexes.createCursor(dummy));
         searchval = 10;
-        d->append(createSingleKeySegmentMonitor(false, 0, sizeof(unsigned), &searchval));
+        d->append(createSingleKeySegmentMonitor(false, 0, 0, sizeof(unsigned), &searchval));
         d->selectKey();
         d->reset();
         ASSERT(d->nextMatch()==NULL);
@@ -2078,7 +2080,7 @@ protected:
         d.clear();
         di.deprecate();
 
-        Owned<IPropertyTree> keyInfo = createPTreeFromXMLString("<R><FieldSet><Field isLittleEndian='1' isSigned='0' offset='0' size='4'/><Field isLittleEndian='1' isSigned='1' offset='0' size='4'/></FieldSet></R>");
+        Owned<IPropertyTree> keyInfo = createPTreeFromXMLString("<R><FieldSet><Field isLittleEndian='1' isSigned='0' offset='0' fieldNum='0' size='4'/><Field isLittleEndian='1' isSigned='1' offset='0' fieldNum='0' size='4'/></FieldSet></R>");
         indexes.setKeyInfo(*keyInfo.get());
         Sleep(1000); // to give key time to build!
 
@@ -2088,7 +2090,7 @@ protected:
         set->addRange(&searchval, &searchval);
         searchval = 9;
         set->addRange(&searchval, &searchval);
-        d->append(createKeySegmentMonitor(false, set, 0, sizeof(unsigned)));
+        d->append(createKeySegmentMonitor(false, set, 0, 0, sizeof(unsigned)));
         d->selectKey();
         d->reset();
         ASSERT(*(int *) d->nextMatch()==2);
@@ -2108,19 +2110,19 @@ protected:
         const RtlFieldInfo * const fields [] = {&f1, nullptr};
         RtlRecord dummy(fields, true); // NOTE - not accurate but good enough for these tests
 
-        IKeySegmentMonitor *ksm = createSingleLittleKeySegmentMonitor(false, 8, sizeof(unsigned), &searchval);
+        IKeySegmentMonitor *ksm = createSingleLittleKeySegmentMonitor(false, 2, 8, sizeof(unsigned), &searchval);
         ASSERT(ksm->isSigned()==false);
         ASSERT(ksm->isLittleEndian()==true);
         di.append(ksm);
-        di.append(createSingleKeySegmentMonitor(false, 4, sizeof(unsigned), &searchval));
-        di.append(createSingleKeySegmentMonitor(false, 0, sizeof(unsigned), &searchval));
+        di.append(createSingleKeySegmentMonitor(false, 1, 4, sizeof(unsigned), &searchval));
+        di.append(createSingleKeySegmentMonitor(false, 0, 0, sizeof(unsigned), &searchval));
         di.setBuilding();
         di.undeprecate();
 
         InMemoryIndex di2;
-        di2.append(createSingleKeySegmentMonitor(false, 12, sizeof(unsigned), &searchval));
-        di2.append(createSingleKeySegmentMonitor(false, 16, sizeof(unsigned), &searchval));
-        di2.append(createSingleKeySegmentMonitor(false, 0, sizeof(unsigned), &searchval));
+        di2.append(createSingleKeySegmentMonitor(false, 3, 12, sizeof(unsigned), &searchval));
+        di2.append(createSingleKeySegmentMonitor(false, 4, 16, sizeof(unsigned), &searchval));
+        di2.append(createSingleKeySegmentMonitor(false, 0, 0, sizeof(unsigned), &searchval));
         di2.setBuilding();
         di2.undeprecate();
         
@@ -2131,8 +2133,8 @@ protected:
         Owned<IInMemoryIndexCursor> dd = indexes.createCursor(dummy);
         InMemoryIndexCursor *d = QUERYINTERFACE(dd.get(), InMemoryIndexCursor);
         ASSERT(d != nullptr);
-        dd->append(createSingleKeySegmentMonitor(false, 4, sizeof(unsigned), &searchval));
-        dd->append(createSingleKeySegmentMonitor(false, 8, sizeof(unsigned), &searchval));
+        dd->append(createSingleKeySegmentMonitor(false, 1, 4, sizeof(unsigned), &searchval));
+        dd->append(createSingleKeySegmentMonitor(false, 2, 8, sizeof(unsigned), &searchval));
         ASSERT(d->postFilter.length()==2);
         ASSERT(d->segMonitors.length()==0);
         ASSERT(d->postFilter.item(0).getOffset()==4);
@@ -2146,8 +2148,8 @@ protected:
         dd.setown(indexes.createCursor(dummy));
         d = QUERYINTERFACE(dd.get(), InMemoryIndexCursor);
         ASSERT(d != nullptr);
-        dd->append(createSingleKeySegmentMonitor(false, 16, sizeof(unsigned), &searchval));
-        dd->append(createSingleKeySegmentMonitor(false, 8, sizeof(unsigned), &searchval));
+        dd->append(createSingleKeySegmentMonitor(false, 4, 16, sizeof(unsigned), &searchval));
+        dd->append(createSingleKeySegmentMonitor(false, 2, 8, sizeof(unsigned), &searchval));
         ASSERT(d->postFilter.length()==2);
         ASSERT(d->segMonitors.length()==0);
         ASSERT(d->postFilter.item(0).getOffset()==8);
@@ -2161,9 +2163,9 @@ protected:
         dd.setown(indexes.createCursor(dummy));
         d = QUERYINTERFACE(dd.get(), InMemoryIndexCursor);
         ASSERT(d != nullptr);
-        dd->append(createSingleKeySegmentMonitor(false, 12, sizeof(unsigned), &searchval));
-        dd->append(createSingleKeySegmentMonitor(false, 16, sizeof(unsigned), &searchval));
-        dd->append(createSingleKeySegmentMonitor(false, 8, sizeof(unsigned), &searchval));
+        dd->append(createSingleKeySegmentMonitor(false, 3, 12, sizeof(unsigned), &searchval));
+        dd->append(createSingleKeySegmentMonitor(false, 4, 16, sizeof(unsigned), &searchval));
+        dd->append(createSingleKeySegmentMonitor(false, 2, 8, sizeof(unsigned), &searchval));
         ASSERT(d->postFilter.length()==3);
         ASSERT(d->segMonitors.length()==0);
         ASSERT(d->postFilter.item(0).getOffset()==8);
@@ -2183,48 +2185,48 @@ protected:
 
         SegMonitorArray q;
         unsigned char searchval;
-        q.append(*createSingleKeySegmentMonitor(false, 'p', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'q', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 0, 'p', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 1, 'q', 1, &searchval));
         unsigned i;
         for (i = 0; i < 104; i++)
             stats.noteQuery(q, 0);
 
         q.kill();
-        q.append(*createSingleKeySegmentMonitor(false, 'a', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'b', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'x', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'y', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 0, 'a', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 1, 'b', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 2, 'x', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 3, 'y', 1, &searchval));
         for (i = 0; i < 103; i++)
             stats.noteQuery(q, 0);
 
         q.kill();
-        q.append(*createSingleKeySegmentMonitor(false, 'c', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'd', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'x', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'y', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 0, 'c', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 1, 'd', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 2, 'x', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 3, 'y', 1, &searchval));
         for (i = 0; i < 102; i++)
             stats.noteQuery(q, 0);
 
         q.kill();
-        q.append(*createSingleKeySegmentMonitor(false, 'e', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'f', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'x', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'y', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 0, 'e', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 1, 'f', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 2, 'x', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 3, 'y', 1, &searchval));
         for (i = 0; i < 101; i++)
             stats.noteQuery(q, 0);
 
         q.kill();
-        q.append(*createSingleKeySegmentMonitor(false, 'g', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'h', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'x', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'y', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 0, 'g', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 1, 'h', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 2, 'x', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 3, 'y', 1, &searchval));
         for (i = 0; i < 100; i++)
             stats.noteQuery(q, 0);
 
         q.kill();
-        q.append(*createSingleKeySegmentMonitor(false, 'g', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'x', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'y', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 0, 'g', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 1, 'x', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 2, 'y', 1, &searchval));
         for (i = 0; i < 100; i++)
             stats.noteQuery(q, 0);
 

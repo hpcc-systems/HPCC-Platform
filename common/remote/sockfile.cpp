@@ -2997,7 +2997,7 @@ class CRemoteKeyManager : public CSimpleInterfaceOf<IKeyManager>
         return count;
     }
 public:
-    CRemoteKeyManager(const char *_filename, unsigned _crc, IDelayedFile *_delayedFile) : filename(_filename), crc(_crc), delayedFile(_delayedFile)
+    CRemoteKeyManager(const char *_filename, unsigned _crc, IDelayedFile *_delayedFile) : segs(true), filename(_filename), crc(_crc), delayedFile(_delayedFile)
     {
     }
     ~CRemoteKeyManager()
@@ -4838,7 +4838,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
         mb.read(handle).read(keyName).read(keySize);
         if (segmentMonitors)
         {
-            SegMonitorList segs;
+            SegMonitorList segs(true);
             segs.deserialize(mb);
             return prepKey(handle, keyName, &segs);
         }
