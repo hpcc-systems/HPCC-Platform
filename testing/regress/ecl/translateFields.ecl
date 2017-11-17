@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+IMPORT Std;
+
 // Test various record translations
 
 // All try to translate to one of these two structures
@@ -54,11 +56,6 @@ parent := RECORD
   linkcounted dataset(child) subl;
   embedded dataset(child) sube;
   child subrec;
-END;
-
-s := SERVICE
-   streamed dataset(dest) stransform(streamed dataset input) : eclrtl,pure,library='eclrtl',entrypoint='transformRecord',passParameterMeta(true);
-   streamed dataset(parent) rtransform(streamed dataset input) : eclrtl,pure,library='eclrtl',entrypoint='transformRecord',passParameterMeta(true);
 END;
 
 // Untranslated (type descriptors match)
@@ -344,54 +341,57 @@ declare_typecast_from_string(unicode8, typecast_from_unicode8, project_from_unic
 declare_typecast_from_string(varunicode8, typecast_from_varunicode8, project_from_varunicode8);
 declare_typecast_from_string(utf8, typecast_from_utf8, project_from_utf8);
 
+s := Std.Type.vrec(dest);
+r := Std.Type.vrec(parent);
+
 sequential(
-  OUTPUT(s.stransform(untranslated)),
-  OUTPUT(s.stransform(none_needed)),
-  OUTPUT(s.stransform(removed)),
-  OUTPUT(s.stransform(swapped_only)),
-  OUTPUT(s.rtransform(switch_linkcounts)),
-  OUTPUT(s.rtransform(translate_link)),
-  OUTPUT(s.rtransform(translate_nested)),
-  OUTPUT(s.stransform(translate_set)),
-  OUTPUT(s.stransform(nomatch)),
-  OUTPUT(s.stransform(multi_adjacent)),
-  OUTPUT(s.stransform(truncate_strings)),
-  OUTPUT(s.stransform(extend_strings)),
-  OUTPUT(s.stransform(typecast_from_int4)),
+  OUTPUT(s.translate(untranslated));
+  OUTPUT(s.translate(none_needed)),
+  OUTPUT(s.translate(removed)),
+  OUTPUT(s.translate(swapped_only)),
+  OUTPUT(r.translate(switch_linkcounts)),
+  OUTPUT(r.translate(translate_link)),
+  OUTPUT(r.translate(translate_nested)),
+  OUTPUT(s.translate(translate_set)),
+  OUTPUT(s.translate(nomatch)),
+  OUTPUT(s.translate(multi_adjacent)),
+  OUTPUT(s.translate(truncate_strings)),
+  OUTPUT(s.translate(extend_strings)),
+  OUTPUT(s.translate(typecast_from_int4)),
   OUTPUT(project_from_int4),
-  OUTPUT(s.stransform(typecast_from_int2)),
+  OUTPUT(s.translate(typecast_from_int2)),
   OUTPUT(project_from_int2),
-  OUTPUT(s.stransform(typecast_from_real4)),
+  OUTPUT(s.translate(typecast_from_real4)),
   OUTPUT(project_from_real4),
-  OUTPUT(s.stransform(typecast_from_real8)),
+  OUTPUT(s.translate(typecast_from_real8)),
   OUTPUT(project_from_real8),
-  OUTPUT(s.stransform(typecast_from_packed)),
+  OUTPUT(s.translate(typecast_from_packed)),
 //  OUTPUT(project_from_packed),  // internal compiler error
 
-  OUTPUT(s.stransform(typecast_from_upacked)),
+  OUTPUT(s.translate(typecast_from_upacked)),
 //  OUTPUT(project_from_upacked),
-  OUTPUT(s.stransform(typecast_from_bigendian)),
+  OUTPUT(s.translate(typecast_from_bigendian)),
   OUTPUT(project_from_bigendian),
-  OUTPUT(s.stransform(typecast_from_decimal)),
+  OUTPUT(s.translate(typecast_from_decimal)),
   OUTPUT(project_from_decimal),
-  OUTPUT(s.stransform(typecast_from_udecimal)),
+  OUTPUT(s.translate(typecast_from_udecimal)),
   OUTPUT(project_from_udecimal),
-  OUTPUT(s.stransform(typecast_from_string)),
+  OUTPUT(s.translate(typecast_from_string)),
   OUTPUT(project_from_string),
-  OUTPUT(s.stransform(typecast_from_varstring)),
+  OUTPUT(s.translate(typecast_from_varstring)),
   OUTPUT(project_from_varstring),
-  OUTPUT(s.stransform(typecast_from_string8)),
+  OUTPUT(s.translate(typecast_from_string8)),
   OUTPUT(project_from_string8),
-  OUTPUT(s.stransform(typecast_from_varstring8)),
+  OUTPUT(s.translate(typecast_from_varstring8)),
   OUTPUT(project_from_varstring8),
-  OUTPUT(s.stransform(typecast_from_unicode)),
+  OUTPUT(s.translate(typecast_from_unicode)),
   OUTPUT(project_from_unicode),
-  OUTPUT(s.stransform(typecast_from_varunicode)),
+  OUTPUT(s.translate(typecast_from_varunicode)),
   OUTPUT(project_from_varunicode),
-  OUTPUT(s.stransform(typecast_from_unicode8)),
+  OUTPUT(s.translate(typecast_from_unicode8)),
   OUTPUT(project_from_unicode8),
-  OUTPUT(s.stransform(typecast_from_varunicode8)),
+  OUTPUT(s.translate(typecast_from_varunicode8)),
   OUTPUT(project_from_varunicode8),
-  OUTPUT(s.stransform(typecast_from_utf8)),
+  OUTPUT(s.translate(typecast_from_utf8)),
   OUTPUT(project_from_utf8),
 );

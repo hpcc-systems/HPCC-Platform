@@ -1,0 +1,57 @@
+<Dataset name='Result 1'>
+ <Row><key>desc</key><value>Description         </value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>Description         </uvalue><dvalue>4465736372697074696F6E202020202020202020</dvalue></Row>
+ <Row><key>b</key><value>1</value><ivalue>1</ivalue><rvalue>1.0</rvalue><bvalue>true</bvalue><uvalue>1</uvalue><dvalue>01</dvalue></Row>
+ <Row><key>n1</key><value>1</value><ivalue>1</ivalue><rvalue>1.0</rvalue><bvalue>true</bvalue><uvalue>1</uvalue><dvalue>01000000</dvalue></Row>
+ <Row><key>n0</key><value>0</value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>0</uvalue><dvalue>00000000</dvalue></Row>
+ <Row><key>n2</key><value>2</value><ivalue>2</ivalue><rvalue>2.0</rvalue><bvalue>true</bvalue><uvalue>2</uvalue><dvalue>0200000000000000</dvalue></Row>
+ <Row><key>r1</key><value>3.14</value><ivalue>3</ivalue><rvalue>3.14</rvalue><bvalue>true</bvalue><uvalue>3.14</uvalue><dvalue>1F85EB51B81E0940</dvalue></Row>
+ <Row><key>d1</key><value>-3.14</value><ivalue>-3</ivalue><rvalue>-3.14</rvalue><bvalue>true</bvalue><uvalue>-3.14</uvalue><dvalue>00314D</dvalue></Row>
+ <Row><key>d2</key><value>3.14</value><ivalue>3</ivalue><rvalue>3.14</rvalue><bvalue>true</bvalue><uvalue>3.14</uvalue><dvalue>0314</dvalue></Row>
+ <Row><key>s1</key><value>string01</value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>string01</uvalue><dvalue>737472696E673031</dvalue></Row>
+ <Row><key>v1</key><value>v1</value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>v1</uvalue><dvalue>763100</dvalue></Row>
+ <Row><key>v2</key><value>v2</value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>v2</uvalue><dvalue>763200000000</dvalue></Row>
+ <Row><key>u1</key><value>&#xe01a;unicode</value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>€unicode</uvalue><dvalue>AC2075006E00690063006F0064006500</dvalue></Row>
+ <Row><key>vu1</key><value>&#xe01a;vu1</value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>€vu1</uvalue><dvalue>AC207600750031000000</dvalue></Row>
+ <Row><key>vu2</key><value>&#xe01a;vu2</value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>€vu2</uvalue><dvalue>AC2076007500320000000000</dvalue></Row>
+ <Row><key>da1</key><value>11223344</value><ivalue>11223344</ivalue><rvalue>11223344.0</rvalue><bvalue>true</bvalue><uvalue>11223344</uvalue><dvalue>080000003131323233333434</dvalue></Row>
+ <Row><key>da2</key><value>55667788</value><ivalue>55667788</ivalue><rvalue>55667788.0</rvalue><bvalue>true</bvalue><uvalue>55667788</uvalue><dvalue>3535363637373838</dvalue></Row>
+ <Row><key>tail</key><value>end</value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>end</uvalue><dvalue>03000000656E64</dvalue></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><key>desc</key><value>Description         </value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>Description         </uvalue><dvalue>4465736372697074696F6E202020202020202020</dvalue></Row>
+ <Row><key>b</key><value>1</value><ivalue>1</ivalue><rvalue>1.0</rvalue><bvalue>true</bvalue><uvalue>1</uvalue><dvalue>01</dvalue></Row>
+ <Row><key>n1</key><value>1</value><ivalue>1</ivalue><rvalue>1.0</rvalue><bvalue>true</bvalue><uvalue>1</uvalue><dvalue>01000000</dvalue></Row>
+ <Row><key>n0</key><value>0</value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>0</uvalue><dvalue>00000000</dvalue></Row>
+ <Row><key>n2</key><value>2</value><ivalue>2</ivalue><rvalue>2.0</rvalue><bvalue>true</bvalue><uvalue>2</uvalue><dvalue>0200000000000000</dvalue></Row>
+ <Row><key>r1</key><value>3.14</value><ivalue>3</ivalue><rvalue>3.14</rvalue><bvalue>true</bvalue><uvalue>3.14</uvalue><dvalue>1F85EB51B81E0940</dvalue></Row>
+ <Row><key>d1</key><value>-3.14</value><ivalue>-3</ivalue><rvalue>-3.14</rvalue><bvalue>true</bvalue><uvalue>-3.14</uvalue><dvalue>00314D</dvalue></Row>
+ <Row><key>d2</key><value>3.14</value><ivalue>3</ivalue><rvalue>3.14</rvalue><bvalue>true</bvalue><uvalue>3.14</uvalue><dvalue>0314</dvalue></Row>
+ <Row><key>s1</key><value>string01</value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>string01</uvalue><dvalue>737472696E673031</dvalue></Row>
+ <Row><key>v1</key><value>v1</value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>v1</uvalue><dvalue>763100</dvalue></Row>
+ <Row><key>v2</key><value>v2</value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>v2</uvalue><dvalue>763200000000</dvalue></Row>
+ <Row><key>u1</key><value>&#xe01a;unicode</value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>€unicode</uvalue><dvalue>AC2075006E00690063006F0064006500</dvalue></Row>
+ <Row><key>vu1</key><value>&#xe01a;vu1</value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>€vu1</uvalue><dvalue>AC207600750031000000</dvalue></Row>
+ <Row><key>vu2</key><value>&#xe01a;vu2</value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>€vu2</uvalue><dvalue>AC2076007500320000000000</dvalue></Row>
+ <Row><key>da1</key><value>11223344</value><ivalue>11223344</ivalue><rvalue>11223344.0</rvalue><bvalue>true</bvalue><uvalue>11223344</uvalue><dvalue>080000003131323233333434</dvalue></Row>
+ <Row><key>da2</key><value>55667788</value><ivalue>55667788</ivalue><rvalue>55667788.0</rvalue><bvalue>true</bvalue><uvalue>55667788</uvalue><dvalue>3535363637373838</dvalue></Row>
+ <Row><key>tail</key><value>end</value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>end</uvalue><dvalue>03000000656E64</dvalue></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><key>desc</key><value>Description         </value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>Description         </uvalue><dvalue>4465736372697074696F6E202020202020202020</dvalue></Row>
+ <Row><key>b</key><value>1</value><ivalue>1</ivalue><rvalue>1.0</rvalue><bvalue>true</bvalue><uvalue>1</uvalue><dvalue>01</dvalue></Row>
+ <Row><key>n1</key><value>1</value><ivalue>1</ivalue><rvalue>1.0</rvalue><bvalue>true</bvalue><uvalue>1</uvalue><dvalue>01000000</dvalue></Row>
+ <Row><key>n0</key><value>0</value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>0</uvalue><dvalue>00000000</dvalue></Row>
+ <Row><key>n2</key><value>2</value><ivalue>2</ivalue><rvalue>2.0</rvalue><bvalue>true</bvalue><uvalue>2</uvalue><dvalue>0200000000000000</dvalue></Row>
+ <Row><key>r1</key><value>3.14</value><ivalue>3</ivalue><rvalue>3.14</rvalue><bvalue>true</bvalue><uvalue>3.14</uvalue><dvalue>1F85EB51B81E0940</dvalue></Row>
+ <Row><key>d1</key><value>-3.14</value><ivalue>-3</ivalue><rvalue>-3.14</rvalue><bvalue>true</bvalue><uvalue>-3.14</uvalue><dvalue>00314D</dvalue></Row>
+ <Row><key>d2</key><value>3.14</value><ivalue>3</ivalue><rvalue>3.14</rvalue><bvalue>true</bvalue><uvalue>3.14</uvalue><dvalue>0314</dvalue></Row>
+ <Row><key>s1</key><value>string01</value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>string01</uvalue><dvalue>737472696E673031</dvalue></Row>
+ <Row><key>v1</key><value>v1</value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>v1</uvalue><dvalue>763100</dvalue></Row>
+ <Row><key>v2</key><value>v2</value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>v2</uvalue><dvalue>763200000000</dvalue></Row>
+ <Row><key>u1</key><value>&#xe01a;unicode</value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>€unicode</uvalue><dvalue>AC2075006E00690063006F0064006500</dvalue></Row>
+ <Row><key>vu1</key><value>&#xe01a;vu1</value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>€vu1</uvalue><dvalue>AC207600750031000000</dvalue></Row>
+ <Row><key>vu2</key><value>&#xe01a;vu2</value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>€vu2</uvalue><dvalue>AC2076007500320000000000</dvalue></Row>
+ <Row><key>da1</key><value>11223344</value><ivalue>11223344</ivalue><rvalue>11223344.0</rvalue><bvalue>true</bvalue><uvalue>11223344</uvalue><dvalue>080000003131323233333434</dvalue></Row>
+ <Row><key>da2</key><value>55667788</value><ivalue>55667788</ivalue><rvalue>55667788.0</rvalue><bvalue>true</bvalue><uvalue>55667788</uvalue><dvalue>3535363637373838</dvalue></Row>
+ <Row><key>tail</key><value>end</value><ivalue>0</ivalue><rvalue>0.0</rvalue><bvalue>false</bvalue><uvalue>end</uvalue><dvalue>03000000656E64</dvalue></Row>
+</Dataset>

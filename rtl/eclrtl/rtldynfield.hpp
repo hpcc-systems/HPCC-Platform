@@ -169,19 +169,71 @@ extern ECLRTL_API void dumpRecordType(size32_t & __lenResult, char * & __result,
  */
 extern ECLRTL_API void serializeRecordType(size32_t & __lenResult, void * & __result, IOutputMetaData &  metaVal);
 
+extern ECLRTL_API void getFieldNames(bool &isAll, unsigned int &len, void *&data, IOutputMetaData &inmeta);
+extern ECLRTL_API void getFieldNames(bool &isAll, unsigned int &len, void *&data, unsigned int typeLen, const void *typeData);
+extern ECLRTL_API unsigned getNumFields(IOutputMetaData &inmeta);
+extern ECLRTL_API unsigned getNumFields(unsigned int typeLen, const void *typeData);
+
 /**
  * Extract a field from a record via dynamic column number
  *
  */
 extern ECLRTL_API void getFieldVal(size32_t & __lenResult, char * & __result, int column, IOutputMetaData &  metaVal, const byte *row);
 
-/**
- * Extract a column number from a record via dynamic fieldname
- *
- */
-extern ECLRTL_API int getFieldNum(const char *fieldName, IOutputMetaData &  metaVal);
+extern ECLRTL_API byte *transformRecord(IEngineRowAllocator * resultAllocator, IOutputMetaData &outMeta, IOutputMetaData &inmeta, unsigned char const *inrow);
+extern ECLRTL_API IRowStream *transformDataset(IEngineRowAllocator *resultAllocator, IOutputMetaData &inmeta, IRowStream * input);
 
-extern ECLRTL_API IRowStream * transformRecord(IEngineRowAllocator * resultAllocator,IOutputMetaData &  metaInput,IRowStream * input);
+/**
+ * Create a serialized row from selected fields of an input record
+ */
+extern ECLRTL_API void serializeRow(unsigned int &__lenResult, void * &__result, IOutputMetaData &outputFields, IOutputMetaData &inRecMeta, unsigned char const *inRec);
+/**
+ * Serialize a row
+ */
+extern ECLRTL_API void serializeRow(unsigned int &__lenResult, void * &__result, IOutputMetaData &inRecMeta, unsigned char const *inRec);
+
+/*
+ * Create a row from a serialized row
+ */
+extern ECLRTL_API byte * deserializeRow(IEngineRowAllocator * _resultAllocator, IOutputMetaData & payload, size32_t lenParcel, const void * parcel);
+/*
+ * Translate field name to field index and vice versa
+ */
+extern ECLRTL_API unsigned getFieldNum(IOutputMetaData&, const char *fieldName);
+extern ECLRTL_API void getFieldName(size32_t &__len, char *&__result, IOutputMetaData & meta, unsigned fieldNum);
+extern ECLRTL_API void getFieldType(size32_t &__len, char *&__result, IOutputMetaData & meta, unsigned fieldNum);
+extern ECLRTL_API unsigned getFieldNum(unsigned int typeLen, const void *typeData, const char *fieldName);
+extern ECLRTL_API void getFieldName(size32_t &__len, char *&__result, unsigned int typeLen, const void *typeData, unsigned fieldNum);
+extern ECLRTL_API void getFieldType(size32_t &__len, char *&__result, unsigned int typeLen, const void *typeData, unsigned fieldNum);
+
+/*
+ * Read values from a serialized row, by fieldnum
+ */
+extern ECLRTL_API __int64 readSerializedInt(IOutputMetaData & meta, size32_t lenData, const void * data, unsigned fieldnum);
+extern ECLRTL_API double readSerializedReal(IOutputMetaData & meta, size32_t lenData, const void * data, unsigned fieldNum);
+extern ECLRTL_API void readSerializedString(unsigned int &__len, char *&__result, IOutputMetaData &inmeta, size32_t lenData, const void * data, unsigned fieldnum);
+extern ECLRTL_API void readSerializedUtf8(unsigned int &__len, char *&__result, IOutputMetaData &inmeta, size32_t lenData, const void * data, unsigned fieldnum);
+extern ECLRTL_API void readSerializedData(unsigned int &__len, void *&__result, IOutputMetaData &inmeta, size32_t lenData, const void * data, unsigned fieldnum);
+extern ECLRTL_API bool readSerializedBool(IOutputMetaData &inmeta, size32_t lenData, const void * data, unsigned fieldnum);
+
+// As above but using serialized type info
+
+extern ECLRTL_API __int64 readSerializedInt(unsigned int typeLen, const void *typeData, size32_t lenData, const void * data, unsigned fieldnum);
+extern ECLRTL_API double readSerializedReal(unsigned int typeLen, const void *typeData, size32_t lenData, const void * data, unsigned fieldNum);
+extern ECLRTL_API void readSerializedString(unsigned int &__len, char *&__result, unsigned int typeLen, const void *typeData, size32_t lenData, const void * data, unsigned fieldnum);
+extern ECLRTL_API void readSerializedUtf8(unsigned int &__len, char *&__result, unsigned int typeLen, const void *typeData, size32_t lenData, const void * data, unsigned fieldnum);
+extern ECLRTL_API void readSerializedData(unsigned int &__len, void *&__result, unsigned int typeLen, const void *typeData, size32_t lenData, const void * data, unsigned fieldnum);
+extern ECLRTL_API bool readSerializedBool(unsigned int typeLen, const void *typeData, size32_t lenData, const void * data, unsigned fieldnum);
+
+/*
+ * Read values from a normal row, by fieldnum
+ */
+extern ECLRTL_API __int64 readFieldInt(IOutputMetaData &inmeta, const byte *inrow, unsigned fieldnum);
+extern ECLRTL_API double readFieldReal(IOutputMetaData & meta, const byte *inrow, unsigned fieldNum);
+extern ECLRTL_API void readFieldString(unsigned int &__len, char *&__result, IOutputMetaData &inmeta, const byte *inrow, unsigned fieldnum);
+extern ECLRTL_API void readFieldUtf8(unsigned int &__len, char *&__result, IOutputMetaData &inmeta, const byte *inrow, unsigned fieldnum);
+extern ECLRTL_API void readFieldData(unsigned int &__len, void *&__result, IOutputMetaData &inmeta, const byte *inrow, unsigned fieldnum);
+extern ECLRTL_API bool readFieldBool(IOutputMetaData &inmeta, const byte *inrow, unsigned fieldnum);
 
 //---------------------------------------------------------------------------------------------------------------------
 

@@ -641,57 +641,61 @@ __int64 RtlRow::getInt(unsigned field) const
 {
     const byte * self = reinterpret_cast<const byte *>(row);
     const RtlFieldInfo *fieldInfo = info.queryField(field);
-    const RtlTypeInfo * type = fieldInfo->type;
-    if (!fieldInfo->omitable() || getSize(field))
-        return type->getInt(self + getOffset(field));
-    else if (fieldInfo->initializer && !isVirtualInitializer(fieldInfo->initializer))
-        return type->getInt(fieldInfo->initializer);
-    else
-        return 0;
+    if (fieldInfo)
+    {
+        const RtlTypeInfo * type = fieldInfo->type;
+        if (!fieldInfo->omitable() || getSize(field))
+            return type->getInt(self + getOffset(field));
+        else if (fieldInfo->initializer && !isVirtualInitializer(fieldInfo->initializer))
+            return type->getInt(fieldInfo->initializer);
+    }
+    return 0;
 }
 
 double RtlRow::getReal(unsigned field) const
 {
     const byte * self = reinterpret_cast<const byte *>(row);
     const RtlFieldInfo *fieldInfo = info.queryField(field);
-    const RtlTypeInfo * type = fieldInfo->type;
-    if (!fieldInfo->omitable() || getSize(field))
-        return type->getReal(self + getOffset(field));
-    else if (fieldInfo->initializer && !isVirtualInitializer(fieldInfo->initializer))
-        return type->getReal(fieldInfo->initializer);
-    else
-        return 0;
+    if (fieldInfo)
+    {
+        const RtlTypeInfo * type = fieldInfo->type;
+        if (!fieldInfo->omitable() || getSize(field))
+            return type->getReal(self + getOffset(field));
+        else if (fieldInfo->initializer && !isVirtualInitializer(fieldInfo->initializer))
+            return type->getReal(fieldInfo->initializer);
+    }
+    return 0;
 }
 
 void RtlRow::getString(size32_t & resultLen, char * & result, unsigned field) const
 {
+    resultLen = 0;
+    result = nullptr;
     const byte * self = reinterpret_cast<const byte *>(row);
     const RtlFieldInfo *fieldInfo = info.queryField(field);
-    const RtlTypeInfo * type = fieldInfo->type;
-    if (!fieldInfo->omitable() || getSize(field))
-        type->getString(resultLen, result, self + getOffset(field));
-    else if (fieldInfo->initializer && !isVirtualInitializer(fieldInfo->initializer))
-        type->getString(resultLen, result, fieldInfo->initializer);
-    else
+    if (fieldInfo)
     {
-        resultLen = 0;
-        result = nullptr;
+        const RtlTypeInfo * type = fieldInfo->type;
+        if (!fieldInfo->omitable() || getSize(field))
+            type->getString(resultLen, result, self + getOffset(field));
+        else if (fieldInfo->initializer && !isVirtualInitializer(fieldInfo->initializer))
+            type->getString(resultLen, result, fieldInfo->initializer);
     }
 }
 
 void RtlRow::getUtf8(size32_t & resultLen, char * & result, unsigned field) const
 {
+    resultLen = 0;
+    result = nullptr;
     const byte * self = reinterpret_cast<const byte *>(row);
     const RtlFieldInfo *fieldInfo = info.queryField(field);
-    const RtlTypeInfo * type = fieldInfo->type;
-    if (!fieldInfo->omitable() || getSize(field))
-        type->getUtf8(resultLen, result, self + getOffset(field));
-    else if (fieldInfo->initializer && !isVirtualInitializer(fieldInfo->initializer))
-        type->getUtf8(resultLen, result, fieldInfo->initializer);
-    else
+    if (fieldInfo)
     {
-        resultLen = 0;
-        result = nullptr;
+        const RtlTypeInfo * type = fieldInfo->type;
+        if (!fieldInfo->omitable() || getSize(field))
+            type->getUtf8(resultLen, result, self + getOffset(field));
+        else if (fieldInfo->initializer && !isVirtualInitializer(fieldInfo->initializer))
+            type->getUtf8(resultLen, result, fieldInfo->initializer);
     }
 }
 

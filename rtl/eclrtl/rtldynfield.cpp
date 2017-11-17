@@ -21,6 +21,7 @@
 #include "jmisc.hpp"
 #include "jlib.hpp"
 #include "eclhelper.hpp"
+#include "eclhelper_dyn.hpp"
 #include "eclrtl_imp.hpp"
 #include "rtldynfield.hpp"
 #include "rtlrecord.hpp"
@@ -57,6 +58,110 @@ extern ECLRTL_API const char *getTranslationModeText(RecordTranslationMode val)
     }
     throwUnexpected();
 }
+
+const StringBuffer &getTypeName(StringBuffer &ret, const RtlTypeInfo &type)
+{
+    switch (type.getType())
+    {
+    case type_boolean:
+        ret.append("BOOLEAN");
+        break;
+    case type_packedint:
+        ret.append("PACKED ");
+        if (type.isUnsigned())
+            ret.append("UNSIGNED");
+        else
+            ret.append("INTEGER");
+        break;
+    case type_filepos:
+    case type_swapint:
+        ret.append("BIG_ENDIAN ");
+        // fall into
+    case type_blob:
+    case type_int:
+    case type_keyedint:
+        if (type.isUnsigned())
+            ret.append("UNSIGNED");
+        else
+            ret.append("INTEGER");
+        ret.append(type.length);
+        break;
+    case type_real:
+        ret.appendf("REAL%d", type.length);
+        break;
+    case type_decimal:
+    {
+        if (type.isUnsigned())
+            ret.append("U");
+        ret.append("DECIMAL");
+        unsigned digits = type.getDecimalDigits();
+        unsigned precision = type.getDecimalPrecision();
+        ret.appendf("%d_%d", digits, precision);
+        break;
+    }
+    case type_qstring:
+        ret.append("Q");
+        goto string_suffix;
+    case type_varstring:
+        ret.append("VAR");
+        goto string_suffix;
+    case type_string:
+    string_suffix:
+        ret.append("STRING");
+        if (type.isFixedSize())
+            ret.append(type.length);
+        break;
+    case type_bitfield:
+        ret.appendf("BITFIELD%d", type.getBitfieldNumBits());
+        if (type.getBitfieldIntSize() != 8)
+            ret.appendf("_%d", type.getBitfieldIntSize());
+        break;
+    case type_data:
+        ret.append("DATA");
+        if (type.isFixedSize())
+            ret.append(type.length);
+        break;
+    case type_utf8:
+        ret.append("UTF8");
+        goto unicode_suffix;
+    case type_varunicode:
+        ret.append("VARUNICODE");
+        goto unicode_suffix;
+    case type_unicode:
+        ret.append("UNICODE");
+    unicode_suffix:
+        if (type.isFixedSize())
+            ret.append(type.length);
+        if (!isEmptyString(type.queryLocale()))
+            ret.appendf("_%s", type.queryLocale());
+        break;
+    case type_table:
+        ret.append("DATASET");
+        break;
+    case type_dictionary:
+        ret.append("DICTIONARY");
+        break;
+    case type_set:
+        ret.append("SET OF ");
+        getTypeName(ret, *type.queryChildType());
+        break;
+    case type_row:
+        ret.append("ROW");
+        break;
+    case type_record:
+        ret.append("RECORD");
+        break;
+    case type_ifblock:
+        ret.append("IFBLOCK");
+        break;
+    case type_alien:
+        ret.append("ALIEN");
+        break;
+    default:
+        throwUnexpected();
+    }
+    return ret;
+};
 
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -980,24 +1085,19 @@ extern ECLRTL_API void getFieldVal(size32_t & __lenResult,char * & __result, int
 {
     __lenResult = 0;
     __result = nullptr;
-    if (column >= 0)
+    if (column > 0)
     {
         const RtlRecord &r = metaVal.queryRecordAccessor(true);
-        if (column < r.getNumFields())
+        if (column <= r.getNumFields())
         {
             unsigned numOffsets = r.getNumVarFields() + 1;
             size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
             RtlRow offsetCalculator(r, row, numOffsets, variableOffsets);
-            offsetCalculator.getUtf8(__lenResult, __result, column);
+            offsetCalculator.getUtf8(__lenResult, __result, column-1);
         }
     }
 }
 
-extern ECLRTL_API int getFieldNum(const char *fieldName, IOutputMetaData &  metaVal)
-{
-    const RtlRecord r = metaVal.queryRecordAccessor(true);
-    return r.getFieldNum(fieldName);
-}
 enum FieldMatchType {
     // On a field, exactly one of the below is set, but translator returns a bitmap indicating
     // which were required (and we can restrict translation to allow some types but not others)
@@ -1554,13 +1654,14 @@ extern ECLRTL_API const IDynamicTransform *createRecordTranslator(const RtlRecor
     return new GeneralRecordTranslator(_destRecInfo, _srcRecInfo);
 }
 
+static const IDynamicTransform &lookupTransform(const RtlRecord &in, const RtlRecord &out);
+
 class TranslatedRowStream : public CInterfaceOf<IRowStream>
 {
 public:
     TranslatedRowStream(IRowStream *_inputStream, IEngineRowAllocator *_resultAllocator, const RtlRecord &outputRecord, const RtlRecord &inputRecord)
-    : inputStream(_inputStream), resultAllocator(_resultAllocator), translator(new GeneralRecordTranslator(outputRecord, inputRecord))
+    : inputStream(_inputStream), resultAllocator(_resultAllocator), translator(lookupTransform(inputRecord, outputRecord))
     {
-        translator->describe();
     }
     virtual const void *nextRow() override
     {
@@ -1578,7 +1679,7 @@ public:
         else
             eogSeen = false;
         RtlDynamicRowBuilder rowBuilder(resultAllocator);
-        size32_t len = translator->translate(rowBuilder, fieldCallback, (const byte *) inRow);
+        size32_t len = translator.translate(rowBuilder, fieldCallback, (const byte *) inRow);
         rtlReleaseRow(inRow);
         return rowBuilder.finalizeRowClear(len);
     }
@@ -1588,11 +1689,11 @@ public:
     }
     bool canTranslate() const
     {
-        return translator->canTranslate();
+        return translator.canTranslate();
     }
     bool needsTranslate() const
     {
-        return translator->needsTranslate();
+        return translator.needsTranslate();
     }
 
     UnexpectedVirtualFieldCallback fieldCallback; // I'm not sure if an non unexpected callback can be implemented
@@ -1600,27 +1701,10 @@ public:
 protected:
     Linked<IRowStream> inputStream;
     Linked<IEngineRowAllocator> resultAllocator;
-    Owned<const IDynamicTransform> translator;
-    unsigned numOffsets = 0;
-    size_t * variableOffsets = nullptr;
+    const IDynamicTransform &translator;
     bool eof = false;
     bool eogSeen = false;
 };
-
-extern ECLRTL_API IRowStream * transformRecord(IEngineRowAllocator * resultAllocator,IOutputMetaData &  metaInput,IRowStream * input)
-{
-    if (resultAllocator->queryOutputMeta()==&metaInput)
-        return LINK(input);
-    Owned<TranslatedRowStream> stream = new TranslatedRowStream(input, resultAllocator,
-                                                                resultAllocator->queryOutputMeta()->queryRecordAccessor(true),
-                                                                metaInput.queryRecordAccessor(true));
-    if (!stream->needsTranslate())
-        return LINK(input);
-    else if (!stream->canTranslate())
-        rtlFail(0, "Cannot translate record stream");
-    else
-        return stream.getClear();
-}
 
 // A key translator allows us to transform a RowFilter that refers to src to one that refers to dest.
 // Basically just a map of those fields with matching types.
@@ -1729,6 +1813,467 @@ extern ECLRTL_API const IKeyTranslator *createKeyTranslator(const RtlRecord &_de
     return new CKeyTranslator(_destRecInfo, _srcRecInfo);
 }
 
+//-----------------------------------------------------------------------------------------------------------
+
+/*
+ * data support - caching of translators per-thread
+ */
+
+class CachedTranslatorKey
+{
+public:
+    const RtlRecord &in;
+    const RtlRecord &out;
+    unsigned getHash() const { return 0; } // more!
+};
+
+class CachedTranslatorEntry : public CachedTranslatorKey
+{
+public:
+    CachedTranslatorEntry(CachedTranslatorKey _key, const IDynamicTransform *_transform)
+    : CachedTranslatorKey(_key), translator(_transform)
+    {
+    }
+    Owned<const IDynamicTransform> translator;
+};
+
+class TranslatorHashTable : public SuperHashTableOf<CachedTranslatorEntry, CachedTranslatorKey>
+{
+public:
+    TranslatorHashTable() : SuperHashTableOf<CachedTranslatorEntry, CachedTranslatorKey>(false) {}
+    ~TranslatorHashTable() { _releaseAll(); }
+
+protected:
+    virtual bool matchesFindParam(const void * _element, const void * _key, unsigned fphash) const override
+    {
+        const CachedTranslatorEntry * element = static_cast<const CachedTranslatorEntry *>(_element);
+        const CachedTranslatorKey * key = static_cast<const CachedTranslatorKey *>(_key);
+        return &element->in==&key->in && &element->out==&key->out;
+    }
+    virtual unsigned getHashFromElement(const void * et) const override
+    {
+        return static_cast<const CachedTranslatorEntry *>(et)->getHash();
+    }
+    virtual unsigned getHashFromFindParam(const void * fp) const override
+    {
+        return static_cast<const CachedTranslatorKey *>(fp)->getHash();
+    }
+    virtual const void * getFindParam(const void * et) const override { return et; }
+    virtual void onAdd(void *et) override {}
+    virtual void onRemove(void *et) override { delete static_cast<const CachedTranslatorEntry *>(et); }
+};
+
+class DynamicMetaEntry
+{
+public:
+    DynamicMetaEntry(unsigned _key, IOutputMetaData *_meta)
+    : key(_key), meta(_meta)
+    {
+    }
+    hash64_t key;
+    Owned<IOutputMetaData> meta;
+};
+
+
+class DynamicMetaHashTable : public SuperHashTableOf<DynamicMetaEntry, hash64_t>
+{
+public:
+    DynamicMetaHashTable() : SuperHashTableOf<DynamicMetaEntry, hash64_t>(false) {}
+    ~DynamicMetaHashTable() { _releaseAll(); }
+
+protected:
+    virtual bool matchesFindParam(const void * _element, const void * _key, unsigned fphash) const override
+    {
+        const DynamicMetaEntry * element = static_cast<const DynamicMetaEntry *>(_element);
+        hash64_t key = *static_cast<const hash64_t *>(_key);
+        return element->key==key;
+    }
+    virtual unsigned getHashFromElement(const void * et) const override
+    {
+        return (unsigned) static_cast<const DynamicMetaEntry *>(et)->key;
+    }
+    virtual unsigned getHashFromFindParam(const void * fp) const override
+    {
+        return *static_cast<const hash64_t *>(fp);
+    }
+    virtual const void * getFindParam(const void * et) const override
+    {
+        return &static_cast<const DynamicMetaEntry *>(et)->key;
+    }
+    virtual void onAdd(void *et) override {}
+    virtual void onRemove(void *et) override { delete static_cast<const DynamicMetaEntry *>(et); }
+};
+
+
+static __thread TranslatorHashTable* translatorCache;  // Cached per thread, so no locking needed
+static __thread DynamicMetaHashTable* metaCache;  // Cached per thread, so no locking needed
+static __thread ThreadTermFunc threadHookChain;
+
+static void releaseContext()
+{
+    if (translatorCache)
+    {
+        delete translatorCache;
+        translatorCache = NULL;
+    }
+    if (metaCache)
+    {
+        delete metaCache;
+        metaCache = NULL;
+    }
+    if (threadHookChain)
+    {
+        (*threadHookChain)();
+        threadHookChain = NULL;
+    }
+}
+
+static TranslatorHashTable *queryTranslatorCache()
+{
+    if (!translatorCache)
+    {
+        translatorCache = new TranslatorHashTable;
+        metaCache = new DynamicMetaHashTable;
+        threadHookChain = addThreadTermFunc(releaseContext);
+    }
+    return translatorCache;
+}
+
+static DynamicMetaHashTable *queryMetaCache()
+{
+    if (!translatorCache)
+    {
+        translatorCache = new TranslatorHashTable;
+        metaCache = new DynamicMetaHashTable;
+        threadHookChain = addThreadTermFunc(releaseContext);
+    }
+    return metaCache;
+}
+
+static const IDynamicTransform &lookupTransform(const RtlRecord &in, const RtlRecord &out)
+{
+    TranslatorHashTable *cache = queryTranslatorCache();
+    CachedTranslatorKey key = {in, out};
+    CachedTranslatorEntry *found = cache->find(&key);
+    if (found)
+        return *found->translator;
+    Owned<const IDynamicTransform> transformer = createRecordTranslator(out, in);
+    if (!transformer->canTranslate())
+        rtlFail(0, "Requested record translation not possible");
+    CachedTranslatorEntry *newEntry = new CachedTranslatorEntry(key, transformer.getLink());
+    cache->add(*newEntry);
+    return *transformer.get();
+}
+
+static IOutputMetaData &lookupMeta(size32_t lenTypeData, const void *typeData)
+{
+    MemoryBuffer b;
+    b.setBuffer(lenTypeData, const_cast<void *>(typeData), false);
+    byte format;
+    hash64_t hash;
+    b.read(format);
+    if (format != RTLTYPEINFO_FORMAT_1)
+        rtlFail(0, "Invalid serialized type information");
+    b.read(hash);
+    DynamicMetaHashTable *cache = queryMetaCache();
+    DynamicMetaEntry *found = cache->find(&hash);
+    if (found)
+        return *found->meta;
+    Owned<IOutputMetaData> meta = createTypeInfoOutputMetaData(b.reset(0), false, nullptr);
+    DynamicMetaEntry *newEntry = new DynamicMetaEntry(hash, meta.getLink());
+    cache->add(*newEntry);
+    return *meta.get();
+}
+
+
+extern ECLRTL_API IRowStream * transformDataset(IEngineRowAllocator *resultAllocator, IOutputMetaData &inmeta, IRowStream * input)
+{
+    IOutputMetaData &outmeta = *resultAllocator->queryOutputMeta();
+    if (&outmeta==&inmeta)
+        return LINK(input);
+    Owned<TranslatedRowStream> stream = new TranslatedRowStream(input, resultAllocator,
+                                                                outmeta.queryRecordAccessor(true),
+                                                                inmeta.queryRecordAccessor(true));
+    if (!stream->needsTranslate())
+        return LINK(input);
+    else
+        return stream.getClear();
+}
+
+extern ECLRTL_API byte *transformRecord(IEngineRowAllocator *resultAllocator, IOutputMetaData &outmeta, IOutputMetaData &inmeta, unsigned char const *inrow)
+{
+    // Dynamically translate from inmeta to outmeta
+    const RtlRecord &inFields = inmeta.queryRecordAccessor(true);
+    const RtlRecord &outFields = outmeta.queryRecordAccessor(true);
+    const IDynamicTransform &transformer = lookupTransform(inFields, outFields);
+    RtlDynamicRowBuilder rowBuilder(*resultAllocator);
+    UnexpectedVirtualFieldCallback fieldCallback;
+    size_t outlen = transformer.translate(rowBuilder, fieldCallback, inrow);
+    return (byte *) rowBuilder.finalizeRowClear(outlen);
+}
+
+extern ECLRTL_API void serializeRow(unsigned int &__lenResult, void * &__result, IOutputMetaData &dataFields, IOutputMetaData &inRecMeta, unsigned char const *inRec)
+{
+    // Dynamically translate from inrec to dataFields (serialized form)
+    const RtlRecord &outFields = dataFields.querySerializedDiskMeta()->queryRecordAccessor(true);
+    const RtlRecord &inFields = inRecMeta.queryRecordAccessor(true);
+    const IDynamicTransform &transformer = lookupTransform(inFields, outFields);
+    MemoryBuffer translated;
+    MemoryBufferBuilder aBuilder(translated, 0);
+    UnexpectedVirtualFieldCallback fieldCallback;
+    transformer.translate(aBuilder, fieldCallback, inRec);
+    __lenResult = translated.length();
+    __result = translated.detach();
+}
+
+extern ECLRTL_API void serializeRow(unsigned int &__lenResult, void * &__result, IOutputMetaData &inRecMeta, unsigned char const *inRec)
+{
+    serializeRow(__lenResult, __result, *inRecMeta.querySerializedDiskMeta(), inRecMeta, inRec);
+}
+
+extern ECLRTL_API byte * deserializeRow(IEngineRowAllocator * _resultAllocator, IOutputMetaData & dataFields, size32_t lenData, const void * data)
+{
+    // Dynamically translate from dataFields (serialized form) to dataFields
+    const RtlRecord &inFields = dataFields.querySerializedDiskMeta()->queryRecordAccessor(true);
+    const RtlRecord &outFields = dataFields.queryRecordAccessor(true);
+    const IDynamicTransform &transformer = lookupTransform(inFields, outFields);
+    unsigned numOffsets = inFields.getNumVarFields() + 1;
+    size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
+    RtlRow inRow(inFields, nullptr, numOffsets, variableOffsets);
+    inRow.setRow(data);  // MORE - pass in lenData too and have a variant of RtlRow that checks have not read too far
+
+    RtlDynamicRowBuilder rowBuilder(*_resultAllocator);
+    UnexpectedVirtualFieldCallback fieldCallback;
+    size_t outlen = transformer.translate(rowBuilder, fieldCallback, inRow);
+    return (byte *) rowBuilder.finalizeRowClear(outlen);
+}
+
+extern ECLRTL_API unsigned getFieldNum(IOutputMetaData & meta, const char *name)
+{
+    const RtlRecord &inFields = meta.querySerializedDiskMeta()->queryRecordAccessor(true);
+    unsigned fieldNum = inFields.getFieldNum(name);
+    return fieldNum+1;
+}
+
+extern ECLRTL_API void getFieldName(size32_t &__len, char *&__result, IOutputMetaData & meta, unsigned fieldNum)
+{
+    const RtlRecord &inFields = meta.queryRecordAccessor(true);
+    StringBuffer result;
+    if (fieldNum && fieldNum <= inFields.getNumFields())
+        result.append(inFields.queryName(fieldNum-1));
+    __len = result.length();
+    __result = result.detach();
+}
+
+extern ECLRTL_API void getFieldType(size32_t &__len, char *&__result, IOutputMetaData & meta, unsigned fieldNum)
+{
+    const RtlRecord &inFields = meta.queryRecordAccessor(true);
+    StringBuffer result;
+    if (fieldNum && fieldNum <= inFields.getNumFields())
+        getTypeName(result, *inFields.queryType(fieldNum-1));
+    __len = result.length();
+    __result = result.detach();
+}
+
+extern ECLRTL_API unsigned getFieldNum(unsigned int typeLen, const void *typeData, const char *fieldName)
+{
+    return getFieldNum(lookupMeta(typeLen, typeData), fieldName);
+}
+
+extern ECLRTL_API void getFieldName(size32_t &__len, char *&__result, unsigned int typeLen, const void *typeData, unsigned fieldNum)
+{
+    getFieldName(__len, __result, lookupMeta(typeLen, typeData), fieldNum);
+}
+extern ECLRTL_API void getFieldType(size32_t &__len, char *&__result, unsigned int typeLen, const void *typeData, unsigned fieldNum)
+{
+    getFieldType(__len, __result, lookupMeta(typeLen, typeData), fieldNum);
+}
+
+extern ECLRTL_API __int64 readFieldInt(IOutputMetaData & meta, const byte *inrow, unsigned fieldNum)
+{
+    const RtlRecord &inFields = meta.queryRecordAccessor(true);
+    if (!fieldNum || fieldNum > inFields.getNumFields())
+        rtlFail(0, "Field not found");
+    fieldNum--;  // Ecl code uses 1-based
+    unsigned numOffsets = inFields.getNumVarFields() + 1;
+    size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
+    RtlRow rowinfo(inFields, nullptr, numOffsets, variableOffsets);
+    rowinfo.setRow(inrow, fieldNum);
+    return rowinfo.getInt(fieldNum);
+}
+
+extern ECLRTL_API __int64 readSerializedInt(IOutputMetaData & meta, size32_t lenData, const void * data, unsigned fieldNum)
+{
+    IOutputMetaData &usemeta = *meta.querySerializedDiskMeta();
+    if (usemeta.getRecordSize(data) != lenData)
+        rtlFail(0, "Invalid serialized data");
+    return readFieldInt(usemeta, (const byte *) data, fieldNum);
+}
+
+extern ECLRTL_API double readFieldReal(IOutputMetaData & meta, const byte *inrow, unsigned fieldNum)
+{
+    const RtlRecord &inFields = meta.queryRecordAccessor(true);
+    if (!fieldNum || fieldNum > inFields.getNumFields())
+        rtlFail(0, "Field not found");
+    fieldNum--;  // Ecl code uses 1-based
+    unsigned numOffsets = inFields.getNumVarFields() + 1;
+    size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
+    RtlRow rowinfo(inFields, nullptr, numOffsets, variableOffsets);
+    rowinfo.setRow(inrow, fieldNum);
+    return rowinfo.getReal(fieldNum);
+}
+
+extern ECLRTL_API double readSerializedReal(IOutputMetaData & meta, size32_t lenData, const void * data, unsigned fieldNum)
+{
+    IOutputMetaData &usemeta = *meta.querySerializedDiskMeta();
+    if (usemeta.getRecordSize(data) != lenData)
+        rtlFail(0, "Invalid serialized data");
+    return readFieldReal(usemeta, (const byte *) data, fieldNum);
+}
+
+extern ECLRTL_API void readFieldString(size32_t &__len, char *&__result, IOutputMetaData &meta, unsigned char const *inrow, unsigned fieldNum)
+{
+    const RtlRecord &inFields = meta.queryRecordAccessor(true);
+    if (!fieldNum || fieldNum > inFields.getNumFields())
+        rtlFail(0, "Field not found");
+    fieldNum--;  // Ecl code uses 1-based
+    unsigned numOffsets = inFields.getNumVarFields() + 1;
+    size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
+    RtlRow rowinfo(inFields, nullptr, numOffsets, variableOffsets);
+    rowinfo.setRow(inrow, fieldNum);
+    rowinfo.getString(__len, __result, fieldNum);
+}
+
+extern ECLRTL_API void readFieldUtf8(unsigned int &__len, char *&__result, IOutputMetaData &meta, unsigned char const *inrow, unsigned fieldNum)
+{
+    const RtlRecord &inFields = meta.queryRecordAccessor(true);
+    if (!fieldNum || fieldNum > inFields.getNumFields())
+        rtlFail(0, "Field not found");
+    fieldNum--;  // Ecl code uses 1-based
+    unsigned numOffsets = inFields.getNumVarFields() + 1;
+    size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
+    RtlRow rowinfo(inFields, nullptr, numOffsets, variableOffsets);
+    rowinfo.setRow(inrow, fieldNum);
+    rowinfo.getUtf8(__len, __result, fieldNum);
+}
+
+extern ECLRTL_API void readFieldData(unsigned int &__len, void *&__result, IOutputMetaData &meta, unsigned char const *inrow, unsigned fieldNum)
+{
+    const RtlRecord &inFields = meta.queryRecordAccessor(true);
+    if (!fieldNum || fieldNum > inFields.getNumFields())
+        rtlFail(0, "Field not found");
+    fieldNum--;  // Ecl code uses 1-based
+    unsigned numOffsets = inFields.getNumVarFields() + 1;
+    size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
+    RtlRow rowinfo(inFields, nullptr, numOffsets, variableOffsets);
+    rowinfo.setRow(inrow, fieldNum+1);
+    __len = rowinfo.getSize(fieldNum);
+    __result = rtlMalloc(__len);
+    memcpy(__result, inrow + rowinfo.getOffset(fieldNum), __len);
+}
+
+extern ECLRTL_API bool readFieldBool(IOutputMetaData &meta, unsigned char const *inrow, unsigned fieldNum)
+{
+    const RtlRecord &inFields = meta.queryRecordAccessor(true);
+    if (!fieldNum || fieldNum > inFields.getNumFields())
+        rtlFail(0, "Field not found");
+    fieldNum--;  // Ecl code uses 1-based
+    unsigned numOffsets = inFields.getNumVarFields() + 1;
+    size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
+    RtlRow rowinfo(inFields, nullptr, numOffsets, variableOffsets);
+    rowinfo.setRow(inrow, fieldNum);
+    return rowinfo.getInt(fieldNum) != 0;  // Should there be a getBool?
+}
+
+extern ECLRTL_API void readSerializedString(unsigned int &__len, char *&__result, IOutputMetaData &inmeta, size32_t lenData,const void * data, unsigned fieldnum)
+{
+    IOutputMetaData &usemeta = *inmeta.querySerializedDiskMeta();
+    if (usemeta.getRecordSize(data) != lenData)
+        rtlFail(0, "Invalid serialized data");
+    readFieldString(__len, __result, usemeta, (const byte *) data, fieldnum);
+}
+
+extern ECLRTL_API void readSerializedUtf8(unsigned int &__len, char *&__result, IOutputMetaData &inmeta, size32_t lenData, const void * data, unsigned fieldnum)
+{
+    IOutputMetaData &usemeta = *inmeta.querySerializedDiskMeta();
+    if (usemeta.getRecordSize(data) != lenData)
+        rtlFail(0, "Invalid serialized data");
+    readFieldUtf8(__len, __result, usemeta, (const byte *) data, fieldnum);
+}
+
+extern ECLRTL_API void readSerializedData(unsigned int &__len, void *&__result, IOutputMetaData &inmeta, size32_t lenData, const void * data, unsigned fieldnum)
+{
+    IOutputMetaData &usemeta = *inmeta.querySerializedDiskMeta();
+    if (usemeta.getRecordSize(data) != lenData)
+        rtlFail(0, "Invalid serialized data");
+    readFieldData(__len, __result, usemeta, (const byte *)data, fieldnum);
+}
+
+extern ECLRTL_API bool readSerializedBool(IOutputMetaData &inmeta, size32_t lenData, const void * data, unsigned fieldnum)
+{
+    IOutputMetaData &usemeta = *inmeta.querySerializedDiskMeta();
+    if (usemeta.getRecordSize(data) != lenData)
+        rtlFail(0, "Invalid serialized data");
+    return readFieldBool(usemeta, (const byte *) data, fieldnum);
+}
+
+extern ECLRTL_API __int64 readSerializedInt(unsigned int typeLen, const void *typeData, size32_t lenData, const void * data, unsigned fieldNum)
+{
+    return readSerializedInt(lookupMeta(typeLen, typeData), lenData, data, fieldNum);
+}
+extern ECLRTL_API double readSerializedReal(unsigned int typeLen, const void *typeData, size32_t lenData, const void * data, unsigned fieldNum)
+{
+    return readSerializedReal(lookupMeta(typeLen, typeData), lenData, data, fieldNum);
+}
+extern ECLRTL_API void readSerializedString(unsigned int &__len, char *&__result, unsigned int typeLen, const void *typeData, size32_t lenData, const void * data, unsigned fieldNum)
+{
+    readSerializedString(__len, __result, lookupMeta(typeLen, typeData), lenData, data, fieldNum);
+}
+extern ECLRTL_API void readSerializedUtf8(unsigned int &__len, char *&__result, unsigned int typeLen, const void *typeData, size32_t lenData, const void * data, unsigned fieldNum)
+{
+    readSerializedUtf8(__len, __result, lookupMeta(typeLen, typeData), lenData, data, fieldNum);
+}
+extern ECLRTL_API void readSerializedData(unsigned int &__len, void *&__result, unsigned int typeLen, const void *typeData, size32_t lenData, const void * data, unsigned fieldNum)
+{
+    readSerializedData(__len, __result, lookupMeta(typeLen, typeData), lenData, data, fieldNum);
+}
+extern ECLRTL_API bool readSerializedBool(unsigned int typeLen, const void *typeData, size32_t lenData, const void * data, unsigned fieldNum)
+{
+    return readSerializedBool(lookupMeta(typeLen, typeData), lenData, data, fieldNum);
+}
+
+
+extern ECLRTL_API void getFieldNames(bool &isAll, unsigned int &len, void *&data, IOutputMetaData &inmeta)
+{
+    const RtlRecord &inFields = inmeta.queryRecordAccessor(true);
+    isAll = false;
+    unsigned numFields = inFields.getNumFields();
+    MemoryBuffer ret;
+    for (unsigned idx = 0; idx < numFields; idx++)
+    {
+        const char *name = inFields.queryName(idx);
+        size32_t namelen = strlen(name);
+        ret.append(namelen);
+        ret.append(namelen, name);
+    }
+    len = ret.length();
+    data = ret.detach();
+}
+
+extern ECLRTL_API void getFieldNames(bool &isAll, unsigned int &len, void *&data, unsigned int typeLen, const void *typeData)
+{
+    getFieldNames(isAll, len, data, lookupMeta(typeLen, typeData));
+}
+
+extern ECLRTL_API unsigned getNumFields(IOutputMetaData &inmeta)
+{
+    return inmeta.queryRecordAccessor(true).getNumFields();
+}
+
+extern ECLRTL_API unsigned getNumFields(unsigned int typeLen, const void *typeData)
+{
+    return getNumFields(lookupMeta(typeLen, typeData));
+}
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -1781,4 +2326,5 @@ unsigned __int64 LocalVirtualFieldCallback::getLocalFilePosition(const void * ro
 {
     return localfilepos;
 }
+
 
