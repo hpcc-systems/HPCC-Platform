@@ -2437,6 +2437,20 @@ public:
                                ".:: scope1::file*",
                                NULL                                             // terminator
                              };
+
+        const char *translatedLfns[][2] = {
+                               { ".::fname", ".::fname" },
+                               { "fname", ".::fname" },
+                               { "~.::fname", ".::fname" },
+                               { ".::.::.::fname", ".::fname" },
+                               { ".::.::.::sname::.::.::fname", "sname::fname" },
+                               { "~.::.::scope2::.::.::.::fname", "scope2::fname" },
+                               { "{.::.::multitest1f1, .::.::multitest1f2}", "{.::multitest1f1,.::multitest1f2}" },
+                               { ".::.::.::.sname.::.::.fname.", ".sname.::.fname." },
+                               { "~foreign::192.168.16.1::.::scope1::file1", "foreign::192.168.16.1::scope1::file1" },
+                               { "{~foreign::192.168.16.1::.::.::multi1, ~foreign::192.168.16.2::multi2::.::fname}", "{foreign::192.168.16.1::multi1,foreign::192.168.16.2::multi2::fname}" },
+                               { nullptr, nullptr }                             // terminator
+                             };
         PROGLOG("Checking valid logical filenames");
         unsigned nlfn=0;
         for (;;)
@@ -2454,30 +2468,39 @@ public:
             {
                 VStringBuffer err("Logical filename '%s' failed.", lfn);
                 EXCLOG(e, err.str());
-                CPPUNIT_FAIL(err.str());
                 e->Release();
+                CPPUNIT_FAIL(err.str());
             }
         }
-        PROGLOG("Checking invalid logical filenames");
+        PROGLOG("Checking translations");
         nlfn = 0;
         for (;;)
         {
-            const char *lfn = invalidLfns[nlfn++];
-            if (NULL == lfn)
+            const char **entry = translatedLfns[nlfn++];
+            if (nullptr == entry[0])
                 break;
-            PROGLOG("lfn = %s", lfn);
+            const char *lfn = entry[0];
+            const char *expected = entry[1];
+            PROGLOG("lfn = %s, expect = %s", lfn, expected);
             CDfsLogicalFileName dlfn;
+            StringBuffer err;
             try
             {
                 dlfn.set(lfn);
-                VStringBuffer err("Logical filename '%s' passed and should have failed.", lfn);
-                ERRLOG("%s", err.str());
-                CPPUNIT_FAIL(err.str());
+                const char *result = dlfn.get();
+                if (!streq(result, expected))
+                    err.appendf("Logical filename '%s' should have translated to '%s', but result was '%s'.", lfn, expected, result);
             }
             catch (IException *e)
             {
-                EXCLOG(e, "Expected error:");
+                err.appendf("Logical filename '%s' failed: ", lfn);
+                e->errorMessage(err);
                 e->Release();
+            }
+            if (err.length())
+            {
+                ERRLOG("%s", err.str());
+                CPPUNIT_FAIL(err.str());
             }
         }
     }
@@ -2514,15 +2537,15 @@ public:
          const char *validInternalLfns[][2] = {
                  //     input file name                    expected normalized file name
                  {"~foreign::192.168.16.1::scope1::file1", "foreign::192.168.16.1::scope1::file1"},
-                 {".::scope1::file",                       ".::scope1::file"},
+                 {".::scope1::file",                       "scope1::file"},
                  {"~ scope1 :: scope2 :: file  ",          "scope1::scope2::file"},
-                 {". :: scope1 :: file nine",              ".::scope1::file nine"},
-                 {". :: scope1 :: file ten  ",             ".::scope1::file ten"},
-                 {". :: scope1 :: file",                   ".::scope1::file"},
+                 {". :: scope1 :: file nine",              "scope1::file nine"},
+                 {". :: scope1 :: file ten  ",             "scope1::file ten"},
+                 {". :: scope1 :: file",                   "scope1::file"},
                  {"~scope1::file@cluster1",                "scope1::file"},
                  {"~scope::^C^a^S^e^d",                    "scope::^c^a^s^e^d"},
                  {"~scope::CaSed",                         "scope::cased"},
-                 {"~scope::^CaSed",                         "scope::^cased"},
+                 {"~scope::^CaSed",                        "scope::^cased"},
                  {nullptr,                                 nullptr}   // terminator
                  };
 

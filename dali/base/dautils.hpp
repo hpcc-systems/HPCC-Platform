@@ -61,6 +61,7 @@ class da_decl CDfsLogicalFileName
     bool allowospath;
     bool allowWild;
     SocketEndpoint foreignep;
+    bool selfScopeTranslation = true; // default behaviour is to translate self scopes, e.g. .::.::scope::.::name -> scope::name
 
 public:
     CDfsLogicalFileName();
@@ -75,6 +76,7 @@ public:
     bool setFromXPath(const char *xpath);
     void clear();
     bool isSet() const;
+    void enableSelfScopeTranslation(bool onOff) { selfScopeTranslation = onOff; }
     /*
      * Foreign files are distributed files whose meta data is stored on a foreign
      * Dali Server, so their names are resolved externally.
