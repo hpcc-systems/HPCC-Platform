@@ -7707,6 +7707,8 @@ IHqlExpression * createDefaultAssertMessage(IHqlExpression * cond)
     IHqlExpression * rhs = cond->queryChild(1);
     if (!lhs->queryType()->isScalar() || !rhs->queryType()->isScalar())
         return createConstant(temp.append("Assert failed: ").append(suffix));
+    if (lhs->queryType()->getTypeCode() == type_data || rhs->queryType()->getTypeCode() == type_data)
+        return createConstant(temp.append("Assert failed: ").append(suffix));
 
     StringBuffer prefix;
     prefix.append("Assert (");
