@@ -2212,6 +2212,296 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
           </informaltable></para>
       </sect2>
 
+      <sect2 id="CT_CLI_SyntaxECLQueriesImport" role="brk">
+        <title>ecl queries import</title>
+
+        <para><emphasis role="bold">ecl queries import &lt;target&gt;
+        &lt;file&gt; [--clone-active-state] [--replace]
+        [options]</emphasis></para>
+
+        <para>Example:</para>
+
+        <programlisting>ecl queries import roxie1 myqueryset.xml
+</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry>ecl queries import</entry>
+
+                  <entry>Imports the contents of a queryset previously
+                  exported to disk</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Actions</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>import</entry>
+
+                  <entry>Imports a queryset from a file</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>The target cluster to import queries to</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>--all</entry>
+
+                  <entry>Copy both active and inactive queries. If omitted,
+                  only active queries are imported.</entry>
+                </row>
+
+                <row>
+                  <entry>--replace</entry>
+
+                  <entry>Replace entire existing queryset</entry>
+                </row>
+
+                <row>
+                  <entry>--queries</entry>
+
+                  <entry>Filter query ids to select for import</entry>
+                </row>
+
+                <row>
+                  <entry>--no-files</entry>
+
+                  <entry>Specifies to not copy DFS file information for files
+                  referenced by the query</entry>
+                </row>
+
+                <row>
+                  <entry>--daliip=&lt;IP&gt;</entry>
+
+                  <entry>Remote Dali DFS to use for copying file
+                  information</entry>
+                </row>
+
+                <row>
+                  <entry>--source-process=&lt;value&gt;</entry>
+
+                  <entry>Process cluster to copy files from</entry>
+                </row>
+
+                <row>
+                  <entry>--clone-active-state</entry>
+
+                  <entry>Make copied queries active if active on
+                  source</entry>
+                </row>
+
+                <row>
+                  <entry>-O, --overwrite</entry>
+
+                  <entry>Completely replace existing DFS file information
+                  (dangerous)</entry>
+                </row>
+
+                <row>
+                  <entry>--update-super-files</entry>
+
+                  <entry>Update local DFS superfiles if remote DALI has
+                  changed</entry>
+                </row>
+
+                <row>
+                  <entry>--update-clone-from</entry>
+
+                  <entry>Update local clone from location if remote DALI has
+                  changed</entry>
+                </row>
+
+                <row>
+                  <entry>--dont-append-cluster</entry>
+
+                  <entry>Use only to avoid locking issues due to adding
+                  cluster to file</entry>
+                </row>
+
+                <row>
+                  <entry>--allow-foreign</entry>
+
+                  <entry>Specifies to allow the use of foreign files in a
+                  Roxie query. If a Roxie query references foreign files and
+                  this is not enabled, publish will fail.</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server=&lt;IP&gt;</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl, --ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>--port=&lt;port&gt;</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLQueriesExport" role="brk">
+        <title>ecl queries export</title>
+
+        <para><emphasis role="bold">ecl queries export &lt;target&gt;
+        [options]</emphasis></para>
+
+        <para>Example:</para>
+
+        <programlisting>ecl queries export roxie1 --output=myqueryset.xml
+</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry>ecl queries export</entry>
+
+                  <entry>saves backup information about a given queryset to a
+                  file.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Actions</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>export</entry>
+
+                  <entry>Exports queryset information to a file</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>Name of target cluster to export from</entry>
+                </row>
+
+                <row>
+                  <entry>-O, --output=&lt;filename&gt;</entry>
+
+                  <entry>Filename to save exported backup information to
+                  (optional)</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>--active-only</entry>
+
+                  <entry>Only include active queries in the exported
+                  queryset.</entry>
+                </row>
+
+                <row>
+                  <entry>--protect</entry>
+
+                  <entry>Protect the workunits for the included
+                  queries</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server=&lt;IP&gt;</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl, --ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>--port=&lt;port&gt;</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
       <sect2 id="eclpackageadd" role="brk">
         <title>ecl packagemap add</title>
 
@@ -4614,8 +4904,8 @@ ecl getname -wu W201407*
         <para>Use the zapgen command to create a Zipped Analysis Package
         (Z.A.P.) containing collecting system information about a workunit and
         encapsulating it into a shareable package. It is a useful tool for
-        reporting errors, inconsistencies, or other unexpected behavior.
-        </para>
+        reporting errors, inconsistencies, or other unexpected
+        behavior.</para>
 
         <para>Examples:</para>
 
