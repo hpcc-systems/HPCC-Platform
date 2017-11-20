@@ -104,6 +104,8 @@ public:
         return meta->queryRecordAccessor(expand);
     }
 
+    const RtlTypeInfo * queryTypeInfo() const               { return meta->queryTypeInfo(); }
+
 //cast operators.
     inline IOutputMetaData * queryOriginal() const          { return meta; }
     inline operator IRecordSize * () const                  { return meta; }

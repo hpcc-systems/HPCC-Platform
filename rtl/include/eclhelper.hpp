@@ -1699,7 +1699,7 @@ struct IHThorKeyedJoinBaseArg : public IHThorArg
     virtual IOutputMetaData * queryIndexRecordSize() = 0;            // Expected layout
     virtual IOutputMetaData * queryProjectedIndexRecordSize() = 0;   // Projected layout
     virtual void createSegmentMonitors(IIndexReadContext *ctx, const void *lhs) = 0;
-    virtual bool indexReadMatch(const void * indexRow, const void * inputRow, unsigned __int64 keyedFpos, IBlobProvider * blobs) = 0;
+    virtual bool indexReadMatch(const void * indexRow, const void * inputRow, IBlobProvider * blobs) = 0;
     virtual unsigned getJoinLimit() = 0;                                        // if a key joins more than this limit no records are output (0 = no limit)
     virtual unsigned getKeepLimit() = 0;                                        // limit to number of matches that are kept (0 = no limit)
     virtual unsigned getIndexFormatCrc() = 0;
@@ -1711,7 +1711,7 @@ struct IHThorKeyedJoinBaseArg : public IHThorArg
 
     // Inside the fetch remote activity
     virtual bool fetchMatch(const void * diskRow, const void * inputRow) = 0;
-    virtual size32_t extractJoinFields(ARowBuilder & rowBuilder, const void * diskRowOr, unsigned __int64 keyedFpos, IBlobProvider * blobs) = 0;
+    virtual size32_t extractJoinFields(ARowBuilder & rowBuilder, const void * diskRowOr, IBlobProvider * blobs) = 0;
     virtual IOutputMetaData * queryJoinFieldsRecordSize() = 0;
 
     // Back at the server
@@ -1724,9 +1724,11 @@ struct IHThorKeyedJoinBaseArg : public IHThorArg
     virtual unsigned getMatchAbortLimit() = 0;
     virtual void onMatchAbortLimitExceeded()                { }
 
+    //keyedFpos is always 0
     virtual size32_t onFailTransform(ARowBuilder & rowBuilder, const void * _dummyRight, const void * _origRow, unsigned __int64 keyedFpos, IException * e) { return 0; }
 //Join:
 //Denormalize:
+    //The _filepos field is used for full keyed join to pass in the fileposition.  It should really use the disk IThorDiskCallback interface.
     virtual size32_t transform(ARowBuilder & rowBuilder, const void * _joinFields, const void * _origRow, unsigned __int64 keyedFpos, unsigned counter) { return 0; }
 //Denormalize group:
     virtual size32_t transform(ARowBuilder & rowBuilder, const void * _joinFields, const void * _origRow, unsigned _numRows, const void * * _rows) { return 0; }
@@ -2246,7 +2248,6 @@ interface IThorDiskCallback : extends IFilePositionProvider
 
 interface IThorIndexCallback : extends IInterface
 {
-    virtual unsigned __int64 getFilePosition(const void * row) = 0;
     virtual byte * lookupBlob(unsigned __int64 id) = 0;         // return reference, not freed by code generator, can dispose once transform() has returned.
 };
 

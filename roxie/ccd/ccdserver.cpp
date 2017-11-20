@@ -12044,6 +12044,7 @@ public:
     virtual void onExecute()
     {
         bool isVariable = helper.queryDiskRecordSize()->isVariableSize();
+        size32_t fileposSize = hasTrailingFileposition(helper.queryDiskRecordSize()->queryTypeInfo()) ? sizeof(offset_t) : 0;
         size32_t maxDiskRecordSize;
         if (isVariable)
         {
@@ -12053,7 +12054,7 @@ public:
                 maxDiskRecordSize = KEYBUILD_MAXLENGTH; // Current default behaviour, could be improved in the future
         }
         else
-            maxDiskRecordSize = helper.queryDiskRecordSize()->getFixedSize();
+            maxDiskRecordSize = helper.queryDiskRecordSize()->getFixedSize()-fileposSize;
 
         if (maxDiskRecordSize > KEYBUILD_MAXLENGTH)
             throw MakeStringException(99, "Index maximum record length (%d) exceeds 32k internal limit", maxDiskRecordSize);
@@ -25505,7 +25506,7 @@ public:
                                     const byte *indexRow = tlk->queryKeyBuffer();
                                     size_t fposOffset = tlk->queryRowSize() - sizeof(offset_t);
                                     offset_t fpos = rtlReadBigUInt8(indexRow + fposOffset);
-                                    if (helper.indexReadMatch(extracted, indexRow, fpos, &adapter))
+                                    if (helper.indexReadMatch(extracted, indexRow, &adapter))
                                     {
                                         KeyedJoinHeader *rhs = (KeyedJoinHeader *) ctx->queryRowManager().allocate(KEYEDJOIN_RECORD_SIZE(0), activityId);
                                         rhs->fpos = fpos;
@@ -25879,8 +25880,8 @@ public:
         unsigned outSize;
         try
         {   
-            outSize = except ? helper.onFailTransform(rowBuilder, left, right, fpos_or_count, except) : 
-                      (activityKind == TAKkeyeddenormalizegroup) ? helper.transform(rowBuilder, left, right, (unsigned) fpos_or_count, group) : 
+            outSize = except ? helper.onFailTransform(rowBuilder, left, right, fpos_or_count, except) :
+                      (activityKind == TAKkeyeddenormalizegroup) ? helper.transform(rowBuilder, left, right, (unsigned)fpos_or_count, group) :
                       helper.transform(rowBuilder, left, right, fpos_or_count, counter);
         }
         catch (IException *E)
@@ -25955,7 +25956,7 @@ public:
                 while (idx < matched)
                 {
                     const KeyedJoinHeader *rhs = jg->queryRow(idx);
-                    added += doTransform(left, &rhs->rhsdata, rhs->fpos, NULL, NULL, idx+1);
+                    added += doTransform(left, &rhs->rhsdata, 0, NULL, NULL, idx+1);
                     if (added==keepLimit)
                         break;
                     idx++;
@@ -26348,13 +26349,13 @@ public:
                                     const byte *indexRow = tlk->queryKeyBuffer();
                                     size_t fposOffset = tlk->queryRowSize() - sizeof(offset_t);
                                     offset_t fpos = rtlReadBigUInt8(indexRow + fposOffset);
-                                    if (helper.indexReadMatch(extracted, indexRow, fpos, &adapter))
+                                    if (helper.indexReadMatch(extracted, indexRow, &adapter))
                                     {
                                         RtlDynamicRowBuilder rb(joinFieldsAllocator, true); 
                                         CPrefixedRowBuilder pb(KEYEDJOIN_RECORD_SIZE(0), rb);
                                         accepted++;
                                         KLBlobProviderAdapter adapter(tlk);
-                                        size32_t joinFieldsSize = helper.extractJoinFields(pb, indexRow, fpos, &adapter);
+                                        size32_t joinFieldsSize = helper.extractJoinFields(pb, indexRow, &adapter);
                                         KeyedJoinHeader *rec = (KeyedJoinHeader *) rb.getUnfinalizedClear(); // lack of finalize ok as unserialized data here.
                                         rec->fpos = fpos;
                                         rec->thisGroup = jg;

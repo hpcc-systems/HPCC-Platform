@@ -333,7 +333,7 @@ IOutputMetaData * CThorKeyedJoinArg::queryProjectedDiskRecordSize() { return NUL
 unsigned __int64 CThorKeyedJoinArg::extractPosition(const void * _right) { return 0; }
 
 bool CThorKeyedJoinArg::leftCanMatch(const void * inputRow) { return true; }
-bool CThorKeyedJoinArg::indexReadMatch(const void * indexRow, const void * inputRow, unsigned __int64 keyedFpos, IBlobProvider * blobs) { return true; }
+bool CThorKeyedJoinArg::indexReadMatch(const void * indexRow, const void * inputRow, IBlobProvider * blobs) { return true; }
 
 unsigned __int64 CThorKeyedJoinArg::getRowLimit() { return (unsigned __int64) -1; }
 void CThorKeyedJoinArg::onLimitExceeded() { }

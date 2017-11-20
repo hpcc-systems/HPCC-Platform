@@ -44,12 +44,21 @@ const RtlTypeInfo *FieldTypeInfoStruct::createRtlTypeInfo(IThorIndexCallback *_c
     case type_keyedint:
         ret = new RtlKeyedIntTypeInfo(fieldType, length, childType);
         break;
-    case type_blob:  // MORE - will need its own type!
+    case type_blob:  // MORE - will need its own type (see code below)
     case type_int:
         ret = new RtlIntTypeInfo(fieldType, length);
         break;
+#if 0 // Later when implemented
+    case type_blob:
+        ret = new RtlBlobTypeInfo(fieldType, length, childType, _callback);
+        break;
+#endif
     case type_filepos:
-        ret = new RtlFileposTypeInfo(fieldType, length, childType, _callback);
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+        ret = new RtlSwapIntTypeInfo(fieldType, length);
+#else
+        ret = new RtlIntTypeInfo(fieldType, length);
+#endif
         break;
     case type_real:
         ret = new RtlRealTypeInfo(fieldType, length);
@@ -358,6 +367,7 @@ public:
             case type_packedint:
             case type_bitfield:
                 needsTranslation = true;
+                break;
             }
         }
         if (needsTranslation)
@@ -413,7 +423,11 @@ private:
             unsigned flags = origType->fieldType & ~RFTMkind;
             unsigned length = origType->length;
             if (isLastField)
-                return new RtlFileposTypeInfo(type_filepos | flags, length, origType, nullptr);
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+                return new RtlSwapIntTypeInfo(type_filepos|type_unsigned, sizeof(offset_t));
+#else
+                return new RtlIntTypeInfo(type_filepos|type_unsigned, sizeof(offset_t));
+#endif
 #if __BYTE_ORDER == __LITTLE_ENDIAN
             else if (type == type_int || origType->isSigned())
 #else
@@ -874,9 +888,9 @@ private:
                 const RtlFieldInfo *field = *fields++;
                 if (!field)
                     break;
-                if (field->type->getType() == type_filepos)  // probably blobs too?
+                if (field->type->getType() == type_blob)
                 {
-                    static_cast<RtlFileposTypeInfo *>(const_cast<RtlTypeInfo *>(field->type))->setCallback(callback);
+                    static_cast<RtlBlobTypeInfo *>(const_cast<RtlTypeInfo *>(field->type))->setCallback(callback);
                 }
             }
         }
@@ -1257,11 +1271,11 @@ private:
         // This code COULD move into rtlfield.cpp?
         switch(destType->getType())
         {
-        case type_filepos:
         case type_boolean:
         case type_int:
         case type_swapint:
         case type_packedint:
+        case type_filepos:
             offset = destType->buildInt(builder, offset, field, sourceType->getInt(source));
             break;
         case type_real:
@@ -1443,7 +1457,7 @@ private:
                         }
                     }
                 }
-                else if (type->fieldType==sourceType->fieldType && type->fieldType != type_filepos)
+                else if (type->fieldType==sourceType->fieldType)
                 {
                     if (type->length==sourceType->length)
                     {

@@ -139,19 +139,14 @@ class TransformCallback : public CInterface, implements IThorIndexCallback
 {
 public:
     TransformCallback() { keyManager = NULL; };
-    IMPLEMENT_IINTERFACE
+    IMPLEMENT_IINTERFACE_O
 
 //IThorIndexCallback
-    virtual unsigned __int64 getFilePosition(const void * row)
-    {
-        throwUnexpected();
-    }
-    virtual byte * lookupBlob(unsigned __int64 id) 
+    virtual byte * lookupBlob(unsigned __int64 id) override
     { 
         size32_t dummy; 
         return (byte *) keyManager->loadBlob(id, dummy); 
     }
-
 
 public:
     void setManager(IKeyManager * _manager)
@@ -746,9 +741,10 @@ void CHThorIndexReadActivityBase::verifyIndex(IKeyIndex * idx)
     if(superIterator)
         layoutTrans.set(layoutTransArray.item(superIndex));
     keySize = idx->keySize();
+    //The index rows always have the filepositions appended, but the ecl may not include a field
+    unsigned fileposSize = idx->hasSpecialFileposition() && !hasTrailingFileposition(eclKeySize.queryTypeInfo()) ? sizeof(offset_t) : 0;
     if (eclKeySize.isFixedSize())
     {
-        unsigned fileposSize = idx->hasSpecialFileposition() ? sizeof(offset_t) : 0;
         if(layoutTrans)
             layoutTrans->checkSizes(df->queryLogicalName(), eclKeySize.getFixedSize(), keySize);
         else
@@ -3549,7 +3545,7 @@ public:
             else
             {
                 RtlDynamicRowBuilder extractBuilder(queryRightRowAllocator()); 
-                size32_t size = helper.extractJoinFields(extractBuilder, row, fetch->pos, NULL);
+                size32_t size = helper.extractJoinFields(extractBuilder, row, NULL);
                 void * ret = (void *) extractBuilder.finalizeRowClear(size);
                 fetch->ms->setPendingRightMatch(fetch->seq, ret);
             }
@@ -3951,12 +3947,12 @@ public:
         }
         KLBlobProviderAdapter adapter(manager);
         byte const * rhs = manager->queryKeyBuffer();
-        size_t fposOffset = manager->queryRowSize() - sizeof(offset_t);
-        offset_t fpos = rtlReadBigUInt8(rhs + fposOffset);
-        if(indexReadMatch(jg->queryLeft(), rhs, fpos, &adapter))
+        if(indexReadMatch(jg->queryLeft(), rhs, &adapter))
         {
             if(needsDiskRead)
             {
+                size_t fposOffset = manager->queryRowSize() - sizeof(offset_t);
+                offset_t fpos = rtlReadBigUInt8(rhs + fposOffset);
                 jg->notePending();
                 offset_t seq = ms->addRightPending();
                 parts->addRow(ms, fpos, seq);
@@ -3968,7 +3964,7 @@ public:
                 else
                 {
                     RtlDynamicRowBuilder rowBuilder(queryRightRowAllocator()); 
-                    size32_t size = helper.extractJoinFields(rowBuilder, rhs, fpos, &adapter);
+                    size32_t size = helper.extractJoinFields(rowBuilder, rhs, &adapter);
                     void * ret = (void *)rowBuilder.finalizeRowClear(size);
                     ms->addRightMatch(ret);
                 }
@@ -3981,10 +3977,10 @@ public:
         return false;
     }
 
-    bool indexReadMatch(const void * indexRow, const void * inputRow, unsigned __int64 keyedFpos, IBlobProvider * blobs)
+    bool indexReadMatch(const void * indexRow, const void * inputRow, IBlobProvider * blobs)
     {
         CriticalBlock proc(imatchCrit);
-        return helper.indexReadMatch(indexRow, inputRow, keyedFpos, blobs);
+        return helper.indexReadMatch(indexRow, inputRow, blobs);
     }
 
     IEngineRowAllocator * queryRightRowAllocator()
@@ -4047,9 +4043,9 @@ protected:
 
     virtual void verifyIndex(IDistributedFile * f, IKeyIndex * idx, IRecordLayoutTranslator * trans)
     {
+        unsigned fileposSize = idx->hasSpecialFileposition() && !hasTrailingFileposition(eclKeySize.queryTypeInfo()) ? sizeof(offset_t) : 0;
         if (eclKeySize.isFixedSize())
         {
-            unsigned fileposSize = idx->hasSpecialFileposition() ? sizeof(offset_t) : 0;
             if(trans)
                 trans->checkSizes(f->queryLogicalName(), eclKeySize.getFixedSize(), idx->keySize());
             else

@@ -136,13 +136,13 @@ struct ECLRTL_API RtlIntTypeInfo : public RtlTypeInfoBase
     virtual unsigned hash(const byte *self, unsigned inhash) const override;
 };
 
-struct ECLRTL_API RtlFileposTypeInfo : public RtlTypeInfoBase
+struct ECLRTL_API RtlBlobTypeInfo : public RtlTypeInfoBase
 {
     // Used for values stored in the fieldpos field of indexes
-    constexpr inline RtlFileposTypeInfo(unsigned _fieldType, unsigned _length, const RtlTypeInfo *_child, IThorIndexCallback *_callback)
+    constexpr inline RtlBlobTypeInfo(unsigned _fieldType, unsigned _length, const RtlTypeInfo *_child, IThorIndexCallback *_callback)
     : RtlTypeInfoBase(_fieldType, _length), child(_child), callback(_callback)
     {}
-    constexpr inline RtlFileposTypeInfo(unsigned _fieldType, unsigned _length, const RtlTypeInfo *_child)
+    constexpr inline RtlBlobTypeInfo(unsigned _fieldType, unsigned _length, const RtlTypeInfo *_child)
     : RtlTypeInfoBase(_fieldType, _length), child(_child), callback(nullptr)
     {}
     virtual void doDelete() const final override { delete this; }
@@ -680,5 +680,6 @@ struct ECLRTL_API RtlFieldStrInfo : public RtlFieldInfo
 extern unsigned ECLRTL_API countFields(const RtlFieldInfo * const * fields);
 extern int ECLRTL_API compareFields(const RtlFieldInfo * const * cur, const byte * left, const byte * right, bool excludePayload = false);
 extern unsigned ECLRTL_API hashFields(const RtlFieldInfo * const * cur, const byte *self, unsigned inhash, bool excludePayload = false);
-
+extern bool ECLRTL_API hasTrailingFileposition(const RtlFieldInfo * const * fields);
+extern bool ECLRTL_API hasTrailingFileposition(const RtlTypeInfo * type);
 #endif

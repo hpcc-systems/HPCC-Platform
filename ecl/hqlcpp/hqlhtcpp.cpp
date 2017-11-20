@@ -3944,7 +3944,7 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
             childType = buildRtlType(arguments, ::queryRecordType(type));
             break;
         }
-    case type_filepos:
+    case type_blob:
     case type_set:
     case type_keyedint:
         arguments.append(",&");

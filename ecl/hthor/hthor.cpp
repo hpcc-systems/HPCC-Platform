@@ -1084,6 +1084,9 @@ void CHThorIndexWriteActivity::execute()
         buildLayoutMetadata(metadata);
         unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;
         size32_t keyMaxSize = helper.queryDiskRecordSize()->getRecordSize(NULL);
+        if (hasTrailingFileposition(helper.queryDiskRecordSize()->queryTypeInfo()))
+            keyMaxSize -= sizeof(offset_t);
+
         Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, keyMaxSize, nodeSize, helper.getKeyedSize(), 0);
         class BcWrapper : implements IBlobCreator
         {

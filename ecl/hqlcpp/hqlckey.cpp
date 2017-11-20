@@ -505,7 +505,7 @@ void KeyedJoinInfo::buildExtractIndexReadFields(BuildCtx & ctx)
 void KeyedJoinInfo::buildExtractJoinFields(ActivityInstance & instance)
 {
     //virtual size32_t extractJoinFields(void *dest, const void *diskRow, IBlobProvider * blobs) = 0;
-    MemberFunction func(translator, instance.startctx, "virtual size32_t extractJoinFields(ARowBuilder & crSelf, const void *_left, unsigned __int64 _filepos, IBlobProvider * blobs) override");
+    MemberFunction func(translator, instance.startctx, "virtual size32_t extractJoinFields(ARowBuilder & crSelf, const void *_left, IBlobProvider * blobs) override");
     translator.ensureRowAllocated(func.ctx, "crSelf");
     if (needToExtractJoinFields())
     {
@@ -518,10 +518,6 @@ void KeyedJoinInfo::buildExtractJoinFields(ActivityInstance & instance)
         {
             OwnedHqlExpr left = createSelector(no_left, raw, joinSeq);
             translator.associateBlobHelper(func.ctx, left, "blobs");
-
-            OwnedHqlExpr fileposExpr = getFilepos(left, false);
-            OwnedHqlExpr fileposVar = createVariable("_filepos", fileposExpr->getType());
-            func.ctx.associateExpr(fileposExpr, fileposVar);
         }
 
         translator.doBuildTransformBody(func.ctx, extractJoinFieldsTransform, selfCursor);
@@ -547,13 +543,10 @@ void KeyedJoinInfo::buildIndexReadMatch(BuildCtx & ctx)
 
     if (matchExpr)
     {
-        MemberFunction func(translator, ctx, "virtual bool indexReadMatch(const void * _left, const void * _right, unsigned __int64 _filepos, IBlobProvider * blobs) override");
+        MemberFunction func(translator, ctx, "virtual bool indexReadMatch(const void * _left, const void * _right, IBlobProvider * blobs) override");
 
         func.ctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
         func.ctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
-
-        OwnedHqlExpr fileposExpr = getFilepos(rawKey, false);
-        OwnedHqlExpr fileposVar = createVariable("_filepos", fileposExpr->getType());
 
         if (translator.queryOptions().spotCSE)
             matchExpr.setown(spotScalarCSE(matchExpr, NULL, translator.queryOptions().spotCseInIfDatasetConditions));
@@ -562,7 +555,6 @@ void KeyedJoinInfo::buildIndexReadMatch(BuildCtx & ctx)
 
         translator.bindTableCursor(func.ctx, keyAccessDataset, "left", no_left, joinSeq);
         translator.bindTableCursor(func.ctx, rawKey, "right");
-        func.ctx.associateExpr(fileposExpr, fileposVar);
 
         translator.buildReturn(func.ctx, matchExpr);
     }
@@ -703,11 +695,12 @@ void KeyedJoinInfo::buildTransformBody(BuildCtx & ctx, IHqlExpression * transfor
 
     newTransform.setown(replaceMemorySelectorWithSerializedSelector(newTransform, rhsRecord, no_right, joinSeq, diskAtom));
 
-    OwnedHqlExpr fileposExpr = getFilepos(extractedRight, false);
+    OwnedHqlExpr fileposExpr;
+    IHqlExpression * fileposField = isFullJoin() ? queryVirtualFileposField(file->queryRecord()) : nullptr;
+    fileposExpr.setown(getFilepos(extractedRight, false));
     if (extractJoinFieldsTransform)
     {
-        IHqlExpression * fileposField = isFullJoin() ? queryVirtualFileposField(file->queryRecord()) : queryLastField(key->queryRecord());
-        if (keyHasFileposition && fileposField && (expr->getOperator() != no_denormalizegroup))
+        if (fileposField && (expr->getOperator() != no_denormalizegroup))
         {
             HqlMapTransformer fileposMapper;
             OwnedHqlExpr select = createSelectExpr(LINK(serializedRight), LINK(fileposField));
@@ -740,8 +733,11 @@ void KeyedJoinInfo::buildTransformBody(BuildCtx & ctx, IHqlExpression * transfor
 
     //Map the file position field in the file to the incoming parameter
     //MORE: This doesn't cope with local/global file position distinctions.
-    OwnedHqlExpr fileposVar = createVariable("_filepos", makeIntType(8, false));
-    ctx.associateExpr(fileposExpr, fileposVar);
+    if (fileposField && (expr->getOperator() != no_denormalizegroup))
+    {
+        OwnedHqlExpr fileposVar = createVariable("_filepos", makeIntType(8, false));
+        ctx.associateExpr(fileposExpr, fileposVar);
+    }
     translator.doBuildTransformBody(ctx, newTransform, selfCursor);
 
     if (isFullJoin())
@@ -997,7 +993,6 @@ void KeyedJoinInfo::optimizeExtractJoinFields()
 {
     HqlExprArray fieldsAccessed;
     bool doExtract = false;
-    IHqlExpression * fileposField = NULL;
     OwnedHqlExpr right = createSelector(no_right, expr->queryChild(1), joinSeq);
     IHqlExpression * rightRecord = right->queryRecord();
     OwnedHqlExpr extractedRecord;
@@ -1009,15 +1004,11 @@ void KeyedJoinInfo::optimizeExtractJoinFields()
         OwnedHqlExpr rows = createDataset(no_rows, LINK(right), LINK(expr->queryAttribute(_rowsid_Atom)));
         if (isFullJoin())
         {
-            //unwindFields(fieldsAccessed, file->queryRecord());
             extractedRecord.set(file->queryRecord());
         }
         else
         {
-//          unwindFields(fieldsAccessed, key->queryRecord());
             extractedRecord.set(key->queryRecord());
-            if (keyHasFileposition)
-                fileposField = queryLastField(key->queryRecord());
         }
     }
     else
@@ -1036,12 +1027,9 @@ void KeyedJoinInfo::optimizeExtractJoinFields()
         else
         {
             IHqlExpression * keyRecord = key->queryRecord();
-            IHqlExpression * filepos = queryLastField(keyRecord);
-            if (filepos && keyHasFileposition)
-                fieldsAccessed.zap(*filepos);
 
             if (translator.getTargetClusterType() != HThorCluster)
-                doExtract = (fieldsAccessed.ordinality() < getFlatFieldCount(keyRecord)-1);
+                doExtract = (fieldsAccessed.ordinality() < getFlatFieldCount(keyRecord));
 
             if (!doExtract && recordContainsBlobs(keyRecord))
                 doExtract = true;
@@ -1071,9 +1059,7 @@ void KeyedJoinInfo::optimizeExtractJoinFields()
                 {
                     IHqlExpression * curMemoryField = extractedRecord->queryChild(i);
                     IHqlExpression * curSerializedField = extractJoinFieldsRecord->queryChild(i);
-                    if (curMemoryField == fileposField)
-                        assigns.append(*createAssign(createSelectExpr(LINK(self), LINK(curSerializedField)), getFilepos(left, false)));
-                    else if (!curMemoryField->isAttribute())
+                    if (!curMemoryField->isAttribute())
                         assigns.append(*createAssign(createSelectExpr(LINK(self), LINK(curSerializedField)), createSelectExpr(LINK(left), LINK(curMemoryField))));      // no
                 }
             }
@@ -1089,9 +1075,7 @@ void KeyedJoinInfo::optimizeExtractJoinFields()
                 {
                     IHqlExpression * curMemoryField = extractedRecord->queryChild(i);
                     IHqlExpression * curSerializedField = extractJoinFieldsRecord->queryChild(i);
-                    if (curMemoryField == fileposField)
-                        assigns.append(*createAssign(createSelectExpr(LINK(self), LINK(curSerializedField)), getFilepos(left, false)));
-                    else if (!curMemoryField->isAttribute())
+                    if (!curMemoryField->isAttribute())
                     {
                         OwnedHqlExpr tgt = createSelectExpr(LINK(self), LINK(curSerializedField));
                         OwnedHqlExpr src = createSelectExpr(LINK(memorySelf), LINK(curMemoryField));
