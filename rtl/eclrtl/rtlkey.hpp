@@ -28,9 +28,7 @@ enum KeySegmentMonitorSerializeType
     KSMST_SINGLEBIGSIGNEDKEYSEGMENTMONITOR,
     KSMST_SINGLELITTLESIGNEDKEYSEGMENTMONITOR,
     KSMST_CSINGLELITTLEKEYSEGMENTMONITOR,
-    KSMST_DUMMYKEYSEGMENTMONITOR,
     KSMST_OVERRIDEABLEKEYSEGMENTMONITOR,
-    KSMST_VAROFFSETKEYSEGMENTMONITOR,
     KSMST_max
 };
 
@@ -80,48 +78,39 @@ ECLRTL_API int memcmplittlesigned(const void *l, const void *r, unsigned size);
 
 class RtlRow;
 
-// In the parameter names below, "expanded" means it's a pointer to a "key buffer" value, while
-// "raw" means it's a pointer to a disk record. For indexes, the two are the same, but for
-// disk files where we may be using segmonitors as a way to serialize remote filters and to build on-the-fly indexes,
-// the distinction is significant.
-// To support varoffset segmonitors, all "raw" values are passed as const RtlRow *. We do not support varoffset segmonitors in
-// on-the-fly in-memory indexes, meaning that the functions taking "expanded" params do not need to support offset translation
-// and the varoffset segmonitor does not implement these functions.
-
 interface IKeySegmentMonitor : public IInterface
 {
 public:
     virtual bool increment(void * expandedRow) const = 0;
     virtual void setLow(void * expandedRow) const = 0;
+    virtual void setHigh(void * expandedRow) const = 0;
     virtual void endRange(void * expandedRow) const = 0;
+
     virtual bool matchesBuffer(const void * expandedRow) const = 0;
     virtual bool matches(const RtlRow * rawRow) const = 0;
-    virtual IKeySegmentMonitor *merge(IKeySegmentMonitor *with) const = 0;  // merge with adjacent, if possible
-    virtual IKeySegmentMonitor *combine(const IKeySegmentMonitor *with) const = 0; // combine with overlapping (compulsory)
-    virtual IKeySegmentMonitor * split(unsigned splitSize) = 0;
+
     virtual bool isWild() const = 0;
+    virtual unsigned getFieldIdx() const = 0;
     virtual unsigned getOffset() const = 0;
     virtual unsigned getSize() const = 0;
-    virtual void *queryValue() const = 0;
-    virtual int docompare(const void * expandedLeft, const void * rawRight) const = 0;
-//  virtual unsigned getFlags() const = 0;
     virtual bool isEmpty() const = 0;
     virtual bool equivalentTo(const IKeySegmentMonitor &other) const = 0;
     virtual bool isSigned() const = 0;
     virtual bool isLittleEndian() const = 0;
-    virtual int docompareraw(const void * rawLeft, const void * rawRight) const = 0; // NOTE - no RtlRow version since only used for in-memory index builds
+
+    virtual int docompare(const void * expandedLeft, const void * rawRight) const = 0;
     virtual unsigned queryHashCode() const = 0;
     virtual bool isWellKeyed() const = 0;
-    virtual bool setOffset(unsigned _offset) = 0;
     virtual bool isOptional() const = 0;
 
-    virtual void setHigh(void * expandedRow) const = 0;
     virtual bool isSimple() const = 0;
     virtual void copy(void *expandedRow, const void *rawRow) const = 0;
     virtual MemoryBuffer &serialize(MemoryBuffer &mb) const = 0;
     virtual KeySegmentMonitorSerializeType serializeType() const = 0;
     virtual IKeySegmentMonitor *clone() const = 0;
     virtual unsigned numFieldsRequired() const = 0;
+
+    virtual bool setOffset(unsigned _offset) = 0;  // Used by old record layout translator - to be removed at some point
 };
 
 interface IOverrideableKeySegmentMonitor  : public IKeySegmentMonitor
@@ -148,19 +137,6 @@ public:
     virtual void setMergeBarrier(unsigned offset) = 0;
 };
 
-interface IKeySegmentOffsetTranslator : public IInterface
-{
-    virtual const void * getSegmentBase(const void * row) const = 0;
-    virtual const char * queryFactoryName() const = 0;
-};
-
-interface IKeySegmentFormatTranslator : public IInterface
-{
-    virtual void extractField(void * target, const void * row) const = 0;
-    virtual const char * queryFactoryName() const = 0;
-    virtual unsigned queryHashCode() const = 0;
-};
-
 ECLRTL_API IStringSet *createRtlStringSet(size32_t size);
 ECLRTL_API IStringSet *createRtlStringSetEx(size32_t size, bool bigEndian, bool isSigned);
 ECLRTL_API IStringSet *createRtlStringValue(size32_t size, const char * value);
@@ -169,21 +145,18 @@ ECLRTL_API IStringSet *createRtlStringValue(size32_t size, const char * value);
 ECLRTL_API IStringSet *rtlUnionSet(IStringSet * lhs, IStringSet * rhs);
 ECLRTL_API IStringSet *rtlIntersectSet(IStringSet * lhs, IStringSet * rhs);
 
-ECLRTL_API IKeySegmentMonitor *createKeySegmentMonitor(bool optional, IStringSet *set, unsigned _offset, unsigned _size);
-ECLRTL_API IKeySegmentMonitor *createEmptyKeySegmentMonitor(bool optional, unsigned _offset, unsigned _size);
-ECLRTL_API IKeySegmentMonitor *createWildKeySegmentMonitor(unsigned _offset, unsigned _size);
-ECLRTL_API IKeySegmentMonitor *createDummyKeySegmentMonitor(unsigned _offset, unsigned _size, bool isSigned, bool isLittleEndian);
-ECLRTL_API IKeySegmentMonitor *createSingleKeySegmentMonitor(bool optional, unsigned _offset, unsigned _size, const void * value);
+// Various types of KeySegmentMonitor, called from generated code
+
+ECLRTL_API IKeySegmentMonitor *createKeySegmentMonitor(bool optional, IStringSet *set, unsigned _fieldIdx, unsigned _offset, unsigned _size);
+ECLRTL_API IKeySegmentMonitor *createEmptyKeySegmentMonitor(bool optional, unsigned _fieldIdx, unsigned _offset, unsigned _size);
+ECLRTL_API IKeySegmentMonitor *createWildKeySegmentMonitor(unsigned _fieldIdx, unsigned _offset, unsigned _size);
+ECLRTL_API IKeySegmentMonitor *createDummyKeySegmentMonitor(unsigned _fieldIdx, unsigned _offset, unsigned _size, bool isSigned, bool isLittleEndian);
+ECLRTL_API IKeySegmentMonitor *createSingleKeySegmentMonitor(bool optional, unsigned _fieldIdx, unsigned _offset, unsigned _size, const void * value);
+ECLRTL_API IKeySegmentMonitor *createSingleBigSignedKeySegmentMonitor(bool optional, unsigned _fieldIdx, unsigned offset, unsigned size, const void * value);
+ECLRTL_API IKeySegmentMonitor *createSingleLittleSignedKeySegmentMonitor(bool optional, unsigned _fieldIdx, unsigned offset, unsigned size, const void * value);
+ECLRTL_API IKeySegmentMonitor *createSingleLittleKeySegmentMonitor(bool optional, unsigned _fieldIdx, unsigned offset, unsigned size, const void * value);
+
 ECLRTL_API IOverrideableKeySegmentMonitor *createOverrideableKeySegmentMonitor(IKeySegmentMonitor *base);
-ECLRTL_API IKeySegmentMonitor *createSingleBigSignedKeySegmentMonitor(bool optional, unsigned offset, unsigned size, const void * value);
-ECLRTL_API IKeySegmentMonitor *createSingleLittleSignedKeySegmentMonitor(bool optional, unsigned offset, unsigned size, const void * value);
-ECLRTL_API IKeySegmentMonitor *createSingleLittleKeySegmentMonitor(bool optional, unsigned offset, unsigned size, const void * value);
-
-//takes over ownership of base
-ECLRTL_API IKeySegmentMonitor *createNewVarOffsetKeySegmentMonitor(IKeySegmentMonitor * base, unsigned fieldIdx);
-
-//takes over ownership of both arguments
-ECLRTL_API IKeySegmentMonitor *createTranslatedKeySegmentMonitor(IKeySegmentMonitor * base, unsigned offset, IKeySegmentFormatTranslator * translator);
 
 ECLRTL_API IKeySegmentMonitor *deserializeKeySegmentMonitor(MemoryBuffer &mb);
 ECLRTL_API void deserializeSet(IStringSet & set, size32_t minRecordSize, const RtlTypeInfo * fieldType, const char * filter);

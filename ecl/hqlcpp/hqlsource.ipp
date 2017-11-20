@@ -80,6 +80,7 @@ struct BuildMonitorState
     BuildMonitorState(BuildCtx & _funcctx, const char * _listName) : funcctx(_funcctx) 
     { 
         listName = _listName; 
+        curFieldIdx = 0;
         curOffset = 0;
         wildOffset = (unsigned) -1;
         numActiveSets = 0;
@@ -105,6 +106,7 @@ struct BuildMonitorState
     bool doneImplicitWarning;
     bool warnedAllConditionsWild;
     bool wildWasKeyed;
+    unsigned curFieldIdx;
     unsigned curOffset;
     unsigned wildOffset;
 };
@@ -114,32 +116,28 @@ enum MonitorFilterKind { NoMonitorFilter, MonitorFilterSkipEmpty, MonitorFilterS
 struct KeySelectorInfo
 {
 public:
-    KeySelectorInfo(KeyedKind _keyedKind, IHqlExpression * _selector, IHqlExpression * _expandedSelector, size32_t _offset, size32_t _size, bool _mapOffset, bool _isComputed)
+    KeySelectorInfo(KeyedKind _keyedKind, IHqlExpression * _selector, IHqlExpression * _expandedSelector, unsigned _fieldIdx, size32_t _offset, size32_t _size)
     {
         keyedKind = _keyedKind; 
         selector = _selector; 
-        expandedSelector = _expandedSelector; 
+        expandedSelector = _expandedSelector;
+        fieldIdx = _fieldIdx;
         offset = _offset; 
         size = _size;
-        expandNeeded = (selector->queryType() != expandedSelector->queryType());
-        mapOffset = _mapOffset;
-        isComputed = _isComputed;
     }
 
     IHqlExpression * selector;
     IHqlExpression * expandedSelector;
+    unsigned fieldIdx;
     size32_t offset;
     size32_t size;
     KeyedKind keyedKind;
-    bool expandNeeded;
-    bool mapOffset;
-    bool isComputed;
 };
 
 class MonitorExtractor
 {
 public:
-    MonitorExtractor(IHqlExpression * _tableExpr, HqlCppTranslator & _translator, int _numKeyableFields, bool _allowTranslatedConds);
+    MonitorExtractor(IHqlExpression * _tableExpr, HqlCppTranslator & _translator, int _numKeyableFields, bool isDiskRead);
 
     void appendFilter(IHqlExpression * expr)                { keyed.appendPostFilter(expr); }
     void buildSegments(BuildCtx & ctx, const char * listName, bool _ignoreUnkeyed);
@@ -164,10 +162,7 @@ public:
     bool createGroupingMonitor(BuildCtx ctx, const char * listName, IHqlExpression * select, unsigned & maxOffset);
 
 protected:
-    void buildArbitaryKeySegment(BuildMonitorState & buildState, BuildCtx & ctx, unsigned curSize, IHqlExpression * condition);
     void buildEmptyKeySegment(BuildMonitorState & buildState, BuildCtx & ctx, KeySelectorInfo & selectorInfo);
-    void buildWildKeySegment(BuildMonitorState & buildState, BuildCtx & ctx, KeySelectorInfo & selectorInfo);
-    void buildWildKeySegment(BuildMonitorState & buildState, BuildCtx & ctx, unsigned offset, unsigned size);
     void buildKeySegment(BuildMonitorState & buildState, BuildCtx & ctx, unsigned whichField, unsigned curSize);
     void buildKeySegmentExpr(BuildMonitorState & buildState, KeySelectorInfo & selectorInfo, BuildCtx & ctx, const char * target, IHqlExpression & thisKey, MonitorFilterKind filterKind);
     void buildKeySegmentCompareExpr(BuildMonitorState & buildState, KeySelectorInfo & selectorInfo, BuildCtx & ctx, const char * requiredSet, IHqlExpression & thisKey);
@@ -187,8 +182,6 @@ protected:
     void expandKeyableFields();
     void expandSelects(IHqlExpression * expr, IHqlSimpleScope * expandedScope, IHqlExpression * keySelector, IHqlExpression * expandedSelector);;
     bool extractOrFilter(KeyConditionInfo & matches, IHqlExpression * filter, KeyedKind keyedKind);
-    void generateFormatWrapping(StringBuffer & createMonitorText, IHqlExpression * selector, IHqlExpression * expandedSelector, unsigned curOffset);
-    void generateOffsetWrapping(StringBuffer & createMonitorText, IHqlExpression * selector);
     IHqlExpression * getMonitorValueAddress(BuildCtx & ctx, IHqlExpression * value);
     IHqlExpression * getRangeLimit(ITypeInfo * fieldType, IHqlExpression * lengthExpr, IHqlExpression * value, int whichBoundary);
     IHqlExpression * invertTransforms(IHqlExpression * left, IHqlExpression * right);
@@ -201,8 +194,8 @@ protected:
     bool okToKey(IHqlExpression * select, KeyedKind keyedKind);
     IHqlExpression * queryKeyableSelector(IHqlExpression * expr);
     IHqlExpression * querySimpleJoinValue(IHqlExpression * field);
-    void extractCompareInformation(BuildCtx & ctx, IHqlExpression * expr, SharedHqlExpr & compare, SharedHqlExpr & normalized, IHqlExpression * expandedSelector, bool isTranslated);
-    void extractCompareInformation(BuildCtx & ctx, IHqlExpression * lhs, IHqlExpression * value, SharedHqlExpr & compare, SharedHqlExpr & normalized, IHqlExpression * expandedSelector, bool isTranslated);
+    void extractCompareInformation(BuildCtx & ctx, IHqlExpression * expr, SharedHqlExpr & compare, SharedHqlExpr & normalized, IHqlExpression * expandedSelector);
+    void extractCompareInformation(BuildCtx & ctx, IHqlExpression * lhs, IHqlExpression * value, SharedHqlExpr & compare, SharedHqlExpr & normalized, IHqlExpression * expandedSelector);
     IHqlExpression * unwindConjunction(HqlExprArray & matches, IHqlExpression * expr);
 
 protected:
@@ -238,7 +231,6 @@ protected:
     HqlExprCopyArray noMergeSelects;    // don't merge these fields (even for wildcards) because they are separate stepping fields.
     unsigned firstOffsetField;          // first field where the keyed offset is adjusted
     bool onlyHozedCompares;
-    bool allowTranslatedConds;
     bool ignoreUnkeyed;
     bool cleanlyKeyedExplicitly;
     bool keyedExplicitly;

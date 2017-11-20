@@ -508,7 +508,7 @@ void CRecordLayoutTranslator::createDiskSegmentMonitors(SegmentMonitorContext co
             //fall through
 
         case FieldMapping::None:
-            monitor.setown(createWildKeySegmentMonitor(diskOffset, size));
+            monitor.setown(createWildKeySegmentMonitor(diskFieldNum, diskOffset, size));
             break;
 
         case FieldMapping::ChildDataset:
@@ -542,15 +542,10 @@ size32_t CRecordLayoutTranslator::transformRow(RowTransformContext * ctx, byte c
 void ExpandedSegmentMonitorList::append(IKeySegmentMonitor * monitor)
 {
     if(owner->failure) return;
-    while(monitor->getSize() > owner->activityKeySizes[monitors.ordinality()])
+    if(monitor->getSize() > owner->activityKeySizes[monitors.ordinality()])
     {
-        Owned<IKeySegmentMonitor> split = monitor->split(owner->activityKeySizes[monitors.ordinality()]);
-        if(!split)
-        {
-            owner->failure.setown(makeFailure(IRecordLayoutTranslator::Failure::UnsupportedFilter)->append("Unsupported filter (segment monitor) type (was larger than keyed field and unsplittable)"));
-            return;
-        }
-        monitors.append(*split.getLink());
+        owner->failure.setown(makeFailure(IRecordLayoutTranslator::Failure::UnsupportedFilter)->append("Unsupported filter (segment monitor) type (was larger than keyed field)"));
+        return;
     }
     if(monitor->getSize() < owner->activityKeySizes[monitors.ordinality()])
     {

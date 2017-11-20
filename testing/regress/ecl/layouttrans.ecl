@@ -15,9 +15,12 @@
     limitations under the License.
 ############################################################################## */
 
-//version multiPart=true,version=1
-//version multiPart=true,version=2
-//version multiPart=true,version=3
+#if (True)
+OUTPUT('Temporarily disabled');
+#else
+//noversion multiPart=true,version=1
+//noversion multiPart=true,version=2
+//noversion multiPart=true,version=3
 
 import ^ as root;
 multiPart := #IFDEFINED(root.multiPart, true);
@@ -61,3 +64,4 @@ SEQUENTIAL(
     OUTPUT(SORT(JOIN(ds, DG_FetchIndex1Alt1, LEFT.Lname = RIGHT.Lname), record), {Fname, Lname}),
     OUTPUT(SORT(JOIN(ds, DG_FetchIndex1Alt2, LEFT.Lname = RIGHT.Lname), record), {Fname, Lname})
 );
+#end

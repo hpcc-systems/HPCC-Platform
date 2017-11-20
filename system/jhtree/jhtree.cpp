@@ -110,7 +110,7 @@ size32_t SegMonitorList::getSize() const
 void SegMonitorList::checkSize(size32_t keyedSize, char const * keyname)
 {
     size32_t segSize = getSize();
-    if (segSize > keyedSize)
+    if (segSize != keyedSize)
     {
         StringBuffer err;
         err.appendf("Key size mismatch on key %s - key size is %u, expected %u", keyname, keyedSize, getSize());
@@ -118,8 +118,6 @@ void SegMonitorList::checkSize(size32_t keyedSize, char const * keyname)
         EXCLOG(e, err.str());
         throw e;
     }
-    else if (segSize < keyedSize)
-        segMonitors.append(*createWildKeySegmentMonitor(segSize, keyedSize-segSize));
 }
 
 void SegMonitorList::setLow(unsigned segno, void *keyBuffer) const
@@ -215,44 +213,18 @@ unsigned SegMonitorList::lastFullSeg() const
     return ret;
 }
 
-void SegMonitorList::finish()
+void SegMonitorList::finish(unsigned keyedSize) // MORE - probably need to know the record layout here, if wilds are to be added properly.
 {
     if (modified)
     {
-        unsigned len = segMonitors.length();
-        unsigned curOffset = 0;
-        unsigned curSize = 0;
-        if (len)
+        size32_t segSize = getSize();
+        if (segSize < mergeBarrier)
         {
-            IKeySegmentMonitor *current = &segMonitors.item(0);
-            curOffset = current->getOffset();
-            curSize = current->getSize();
-            for (unsigned seg = 1; seg < len; seg++)
-            {
-                IKeySegmentMonitor *next = &segMonitors.item(seg);
-                unsigned nextOffset = next->getOffset();
-                unsigned nextSize = next->getSize();
-                assertex(curOffset + curSize == nextOffset) ;
-                IKeySegmentMonitor *merged = NULL;
-                if (nextOffset != mergeBarrier)
-                    merged = current->merge(next);
-                if (merged)
-                {
-                    current = merged;
-                    segMonitors.replace(*current, seg-1);
-                    segMonitors.remove(seg);
-                    curSize += nextSize;
-                    seg--;
-                    len--;
-                }
-                else
-                {
-                    current = next;
-                    curOffset = nextOffset;
-                    curSize = nextSize;
-                }
-            }
+            segMonitors.append(*createWildKeySegmentMonitor(0, segSize, mergeBarrier-segSize));  // MORE - field number is needed, but that requires layout info
+            segSize = mergeBarrier;
         }
+         if (segSize < keyedSize)
+            segMonitors.append(*createWildKeySegmentMonitor(0, segSize, keyedSize-segSize));  // MORE - field number is needed, but that requires layout info
         recalculateCache();
         modified = false;
     }
@@ -294,81 +266,40 @@ void SegMonitorList::serialize(MemoryBuffer &mb) const
 void SegMonitorList::append(IKeySegmentMonitor *segment)
 {
     modified = true;
+    unsigned fieldIdx = segment->getFieldIdx();
     unsigned offset = segment->getOffset();
     unsigned size = segment->getSize();
-    if (mergeBarrier)
+#if 0
+    // Eventually we will want something like this:
+    while (segMonitors.length() < fieldIdx)
     {
-        // check if we need to split
-        if (offset < mergeBarrier && offset+size > mergeBarrier)
-        {
-            IKeySegmentMonitor *split = segment->split(mergeBarrier - offset);
-            assertex(split);
-            append(split);   // note - recursive call
-            append(segment);
-            return;
-        }
+        unsigned idx = segMonitors.length();
+        IKeySegmentMonitor * before = createWildKeySegmentMonitor(idx, field(idx));
     }
+#else
+    // But as we don't have field info yet, and we don't care about it yet, this will do
+    unsigned lastOffset = 0;
     if (segMonitors.length())
     {
         unsigned lpos = segMonitors.length()-1;
         IKeySegmentMonitor &last = segMonitors.item(lpos);
-        if (last.getOffset() + last.getSize() == offset)
+        lastOffset = last.getOffset() + last.getSize();
+    }
+    assertex(lastOffset <= offset);
+    if (lastOffset < offset && needWild)
+    {
+        if (mergeBarrier && lastOffset < mergeBarrier && offset > mergeBarrier)
         {
-            segMonitors.append(*segment);
+            segMonitors.append(*createWildKeySegmentMonitor(0, lastOffset, mergeBarrier-lastOffset));
+            segMonitors.append(*createWildKeySegmentMonitor(0, mergeBarrier, offset-mergeBarrier));
         }
         else
         {
-            // we need to combine new segmonitor with existing segmonitors
-            assertex (offset + size <= last.getOffset() + last.getSize());   // no holes should ever be created...
-            if (!segment->isWild())  // X and wild is always X
-            {
-                // Find segmonitor that overlaps the new one, splitting if necessary
-                unsigned idx = 0;
-                while (segMonitors.isItem(idx))
-                {
-                    IKeySegmentMonitor &existing = segMonitors.item(idx);
-                    unsigned existingOffset = existing.getOffset();
-                    unsigned existingSize = existing.getSize();
-                    if (existingOffset <= offset && existingOffset+existingSize > offset)
-                    {
-                        // There is some overlap ...
-                        if (existingOffset < offset)
-                        {
-                            // split existing at start
-                            IKeySegmentMonitor *splitExisting = existing.split(offset-existingOffset);
-                            segMonitors.add(*splitExisting, idx);
-                            // now loop around to handle second half of existing
-                        }
-                        else if (size > existingSize)
-                        {
-                            // split new, merge first half into existing, and loop around to merge second half
-                            Owned<IKeySegmentMonitor> splitNew = segment->split(existingSize);
-                            IKeySegmentMonitor *combined = existing.combine(splitNew);
-                            segMonitors.replace(*combined, idx);
-                        }
-                        else if (size < existingSize)
-                        {
-                            // split existing, then merge new into first half
-                            Owned<IKeySegmentMonitor> split = existing.split(size); // leaves existing in the array as the tail
-                            IKeySegmentMonitor *combined = segment->combine(split);
-                            segMonitors.add(*combined, idx);
-                            break;
-                        }
-                        else // perfect overlap
-                        {
-                            IKeySegmentMonitor *combined = segment->combine(&existing);
-                            segMonitors.add(*combined, idx);
-                            break;
-                        }
-                    }
-                    idx++;
-                }
-            }
-            segment->Release();
+            segMonitors.append(*createWildKeySegmentMonitor(0, lastOffset, offset-lastOffset));
         }
     }
-    else
-        segMonitors.append(*segment);
+#endif
+    segMonitors.append(*segment);
 }
 
 bool SegMonitorList::matched(void *keyBuffer, unsigned &lastMatch) const
@@ -553,7 +484,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CKeyLevelManager(IKeyIndex * _key, IContextLogger *_ctx)
+    CKeyLevelManager(IKeyIndex * _key, IContextLogger *_ctx) : segs(true)
     {
         ctx = _ctx;
         numsegs = 0;
@@ -653,8 +584,7 @@ public:
             {
                 started = true;
                 numsegs = segs.ordinality();
-                if (numsegs)
-                    segs.checkSize(keyedSize, keyName.get());
+                segs.checkSize(keyedSize, keyName.get());
             }
             if (!crappyHack)
             {
@@ -668,7 +598,7 @@ public:
 
     virtual void releaseSegmentMonitors()
     {
-        segs.segMonitors.kill();    
+        segs.reset();
         started = false;
         if(layoutTransSegCtx)
             layoutTransSegCtx->reset();
@@ -982,6 +912,7 @@ public:
 
     virtual void finishSegmentMonitors()
     {
+        segs.finish(keyedSize);
         if(transformSegs)
         {
             layoutTrans->createDiskSegmentMonitors(*layoutTransSegCtx, segs);
@@ -993,7 +924,6 @@ public:
                 throw MakeStringExceptionDirect(0, err.str());
             }
         }
-        segs.finish();
     }
 };
 
@@ -2419,7 +2349,6 @@ class CKeyMerger : public CKeyLevelManager
             }
             IKeySegmentMonitor *override = createOverrideableKeySegmentMonitor(LINK(&seg));
             segs.segMonitors.replace(*override, idx);
-
         }
         if (sortFromSeg == -1)
             assertex(!"Attempting to sort from offset that is not on a segment boundary"); // MORE - can use the information that we have earlier to make sure not merged
@@ -2934,7 +2863,11 @@ public:
     {
         CKeyLevelManager::finishSegmentMonitors();
         if (sortFieldOffset)
+        {
+            if (keyedSize)
+                segs.checkSize(keyedSize, "[merger]"); // Ensures trailing KSM is setup
             replicateForTrailingSort();
+        }
     }
 };
 
@@ -3030,14 +2963,14 @@ class IKeyManagerTest : public CppUnit::TestFixture
             Owned<IStringSet> sset1 = createStringSet(7);
             sset1->addRange("0000003", "0000003");
             sset1->addRange("0000005", "0000006");
-            tlk1->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 7));
+            tlk1->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 0, 7));
             Owned<IStringSet> sset2 = createStringSet(3);
             sset2->addRange("010", "010");
             sset2->addRange("030", "033");
             Owned<IStringSet> sset3 = createStringSet(3);
             sset3->addRange("999", "XXX");
             sset3->addRange("000", "002");
-            tlk1->append(createKeySegmentMonitor(false, sset2.getLink(), 7, 3));
+            tlk1->append(createKeySegmentMonitor(false, sset2.getLink(), 1, 7, 3));
             tlk1->finishSegmentMonitors();
 
             tlk1->reset();
@@ -3066,8 +2999,8 @@ class IKeyManagerTest : public CppUnit::TestFixture
             Owned <IKeyManager> tlk2 = createKeyMerger(NULL, 7, NULL);
             tlk2->setKey(keyset);
             tlk2->deserializeCursorPos(mb);
-            tlk2->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 7));
-            tlk2->append(createKeySegmentMonitor(false, sset2.getLink(), 7, 3));
+            tlk2->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 0, 7));
+            tlk2->append(createKeySegmentMonitor(false, sset2.getLink(), 1, 7, 3));
             tlk2->finishSegmentMonitors();
             tlk2->reset(true);
             ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000003032", 10)==0);
@@ -3081,8 +3014,8 @@ class IKeyManagerTest : public CppUnit::TestFixture
 
             Owned <IKeyManager> tlk3 = createKeyMerger(NULL, 7, NULL);
             tlk3->setKey(keyset);
-            tlk3->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 7));
-            tlk3->append(createKeySegmentMonitor(false, sset2.getLink(), 7, 3));
+            tlk3->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 0, 7));
+            tlk3->append(createKeySegmentMonitor(false, sset2.getLink(), 1, 7, 3));
             tlk3->finishSegmentMonitors();
             tlk3->reset(false);
             ASSERT(tlk3->lookup(true)); ASSERT(memcmp(tlk3->queryKeyBuffer(), "0000003010", 10)==0);
@@ -3094,8 +3027,8 @@ class IKeyManagerTest : public CppUnit::TestFixture
 
             Owned <IKeyManager> tlk4 = createKeyMerger(NULL, 7, NULL);
             tlk4->setKey(keyset);
-            tlk4->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 7));
-            tlk4->append(createKeySegmentMonitor(false, sset3.getLink(), 7, 3));
+            tlk4->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 0, 7));
+            tlk4->append(createKeySegmentMonitor(false, sset3.getLink(), 1, 7, 3));
             tlk4->finishSegmentMonitors();
             tlk4->reset(false);
             ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000003000", 10)==0);
@@ -3219,18 +3152,18 @@ protected:
             Owned <IKeyManager> tlk1 = createLocalKeyManager(index1, NULL);
             Owned<IStringSet> sset1 = createStringSet(10);
             sset1->addRange("0000000001", "0000000100");
-            tlk1->append(createKeySegmentMonitor(false, sset1.getClear(), 0, 10));
+            tlk1->append(createKeySegmentMonitor(false, sset1.getClear(), 0, 0, 10));
             tlk1->finishSegmentMonitors();
             tlk1->reset();
 
             Owned <IKeyManager> tlk1a = createLocalKeyManager(index1, NULL);
             Owned<IStringSet> sset1a = createStringSet(8);
             sset1a->addRange("00000000", "00000001");
-            tlk1a->append(createKeySegmentMonitor(false, sset1a.getClear(), 0, 8));
-            tlk1a->append(createKeySegmentMonitor(false, NULL, 8, 1));
+            tlk1a->append(createKeySegmentMonitor(false, sset1a.getClear(), 0, 0, 8));
+            tlk1a->append(createKeySegmentMonitor(false, NULL, 1, 8, 1));
             sset1a.setown(createStringSet(1));
             sset1a->addRange("0", "1");
-            tlk1a->append(createKeySegmentMonitor(false, sset1a.getClear(), 9, 1));
+            tlk1a->append(createKeySegmentMonitor(false, sset1a.getClear(), 2, 9, 1));
             tlk1a->finishSegmentMonitors();
             tlk1a->reset();
 
@@ -3259,7 +3192,7 @@ protected:
             Owned<IStringSet> sset2 = createStringSet(10);
             sset2->addRange("0000000001", "0000000100");
             ASSERT(sset2->numValues() == 65536);
-            tlk2->append(createKeySegmentMonitor(false, sset2.getClear(), 0, 10));
+            tlk2->append(createKeySegmentMonitor(false, sset2.getClear(), 0, 0, 10));
             tlk2->finishSegmentMonitors();
             tlk2->reset();
 
@@ -3273,7 +3206,7 @@ protected:
                 tlk3.setown(createKeyMerger(NULL, 0, NULL));
                 tlk3->setKey(both);
                 sset3->addRange("0000000001", "0000000100");
-                tlk3->append(createKeySegmentMonitor(false, sset3.getClear(), 0, 10));
+                tlk3->append(createKeySegmentMonitor(false, sset3.getClear(), 0, 0, 10));
                 tlk3->finishSegmentMonitors();
                 tlk3->reset();
             }
@@ -3282,7 +3215,7 @@ protected:
             Owned<IStringSet> sset2a = createStringSet(10);
             sset2a->addRange("0000000048", "0000000048");
             ASSERT(sset2a->numValues() == 1);
-            tlk2a->append(createKeySegmentMonitor(false, sset2a.getClear(), 0, 10));
+            tlk2a->append(createKeySegmentMonitor(false, sset2a.getClear(), 0, 0, 10));
             tlk2a->finishSegmentMonitors();
             tlk2a->reset();
 
@@ -3290,14 +3223,14 @@ protected:
             Owned<IStringSet> sset2b = createStringSet(10);
             sset2b->addRange("0000000047", "0000000049");
             ASSERT(sset2b->numValues() == 3);
-            tlk2b->append(createKeySegmentMonitor(false, sset2b.getClear(), 0, 10));
+            tlk2b->append(createKeySegmentMonitor(false, sset2b.getClear(), 0, 0, 10));
             tlk2b->finishSegmentMonitors();
             tlk2b->reset();
 
             Owned <IKeyManager> tlk2c = createLocalKeyManager(index2, NULL);
             Owned<IStringSet> sset2c = createStringSet(10);
             sset2c->addRange("0000000047", "0000000047");
-            tlk2c->append(createKeySegmentMonitor(false, sset2c.getClear(), 0, 10));
+            tlk2c->append(createKeySegmentMonitor(false, sset2c.getClear(), 0, 0, 10));
             tlk2c->finishSegmentMonitors();
             tlk2c->reset();
 
