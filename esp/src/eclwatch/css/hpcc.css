@@ -1541,3 +1541,10 @@ margin-left:-20px;
 	margin: 0px;
 	font:0.75em;
 }
+
+button.clippy img {
+    margin:2px 0 0;
+    padding:0px;
+    width:13px;
+    height:16px;
+}

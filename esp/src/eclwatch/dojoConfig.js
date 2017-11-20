@@ -31,6 +31,7 @@ function getConfig(env) {
             "@hpcc-js/layout": baseUrl + "/node_modules/@hpcc-js/layout/dist/layout",
             "@hpcc-js/map": baseUrl + "/node_modules/@hpcc-js/map/dist/map",
             "@hpcc-js/other": baseUrl + "/node_modules/@hpcc-js/other/dist/other",
+            "clipboard": baseUrl + "/node_modules/clipboard/dist/clipboard",
             "crossfilter": baseUrl + "/crossfilter/crossfilter.min"
         },
         packages: [

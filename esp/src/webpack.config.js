@@ -42,6 +42,11 @@ module.exports = {
                 }]
             }]
     },
+    resolve: {
+        alias: {
+            "clipboard": path.resolve(__dirname, 'node_modules/clipboard/dist/clipboard')
+        }
+    },    
     plugins: [
         new DojoWebpackPlugin({
             loaderConfig: require.resolve("./eclwatch/dojoConfig"),
