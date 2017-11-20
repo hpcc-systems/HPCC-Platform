@@ -470,6 +470,12 @@ ECLRTL_API void rtlWriteSwapInt7(void * data, unsigned __int64 value);
 ECLRTL_API void rtlWriteSwapInt8(void * data, unsigned __int64 value);
 ECLRTL_API void rtlWriteSwapInt(void * self, __int64 val, unsigned length);
 
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+inline unsigned __int64 rtlReadBigUInt8(const void * data) { return rtlReadSwapUInt8(data); }
+#else
+inline unsigned __int64 rtlReadBigUInt8(const void * data) { return rtlReadUInt8(data); }
+#endif
+
 ECLRTL_API short rtlRevInt2(const void * data);
 ECLRTL_API int rtlRevInt3(const void * data);
 ECLRTL_API int rtlRevInt4(const void * data);

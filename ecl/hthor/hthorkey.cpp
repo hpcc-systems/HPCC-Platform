@@ -91,6 +91,10 @@ bool rltEnabled(IConstWorkUnit const * wu)
 
 IRecordLayoutTranslator * getRecordLayoutTranslator(IDefRecordMeta const * activityMeta, size32_t activityMetaSize, void const * activityMetaBuff, IDistributedFile * df, IRecordLayoutTranslatorCache * cache, IRecordLayoutTranslator::Mode mode)
 {
+    //Disallow any keyed translation
+    if (mode == IRecordLayoutTranslator::TranslateAll)
+        mode = IRecordLayoutTranslator::TranslatePayload;
+
     IPropertyTree const & props = df->queryAttributes();
     MemoryBuffer diskMetaBuff;
     if(!props.getPropBin("_record_layout", diskMetaBuff))
@@ -140,7 +144,7 @@ public:
 //IThorIndexCallback
     virtual unsigned __int64 getFilePosition(const void * row)
     {
-        return filepos;
+        throwUnexpected();
     }
     virtual byte * lookupBlob(unsigned __int64 id) 
     { 
@@ -150,7 +154,6 @@ public:
 
 
 public:
-    offset_t & getFPosRef()                                 { return filepos; }
     void setManager(IKeyManager * _manager)
     {
         finishedRow();
@@ -165,7 +168,6 @@ public:
 
 protected:
     IKeyManager * keyManager;
-    offset_t filepos;
 };
 
 //-------------------------------------------------------------------------------------------------------------
@@ -307,7 +309,7 @@ protected:
     void getLayoutTranslators();
     IRecordLayoutTranslator * getLayoutTranslator(IDistributedFile * f);
     void verifyIndex(IKeyIndex * idx);
-    void initManager(IKeyManager *manager);
+    void initManager(IKeyManager *manager, bool isTlk);
     bool firstPart();
     virtual bool nextPart();
     virtual void initPart();
@@ -468,10 +470,10 @@ bool CHThorIndexReadActivityBase::doPreopenLimitFile(unsigned __int64 & count, u
             Owned<IKeyIndex> tlk = openKeyFile(df->queryPart(num));
             verifyIndex(tlk);
             Owned<IKeyManager> tlman = createLocalKeyManager(tlk, NULL);
-            initManager(tlman);
+            initManager(tlman, true);
             while(tlman->lookup(false) && (count<=limit))
             {
-                unsigned slavePart = (unsigned)tlman->queryFpos();
+                unsigned slavePart = (unsigned)extractFpos(tlman);
                 if (slavePart)
                 {
                     keyIndexCache->addIndex(doPreopenLimitPart(count, limit, slavePart-1));
@@ -504,7 +506,7 @@ IKeyIndex * CHThorIndexReadActivityBase::doPreopenLimitPart(unsigned __int64 & r
     if (limit != (unsigned) -1)
     {
         Owned<IKeyManager> kman = createLocalKeyManager(kidx, NULL);
-        initManager(kman);
+        initManager(kman, false);
         result += kman->checkCount(limit-result);
     }
     return kidx.getClear();
@@ -593,9 +595,9 @@ bool CHThorIndexReadActivityBase::nextPart()
 }
 
 
-void CHThorIndexReadActivityBase::initManager(IKeyManager *manager)
+void CHThorIndexReadActivityBase::initManager(IKeyManager *manager, bool isTlk)
 {
-    if(layoutTrans)
+    if(layoutTrans && !isTlk)
         manager->setLayoutTranslator(layoutTrans);
     helper.createSegmentMonitors(manager);
     manager->finishSegmentMonitors();
@@ -604,8 +606,9 @@ void CHThorIndexReadActivityBase::initManager(IKeyManager *manager)
 
 void CHThorIndexReadActivityBase::initPart()                                    
 { 
+    assertex(!keyIndex->isTopLevelKey());
     klManager.setown(createLocalKeyManager(keyIndex, NULL));
-    initManager(klManager);     
+    initManager(klManager, false);
     callback.setManager(klManager);
 }
 
@@ -635,7 +638,7 @@ bool CHThorIndexReadActivityBase::firstMultiPart()
         openTlk();
     verifyIndex(tlk);
     tlManager.setown(createLocalKeyManager(tlk, NULL));
-    initManager(tlManager);
+    initManager(tlManager, true);
     nextPartNumber = 0;
     return nextMultiPart();
 }
@@ -654,8 +657,9 @@ bool CHThorIndexReadActivityBase::nextMultiPart()
         {
             while (tlManager->lookup(false))
             {
-                if (tlManager->queryFpos())
-                    return setCurrentPart((unsigned)tlManager->queryFpos()-1);
+                offset_t node = extractFpos(tlManager);
+                if (node)
+                    return setCurrentPart((unsigned)node-1);
             }
         }
     }
@@ -866,7 +870,7 @@ bool CHThorIndexReadActivity::nextPart()
     {
         klManager.setown(createKeyMerger(keyIndexCache, seekGEOffset, NULL));
         keyIndexCache.clear();
-        initManager(klManager);
+        initManager(klManager, false);
         callback.setManager(klManager);
         return true;
     }
@@ -911,7 +915,7 @@ const void *CHThorIndexReadActivity::nextRow()
             keyedProcessed++;
             if ((keyedLimit != (unsigned __int64) -1) && keyedProcessed > keyedLimit)
                 helper.onKeyedLimitExceeded();
-            byte const * keyRow = klManager->queryKeyBuffer(callback.getFPosRef());
+            byte const * keyRow = klManager->queryKeyBuffer();
             if (needTransform)
             {
                 try
@@ -992,7 +996,7 @@ const void *CHThorIndexReadActivity::nextRowGE(const void * seek, unsigned numFi
 
         if (klManager->lookupSkip(rawSeek, seekGEOffset, seekSize))
         {
-            const byte * row = klManager->queryKeyBuffer(callback.getFPosRef());
+            const byte * row = klManager->queryKeyBuffer();
 #ifdef _DEBUG
             if (memcmp(row + seekGEOffset, rawSeek, seekSize) < 0)
                 assertex("smart seek failure");
@@ -1207,7 +1211,7 @@ const void *CHThorIndexNormalizeActivity::nextRow()
             }
 
             agent.reportProgress(NULL);
-            expanding = helper.first(klManager->queryKeyBuffer(callback.getFPosRef()));
+            expanding = helper.first(klManager->queryKeyBuffer());
             if (expanding)
             {
                 const void * ret = createNextRow();
@@ -1343,7 +1347,7 @@ void CHThorIndexAggregateActivity::gather()
         agent.reportProgress(NULL);
         try
         {
-            helper.processRow(outBuilder, klManager->queryKeyBuffer(callback.getFPosRef()));
+            helper.processRow(outBuilder, klManager->queryKeyBuffer());
         }
         catch(IException * e)
         {
@@ -1436,7 +1440,7 @@ const void *CHThorIndexCountActivity::nextRow()
                     agent.reportProgress(NULL);
                     if (!klManager->lookup(true))
                         break;
-                    totalCount += helper.numValid(klManager->queryKeyBuffer(callback.getFPosRef()));
+                    totalCount += helper.numValid(klManager->queryKeyBuffer());
                     callback.finishedRow();
                     if ((totalCount > choosenLimit))
                         break;
@@ -1554,7 +1558,7 @@ void CHThorIndexGroupAggregateActivity::gather()
         agent.reportProgress(NULL);
         try
         {
-            helper.processRow(klManager->queryKeyBuffer(callback.getFPosRef()), this);
+            helper.processRow(klManager->queryKeyBuffer(), this);
         }
         catch(IException * e)
         {
@@ -2702,20 +2706,18 @@ public:
             ReleaseRoxieRow(rows.item(idx));
     }
 
-    void addRightMatch(void * right, offset_t fpos);
+    void addRightMatch(void * right);
     offset_t addRightPending();
-    void setPendingRightMatch(offset_t seq, void * right, offset_t fpos);
+    void setPendingRightMatch(offset_t seq, void * right);
     void incRightMatchCount();
 
     unsigned count() const { return rows.ordinality(); }
     CJoinGroup * queryJoinGroup() const { return jg; }
     void * queryRow(unsigned idx) const { return rows.item(idx); }
-    offset_t queryOffset(unsigned idx) const { return offsets.item(idx); }
 
 private:
     CJoinGroup * jg;
     PointerArray rows;
-    Int64Array offsets;
 };
 
 interface IJoinProcessor
@@ -2738,7 +2740,6 @@ public:
     public:
         // Single threaded by now
         void const * queryRow() const { return owner.matchsets.item(ms).queryRow(idx); }
-        offset_t queryOffset() const { return owner.matchsets.item(ms).queryOffset(idx); }
         bool start()
         {
             idx = 0;
@@ -2873,12 +2874,11 @@ protected:
     unsigned candidates;
 };
 
-void MatchSet::addRightMatch(void * right, offset_t fpos)
+void MatchSet::addRightMatch(void * right)
 {
     assertex(!jg->complete());
     CriticalBlock b(jg->crit);
     rows.append(right);
-    offsets.append(fpos);
     jg->matchcount++;
 }
 
@@ -2888,16 +2888,14 @@ offset_t MatchSet::addRightPending()
     CriticalBlock b(jg->crit);
     offset_t seq = rows.ordinality();
     rows.append(NULL);
-    offsets.append(0);
     return seq;
 }
 
-void MatchSet::setPendingRightMatch(offset_t seq, void * right, offset_t fpos)
+void MatchSet::setPendingRightMatch(offset_t seq, void * right)
 {
     assertex(!jg->complete());
     CriticalBlock b(jg->crit);
     rows.replace(right, (aindex_t)seq);
-    offsets.replace(fpos, (aindex_t)seq);
     jg->matchcount++;
 }
 
@@ -3090,7 +3088,7 @@ public:
                 owner.readyManager(&manager, row);
                 while(manager.lookup(false))
                 {
-                    unsigned recptr = (unsigned)manager.queryFpos();
+                    unsigned recptr = (unsigned)extractFpos(&manager);
                     if (recptr)
                     {
                         jg->notePending();
@@ -3119,8 +3117,6 @@ public:
             trans.setown(owner.getLayoutTranslator(&f));
             owner.verifyIndex(&f, index, trans);
             Owned<IKeyManager> manager = createLocalKeyManager(index, NULL);
-            if(trans)
-                manager->setLayoutTranslator(trans);
             managers.append(*manager.getLink());
         }
         opened = true;
@@ -3161,7 +3157,7 @@ void KeyedLookupPartHandler::openPart()
     Owned<IKeyIndex> index = openKeyFile(*part);
     manager.setown(createLocalKeyManager(index, NULL));
     IRecordLayoutTranslator * trans = tlk->queryRecordLayoutTranslator();
-    if(trans)
+    if(trans && !index->isTopLevelKey())
         manager->setLayoutTranslator(trans);
 }
 
@@ -3554,7 +3550,7 @@ public:
                 RtlDynamicRowBuilder extractBuilder(queryRightRowAllocator()); 
                 size32_t size = helper.extractJoinFields(extractBuilder, row, fetch->pos, NULL);
                 void * ret = (void *) extractBuilder.finalizeRowClear(size);
-                fetch->ms->setPendingRightMatch(fetch->seq, ret, fetch->pos);
+                fetch->ms->setPendingRightMatch(fetch->seq, ret);
             }
         }
         fetch->ms->queryJoinGroup()->noteEnd();
@@ -3761,7 +3757,7 @@ public:
                                 RtlDynamicRowBuilder rowBuilder(rowAllocator);
                                 void const * row = jg->matches.queryRow();
                                 if(!row) continue;
-                                offset_t fpos = jg->matches.queryOffset();
+                                offset_t fpos = 0;
                                 size32_t transformedSize;
                                 transformedSize = helper.transform(rowBuilder, left, row, fpos, ++counter);
                                 if (transformedSize)
@@ -3800,7 +3796,7 @@ public:
                             void const * row = jg->matches.queryRow();
                             if(!row) continue;
                             ++count;
-                            offset_t fpos = jg->matches.queryOffset();
+                            offset_t fpos = 0;
                             size32_t transformedSize;
                             try
                             {
@@ -3953,15 +3949,16 @@ public:
             return true;
         }
         KLBlobProviderAdapter adapter(manager);
-        offset_t recptr;
-        byte const * rhs = manager->queryKeyBuffer(recptr);
-        if(indexReadMatch(jg->queryLeft(), rhs, recptr, &adapter))
+        byte const * rhs = manager->queryKeyBuffer();
+        size_t fposOffset = manager->queryRowSize() - sizeof(offset_t);
+        offset_t fpos = rtlReadBigUInt8(rhs + fposOffset);
+        if(indexReadMatch(jg->queryLeft(), rhs, fpos, &adapter))
         {
             if(needsDiskRead)
             {
                 jg->notePending();
                 offset_t seq = ms->addRightPending();
-                parts->addRow(ms, recptr, seq);
+                parts->addRow(ms, fpos, seq);
             }
             else
             {
@@ -3970,9 +3967,9 @@ public:
                 else
                 {
                     RtlDynamicRowBuilder rowBuilder(queryRightRowAllocator()); 
-                    size32_t size = helper.extractJoinFields(rowBuilder, rhs, recptr, &adapter);
+                    size32_t size = helper.extractJoinFields(rowBuilder, rhs, fpos, &adapter);
                     void * ret = (void *)rowBuilder.finalizeRowClear(size);
-                    ms->addRightMatch(ret, recptr);
+                    ms->addRightMatch(ret);
                 }
             }
         }

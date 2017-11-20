@@ -1289,8 +1289,9 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                             if (candidateCount > owner.atMost)
                                 break;
                             KLBlobProviderAdapter adapter(currentPartKeyManager);
-                            offset_t fpos;
-                            byte const * keyRow = currentPartKeyManager->queryKeyBuffer(fpos);
+                            byte const * keyRow = currentPartKeyManager->queryKeyBuffer();
+                            size_t fposOffset = currentPartKeyManager->queryRowSize() - sizeof(offset_t);
+                            offset_t fpos = rtlReadBigUInt8(keyRow + fposOffset);
                             if (owner.helper->indexReadMatch(indexReadFieldsRow.getSelf(), keyRow, fpos, &adapter))
                             {
                                 if (currentJG->rowsSeen() >= owner.keepLimit)
@@ -1349,9 +1350,10 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                         for (;;)
                         {
                             if (!tlkManager->lookup(false)) break;
-                            if (tlkManager->queryFpos()) // don't bail out if part0 match, test again for 'real' tlk match.
+                            offset_t node = extractFpos(tlkManager);
+                            if (node) // don't bail out if part0 match, test again for 'real' tlk match.
                             {
-                                unsigned partNo = (unsigned)tlkManager->queryFpos();
+                                unsigned partNo = (unsigned)node;
                                 partNo = owner.superWidth ? owner.superWidth*nextTlk+(partNo-1) : partNo-1;
 
                                 currentPartKeyManager = &partKeyManagers.item(partNo);

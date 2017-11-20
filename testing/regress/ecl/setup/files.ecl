@@ -96,7 +96,7 @@ EXPORT DG_KeyDiffIndex1 := INDEX(DG_FetchFile,{Lname,Fname},{STRING tfn := TRIM(
 EXPORT DG_KeyDiffIndex2 := INDEX(DG_KeyDiffIndex1, DG_KeyDiffIndex2Name);
 
 //This version is used for testing reading from a file requiring translation 
-EXPORT DG_FetchTransIndex := INDEX(DG_FetchFile,{Lname,Fname},{STRING tfn := TRIM(Fname), state, STRING100 blobfield {blob}:= fname, __filepos},DG_FetchTransIndexName);
+EXPORT DG_FetchTransIndex := INDEX(DG_FetchFile,{Lname,Fname},{state, STRING tfn := TRIM(Fname), STRING100 blobfield {blob}:= fname, __filepos},DG_FetchTransIndexName);
 
 indexName := IF(useTranslation, __nameof__(DG_FetchTransIndex), __nameof__(DG_FetchIndex1));
 EXPORT DG_FetchIndex := INDEX(DG_FetchIndex1,indexName);
@@ -134,8 +134,8 @@ EXPORT DG_FlatFileEvens := DATASET(DG_FileOut+'FLAT_EVENS',{DG_OutRec,UNSIGNED8 
 EXPORT DG_NormalIndexFile      := INDEX(DG_FlatFile, { DG_firstname, DG_lastname }, { DG_Prange, filepos }, DG_IndexOut+'INDEX');
 EXPORT DG_NormalIndexFileEvens := INDEX(DG_FlatFileEvens, { DG_firstname; DG_lastname; }, { DG_Prange, filepos } ,DG_IndexOut+'INDEX_EVENS');
 
-EXPORT DG_TransIndexFile      := INDEX(DG_FlatFile, { DG_lastname, DG_firstname }, { DG_Prange, filepos }, DG_IndexOut+'TRANS_INDEX');
-EXPORT DG_TransIndexFileEvens := INDEX(DG_FlatFileEvens, { DG_lastname, DG_firstname }, { DG_Prange, filepos } ,DG_IndexOut+'TRANS_INDEX_EVENS');
+EXPORT DG_TransIndexFile      := INDEX(DG_FlatFile, { DG_firstname, DG_lastname }, { DG_ChildID := filepos, DG_Prange, filepos }, DG_IndexOut+'TRANS_INDEX');
+EXPORT DG_TransIndexFileEvens := INDEX(DG_FlatFileEvens, { DG_firstname, DG_lastname }, { DG_ChildID := filepos, DG_Prange, filepos } ,DG_IndexOut+'TRANS_INDEX_EVENS');
 
 indexName := IF(useTranslation, __nameof__(DG_TransIndexFile), __nameof__(DG_NormalIndexFile));
 EXPORT DG_indexFile      := INDEX(DG_NormalIndexFile, indexName);
@@ -156,7 +156,7 @@ END;
 EXPORT DG_VarFile   := DATASET(DG_FileOut+'VAR',DG_VarOutRecPlus,FLAT);
 
 EXPORT DG_NormalVarIndex  := INDEX(DG_VarFile, { DG_firstname; DG_lastname; __filepos } ,DG_IndexOut+'VARINDEX');
-EXPORT DG_TransVarIndex  := INDEX(DG_VarFile, { DG_lastname; DG_firstname; __filepos } ,DG_IndexOut+'TRANS_VARINDEX');
+EXPORT DG_TransVarIndex  := INDEX(DG_VarFile, { DG_firstname; DG_lastname; }, { DGextra := DG_lastname; __filepos } ,DG_IndexOut+'TRANS_VARINDEX');
 
 indexName := IF(useTranslation, __nameof__(DG_TransVarIndex), __nameof__(DG_NormalVarIndex));
 EXPORT DG_VarIndex  := INDEX(DG_NormalVarIndex, indexName);

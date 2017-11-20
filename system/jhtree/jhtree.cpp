@@ -392,7 +392,6 @@ protected:
     SegMonitorList segs;
     IKeyCursor *keyCursor;
     char *keyBuffer;
-    offset_t lookupFpos;
     unsigned keySize;       // size of key record including payload
     unsigned keyedSize;     // size of non-payload part of key
     unsigned numsegs;
@@ -410,6 +409,7 @@ protected:
     bool transformSegs;
     IIndexReadContext * activitySegs;
     CMemoryBlock layoutTransBuff;
+    size32_t layoutSize = 0;
     Owned<IRecordLayoutTranslator::SegmentMonitorContext> layoutTransSegCtx;
     Owned<IRecordLayoutTranslator::RowTransformContext> layoutTransRowCtx;
 
@@ -433,9 +433,9 @@ protected:
         segs.endRange(segno, keyBuffer);
     }
 
-    byte const * doRowLayoutTransform(offset_t & fpos)
+    byte const * doRowLayoutTransform()
     {
-        layoutTrans->transformRow(layoutTransRowCtx, reinterpret_cast<byte const *>(keyBuffer), keySize, layoutTransBuff, fpos);
+        layoutSize = layoutTrans->transformRow(layoutTransRowCtx, reinterpret_cast<byte const *>(keyBuffer), keySize, layoutTransBuff);
         return layoutTransBuff.get();
     }
 
@@ -690,28 +690,25 @@ public:
         return activitySegs->item(idx);
     }
 
-    inline const byte *queryKeyBuffer(offset_t & fpos)
+    inline const byte *queryKeyBuffer()
     {
-        fpos = lookupFpos;
         if(layoutTrans)
-            return doRowLayoutTransform(fpos);
+            return doRowLayoutTransform();
         else
             return reinterpret_cast<byte const *>(keyBuffer);
     }
 
     inline size32_t queryRowSize()
     {
-        return keyCursor ? keyCursor->getSize() : 0;
+        if (layoutTrans)
+            return layoutSize;
+        else
+            return keyCursor ? keyCursor->getSize() : 0;
     }
 
     inline unsigned __int64 querySequence()
     {
         return keyCursor ? keyCursor->getSequence() : 0;
-    }
-
-    inline offset_t queryFpos()
-    {
-        return lookupFpos;
     }
 
     inline unsigned queryRecordSize() { return keySize; }
@@ -737,7 +734,6 @@ public:
             }
             if (ok)
             {
-                lookupFpos = keyCursor->getFPos();
                 unsigned i = 0;
                 matched = true;
                 if (segs.segMonitors.length())
@@ -2371,10 +2367,8 @@ class CKeyMerger : public CKeyLevelManager
     PointerArray bufferArray;
     PointerArray fixedArray;
     BoolArray matchedArray; 
-    UInt64Array fposArray;
     UnsignedArray mergeHeapArray;
     UnsignedArray keyNoArray;
-    offset_t *fposes;
 
     IKeyCursor **cursors;
     char **buffers;
@@ -2448,7 +2442,6 @@ class CKeyMerger : public CKeyLevelManager
         keyBuffer = buffers[key];
         keyCursor = cursors[key];
         matched = matcheds[key];
-        lookupFpos = fposes[key];
         for (unsigned segno = 0; segno < sortFromSeg; segno++)
         {
             IOverrideableKeySegmentMonitor *sm = QUERYINTERFACE(&segs.segMonitors.item(segno), IOverrideableKeySegmentMonitor);
@@ -2492,7 +2485,6 @@ public:
         cursorArray.kill();
         keyCursor = NULL; // cursorArray owns cursors
         matchedArray.kill();
-        fposArray.kill();
         mergeHeapArray.kill();
         bufferArray.kill();
         fixedArray.kill();
@@ -2500,7 +2492,6 @@ public:
 
         cursors = NULL;
         matcheds = NULL;
-        fposes = NULL;
         mergeheap = NULL;
         buffers = NULL; 
         fixeds = NULL;
@@ -2546,11 +2537,7 @@ public:
             unsigned compares = 0;
             for (;;)
             {
-                if (CKeyLevelManager::lookupSkip(seek, seekOffset, seeklen) )
-                {
-                    fposes[key] = lookupFpos;
-                }
-                else
+                if (!CKeyLevelManager::lookupSkip(seek, seekOffset, seeklen) )
                 {
                     activekeys--;
                     if (!activekeys)
@@ -2700,7 +2687,6 @@ public:
                     cursorArray.append(*keyCursor);
                     bufferArray.append(keyBuffer);
                     matchedArray.append(matched);
-                    fposArray.append(lookupFpos);
                     mergeHeapArray.append(activekeys++);
                     if (!sortFromSeg)
                     {
@@ -2755,7 +2741,6 @@ public:
             if (ctx)
                 ctx->noteStatistic(StNumIndexMerges, activekeys);
             cursors = cursorArray.getArray();
-            fposes = fposArray.getArray();
             matcheds = (bool *) matchedArray.getArray();  // For some reason BoolArray is typedef'd to CharArray on linux...
             buffers = (char **) bufferArray.getArray();
             mergeheap = mergeHeapArray.getArray();
@@ -2827,11 +2812,7 @@ public:
             if (!activekeys)
                 return false;
             unsigned key = mergeheap[0];
-            if (CKeyLevelManager::lookup(exact)) 
-            {
-                fposes[key] = lookupFpos;
-            }
-            else
+            if (!CKeyLevelManager::lookup(exact)) 
             {
                 activekeys--;
                 if (!activekeys)
@@ -2917,7 +2898,6 @@ public:
             mb.append(keyNoArray.item(key));
             cursors[key]->serializeCursorPos(mb);
             mb.append(matcheds[key]);
-            mb.append(fposes[key]);
         }
     }
 
@@ -2937,9 +2917,6 @@ public:
             keyCursor->deserializeCursorPos(mb, keyBuffer);
             mb.read(matched);
             matchedArray.append(matched);
-            offset_t fpos;
-            mb.read(fpos);
-            fposArray.append(fpos);
             bufferArray.append(keyBuffer);
             void *fixedValue = (char *) malloc(sortFieldOffset);
             memcpy(fixedValue, keyBuffer, sortFieldOffset); // If it's not at EOF then it must match
@@ -2947,7 +2924,6 @@ public:
             mergeHeapArray.append(i);
         }
         cursors = cursorArray.getArray();
-        fposes = fposArray.getArray();
         matcheds = (bool *) matchedArray.getArray();  // For some reason BoolArray is typedef'd to CharArray on linux...
         buffers = (char **) bufferArray.getArray();
         mergeheap = mergeHeapArray.getArray();
@@ -3067,23 +3043,23 @@ class IKeyManagerTest : public CppUnit::TestFixture
             tlk1->reset();
 
             offset_t fpos;
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000003010", 10)==0);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000005010", 10)==0);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000006010", 10)==0);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000003030", 10)==0);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000005030", 10)==0);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000006030", 10)==0);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000003031", 10)==0);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000005031", 10)==0);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000006031", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000003010", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000005010", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000006010", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000003030", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000005030", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000006030", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000003031", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000005031", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000006031", 10)==0);
             MemoryBuffer mb;
             tlk1->serializeCursorPos(mb);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000003032", 10)==0);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000005032", 10)==0);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000006032", 10)==0);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000003033", 10)==0);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000005033", 10)==0);
-            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000006033", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000003032", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000005032", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000006032", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000003033", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000005033", 10)==0);
+            ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000006033", 10)==0);
             ASSERT(!tlk1->lookup(true)); 
             ASSERT(!tlk1->lookup(true)); 
 
@@ -3094,12 +3070,12 @@ class IKeyManagerTest : public CppUnit::TestFixture
             tlk2->append(createKeySegmentMonitor(false, sset2.getLink(), 7, 3));
             tlk2->finishSegmentMonitors();
             tlk2->reset(true);
-            ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000003032", 10)==0);
-            ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000005032", 10)==0);
-            ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000006032", 10)==0);
-            ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000003033", 10)==0);
-            ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000005033", 10)==0);
-            ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000006033", 10)==0);
+            ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000003032", 10)==0);
+            ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000005032", 10)==0);
+            ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000006032", 10)==0);
+            ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000003033", 10)==0);
+            ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000005033", 10)==0);
+            ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000006033", 10)==0);
             ASSERT(!tlk2->lookup(true)); 
             ASSERT(!tlk2->lookup(true)); 
 
@@ -3109,10 +3085,10 @@ class IKeyManagerTest : public CppUnit::TestFixture
             tlk3->append(createKeySegmentMonitor(false, sset2.getLink(), 7, 3));
             tlk3->finishSegmentMonitors();
             tlk3->reset(false);
-            ASSERT(tlk3->lookup(true)); ASSERT(memcmp(tlk3->queryKeyBuffer(fpos), "0000003010", 10)==0);
-            ASSERT(tlk3->lookupSkip("031", 7, 3)); ASSERT(memcmp(tlk3->queryKeyBuffer(fpos), "0000003031", 10)==0);
-            ASSERT(tlk3->lookup(true)); ASSERT(memcmp(tlk3->queryKeyBuffer(fpos), "0000005031", 10)==0);
-            ASSERT(tlk3->lookup(true)); ASSERT(memcmp(tlk3->queryKeyBuffer(fpos), "0000006031", 10)==0);
+            ASSERT(tlk3->lookup(true)); ASSERT(memcmp(tlk3->queryKeyBuffer(), "0000003010", 10)==0);
+            ASSERT(tlk3->lookupSkip("031", 7, 3)); ASSERT(memcmp(tlk3->queryKeyBuffer(), "0000003031", 10)==0);
+            ASSERT(tlk3->lookup(true)); ASSERT(memcmp(tlk3->queryKeyBuffer(), "0000005031", 10)==0);
+            ASSERT(tlk3->lookup(true)); ASSERT(memcmp(tlk3->queryKeyBuffer(), "0000006031", 10)==0);
             ASSERT(!tlk3->lookupSkip("081", 7, 3)); 
             ASSERT(!tlk3->lookup(true)); 
 
@@ -3122,18 +3098,18 @@ class IKeyManagerTest : public CppUnit::TestFixture
             tlk4->append(createKeySegmentMonitor(false, sset3.getLink(), 7, 3));
             tlk4->finishSegmentMonitors();
             tlk4->reset(false);
-            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(fpos), "0000003000", 10)==0);
-            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(fpos), "0000005000", 10)==0);
-            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(fpos), "0000006000", 10)==0);
-            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(fpos), "0000003001", 10)==0);
-            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(fpos), "0000005001", 10)==0);
-            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(fpos), "0000006001", 10)==0);
-            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(fpos), "0000003002", 10)==0);
-            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(fpos), "0000005002", 10)==0);
-            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(fpos), "0000006002", 10)==0);
-            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(fpos), "0000003999", 10)==0);
-            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(fpos), "0000005999", 10)==0);
-            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(fpos), "0000006999", 10)==0);
+            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000003000", 10)==0);
+            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000005000", 10)==0);
+            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000006000", 10)==0);
+            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000003001", 10)==0);
+            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000005001", 10)==0);
+            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000006001", 10)==0);
+            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000003002", 10)==0);
+            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000005002", 10)==0);
+            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000006002", 10)==0);
+            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000003999", 10)==0);
+            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000005999", 10)==0);
+            ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000006999", 10)==0);
             ASSERT(!tlk4->lookup(true)); 
             ASSERT(!tlk4->lookup(true)); 
 
@@ -3208,8 +3184,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
     void checkBlob(IKeyManager *key, unsigned size)
     {
         unsigned __int64 blobid;
-        offset_t fpos;
-        memcpy(&blobid, key->queryKeyBuffer(fpos)+10, sizeof(blobid));
+        memcpy(&blobid, key->queryKeyBuffer()+10, sizeof(blobid));
         ASSERT(blobid != 0);
         size32_t blobsize;
         const byte *blob = key->loadBlob(blobid, blobsize);
@@ -3261,10 +3236,9 @@ protected:
 
 /*          for (;;)
             {
-                offset_t fpos;
                 if (!tlk1a->lookup(true))
                     break;
-                DBGLOG("%.10s", tlk1a->queryKeyBuffer(fpos));
+                DBGLOG("%.10s", tlk1a->queryKeyBuffer());
             }
             tlk1a->reset();
 */
@@ -3346,42 +3320,42 @@ protected:
             {
                 offset_t fpos;
                 tlk1->reset();
-                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000000001", 10)==0);
-                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000000002", 10)==0);
-                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000000003", 10)==0);
-                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000000005", 10)==0);
-                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000000006", 10)==0);
-                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000000007", 10)==0);
-                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000000009", 10)==0);
-                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(fpos), "0000000010", 10)==0);
+                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000000001", 10)==0);
+                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000000002", 10)==0);
+                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000000003", 10)==0);
+                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000000005", 10)==0);
+                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000000006", 10)==0);
+                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000000007", 10)==0);
+                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000000009", 10)==0);
+                ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000000010", 10)==0);
                 if (blobby)
                     checkBlob(tlk1, 10+100000);
 
                 tlk1a->reset();
-                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(fpos), "0000000001", 10)==0);
-                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(fpos), "0000000010", 10)==0);
-                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(fpos), "0000000011", 10)==0);
-                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(fpos), "0000000021", 10)==0);
-                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(fpos), "0000000030", 10)==0);
-                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(fpos), "0000000031", 10)==0);
-                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(fpos), "0000000041", 10)==0);
-                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(fpos), "0000000050", 10)==0);
+                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(), "0000000001", 10)==0);
+                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(), "0000000010", 10)==0);
+                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(), "0000000011", 10)==0);
+                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(), "0000000021", 10)==0);
+                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(), "0000000030", 10)==0);
+                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(), "0000000031", 10)==0);
+                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(), "0000000041", 10)==0);
+                ASSERT(tlk1a->lookup(true)); ASSERT(memcmp(tlk1a->queryKeyBuffer(), "0000000050", 10)==0);
 
                 tlk2->reset();
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000004", 10)==0);
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000008", 10)==0);
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000012", 10)==0);
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000016", 10)==0);
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000020", 10)==0);
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000024", 10)==0);
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000028", 10)==0);
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000032", 10)==0);
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000036", 10)==0);
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000040", 10)==0);
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000044", 10)==0);
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000048", 10)==0);
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000048", 10)==0);
-                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(fpos), "0000000052", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000004", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000008", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000012", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000016", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000020", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000024", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000028", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000032", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000036", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000040", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000044", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000048", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000048", 10)==0);
+                ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000000052", 10)==0);
 
                 if (tlk3)
                 {
@@ -3390,11 +3364,11 @@ protected:
                     {
                         ASSERT(tlk3->lookup(true)); 
                         sprintf(buf, "%010d", i);
-                        ASSERT(memcmp(tlk3->queryKeyBuffer(fpos), buf, 10)==0);
+                        ASSERT(memcmp(tlk3->queryKeyBuffer(), buf, 10)==0);
                         if (i==48 || i==49)
                         {
                             ASSERT(tlk3->lookup(true)); 
-                            ASSERT(memcmp(tlk3->queryKeyBuffer(fpos), buf, 10)==0);
+                            ASSERT(memcmp(tlk3->queryKeyBuffer(), buf, 10)==0);
                         }
                     }
                     ASSERT(!tlk3->lookup(true)); 

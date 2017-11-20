@@ -3541,7 +3541,7 @@ public:
 
                         atomic_inc(&indexRecordsRead);
                         size32_t transformedSize;
-                        const byte * keyRow = tlk->queryKeyBuffer(callback.getFPosRef());
+                        const byte * keyRow = tlk->queryKeyBuffer();
                         int diff = 0;
                         if (steppingRow)
                         {
@@ -3801,7 +3801,7 @@ public:
                     }
 
                     atomic_inc(&indexRecordsRead);
-                    if (normalizeHelper->first(tlk->queryKeyBuffer(callback.getFPosRef())))
+                    if (normalizeHelper->first(tlk->queryKeyBuffer()))
                     {
                         do
                         {
@@ -3932,7 +3932,7 @@ public:
                     {
                         keyprocessed++;
                         atomic_inc(&indexRecordsRead);
-                        count += countHelper->numValid(tlk->queryKeyBuffer(callback.getFPosRef()));
+                        count += countHelper->numValid(tlk->queryKeyBuffer());
                         if (count > rowLimit)
                             limitExceeded(false);
                         else if (count > keyedLimit)
@@ -4052,7 +4052,7 @@ public:
                 {
                     keyprocessed++;
                     atomic_inc(&indexRecordsRead);
-                    aggregateHelper->processRow(rowBuilder, tlk->queryKeyBuffer(callback.getFPosRef()));
+                    aggregateHelper->processRow(rowBuilder, tlk->queryKeyBuffer());
                     callback.finishedRow();
                 }
                 callback.setManager(NULL);
@@ -4193,7 +4193,7 @@ public:
                     {
                         if (groupSegCount && !layoutTranslators->item(lastPartNo.fileNo))
                         {
-                            AggregateRowBuilder &rowBuilder = results.addRow(tlk->queryKeyBuffer(callback.getFPosRef()));
+                            AggregateRowBuilder &rowBuilder = results.addRow(tlk->queryKeyBuffer());
                             callback.finishedRow();
                             if (kind == TAKindexgroupcount)
                             {
@@ -4207,7 +4207,7 @@ public:
                         {
                             keyprocessed++;
                             atomic_inc(&indexRecordsRead);
-                            aggregateHelper->processRow(tlk->queryKeyBuffer(callback.getFPosRef()), this);
+                            aggregateHelper->processRow(tlk->queryKeyBuffer(), this);
                             callback.finishedRow();
                         }
                     }
@@ -4858,9 +4858,10 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
                     candidateCount++;
                     atomic_inc(&indexRecordsRead);
                     KLBlobProviderAdapter adapter(tlk);
-                    offset_t recptr;
-                    const byte *indexRow = tlk->queryKeyBuffer(recptr);
-                    if (helper->indexReadMatch(inputRow, indexRow, recptr, &adapter))
+                    const byte *indexRow = tlk->queryKeyBuffer();
+                    size_t fposOffset = tlk->queryRowSize() - sizeof(offset_t);
+                    offset_t fpos = rtlReadBigUInt8(indexRow + fposOffset);
+                    if (helper->indexReadMatch(inputRow, indexRow, fpos, &adapter))
                     {
                         processed++;
                         if (keepLimit)
@@ -4885,7 +4886,7 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
                         {
                             const void *self = output->getBuffer(KEYEDJOIN_RECORD_SIZE(0), true);
                             KeyedJoinHeader *rec = (KeyedJoinHeader *) self;
-                            rec->fpos = recptr;
+                            rec->fpos = fpos;
                             rec->thisGroup = jg;
                             rec->partNo = lastPartNo.partNo;
                             output->putBuffer(self, KEYEDJOIN_RECORD_SIZE(0), true);
@@ -4893,8 +4894,8 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
                         else
                         {
                             KLBlobProviderAdapter adapter(tlk);
-                            totalSize = helper->extractJoinFields(rowBuilder, indexRow, recptr, &adapter);
-                            rowBuilder.writeToOutput(totalSize, recptr, jg, lastPartNo.partNo);
+                            totalSize = helper->extractJoinFields(rowBuilder, indexRow, fpos, &adapter);
+                            rowBuilder.writeToOutput(totalSize, fpos, jg, lastPartNo.partNo);
                         }
                         totalSizeSent += KEYEDJOIN_RECORD_SIZE(totalSize);
                         if (totalSizeSent > indexReadChunkSize && !continuationFailed)

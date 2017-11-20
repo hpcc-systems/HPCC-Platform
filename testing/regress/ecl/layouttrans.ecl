@@ -38,14 +38,14 @@ Files := setup.Files(multiPart, useLocal, false);
 //nothorlcr
 
 #IF (version=1)
-DG_FetchIndex1Alt1 := INDEX(Files.DG_FetchFile,{Fname,Lname,__filepos},Files.DG_FetchIndex1Name);
-DG_FetchIndex1Alt2 := INDEX(Files.DG_FetchFile,{Fname,Lname,__filepos},Files.DG_FetchIndex1Name);
+DG_FetchIndex1Alt1 := INDEX(Files.DG_FetchFile,{Lname,Fname,__filepos},Files.DG_FetchIndex1Name);
+DG_FetchIndex1Alt2 := INDEX(Files.DG_FetchFile,{Lname,Fname,__filepos},Files.DG_FetchIndex1Name);
 #ELIF (version=2)
-DG_FetchIndex1Alt1 := INDEX(Files.DG_FetchFile,{Fname,Lname},{state, STRING100 blobfield {blob}:= fname, STRING tfn := TRIM(Fname), __filepos},Files.DG_FetchIndex1Name);
-DG_FetchIndex1Alt2 := INDEX(Files.DG_FetchFile,{Fname,Lname},{ STRING100 blobfield {blob}:= fname, __filepos},Files.DG_FetchIndex1Name);
+DG_FetchIndex1Alt1 := INDEX(Files.DG_FetchFile,{Lname,Fname},{state, STRING100 blobfield {blob}:= fname, STRING tfn := TRIM(Fname), __filepos},Files.DG_FetchIndex1Name);
+DG_FetchIndex1Alt2 := INDEX(Files.DG_FetchFile,{Lname,Fname},{ STRING100 blobfield {blob}:= fname, __filepos},Files.DG_FetchIndex1Name);
 #ELSE
-DG_FetchIndex1Alt1 := INDEX(Files.DG_FetchFile,{Fname,Lname},{state ,__filepos},Files.DG_FetchIndex1Name);
-DG_FetchIndex1Alt2 := INDEX(Files.DG_FetchFile,{Fname,Lname},{__filepos},Files.DG_FetchIndex1Name);
+DG_FetchIndex1Alt1 := INDEX(Files.DG_FetchFile,{Lname,Fname},{state ,__filepos},Files.DG_FetchIndex1Name);
+DG_FetchIndex1Alt2 := INDEX(Files.DG_FetchFile,{Lname,Fname},{__filepos},Files.DG_FetchIndex1Name);
 #END
 
 ds := DATASET([{'Anderson'}, {'Doe'}], {STRING25 Lname});

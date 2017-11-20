@@ -22811,7 +22811,10 @@ public:
                             else
                             {
                                 tlk.setown(createLocalKeyManager(thisKey, this));
-                                tlk->setLayoutTranslator(translators->item(fileNo));
+                                if (!thisKey->isTopLevelKey())
+                                    tlk->setLayoutTranslator(translators->item(fileNo));
+                                else
+                                    tlk->setLayoutTranslator(nullptr);
                             }
                             createSegmentMonitors(tlk);
                             if (queryTraceLevel() > 3 || ctx->queryProbeManager())
@@ -22834,7 +22837,7 @@ public:
                                         {
                                             while (tlk->lookup(false))
                                             {
-                                                unsigned slavePart = (unsigned) tlk->queryFpos();
+                                                unsigned slavePart = (unsigned)extractFpos(tlk);
                                                 if (slavePart)
                                                 {
                                                     accepted++;
@@ -22861,7 +22864,10 @@ public:
                                 {
                                     thisKey = thisBase->queryPart(fileNo);
                                     tlk->setKey(thisKey);
-                                    tlk->setLayoutTranslator(translators->item(fileNo));
+                                    if (!thisKey->isTopLevelKey())
+                                        tlk->setLayoutTranslator(translators->item(fileNo));
+                                    else
+                                        tlk->setLayoutTranslator(nullptr);
                                     tlk->reset();
                                 }
                                 else
@@ -23073,7 +23079,8 @@ public:
                 tlk.setown(createKeyMerger(keySet, owner.seekGEOffset, &owner));
             else
                 tlk.setown(createLocalKeyManager(keySet->queryPart(0), &owner));
-            tlk->setLayoutTranslator(trans);
+            if (!key->isTopLevelKey())
+                tlk->setLayoutTranslator(trans);
             owner.indexHelper.createSegmentMonitors(tlk);
             tlk->finishSegmentMonitors();
             tlk->reset();
@@ -23091,7 +23098,7 @@ public:
                 }
                 size32_t transformedSize;
                 RtlDynamicRowBuilder rowBuilder(owner.rowAllocator);
-                byte const * keyRow = tlk->queryKeyBuffer(owner.callback.getFPosRef());
+                byte const * keyRow = tlk->queryKeyBuffer();
                 try
                 {
                     transformedSize = owner.readHelper.transform(rowBuilder, keyRow);
@@ -23598,7 +23605,7 @@ public:
                 break;
             }
 
-            byte const * keyRow = tlk->queryKeyBuffer(callback.getFPosRef());
+            byte const * keyRow = tlk->queryKeyBuffer();
 #ifdef _DEBUG
 //          StringBuffer recstr;
 //          unsigned size = (tlk->queryRecordSize()<80)  ? tlk->queryRecordSize() : 80;
@@ -23908,7 +23915,7 @@ public:
             {
                 try
                 {
-                    count += countHelper.numValid(tlk->queryKeyBuffer(callback.getFPosRef()));
+                    count += countHelper.numValid(tlk->queryKeyBuffer());
                     callback.finishedRow();
                 }
                 catch (IException *E)
@@ -24150,7 +24157,7 @@ public:
             }
             try
             {
-                aggregateHelper.processRow(rowBuilder, tlk->queryKeyBuffer(callback.getFPosRef()));
+                aggregateHelper.processRow(rowBuilder, tlk->queryKeyBuffer());
                 callback.finishedRow();
             }
             catch (IException *E)
@@ -24331,7 +24338,7 @@ public:
             {
                 if (groupSegCount && !trans)
                 {
-                    AggregateRowBuilder &rowBuilder = singleAggregator.addRow(tlk->queryKeyBuffer(callback.getFPosRef()));
+                    AggregateRowBuilder &rowBuilder = singleAggregator.addRow(tlk->queryKeyBuffer());
                     callback.finishedRow();
                     if (kind==TAKindexgroupcount)                   
                     {
@@ -24343,7 +24350,7 @@ public:
                 }
                 else
                 {
-                    aggregateHelper.processRow(tlk->queryKeyBuffer(callback.getFPosRef()), this);
+                    aggregateHelper.processRow(tlk->queryKeyBuffer(), this);
                     callback.finishedRow();
                 }
             }
@@ -24479,7 +24486,7 @@ public:
             }
             size32_t transformedSize;
     
-            if (readHelper.first(tlk->queryKeyBuffer(callback.getFPosRef())))
+            if (readHelper.first(tlk->queryKeyBuffer()))
             {
                 Owned<CRowArrayMessageResult> result = new CRowArrayMessageResult(ctx->queryRowManager(), meta.isVariableSize());
                 do
@@ -25444,7 +25451,10 @@ public:
                     try
                     {
                         tlk->setKey(thisKey);
-                        tlk->setLayoutTranslator(translators->item(fileNo));
+                        if (!thisKey->isTopLevelKey())
+                            tlk->setLayoutTranslator(translators->item(fileNo));
+                        else
+                            tlk->setLayoutTranslator(nullptr);
                         helper.createSegmentMonitors(tlk, extracted);
                         if (rootIndex)
                             rootIndex->mergeSegmentMonitors(tlk);
@@ -25458,7 +25468,7 @@ public:
                                 bool locallySorted = !thisKey->isFullySorted();
                                 while (locallySorted || tlk->lookup(false)) 
                                 {
-                                    unsigned slavePart = locallySorted ? 0 : (unsigned) tlk->queryFpos();
+                                    unsigned slavePart = locallySorted ? 0 : (unsigned)extractFpos(tlk);
                                     if (locallySorted || slavePart)
                                     {
                                         cvp *outputBuffer = (cvp *) remote.getMem(slavePart, fileNo, indexReadSize + sizeof(cvp) + (indexReadInputRecordVariable ? sizeof(unsigned) : 0));
@@ -25492,12 +25502,13 @@ public:
                                     candidateCount++;
                                     atomic_inc(&indexRecordsRead);
                                     KLBlobProviderAdapter adapter(tlk);
-                                    offset_t recptr;
-                                    const byte *indexRow = tlk->queryKeyBuffer(recptr);
-                                    if (helper.indexReadMatch(extracted, indexRow, recptr, &adapter))
+                                    const byte *indexRow = tlk->queryKeyBuffer();
+                                    size_t fposOffset = tlk->queryRowSize() - sizeof(offset_t);
+                                    offset_t fpos = rtlReadBigUInt8(indexRow + fposOffset);
+                                    if (helper.indexReadMatch(extracted, indexRow, fpos, &adapter))
                                     {
                                         KeyedJoinHeader *rhs = (KeyedJoinHeader *) ctx->queryRowManager().allocate(KEYEDJOIN_RECORD_SIZE(0), activityId);
-                                        rhs->fpos = recptr; 
+                                        rhs->fpos = fpos;
                                         rhs->thisGroup = jg; 
                                         rhs->partNo = partNo; 
                                         result->append(rhs);
@@ -25525,7 +25536,10 @@ public:
                             {
                                 thisKey = thisBase->queryPart(fileNo);
                                 tlk->setKey(thisKey);
-                                tlk->setLayoutTranslator(translators->item(fileNo));
+                                if (!thisKey->isTopLevelKey())
+                                    tlk->setLayoutTranslator(translators->item(fileNo));
+                                else
+                                    tlk->setLayoutTranslator(nullptr);
                                 tlk->reset();
                             }
                             else
@@ -26276,7 +26290,10 @@ public:
                     unsigned fileNo = 0;
                     IKeyIndex *thisKey = thisBase->queryPart(fileNo);
                     tlk->setKey(thisKey);
-                    tlk->setLayoutTranslator(translators->item(fileNo));
+                    if (thisKey && !thisKey->isTopLevelKey())
+                        tlk->setLayoutTranslator(translators->item(fileNo));
+                    else
+                        tlk->setLayoutTranslator(nullptr);
                     helper.createSegmentMonitors(tlk, extracted);
                     if (rootIndex)
                         rootIndex->mergeSegmentMonitors(tlk);
@@ -26292,7 +26309,7 @@ public:
                                 bool locallySorted = (!thisKey->isFullySorted());
                                 while (locallySorted || tlk->lookup(false))
                                 {
-                                    unsigned slavePart = locallySorted ? 0 : (unsigned) tlk->queryFpos();
+                                    unsigned slavePart = locallySorted ? 0 : (unsigned)extractFpos(tlk);
                                     if (locallySorted || slavePart)
                                     {
                                         cvp *outputBuffer = (cvp *) remote.getMem(slavePart, fileNo, indexReadRecordSize + sizeof(cvp) + (indexReadInputRecordVariable ? sizeof(unsigned) : 0));
@@ -26328,17 +26345,18 @@ public:
                                     candidateCount++;
                                     atomic_inc(&indexRecordsRead);
                                     KLBlobProviderAdapter adapter(tlk);
-                                    offset_t recptr;
-                                    const byte *indexRow = tlk->queryKeyBuffer(recptr);
-                                    if (helper.indexReadMatch(extracted, indexRow, recptr, &adapter))
+                                    const byte *indexRow = tlk->queryKeyBuffer();
+                                    size_t fposOffset = tlk->queryRowSize() - sizeof(offset_t);
+                                    offset_t fpos = rtlReadBigUInt8(indexRow + fposOffset);
+                                    if (helper.indexReadMatch(extracted, indexRow, fpos, &adapter))
                                     {
                                         RtlDynamicRowBuilder rb(joinFieldsAllocator, true); 
                                         CPrefixedRowBuilder pb(KEYEDJOIN_RECORD_SIZE(0), rb);
                                         accepted++;
                                         KLBlobProviderAdapter adapter(tlk);
-                                        size32_t joinFieldsSize = helper.extractJoinFields(pb, indexRow, recptr, &adapter);
+                                        size32_t joinFieldsSize = helper.extractJoinFields(pb, indexRow, fpos, &adapter);
                                         KeyedJoinHeader *rec = (KeyedJoinHeader *) rb.getUnfinalizedClear(); // lack of finalize ok as unserialized data here.
-                                        rec->fpos = recptr;
+                                        rec->fpos = fpos;
                                         rec->thisGroup = jg;
                                         rec->partNo = partNo;
                                         if (isSimple)
@@ -26373,7 +26391,10 @@ public:
                             {
                                 thisKey = thisBase->queryPart(fileNo);
                                 tlk->setKey(thisKey);
-                                tlk->setLayoutTranslator(translators->item(fileNo));
+                                if (thisKey && !thisKey->isTopLevelKey())
+                                    tlk->setLayoutTranslator(translators->item(fileNo));
+                                else
+                                    tlk->setLayoutTranslator(nullptr);
                                 tlk->reset();
                             }
                             else

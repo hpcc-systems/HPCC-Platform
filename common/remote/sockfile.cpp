@@ -2931,7 +2931,6 @@ class CRemoteKeyManager : public CSimpleInterfaceOf<IKeyManager>
     MemoryBuffer keyCursorMb;        // used for continuation
     unsigned __int64 totalGot = 0;
     size32_t currentSize = 0;
-    offset_t currentFpos = 0;
     const byte *currentRow = nullptr;
     bool first = true;
     unsigned __int64 chooseNLimit = 0;
@@ -3016,7 +3015,6 @@ public:
         rowDataRemaining = 0;
         keyCursorMb.clear();
         currentSize = 0;
-        currentFpos = 0;
         currentRow = nullptr;
         first = true;
         totalGot = 0;
@@ -3030,18 +3028,11 @@ public:
         }
         segs.reset();
     }
-    virtual const byte *queryKeyBuffer(offset_t & fpos) override
+    virtual const byte *queryKeyBuffer() override
     {
         if (!remoteSupport())
-            return directKM->queryKeyBuffer(fpos);;
-        fpos = currentFpos;
+            return directKM->queryKeyBuffer();
         return currentRow;
-    }
-    virtual offset_t queryFpos() override
-    {
-        if (!remoteSupport())
-            return directKM->queryFpos();
-        return currentFpos;
     }
     virtual unsigned queryRecordSize() override
     {
@@ -3069,10 +3060,9 @@ public:
         {
             if (rowDataRemaining)
             {
-                rowDataBuffer.read(currentFpos);
                 rowDataBuffer.read(currentSize);
                 currentRow = rowDataBuffer.readDirect(currentSize);
-                rowDataRemaining -= sizeof(currentFpos) + sizeof(currentSize) + currentSize;
+                rowDataRemaining -= sizeof(currentSize) + currentSize;
                 return true;
             }
             else
@@ -4785,9 +4775,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
         while (keyManager->lookup(true))
         {
             unsigned size = keyManager->queryRecordSize();
-            offset_t fpos;
-            const byte *result = keyManager->queryKeyBuffer(fpos);
-            reply.append(fpos);
+            const byte *result = keyManager->queryKeyBuffer();
             reply.append(size);
             reply.append(size, result);
             ++numRecs;

@@ -43,7 +43,6 @@ interface jhtree_decl IKeyCursor : public IInterface
     virtual bool gtEqual(const char *src, char *dst, bool seekForward = false) = 0; // returns first record >= src
     virtual bool ltEqual(const char *src, char *dst, bool seekForward = false) = 0; // returns last record <= src
     virtual size32_t getSize() = 0;
-    virtual offset_t getFPos() = 0;
     virtual void serializeCursorPos(MemoryBuffer &mb) = 0;
     virtual void deserializeCursorPos(MemoryBuffer &mb, char *keyBuffer) = 0;
     virtual unsigned __int64 getSequence() = 0;
@@ -197,8 +196,7 @@ interface IKeyManager : public IInterface, extends IIndexReadContext
     virtual void reset(bool crappyHack = false) = 0;
     virtual void releaseSegmentMonitors() = 0;
 
-    virtual const byte *queryKeyBuffer(offset_t & fpos) = 0; //if using RLT: fpos is the translated value, so correct in a normal row
-    virtual offset_t queryFpos() = 0; //if using RLT: this is the untranslated fpos, so correct as the part number in TLK but not in a normal row
+    virtual const byte *queryKeyBuffer() = 0; //if using RLT: fpos is the translated value, so correct in a normal row
     virtual unsigned __int64 querySequence() = 0;
     virtual size32_t queryRowSize() = 0;     // Size of current row as returned by queryKeyBuffer()
     virtual unsigned queryRecordSize() = 0;  // Max size
@@ -227,6 +225,14 @@ interface IKeyManager : public IInterface, extends IIndexReadContext
 
     virtual bool lookupSkip(const void *seek, size32_t seekGEOffset, size32_t seeklen) = 0;
 };
+
+inline offset_t extractFpos(IKeyManager * manager)
+{
+    byte const * keyRow = manager->queryKeyBuffer();
+    size32_t rowSize = manager->queryRowSize();
+    size32_t offset = rowSize - sizeof(offset_t);
+    return rtlReadBigUInt8(keyRow + offset);
+}
 
 extern jhtree_decl IKeyManager *createLocalKeyManager(IKeyIndex * _key, IContextLogger *ctx);
 extern jhtree_decl IKeyManager *createKeyMerger(IKeyIndexSet * _key, unsigned sortFieldOffset, IContextLogger *ctx);

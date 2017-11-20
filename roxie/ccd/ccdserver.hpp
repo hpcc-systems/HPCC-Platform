@@ -280,13 +280,13 @@ extern void setStartRuid(unsigned restarts);
 class CIndexTransformCallback : implements IThorIndexCallback, public CInterface
 {
 public:
-    CIndexTransformCallback() { keyManager = NULL; cleanupRequired = false; filepos = 0; };
+    CIndexTransformCallback() { keyManager = NULL; cleanupRequired = false; };
     IMPLEMENT_IINTERFACE
 
 //IThorIndexCallback
     virtual unsigned __int64 getFilePosition(const void * row)
     {
-        return filepos;
+        throwUnexpected();
     }
     virtual byte * lookupBlob(unsigned __int64 id) 
     { 
@@ -297,7 +297,6 @@ public:
 
 
 public:
-    inline offset_t & getFPosRef()                              { return filepos; }
     inline void setManager(IKeyManager * _manager)
     {
         finishedRow();
@@ -314,7 +313,6 @@ public:
 
 protected:
     IKeyManager * keyManager;
-    offset_t filepos;
     bool cleanupRequired;
 };
 

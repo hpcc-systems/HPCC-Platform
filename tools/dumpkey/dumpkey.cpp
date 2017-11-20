@@ -179,7 +179,7 @@ int main(int argc, const char **argv)
                     MyIndexCallback(IKeyManager *_manager) : manager(_manager) {}
                     virtual unsigned __int64 getFilePosition(const void * row)
                     {
-                        return manager->queryFpos();
+                        return 0;
                     }
                     virtual byte * lookupBlob(unsigned __int64 id)
                     {
@@ -257,8 +257,7 @@ int main(int argc, const char **argv)
                 manager->reset();
                 while (manager->lookup(true) && count--)
                 {
-                    offset_t pos;
-                    byte const * buffer = manager->queryKeyBuffer(pos);
+                    byte const * buffer = manager->queryKeyBuffer();
                     size32_t size = manager->queryRowSize();
                     unsigned __int64 seq = manager->querySequence();
                     if (optRaw)
@@ -269,7 +268,7 @@ int main(int argc, const char **argv)
                     {
                         for (unsigned i = 0; i < size; i++)
                             printf("%02x", ((unsigned char) buffer[i]) & 0xff);
-                        printf("  :%" I64F "u:%012" I64F "x\n", seq, pos);
+                        printf("  :%" I64F "u\n", seq);
                     }
                     else if (helper)
                     {
@@ -285,7 +284,7 @@ int main(int argc, const char **argv)
                             count++;  // Don't count this row as it was postfiltered
                     }
                     else
-                        printf("%.*s  :%" I64F "u:%012" I64F "x\n", size, buffer, seq, pos);
+                        printf("%.*s  :%" I64F "u\n", size, buffer, seq);
                 }
                 if (outRecType)
                     outRecType->doDelete();

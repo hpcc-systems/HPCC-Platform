@@ -2389,7 +2389,7 @@ class IndexDistributeSlaveActivity : public HashDistributeSlaveBase
             tlkManager->reset();
             verifyex(tlkManager->lookup(false));
             tlkManager->releaseSegmentMonitors();
-            offset_t partNo = tlkManager->queryFpos();
+            offset_t partNo = extractFpos(tlkManager);
             if (partNo)
                 partNo--; // note that partNo==0 means lower than anything in the key - should be treated same as partNo==1 here
             return ((unsigned)partNo % numslaves);

@@ -53,16 +53,13 @@ public:
         ~RowTransformContext();
         void init(unsigned seq, unsigned num) { sizes[seq] = new unsigned[num]; ptrs[seq] = new byte const *[num]; }
         void set(unsigned seq, unsigned i, size32_t size, byte const * ptr) { sizes[seq][i] = size; ptrs[seq][i] = ptr; }
-        void setFposIn(offset_t fpos) { fposIn = fpos; }
 
         size32_t querySize(unsigned seq, unsigned i) const { return sizes[seq][i]; }
         byte const * queryPointer(unsigned seq, unsigned i) const { return ptrs[seq][i]; }
-        offset_t const * queryFposIn() const { return &fposIn; }
     private:
         unsigned num;
         size32_t * * sizes;
         byte const * * * ptrs;
-        offset_t fposIn;
     };
 
     typedef enum { NoTranslation = 0, TranslateAll = 1, TranslatePayload = 2 } Mode;
@@ -74,7 +71,7 @@ public:
     virtual SegmentMonitorContext * getSegmentMonitorContext() = 0;
     virtual void createDiskSegmentMonitors(SegmentMonitorContext const & in, IIndexReadContext & out) = 0;
     virtual RowTransformContext * getRowTransformContext() = 0;
-    virtual size32_t transformRow(RowTransformContext * ctx, byte const * in, size32_t inSize, IMemoryBlock & out, offset_t & fpos) const = 0;
+    virtual size32_t transformRow(RowTransformContext * ctx, byte const * in, size32_t inSize, IMemoryBlock & out) const = 0;
 #ifdef DEBUG_HELPERS_REQUIRED
     virtual StringBuffer & getMappingsAsString(StringBuffer & out) const = 0;
 #endif

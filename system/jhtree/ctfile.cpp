@@ -777,7 +777,10 @@ bool CJHTreeNode::getValueAt(unsigned int index, char *dst) const
 
 size32_t CJHTreeNode::getSizeAt(unsigned int index) const
 {
-    return keyLen;
+    if (keyHdr->hasSpecialFileposition())
+        return keyLen + sizeof(offset_t);
+    else
+        return keyLen;
 }
 
 offset_t CJHTreeNode::getFPosAt(unsigned int index) const
@@ -951,7 +954,10 @@ size32_t CJHVarTreeNode::getSizeAt(unsigned int num) const
     const char * p = recArray[num];
     KEYRECSIZE_T reclen = ((KEYRECSIZE_T *) p)[-1];
     _WINREV(reclen);
-    return reclen;
+    if (keyHdr->hasSpecialFileposition())
+        return reclen + sizeof(offset_t);
+    else
+        return reclen;
 }
 
 offset_t CJHVarTreeNode::getFPosAt(unsigned int num) const
