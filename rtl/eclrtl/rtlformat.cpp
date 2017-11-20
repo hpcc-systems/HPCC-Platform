@@ -832,18 +832,12 @@ void CPropertyTreeWriter::outputQuoted(const char *text)
 
 void CPropertyTreeWriter::outputString(unsigned len, const char *field, const char *fieldname)
 {
-    unsigned olen = len;
     if (flags & XWFtrim)
         len = rtlTrimStrLen(len, field);
     if ((flags & XWFopt) && (rtlTrimStrLen(len, field) == 0))
         return;
-    if (olen != len)
-    {
-        StringBuffer tmp(len, field);
-        target->setProp(fieldname, tmp.str());
-    }
-    else
-        target->setProp(fieldname, field);
+    StringBuffer tmp(len, field);
+    target->setProp(fieldname, tmp.str());
 }
 
 
