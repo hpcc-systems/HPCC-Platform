@@ -1156,6 +1156,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         Linked<IRowStream> in;
         unsigned nextTlk;
         Owned<IKeyManager> tlkManager;
+        const RtlRecord &keyRecInfo;
         bool eos, eog;
         IKeyIndex *currentTlk;
         CJoinGroup *currentJG;
@@ -1196,9 +1197,9 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-        CKeyLocalLookup(CKeyedJoinSlave &_owner) : owner(_owner), indexReadFieldsRow(_owner.indexInputAllocator)
+        CKeyLocalLookup(CKeyedJoinSlave &_owner, const RtlRecord &_keyRecInfo) : owner(_owner), keyRecInfo(_keyRecInfo), indexReadFieldsRow(_owner.indexInputAllocator)
         {
-            tlkManager.setown(owner.keyHasTlk ? createLocalKeyManager(nullptr, nullptr) : nullptr);
+            tlkManager.setown(owner.keyHasTlk ? createLocalKeyManager(keyRecInfo, nullptr, nullptr) : nullptr);
 
             if (owner.getKeyManagers(partKeyManagers)) // true signifies that dealing with a local mergable set of index parts
                 currentPartKeyManager = &partKeyManagers.item(0);
@@ -1493,7 +1494,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 
             CKeyLookupPoolMember(CPRowStream &_owner) : owner(_owner)
             {
-                lookupStream.setown(new CKeyLocalLookup(owner.owner));
+                lookupStream.setown(new CKeyLocalLookup(owner.owner, owner.owner.helper->queryIndexRecordSize()->queryRecordAccessor(true)));
             }
             virtual void init(void *param) override
             {
@@ -1588,16 +1589,15 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             }
             else
             {
-                bool allowRemote = getOptBool("remoteKeyFilteringEnabled");
-                bool forceRemote = allowRemote ? getOptBool("forceDafilesrv") : false; // can only force remote, if forceDafilesrv and remoteKeyFilteringEnabled are enabled.
-                klManager.setown(createKeyManager(filename, crc, lfile, allowRemote, forceRemote));
+                Owned<IKeyIndex> keyIndex = createKeyIndex(filename, crc, *lfile, false, false);
+                klManager.setown(createLocalKeyManager(helper->queryIndexRecordSize()->queryRecordAccessor(true), keyIndex, nullptr));
                 keyManagers.append(*klManager.getClear());
             }
         }
         if (localMergedKey)
         {
             dbgassertex(0 == keyManagers.ordinality());
-            keyManagers.append(*createKeyMerger(partKeySet, 0, nullptr));
+            keyManagers.append(*createKeyMerger(helper->queryIndexRecordSize()->queryRecordAccessor(true), partKeySet, 0, nullptr));
             return true;
         }
         else
@@ -2032,7 +2032,7 @@ public:
         else
         {
             parallelLookups = 0;
-            resultDistStream = new CKeyLocalLookup(*this);
+            resultDistStream = new CKeyLocalLookup(*this, helper->queryIndexRecordSize()->queryRecordAccessor(true));
         }
     }
     virtual void abort()

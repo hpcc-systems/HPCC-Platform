@@ -154,6 +154,7 @@ typedef unsigned short UChar;
 #include "rtlkey.hpp"
 #include "jmisc.hpp"
 
+class RtlRecord;
 class jhtree_decl SegMonitorList : implements IInterface, implements IIndexReadContext, public CInterface
 {
     unsigned _lastRealSeg() const;
@@ -161,9 +162,10 @@ class jhtree_decl SegMonitorList : implements IInterface, implements IIndexReadC
     unsigned mergeBarrier;
     bool modified;
     bool needWild;
+    const RtlRecord &recInfo;
 public:
     IMPLEMENT_IINTERFACE;
-    inline SegMonitorList(bool _needWild) : needWild(_needWild) { reset(); }
+    inline SegMonitorList(const RtlRecord &_recInfo, bool _needWild) : recInfo(_recInfo), needWild(_needWild) { reset(); }
     IArrayOf<IKeySegmentMonitor> segMonitors;
 
     void reset();
@@ -235,9 +237,11 @@ inline offset_t extractFpos(IKeyManager * manager)
     return rtlReadBigUInt8(keyRow + offset);
 }
 
-extern jhtree_decl IKeyManager *createLocalKeyManager(IKeyIndex * _key, IContextLogger *ctx);
-extern jhtree_decl IKeyManager *createKeyMerger(IKeyIndexSet * _key, unsigned sortFieldOffset, IContextLogger *ctx);
-extern jhtree_decl IKeyManager *createSingleKeyMerger(IKeyIndex * _onekey, unsigned sortFieldOffset, IContextLogger *ctx);
+class RtlRecord;
+
+extern jhtree_decl IKeyManager *createLocalKeyManager(const RtlRecord &_recInfo, IKeyIndex * _key, IContextLogger *ctx);
+extern jhtree_decl IKeyManager *createKeyMerger(const RtlRecord &_recInfo, IKeyIndexSet * _key, unsigned sortFieldOffset, IContextLogger *ctx);
+extern jhtree_decl IKeyManager *createSingleKeyMerger(const RtlRecord &_recInfo, IKeyIndex * _onekey, unsigned sortFieldOffset, IContextLogger *ctx);
 
 class KLBlobProviderAdapter : implements IBlobProvider
 {

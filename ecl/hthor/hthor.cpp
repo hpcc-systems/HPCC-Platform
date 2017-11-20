@@ -8364,7 +8364,10 @@ void CHThorDiskReadBaseActivity::open()
 //=====================================================================================================
 
 CHThorBinaryDiskReadBase::CHThorBinaryDiskReadBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, IHThorCompoundBaseArg & _segHelper, ThorActivityKind _kind)
-: CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind), segHelper(_segHelper), prefetchBuffer(NULL), recInfo(outputMeta.queryOriginal()->queryRecordAccessor(true)),rowInfo(recInfo)
+: CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind),
+  segHelper(_segHelper), prefetchBuffer(NULL),
+  recInfo(outputMeta.queryRecordAccessor(true)),  // MORE - is this right - should it be diskMeta->queryRecordAccessor() ?
+  rowInfo(recInfo)
 {
 }
 
