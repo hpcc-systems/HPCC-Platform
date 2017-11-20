@@ -3527,18 +3527,21 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             {
                 EclAgent agent(w, wuid.str(), globals->getPropInt("IGNOREVERSION", 0)==0, globals->getPropBool("WFRESET", false), globals->getPropBool("NORETRY", false), logfilespec.str(), globals->queryProp("allowedPipePrograms"), query.getClear(), globals, agentTopology, logMsgHandler);
                 const bool isRemoteWorkunit = (daliServers.length() != 0);
-                const bool resolveFilesLocally = !isRemoteWorkunit || globals->getPropBool("USELOCALFILES", false);
-                const bool writeResultsToStdout = !isRemoteWorkunit || globals->getPropBool("RESULTSTOSTDOUT", false);
+                const bool resolveFilesLocally = standAloneExe && (!isRemoteWorkunit || globals->getPropBool("USELOCALFILES", false));
+                const bool writeResultsToStdout = standAloneExe && (!isRemoteWorkunit || globals->getPropBool("RESULTSTOSTDOUT", true));
 
                 outputFmts outputFmt = ofSTD;
-                if (globals->getPropBool("-xml", false))
-                    outputFmt = ofXML;
-                else if (globals->getPropBool("-raw", false))
-                    outputFmt = ofRAW;
-                else if (globals->getPropBool("-csv", false))
+                if (writeResultsToStdout)
                 {
-                    fprintf(stdout,"\nCSV output format not supported\n");
-                    return false;
+                    if (globals->getPropBool("-xml", false))
+                        outputFmt = ofXML;
+                    else if (globals->getPropBool("-raw", false))
+                        outputFmt = ofRAW;
+                    else if (globals->getPropBool("-csv", false))
+                    {
+                        fprintf(stdout,"\nCSV output format not supported\n");
+                        return false;
+                    }
                 }
 
                 agent.setStandAloneOptions(standAloneExe, isRemoteWorkunit, resolveFilesLocally, writeResultsToStdout, outputFmt, standAloneUDesc);
