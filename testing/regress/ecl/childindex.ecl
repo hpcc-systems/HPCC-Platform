@@ -20,7 +20,7 @@
 //version multiPart=false
 //version multiPart=true
 //version multiPart=true,useLocal=true
-//version multiPart=true,useTranslation=true,nothor
+//noversion multiPart=true,useTranslation=true,nothor
 
 import ^ as root;
 multiPart := #IFDEFINED(root.multiPart, true);
