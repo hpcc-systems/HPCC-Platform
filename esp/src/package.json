@@ -12,7 +12,7 @@
     "copy-res-dojox": "cpx \"./node_modules/dojox/widget/ColorPicker/images/**/*.{png,jpg,gif}\" ./build/eclwatch/img/",
     "copy-res": "npm run copy-res-es6-promise && npm run copy-res-eclwatch-img && npm run copy-res-eclwatch-ecl && npm run copy-res-dojo && npm run copy-res-dojox",
     "compile": "tsc",
-    "bundle": "node node_modules/webpack/bin/webpack.js --config webpack.config.js",
+    "bundle": "node node_modules/webpack/bin/webpack.js --bail --display errors-only --config webpack.config.js",
     "build": "npm run copy-res && npm run compile && npm run bundle",
     "test": "npm run lint"
   },
@@ -27,7 +27,7 @@
     "@hpcc-js/map": "0.0.44",
     "@hpcc-js/other": "0.0.40",
     "clipboard": "1.7.1",
-    "cpx":  "1.5.0",
+    "cpx": "1.5.0",
     "css-loader": "0.28.7",
     "dijit": "1.13.0",
     "dojo": "1.13.0",
