@@ -4471,7 +4471,7 @@ StringBuffer & RemoteFilename::getRemotePath(StringBuffer & out) const
         fn = loc.append(sharehead).append(tailpath).str();
     else // try and guess from just tail (may likely fail other than for windows) 
         fn=getLocalPath(loc).str();
-    if ((c=='\\')&&(fn[1]==':')) {  // windows \\d$
+    if ((fn[1]==':') && (fn[2]=='/' || fn[2]=='\\')) {  // windows \\d$
         out.append((char)tolower(c)).append(*fn).append(getShareChar());
         fn+=2;
     }
