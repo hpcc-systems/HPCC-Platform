@@ -53,6 +53,7 @@ struct ECLRTL_API RtlTypeInfoBase : public RtlTypeInfo
     virtual bool isNumeric() const override { return false; }
     virtual bool canTruncate() const override { return false; }
     virtual bool canExtend(char &) const override { return false; }
+    virtual bool canMemCmp() const override { return false; }
 
     virtual const char * queryLocale() const override;
     virtual const RtlFieldInfo * const * queryFields() const override;
@@ -82,6 +83,7 @@ struct ECLRTL_API RtlBoolTypeInfo : public RtlTypeInfoBase
     virtual void getUtf8(size32_t & resultLen, char * & result, const void * ptr) const override;
     virtual __int64 getInt(const void * ptr) const override;
     virtual int compare(const byte * left, const byte * right) const override;
+    virtual bool canMemCmp() const override { return true; }
     virtual unsigned hash(const byte *self, unsigned inhash) const override;
 protected:
     bool getBool(const void * ptr) const;
@@ -110,7 +112,6 @@ private:
     inline double value(const void * self) const;
 };
 
-//MORE: Create specialist versions
 struct ECLRTL_API RtlIntTypeInfo : public RtlTypeInfoBase
 {
     constexpr inline RtlIntTypeInfo(unsigned _fieldType, unsigned _length) : RtlTypeInfoBase(_fieldType, _length) {}
@@ -131,6 +132,7 @@ struct ECLRTL_API RtlIntTypeInfo : public RtlTypeInfoBase
     virtual bool canExtend(char &fillChar) const override;
     virtual bool isNumeric() const override { return true; }
     virtual int compare(const byte * left, const byte * right) const override;
+    virtual bool canMemCmp() const override;
     virtual unsigned hash(const byte *self, unsigned inhash) const override;
 };
 
@@ -190,6 +192,7 @@ struct ECLRTL_API RtlSwapIntTypeInfo : public RtlTypeInfoBase
     virtual bool canExtend(char &fillChar) const override;
     virtual bool isNumeric() const override { return true; }
     virtual int compare(const byte * left, const byte * right) const override;
+    virtual bool canMemCmp() const override;
     virtual unsigned hash(const byte *self, unsigned inhash) const override;
 };
 
@@ -211,6 +214,7 @@ struct ECLRTL_API RtlKeyedIntTypeInfo final : public RtlTypeInfoBase
     virtual double getReal(const void * ptr) const override;
     virtual bool isNumeric() const override { return true; }
     virtual int compare(const byte * left, const byte * right) const override;
+    virtual bool canMemCmp() const override { return true; }
     virtual unsigned hash(const byte *self, unsigned inhash) const override;
 private:
     inline __uint64 getUInt(const void * ptr) const { return (__uint64) getInt(ptr); }
@@ -265,6 +269,7 @@ struct ECLRTL_API RtlStringTypeInfo : public RtlTypeInfoBase
     virtual bool canTruncate() const override { return isFixedSize(); }
     virtual bool canExtend(char &fillChar) const override;
     virtual int compare(const byte * left, const byte * right) const override;
+    virtual bool canMemCmp() const override;
     virtual unsigned hash(const byte * self, unsigned inhash) const override;
 };
 
@@ -288,6 +293,7 @@ struct ECLRTL_API RtlDataTypeInfo : public RtlTypeInfoBase
     virtual bool canTruncate() const override { return isFixedSize(); }
     virtual bool canExtend(char &fillChar) const override;
     virtual int compare(const byte * left, const byte * right) const override;
+    virtual bool canMemCmp() const override;
     virtual unsigned hash(const byte *self, unsigned inhash) const override;
 };
 
@@ -332,6 +338,7 @@ struct ECLRTL_API RtlQStringTypeInfo : public RtlTypeInfoBase
     virtual __int64 getInt(const void * ptr) const override;
     virtual bool canExtend(char &fillChar) const override;
     virtual int compare(const byte * left, const byte * right) const override;
+    virtual bool canMemCmp() const override;
     virtual unsigned hash(const byte * self, unsigned inhash) const override;
 };
 
@@ -372,6 +379,7 @@ struct ECLRTL_API RtlCharTypeInfo : public RtlTypeInfoBase
     virtual void getUtf8(size32_t & resultLen, char * & result, const void * ptr) const override;
     virtual __int64 getInt(const void * ptr) const override;
     virtual int compare(const byte * left, const byte * right) const override;
+    virtual bool canMemCmp() const override { return true; }
     virtual unsigned hash(const byte *self, unsigned inhash) const override;
 };
 
