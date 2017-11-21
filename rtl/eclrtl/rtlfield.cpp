@@ -485,6 +485,15 @@ int RtlIntTypeInfo::compare(const byte * left, const byte * right) const
     }
 }
 
+bool RtlIntTypeInfo::canMemCmp() const
+{
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    return false;
+#else
+    return isUnsigned();
+#endif
+}
+
 unsigned RtlIntTypeInfo::hash(const byte *self, unsigned inhash) const
 {
     __int64 val = getInt(self);
@@ -704,6 +713,15 @@ int RtlSwapIntTypeInfo::compare(const byte * left, const byte * right) const
         __int64 rightValue = rtlReadSwapInt(right, length);
         return (leftValue < rightValue) ? -1 : (leftValue > rightValue) ? +1 : 0;
     }
+}
+
+bool RtlSwapIntTypeInfo::canMemCmp() const
+{
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    return isUnsigned();
+#else
+    return false;
+#endif
 }
 
 unsigned RtlSwapIntTypeInfo::hash(const byte *self, unsigned inhash) const
@@ -1203,10 +1221,14 @@ __int64 RtlStringTypeInfo::getInt(const void * ptr) const
 
 int RtlStringTypeInfo::compare(const byte * left, const byte * right) const
 {
-    if (isEbcdic())
+    if (isFixedSize())
+        return memcmp(left, right, length);
+    else if (isEbcdic())
     {
-        if (isFixedSize())
-            return rtlCompareEStrEStr(length, (const char *)left, length, (const char *)right);
+        // Logically this should be
+        // if (isFixedSize())
+        //    return rtlCompareEStrEStr(length, (const char *)left, length, (const char *)right);
+        // but that's the same as a memcmp if lengths match
 
         size32_t lenLeft = rtlReadSize32t(left);
         size32_t lenRight = rtlReadSize32t(right);
@@ -1214,13 +1236,20 @@ int RtlStringTypeInfo::compare(const byte * left, const byte * right) const
     }
     else
     {
-        if (isFixedSize())
-            return rtlCompareStrStr(length, (const char *)left, length, (const char *)right);
+        // Logically this should be
+        // if (isFixedSize())
+        //    return rtlCompareStrStr(length, (const char *)left, length, (const char *)right);  // Actually this is a memcmp
+        // but that's the same as a memcmp if lengths match
 
         size32_t lenLeft = rtlReadSize32t(left);
         size32_t lenRight = rtlReadSize32t(right);
         return rtlCompareStrStr(lenLeft, (const char *)left + sizeof(size32_t), lenRight, (const char *)right + sizeof(size32_t));
     }
+}
+
+bool RtlStringTypeInfo::canMemCmp() const
+{
+    return isFixedSize();
 }
 
 unsigned RtlStringTypeInfo::hash(const byte * self, unsigned inhash) const
@@ -1409,11 +1438,18 @@ __int64 RtlDataTypeInfo::getInt(const void * ptr) const
 int RtlDataTypeInfo::compare(const byte * left, const byte * right) const
 {
     if (isFixedSize())
-        return rtlCompareDataData(length, (const char *)left, length, (const char *)right);
+        // Logically this should be return rtlCompareDataData(length, (const char *)left, length, (const char *)right);
+        // but that acts as a memcmp if lengths match
+        return memcmp(left, right, length);
 
     size32_t lenLeft = rtlReadSize32t(left);
     size32_t lenRight = rtlReadSize32t(right);
     return rtlCompareDataData(lenLeft, (const char *)left + sizeof(size32_t), lenRight, (const char *)right + sizeof(size32_t));
+}
+
+bool RtlDataTypeInfo::canMemCmp() const
+{
+    return isFixedSize();
 }
 
 unsigned RtlDataTypeInfo::hash(const byte *self, unsigned inhash) const
@@ -1567,7 +1603,6 @@ void RtlVarStringTypeInfo::readAhead(IRowDeserializerSource & in) const
         in.skipVStr();
     }
 }
-
 
 void RtlVarStringTypeInfo::getString(size32_t & resultLen, char * & result, const void * ptr) const
 {
@@ -1774,11 +1809,18 @@ __int64 RtlQStringTypeInfo::getInt(const void * ptr) const
 int RtlQStringTypeInfo::compare(const byte * left, const byte * right) const
 {
     if (isFixedSize())
-        return rtlCompareQStrQStr(length, left, length, right);
+        // Logically this should be return rtlCompareQStrQStr(length, left, length, right);
+        // but that acts as a memcmp if lengths match
+        return memcmp(left, right, length);
 
     size32_t lenLeft = rtlReadSize32t(left);
     size32_t lenRight = rtlReadSize32t(right);
     return rtlCompareQStrQStr(lenLeft, left + sizeof(size32_t), lenRight, right + sizeof(size32_t));
+}
+
+bool RtlQStringTypeInfo::canMemCmp() const
+{
+    return isFixedSize();
 }
 
 unsigned RtlQStringTypeInfo::hash(const byte * self, unsigned inhash) const

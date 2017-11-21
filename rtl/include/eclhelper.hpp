@@ -419,6 +419,7 @@ struct RtlTypeInfo : public RtlITypeInfo
     virtual bool isNumeric() const = 0;
     virtual bool canTruncate() const = 0;
     virtual bool canExtend(char &) const = 0;
+    virtual bool canMemCmp() const = 0;
 
     virtual void doDelete() const = 0;  // Used in place of virtual destructor to allow constexpr constructors.
 public:
