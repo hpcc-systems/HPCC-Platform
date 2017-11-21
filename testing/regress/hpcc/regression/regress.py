@@ -370,16 +370,16 @@ class Regression:
                 if self.retryCount> 0:
                     self.timeouts[threadId] =  self.timeout
                     self.loggermutex.acquire()
-                    logging.warn("%3d. Has not started yet. Reset due to timeout after %d sec (%d retry attempt(s) remain)." % (cnt, self.timeouts[threadId],  self.retryCount),  extra={'taskId':cnt})
+                    logging.warn("%3d. %s has not started yet. Reset due to timeout after %d sec (%d retry attempt(s) remain)." % (cnt, query.ecl, self.timeouts[threadId],  self.retryCount),  extra={'taskId':cnt})
                     logging.debug("%3d. Task parameters: thread id: %d, ecl:'%s',state:'%s', retry count:%d." % (cnt, threadId,  query.ecl,   wuid['state'],  self.retryCount),  extra={'taskId':cnt})
                     self.loggermutex.release()
                 else:
                     # retry counter exhausted, give up and abort this test case if exists
-                    logging.debug("%3d. Abort WUID:'%s'" % (cnt,  str(wuid)),  extra={'taskId':cnt})
+                    logging.debug("%3d. Abort %s WUID:'%s'" % (cnt, query.ecl, str(wuid)),  extra={'taskId':cnt})
                     abortWorkunit(wuid['wuid'])
                     query.setAborReason('Timeout and retry count exhausted!')
                     self.loggermutex.acquire()
-                    logging.error("%3d. Timeout occured and no more attempt left. Force to abort... " % (cnt),  extra={'taskId':cnt})
+                    logging.error("%3d. Timeout occured for %s and no more attempt left. Force to abort... " % (cnt, query.ecl),  extra={'taskId':cnt})
                     logging.debug("%3d. Task parameters: wuid:'%s', state:'%s', ecl:'%s'." % (cnt, wuid['wuid'], wuid['state'],  query.ecl),  extra={'taskId':cnt})
                     logging.debug("%3d. Waiting for abort..." % (cnt),  extra={'taskId':cnt})
                     self.loggermutex.release()
@@ -570,13 +570,13 @@ class Regression:
         self.loggermutex.acquire()
         elapsTime = time.time()-startTime
         if res:
-            logging.info("%3d. Pass %s (%d sec)" % (cnt, wuid,  elapsTime),  extra={'taskId':cnt})
+            logging.info("%3d. Pass %s - %s (%d sec)" % (cnt, query.getBaseEclRealName(), wuid,  elapsTime),  extra={'taskId':cnt})
             logging.info("%3d. URL %s" % (cnt,url))
         else:
             if not wuid or not wuid.startswith("W"):
-                logging.error("%3d. Fail No WUID (%d sec)" % (cnt,  elapsTime),  extra={'taskId':cnt})
+                logging.error("%3d. Fail No WUID for %s (%d sec)" % (cnt, query.getBaseEclRealName(), elapsTime),  extra={'taskId':cnt})
             else:
-                logging.error("%3d. Fail %s (%d sec)" % (cnt, wuid,  elapsTime),  extra={'taskId':cnt})
+                logging.error("%3d. Fail %s - %s (%d sec)" % (cnt, query.getBaseEclRealName(), wuid, elapsTime),  extra={'taskId':cnt})
                 logging.error("%3d. URL %s" %  (cnt,url),  extra={'taskId':cnt})
                 zapRes = createZAP(wuid,  cnt)
                 logging.error("%3d. Zipped Analysis Package: %s" %  (cnt, zapRes),  extra={'taskId':cnt})
