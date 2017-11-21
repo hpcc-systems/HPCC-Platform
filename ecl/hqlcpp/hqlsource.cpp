@@ -2023,6 +2023,7 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
                 bool hasFilePosition = getBoolAttribute(indexExpr, filepositionAtom, true);
                 serializedRecord.setown(createMetadataIndexRecord(serializedRecord, hasFilePosition));
                 translator.buildMetaMember(instance->classctx, serializedRecord, false, "queryDiskRecordSize");
+                translator.buildMetaMember(instance->classctx, serializedRecord, false, "queryProjectedDiskRecordSize");
                 break;
             }
             default:
@@ -2030,10 +2031,14 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
                 {
                     OwnedHqlExpr diskTable = createDataset(no_anon, LINK(physicalRecord));
                     translator.buildMetaMember(instance->classctx, diskTable, false, "queryDiskRecordSize");
+                    if (activityKind != TAKpiperead)
+                        translator.buildMetaMember(instance->classctx, diskTable, false, "queryProjectedDiskRecordSize");
                 }
                 else
                 {
                     translator.buildMetaMember(instance->classctx, tableExpr, isGrouped(tableExpr), "queryDiskRecordSize");
+                    if (activityKind != TAKpiperead)
+                        translator.buildMetaMember(instance->classctx, tableExpr, isGrouped(tableExpr), "queryProjectedDiskRecordSize");
                 }
             }
         }
@@ -6973,6 +6978,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityXmlRead(BuildCtx & ctx, IHqlEx
     doBuildVarStringFunction(instance->classctx, "getXmlIteratorPath", queryRealChild(mode, 0));
 
     buildMetaMember(instance->classctx, tableExpr, false, "queryDiskRecordSize");  // A lie, but I don't care....
+    buildMetaMember(instance->classctx, tableExpr, false, "queryProjectedDiskRecordSize");  // A lie, but I don't care....
 
     //virtual unsigned getFlags() = 0;
     StringBuffer flags;

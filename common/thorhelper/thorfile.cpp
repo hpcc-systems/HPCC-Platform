@@ -53,6 +53,10 @@ public:
     {
         return (IOutputMetaData *)recordSize;
     }
+    virtual IOutputMetaData * queryProjectedDiskRecordSize()
+    {
+        return (IOutputMetaData *)recordSize;
+    }
     virtual unsigned getFormatCrc()
     {
         return 0;
