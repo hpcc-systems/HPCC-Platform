@@ -41,7 +41,7 @@ streamed dataset(outRecord) doRead(const varstring name) := EMBED(C++ : distribu
         }
         RTLIMPLEMENT_IINTERFACE
 
-        virtual const void * nextRow()
+        virtual const void * nextRow() override
         {
             if (idx >= sizeof(rows)/sizeof(*rows))
                 return NULL;
@@ -51,7 +51,7 @@ streamed dataset(outRecord) doRead(const varstring name) := EMBED(C++ : distribu
             return builder.finalizeRowClear(11);
         }
 
-        virtual void stop()
+        virtual void stop() override
         {
         }
 
