@@ -551,7 +551,7 @@ double RtlRow::getReal(unsigned field) const
     if (!fieldInfo->omitable() || getSize(field))
         return type->getReal(self + getOffset(field));
     else if (fieldInfo->initializer)
-        return type->getInt(fieldInfo->initializer);
+        return type->getReal(fieldInfo->initializer);
     else
         return 0;
 }
