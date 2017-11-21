@@ -1,5 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!--
 ################################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 #
@@ -15,16 +13,32 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
--->
 
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
-    <xs:include schemaLocation="environment.xsd"/>
-    <xs:element name="Topology">
-        <xs:annotation>
-            <xs:appinfo>
-                <viewType>topology</viewType>
-            </xs:appinfo>
-            <xs:documentation>Describes the Topology of the environment</xs:documentation>
-        </xs:annotation>
-    </xs:element>
-</xs:schema>
+
+# - Try to find the xsltproc executable
+#
+#  SAXON_FOUND - system has the saxon executable.
+#  SAXON_EXECUTABLE - the runtime path of the saxon executable
+
+if (NOT SAXON_FOUND)
+  IF (WIN32)
+    SET (saxon "transform.exe")
+  ELSE()
+    SET (saxon "saxonb-xslt")
+  ENDIF()
+
+  IF (NOT "${EXTERNALS_DIRECTORY}" STREQUAL "")
+    FIND_PROGRAM(SAXON_EXECUTABLE ${saxon} PATHS "${EXTERNALS_DIRECTORY}")
+  ENDIF()
+
+  if (USE_NATIVE_LIBRARIES)
+    # if we didn't find in externals, look in system include path
+    FIND_PROGRAM(SAXON_EXECUTABLE ${saxon})
+  endif()
+
+  include(FindPackageHandleStandardArgs)
+  find_package_handle_standard_args(SAXON DEFAULT_MSG
+    SAXON_EXECUTABLE
+  )
+  MARK_AS_ADVANCED(SAXON_EXECUTABLE)
+ENDIF()
