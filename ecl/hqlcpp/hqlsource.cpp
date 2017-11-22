@@ -500,7 +500,7 @@ static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IH
                 if (hozedType == cur->queryType())
                     newField = LINK(cur);
                 else if (createKeyedTypes)
-                    newField = createField(cur->queryId(), makeKeyedType(hozedType.getClear()), nullptr, extractFieldAttrs(cur));
+                    newField = createField(cur->queryId(), makeKeyedType(cur->getType()), nullptr, extractFieldAttrs(cur));
                 else
                     newField = createField(cur->queryId(), hozedType.getClear(), nullptr, extractFieldAttrs(cur));
             }

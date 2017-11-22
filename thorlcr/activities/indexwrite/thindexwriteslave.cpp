@@ -204,10 +204,10 @@ public:
         if(!metadata) metadata.setown(createPTree("metadata"));
         metadata->setProp("_record_ECL", helper->queryRecordECL());
 
-        if (helper->queryOutputMeta() && helper->queryOutputMeta()->queryTypeInfo())
+        if (helper->queryDiskRecordSize()->queryTypeInfo())
         {
             MemoryBuffer out;
-            dumpTypeInfo(out, helper->queryOutputMeta()->queryTypeInfo(), true);
+            dumpTypeInfo(out, helper->queryDiskRecordSize()->queryTypeInfo());
             metadata->setPropBin("_rtlType", out.length(), out.toByteArray());
         }
     }

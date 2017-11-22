@@ -2732,7 +2732,7 @@ extern bool ECLRTL_API hasTrailingFileposition(const RtlFieldInfo * const * fiel
         return false;
     while (*fields)
         fields++;
-    return (fields[-1]->type->getType() == type_filepos);
+    return (fields[-1]->type->getType() == type_filepos);  // note - filepos is created as an RtlSwapIntTypeInfo with type set to type_filepos
 }
 
 extern bool ECLRTL_API hasTrailingFileposition(const RtlTypeInfo * type)

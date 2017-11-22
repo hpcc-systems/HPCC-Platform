@@ -12014,10 +12014,10 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
             metadata.setown(createPTree("metadata", ipt_fast));
         metadata->setProp("_record_ECL", helper.queryRecordECL());
 
-        if (helper.queryOutputMeta() && helper.queryOutputMeta()->queryTypeInfo())
+        if (helper.queryDiskRecordSize()->queryTypeInfo())
         {
             MemoryBuffer out;
-            dumpTypeInfo(out, helper.queryOutputMeta()->queryTypeInfo(), true);
+            dumpTypeInfo(out, helper.queryDiskRecordSize()->queryTypeInfo());
             metadata->setPropBin("_rtlType", out.length(), out.toByteArray());
         }
     }
@@ -12224,10 +12224,10 @@ public:
             rtlFree(layoutMetaBuff);
         }
         // New record layout info
-        if (helper.queryOutputMeta() && helper.queryOutputMeta()->queryTypeInfo())
+        if (helper.queryDiskRecordSize()->queryTypeInfo())
         {
             MemoryBuffer out;
-            dumpTypeInfo(out, helper.queryOutputMeta()->queryTypeInfo(), true);
+            dumpTypeInfo(out, helper.queryDiskRecordSize()->queryTypeInfo());
             properties.setPropBin("_rtlType", out.length(), out.toByteArray());
         }
     }

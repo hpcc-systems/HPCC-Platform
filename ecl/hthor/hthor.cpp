@@ -1214,10 +1214,10 @@ void CHThorIndexWriteActivity::execute()
         rtlFree(layoutMetaBuff);
     }
     // New record layout info
-    if (helper.queryOutputMeta() && helper.queryOutputMeta()->queryTypeInfo())
+    if (helper.queryDiskRecordSize()->queryTypeInfo())
     {
         MemoryBuffer out;
-        dumpTypeInfo(out, helper.queryOutputMeta()->queryTypeInfo(), true);
+        dumpTypeInfo(out, helper.queryDiskRecordSize()->queryTypeInfo());
         properties.setPropBin("_rtlType", out.length(), out.toByteArray());
     }
 
@@ -1284,10 +1284,10 @@ void CHThorIndexWriteActivity::buildLayoutMetadata(Owned<IPropertyTree> & metada
     if(!metadata) metadata.setown(createPTree("metadata"));
     metadata->setProp("_record_ECL", helper.queryRecordECL());
 
-    if (helper.queryOutputMeta() && helper.queryOutputMeta()->queryTypeInfo())
+    if (helper.queryDiskRecordSize()->queryTypeInfo())
     {
         MemoryBuffer out;
-        dumpTypeInfo(out, helper.queryOutputMeta()->queryTypeInfo(), true);
+        dumpTypeInfo(out, helper.queryDiskRecordSize()->queryTypeInfo());
         metadata->setPropBin("_rtlType", out.length(), out.toByteArray());
     }
 }

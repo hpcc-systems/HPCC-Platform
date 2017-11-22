@@ -178,10 +178,10 @@ public:
             rtlFree(layoutMetaBuff);
         }
         // New record layout info
-        if (helper->queryOutputMeta() && helper->queryOutputMeta()->queryTypeInfo())
+        if (helper->queryDiskRecordSize()->queryTypeInfo())
         {
             MemoryBuffer out;
-            dumpTypeInfo(out, helper->queryOutputMeta()->queryTypeInfo(), true);
+            dumpTypeInfo(out, helper->queryDiskRecordSize()->queryTypeInfo());
             props.setPropBin("_rtlType", out.length(), out.toByteArray());
         }
         mpTag = container.queryJob().allocateMPTag();

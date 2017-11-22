@@ -317,132 +317,6 @@ private:
     bool commaPending = false;
 };
 
-class IndexBiasTranslator
-{
-public:
-    IndexBiasTranslator(const RtlTypeInfo *type)
-    {
-        translatedType = type;  // Assume no translation needed until proven otherwise
-        if (type->getType() != type_record)
-            return;
-        const RtlFieldInfo * const * fields = type->queryFields();
-        if (!fields)
-            return;
-
-        unsigned numFields;
-        needsTranslation = false;
-        for (numFields=0;;numFields++)
-        {
-            const RtlFieldInfo * child = fields[numFields];
-            if (!child)
-                break;
-            switch (child->type->getType())
-            {
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-            case type_swapint:
-                if (!child->type->isUnsigned())
-                    needsTranslation = true;
-                break;
-            case type_int:
-                needsTranslation = true;
-                break;
-#else
-            case type_int:
-                if (!child->type->isUnsigned())
-                    needsTranlsation = true;
-                break;
-            case type_swapint:
-                needsTranslation = true;
-                break;
-#endif
-            }
-        }
-        if (!needsTranslation && numFields > 1)
-        {
-            // Check if need last field translating to a type_filepos
-            switch(fields[numFields]->type->getType())
-            {
-            case type_int:
-            case type_swapint:
-            case type_packedint:
-            case type_bitfield:
-                needsTranslation = true;
-                break;
-            }
-        }
-        if (needsTranslation)
-        {
-            translated = new bool[numFields];
-            RtlFieldInfo * * newFields = new RtlFieldInfo * [numFields+1];
-            newFields[numFields] = nullptr;
-            for (unsigned idx = 0; idx < numFields; idx++)
-            {
-                newFields[idx] = new RtlFieldInfo(*fields[idx]);
-                const RtlTypeInfo *newType = createBiasType(fields[idx]->type, idx > 1 && idx == numFields-1);
-                // MORE - Is it an issue if we don't common these up?
-                if (newType)
-                {
-                    newFields[idx]->type = newType;
-                    translated[idx] = true;
-                }
-                else
-                    translated[idx] = false;
-            }
-            translatedType = new RtlRecordTypeInfo(type->fieldType, type->length, newFields);
-        }
-    }
-    ~IndexBiasTranslator()
-    {
-        if (needsTranslation)
-        {
-            const RtlFieldInfo * const * fields = translatedType->queryFields();
-            for (unsigned idx = 0;;idx++)
-            {
-                const RtlFieldInfo * child = fields[idx];
-                if (!child)
-                    break;
-                if (translated[idx])
-                    child->type->doDelete();
-                delete child;
-            }
-            delete [] fields;
-            translatedType->doDelete();
-            delete [] translated;
-        }
-    }
-    const RtlTypeInfo *queryTranslatedType()
-    {
-        return translatedType;
-    }
-private:
-    static const RtlTypeInfo *createBiasType(const RtlTypeInfo *origType, bool isLastField)
-    {
-        auto type = origType->getType();
-        if (type==type_int || type==type_swapint)
-        {
-            unsigned flags = origType->fieldType & ~RFTMkind;
-            unsigned length = origType->length;
-            if (isLastField)
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-                return new RtlSwapIntTypeInfo(type_filepos|type_unsigned, sizeof(offset_t));
-#else
-                return new RtlIntTypeInfo(type_filepos|type_unsigned, sizeof(offset_t));
-#endif
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-            else if (type == type_int || origType->isSigned())
-#else
-            else if (type == type_swapint || origType->isSigned()) // MORE - this may not be right if compiler machine endianness does not match this machine
-#endif
-                return new RtlKeyedIntTypeInfo(type_keyedint | flags, length, origType);
-        }
-        return nullptr;
-    }
-
-    const RtlTypeInfo *translatedType = nullptr;
-    bool needsTranslation = false;
-    bool *translated = nullptr;
-};
-
 class CRtlFieldTypeBinSerializer
 {
 public:
@@ -453,7 +327,7 @@ public:
      * @param  type RtlTypeInfo structure to be serialized
      * @return Referenced to supplied buffer
      */
-     static MemoryBuffer &serialize(MemoryBuffer &out, const RtlTypeInfo *type, bool applyBias)
+     static MemoryBuffer &serialize(MemoryBuffer &out, const RtlTypeInfo *type)
      {
          int oldEnd = out.setEndian(__LITTLE_ENDIAN);
          CRtlFieldTypeBinSerializer s(out);
@@ -462,13 +336,7 @@ public:
          DelayedMarker<hash64_t> hash(out);
          DelayedSizeMarker size(out);
          size32_t pos = out.length();
-         if (applyBias)
-         {
-             IndexBiasTranslator translator(type);
-             s.serializeType(translator.queryTranslatedType());
-         }
-         else
-             s.serializeType(type);
+         s.serializeType(type);
          size.write();
          hash.write(rtlHash64Data(size.size(), out.toByteArray()+pos, 0));
          out.setEndian(oldEnd);
@@ -907,15 +775,15 @@ extern ECLRTL_API StringBuffer &dumpTypeInfo(StringBuffer &ret, const RtlTypeInf
     return CRtlFieldTypeSerializer::serialize(ret, t);
 }
 
-extern ECLRTL_API MemoryBuffer &dumpTypeInfo(MemoryBuffer &ret, const RtlTypeInfo *t, bool useBias)
+extern ECLRTL_API MemoryBuffer &dumpTypeInfo(MemoryBuffer &ret, const RtlTypeInfo *t)
 {
-    return CRtlFieldTypeBinSerializer::serialize(ret, t, useBias);
+    return CRtlFieldTypeBinSerializer::serialize(ret, t);
 }
 
 extern ECLRTL_API void serializeRecordType(size32_t & __lenResult, void * & __result, IOutputMetaData &  metaVal)
 {
     MemoryBuffer ret;
-    CRtlFieldTypeBinSerializer::serialize(ret, metaVal.queryTypeInfo(), false);
+    CRtlFieldTypeBinSerializer::serialize(ret, metaVal.queryTypeInfo());
     __lenResult = ret.length();
     __result = ret.detach();
 }
@@ -931,7 +799,7 @@ extern ECLRTL_API void dumpRecordType(size32_t & __lenResult,char * & __result,I
     CRtlFieldTypeSerializer::serialize(ret2, deserializer.deserialize(ret));
     assert(streq(ret, ret2));
     MemoryBuffer out;
-    CRtlFieldTypeBinSerializer::serialize(out, metaVal.queryTypeInfo(), false);
+    CRtlFieldTypeBinSerializer::serialize(out, metaVal.queryTypeInfo());
     CRtlFieldTypeDeserializer bindeserializer(nullptr);
     CRtlFieldTypeSerializer::serialize(ret2.clear(), bindeserializer.deserialize(out));
     assert(streq(ret, ret2));

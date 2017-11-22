@@ -9687,7 +9687,8 @@ void getFieldTypeInfo(FieldTypeInfoStruct &out, ITypeInfo *type)
     case type_filepos:
         out.className = "RtlSwapIntTypeInfo";
         out.length = sizeof(offset_t);
-        out.fieldType |= RFTMunsigned;
+        if (!type->isSigned())
+            out.fieldType |= RFTMunsigned;
         break;
     case type_blob:
         out.className = "RtlBlobTypeInfo";
