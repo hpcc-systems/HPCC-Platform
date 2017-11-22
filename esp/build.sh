@@ -21,7 +21,6 @@ rm -rf "$DISTDIR"
 echo "EclWatch:  Cleaning Done"
 
 mkdir -p "$DISTDIR"
-cp -r "$SRCDIR/CodeMirror2" "$DISTDIR/CodeMirror2"
 mkdir "$DISTDIR/crossfilter"
 cp "$SRCDIR/crossfilter/crossfilter.min.js" "$DISTDIR/crossfilter/crossfilter.min.js"
 cp "$SRCDIR/crossfilter/LICENSE" "$DISTDIR/LICENSE"
