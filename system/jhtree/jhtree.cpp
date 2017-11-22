@@ -497,6 +497,7 @@ public:
         seeks = 0;
         scans = 0;
         skips = 0;
+        eof = false;
         nullSkips = 0;
         wildseeks = 0;
         transformSegs = false;
