@@ -488,7 +488,7 @@ public:
         n++;
     }
 
-    C *findh(const char *key,unsigned h) 
+    C *findh(const char *key,unsigned h,bool add)
     {
         unsigned i=h%htn;
         while (table[i]) {
@@ -497,7 +497,14 @@ public:
             if (++i==htn)
                 i = 0;
         }
-        return NULL;
+        if (!add)
+            return NULL;
+        C *c = C::create(key);
+        table[i] = c;
+        n++;
+        if (n*4>htn*3)
+            expand();
+        return c;
     }
 
     C *find(const char *key,bool add) 

@@ -36,6 +36,9 @@
 #include "jlog.hpp"
 #include "jptree.ipp"
 
+// In my tests this makes things slower (perhaps because of the lock contention?). Could maybe make it lockfree though?
+// #define USE_FREEALLOCATOR
+
 #define WARNLEGACYCOMPARE
 #define XMLTAG_CONTENT "<>"
 
@@ -71,11 +74,14 @@ RONameTable *AttrStrUnionWithValueTable::roValueTable = nullptr;
 static AtomRefTable *keyTable = nullptr;
 static AtomRefTable *keyTableNC = nullptr;
 
-static CriticalSection hashcrit;
 static CAttrValHashTable *attrHT = nullptr;
+
+#ifdef USE_FREEALLOCATOR
+static CriticalSection hashcrit;
 static AttrValue **freelist = nullptr;
 static unsigned freelistmax = 0;
 static CLargeMemoryAllocator freeallocator((memsize_t)-1, 0x1000*sizeof(AttrValue), true);
+#endif
 
 #ifdef USE_READONLY_ATOMTABLE
 static const char * roAttributes[] =
@@ -187,8 +193,10 @@ MODULE_EXIT()
     delete AttrStrUnionWithTable::roNameTable;
     delete AttrStrUnionWithValueTable::roValueTable;
 #endif
-    free(freelist);
+#ifdef USE_FREEALLOCATOR
+	free(freelist);
     freelist = NULL;
+#endif
 }
 
 static int comparePropTrees(IInterface * const *ll, IInterface * const *rr)
@@ -3100,7 +3108,6 @@ CAtomPTree::~CAtomPTree()
         return;
     AttrValue *a = attrs+numAttrs;
     {
-        CriticalBlock block(hashcrit);
         while (a--!=attrs)
         {
             if (a->key.isPtr())
@@ -3176,17 +3183,24 @@ unsigned CAtomPTree::queryHash() const
     }
 }
 
+// There is a separate free-list for every different size of attribute array.
+
 AttrValue *CAtomPTree::newAttrArray(unsigned n)
 {
+#ifdef USE_FREEALLOCATOR
     // NB crit must be locked
+    CriticalBlock block(hashcrit);
     if (!n)
         return nullptr;
     if (freelistmax<=n)
     {
+        // Expanding the freelist is a rare event - it's ok to use a global lock here
         freelist = (AttrValue **)realloc(freelist, sizeof(AttrValue *)*(n+1));
         while (freelistmax<=n)
             freelist[freelistmax++] = nullptr;
     }
+    // This could be locked with a separate lock for each n...
+    // Or could probably be made lock-free
     AttrValue *&p = freelist[n];
     AttrValue *ret = p;
     if (ret)
@@ -3194,17 +3208,27 @@ AttrValue *CAtomPTree::newAttrArray(unsigned n)
     else
         ret = (AttrValue *)freeallocator.alloc(sizeof(AttrValue)*n);
     return ret;
+#else
+    return new AttrValue[n];
+#endif
 }
 
 void CAtomPTree::freeAttrArray(AttrValue *a, unsigned n)
 {
-    // NB crit must be locked
+#ifdef USE_FREEALLOCATOR
+    // NB crit must be locked (presently)
+    // This could be locked with a separate lock for each n...
+    // Or could probably be made lock-free
+    CriticalBlock block(hashcrit);
     if (a)
     {
         AttrValue *&p = freelist[n];
         *(AttrValue **)a = p;
         p = a;
     }
+#else
+    delete [] a;
+#endif
 }
 
 void CAtomPTree::setAttribute(const char *key, const char *val)
@@ -3220,23 +3244,20 @@ void CAtomPTree::setAttribute(const char *key, const char *val)
     {
         if (streq(v->value.get(), val))
             return;
-        AttrStr * goer = v->value.getPtr();
+        // Question: is it better to move the crit block into attrHT? Would hold it for shorter periods and sometimes avoid holding it at all,
+        // but would also potentially mean more enter/exit calls.
+        // safer and easier to code if it moves... then use a separate crit (or crits) for attr free list
+        // and potentially multiple separate hash tables for atoms
+        // A bit of experimenting and thinking suggests that there are competing considerations:
+        // 1. critsec can cause a context switch in a way that (say) spinlock does not. That suggests holding for a bit longer is better than holding and releasing and holding and releasing.
+        // 2. Cost to acquire uncontended critsec is small. It's the sleep and subsequent wake of the other thread that hurts
+        if (v->value.isPtr())
+            attrHT->removeval(v->value.getPtr());
         if (!v->value.set(val))
-        {
-            CriticalBlock block(hashcrit);
-            if (goer)
-                attrHT->removeval(goer);
             v->value.setPtr(attrHT->addval(val));
-        }
-        else if (goer)
-        {
-            CriticalBlock block(hashcrit);
-            attrHT->removeval(goer);
-        }
     }
     else
     {
-        CriticalBlock block(hashcrit);
         AttrValue *newattrs = newAttrArray(numAttrs+1);
         memcpy(newattrs, attrs, numAttrs*sizeof(AttrValue));
         v = &newattrs[numAttrs];
@@ -3256,7 +3277,6 @@ bool CAtomPTree::removeAttribute(const char *key)
     if (!del)
         return false;
     numAttrs--;
-    CriticalBlock block(hashcrit);
     if (del->key.isPtr())
         attrHT->removekey(del->key.getPtr(), isnocase());
     if (del->value.isPtr())
