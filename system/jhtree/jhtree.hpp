@@ -165,7 +165,7 @@ class jhtree_decl SegMonitorList : implements IInterface, implements IIndexReadC
     unsigned keySegCount;
 
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_O;
     SegMonitorList(const RtlRecord &_recInfo, bool _needWild);
     IArrayOf<IKeySegmentMonitor> segMonitors;
 
@@ -187,9 +187,10 @@ public:
     void serialize(MemoryBuffer &mb) const;
 
     // interface IIndexReadContext
-    virtual void append(IKeySegmentMonitor *segment);
-    virtual unsigned ordinality() const;
-    virtual IKeySegmentMonitor *item(unsigned i) const;
+    virtual void append(IKeySegmentMonitor *segment) override;
+    virtual unsigned ordinality() const override;
+    virtual IKeySegmentMonitor *item(unsigned i) const override;
+    virtual void append(FFoption option, IFieldFilter * filter) override;
 };
 
 class IRecordLayoutTranslator;

@@ -288,6 +288,11 @@ void SegMonitorList::append(IKeySegmentMonitor *segment)
     segMonitors.append(*segment);
 }
 
+void SegMonitorList::append(FFoption option, IFieldFilter * filter)
+{
+    UNIMPLEMENTED;
+}
+
 bool SegMonitorList::matched(void *keyBuffer, unsigned &lastMatch) const
 {
     lastMatch = 0;
@@ -595,6 +600,12 @@ public:
     { 
         assertex(!started);
         activitySegs->append(segment);
+    }
+
+
+    virtual void append(FFoption option, IFieldFilter * filter)
+    {
+        UNIMPLEMENTED;
     }
 
     virtual unsigned ordinality() const 

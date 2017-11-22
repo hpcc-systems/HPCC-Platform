@@ -8391,6 +8391,11 @@ void CHThorBinaryDiskReadBase::append(IKeySegmentMonitor *segment)
     }
 }
 
+void CHThorBinaryDiskReadBase::append(FFoption option, IFieldFilter * filter)
+{
+    UNIMPLEMENTED;
+}
+
 unsigned CHThorBinaryDiskReadBase::ordinality() const
 {
     return segMonitors.length();

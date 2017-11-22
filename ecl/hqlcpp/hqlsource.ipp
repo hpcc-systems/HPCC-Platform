@@ -92,7 +92,7 @@ struct BuildMonitorState
     inline bool wildPending() { return wildOffset != (unsigned)-1; }
     inline void clearWild() { wildOffset = (unsigned) -1; }
 
-    const char * getSetName();
+    const char * getSetName(bool createValueSets);
     void popSetName();
 
 //Constant while building monitors
@@ -125,6 +125,8 @@ public:
         offset = _offset; 
         size = _size;
     }
+
+    const char * getFFOptions();
 
     IHqlExpression * selector;
     IHqlExpression * expandedSelector;
@@ -171,7 +173,7 @@ protected:
     IHqlExpression * castToFieldAndBack(IHqlExpression * left, IHqlExpression * right);
     bool containsTableSelects(IHqlExpression * expr);
     IHqlExpression * createRangeCompare(IHqlExpression * selector, IHqlExpression * value, IHqlExpression * lengthExpr, bool compareEqual);
-    void createStringSet(BuildCtx & ctx, const char * target, unsigned size, ITypeInfo * type);
+    void createStringSet(BuildCtx & ctx, const char * target, unsigned size, IHqlExpression * selector);
     KeyCondition * createTranslatedCondition(IHqlExpression * cond, KeyedKind keyedKind);
     bool extractBoolFieldFilter(KeyConditionInfo & matches, IHqlExpression * selector, KeyedKind keyedKind, bool compareValue);
     bool extractFilters(KeyConditionInfo & matches, IHqlExpression * filter, KeyedKind keyedKind);
@@ -233,6 +235,9 @@ protected:
     bool cleanlyKeyedExplicitly;
     bool keyedExplicitly;
     bool allowDynamicFormatChange;
+    bool createValueSets;
+    IIdAtom * addRangeFunc;
+    IIdAtom * killRangeFunc;
 };
 
 //---------------------------------------------------------------------------

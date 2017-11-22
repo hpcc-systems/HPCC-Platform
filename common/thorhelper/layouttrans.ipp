@@ -99,11 +99,12 @@ class ExpandedSegmentMonitorList : public IRecordLayoutTranslator::SegmentMonito
 public:
     ExpandedSegmentMonitorList(CRecordLayoutTranslator * _owner) : owner(_owner) {}
     IMPLEMENT_IINTERFACE;
-    virtual void append(IKeySegmentMonitor * monitor);
-    virtual bool isLastSegmentWild() const { return false; }
-    virtual unsigned ordinality() const { return monitors.ordinality(); }
-    virtual IKeySegmentMonitor * item(unsigned i) const { return &monitors.item(i); }
-    virtual void reset() { monitors.kill(); }
+    virtual void append(IKeySegmentMonitor * monitor) override;
+    virtual unsigned ordinality() const override { return monitors.ordinality(); }
+    virtual IKeySegmentMonitor * item(unsigned i) const override { return &monitors.item(i); }
+    virtual void reset() override { monitors.kill(); }
+    virtual void append(FFoption option, IFieldFilter * filter) override { UNIMPLEMENTED; }
+
 private:
     CRecordLayoutTranslator * owner;
     IArrayOf<IKeySegmentMonitor> monitors;

@@ -21569,6 +21569,11 @@ public:
         }
     }
 
+    virtual void append(FFoption option, IFieldFilter * filter)
+    {
+        UNIMPLEMENTED;
+    }
+
     virtual unsigned ordinality() const
     {
         return cursor ? cursor->ordinality() : 0;

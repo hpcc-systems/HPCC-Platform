@@ -791,6 +791,7 @@ struct HqlCppOptions
     bool                translateDFSlayouts;
     bool                timeTransforms;
     bool                useGlobalCompareClass;
+    bool                createValueSets;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
@@ -1058,6 +1059,7 @@ public:
 
     IHqlExpression * getRtlFieldKey(IHqlExpression * expr, IHqlExpression * ownerRecord, bool &isPayload);
     unsigned buildRtlField(StringBuffer & instanceName, IHqlExpression * field, IHqlExpression * rowRecord);
+    unsigned buildRtlFieldType(StringBuffer & instanceName, IHqlExpression * field, IHqlExpression * rowRecord);
     unsigned buildRtlType(StringBuffer & instanceName, ITypeInfo * type);
     unsigned buildRtlRecordFields(StringBuffer & instanceName, IHqlExpression * record, IHqlExpression * rowRecord);
     unsigned expandRtlRecordFields(StringBuffer & fieldListText, IHqlExpression * record, IHqlExpression * rowRecord);
