@@ -555,11 +555,6 @@ void ExpandedSegmentMonitorList::append(IKeySegmentMonitor * monitor)
     monitors.append(*monitor);
 }
 
-void ExpandedSegmentMonitorList::setMergeBarrier(unsigned offset)
-{
-    // MORE - It's possible that I need to do something here??
-}
-
 IRecordLayoutTranslator * createRecordLayoutTranslator(IDefRecordMeta const * diskMeta, IDefRecordMeta const * activityMeta, IRecordLayoutTranslator::Mode _mode)
 {
     Owned<IRecordLayoutTranslator> layoutTrans = new CRecordLayoutTranslator(diskMeta, activityMeta, _mode);

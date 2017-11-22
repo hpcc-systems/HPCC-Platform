@@ -8391,11 +8391,6 @@ void CHThorBinaryDiskReadBase::append(IKeySegmentMonitor *segment)
     }
 }
 
-void CHThorBinaryDiskReadBase::setMergeBarrier(unsigned barrierOffset)
-{
-    // nothing to do - we don't merge...
-}
-
 unsigned CHThorBinaryDiskReadBase::ordinality() const
 {
     return segMonitors.length();

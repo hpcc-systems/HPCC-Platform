@@ -134,7 +134,6 @@ public:
     virtual void append(IKeySegmentMonitor *segment) = 0;
     virtual unsigned ordinality() const = 0;
     virtual IKeySegmentMonitor *item(unsigned idx) const = 0;
-    virtual void setMergeBarrier(unsigned offset) = 0;
 };
 
 ECLRTL_API IStringSet *createRtlStringSet(size32_t size);

@@ -99,7 +99,6 @@ class ExpandedSegmentMonitorList : public IRecordLayoutTranslator::SegmentMonito
 public:
     ExpandedSegmentMonitorList(CRecordLayoutTranslator * _owner) : owner(_owner) {}
     IMPLEMENT_IINTERFACE;
-    virtual void setMergeBarrier(unsigned barrierOffset);
     virtual void append(IKeySegmentMonitor * monitor);
     virtual bool isLastSegmentWild() const { return false; }
     virtual unsigned ordinality() const { return monitors.ordinality(); }

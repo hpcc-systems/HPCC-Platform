@@ -2307,7 +2307,6 @@ public:
     virtual void append(IKeySegmentMonitor *segment);
     virtual unsigned ordinality() const;
     virtual IKeySegmentMonitor *item(unsigned idx) const;
-    virtual void setMergeBarrier(unsigned barrierOffset);
 
 protected:
     virtual void verifyRecordFormatCrc() { ::verifyFormatCrcSuper(helper.getFormatCrc(), ldFile?ldFile->queryDistributedFile():NULL, false, true); }

@@ -59,6 +59,7 @@
 #include "keybuild.hpp"
 #include "eclhelper_dyn.hpp"
 #include "layouttrans.hpp"
+#include "rtlrecord.hpp"
 
 static std::atomic<CKeyStore *> keyStore(nullptr);
 static unsigned defaultKeyIndexLimit = 200;
@@ -85,6 +86,12 @@ MODULE_EXIT()
 }
 
 //#define DUMP_NODES
+
+SegMonitorList::SegMonitorList(const RtlRecord &_recInfo, bool _needWild) : recInfo(_recInfo), needWild(_needWild)
+{
+    keySegCount = recInfo.getNumKeyedFields();
+    reset();
+}
 
 unsigned SegMonitorList::ordinality() const
 {
@@ -214,18 +221,19 @@ unsigned SegMonitorList::lastFullSeg() const
     return ret;
 }
 
-void SegMonitorList::finish(unsigned keyedSize) // MORE - probably need to know the record layout here, if wilds are to be added properly.
+void SegMonitorList::finish(unsigned keyedSize)
 {
     if (modified)
     {
-        size32_t segSize = getSize();
-        if (segSize < mergeBarrier)
+        while (segMonitors.length() < keySegCount)
         {
-            segMonitors.append(*createWildKeySegmentMonitor(0, segSize, mergeBarrier-segSize));  // MORE - field number is needed, but that requires layout info
-            segSize = mergeBarrier;
+            unsigned idx = segMonitors.length();
+            size32_t offset = recInfo.getFixedOffset(idx);
+            size32_t size = recInfo.getFixedOffset(idx+1) - offset;
+            segMonitors.append(*createWildKeySegmentMonitor(idx, offset, size));
         }
-         if (segSize < keyedSize)
-            segMonitors.append(*createWildKeySegmentMonitor(0, segSize, keyedSize-segSize));  // MORE - field number is needed, but that requires layout info
+        size32_t segSize = getSize();
+        assertex(segSize == keyedSize);
         recalculateCache();
         modified = false;
     }
@@ -239,7 +247,7 @@ void SegMonitorList::recalculateCache()
 void SegMonitorList::reset()
 {
     segMonitors.kill();
-    modified = true; mergeBarrier = 0;
+    modified = true;
 }
 
 void SegMonitorList::swapWith(SegMonitorList &other)
@@ -270,36 +278,13 @@ void SegMonitorList::append(IKeySegmentMonitor *segment)
     unsigned fieldIdx = segment->getFieldIdx();
     unsigned offset = segment->getOffset();
     unsigned size = segment->getSize();
-#if 0
-    // Eventually we will want something like this:
     while (segMonitors.length() < fieldIdx)
     {
         unsigned idx = segMonitors.length();
-        IKeySegmentMonitor * before = createWildKeySegmentMonitor(idx, field(idx));
+        size32_t offset = recInfo.getFixedOffset(idx);
+        size32_t size = recInfo.getFixedOffset(idx+1) - offset;
+        segMonitors.append(*createWildKeySegmentMonitor(idx, offset, size));
     }
-#else
-    // But as we don't have field info yet, and we don't care about it yet, this will do
-    unsigned lastOffset = 0;
-    if (segMonitors.length())
-    {
-        unsigned lpos = segMonitors.length()-1;
-        IKeySegmentMonitor &last = segMonitors.item(lpos);
-        lastOffset = last.getOffset() + last.getSize();
-    }
-    assertex(lastOffset <= offset);
-    if (lastOffset < offset && needWild)
-    {
-        if (mergeBarrier && lastOffset < mergeBarrier && offset > mergeBarrier)
-        {
-            segMonitors.append(*createWildKeySegmentMonitor(0, lastOffset, mergeBarrier-lastOffset));
-            segMonitors.append(*createWildKeySegmentMonitor(0, mergeBarrier, offset-mergeBarrier));
-        }
-        else
-        {
-            segMonitors.append(*createWildKeySegmentMonitor(0, lastOffset, offset-lastOffset));
-        }
-    }
-#endif
     segMonitors.append(*segment);
 }
 
@@ -895,11 +880,6 @@ public:
         {
             layoutTransRowCtx.clear();
         }
-    }
-
-    virtual void setMergeBarrier(unsigned offset)
-    {
-        activitySegs->setMergeBarrier(offset); 
     }
 
     virtual void setSegmentMonitors(SegMonitorList &segmentMonitors) override
@@ -2384,14 +2364,12 @@ class CKeyMerger : public CKeyLevelManager
 public:
     CKeyMerger(const RtlRecord &_recInfo, IKeyIndexSet *_keyset, unsigned _sortFieldOffset, IContextLogger *_ctx) : CKeyLevelManager(_recInfo, NULL, _ctx), sortFieldOffset(_sortFieldOffset)
     {
-        segs.setMergeBarrier(sortFieldOffset);
         init();
         setKey(_keyset);
     }
 
     CKeyMerger(const RtlRecord &_recInfo, IKeyIndex *_onekey, unsigned _sortFieldOffset, IContextLogger *_ctx) : CKeyLevelManager(_recInfo, NULL, _ctx), sortFieldOffset(_sortFieldOffset)
     {
-        segs.setMergeBarrier(sortFieldOffset);
         init();
         setKey(_onekey);
     }
@@ -3144,23 +3122,19 @@ protected:
     void testKeys(bool variable)
     {
         const char *json = variable ?
-                "{ \"ty1\": { \"fieldType\": 4, \"length\": 7 }, "
-                "  \"ty2\": { \"fieldType\": 4, \"length\": 3 }, "
-                "  \"ty3\": { \"fieldType\": 15, \"length\": 8 }, "
+                "{ \"ty1\": { \"fieldType\": 4, \"length\": 10 }, "
+                "  \"ty2\": { \"fieldType\": 15, \"length\": 8 }, "
                 " \"fieldType\": 13, \"length\": 10, "
                 " \"fields\": [ "
                 " { \"name\": \"f1\", \"type\": \"ty1\", \"flags\": 4 }, "
-                " { \"name\": \"f2\", \"type\": \"ty2\", \"flags\": 4 }, "
-                " { \"name\": \"f3\", \"type\": \"ty3\", \"flags\": 65551 } "  // 0x01000f i.e. payload and blob
+                " { \"name\": \"f3\", \"type\": \"ty2\", \"flags\": 65551 } "  // 0x01000f i.e. payload and blob
                 " ]"
                 "}"
                 :
-                "{ \"ty1\": { \"fieldType\": 4, \"length\": 7 }, "
-                "  \"ty2\": { \"fieldType\": 4, \"length\": 3 }, "
+                "{ \"ty1\": { \"fieldType\": 4, \"length\": 10 }, "
                 " \"fieldType\": 13, \"length\": 10, "
                 " \"fields\": [ "
                 " { \"name\": \"f1\", \"type\": \"ty1\", \"flags\": 4 }, "
-                " { \"name\": \"f2\", \"type\": \"ty2\", \"flags\": 4 } "
                 " ] "
                 "}";
         Owned<IOutputMetaData> meta = createTypeInfoOutputMetaData(json, nullptr);

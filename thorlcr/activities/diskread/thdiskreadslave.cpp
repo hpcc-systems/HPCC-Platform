@@ -112,11 +112,6 @@ public:
             return NULL;
     }
     
-    virtual void setMergeBarrier(unsigned barrierOffset)
-    {
-        // We don't merge them so no issue... afaik
-    }
-
 friend class CDiskRecordPartHandler;
 };
 

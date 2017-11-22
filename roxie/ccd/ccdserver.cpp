@@ -21579,11 +21579,6 @@ public:
         return cursor ? cursor->item(idx) : 0;
     }
 
-    virtual void setMergeBarrier(unsigned barrierOffset)
-    {
-        // no merging so no issue...
-    }
-
     virtual void stop()
     {
         if (useRemote())
@@ -24310,7 +24305,6 @@ public:
             groupSegSize = 0;
         if (groupSegSize)
         {
-            key->setMergeBarrier(groupSegSize);
             CRoxieServerIndexActivity::createSegmentMonitors(key);
             unsigned numSegs = tlk->ordinality();
             for (unsigned segNo = 0; segNo < numSegs; segNo++)

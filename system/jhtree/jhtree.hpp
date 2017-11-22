@@ -159,13 +159,14 @@ class jhtree_decl SegMonitorList : implements IInterface, implements IIndexReadC
 {
     unsigned _lastRealSeg() const;
     unsigned cachedLRS;
-    unsigned mergeBarrier;
     bool modified;
     bool needWild;
     const RtlRecord &recInfo;
+    unsigned keySegCount;
+
 public:
     IMPLEMENT_IINTERFACE;
-    inline SegMonitorList(const RtlRecord &_recInfo, bool _needWild) : recInfo(_recInfo), needWild(_needWild) { reset(); }
+    SegMonitorList(const RtlRecord &_recInfo, bool _needWild);
     IArrayOf<IKeySegmentMonitor> segMonitors;
 
     void reset();
@@ -178,7 +179,6 @@ public:
     unsigned lastFullSeg() const;
     bool matched(void *keyBuffer, unsigned &lastMatch) const;
     size32_t getSize() const;
-    inline void setMergeBarrier(unsigned offset) { mergeBarrier = offset; }
 
     void checkSize(size32_t keyedSize, char const * keyname);
     void recalculateCache();

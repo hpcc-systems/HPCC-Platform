@@ -483,7 +483,7 @@ static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IH
             physicalFields.append(*createPhysicalIndexRecord(mapper, cur, false, createKeyedTypes));
         else if (cur->hasAttribute(blobAtom))
         {
-            newField = createField(cur->queryId(), makeIntType(8, false), NULL, NULL);
+            newField = createField(cur->queryId(), makeIntType(8, false), nullptr, createKeyedTypes ? createAttribute(_payload_Atom) : nullptr);
         }
         else
         {
@@ -2014,8 +2014,9 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
             {
                 LinkedHqlExpr indexExpr = queryAttributeChild(tableExpr, _original_Atom, 0);
                 OwnedHqlExpr serializedRecord;
-                if (indexExpr->hasAttribute(_payload_Atom))
-                    serializedRecord.setown(notePayloadFields(indexExpr->queryRecord(), numPayloadFields(indexExpr)));
+                unsigned numPayload = numPayloadFields(indexExpr);
+                if (numPayload)
+                    serializedRecord.setown(notePayloadFields(indexExpr->queryRecord(), numPayload));
                 else
                     serializedRecord.set(indexExpr->queryRecord());
                 serializedRecord.setown(getSerializedForm(serializedRecord, diskAtom));
@@ -4781,8 +4782,6 @@ void MonitorExtractor::buildSegments(BuildCtx & ctx, const char * listName, bool
         //      and field->queryType()->getSize() doesn't work for alien datatypes etc.
         if(!field->hasAttribute(virtualAtom))
         {
-            if (mergedSizes.isItem(idx))
-                curSize = mergedSizes.item(idx);
             if (curSize)
                 buildKeySegment(buildState, ctx, idx, curSize);
             else
@@ -6071,47 +6070,6 @@ IHqlExpression * MonitorExtractor::querySimpleJoinValue(IHqlExpression * selecto
     }
 
     return matched;
-}
-
-
-void MonitorExtractor::optimizeSegments(IHqlExpression * leftRecord)
-{
-    //loop to see if we have matches for key.cpt[n] = x.field[n] and key.cpt[n+1] = x.field[n+1]
-    //where fields are fixed length, no casts and no modifiers.
-    //if so, mark the new total size,
-    //when generate, extend the size of the first monitor, and skip the others.
-    //MORE: Could also combine fixed constants, but less of an advantage.
-    //Don't process anything after a variable size field/something that is transformed.
-    unsigned i = 0;
-    for (; i < firstOffsetField; i++)
-    {
-        IHqlExpression * keySelector = &keyableSelects.item(i);
-        unsigned mergedSize = keySelector->queryType()->getSize();
-        IHqlExpression * prevValue = querySimpleJoinValue(keySelector);
-        unsigned best = i;
-        if (prevValue && isSameBasicType(keySelector->queryType(), prevValue->queryType()))
-        {
-            for (unsigned j = i+1; j < firstOffsetField; j++)
-            {
-                IHqlExpression * nextSelector = &keyableSelects.item(j);
-                if (noMergeSelects.contains(*nextSelector))
-                    break;
-
-                IHqlExpression * nextValue = querySimpleJoinValue(nextSelector);
-                if (!nextValue || !isNextField(leftRecord, prevValue, nextValue) ||
-                    !isSameBasicType(nextSelector->queryType(), nextValue->queryType()))
-                    break;
-                prevValue = nextValue;
-                mergedSize += nextSelector->queryType()->getSize();
-                best = j;
-            }
-        }
-        mergedSizes.append(mergedSize);
-        for (;i < best;i++)
-            mergedSizes.append(0);
-    }
-    while ( i < numKeyableFields)
-        mergedSizes.append(expandedSelects.item(i).queryType()->getSize());
 }
 
 //---------------------------------------------------------------------------

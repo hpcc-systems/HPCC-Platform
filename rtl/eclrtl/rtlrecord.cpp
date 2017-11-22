@@ -348,6 +348,18 @@ RtlRecord::~RtlRecord()
     delete nameMap;
 }
 
+unsigned RtlRecord::getNumKeyedFields() const
+{
+    unsigned ret = 0;
+    for (const RtlFieldInfo * const * finger = originalFields; *finger; finger++)
+    {
+        if ((*finger)->flags & RFTMispayloadfield)
+            break;
+        ret++;
+    }
+    return ret;
+}
+
 void RtlRecord::calcRowOffsets(size_t * variableOffsets, const void * _row, unsigned numFieldsUsed) const
 {
     const byte * row = static_cast<const byte *>(_row);
@@ -499,6 +511,12 @@ const RtlFieldInfo *RtlRecord::queryOriginalField(unsigned idx) const
 bool RtlRecord::excluded(const RtlFieldInfo *field, const byte *row, byte *conditionValues)
 {
     return (field->omitable() && static_cast<const RtlCondFieldStrInfo *>(field)->ifblock.excluded(row, conditionValues));
+}
+
+size_t RtlRecord::getFixedOffset(unsigned field) const
+{
+    assert(whichVariableOffset[field]==0);
+    return fixedOffsets[field];
 }
 
 size32_t RtlRecord::getRecordSize(const void *_row) const
