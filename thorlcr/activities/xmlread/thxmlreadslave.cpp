@@ -204,7 +204,7 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase
         }
     };
 public:
-    CXmlReadSlaveActivity(CGraphElementBase *_container) : CDiskReadSlaveActivityBase(_container)
+    CXmlReadSlaveActivity(CGraphElementBase *_container) : CDiskReadSlaveActivityBase(_container, nullptr)
     {
         out = NULL;
         helper = (IHThorXmlReadArg *)queryHelper();

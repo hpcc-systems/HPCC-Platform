@@ -1680,7 +1680,8 @@ struct IHThorFetchContext
 {
     virtual unsigned __int64 extractPosition(const void * _right) = 0;  // Gets file position value from rhs row
     virtual const char * getFileName() = 0;                 // Returns filename of raw file fpos'es refer into
-    virtual IOutputMetaData * queryDiskRecordSize() = 0;        // Returns record size of raw file fpos'es refer into
+    virtual IOutputMetaData * queryDiskRecordSize() = 0;            // Expected layout
+    virtual IOutputMetaData * queryProjectedDiskRecordSize() = 0;   // Projected layout
     virtual unsigned getFetchFlags() { return 0; }              
     virtual unsigned getDiskFormatCrc() { return 0; }
     virtual void getFileEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
@@ -1695,7 +1696,8 @@ struct IHThorKeyedJoinBaseArg : public IHThorArg
 
     // Inside the indexRead remote activity:
     virtual const char * getIndexFileName() = 0;
-    virtual IOutputMetaData * queryIndexRecordSize() = 0;
+    virtual IOutputMetaData * queryIndexRecordSize() = 0;            // Expected layout
+    virtual IOutputMetaData * queryProjectedIndexRecordSize() = 0;   // Projected layout
     virtual void createSegmentMonitors(IIndexReadContext *ctx, const void *lhs) = 0;
     virtual bool indexReadMatch(const void * indexRow, const void * inputRow, unsigned __int64 keyedFpos, IBlobProvider * blobs) = 0;
     virtual unsigned getJoinLimit() = 0;                                        // if a key joins more than this limit no records are output (0 = no limit)
@@ -2277,7 +2279,8 @@ struct IHThorCompoundBaseArg : public IHThorArg
 struct IHThorIndexReadBaseArg : extends IHThorCompoundBaseArg
 {
     virtual const char * getFileName() = 0;
-    virtual IOutputMetaData * queryDiskRecordSize() = 0;                // size of records on disk may differ if records are transformed on read
+    virtual IOutputMetaData * queryDiskRecordSize() = 0;            // Expected layout
+    virtual IOutputMetaData * queryProjectedDiskRecordSize() = 0;   // Projected layout
     virtual unsigned getFlags() = 0;
     virtual unsigned getFormatCrc() = 0;
     virtual void setCallback(IThorIndexCallback * callback) = 0;
@@ -2290,7 +2293,8 @@ struct IHThorIndexReadBaseArg : extends IHThorCompoundBaseArg
 struct IHThorDiskReadBaseArg : extends IHThorCompoundBaseArg
 {
     virtual const char * getFileName() = 0;
-    virtual IOutputMetaData * queryDiskRecordSize() = 0;                // size of records on disk may differ if records are transformed on read
+    virtual IOutputMetaData * queryDiskRecordSize() = 0;            // Expected layout
+    virtual IOutputMetaData * queryProjectedDiskRecordSize() = 0;   // Projected layout
     virtual unsigned getFlags() = 0;
     virtual unsigned getFormatCrc() = 0;
     virtual void getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }

@@ -1260,9 +1260,12 @@ void KeyedJoinInfo::splitFilter(IHqlExpression * filter, SharedHqlExpr & keyTarg
 void HqlCppTranslator::buildKeyedJoinExtra(ActivityInstance & instance, IHqlExpression * expr, KeyedJoinInfo * info)
 {
     //virtual IOutputMetaData * queryDiskRecordSize() = 0;
+    //virtual IOutputMetaData * queryProjectedDiskRecordSize() = 0;
     if (info->isFullJoin())
+    {
         buildMetaMember(instance.classctx, info->queryRawRhs(), false, "queryDiskRecordSize");
-
+        buildMetaMember(instance.classctx, info->queryRawRhs(), false, "queryProjectedDiskRecordSize");
+    }
     //virtual unsigned __int64 extractPosition(const void * _right) = 0;  // Gets file position value from rhs row
     if (info->isFullJoin())
     {
@@ -1328,6 +1331,7 @@ void HqlCppTranslator::buildKeyJoinIndexReadHelper(ActivityInstance & instance, 
     bool hasFilePosition = getBoolAttribute(indexExpr, filepositionAtom, true);
     serializedRecord.setown(createMetadataIndexRecord(serializedRecord, hasFilePosition));
     buildMetaMember(instance.classctx, serializedRecord, false, "queryIndexRecordSize");
+    buildMetaMember(instance.classctx, serializedRecord, false, "queryProjectedIndexRecordSize");
 
     //virtual void createSegmentMonitors(IIndexReadContext *ctx, const void *lhs) = 0;
     info->buildMonitors(instance.startctx);

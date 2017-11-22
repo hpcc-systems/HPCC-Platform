@@ -232,6 +232,10 @@ public:
     {
         return in;
     }
+    virtual IOutputMetaData * queryProjectedDiskRecordSize() override final
+    {
+        return in;
+    }
     virtual unsigned getFormatCrc() override
     {
         return 0;  // engines should treat 0 as 'ignore'
@@ -294,6 +298,10 @@ public:
         return fileName;
     }
     virtual IOutputMetaData * queryDiskRecordSize() override final
+    {
+        return in;
+    }
+    virtual IOutputMetaData * queryProjectedDiskRecordSize() override final
     {
         return in;
     }

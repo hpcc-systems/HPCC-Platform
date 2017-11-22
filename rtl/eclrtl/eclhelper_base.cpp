@@ -329,6 +329,7 @@ ICompare * CThorSubSortArg::queryCompareSerializedRow() { return NULL; }
 bool CThorKeyedJoinArg::diskAccessRequired() { return false; }
 const char * CThorKeyedJoinArg::getFileName() { return NULL; }
 IOutputMetaData * CThorKeyedJoinArg::queryDiskRecordSize() { return NULL; }
+IOutputMetaData * CThorKeyedJoinArg::queryProjectedDiskRecordSize() { return NULL; }
 unsigned __int64 CThorKeyedJoinArg::extractPosition(const void * _right) { return 0; }
 
 bool CThorKeyedJoinArg::leftCanMatch(const void * inputRow) { return true; }
