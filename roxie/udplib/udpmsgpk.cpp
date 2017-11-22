@@ -499,8 +499,8 @@ public:
         UdpPacketHeader *pktHdr = (UdpPacketHeader*) dataBuff->data;
         if (checkTraceLevel(TRACE_MSGPACK, 4))
         {
-            DBGLOG("UdpCollator: CMessageCollator::add_package memLimitEx=%d ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X node=%u rowMgr=%p this=%p",
-                memLimitExceeded, pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->nodeIndex, (void*)rowMgr, this);
+            DBGLOG("UdpCollator: CMessageCollator::add_package memLimitEx=%d ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X node=%u udpSequence=%u rowMgr=%p this=%p", 
+                memLimitExceeded, pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->nodeIndex, pktHdr->udpSequence, (void*)rowMgr, this);
         }
 
         if (memLimitExceeded || roxiemem::memPoolExhausted()) 

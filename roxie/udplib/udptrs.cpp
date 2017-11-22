@@ -111,10 +111,16 @@ public:
                 MTIME_SECTION(queryActiveTimer(), "bucket_wait");
                 bucket->wait((length / 1024)+1);
             }
-            if (udpSendCompletedInData && idx == maxPackets-1)
-                header->pktSeq |= UDP_PACKET_ENDBURST;
             try
             {
+                if (udpSendCompletedInData)
+                {
+                    if (idx == maxPackets-1)
+                    {
+                         // MORE - is this safe ? Any other thread looking at the data right now? Don't _think_ so...
+                        header->udpSequence = UDP_SEQUENCE_COMPLETE;
+                    }
+                }
                 data_socket->write(buffer->data, length);
             }
             catch(IException *e)
@@ -890,6 +896,7 @@ public:
         package_header.pktSeq = 0;
         package_header.nodeIndex = _sourceNode;
         package_header.msgSeq = _msgSeq;
+        package_header.udpSequence = 0; // these are allocated when transmitted
 
         packed_request = false;
         part_buffer = bufferManager->allocate();
