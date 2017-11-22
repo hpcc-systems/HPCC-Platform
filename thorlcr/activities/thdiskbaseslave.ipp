@@ -91,7 +91,7 @@ protected:
     rowcount_t diskProgress = 0;
 
 public:
-    CDiskReadSlaveActivityBase(CGraphElementBase *_container);
+    CDiskReadSlaveActivityBase(CGraphElementBase *_container, IHThorArg *_helper);
     const char *queryLogicalFilename(unsigned index);
     IThorRowInterfaces * queryDiskRowInterfaces();
     virtual void start() override;

@@ -74,10 +74,8 @@ protected:
 
 public:
     CDiskReadSlaveActivityRecord(CGraphElementBase *_container, IHThorArg *_helper=NULL) 
-        : CDiskReadSlaveActivityBase(_container)
+        : CDiskReadSlaveActivityBase(_container, _helper)
     {
-        if (_helper)
-            baseHelper.set(_helper);
         helper = (IHThorDiskReadArg *)queryHelper();
         IOutputMetaData *diskRowMeta = queryDiskRowInterfaces()->queryRowMetaData()->querySerializedDiskMeta();
         isFixedDiskWidth = diskRowMeta->isFixedSize();

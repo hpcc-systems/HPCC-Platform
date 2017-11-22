@@ -299,7 +299,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
         }
     }
 public:
-    CCsvReadSlaveActivity(CGraphElementBase *_container) : CDiskReadSlaveActivityBase(_container)
+    CCsvReadSlaveActivity(CGraphElementBase *_container) : CDiskReadSlaveActivityBase(_container, nullptr)
     {
         helper = static_cast <IHThorCsvReadArg *> (queryHelper());
         stopAfter = (rowcount_t)helper->getChooseNLimit();
