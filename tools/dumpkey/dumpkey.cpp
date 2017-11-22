@@ -176,12 +176,8 @@ int main(int argc, const char **argv)
                 class MyIndexCallback : public CInterfaceOf<IThorIndexCallback>
                 {
                 public:
-                    MyIndexCallback()  {}
-                    virtual unsigned __int64 getFilePosition(const void * row)
-                    {
-                        return 0;
-                    }
-                    virtual byte * lookupBlob(unsigned __int64 id)
+                    MyIndexCallback() {}
+                    virtual byte * lookupBlob(unsigned __int64 id) override
                     {
                         UNIMPLEMENTED;
                     }
@@ -210,10 +206,11 @@ int main(int argc, const char **argv)
                             if (fieldNum == (unsigned) -1)
                                 throw MakeStringException(0, "Requested output field '%s' not found", fieldNames.item(idx));
                             const RtlFieldInfo *field = inrec.queryOriginalField(fieldNum);
-                            if (field->type->getType() == type_filepos)
+                            if (field->type->getType() == type_blob)
                             {
-                                // We can't just use the original source field in this case (as output record does not have a special filepos)
+                                // We can't just use the original source field in this case (as blobs are only supported in the input)
                                 // So instead, create a field in the target with the original type.
+                                //MORE: I'm not sure what this should do for a blob..., revisit when blobs are implemented
                                 field = new RtlFieldStrInfo(field->name, field->xpath, field->type->queryChildType());
                                 deleteFields.append(field);
                             }
@@ -228,9 +225,9 @@ int main(int argc, const char **argv)
                         for (unsigned idx = 0; idx < numFields;idx++)
                         {
                             const RtlFieldInfo *field = inrec.queryOriginalField(idx);
-                            if (field->type->getType() == type_filepos)
+                            if (field->type->getType() == type_blob)
                             {
-                                // See above - filepos field in source needs special treatment
+                                // See above - blob field in source needs special treatment
                                 field = new RtlFieldStrInfo(field->name, field->xpath, field->type->queryChildType());
                                 deleteFields.append(field);
                             }

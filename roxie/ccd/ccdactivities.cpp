@@ -4864,7 +4864,7 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
                     const byte *indexRow = tlk->queryKeyBuffer();
                     size_t fposOffset = tlk->queryRowSize() - sizeof(offset_t);
                     offset_t fpos = rtlReadBigUInt8(indexRow + fposOffset);
-                    if (helper->indexReadMatch(inputRow, indexRow, fpos, &adapter))
+                    if (helper->indexReadMatch(inputRow, indexRow, &adapter))
                     {
                         processed++;
                         if (keepLimit)
@@ -4897,7 +4897,7 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
                         else
                         {
                             KLBlobProviderAdapter adapter(tlk);
-                            totalSize = helper->extractJoinFields(rowBuilder, indexRow, fpos, &adapter);
+                            totalSize = helper->extractJoinFields(rowBuilder, indexRow, &adapter);
                             rowBuilder.writeToOutput(totalSize, fpos, jg, lastPartNo.partNo);
                         }
                         totalSizeSent += KEYEDJOIN_RECORD_SIZE(totalSize);
@@ -5103,7 +5103,7 @@ IMessagePacker *CRoxieKeyedJoinFetchActivity::process()
         }
         if (helper->fetchMatch(inputData, rawBuffer))
         {
-            unsigned thisSize = helper->extractJoinFields(jfRowBuilder, rawBuffer, rp, (IBlobProvider*)NULL);
+            unsigned thisSize = helper->extractJoinFields(jfRowBuilder, rawBuffer, (IBlobProvider*)NULL);
             jfRowBuilder.writeToOutput(thisSize, headerPtr->fpos, headerPtr->thisGroup, headerPtr->partNo);
             totalSizeSent += KEYEDJOIN_RECORD_SIZE(thisSize);
             processed++;

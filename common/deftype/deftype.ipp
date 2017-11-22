@@ -562,7 +562,7 @@ protected:
 class CFilePosTypeInfo : public CBasedTypeInfo
 {
 public:
-    CFilePosTypeInfo(ITypeInfo * _basetype) : CBasedTypeInfo(_basetype, 0) {}
+    CFilePosTypeInfo(ITypeInfo * _basetype) : CBasedTypeInfo(_basetype, sizeof(offset_t)) {}
     virtual type_t getTypeCode() const { return type_filepos; };
 
     // Only used for generation of type information so no need to fully implement these

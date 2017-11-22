@@ -9685,9 +9685,12 @@ void getFieldTypeInfo(FieldTypeInfoStruct &out, ITypeInfo *type)
             out.fieldType |= RFTMunsigned;
         break;
     case type_filepos:
-        out.className = "RtlFileposTypeInfo";
-        if (!type->isSigned())
-            out.fieldType |= RFTMunsigned;
+        out.className = "RtlSwapIntTypeInfo";
+        out.length = sizeof(offset_t);
+        out.fieldType |= RFTMunsigned;
+        break;
+    case type_blob:
+        out.className = "RtlBlobTypeInfo";
         break;
     case type_swapint:
         out.className = "RtlSwapIntTypeInfo";
@@ -9795,7 +9798,6 @@ void getFieldTypeInfo(FieldTypeInfoStruct &out, ITypeInfo *type)
         out.locale = str(type->queryLocale());
         out.length = type->getStringLen();
         break;
-    case type_blob:
     case type_pointer:
     case type_class:
     case type_array:
@@ -9959,7 +9961,7 @@ const RtlTypeInfo *buildRtlType(IRtlFieldTypeDeserializer &deserializer, ITypeIn
         }
     case type_dictionary:
         return nullptr;  // MORE - does this leak?
-    case type_filepos:
+    case type_blob:
     case type_set:
     case type_keyedint:
         info.childType = buildRtlType(deserializer, type->queryChildType());

@@ -523,102 +523,86 @@ bool RtlIntTypeInfo::canExtend(char &fillChar) const
 
 //-------------------------------------------------------------------------------------------------------------------
 
-size32_t RtlFileposTypeInfo::getMinSize() const
+size32_t RtlBlobTypeInfo::getMinSize() const
 {
-    return 0;  // because they take up no space in the index record. Odd but this seems to be the cleanest way to handle
+    return sizeof(offset_t);
 }
 
-size32_t RtlFileposTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
-{
-    throwUnexpected();  // This is only expected to be used for reading at present
-}
-
-size32_t RtlFileposTypeInfo::buildInt(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, __int64 val) const
+size32_t RtlBlobTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
 {
     throwUnexpected();  // This is only expected to be used for reading at present
 }
 
-size32_t RtlFileposTypeInfo::buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const
+size32_t RtlBlobTypeInfo::buildInt(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, __int64 val) const
 {
     throwUnexpected();  // This is only expected to be used for reading at present
 }
 
-size32_t RtlFileposTypeInfo::buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const
+size32_t RtlBlobTypeInfo::buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const
 {
     throwUnexpected();  // This is only expected to be used for reading at present
 }
 
-size32_t RtlFileposTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
+size32_t RtlBlobTypeInfo::buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const
+{
+    throwUnexpected();  // This is only expected to be used for reading at present
+}
+
+size32_t RtlBlobTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
 {
     assertex(callback);
-    if (isUnsigned())
-        target.processUInt(callback->getFilePosition(nullptr), field);
-    else
-        target.processInt(callback->getFilePosition(nullptr), field);
-    return length;
+    UNIMPLEMENTED;
 }
 
-size32_t RtlFileposTypeInfo::toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const
+size32_t RtlBlobTypeInfo::toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const
 {
     assertex(callback);
-    if (isUnsigned())
-        target.outputUInt(callback->getFilePosition(nullptr), length, queryScalarXPath(field));
-    else
-        target.outputInt(callback->getFilePosition(nullptr), length, queryScalarXPath(field));
-    return length;
+    UNIMPLEMENTED;
 }
 
-void RtlFileposTypeInfo::getString(size32_t & resultLen, char * & result, const void * ptr) const
+void RtlBlobTypeInfo::getString(size32_t & resultLen, char * & result, const void * ptr) const
 {
     assertex(callback);
-    if (isUnsigned())
-        rtlUInt8ToStrX(resultLen, result, callback->getFilePosition(nullptr));
-    else
-        rtlInt8ToStrX(resultLen, result, callback->getFilePosition(nullptr));
+    UNIMPLEMENTED;
 }
 
-void RtlFileposTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
+void RtlBlobTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
 {
-    getString(resultLen, result, ptr);
+    UNIMPLEMENTED;
 }
 
-__int64 RtlFileposTypeInfo::getInt(const void * ptr) const
+__int64 RtlBlobTypeInfo::getInt(const void * ptr) const
 {
-    assertex(callback);
-    return (__int64) callback->getFilePosition(nullptr);
+    UNIMPLEMENTED;
 }
 
-double RtlFileposTypeInfo::getReal(const void * ptr) const
+double RtlBlobTypeInfo::getReal(const void * ptr) const
 {
-    assertex(callback);
-    if (isUnsigned())
-        return (double) (__uint64) callback->getFilePosition(nullptr);
-    else
-        return (double) (__int64) callback->getFilePosition(nullptr);
+    UNIMPLEMENTED;
 }
 
-bool RtlFileposTypeInfo::canTruncate() const
+bool RtlBlobTypeInfo::canTruncate() const
 {
     return false;
 }
 
-bool RtlFileposTypeInfo::canExtend(char &fillChar) const
+bool RtlBlobTypeInfo::canExtend(char &fillChar) const
 {
     return false;
 }
 
-void RtlFileposTypeInfo::setCallback(IThorIndexCallback *_callback)
+void RtlBlobTypeInfo::setCallback(IThorIndexCallback *_callback)
 {
     callback = _callback;
 }
 
-int RtlFileposTypeInfo::compare(const byte * left, const byte * right) const
+int RtlBlobTypeInfo::compare(const byte * left, const byte * right) const
 {
-    throwUnexpected();  // Not needed and unimplementable
+    UNIMPLEMENTED;
 }
-unsigned RtlFileposTypeInfo::hash(const byte *self, unsigned inhash) const
+unsigned RtlBlobTypeInfo::hash(const byte *self, unsigned inhash) const
 {
-    throwUnexpected();  // Not needed and unimplementable
+    UNIMPLEMENTED;
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -2740,6 +2724,28 @@ unsigned ECLRTL_API hashFields(const RtlFieldInfo * const * cur, const byte *sel
         cur++;
     }
     return inhash;
+}
+
+extern bool ECLRTL_API hasTrailingFileposition(const RtlFieldInfo * const * fields)
+{
+    if (!*fields)
+        return false;
+    while (*fields)
+        fields++;
+    return (fields[-1]->type->getType() == type_filepos);
+}
+
+extern bool ECLRTL_API hasTrailingFileposition(const RtlTypeInfo * type)
+{
+    switch (type->getType())
+    {
+    case type_record:
+    {
+        const RtlRecordTypeInfo * record = static_cast<const RtlRecordTypeInfo *>(type);
+        return hasTrailingFileposition(record->fields);
+    }
+    }
+    return false;
 }
 
 //-------------------------------------------------------------------------------------------------------------------

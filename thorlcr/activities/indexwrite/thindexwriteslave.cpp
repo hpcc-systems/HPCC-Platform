@@ -134,6 +134,8 @@ public:
         }
 
         IOutputMetaData * diskSize = helper->queryDiskRecordSize();
+        //Need to adjust the size if the last field is used in the special fileposition location.
+        size32_t fileposSize = hasTrailingFileposition(diskSize->queryTypeInfo()) ? sizeof(offset_t) : 0;
         assertex(!(diskSize->getMetaFlags() & MDFneedserializedisk));
         if (diskSize->isVariableSize())
         {
@@ -143,7 +145,7 @@ public:
                 maxDiskRecordSize = KEYBUILD_MAXLENGTH; //Current default behaviour, could be improved in the future
         }
         else
-            maxDiskRecordSize = diskSize->getFixedSize();
+            maxDiskRecordSize = diskSize->getFixedSize() - fileposSize;
         reportOverflow = false;
     }
     virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override

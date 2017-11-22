@@ -835,7 +835,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                                 const void *fJoinFieldsRow = NULL;
                                 if (owner.helper->fetchMatch(fetchKey, diskFetchRow))
                                 {
-                                    size32_t sz = owner.helper->extractJoinFields(joinFieldsRow, diskFetchRow.get(), fpos, (IBlobProvider*)NULL); // JCSMORE it right that passing NULL IBlobProvider here??
+                                    size32_t sz = owner.helper->extractJoinFields(joinFieldsRow, diskFetchRow.get(), (IBlobProvider*)NULL); // JCSMORE it right that passing NULL IBlobProvider here??
                                     fJoinFieldsRow = joinFieldsRow.finalizeRowClear(sz);
                                     replySz += FETCHKEY_HEADER_SIZE + sz;
                                     owner.statsArr[AS_DiskAccepted]++;
@@ -1293,7 +1293,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                             byte const * keyRow = currentPartKeyManager->queryKeyBuffer();
                             size_t fposOffset = currentPartKeyManager->queryRowSize() - sizeof(offset_t);
                             offset_t fpos = rtlReadBigUInt8(keyRow + fposOffset);
-                            if (owner.helper->indexReadMatch(indexReadFieldsRow.getSelf(), keyRow, fpos, &adapter))
+                            if (owner.helper->indexReadMatch(indexReadFieldsRow.getSelf(), keyRow, &adapter))
                             {
                                 if (currentJG->rowsSeen() >= owner.keepLimit)
                                     break;
@@ -1311,7 +1311,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                                 {
                                     void *joinFieldsPtr = (void *)(lookupRowResult+1);
                                     RtlDynamicRowBuilder joinFieldsRow(owner.joinFieldsAllocator);
-                                    size32_t sz = owner.helper->extractJoinFields(joinFieldsRow, keyRow, fpos, &adapter);
+                                    size32_t sz = owner.helper->extractJoinFields(joinFieldsRow, keyRow, &adapter);
                                     const void *fJoinFieldsRow = joinFieldsRow.finalizeRowClear(sz);
                                     memcpy(joinFieldsPtr, &fJoinFieldsRow, sizeof(const void *));
                                 }

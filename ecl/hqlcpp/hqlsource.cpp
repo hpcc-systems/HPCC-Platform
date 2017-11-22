@@ -7159,7 +7159,7 @@ void FetchBuilder::buildTransformFpos(BuildCtx & transformCtx)
 {
     fpos.setown(createVariable("_fpos", LINK(fposType)));
 
-    //NB: Because the fetch gets merged with the usertable used to project the dataset, the 
+    //NB: Because the fetch gets merged with the usertable used to project the dataset, the
     //transform contains filepos(LEFT) not filepos(tableExpr)
     OwnedHqlExpr leftSelect = createSelector(no_left, fetchExpr->queryChild(0), selSeq);
     OwnedHqlExpr fposField = getFilepos(leftSelect, false);

@@ -281,20 +281,15 @@ class CIndexTransformCallback : implements IThorIndexCallback, public CInterface
 {
 public:
     CIndexTransformCallback() { keyManager = NULL; cleanupRequired = false; };
-    IMPLEMENT_IINTERFACE
+    IMPLEMENT_IINTERFACE_O
 
 //IThorIndexCallback
-    virtual unsigned __int64 getFilePosition(const void * row)
-    {
-        throwUnexpected();
-    }
-    virtual byte * lookupBlob(unsigned __int64 id) 
+    virtual byte * lookupBlob(unsigned __int64 id) override
     { 
         size32_t dummy; 
         cleanupRequired = true;
         return (byte *) keyManager->loadBlob(id, dummy); 
     }
-
 
 public:
     inline void setManager(IKeyManager * _manager)

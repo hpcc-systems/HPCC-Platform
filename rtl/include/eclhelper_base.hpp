@@ -446,7 +446,7 @@ class ECLRTL_API CThorKeyedJoinArg : public CThorArgOf<IHThorKeyedJoinArg>
     
     // For the data going to the indexRead remote activity:
     virtual bool leftCanMatch(const void * inputRow) override;
-    virtual bool indexReadMatch(const void * indexRow, const void * inputRow, unsigned __int64 keyedFpos, IBlobProvider * blobs) override;
+    virtual bool indexReadMatch(const void * indexRow, const void * inputRow, IBlobProvider * blobs) override;
 
     virtual unsigned __int64 getRowLimit() override;
     virtual void onLimitExceeded() override;

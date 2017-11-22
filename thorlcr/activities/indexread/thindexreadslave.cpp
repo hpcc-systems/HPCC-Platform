@@ -70,14 +70,10 @@ protected:
         IKeyManager *keyManager;
     public:
         TransformCallback() { keyManager = NULL; };
-        IMPLEMENT_IINTERFACE_USING(CSimpleInterface)
+        IMPLEMENT_IINTERFACE_O_USING(CSimpleInterface)
 
     //IThorIndexCallback
-        virtual unsigned __int64 getFilePosition(const void *row)
-        {
-            throwUnexpected();
-        }
-        virtual byte *lookupBlob(unsigned __int64 id) 
+        virtual byte *lookupBlob(unsigned __int64 id) override
         { 
             size32_t dummy;
             return (byte *) keyManager->loadBlob(id, dummy); 

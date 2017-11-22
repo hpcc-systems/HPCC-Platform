@@ -516,7 +516,8 @@ void HqlCppWriter::generateType(ITypeInfo * type, const char * name)
             prefix = "bool";
             break;
         case type_filepos:
-            prefix = intTypeName(8-1, compiler, type->isSigned());
+        case type_blob:
+            prefix = intTypeName(8-1, compiler, false);
             break;
         case type_keyedint:
             break;
