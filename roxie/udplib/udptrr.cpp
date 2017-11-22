@@ -49,7 +49,6 @@ using roxiemem::IRowManager;
 unsigned udpRetryBusySenders = 0; // seems faster with 0 than 1 in my testing on small clusters and sustained throughput
 unsigned udpInlineCollationPacketLimit;
 bool udpInlineCollation = false;
-bool udpSendCompletedInData = false;
 
 class CReceiveManager : implements IReceiveManager, public CInterface
 {
@@ -559,7 +558,8 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     b = bufferManager->allocate();
                     receive_socket->read(b->data, 1, DATA_PAYLOAD, res, 5);
                     UdpPacketHeader &hdr = *(UdpPacketHeader *) b->data;
-                    if (hdr.pktSeq & UDP_PACKET_ENDBURST)
+                    unsigned flowBits = hdr.udpSequence;
+                    if (flowBits & UDP_SEQUENCE_COMPLETE)
                     {
                         parent.manager->completed(hdr.nodeIndex);
                     }
