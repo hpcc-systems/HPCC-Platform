@@ -138,13 +138,11 @@ public:
     }
     void stop()
     {
-        ForEachItemIn(ei, expandedStreams)
-            expandedStreams.item(ei)->stop();
-        ForEachItemIn(idx, expandedInputs)
-            resetJunction(expandedJunctions.item(idx));
+        stopAllInputs();
         expandedInputs.kill();
         expandedStreams.kill();
         expandedJunctions.kill();
+        dataLinkStop();
     }
 };
 
