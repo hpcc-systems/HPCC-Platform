@@ -113,14 +113,6 @@ public:
             }
             try
             {
-                if (udpSendCompletedInData)
-                {
-                    if (idx == maxPackets-1)
-                    {
-                         // MORE - is this safe ? Any other thread looking at the data right now? Don't _think_ so...
-                        header->udpSequence = UDP_SEQUENCE_COMPLETE;
-                    }
-                }
                 data_socket->write(buffer->data, length);
             }
             catch(IException *e)
@@ -444,18 +436,7 @@ class CSendManager : implements ISendManager, public CInterface
 
             if (udpTraceLevel > 3) 
                 DBGLOG("UdpSender: sending send_completed msg to node=%u, dataRemaining=%d", index, dataRemaining);
-            if (udpSendCompletedInData)
-            {
-                if (dataRemaining)
-                {
-                    // MORE - we indicate the more to send via a bit already - don't need this unless we never go idle
-                    // though there is a possible race to consider
-                    if (!moreRequested)
-                        parent.sendRequest(index, flow_t::request_to_send); 
-                }
-            }
-            else
-                parent.sendRequest(index, dataRemaining ? flow_t::request_to_send_more : flow_t::send_completed);
+            parent.sendRequest(index, dataRemaining ? flow_t::request_to_send_more : flow_t::send_completed);
         }
 
         void sendRequest(unsigned index) 
@@ -712,8 +693,6 @@ class CSendManager : implements ISendManager, public CInterface
                 bool moreRequested;
                 unsigned maxPackets;
                 unsigned payload = receiverInfo.sendData(permit, (parent.myNodeIndex == permit.destNodeIndex), bucket, moreRequested, maxPackets);
-                if (udpSendCompletedInData && !maxPackets)
-                    parent.sendRequest(permit.destNodeIndex, flow_t::send_completed);
                 parent.send_flow->send_done(permit.destNodeIndex, moreRequested);
                 if (udpSnifferEnabled)
                     send_sniff(false);
