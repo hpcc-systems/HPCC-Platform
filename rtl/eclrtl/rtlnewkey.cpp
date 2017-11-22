@@ -23,15 +23,17 @@
 #include "rtlrecord.hpp"
 #include "rtlkey.hpp"
 
-//move to jstring as part of HPCC-18547
 /*
  * Read a single quoted string from in until the terminating quote is found
  *
- * @param out       The resulting string with special quote characters resolved.
+ * @param out       The resulting string with embedded escaped quote characters resolved.
  * @param in        A reference to the start of the string.  Updated to point to the end of the string.
+ *
  */
 static void readString(StringBuffer &out, const char * &in)
 {
+    const char *start = in;
+    // Find terminating quote, skipping any escaped ones
     for (;;)
     {
         char c = *in++;
@@ -40,19 +42,17 @@ static void readString(StringBuffer &out, const char * &in)
         if (c=='\'')
             break;
         if (c=='\\')
-        {
             c = *in++;
-            switch (c)
-            {
-            case '\'':
-            case '\\':
-                break;
-            default:
-                UNIMPLEMENTED; // HPCC-18547
-            }
-        }
-        out.append(c);
     }
+    StringBuffer errmsg;
+    unsigned errpos;
+    if (!checkUnicodeLiteral(start, in-start-1, errpos, errmsg))
+        throw makeStringExceptionV(0, "Invalid filter - %s", errmsg.str());
+    rtlDataAttr temp;
+    size32_t newlen = 0;  // NOTE - this will be in codepoints, not bytes
+    rtlCodepageToUtf8XUnescape(newlen, temp.refstr(), in-start-1, start, "UTF-8");
+    size32_t newsize = rtlUtf8Size(newlen, temp.getstr());
+    out.append(newsize, temp.getstr());
 }
 
 /*
@@ -1575,6 +1575,7 @@ protected:
         RtlStringTypeInfo str1(type_string, 1);
         RtlIntTypeInfo int2(type_int, 2);
         RtlStringTypeInfo strx(type_string|RFTMunknownsize, 0);
+        RtlUtf8TypeInfo utf8(type_utf8|RFTMunknownsize, 0, nullptr);
         testSerialize(int2, "[123]");
         testSerialize(int2, "(123,234]");
         testSerialize(int2, "[123,234)");
@@ -1588,6 +1589,9 @@ protected:
         testSerialize(str1, "['A']");
         testSerialize(str1, "[',']");
         testSerialize(str1, "['\\'']");
+        testSerialize(str1, "['\\u0041']", "['A']");
+        testSerialize(str1, "['\\n']");
+        testSerialize(utf8, "['\\u611b']", "['愛']");
         testSerialize(strx, "['\\'\\'','}']");
 
         testSerialize(str1, "[A]", "['A']");

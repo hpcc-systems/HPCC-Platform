@@ -1245,7 +1245,6 @@ class HqlLex
 
         bool getDefinedParameter(StringBuffer &curParam, YYSTYPE & returnToken, const char* for_what, SharedHqlExpr & resolved);
 
-        bool checkUnicodeLiteral(char const * str, unsigned length, unsigned & ep, StringBuffer & msg);
         int processStringLiteral(YYSTYPE & returnToken, char *CUR_TOKEN_TEXT, unsigned CUR_TOKEN_LENGTH, int oldColumn, int oldPosition);
 
         bool readCheckNextToken(YYSTYPE & returnToken, int expected, unsigned errCode, const char * msg);
