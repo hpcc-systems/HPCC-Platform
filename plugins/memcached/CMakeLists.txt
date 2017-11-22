@@ -64,7 +64,7 @@ if (MEMCACHED)
             TARGETS memcachedplugin
             DESTINATION plugins)
 
-        if(MEMCACHED_USE_EXTERNAL_LIBRARY)
+	if(TARGET generate-libmemcached)
             target_link_libraries(memcachedplugin libmemcached libmemcachedutil)
             add_dependencies(memcachedplugin generate-libmemcached)
             install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${CMAKE_BINARY_DIR}/build-libmemcached/libmemcached/.libs\")")
