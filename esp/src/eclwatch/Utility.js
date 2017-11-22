@@ -369,6 +369,15 @@
             case "DiskUsageWidget":
                 require(["hpcc/DiskUsageWidget"], doLoad);
                 break;
+            case "viz/DojoD3Choropleth":
+                require(["hpcc/viz/DojoD3Choropleth"], doLoad);
+                break;
+            case "viz/DojoD32DChart":
+                require(["hpcc/viz/DojoD32DChart"], doLoad);
+                break;
+            case "viz/DojoD3NDChart":
+                require(["hpcc/viz/DojoD3NDChart"], doLoad);
+                break;
             case "DynamicESDLDefinitionDetailsWidget":
                 require(["hpcc/DynamicESDLDefinitionDetailsWidget"], doLoad);
                 break;

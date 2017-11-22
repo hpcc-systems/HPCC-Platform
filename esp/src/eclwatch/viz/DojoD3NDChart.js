@@ -4,12 +4,12 @@ define([
   "dojo/_base/array",
   "dojo/_base/Deferred",
 
-  "@hpcc-js/composite",
-
+  "@hpcc-js/chart",
+  
   "./DojoD3",
   "./Mapping"
 ], function (declare, lang, arrayUtil, Deferred,
-    hpccComposite,
+    hpccChart,
     DojoD3, Mapping) {
 
     return declare([Mapping, DojoD3], {
@@ -37,11 +37,47 @@ define([
 
         renderTo: function (_target) {
             var deferred = new Deferred();
-            this.chart = new hpccComposite.MultiChart()
-            .chartType(this._chartType)
-                .target(_target.domNodeID)
-            ;
-            deferred.resolve(this.chart);
+            switch (this._chartType) {
+                case "COLUMN":
+                    this.chart = new hpccChart.Column()
+                        .target(_target.domNodeID)
+                    ;
+                    deferred.resolve(this.chart);
+                    break;
+                case "BAR":
+                    this.chart = new hpccChart.Bar()
+                        .target(_target.domNodeID)
+                    ;
+                    deferred.resolve(this.chart);
+                    break;
+                case "LINE":
+                    this.chart = new hpccChart.Line()
+                        .target(_target.domNodeID)
+                    ;
+                    deferred.resolve(this.chart);
+                    break;
+                case "AREA":
+                    this.chart = new hpccChart.Area()
+                        .target(_target.domNodeID)
+                    ;
+                    deferred.resolve(this.chart);
+                    break;
+                case "STEP":
+                    this.chart = new hpccChart.Step()
+                        .target(_target.domNodeID)
+                    ;
+                    deferred.resolve(this.chart);
+                    break;
+                case "SCATTER":
+                    this.chart = new hpccChart.Scatter()
+                        .target(_target.domNodeID)
+                    ;
+                    deferred.resolve(this.chart);
+                    break;
+                default:
+                    console.log("Invalid visualization:  " + this._chartType)
+                    deferred.resolve(null);
+            }
             return deferred.promise;
         },
 

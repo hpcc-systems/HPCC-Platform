@@ -32,6 +32,8 @@ define([
 
     "dgrid/editor",
 
+    "@hpcc-js/common",
+
     "hpcc/TableContainer",
     "hpcc/_Widget",
     "hpcc/ESPWorkunit",
@@ -55,6 +57,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, domConstruct, domForm, ioQuery, all,
                 registry, ContentPane, Select, CheckBox,
                 editor,
+                hpccCommon,
                 TableContainer, _Widget, ESPWorkunit, WsWorkunits, SelectionGridWidget, Utility,
                 template) {
     return declare("VizWidget", [_Widget], {
@@ -423,8 +426,7 @@ define([
                 }
             }, this);
             var context = this;
-            /*
-            var data = d3.nest()
+            var data = hpccCommon.nest()
                 .key(function (d) { return d[request.label] })
                 .rollup(function (leaves) {
                     var retVal = {
@@ -436,7 +438,7 @@ define([
                                     retVal[row.id] = leaves.length;
                                     break;
                                 default:
-                                    retVal[row.id] = d3[row.aggregation || "mean"](leaves, function (d) {
+                                    retVal[row.id] = hpccCommon[row.aggregation || "mean"](leaves, function (d) {
                                         return d[row.field];
                                     });
                                     break;
@@ -446,15 +448,11 @@ define([
                     return retVal;
                 })
                 .entries(this.rows).map(function (d) {
-                    var retVal = d.values;
+                    var retVal = d.value;
                     retVal.label = d.key;
                     return retVal;
                 })
             ;
-            */
-            //  TODO - reimplement with d3v4  ---
-            var data = [];
-
             this.d3Viz.setData(data, null, request);
 
             this.params.limit = this.limit.get("value");
