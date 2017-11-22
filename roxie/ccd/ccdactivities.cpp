@@ -957,7 +957,7 @@ public:
         if (!segment->isWild())
         {
             if (!cursor)
-                cursor.setown(manager->createCursor(diskSize.queryOriginal()->queryRecordAccessor(true)));
+                cursor.setown(manager->createCursor(diskSize.queryRecordAccessor(true)));
             cursor->append(segment);
         }
     }
@@ -3135,6 +3135,7 @@ protected:
     Owned<IKeyManager> tlk;
     Linked<TranslatorArray> layoutTranslators;
     Linked<IKeyArray> keyArray;
+    const RtlRecord *keyRecInfo = nullptr;
     IDefRecordMeta *activityMeta;
     bool createSegmentMonitorsPending;
 
@@ -3160,7 +3161,7 @@ protected:
             }
             if (allKeys->numParts())
             {
-                tlk.setown(createKeyMerger(allKeys, 0, &logctx));
+                tlk.setown(createKeyMerger(*keyRecInfo, allKeys, 0, &logctx));
                 createSegmentMonitorsPending = true;
             }
             else
@@ -3173,7 +3174,7 @@ protected:
             IKeyIndex *k = kib->queryPart(lastPartNo.fileNo);
             if (filechanged)
             {
-                tlk.setown(createLocalKeyManager(k, &logctx));
+                tlk.setown(createLocalKeyManager(*keyRecInfo, k, &logctx));
                 createSegmentMonitorsPending = true;
             }
             else
@@ -3264,12 +3265,13 @@ protected:
 
 public:
     CRoxieIndexActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieIndexActivityFactory *_aFactory, unsigned _steppingOffset)
-        : CRoxieKeyedActivity(_logctx, _packet, _hFactory, _aFactory), 
+        : CRoxieKeyedActivity(_logctx, _packet, _hFactory, _aFactory),
         factory(_aFactory),
         steppingOffset(_steppingOffset),
         stepExtra(SSEFreadAhead, NULL)
     {
         indexHelper = (IHThorIndexReadBaseArg *) basehelper;
+        keyRecInfo = &indexHelper->queryDiskRecordSize()->queryRecordAccessor(true);
         variableFileName = allFilesDynamic || basefactory->queryQueryFactory().isDynamic() || ((indexHelper->getFlags() & (TIRvarfilename|TIRdynamicfilename)) != 0);
         isOpt = (indexHelper->getFlags() & TDRoptional) != 0;
         inputData = NULL;
@@ -3422,7 +3424,7 @@ public:
                 i++;
             }
             if (allKeys->numParts())
-                tlk.setown(::createKeyMerger(allKeys, steppingOffset, &logctx));
+                tlk.setown(::createKeyMerger(*keyRecInfo, allKeys, steppingOffset, &logctx));
             else
                 tlk.clear();
             createSegmentMonitorsPending = true;
@@ -4682,6 +4684,7 @@ public:
         : factory(_aFactory), CRoxieKeyedActivity(_logctx, _packet, _hFactory, _aFactory)
     {
         helper = (IHThorKeyedJoinArg *) basehelper;
+        keyRecInfo = &helper->queryIndexRecordSize()->queryRecordAccessor(true);
         variableFileName = allFilesDynamic || basefactory->queryQueryFactory().isDynamic() || ((helper->getJoinFlags() & (JFvarindexfilename|JFdynamicindexfilename|JFindexfromactivity)) != 0);
         inputDone = 0;
         processed = 0;

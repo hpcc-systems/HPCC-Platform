@@ -14074,6 +14074,11 @@ void exportBinaryType(MemoryBuffer &ret, IHqlExpression *table)
     dumpTypeInfo(ret, typeInfo, false);
 }
 
+const RtlTypeInfo *queryRtlType(IRtlFieldTypeDeserializer &deserializer, IHqlExpression *table)
+{
+    return buildRtlType(deserializer, table->queryType());
+}
+
 void exportData(IPropertyTree *data, IHqlExpression *table, bool flatten)
 {
     IPropertyTree *tt = NULL;

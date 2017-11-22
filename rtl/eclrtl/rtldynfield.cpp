@@ -44,6 +44,7 @@ const RtlTypeInfo *FieldTypeInfoStruct::createRtlTypeInfo(IThorIndexCallback *_c
     case type_keyedint:
         ret = new RtlKeyedIntTypeInfo(fieldType, length, childType);
         break;
+    case type_blob:  // MORE - will need its own type!
     case type_int:
         ret = new RtlIntTypeInfo(fieldType, length);
         break;

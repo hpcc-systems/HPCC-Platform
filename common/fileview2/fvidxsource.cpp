@@ -24,6 +24,8 @@
 #include "fvidxsource.ipp"
 #include "fverror.hpp"
 #include "dasess.hpp"
+#include "rtlrecord.hpp"
+#include "rtldynfield.hpp"
 
 //cloned from hthor - a candidate for commoning up.
 static IKeyIndex *openKeyFile(IDistributedFilePart *keyFile)
@@ -122,7 +124,8 @@ IndexDataSource::IndexDataSource(const char * _logicalName, IHqlExpression * _di
 {
     logicalName.set(_logicalName);
     diskRecord.set(_diskRecord);
-
+    deserializer.setown(createRtlFieldTypeDeserializer(nullptr));
+    diskRecordMeta.setown(new CDynamicOutputMetaData(* static_cast<const RtlRecordTypeInfo *>(queryRtlType(*deserializer.get(), diskRecord))));
     Owned<IUserDescriptor> udesc;
     if(_username != NULL && *_username != '\0')
     {
@@ -139,6 +142,8 @@ IndexDataSource::IndexDataSource(IndexDataSource * _other)
 {
     logicalName.set(_other->logicalName);
     diskRecord.set(_other->diskRecord);
+    deserializer.set(_other->deserializer);
+    diskRecordMeta.set(_other->diskRecordMeta);
     df.set(_other->df);
     original.set(_other);       // stop any work units etc. being unloaded.
     diskMeta.set(_other->diskMeta);     // optimization - would be handled by init anyway
@@ -427,7 +432,7 @@ bool IndexDataSource::addFilter(unsigned column, unsigned matchLen, unsigned siz
 
 void IndexDataSource::applyFilter()
 {
-    manager.setown(createLocalKeyManager(tlk, NULL));
+    manager.setown(createLocalKeyManager(diskRecordMeta->queryRecordAccessor(true), tlk, NULL));
     ForEachItemIn(i, values)
     {
         IStringSet & cur = values.item(i);

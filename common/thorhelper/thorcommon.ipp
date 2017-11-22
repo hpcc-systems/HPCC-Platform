@@ -99,6 +99,10 @@ public:
     {
         return meta->queryChildMeta(i);
     }
+    inline const RtlRecord &queryRecordAccessor(bool expand) const
+    {
+        return meta->queryRecordAccessor(expand);
+    }
 
 //cast operators.
     inline IOutputMetaData * queryOriginal() const          { return meta; }

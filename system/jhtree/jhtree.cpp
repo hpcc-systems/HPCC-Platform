@@ -57,6 +57,7 @@
 
 #include "jhtree.ipp"
 #include "keybuild.hpp"
+#include "eclhelper_dyn.hpp"
 #include "layouttrans.hpp"
 
 static std::atomic<CKeyStore *> keyStore(nullptr);
@@ -484,7 +485,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CKeyLevelManager(IKeyIndex * _key, IContextLogger *_ctx) : segs(true)
+    CKeyLevelManager(const RtlRecord &_recInfo, IKeyIndex * _key, IContextLogger *_ctx) : segs(_recInfo, true)
     {
         ctx = _ctx;
         numsegs = 0;
@@ -2381,14 +2382,14 @@ class CKeyMerger : public CKeyLevelManager
     }
 
 public:
-    CKeyMerger(IKeyIndexSet *_keyset, unsigned _sortFieldOffset, IContextLogger *_ctx) : CKeyLevelManager(NULL, _ctx), sortFieldOffset(_sortFieldOffset)
+    CKeyMerger(const RtlRecord &_recInfo, IKeyIndexSet *_keyset, unsigned _sortFieldOffset, IContextLogger *_ctx) : CKeyLevelManager(_recInfo, NULL, _ctx), sortFieldOffset(_sortFieldOffset)
     {
         segs.setMergeBarrier(sortFieldOffset);
         init();
         setKey(_keyset);
     }
 
-    CKeyMerger(IKeyIndex *_onekey, unsigned _sortFieldOffset, IContextLogger *_ctx) : CKeyLevelManager(NULL, _ctx), sortFieldOffset(_sortFieldOffset)
+    CKeyMerger(const RtlRecord &_recInfo, IKeyIndex *_onekey, unsigned _sortFieldOffset, IContextLogger *_ctx) : CKeyLevelManager(_recInfo, NULL, _ctx), sortFieldOffset(_sortFieldOffset)
     {
         segs.setMergeBarrier(sortFieldOffset);
         init();
@@ -2872,14 +2873,14 @@ public:
     }
 };
 
-extern jhtree_decl IKeyManager *createKeyMerger(IKeyIndexSet * _keys, unsigned _sortFieldOffset, IContextLogger *_ctx)
+extern jhtree_decl IKeyManager *createKeyMerger(const RtlRecord &_recInfo, IKeyIndexSet * _keys, unsigned _sortFieldOffset, IContextLogger *_ctx)
 {
-    return new CKeyMerger(_keys, _sortFieldOffset, _ctx);
+    return new CKeyMerger(_recInfo, _keys, _sortFieldOffset, _ctx);
 }
 
-extern jhtree_decl IKeyManager *createSingleKeyMerger(IKeyIndex * _onekey, unsigned _sortFieldOffset, IContextLogger *_ctx)
+extern jhtree_decl IKeyManager *createSingleKeyMerger(const RtlRecord &_recInfo, IKeyIndex * _onekey, unsigned _sortFieldOffset, IContextLogger *_ctx)
 {
-    return new CKeyMerger(_onekey, _sortFieldOffset, _ctx);
+    return new CKeyMerger(_recInfo, _onekey, _sortFieldOffset, _ctx);
 }
 
 class CKeyIndexSet : implements IKeyIndexSet, public CInterface
@@ -2907,9 +2908,9 @@ extern jhtree_decl IKeyIndexSet *createKeyIndexSet()
     return new CKeyIndexSet;
 }
 
-extern jhtree_decl IKeyManager *createLocalKeyManager(IKeyIndex *key, IContextLogger *_ctx)
+extern jhtree_decl IKeyManager *createLocalKeyManager(const RtlRecord &_recInfo, IKeyIndex *_key, IContextLogger *_ctx)
 {
-    return new CKeyLevelManager(key, _ctx);
+    return new CKeyLevelManager(_recInfo, _key, _ctx);
 }
 
 class CKeyArray : implements IKeyArray, public CInterface
@@ -2951,16 +2952,23 @@ class IKeyManagerTest : public CppUnit::TestFixture
 
     void testStepping()
     {
-        buildTestKeys(false, false, false, false);
+        buildTestKeys(false);
         {
             // We are going to treat as a 7-byte field then a 3-byte field, and request the datasorted by the 3-byte...
-            unsigned maxSize = 10; // (variable && blobby) ? 18 : 10;
             Owned <IKeyIndex> index1 = createKeyIndex("keyfile1.$$$", 0, false, false);
             Owned <IKeyIndex> index2 = createKeyIndex("keyfile2.$$$", 0, false, false);
             Owned<IKeyIndexSet> keyset = createKeyIndexSet();
             keyset->addIndex(index1.getClear());
             keyset->addIndex(index2.getClear());
-            Owned <IKeyManager> tlk1 = createKeyMerger(keyset, 7, NULL);
+            const char *json = "{ \"ty1\": { \"fieldType\": 4, \"length\": 7 }, "
+                               "  \"ty2\": { \"fieldType\": 4, \"length\": 3 }, "
+                               " \"fieldType\": 13, \"length\": 10, "
+                               " \"fields\": [ "
+                               " { \"name\": \"f1\", \"type\": \"ty1\", \"flags\": 4 }, "
+                               " { \"name\": \"f2\", \"type\": \"ty2\", \"flags\": 4 } ] "
+                               "}";
+            Owned<IOutputMetaData> meta = createTypeInfoOutputMetaData(json, nullptr);
+            Owned <IKeyManager> tlk1 = createKeyMerger(meta->queryRecordAccessor(true), keyset, 7, NULL);
             Owned<IStringSet> sset1 = createStringSet(7);
             sset1->addRange("0000003", "0000003");
             sset1->addRange("0000005", "0000006");
@@ -2997,7 +3005,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
             ASSERT(!tlk1->lookup(true)); 
             ASSERT(!tlk1->lookup(true)); 
 
-            Owned <IKeyManager> tlk2 = createKeyMerger(NULL, 7, NULL);
+            Owned <IKeyManager> tlk2 = createKeyMerger(meta->queryRecordAccessor(true), NULL, 7, NULL);
             tlk2->setKey(keyset);
             tlk2->deserializeCursorPos(mb);
             tlk2->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 0, 7));
@@ -3013,7 +3021,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
             ASSERT(!tlk2->lookup(true)); 
             ASSERT(!tlk2->lookup(true)); 
 
-            Owned <IKeyManager> tlk3 = createKeyMerger(NULL, 7, NULL);
+            Owned <IKeyManager> tlk3 = createKeyMerger(meta->queryRecordAccessor(true), NULL, 7, NULL);
             tlk3->setKey(keyset);
             tlk3->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 0, 7));
             tlk3->append(createKeySegmentMonitor(false, sset2.getLink(), 1, 7, 3));
@@ -3026,7 +3034,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
             ASSERT(!tlk3->lookupSkip("081", 7, 3)); 
             ASSERT(!tlk3->lookup(true)); 
 
-            Owned <IKeyManager> tlk4 = createKeyMerger(NULL, 7, NULL);
+            Owned <IKeyManager> tlk4 = createKeyMerger(meta->queryRecordAccessor(true), NULL, 7, NULL);
             tlk4->setKey(keyset);
             tlk4->append(createKeySegmentMonitor(false, sset1.getLink(), 0, 0, 7));
             tlk4->append(createKeySegmentMonitor(false, sset3.getLink(), 1, 7, 3));
@@ -3052,19 +3060,19 @@ class IKeyManagerTest : public CppUnit::TestFixture
         removeTestKeys();
     }
 
-    void buildTestKeys(bool shortForm, bool indar, bool variable, bool blobby)
+    void buildTestKeys(bool variable)
     {
-        buildTestKey("keyfile1.$$$", false, shortForm, indar, variable, blobby);
-        buildTestKey("keyfile2.$$$", true, shortForm, indar, variable, blobby);
+        buildTestKey("keyfile1.$$$", false, variable);
+        buildTestKey("keyfile2.$$$", true, variable);
     }
 
-    void buildTestKey(const char *filename, bool skip, bool shortForm, bool indar, bool variable, bool blobby)
+    void buildTestKey(const char *filename, bool skip, bool variable)
     {
         OwnedIFile file = createIFile(filename);
         OwnedIFileIO io = file->openShared(IFOcreate, IFSHfull);
         Owned<IFileIOStream> out = createIOStream(io);
-        unsigned maxRecSize = (variable && blobby) ? 18 : 10;
-        unsigned keyedSize = (shortForm || (variable && blobby)) ? 10 : (unsigned) -1;
+        unsigned maxRecSize = variable ? 18 : 10;
+        unsigned keyedSize = 10;
         Owned<IKeyBuilder> builder = createKeyBuilder(out, COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY |  (variable ? HTREE_VARSIZE : 0), maxRecSize, NODESIZE, keyedSize, 0);
 
         char keybuf[18];
@@ -3072,7 +3080,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
         for (unsigned count = 0; count < 10000; count++)
         {
             unsigned datasize = 10;
-            if (blobby && variable && (count % 10)==0)
+            if (variable && (count % 10)==0)
             {
                 char *blob = new char[count+100000];
                 byte seed = count;
@@ -3133,31 +3141,41 @@ class IKeyManagerTest : public CppUnit::TestFixture
         key->releaseBlobs();
     }
 protected:
-    void testKeys(bool shortForm, bool indar, bool variable, bool blobby)
+    void testKeys(bool variable)
     {
-        // If it is not a supported combination, just return
-        if (indar)
+        const char *json = variable ?
+                "{ \"ty1\": { \"fieldType\": 4, \"length\": 7 }, "
+                "  \"ty2\": { \"fieldType\": 4, \"length\": 3 }, "
+                "  \"ty3\": { \"fieldType\": 15, \"length\": 8 }, "
+                " \"fieldType\": 13, \"length\": 10, "
+                " \"fields\": [ "
+                " { \"name\": \"f1\", \"type\": \"ty1\", \"flags\": 4 }, "
+                " { \"name\": \"f2\", \"type\": \"ty2\", \"flags\": 4 }, "
+                " { \"name\": \"f3\", \"type\": \"ty3\", \"flags\": 65551 } "  // 0x01000f i.e. payload and blob
+                " ]"
+                "}"
+                :
+                "{ \"ty1\": { \"fieldType\": 4, \"length\": 7 }, "
+                "  \"ty2\": { \"fieldType\": 4, \"length\": 3 }, "
+                " \"fieldType\": 13, \"length\": 10, "
+                " \"fields\": [ "
+                " { \"name\": \"f1\", \"type\": \"ty1\", \"flags\": 4 }, "
+                " { \"name\": \"f2\", \"type\": \"ty2\", \"flags\": 4 } "
+                " ] "
+                "}";
+        Owned<IOutputMetaData> meta = createTypeInfoOutputMetaData(json, nullptr);
+        const RtlRecord &recInfo = meta->queryRecordAccessor(true);
+        buildTestKeys(variable);
         {
-            if (shortForm || variable || blobby)
-                return;
-        }
-        if (blobby)
-        {
-            if (!shortForm || !variable)
-                return;
-        }
-        buildTestKeys(shortForm, indar, variable, blobby);
-        {
-            unsigned maxSize = (variable && blobby) ? 18 : 10;
             Owned <IKeyIndex> index1 = createKeyIndex("keyfile1.$$$", 0, false, false);
-            Owned <IKeyManager> tlk1 = createLocalKeyManager(index1, NULL);
+            Owned <IKeyManager> tlk1 = createLocalKeyManager(recInfo, index1, NULL);
             Owned<IStringSet> sset1 = createStringSet(10);
             sset1->addRange("0000000001", "0000000100");
             tlk1->append(createKeySegmentMonitor(false, sset1.getClear(), 0, 0, 10));
             tlk1->finishSegmentMonitors();
             tlk1->reset();
 
-            Owned <IKeyManager> tlk1a = createLocalKeyManager(index1, NULL);
+            Owned <IKeyManager> tlk1a = createLocalKeyManager(recInfo, index1, NULL);
             Owned<IStringSet> sset1a = createStringSet(8);
             sset1a->addRange("00000000", "00000001");
             tlk1a->append(createKeySegmentMonitor(false, sset1a.getClear(), 0, 0, 8));
@@ -3168,14 +3186,6 @@ protected:
             tlk1a->finishSegmentMonitors();
             tlk1a->reset();
 
-/*          for (;;)
-            {
-                if (!tlk1a->lookup(true))
-                    break;
-                DBGLOG("%.10s", tlk1a->queryKeyBuffer());
-            }
-            tlk1a->reset();
-*/
 
             Owned<IStringSet> ssetx = createStringSet(10);
             ssetx->addRange("0000000001", "0000000002");
@@ -3189,7 +3199,7 @@ protected:
 
 
             Owned <IKeyIndex> index2 = createKeyIndex("keyfile2.$$$", 0, false, false);
-            Owned <IKeyManager> tlk2 = createLocalKeyManager(index2, NULL);
+            Owned <IKeyManager> tlk2 = createLocalKeyManager(recInfo, index2, NULL);
             Owned<IStringSet> sset2 = createStringSet(10);
             sset2->addRange("0000000001", "0000000100");
             ASSERT(sset2->numValues() == 65536);
@@ -3204,7 +3214,7 @@ protected:
                 both->addIndex(index1.getLink());
                 both->addIndex(index2.getLink());
                 Owned<IStringSet> sset3 = createStringSet(10);
-                tlk3.setown(createKeyMerger(NULL, 0, NULL));
+                tlk3.setown(createKeyMerger(recInfo, NULL, 0, NULL));
                 tlk3->setKey(both);
                 sset3->addRange("0000000001", "0000000100");
                 tlk3->append(createKeySegmentMonitor(false, sset3.getClear(), 0, 0, 10));
@@ -3212,7 +3222,7 @@ protected:
                 tlk3->reset();
             }
 
-            Owned <IKeyManager> tlk2a = createLocalKeyManager(index2, NULL);
+            Owned <IKeyManager> tlk2a = createLocalKeyManager(recInfo, index2, NULL);
             Owned<IStringSet> sset2a = createStringSet(10);
             sset2a->addRange("0000000048", "0000000048");
             ASSERT(sset2a->numValues() == 1);
@@ -3220,7 +3230,7 @@ protected:
             tlk2a->finishSegmentMonitors();
             tlk2a->reset();
 
-            Owned <IKeyManager> tlk2b = createLocalKeyManager(index2, NULL);
+            Owned <IKeyManager> tlk2b = createLocalKeyManager(recInfo, index2, NULL);
             Owned<IStringSet> sset2b = createStringSet(10);
             sset2b->addRange("0000000047", "0000000049");
             ASSERT(sset2b->numValues() == 3);
@@ -3228,7 +3238,7 @@ protected:
             tlk2b->finishSegmentMonitors();
             tlk2b->reset();
 
-            Owned <IKeyManager> tlk2c = createLocalKeyManager(index2, NULL);
+            Owned <IKeyManager> tlk2c = createLocalKeyManager(recInfo, index2, NULL);
             Owned<IStringSet> sset2c = createStringSet(10);
             sset2c->addRange("0000000047", "0000000047");
             tlk2c->append(createKeySegmentMonitor(false, sset2c.getClear(), 0, 0, 10));
@@ -3262,7 +3272,7 @@ protected:
                 ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000000007", 10)==0);
                 ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000000009", 10)==0);
                 ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000000010", 10)==0);
-                if (blobby)
+                if (variable)
                     checkBlob(tlk1, 10+100000);
 
                 tlk1a->reset();
@@ -3321,8 +3331,8 @@ protected:
     void testKeys()
     {
         ASSERT(sizeof(CKeyIdAndPos) == sizeof(unsigned __int64) + sizeof(offset_t));
-        for (unsigned i = 0; i < 16; i++)
-            testKeys((i & 0x8)!=0,(i & 0x4)!=0,(i & 0x2)!=0,(i & 0x1)!=0);
+        testKeys(false);
+        testKeys(true);
     }
 };
 

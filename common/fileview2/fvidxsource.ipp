@@ -78,6 +78,8 @@ protected:
     IArrayOf<IStringSet> values;
     Owned<DataSourceMetaData> diskMeta;
     HqlExprAttr diskRecord;
+    Owned<IRtlFieldTypeDeserializer> deserializer;
+    Owned<IOutputMetaData> diskRecordMeta;
     Owned<IDistributedFile> df;
     Linked<FVDataSource> original;
     unsigned __int64 totalRows;

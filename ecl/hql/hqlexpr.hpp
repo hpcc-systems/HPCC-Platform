@@ -1829,9 +1829,13 @@ extern HQL_API StringBuffer& getFriendlyTypeStr(ITypeInfo* type, StringBuffer& s
 #define ForEachChildFrom(idx, expr, first)  unsigned numOfChildren##idx = (expr)->numChildren(); \
         for (unsigned idx = first; idx < numOfChildren##idx; idx++) 
 
+struct RtlTypeInfo;
+interface IRtlFieldTypeDeserializer;
+
 extern HQL_API void exportData(IPropertyTree *data, IHqlExpression *table, bool flatten=false);
 extern HQL_API void exportJsonType(StringBuffer &ret, IHqlExpression *table);
 extern HQL_API void exportBinaryType(MemoryBuffer &ret, IHqlExpression *table);
+extern HQL_API const RtlTypeInfo *queryRtlType(IRtlFieldTypeDeserializer &deserializer, IHqlExpression *table);
 
 extern HQL_API void clearCacheCounts();
 extern HQL_API void displayHqlCacheStats();

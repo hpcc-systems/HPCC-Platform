@@ -164,7 +164,7 @@ int main(int argc, const char **argv)
             }
             else
             {
-                Owned<IKeyManager> manager = createLocalKeyManager(index, NULL);
+                Owned<IKeyManager> manager;
                 Owned<IPropertyTree> metadata = index->getMetadata();
                 Owned<IOutputMetaData> diskmeta;
                 Owned<IOutputMetaData> translatedmeta;
@@ -176,7 +176,7 @@ int main(int argc, const char **argv)
                 class MyIndexCallback : public CInterfaceOf<IThorIndexCallback>
                 {
                 public:
-                    MyIndexCallback(IKeyManager *_manager) : manager(_manager) {}
+                    MyIndexCallback()  {}
                     virtual unsigned __int64 getFilePosition(const void * row)
                     {
                         return 0;
@@ -185,8 +185,7 @@ int main(int argc, const char **argv)
                     {
                         UNIMPLEMENTED;
                     }
-                    Linked<IKeyManager> manager;
-                } callback(manager);
+                } callback;
                 unsigned __int64 count = globals->getPropInt("recs", 1);
                 const RtlRecordTypeInfo *outRecType = nullptr;
                 if (metadata && metadata->hasProp("_rtlType"))
@@ -194,8 +193,12 @@ int main(int argc, const char **argv)
                     MemoryBuffer layoutBin;
                     metadata->getPropBin("_rtlType", layoutBin);
                     diskmeta.setown(createTypeInfoOutputMetaData(layoutBin, &callback));
+                }
+                if (diskmeta)
+                {
                     writer.setown(new SimpleOutputWriter);
                     const RtlRecord &inrec = diskmeta->queryRecordAccessor(true);
+                    manager.setown(createLocalKeyManager(inrec, index, nullptr));
                     size32_t minRecSize = 0;
                     if (globals->hasProp("fields"))
                     {
@@ -252,6 +255,12 @@ int main(int argc, const char **argv)
                     }
                     helper->createSegmentMonitors(manager);
                     count = helper->getChooseNLimit(); // Just because this is testing out the createIndexReadArg functionality
+                }
+                else
+                {
+                    // We don't have record info - fake it? We could pretend it's a single field...
+                    UNIMPLEMENTED;
+                    // manager.setown(createLocalKeyManager(fake, index, nullptr));
                 }
                 manager->finishSegmentMonitors();
                 manager->reset();
