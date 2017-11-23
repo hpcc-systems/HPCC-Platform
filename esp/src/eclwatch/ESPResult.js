@@ -40,8 +40,10 @@ define([
                 return item;
             case "[object String]":
                 return entities.encode(item);
+            case "[object Undefined]":
+                return "";
             default:
-                console.log("Unknown cell type.")
+                console.log("Unknown cell type:  " + Object.prototype.toString.call(item))
         }
         return item;
     }

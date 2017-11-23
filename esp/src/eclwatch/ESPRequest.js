@@ -19,13 +19,14 @@ define([
     "dojo/_base/lang",
     "dojo/_base/config",
     "dojo/_base/Deferred",
-    "dojo/request",
-    "dojo/request/script",
     "dojo/store/util/QueryResults",
     "dojo/store/Observable",
-    "dojo/topic"
+    "dojo/topic",
 
-], function (declare, arrayUtil, lang, config, Deferred, request, script, QueryResults, Observable, topic) {
+    "@hpcc-js/comms"
+
+], function (declare, arrayUtil, lang, config, Deferred, QueryResults, Observable, topic,
+    hpccComms) {
     var RequestHelper = declare(null, {
 
         serverIP: null,
@@ -64,6 +65,7 @@ define([
 
         _send: function(service, action, _params) {
             var params = lang.mixin({
+                request: {},
                 load: function (response) {
                 },
                 error: function (error) {
@@ -84,27 +86,18 @@ define([
 
             var retVal = null;
             if (this.isCrossSite()) {
-                retVal = script.get(this.getBaseURL(service) + "/" + action + postfix, {
-                    query: params.request,
-                    jsonp: "jsonp"
-                });
+                var transport = new hpccComms.Connection({ baseUrl: this.getBaseURL(service), type: hpccComms.RequestType.JSONP });
+                retVal = transport.send(action + postfix, params.request, handleAs === "text" ? hpccComms.ResponseType.TEXT : hpccComms.ResponseType.JSON);
             } else {
-                retVal = request.post(this.getBaseURL(service) + "/" + action + postfix, {
-                    data: params.request,
-                    handleAs: handleAs
-                });
+                var transport = new hpccComms.Connection({ baseUrl: this.getBaseURL(service) });
+                retVal = transport.send(action + postfix, params.request, handleAs === "text" ? hpccComms.ResponseType.TEXT : hpccComms.ResponseType.JSON);
             }
             return retVal.then(function (response) {
                 params.load(response);
                 return response;
-            },
-            function (error) {
+            }).catch(function(e) {
                 params.error(error);
                 return error;
-            },
-            function (event) {
-                params.event(event);
-                return event;
             });
         },
 
