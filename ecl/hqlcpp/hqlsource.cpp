@@ -23,6 +23,7 @@
 #include "jstream.ipp"
 #include "jdebug.hpp"
 #include "eclrtl_imp.hpp"
+#include "rtlkey.hpp"
 
 #include "hql.hpp"
 #include "hqlattr.hpp"
@@ -3688,7 +3689,7 @@ void KeyFailureInfo::reportError(HqlCppTranslator & translator, IHqlExpression *
 }
 
 
-const char * BuildMonitorState::getSetName()
+const char * BuildMonitorState::getSetName(bool createValueSets)
 {
     if (!setNames.isItem(numActiveSets))
     {
@@ -3698,7 +3699,10 @@ const char * BuildMonitorState::getSetName()
 
         StringBuffer s;
         funcctx.setNextConstructor();
-        funcctx.addQuoted(s.append("Owned<IStringSet> ").append(name).append(";"));
+        if (createValueSets)
+            funcctx.addQuoted(s.append("Owned<IValueSet> ").append(name).append(";"));
+        else
+            funcctx.addQuoted(s.append("Owned<IStringSet> ").append(name).append(";"));
     }
 
     return setNames.item(numActiveSets++).text;
@@ -3719,6 +3723,21 @@ IHqlExpression * KeyConditionInfo::createConjunction()
     extendAndCondition(result, postFilter);
     return result.getClear();
 }
+
+//---------------------------------------------------------------------------------------------------------------------
+
+const char * KeySelectorInfo::getFFOptions()
+{
+    switch (keyedKind)
+    {
+    case KeyedExtend:
+        return "FFopt";
+    default:
+        return "FFkeyed";
+    }
+}
+
+//---------------------------------------------------------------------------------------------------------------------
 
 MonitorExtractor::MonitorExtractor(IHqlExpression * _tableExpr, HqlCppTranslator & _translator, int _numKeyableFields, bool _isDiskRead) : translator(_translator)
 { 
@@ -3743,6 +3762,17 @@ MonitorExtractor::MonitorExtractor(IHqlExpression * _tableExpr, HqlCppTranslator
     cleanlyKeyedExplicitly = false;
     keyedExplicitly = false;
     allowDynamicFormatChange = !tableExpr->hasAttribute(fixedAtom);
+    createValueSets = translator.queryOptions().createValueSets;
+    if (createValueSets)
+    {
+        addRangeFunc = addRawRangeId;
+        killRangeFunc = killRawRangeId;
+    }
+    else
+    {
+        addRangeFunc = addRangeId;
+        killRangeFunc = killRangeId;
+    }
 }
 
 void MonitorExtractor::callAddAll(BuildCtx & ctx, IHqlExpression * targetVar)
@@ -4067,17 +4097,17 @@ void MonitorExtractor::buildKeySegmentInExpr(BuildMonitorState & buildState, Key
     IHqlExpression * expandedSelector = selectorInfo.expandedSelector;
     ITypeInfo * fieldType = expandedSelector->queryType();
     unsigned curSize = fieldType->getSize();
-    createStringSet(ctx, target, curSize, fieldType);
+    createStringSet(ctx, target, curSize, expandedSelector);
 
     OwnedHqlExpr targetVar = createVariable(target, makeVoidType());
     IHqlExpression * lhs = thisKey.queryChild(0);
     OwnedHqlExpr values = normalizeListCasts(thisKey.queryChild(1));
 
-    IIdAtom * func = addRangeId;
+    IIdAtom * func = addRangeFunc;
     if (thisKey.getOperator() == no_notin)
     {
         callAddAll(ctx, targetVar);
-        func = killRangeId;
+        func = killRangeFunc;
     }
 
     if (values->getOperator() != no_list)
@@ -4205,21 +4235,32 @@ void MonitorExtractor::extractCompareInformation(BuildCtx & ctx, IHqlExpression 
         compare.setown(createCompareRecast(no_eq, compareValue, recastValue));
 }
 
-void MonitorExtractor::createStringSet(BuildCtx & ctx, const char * target, unsigned size, ITypeInfo * type)
+void MonitorExtractor::createStringSet(BuildCtx & ctx, const char * target, unsigned size, IHqlExpression * selector)
 {
-    if (onlyHozedCompares)
-        ctx.addQuotedF("%s.setown(createRtlStringSet(%u));", target, size);
+    assertex(selector->getOperator() == no_select);
+    if (createValueSets)
+    {
+        StringBuffer type;
+        translator.buildRtlFieldType(type, selector->queryChild(1), queryRecord(tableExpr));
+        ctx.addQuotedF("%s.setown(createValueSet(%s));", target, type.str());
+    }
     else
     {
-        bool isBigEndian = !type->isInteger() || !isLittleEndian(type);
-        ctx.addQuotedF("%s.setown(createRtlStringSetEx(%u,%d,%d));", target, size, isBigEndian, type->isSigned());
+        if (onlyHozedCompares)
+            ctx.addQuotedF("%s.setown(createRtlStringSet(%u));", target, size);
+        else
+        {
+            ITypeInfo * type = selector->queryType();
+            bool isBigEndian = !type->isInteger() || !isLittleEndian(type);
+            ctx.addQuotedF("%s.setown(createRtlStringSetEx(%u,%d,%d));", target, size, isBigEndian, type->isSigned());
+        }
     }
 }
 
 void MonitorExtractor::buildKeySegmentCompareExpr(BuildMonitorState & buildState, KeySelectorInfo & selectorInfo, BuildCtx & ctx, const char * targetSet, IHqlExpression & thisKey)
 {
     OwnedHqlExpr targetVar = createVariable(targetSet, makeVoidType());
-    createStringSet(ctx, targetSet, selectorInfo.size, selectorInfo.expandedSelector->queryType());
+    createStringSet(ctx, targetSet, selectorInfo.size, selectorInfo.expandedSelector);
 
     if (!exprReferencesDataset(&thisKey, tableExpr))
     {
@@ -4246,7 +4287,7 @@ void MonitorExtractor::buildKeySegmentCompareExpr(BuildMonitorState & buildState
             translator.buildFilter(subctx, compare);
         args.append(*LINK(address));
         args.append(*LINK(address));
-        translator.callProcedure(subctx, addRangeId, args);
+        translator.callProcedure(subctx, addRangeFunc, args);
         break;
     case no_ne:
         subctx.addQuoted(StringBuffer().appendf("%s->addAll();", targetSet));
@@ -4254,12 +4295,12 @@ void MonitorExtractor::buildKeySegmentCompareExpr(BuildMonitorState & buildState
             translator.buildFilter(subctx, compare);
         args.append(*LINK(address));
         args.append(*LINK(address));
-        translator.callProcedure(subctx, killRangeId, args);
+        translator.callProcedure(subctx, killRangeFunc, args);
         break;
     case no_le:
         args.append(*createValue(no_nullptr, makeVoidType()));
         args.append(*LINK(address));
-        translator.callProcedure(subctx, addRangeId, args);
+        translator.callProcedure(subctx, addRangeFunc, args);
         break;
     case no_lt:
         // e) no_lt.  If isExact add < value else add <= value
@@ -4270,14 +4311,14 @@ void MonitorExtractor::buildKeySegmentCompareExpr(BuildMonitorState & buildState
             //common this up...
             args.append(*createValue(no_nullptr, makeVoidType()));
             args.append(*LINK(address));
-            translator.callProcedure(subctx, addRangeId, args);
+            translator.callProcedure(subctx, addRangeFunc, args);
             subctx.selectElse(cond);
             args.append(*LINK(targetVar));
         }
         subctx.addQuoted(StringBuffer().appendf("%s->addAll();", targetSet));
         args.append(*LINK(address));
         args.append(*createValue(no_nullptr, makeVoidType()));
-        translator.callProcedure(subctx, killRangeId, args);
+        translator.callProcedure(subctx, killRangeFunc, args);
         break;
     case no_ge:
         // d) no_ge.  If isExact add >= value else add > value
@@ -4289,19 +4330,19 @@ void MonitorExtractor::buildKeySegmentCompareExpr(BuildMonitorState & buildState
             subctx.addQuoted(StringBuffer().appendf("%s->addAll();", targetSet));
             args.append(*createValue(no_nullptr, makeVoidType()));
             args.append(*LINK(address));
-            translator.callProcedure(subctx, killRangeId, args);
+            translator.callProcedure(subctx, killRangeFunc, args);
             subctx.selectElse(cond);
             args.append(*LINK(targetVar));
         }
         args.append(*LINK(address));
         args.append(*createValue(no_nullptr, makeVoidType()));
-        translator.callProcedure(subctx, addRangeId, args);
+        translator.callProcedure(subctx, addRangeFunc, args);
         break;
     case no_gt:
         subctx.addQuoted(StringBuffer().appendf("%s->addAll();", targetSet));
         args.append(*createValue(no_nullptr, makeVoidType()));
         args.append(*LINK(address));
-        translator.callProcedure(subctx, killRangeId, args);
+        translator.callProcedure(subctx, killRangeFunc, args);
         break;
     case no_between:
     case no_notbetween:
@@ -4321,11 +4362,11 @@ void MonitorExtractor::buildKeySegmentCompareExpr(BuildMonitorState & buildState
             translator.ensureHasAddress(subctx, rhs2);
             args.append(*getPointer(rhs2.expr));
             if (op == no_between)
-                translator.callProcedure(subctx, addRangeId, args);
+                translator.callProcedure(subctx, addRangeFunc, args);
             else
             {
                 subctx.addQuoted(StringBuffer().appendf("%s->addAll();", targetSet));
-                translator.callProcedure(subctx, killRangeId, args);
+                translator.callProcedure(subctx, killRangeFunc, args);
             }
             break;
         }
@@ -4371,7 +4412,7 @@ void MonitorExtractor::buildKeySegmentExpr(BuildMonitorState & buildState, KeySe
     case no_notin:
         {
             if (!targetSet)
-                targetSet = buildState.getSetName();
+                targetSet = buildState.getSetName(createValueSets);
             buildKeySegmentInExpr(buildState, selectorInfo, ctx, targetSet, thisKey, filterKind);
             break;
         }
@@ -4391,7 +4432,7 @@ void MonitorExtractor::buildKeySegmentExpr(BuildMonitorState & buildState, KeySe
             unsigned numMatches = matches.ordinality();
 
             if (!targetSet && numMatches > 1)
-                targetSet = buildState.getSetName();
+                targetSet = buildState.getSetName(createValueSets);
 
             IHqlStmt * ifStmt = NULL;
             if (invariant)
@@ -4405,10 +4446,13 @@ void MonitorExtractor::buildKeySegmentExpr(BuildMonitorState & buildState, KeySe
             for (unsigned i=1; i< numMatches; i++)
             {
                 IHqlExpression & cur = matches.item(i);
-                const char * curTarget = buildState.getSetName();
+                const char * curTarget = buildState.getSetName(createValueSets);
                 BuildCtx childctx(subctx);
                 buildKeySegmentExpr(buildState, selectorInfo, childctx, curTarget, cur, MonitorFilterSkipAll);
-                childctx.addQuotedF("%s.setown(rtlIntersectSet(%s,%s));", targetSet, targetSet, curTarget);
+                if (createValueSets)
+                    childctx.addQuotedF("%s->intersectSet(%s);", targetSet, curTarget);
+                else
+                    childctx.addQuotedF("%s.setown(rtlIntersectSet(%s,%s));", targetSet, targetSet, curTarget);
                 buildState.popSetName();
             }
 
@@ -4416,7 +4460,7 @@ void MonitorExtractor::buildKeySegmentExpr(BuildMonitorState & buildState, KeySe
             {
                 subctx.selectElse(ifStmt);
                 if (targetSet)
-                    createStringSet(subctx, targetSet, curSize, selectorInfo.selector->queryType());
+                    createStringSet(subctx, targetSet, curSize, selectorInfo.selector);
                 else
                     buildEmptyKeySegment(buildState, subctx, selectorInfo);
             }
@@ -4441,7 +4485,7 @@ void MonitorExtractor::buildKeySegmentExpr(BuildMonitorState & buildState, KeySe
                     IHqlStmt * ifStmt = translator.buildFilterViaExpr(subctx, invariant);
                     if (targetSet)
                     {
-                        createStringSet(subctx, targetSet, curSize, selectorInfo.selector->queryType());
+                        createStringSet(subctx, targetSet, curSize, selectorInfo.selector);
                         OwnedHqlExpr targetVar = createVariable(targetSet, makeVoidType());
                         callAddAll(subctx, targetVar);
                     }
@@ -4451,16 +4495,19 @@ void MonitorExtractor::buildKeySegmentExpr(BuildMonitorState & buildState, KeySe
             
             appendCtx = &subctx;
             if (!targetSet && numMatches > 1)
-                targetSet = buildState.getSetName();
+                targetSet = buildState.getSetName(createValueSets);
 
             buildKeySegmentExpr(buildState, selectorInfo, subctx, targetSet, matches.item(0), NoMonitorFilter);
             for (unsigned i=1; i < numMatches; i++)
             {
                 IHqlExpression & cur = matches.item(i);
-                const char * curTarget = buildState.getSetName();
+                const char * curTarget = buildState.getSetName(createValueSets);
                 BuildCtx childctx(subctx);
                 buildKeySegmentExpr(buildState, selectorInfo, childctx, curTarget, cur, MonitorFilterSkipEmpty);
-                childctx.addQuotedF("%s.setown(rtlUnionSet(%s, %s));", targetSet, targetSet, curTarget);
+                if (createValueSets)
+                    childctx.addQuotedF("%s->unionSet(%s);", targetSet, curTarget);
+                else
+                    childctx.addQuotedF("%s.setown(rtlUnionSet(%s, %s));", targetSet, targetSet, curTarget);
                 buildState.popSetName();
             }
             break;
@@ -4471,7 +4518,7 @@ void MonitorExtractor::buildKeySegmentExpr(BuildMonitorState & buildState, KeySe
             {
                 if (buildSingleKeyMonitor(createMonitorText, selectorInfo, subctx, thisKey))
                     break;
-                targetSet = buildState.getSetName();
+                targetSet = buildState.getSetName(createValueSets);
             }
             buildKeySegmentCompareExpr(buildState, selectorInfo, ctx, targetSet, thisKey);
             break;
@@ -4479,7 +4526,7 @@ void MonitorExtractor::buildKeySegmentExpr(BuildMonitorState & buildState, KeySe
     default:
         {
             if (!targetSet)
-                targetSet = buildState.getSetName();
+                targetSet = buildState.getSetName(createValueSets);
             buildKeySegmentCompareExpr(buildState, selectorInfo, ctx, targetSet, thisKey);
             break;
         }
@@ -4487,14 +4534,23 @@ void MonitorExtractor::buildKeySegmentExpr(BuildMonitorState & buildState, KeySe
 
     if (targetSet && !requiredSet)
     {
-        createMonitorText.appendf("createKeySegmentMonitor(%s, %s.getClear(), %u, %u, %u)",
-                                  boolToText(selectorInfo.keyedKind != KeyedYes), targetSet, selectorInfo.fieldIdx, selectorInfo.offset, selectorInfo.size);
+        if (createValueSets)
+            createMonitorText.appendf("createFieldFilter(%u, %s.getClear())", selectorInfo.fieldIdx, targetSet);
+        else
+            createMonitorText.appendf("createKeySegmentMonitor(%s, %s.getClear(), %u, %u, %u)",
+                                      boolToText(selectorInfo.keyedKind != KeyedYes), targetSet, selectorInfo.fieldIdx, selectorInfo.offset, selectorInfo.size);
+
 
         buildState.popSetName();
     }
 
     if (createMonitorText.length())
-        appendCtx->addQuotedF("%s->append(%s);", buildState.listName, createMonitorText.str());
+    {
+        if (createValueSets)
+            appendCtx->addQuotedF("%s->append(%s, %s);", buildState.listName, selectorInfo.getFFOptions(), createMonitorText.str());
+        else
+            appendCtx->addQuotedF("%s->append(%s);", buildState.listName, createMonitorText.str());
+    }
 }
 
 
@@ -4540,36 +4596,51 @@ bool MonitorExtractor::buildSingleKeyMonitor(StringBuffer & createMonitorText, K
     if (compare)
         return false;
 
-    ITypeInfo * type = selectorInfo.expandedSelector->queryType();
-    type_t tc = type->getTypeCode();
-    if ((tc == type_int) || (tc == type_swapint))
+    if (createValueSets)
     {
-        if (isLittleEndian(type))
-        {
-            if (type->isSigned())
-                funcName.append("createSingleLittleSignedKeySegmentMonitor");
-            else if (type->getSize() != 1)
-                funcName.append("createSingleLittleKeySegmentMonitor");
-        }
-        else
-        {
-            if (type->isSigned())
-                funcName.append("createSingleBigSignedKeySegmentMonitor");
-            else
-                funcName.append("createSingleKeySegmentMonitor");
-        }
+        StringBuffer type;
+        translator.buildRtlFieldType(type, selectorInfo.selector->queryChild(1), queryRecord(selectorInfo.selector->queryChild(0)));
+
+        //MORE: Need to ensure it is exactly the correct format - e.g. variable length strings are length prefixed
+        OwnedHqlExpr address = getMonitorValueAddress(subctx, normalized);
+        StringBuffer addrText;
+        translator.generateExprCpp(addrText, address);
+
+        createMonitorText.appendf("createFieldFilter(%u, %s, %s)", selectorInfo.fieldIdx, type.str(), addrText.str());
     }
-    
-    if (!funcName.length())
-        funcName.append("createSingleKeySegmentMonitor");
+    else
+    {
+        ITypeInfo * type = selectorInfo.expandedSelector->queryType();
+        type_t tc = type->getTypeCode();
+        if ((tc == type_int) || (tc == type_swapint))
+        {
+            if (isLittleEndian(type))
+            {
+                if (type->isSigned())
+                    funcName.append("createSingleLittleSignedKeySegmentMonitor");
+                else if (type->getSize() != 1)
+                    funcName.append("createSingleLittleKeySegmentMonitor");
+            }
+            else
+            {
+                if (type->isSigned())
+                    funcName.append("createSingleBigSignedKeySegmentMonitor");
+                else
+                    funcName.append("createSingleKeySegmentMonitor");
+            }
+        }
 
-    OwnedHqlExpr address = getMonitorValueAddress(subctx, normalized);
-    StringBuffer addrText;
-    translator.generateExprCpp(addrText, address);
+        if (!funcName.length())
+            funcName.append("createSingleKeySegmentMonitor");
 
-    createMonitorText.append(funcName)
-                     .appendf("(%s, %u, %u, %u, %s)",
-                              boolToText(selectorInfo.keyedKind != KeyedYes), selectorInfo.fieldIdx, selectorInfo.offset, selectorInfo.size, addrText.str());
+        OwnedHqlExpr address = getMonitorValueAddress(subctx, normalized);
+        StringBuffer addrText;
+        translator.generateExprCpp(addrText, address);
+
+        createMonitorText.append(funcName)
+                         .appendf("(%s, %u, %u, %u, %s)",
+                                  boolToText(selectorInfo.keyedKind != KeyedYes), selectorInfo.fieldIdx, selectorInfo.offset, selectorInfo.size, addrText.str());
+    }
     return true;
 }
 
@@ -4593,7 +4664,14 @@ KeyedKind getKeyedKind(HqlCppTranslator & translator, KeyConditionArray & matche
 void MonitorExtractor::buildEmptyKeySegment(BuildMonitorState & buildState, BuildCtx & ctx, KeySelectorInfo & selectorInfo)
 {
     StringBuffer s;
-    ctx.addQuoted(s.appendf("%s->append(createEmptyKeySegmentMonitor(%s, %u, %u, %u));", buildState.listName, boolToText(selectorInfo.keyedKind != KeyedYes), selectorInfo.fieldIdx, selectorInfo.offset, selectorInfo.size));
+    if (createValueSets)
+    {
+        StringBuffer type;
+        translator.buildRtlFieldType(type, selectorInfo.selector->queryChild(1), queryRecord(selectorInfo.selector->queryChild(0)));
+        ctx.addQuoted(s.appendf("%s->append(%s, createEmptyFieldFilter(%u, %s));", buildState.listName, selectorInfo.getFFOptions(), selectorInfo.fieldIdx, type.str()));
+    }
+    else
+        ctx.addQuoted(s.appendf("%s->append(createEmptyKeySegmentMonitor(%s, %u, %u, %u));", buildState.listName, boolToText(selectorInfo.keyedKind != KeyedYes), selectorInfo.fieldIdx, selectorInfo.offset, selectorInfo.size));
 }
 
 

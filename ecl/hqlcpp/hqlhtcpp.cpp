@@ -3771,6 +3771,32 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer & instanceName, IHqlExpres
 }
 
 
+unsigned HqlCppTranslator::buildRtlFieldType(StringBuffer & instanceName, IHqlExpression * field, IHqlExpression * rowRecord)
+{
+    Linked<ITypeInfo> fieldType = field->queryType();
+    switch (field->queryType()->getTypeCode())
+    {
+    case type_alien:
+        //MORE:::
+        break;
+    case type_row:
+        //Backward compatibility - should revisit
+        fieldType.set(fieldType->queryChildType());
+        break;
+    case type_bitfield:
+    {
+        //fieldKey contains a field with a type annotated with offsets/isLastBitfield
+        bool isPayload = field->hasAttribute(_payload_Atom);
+        OwnedHqlExpr fieldKey = getRtlFieldKey(field, rowRecord, isPayload);
+        fieldType.set(fieldKey->queryType());
+        break;
+    }
+    }
+
+    return buildRtlType(instanceName, fieldType);
+}
+
+
 unsigned HqlCppTranslator::buildRtlIfBlockField(StringBuffer & instanceName, IHqlExpression * ifblock, IHqlExpression * rowRecord, bool isPayload)
 {
     StringBuffer typeName, s;
@@ -3964,6 +3990,14 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
     BuildCtx typectx(declarectx);
     typectx.setNextPriority(TypeInfoPrio);
     typectx.addQuoted(definition);
+
+    if (options.spanMultipleCpp)
+    {
+        StringBuffer s;
+        s.append("extern const ").append(info.className).append("  ").append(name).append(";");
+        BuildCtx protoctx(*code, mainprototypesAtom);
+        protoctx.addQuoted(s);
+    }
 
     OwnedHqlExpr nameExpr = createVariable(name.str(), makeVoidType());
     OwnedHqlExpr mapped = createAttribute(fieldAtom, LINK(nameExpr), getSizetConstant(info.fieldType));

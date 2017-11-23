@@ -2307,6 +2307,7 @@ public:
     virtual void append(IKeySegmentMonitor *segment);
     virtual unsigned ordinality() const;
     virtual IKeySegmentMonitor *item(unsigned idx) const;
+    virtual void append(FFoption option, IFieldFilter * filter);
 
 protected:
     virtual void verifyRecordFormatCrc() { ::verifyFormatCrcSuper(helper.getFormatCrc(), ldFile?ldFile->queryDistributedFile():NULL, false, true); }

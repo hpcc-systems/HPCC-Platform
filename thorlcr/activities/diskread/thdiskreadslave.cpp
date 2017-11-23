@@ -87,7 +87,7 @@ public:
     }
 
 // IIndexReadContext impl.
-    void append(IKeySegmentMonitor *segment)
+    virtual void append(IKeySegmentMonitor *segment)
     {
         if (segment->isWild())
             segment->Release();
@@ -99,12 +99,17 @@ public:
         }
     }
 
-    unsigned ordinality() const
+    virtual void append(FFoption option, IFieldFilter * filter)
+    {
+        UNIMPLEMENTED;
+    }
+
+    virtual unsigned ordinality() const
     {
         return segMonitors.length();
     }
 
-    IKeySegmentMonitor *item(unsigned idx) const
+    virtual IKeySegmentMonitor *item(unsigned idx) const
     {
         if (segMonitors.isItem(idx))
             return &segMonitors.item(idx);

@@ -722,6 +722,25 @@ public:
 
     }
 
+    virtual ValueTransition * createRawTransition(TransitionMask mask, const void * value) const override
+    {
+        return new ValueTransition(mask, type, value);
+    }
+
+    virtual void addRawRange(const void * lower, const void * upper) override
+    {
+        Owned<ValueTransition> lowerBound = lower ? createRawTransition(CMPge, lower) : nullptr;
+        Owned<ValueTransition> upperBound = upper ? createRawTransition(CMPle, upper) : nullptr;
+        addRange(lowerBound, upperBound);
+    }
+
+    virtual void killRawRange(const void * lower, const void * upper) override
+    {
+        Owned<ValueTransition> lowerBound = lower ? createRawTransition(CMPge, lower) : nullptr;
+        Owned<ValueTransition> upperBound = upper ? createRawTransition(CMPle, upper) : nullptr;
+        killRange(lowerBound, upperBound);
+    }
+
 // Methods for using a value set
     virtual unsigned numRanges() const override;
 
@@ -989,6 +1008,19 @@ bool SetFieldFilter::matches(const RtlRow & row, unsigned range) const
 
 IFieldFilter * createFieldFilter(unsigned fieldId, IValueSet * values)
 {
+    return new SetFieldFilter(fieldId, values);
+}
+
+IFieldFilter * createEmptyFieldFilter(unsigned fieldId, const RtlTypeInfo & type)
+{
+    Owned<IValueSet> values = createValueSet(type);
+    return new SetFieldFilter(fieldId, values);
+}
+
+IFieldFilter * createFieldFilter(unsigned fieldId, const RtlTypeInfo & type, const void * value)
+{
+    Owned<IValueSet> values = createValueSet(type);
+    values->addRawRange(value, value);
     return new SetFieldFilter(fieldId, values);
 }
 

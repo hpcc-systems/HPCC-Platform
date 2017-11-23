@@ -291,6 +291,11 @@ public:
         totalCount += segment->getSize();
     }
 
+    virtual void append(FFoption option, IFieldFilter * filter)
+    {
+        UNIMPLEMENTED;
+    }
+
     virtual unsigned ordinality() const
     {
         return segMonitors.length();
@@ -1811,6 +1816,11 @@ public:
             }
         }
         segment->Release();
+    }
+
+    virtual void append(FFoption option, IFieldFilter * filter)
+    {
+        UNIMPLEMENTED;
     }
 
     virtual unsigned ordinality() const
