@@ -14071,7 +14071,7 @@ void exportBinaryType(MemoryBuffer &ret, IHqlExpression *table)
 {
     Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer(nullptr));
     const RtlTypeInfo *typeInfo = buildRtlType(*deserializer.get(), table->queryType());
-    dumpTypeInfo(ret, typeInfo, false);
+    dumpTypeInfo(ret, typeInfo);
 }
 
 const RtlTypeInfo *queryRtlType(IRtlFieldTypeDeserializer &deserializer, IHqlExpression *table)

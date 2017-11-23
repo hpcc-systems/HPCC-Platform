@@ -151,14 +151,14 @@ public:
             {
                 filters.append(nullptr);
                 filterOffsets.append(offsetCalculator.getOffset(filters.length()));
-                filterOffsets.append(offsetCalculator.getSize(filters.length()));
+                filterSizes.append(offsetCalculator.getSize(filters.length()));
             }
             IStringSet *prev = filters.item(fieldNum);
             if (prev)
                 filterSet.setown(prev->unionSet(filterSet)); // Debatable - would intersect be more appropriate?
             filters.replace(filterSet.getClear(), fieldNum);
-            filterOffsets.replace(fieldOffset, fieldOffset); // MORE - probably refactor this in  a bit
-            filterSizes.replace(fieldSize, fieldSize); // MORE - probably refactor this in  a bit
+            filterOffsets.replace(fieldOffset, fieldNum); // MORE - probably refactor this in  a bit
+            filterSizes.replace(fieldSize, fieldNum); // MORE - probably refactor this in  a bit
         }
     }
     void createSegmentMonitors(IIndexReadContext *irc)
