@@ -95,7 +95,7 @@ define([
             return retVal.then(function (response) {
                 params.load(response);
                 return response;
-            }).catch(function(e) {
+            }).catch(function(error) {
                 params.error(error);
                 return error;
             });

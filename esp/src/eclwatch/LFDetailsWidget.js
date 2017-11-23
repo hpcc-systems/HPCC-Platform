@@ -116,6 +116,7 @@ define([
             var context = this;
             var origOnOpen = this.desprayTooltiopDialog.onOpen;
             this.desprayTooltiopDialog.onOpen = function () {
+                var targetRow;
                 if (!context.desprayTargetSelect.initalized) {
                     context.desprayTargetSelect.init({
                         DropZones: true,
