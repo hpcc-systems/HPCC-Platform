@@ -62,7 +62,7 @@ public:
         byte const * * * ptrs;
     };
 
-    typedef enum { NoTranslation = 0, TranslateAll = 1, TranslatePayload = 2 } Mode;
+    typedef enum { NoTranslation = 0, TranslateAll = 1, TranslatePayload = 2, TranslateAlwaysDisk = 3, TranslateAlwaysECL = 4 } Mode;
 
     virtual bool querySuccess() const = 0;
     virtual Failure const & queryFailure() const = 0;

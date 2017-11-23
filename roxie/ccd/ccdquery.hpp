@@ -287,6 +287,18 @@ public:
         // Default is no additional information
     }
 
+    unsigned getFormatCrc(unsigned helperCrc) const
+    {
+        if (queryFactory.queryOptions().skipFileFormatCrcCheck)
+            return 0;
+        else
+            return helperCrc;
+    }
+
+    IRecordLayoutTranslator::Mode getEnableFieldTranslation() const
+    {
+        return queryFactory.queryOptions().enableFieldTranslation;
+    }
 };
 
 extern void addXrefFileInfo(IPropertyTree &reply, const IResolvedFile *dataFile);

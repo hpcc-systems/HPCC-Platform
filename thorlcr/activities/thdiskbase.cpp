@@ -28,6 +28,7 @@
 
 #include "eclhelper.hpp" // tmp for IHThorArg interface
 #include "thdiskbase.ipp"
+#include "rtldynfield.hpp"
 
 CDiskReadMasterBase::CDiskReadMasterBase(CMasterGraphElement *info) : CMasterActivity(info), diskStats(info->queryJob(), diskReadRemoteStatistics)
 {
@@ -190,6 +191,13 @@ void CWriteMasterBase::init()
         const char *rececl= diskHelperBase->queryRecordECL();
         if (rececl&&*rececl)
             props.setProp("ECL", rececl);
+        if (diskHelperBase->queryDiskRecordSize()->queryTypeInfo())
+        {
+            MemoryBuffer out;
+            if (dumpTypeInfo(out, diskHelperBase->queryDiskRecordSize()->queryTypeInfo()))
+                props.setPropBin("_rtlType", out.length(), out.toByteArray());
+        }
+
         bool blockCompressed=false;
         void *ekey;
         size32_t ekeylen;

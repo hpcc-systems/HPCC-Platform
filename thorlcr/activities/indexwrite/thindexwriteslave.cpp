@@ -207,8 +207,8 @@ public:
         if (helper->queryDiskRecordSize()->queryTypeInfo())
         {
             MemoryBuffer out;
-            dumpTypeInfo(out, helper->queryDiskRecordSize()->queryTypeInfo());
-            metadata->setPropBin("_rtlType", out.length(), out.toByteArray());
+            if (dumpTypeInfo(out, helper->queryDiskRecordSize()->queryTypeInfo()))
+                metadata->setPropBin("_rtlType", out.length(), out.toByteArray());
         }
     }
 

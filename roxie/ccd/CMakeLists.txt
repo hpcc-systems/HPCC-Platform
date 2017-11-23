@@ -70,6 +70,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/roxie/udplib
          ${HPCC_SOURCE_DIR}/roxie/roxie
          ${HPCC_SOURCE_DIR}/common/environment
+         ${HPCC_SOURCE_DIR}/ecl/hql
          ${HPCC_SOURCE_DIR}/ecl/hthor
          ${HPCC_SOURCE_DIR}/ecl/schedulectrl
          ${HPCC_SOURCE_DIR}/rtl/nbcd
@@ -102,7 +103,8 @@ install ( TARGETS ccd RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_
 
 target_link_libraries ( ccd 
          jlib
-         nbcd 
+         nbcd
+         hql
          roxiemem 
          udplib 
          remote 

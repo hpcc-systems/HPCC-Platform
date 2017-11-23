@@ -417,6 +417,11 @@ class OwnedPointerArrayOf : public ArrayOf<INTERFACE *, INTERFACE *, OwnedPointe
 {
 };
 
+template <typename INTERFACE>
+class OwnedConstPointerArrayOf : public ArrayOf<const INTERFACE *, const INTERFACE *, OwnedPointerArrayMapper<const INTERFACE> >
+{
+};
+
 //--------------------------------------------------------------------------------------------------------------------
 
 template <typename ITEM>

@@ -82,6 +82,10 @@ const RtlTypeInfo *FieldTypeInfoStruct::createRtlTypeInfo(IThorIndexCallback *_c
         assert(childType);
         ret = new RtlDatasetTypeInfo(fieldType, length, childType);
         break;
+    case type_dictionary:
+        assert(childType);
+        ret = new RtlDictionaryTypeInfo(fieldType, length, childType);
+        break;
     case type_set:
         assert(childType);
         ret = new RtlSetTypeInfo(fieldType, length, childType);
@@ -779,9 +783,18 @@ extern ECLRTL_API StringBuffer &dumpTypeInfo(StringBuffer &ret, const RtlTypeInf
     return CRtlFieldTypeSerializer::serialize(ret, t);
 }
 
-extern ECLRTL_API MemoryBuffer &dumpTypeInfo(MemoryBuffer &ret, const RtlTypeInfo *t)
+extern ECLRTL_API bool dumpTypeInfo(MemoryBuffer &ret, const RtlTypeInfo *t)
 {
-    return CRtlFieldTypeBinSerializer::serialize(ret, t);
+    try
+    {
+        CRtlFieldTypeBinSerializer::serialize(ret, t);
+        return true;
+    }
+    catch (IException *E)
+    {
+        EXCLOG(E);
+        return false;
+    }
 }
 
 extern ECLRTL_API void serializeRecordType(size32_t & __lenResult, void * & __result, IOutputMetaData &  metaVal)
@@ -934,6 +947,7 @@ private:
         unsigned numOffsets = sourceRecInfo.getNumVarFields() + 1;
         size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
         byte * destConditions = (byte *)alloca(destRecInfo.getNumIfBlocks() * sizeof(byte));
+        memset(destConditions, 2, destRecInfo.getNumIfBlocks() * sizeof(byte));
         RtlRow sourceRow(sourceRecInfo, sourceRec, numOffsets, variableOffsets);
         size32_t estimate = destRecInfo.getFixedSize();
         if (!estimate)
@@ -1377,8 +1391,9 @@ private:
             for (unsigned idx = 0; idx < sourceRecInfo.getNumFields(); idx++)
             {
                 const RtlFieldInfo *field = sourceRecInfo.queryField(idx);
+                const char *name = sourceRecInfo.queryName(idx);
                 const RtlTypeInfo *type = field->type;
-                if (destRecInfo.getFieldNum(field->name) == (unsigned) -1)
+                if (destRecInfo.getFieldNum(name) == (unsigned) -1)
                 {
                     // unmatched field
                     if (type->isFixedSize())

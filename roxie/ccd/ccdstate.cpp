@@ -2212,7 +2212,11 @@ private:
                 const char *val = control->queryProp("@val");
                 if (val)
                 {
-                    if (strieq(val, "payload"))
+                    if (strieq(val, "alwaysDisk"))
+                        fieldTranslationEnabled = IRecordLayoutTranslator::TranslateAlwaysDisk;
+                    else if (strieq(val, "alwaysECL"))
+                        fieldTranslationEnabled = IRecordLayoutTranslator::TranslateAlwaysECL;
+                    else if (strieq(val, "payload"))
                         fieldTranslationEnabled = IRecordLayoutTranslator::TranslatePayload;
                     else if (!val || strToBool(val))
                         fieldTranslationEnabled = IRecordLayoutTranslator::TranslateAll;
@@ -2552,6 +2556,10 @@ private:
                     shash = allQueryPackages->queryHash();
                 }
                 reply.appendf("<State hash='%" I64F "u' topologyHash='%" I64F "u'/>", shash, thash);
+            }
+            else if (stricmp(queryName, "control:resetcache")==0)
+            {
+                releaseSlaveDynamicFileCache();
             }
             else if (stricmp(queryName, "control:resetindexmetrics")==0)
             {

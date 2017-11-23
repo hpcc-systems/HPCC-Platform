@@ -40,20 +40,25 @@
 class CDeserializedOutputMetaData : public COutputMetaData
 {
 public:
-    CDeserializedOutputMetaData(MemoryBuffer &binInfo, IThorIndexCallback *callback);
+    CDeserializedOutputMetaData(MemoryBuffer &binInfo, bool isGrouped, IThorIndexCallback *callback);
     CDeserializedOutputMetaData(IPropertyTree &jsonInfo, IThorIndexCallback *callback);
     CDeserializedOutputMetaData(const char *json, IThorIndexCallback *callback);
 
     virtual const RtlTypeInfo * queryTypeInfo() const override { return typeInfo; }
+    virtual unsigned getMetaFlags() override { return flags; }
 protected:
     Owned<IRtlFieldTypeDeserializer> deserializer;
     const RtlTypeInfo *typeInfo = nullptr;
+    unsigned flags = MDFhasserialize|MDFhasxml;
+
 };
 
-CDeserializedOutputMetaData::CDeserializedOutputMetaData(MemoryBuffer &binInfo, IThorIndexCallback *callback)
+CDeserializedOutputMetaData::CDeserializedOutputMetaData(MemoryBuffer &binInfo, bool isGrouped, IThorIndexCallback *callback)
 {
     deserializer.setown(createRtlFieldTypeDeserializer(callback));
     typeInfo = deserializer->deserialize(binInfo);
+    if (isGrouped)
+        flags |= MDFgrouped;
 }
 
 CDeserializedOutputMetaData::CDeserializedOutputMetaData(IPropertyTree &jsonInfo, IThorIndexCallback *callback)
@@ -68,9 +73,9 @@ CDeserializedOutputMetaData::CDeserializedOutputMetaData(const char *json, IThor
     typeInfo = deserializer->deserialize(json);
 }
 
-extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(MemoryBuffer &binInfo, IThorIndexCallback *callback)
+extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(MemoryBuffer &binInfo, bool isGrouped, IThorIndexCallback *callback)
 {
-    return new CDeserializedOutputMetaData(binInfo, callback);
+    return new CDeserializedOutputMetaData(binInfo, isGrouped, callback);
 }
 
 extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(IPropertyTree &jsonInfo, IThorIndexCallback *callback)
@@ -350,7 +355,9 @@ static IOutputMetaData *loadTypeInfo(IPropertyTree &xgmml, const char *key)
     MemoryBuffer binInfo;
     xgmml.getPropBin(xpath.setf("att[@name='%s_binary']/value", key), binInfo);
     assertex(binInfo.length());
-    return new CDeserializedOutputMetaData(binInfo, nullptr);
+    bool grouped = xgmml.getPropBool(xpath.setf("att[@name='%s_binary']/value", key), false);
+
+    return new CDeserializedOutputMetaData(binInfo, grouped, nullptr);
 }
 
 extern ECLRTL_API IHThorDiskReadArg *createDiskReadArg(IPropertyTree &xgmml)

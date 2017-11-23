@@ -12,9 +12,10 @@
 class ECLRTL_API CThorContiguousRowBuffer : implements IRowPrefetcherSource
 {
 public:
+    CThorContiguousRowBuffer() {};
     CThorContiguousRowBuffer(ISerialStream * _in);
 
-    inline void setStream(ISerialStream *_in) { in.set(_in); maxOffset = 0; readOffset = 0; }
+    inline void setStream(ISerialStream *_in) { in = _in; maxOffset = 0; readOffset = 0; }
 
     virtual const byte * peek(size32_t maxSize) override;
     virtual offset_t beginNested() override;
@@ -50,17 +51,25 @@ public:
 
     inline void clearStream()
     {
-        in.clear();
+        in = nullptr;
         maxOffset = 0;
         readOffset = 0;
     }
 
-    inline const byte * queryRow() { return buffer; }
-    inline size32_t queryRowSize() { return readOffset; }
+    inline const byte * queryRow() const { return buffer; }
+    inline size32_t queryRowSize() const { return readOffset; }
     inline void finishedRow()
     {
         if (readOffset)
             in->skip(readOffset);
+        maxOffset = 0;
+        readOffset = 0;
+    }
+
+    inline void reset(offset_t offset, offset_t flen = (offset_t)-1)
+    {
+        in->reset(offset, flen);
+        buffer = nullptr;
         maxOffset = 0;
         readOffset = 0;
     }
@@ -91,10 +100,10 @@ private:
     }
 
 protected:
-    Linked<ISerialStream> in;
-    const byte * buffer;
-    size32_t maxOffset;
-    size32_t readOffset;
+    ISerialStream* in = nullptr;
+    const byte * buffer = nullptr;
+    size32_t maxOffset = 0;
+    size32_t readOffset = 0;
     UnsignedArray childStartOffsets;
 };
 

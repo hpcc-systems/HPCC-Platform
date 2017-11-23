@@ -20,8 +20,11 @@
 #include "rtlkey.hpp"
 #include "eclhelper.hpp"
 #include "jfile.hpp"
+#include "rtlcommon.hpp"
 
 interface IFileIOArray;
+interface ITranslatorSet;
+
 typedef IArrayOf<IKeySegmentMonitor> SegMonitorArray;
 
 interface IDirectReader : public ISerialStream
@@ -30,6 +33,10 @@ interface IDirectReader : public ISerialStream
     virtual ISimpleReadStream *querySimpleStream() = 0;
     virtual unsigned queryFilePart() const = 0;
     virtual unsigned __int64 makeFilePositionLocal(offset_t pos) = 0;
+    virtual const byte *nextRow() = 0;
+    virtual bool eog() const = 0;
+    virtual void finishedRow() = 0;
+    virtual bool isTranslating() const = 0;
 };
 
 interface IInMemoryIndexCursor : public IThorDiskCallback, public IIndexReadContext
@@ -44,11 +51,11 @@ interface IInMemoryIndexCursor : public IThorDiskCallback, public IIndexReadCont
 
 interface IInMemoryIndexManager : extends IInterface
 {
-    virtual void load(IFileIOArray *, IRecordSize *, bool preload, int numKeys) = 0;
+    virtual void load(IFileIOArray *, IOutputMetaData *preloadLayout, bool preload, int numKeys) = 0;
     virtual bool IsShared() const = 0;
     virtual IInMemoryIndexCursor *createCursor(const RtlRecord &recInfo) = 0;
-    virtual IDirectReader *createReader(offset_t readPos, unsigned partNo, unsigned numParts) = 0;
-    virtual void getTrackedInfo(const char *id, StringBuffer &xml) = 0;
+    virtual IDirectReader *createReader(offset_t readPos, unsigned partNo, unsigned numParts, const ITranslatorSet *translators, ICodeContext *ctx, unsigned id) const = 0;
+    virtual void getTrackedInfo(const char *id, StringBuffer &xml) const = 0;
     virtual void setKeyInfo(IPropertyTree &indexInfo) = 0;
 };
 

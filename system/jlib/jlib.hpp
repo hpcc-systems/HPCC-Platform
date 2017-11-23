@@ -44,6 +44,7 @@
 class jlib_decl ICopyArray : public CopyReferenceArrayOf<IInterface> {};
 class jlib_decl IArray : public OwnedReferenceArrayOf<IInterface> {};
 class jlib_decl IPointerArray : public OwnedPointerArrayOf<IInterface> {};
+class jlib_decl IConstPointerArray : public OwnedConstPointerArrayOf<IInterface> {};
 
 class jlib_decl CICopyArray : public CopyReferenceArrayOf<CInterface> {};
 class jlib_decl CIArray : public OwnedReferenceArrayOf<CInterface> {};
@@ -188,6 +189,25 @@ public:
     inline aindex_t find(TYPE * obj) const        { return IPointerArray::find(obj); }
     inline void replace(TYPE * obj, aindex_t pos, bool nodel=false) { IPointerArray::replace(obj, pos, nodel); }
     inline bool zap(TYPE * obj, bool nodel=false) { return IPointerArray::zap(obj, nodel); }
+};
+
+template <class BTYPE>
+class IConstPointerArrayOf : public IConstPointerArray
+{
+    typedef const BTYPE TYPE;
+public:
+    inline TYPE * item(aindex_t pos) const        { return (TYPE *)IConstPointerArray::item(pos); }
+    inline TYPE * popGet()                        { return (TYPE *)IConstPointerArray::popGet(); }
+    inline TYPE * tos(void) const                 { return (TYPE *)IConstPointerArray::tos(); }
+    inline TYPE * tos(aindex_t num) const         { return (TYPE *)IConstPointerArray::tos(num); }
+    inline TYPE **getArray(aindex_t pos = 0)      { return (TYPE **)IConstPointerArray::getArray(pos); }
+    inline TYPE **detach()                        { return (TYPE **)IConstPointerArray::detach(); }
+    inline void append(TYPE * obj)                { IConstPointerArray::append(obj); }
+    inline void appendUniq(TYPE * obj)            { IConstPointerArray::appendUniq(obj); }
+    inline void add(TYPE * obj, aindex_t pos)     { IConstPointerArray::add(obj, pos); }
+    inline aindex_t find(TYPE * obj) const        { return IConstPointerArray::find(obj); }
+    inline void replace(TYPE * obj, aindex_t pos, bool nodel=false) { IConstPointerArray::replace(obj, pos, nodel); }
+    inline bool zap(TYPE * obj, bool nodel=false) { return IConstPointerArray::zap(obj, nodel); }
 };
 
 template <class TYPE>
