@@ -80,7 +80,7 @@ struct IHThorActivity : implements IActivityBase
     virtual void execute() = 0;
     virtual void stop() = 0;
     virtual __int64 getCount() = 0;
-    virtual unsigned queryOutputs() = 0;
+    virtual unsigned queryOutputs() const = 0;
     virtual void updateProgress(IStatisticGatherer &progress) const = 0;
     virtual void updateProgressForOther(IStatisticGatherer &progress, unsigned otherActivity, unsigned otherSubgraph) const = 0;
     virtual void extractResult(unsigned & len, void * & ret) = 0;
