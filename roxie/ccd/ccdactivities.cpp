@@ -972,11 +972,6 @@ public:
         return cursor ? cursor->item(idx) : 0;
     }
 
-    virtual void setMergeBarrier(unsigned barrierOffset)
-    {
-        // no merging so no issue...
-    }
-
     virtual void abort() 
     {
         CRoxieSlaveActivity::abort();
@@ -4152,7 +4147,6 @@ public:
                 groupSegSize = aggregateHelper->getGroupSegmentMonitorsSize();
             else
                 groupSegSize = 0;
-            tlk->setMergeBarrier(groupSegSize);
             CRoxieIndexActivity::createSegmentMonitors();
             if (groupSegSize)
             {

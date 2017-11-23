@@ -291,11 +291,6 @@ public:
         totalCount += segment->getSize();
     }
 
-    virtual void setMergeBarrier(unsigned barrierOffset)
-    {
-        // We don't merge segmonitors so nothing to do
-    }
-
     virtual unsigned ordinality() const
     {
         return segMonitors.length();
@@ -1816,11 +1811,6 @@ public:
             }
         }
         segment->Release();
-    }
-
-    virtual void setMergeBarrier(unsigned)
-    {
-        // we don't merge segmonitors - nothing to do
     }
 
     virtual unsigned ordinality() const

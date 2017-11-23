@@ -10320,8 +10320,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
     buildUpdateHelper(instance->createctx, *instance, dataset, updateAttr);
     buildClusterHelper(instance->classctx, expr);
 
-    LinkedHqlExpr serializedRecord = record;
-
     // virtual unsigned getKeyedSize()
     HqlExprArray fields;
     unwindChildren(fields, record);
@@ -10329,14 +10327,15 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
     fields.popn(numPayloadFields(expr));
     OwnedHqlExpr keyedRecord = createRecord(fields); // must be fixed length => no maxlength
     if (expr->hasAttribute(_payload_Atom))
-    {
         instance->classctx.addQuoted(s.clear().append("virtual unsigned getKeyedSize() override { return ").append(getFixedRecordSize(keyedRecord)).append("; }"));
-        serializedRecord.setown(notePayloadFields(serializedRecord, numPayloadFields(expr)));
-    }
     else
         instance->classctx.addQuoted(s.clear().append("virtual unsigned getKeyedSize() override { return (unsigned) -1; }"));
 
     //virtual const char * queryRecordECL() = 0;
+    LinkedHqlExpr serializedRecord = record;
+    unsigned numPayload = numPayloadFields(expr);
+    if (numPayload)
+        serializedRecord.setown(notePayloadFields(serializedRecord, numPayload));
     serializedRecord.setown(getSerializedForm(serializedRecord, diskAtom));
     buildRecordEcl(instance->createctx, serializedRecord, "queryRecordECL");
 

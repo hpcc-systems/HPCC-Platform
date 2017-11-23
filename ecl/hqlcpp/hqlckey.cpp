@@ -575,8 +575,6 @@ void KeyedJoinInfo::buildLeftOnly(BuildCtx & ctx)
 
 void KeyedJoinInfo::buildMonitors(BuildCtx & ctx)
 {
-    monitors->optimizeSegments(keyAccessDataset->queryRecord());
-
     //---- virtual void createSegmentMonitors(struct IIndexReadContext *) { ... } ----
     MemberFunction func(translator, ctx, "virtual void createSegmentMonitors(IIndexReadContext *irc, const void * _left) override");
     func.ctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
@@ -1306,8 +1304,9 @@ void HqlCppTranslator::buildKeyJoinIndexReadHelper(ActivityInstance & instance, 
     //virtual IOutputMetaData * queryIndexRecordSize() = 0;
     LinkedHqlExpr indexExpr = info->queryOriginalKey();
     OwnedHqlExpr serializedRecord;
-    if (indexExpr->hasAttribute(_payload_Atom))
-        serializedRecord.setown(notePayloadFields(indexExpr->queryRecord(), numPayloadFields(indexExpr)));
+    unsigned numPayload = numPayloadFields(indexExpr);
+    if (numPayload)
+        serializedRecord.setown(notePayloadFields(indexExpr->queryRecord(), numPayload));
     else
         serializedRecord.set(indexExpr->queryRecord());
     serializedRecord.setown(getSerializedForm(serializedRecord, diskAtom));
@@ -1559,8 +1558,19 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedDistribute(BuildCtx & ctx
     //virtual const char * getIndexFileName() = 0;
     buildFilenameFunction(*instance, instance->startctx, "getIndexFileName", keyFilename, dynamic);
 
-    //virtual IOutputMetaData * queryIndexRecordSize() = 0; //Excluding fpos and sequence
-    buildMetaMember(instance->classctx, info.queryRawKey(), false, "queryIndexRecordSize");
+    //virtual IOutputMetaData * queryIndexRecordSize() = 0;
+    LinkedHqlExpr indexExpr = info.queryRawKey();
+    OwnedHqlExpr serializedRecord;
+    unsigned numPayload = numPayloadFields(indexExpr);
+    if (numPayload)
+        serializedRecord.setown(notePayloadFields(indexExpr->queryRecord(), numPayload));
+    else
+        serializedRecord.set(indexExpr->queryRecord());
+    serializedRecord.setown(getSerializedForm(serializedRecord, diskAtom));
+
+    bool hasFilePosition = getBoolAttribute(indexExpr, filepositionAtom, true);
+    serializedRecord.setown(createMetadataIndexRecord(serializedRecord, hasFilePosition));
+    buildMetaMember(instance->classctx, serializedRecord, false, "queryIndexRecordSize");
 
     //virtual void createSegmentMonitors(IIndexReadContext *ctx, const void *lhs) = 0;
     info.buildMonitors(instance->startctx);

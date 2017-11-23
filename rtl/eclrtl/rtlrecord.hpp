@@ -214,6 +214,7 @@ public:
         return fixedOffsets[field] + variableOffsets[whichVariableOffset[field]];
     }
 
+    size_t getFixedOffset(unsigned field) const;
     size_t getRecordSize(size_t * variableOffsets) const
     {
         return getOffset(variableOffsets, numFields);
@@ -225,6 +226,7 @@ public:
     void readAhead(IRowDeserializerSource & in) const;
 
     inline unsigned getNumFields() const { return numFields; }
+    unsigned getNumKeyedFields() const;
     inline unsigned getNumVarFields() const { return numVarFields; }
     inline unsigned getNumIfBlocks() const { return numIfBlocks > 0; }
     inline const RtlFieldInfo * queryField(unsigned field) const { return fields[field]; }

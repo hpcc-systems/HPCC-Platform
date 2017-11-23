@@ -151,7 +151,6 @@ public:
     bool isKeyedExplicitly()                                { return keyedExplicitly; }
     bool isFiltered()                                       { return keyed.postFilter || isKeyed(); }
     bool isKeyed();
-    void optimizeSegments(IHqlExpression * leftRecord);
     IHqlExpression * queryGlobalGuard()                     { return keyed.preFilter; }
     void reportFailureReason(IHqlExpression * cond)         { failReason.reportError(translator, cond); }
     const char * queryKeyName(StringBuffer & s);
@@ -218,7 +217,6 @@ protected:
 //  LinkedHqlExpr filter;
 //  LinkedHqlExpr globalGuard;
     KeyConditionInfo keyed;
-    UnsignedArray mergedSizes;
     unsigned numKeyableFields;
     KeyFailureInfo failReason;
 
