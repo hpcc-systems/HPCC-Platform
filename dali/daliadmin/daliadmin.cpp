@@ -68,7 +68,7 @@ void usage(const char *exe)
   printf("  export <branchxpath> <destfile>\n");
   printf("  import <branchxpath> <srcfile>\n");
   printf("  importadd <branchxpath> <srcfile>\n");
-  printf("  delete <branchxpath>\n");
+  printf("  delete <branchxpath> [nobackup] -- delete branch, 'nobackup' option suppresses writing copy of existing branch\n");
   printf("  set <xpath> <value>        -- set single value\n");
   printf("  get <xpath>                -- get single value\n");
   printf("  bget <xpath> <dest-file>   -- binary property\n");
@@ -3357,8 +3357,9 @@ int main(int argc, char* argv[])
                         import(params.item(1),params.item(2),true);
                     }
                     else if (strieq(cmd,"delete")) {
-                        CHECKPARAMS(1,1);
-                        _delete_(params.item(1),true);
+                        CHECKPARAMS(1,2);
+                        bool backup = np<2 || !strieq("nobackup", params.item(2));
+                        _delete_(params.item(1),backup);
                     }
                     else if (strieq(cmd,"set")) {
                         CHECKPARAMS(2,2);
