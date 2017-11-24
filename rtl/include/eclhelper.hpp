@@ -44,8 +44,8 @@ typedef unsigned short UChar;
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      201
-#define MIN_ACTIVITY_INTERFACE_VERSION  201             //minimum value that is compatible with current interface
+#define ACTIVITY_INTERFACE_VERSION      202
+#define MIN_ACTIVITY_INTERFACE_VERSION  202             //minimum value that is compatible with current interface
 
 typedef unsigned char byte;
 
@@ -2394,7 +2394,7 @@ struct IHThorCompoundGroupAggregateExtra : implements IHThorHashAggregateExtra, 
     //Only applicable to index count variants.
     virtual size32_t initialiseCountGrouping(ARowBuilder & rowBuilder, const void * src) = 0;
     virtual size32_t processCountGrouping(ARowBuilder & rowBuilder, unsigned __int64 count) = 0;
-    virtual unsigned getGroupSegmentMonitorsSize() = 0;
+    virtual unsigned getGroupingMaxField() = 0;
 };
 
 //------------------------- Concrete definitions -------------------------

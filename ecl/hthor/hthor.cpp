@@ -8394,7 +8394,14 @@ void CHThorBinaryDiskReadBase::append(IKeySegmentMonitor *segment)
 
 void CHThorBinaryDiskReadBase::append(FFoption option, IFieldFilter * filter)
 {
-    UNIMPLEMENTED;
+    if (filter->isWild())
+        filter->Release();
+    else
+    {
+        fieldFilters.append(*filter);
+        if (filter->queryFieldIndex() > numFieldsRequired)
+            numFieldsRequired = filter->queryFieldIndex();
+    }
 }
 
 unsigned CHThorBinaryDiskReadBase::ordinality() const
@@ -8416,6 +8423,7 @@ void CHThorBinaryDiskReadBase::ready()
     if (!diskMeta)
         diskMeta.set(outputMeta);
     segMonitors.kill();
+    fieldFilters.kill();
     numFieldsRequired = 0;
     segHelper.createSegmentMonitors(this);
     prefetcher.setown(diskMeta->createDiskPrefetcher(agent.queryCodeContext(), activityId));
@@ -8481,7 +8489,7 @@ void CHThorDiskReadActivity::ready()
     outBuilder.setAllocator(rowAllocator);
     eogPending = false;
     lastGroupProcessed = processed;
-    needTransform = helper.needTransform() || segMonitors.length();
+    needTransform = helper.needTransform() || segMonitors.length() || fieldFilters.length();
     limit = helper.getRowLimit();
     if (helper.getFlags() & TDRlimitskips)
         limit = (unsigned __int64) -1;
@@ -8802,8 +8810,9 @@ const void *CHThorDiskCountActivity::nextRow()
     if (finished) return NULL;
 
     unsigned __int64 totalCount = 0;
-    if ((segMonitors.ordinality() == 0) && !helper.hasFilter() && (fixedDiskRecordSize != 0) && !(helper.getFlags() & (TDXtemporary | TDXjobtemp))
-        && !((helper.getFlags() & TDXcompress) && agent.queryResolveFilesLocally()) )
+    if ((segMonitors.ordinality() == 0) && (fieldFilters.ordinality() == 0) && !helper.hasFilter() &&
+        (fixedDiskRecordSize != 0) && !(helper.getFlags() & (TDXtemporary | TDXjobtemp)) &&
+        !((helper.getFlags() & TDXcompress) && agent.queryResolveFilesLocally()) )
     {
         resolve();
         if (segHelper.canMatchAny() && ldFile)

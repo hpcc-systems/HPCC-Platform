@@ -456,6 +456,12 @@ void RtlRecord::readAhead(IRowPrefetcherSource & in) const
     in.skip(fixedOffsets[numFields]);
 }
 
+int RtlRecord::compare(const byte * left, const byte * right) const
+{
+    //Use originalFields so that ifblocks are processed correctly
+    return compareFields(originalFields, left, right, false);
+}
+
 static const FieldNameToFieldNumMap *setupNameMap(const RtlRecord &record, std::atomic<const FieldNameToFieldNumMap *> &aNameMap)
 {
     const FieldNameToFieldNumMap *lnameMap = new FieldNameToFieldNumMap(record);

@@ -2290,6 +2290,7 @@ class CHThorBinaryDiskReadBase : public CHThorDiskReadBaseActivity, implements I
 {
 protected:
     IArrayOf<IKeySegmentMonitor> segMonitors;
+    IArrayOf<IFieldFilter> fieldFilters;
     IHThorCompoundBaseArg & segHelper;
     Owned<ISourceRowPrefetcher> prefetcher;
     Owned<IOutputRowDeserializer> deserializer;
@@ -2319,12 +2320,20 @@ protected:
     inline bool segMonitorsMatch(const void * buffer)
     {
         bool match = true;
-        if (segMonitors.length())
+        if (segMonitors || fieldFilters)
         {
             rowInfo.setRow(buffer, numFieldsRequired);
             ForEachItemIn(idx, segMonitors)
             {
                 if (!segMonitors.item(idx).matches(&rowInfo))
+                {
+                    match = false;
+                    break;
+                }
+            }
+            ForEachItemIn(idx2, fieldFilters)
+            {
+                if (!fieldFilters.item(idx2).matches(rowInfo))
                 {
                     match = false;
                     break;

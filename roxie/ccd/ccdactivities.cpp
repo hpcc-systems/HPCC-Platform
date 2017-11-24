@@ -960,11 +960,20 @@ public:
                 cursor.setown(manager->createCursor(diskSize.queryRecordAccessor(true)));
             cursor->append(segment);
         }
+        else
+            segment->Release();
     }
 
     virtual void append(FFoption option, IFieldFilter * filter)
     {
-        UNIMPLEMENTED;
+        if (!filter->isWild())
+        {
+            if (!cursor)
+                cursor.setown(manager->createCursor(diskSize.queryRecordAccessor(true)));
+            cursor->append(option, filter);
+        }
+        else
+            filter->Release();
     }
 
     virtual unsigned ordinality() const
@@ -4147,27 +4156,9 @@ public:
     {
         if (createSegmentMonitorsPending)
         {
-            unsigned groupSegSize;
-            if ((kind==TAKindexgroupcount || kind==TAKindexgroupexists)) 
-                groupSegSize = aggregateHelper->getGroupSegmentMonitorsSize();
-            else
-                groupSegSize = 0;
             CRoxieIndexActivity::createSegmentMonitors();
-            if (groupSegSize)
-            {
-                // MORE - this code should be moved to somewhere common so ccdserver can share it
-                unsigned numSegs = tlk->ordinality();
-                for (unsigned segNo = 0; segNo < numSegs; segNo++)
-                {
-                    IKeySegmentMonitor *seg = tlk->item(segNo);
-                    if (seg->getOffset()+seg->getSize()==groupSegSize)
-                    {
-                        groupSegCount = segNo+1;
-                        break;
-                    }
-                }
-                assertex(groupSegCount);
-            }
+            if ((kind==TAKindexgroupcount || kind==TAKindexgroupexists))
+                groupSegCount = aggregateHelper->getGroupingMaxField();
             else
                 groupSegCount = 0;
         }
