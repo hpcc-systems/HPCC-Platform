@@ -53,6 +53,7 @@ interface IConstXRefNode : extends IInterface
     virtual IXRefFilesNode* getFoundFiles() = 0;
     virtual IXRefFilesNode* getOrphanFiles() = 0;
     virtual StringBuffer& getCluster(StringBuffer& Cluster) = 0;
+    virtual const char *queryRootDir() const = 0;
     virtual bool useSasha() = 0;
 };
 
@@ -94,6 +95,7 @@ private:
     StringBuffer m_dataStr;
     StringBuffer m_ClusterName;
     Mutex commitMutex;
+    StringAttr rootDir;
 
 private:
     IPropertyTree& getDataTree();
@@ -106,29 +108,30 @@ public:
     virtual ~CXRefNode();
     bool IsChanged();
     void SetChanged(bool bChanged);
+    void setLastModified(IJlibDateTime& DateTime);
 
     //IXRefProgressCallback
     void progress(const char *text);
     void error(const char *text);
 
     //IConstXRefNode
-    StringBuffer & getName(StringBuffer & str);
-    StringBuffer & getLastModified(StringBuffer & str);
-    bool useSasha();
+    virtual StringBuffer & getName(StringBuffer & str) override;
+    virtual StringBuffer & getLastModified(StringBuffer & str) override;
+    virtual bool useSasha() override;
+    virtual const char *queryRootDir() const override { return rootDir; }
     
-    StringBuffer& getXRefData(StringBuffer & buff);
-    StringBuffer& getStatus(StringBuffer & buff);
-    void setLastModified(IJlibDateTime& DateTime);
-    IXRefFilesNode* getLostFiles();
-    IXRefFilesNode* getFoundFiles();
-    IXRefFilesNode* getOrphanFiles();
-    StringBuffer &serializeMessages(StringBuffer &buf);
-    void deserializeMessages(IPropertyTree& inTree);
-    StringBuffer &serializeDirectories(StringBuffer &buf);
-    void deserializeDirectories(IPropertyTree& inTree);
-    bool removeEmptyDirectories(StringBuffer &errstr);
+    virtual StringBuffer& getXRefData(StringBuffer & buff) override;
+    virtual StringBuffer& getStatus(StringBuffer & buff) override;
+    virtual IXRefFilesNode* getLostFiles() override;
+    virtual IXRefFilesNode* getFoundFiles() override;
+    virtual IXRefFilesNode* getOrphanFiles() override;
     //IXRefNode
-    void setName(const char* str);
+    virtual StringBuffer &serializeMessages(StringBuffer &buf) override;
+    virtual void deserializeMessages(IPropertyTree& inTree) override;
+    virtual StringBuffer &serializeDirectories(StringBuffer &buf) override;
+    virtual void deserializeDirectories(IPropertyTree& inTree) override;
+    virtual bool removeEmptyDirectories(StringBuffer &errstr) override;
+    virtual void setName(const char* str) override;
     
     void setXRefData(StringBuffer & buff);
     void setXRefData(IPropertyTree & pTree);

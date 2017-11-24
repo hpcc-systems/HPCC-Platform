@@ -45,25 +45,24 @@ bool CXRefFilesNode::IsChanged()
 void CXRefFilesNode::Commit()
 {
     if (m_bChanged)
-        Deserialize(getDataTree());
+        Deserialize(queryDataTree());
     m_bChanged = false;
+}
+
+MemoryBuffer &CXRefFilesNode::getData()
+{
+    if (m_bChanged || (0 == _data.length()))
+    {
+        _data.clear();
+        m_baseTree.getPropBin("data", _data);
+    }
+    return _data;
 }
 
 StringBuffer& CXRefFilesNode::Serialize(StringBuffer& outStr)
 {
-    if (!m_bChanged && _data.length() > 0)
-    {
-        outStr.append(_data);
-        return outStr;
-    }
-    _data.clear();
-    MemoryBuffer buff;
-    m_baseTree.getPropBin("data",buff);
-    if (buff.length())
-    {
-        outStr.append(buff.length(),buff.toByteArray());
-        _data.append(outStr);
-    }
+    MemoryBuffer &data = getData();
+    outStr.append(_data.length(), _data.toByteArray());
     return outStr;
 }
 
@@ -79,17 +78,22 @@ IPropertyTree* CXRefFilesNode::FindNode(const char* NodeName)
 {
     StringBuffer xpath;
     xpath.clear().appendf("File/[Partmask=\"%s\"]", NodeName);
-    StringBuffer tmpbuf;
-    return getDataTree().getBranch(xpath.str());
+    return queryDataTree().getBranch(xpath.str());
 }
         
-IPropertyTree& CXRefFilesNode::getDataTree()
+IPropertyTreeIterator *CXRefFilesNode::getMatchingFiles(const char *match, const char *type)
+{
+    StringBuffer xpath;
+    xpath.clear().appendf("File/[%s=\"%s\"]", type, match);
+    return queryDataTree().getElements(xpath.str());
+}
+
+IPropertyTree& CXRefFilesNode::queryDataTree()
 {
     if (m_DataTree.get() == 0)
     {
-        StringBuffer dataStr;
-        Serialize(dataStr);
-        m_DataTree.setown(createPTreeFromXMLString(dataStr.str()));
+        MemoryBuffer &data = getData();
+        m_DataTree.setown(createPTreeFromXMLString(data.length(), data.toByteArray()));
     }
     return *m_DataTree.get();
 }
@@ -272,7 +276,7 @@ bool CXRefFilesNode::RemoveLogical(const char* LogicalName,IUserDescriptor* udes
     StringBuffer tmpbuf;
         
 
-    IPropertyTree* pLogicalFileNode =  getDataTree().getBranch(xpath.str());
+    IPropertyTree* pLogicalFileNode =  queryDataTree().getBranch(xpath.str());
     if (!pLogicalFileNode) {
         ERRLOG("Branch %s not found",xpath.str());
         errstr.appendf("Branch %s not found",xpath.str());
@@ -285,7 +289,7 @@ bool CXRefFilesNode::RemoveLogical(const char* LogicalName,IUserDescriptor* udes
         errstr.appendf("Logical file %s all parts exist (not lost?))",LogicalName);
         return false;
     }
-    if (!getDataTree().removeTree(pLogicalFileNode)) {                  
+    if (!queryDataTree().removeTree(pLogicalFileNode)) {
         ERRLOG("Removing XRef Branch %s", xpath.str());
         errstr.appendf("Removing XRef Branch %s", xpath.str());
         return false;
@@ -441,7 +445,7 @@ bool CXRefFilesNode::RemoveTreeNode(const char* NodeName)
     if (!subBranch)
         return false;
     StringBuffer tmpbuf;
-    return getDataTree().removeTree(subBranch);
+    return queryDataTree().removeTree(subBranch);
 }
 
 bool CXRefFilesNode::RemoveRemoteFile(const char* fileName,  const char* ipAddress)

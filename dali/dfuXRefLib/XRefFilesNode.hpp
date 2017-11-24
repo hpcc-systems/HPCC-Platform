@@ -38,6 +38,7 @@ interface IXRefFilesNode : extends IInterface
     virtual bool RemovePhysical(const char* Partmask,IUserDescriptor* udesc,const char *clustername, StringBuffer &errstr) = 0;
     virtual bool AttachPhysical(const char* Partmask,IUserDescriptor* udesc,const char *clustername, StringBuffer &errstr) = 0;
     virtual bool RemoveLogical(const char* LogicalName,IUserDescriptor* udesc,const char *clustername,StringBuffer &errstr) = 0;
+    virtual IPropertyTreeIterator *getMatchingFiles(const char *match, const char *type) = 0;
     virtual bool IsChanged() = 0;
     virtual void Commit() = 0;
 };
@@ -48,29 +49,30 @@ protected:
     bool m_bChanged;
     IPropertyTree& m_baseTree;
     Owned<IPropertyTree> m_DataTree;
-    StringBuffer _data;
+    MemoryBuffer _data;
     StringBuffer prefixName;
     StringAttr rootdir;
 private:
     IPropertyTree* FindNode(const char* NodeName);
-    IPropertyTree& getDataTree();
+    IPropertyTree& queryDataTree();
     void DirectoryFromMask(const char* Partmask,StringBuffer& directory);
     bool LogicalNameFromMask(const char* Partmask,StringBuffer& logicalName);
     bool RemoveTreeNode(const char* NodeName);
     bool RemoveRemoteFile(const char* fileName,  const char* ipAddress);
+    MemoryBuffer &getData();
     virtual void CleanTree(IPropertyTree& inTree){}
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
     CXRefFilesNode(IPropertyTree& baseNode,const char* cluster, const char *rootdir);
     virtual ~CXRefFilesNode(){};
-    virtual bool IsChanged();
-    void Commit();
-    virtual StringBuffer& Serialize(StringBuffer& outStr);
-    virtual void Deserialize(IPropertyTree& inTree);
-    virtual bool RemovePhysical(const char* Partmask,IUserDescriptor* udesc,const char *clustername,StringBuffer &errstr);
-    virtual bool RemoveLogical(const char* LogicalName,IUserDescriptor* udesc,const char *clustername,StringBuffer &errstr);
-    virtual bool AttachPhysical(const char* Partmask,IUserDescriptor* udesc,const char *clustername,StringBuffer &errstr);
-
+    virtual bool IsChanged() override;
+    void Commit() override;
+    virtual StringBuffer& Serialize(StringBuffer& outStr) override;
+    virtual void Deserialize(IPropertyTree& inTree) override;
+    virtual bool RemovePhysical(const char* Partmask,IUserDescriptor* udesc,const char *clustername,StringBuffer &errstr) override;
+    virtual bool RemoveLogical(const char* LogicalName,IUserDescriptor* udesc,const char *clustername,StringBuffer &errstr) override;
+    virtual bool AttachPhysical(const char* Partmask,IUserDescriptor* udesc,const char *clustername,StringBuffer &errstr) override;
+    virtual IPropertyTreeIterator *getMatchingFiles(const char *match, const char *type) override;
 };
 
 class CXRefOrphanFilesNode : public CXRefFilesNode
