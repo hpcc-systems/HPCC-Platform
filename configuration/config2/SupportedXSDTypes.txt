@@ -1,0 +1,39 @@
+The following xsd types are supported
+
+Base: String
+Derived: -
+Restrictions: enumeration, length, maxLength, minLength, pattern, whiteSpace(collapse)
+
+
+Base: integer
+Drived: negativeInteger, nonNegativeInteger, positiveInteger, nonPositiveInteger 
+Restrictions: enumeration, maxInclusive, maxExclusive, minInclusive, minExclusive
+
+
+Layout limitations:
+
+Includes locations are restricted a bit.
+
+Includes are parsed and processed differently based on their location.
+
+complexType - no attributes are supported (essentially only required for XSD compliance)
+
+Environment XSD is processed at the top level, it icnludes component XSDs and others?
+- The 1st level element tags under Environment may include a component XSD, otherwise it must fully 
+  define the component (not a component may still have an include if needed).
+
+Includes are used by config2 to define things and are not "inserted" into the schema and therefore cannot be used 
+to extend a schema. That must be done using things like attribute groups which can be defined in an include that is 
+in a legal location
+
+For a component, Only these top level elements are supported
+- xs:include <- done first in order to pick up any types 
+- xs:attributeGroup MUST have schema as parent, otherwise ignored
+
+don't support attribute w/schema as parent?
+
+
+XSD file format:
+
+Includes
+then element for a component

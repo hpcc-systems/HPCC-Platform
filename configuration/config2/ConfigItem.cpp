@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -22,6 +22,11 @@
 #include <algorithm>
 
 
+// static class variables
+std::map<std::string, std::vector<std::shared_ptr<CfgValue>>> ConfigItem::m_uniqueAttributeValueSets;
+//std::map<std::string, ConfigItem::KeyRef> ConfigItem::m_keyRefs;
+
+
 ConfigItem::ConfigItem(const std::string &name, const std::string &className, const std::shared_ptr<ConfigItem> &pParent) :
 	m_className(className), 
 	m_name(name), 
@@ -29,15 +34,15 @@ ConfigItem::ConfigItem(const std::string &name, const std::string &className, co
 	m_displayName(name),
 	m_minInstances(1), 
 	m_maxInstances(1), 
-	m_isConfigurable(false), 
 	m_version(-1) 
 {
 	//
-	// If this is a root node (no parent), then do some additional init so that default nodes
-	// throughout the configuration can present a set of objects, even for non configured elements
+	// If this is a root node (no parent), then do some additional init 
 	if (m_pParent.expired())
 	{
-		std::shared_ptr<CfgType> pDefaultType = std::make_shared<CfgType>("none");
+        //
+        // Create a default type so that all values have a type
+		std::shared_ptr<CfgType> pDefaultType = std::make_shared<CfgType>("default");
 		std::shared_ptr<CfgLimits> pDefaultLimits = std::make_shared<CfgLimits>();
 		pDefaultType->setLimits(pDefaultLimits);
 		addType(pDefaultType);
@@ -51,8 +56,9 @@ void ConfigItem::addType(const std::shared_ptr<CfgType> &pType)
 }
 
 
-const std::shared_ptr<CfgType> &ConfigItem::getType(const std::string &typeName) const
+std::shared_ptr<CfgType> ConfigItem::getType(const std::string &typeName, bool throwIfNotPresent) const
 {
+    std::shared_ptr<CfgType> pType;
     auto it = m_types.find(typeName);
     if (it != m_types.end())
     {
@@ -63,21 +69,25 @@ const std::shared_ptr<CfgType> &ConfigItem::getType(const std::string &typeName)
         std::shared_ptr<ConfigItem> pParent = m_pParent.lock();
         if (pParent)
         {
-            return pParent->getType(typeName);
+            return pParent->getType(typeName, throwIfNotPresent);
         }
     }
 
     //
     // Did not find the type
-    std::string msg = "Unable to find type: " + typeName;
-    throw(new ParseException(msg));
+    if (throwIfNotPresent)
+    {
+        std::string msg = "Unable to find type: " + typeName;
+        throw(ParseException(msg));
+    }
+    return pType;
 }
 
 
 bool ConfigItem::addUniqueName(const std::string keyName)
 {
     auto result = m_keys.insert(keyName);
-    return result.second;
+    return result.second;  // true if keyName did not already exist
 }
 
 
@@ -90,7 +100,7 @@ void ConfigItem::addConfigType(const std::shared_ptr<ConfigItem> &pItem, const s
     }
     else
     {
-        throw(new ParseException("Duplicate config type found: " + pItem->getName()));
+        throw(ParseException("Duplicate config type found: " + pItem->getName()));
     }
 }
 
@@ -108,7 +118,7 @@ std::shared_ptr<ConfigItem> ConfigItem::getConfigType(const std::string &name, b
         std::shared_ptr<ConfigItem> pParent = m_pParent.lock();
         if (pParent)
         {
-            return pParent->getConfigType(name);
+            return pParent->getConfigType(name, throwIfNotPresent);
         }
     }
 
@@ -117,9 +127,60 @@ std::shared_ptr<ConfigItem> ConfigItem::getConfigType(const std::string &name, b
     if (throwIfNotPresent)
     {
         std::string msg = "Unable to find config type: " + name;
-        throw(new ParseException(msg));
+        throw(ParseException(msg));
     }
     return pItem;
+}
+
+
+//
+// Inserts a previously added configType to the config item
+void ConfigItem::insertConfigType(const std::shared_ptr<ConfigItem> pTypeItem)
+{
+    //
+    // To insert a config type (most likely previously defined by a complexType name="" XSD definition)
+    // loop through each set of configurable pieces of the input type, make a copy of each, and add it to 
+    // this element.
+
+    //
+    // Children
+    std::multimap<std::string, std::shared_ptr<ConfigItem>> typeChildren = pTypeItem->getChildren();
+    for (auto childIt = typeChildren.begin(); childIt != typeChildren.end(); ++childIt)
+    {
+        std::shared_ptr<ConfigItem> pNewItem = std::make_shared<ConfigItem>(*(childIt->second));
+        addChild(pNewItem);
+    }
+
+    //
+    // Attributes
+    const std::map<std::string, std::shared_ptr<CfgValue>> &typeAttributes = pTypeItem->getAttributes();
+    for (auto attrIt = typeAttributes.begin(); attrIt != typeAttributes.end(); ++attrIt)
+    {
+        std::shared_ptr<CfgValue> pNewAttr = std::make_shared<CfgValue>(*(attrIt->second));
+        addAttribute(pNewAttr);
+    }
+
+    //
+    // Type main value
+    if (pTypeItem->getItemCfgValue() != nullptr)
+    {
+        std::shared_ptr<CfgValue> pNewItemCfgValue = std::make_shared<CfgValue>(*(pTypeItem->getItemCfgValue()));
+        setItemCfgValue(pNewItemCfgValue);
+    }
+
+    //
+    // Unique attribute sets
+    for (auto setIt = pTypeItem->m_uniqueAttributeValueSetDefs.begin(); setIt != pTypeItem->m_uniqueAttributeValueSetDefs.end(); ++setIt)
+    {
+        m_uniqueAttributeValueSetDefs.insert({ setIt->first, setIt->second });
+    }
+
+    //
+    // Unique attribute reference sets
+    for (auto it = pTypeItem->m_uniqueAttributeValueSetReferences.begin(); it != pTypeItem->m_uniqueAttributeValueSetReferences.end(); ++it)
+    {
+        m_uniqueAttributeValueSetReferences.insert({ it->first, it->second });
+    }
 }
 
 
@@ -128,7 +189,7 @@ void ConfigItem::addAttribute(const std::shared_ptr<CfgValue> &pCfgValue)
 	auto retVal = m_attributes.insert({ pCfgValue->getName(), pCfgValue });
 	if (!retVal.second)
 	{
-		throw(new ParseException("Duplicate attribute (" + pCfgValue->getName() + ") found for element " + m_name));
+		throw(ParseException("Duplicate attribute (" + pCfgValue->getName() + ") found for element " + m_name));
 	}
 }
 
@@ -148,69 +209,96 @@ std::shared_ptr<CfgValue> ConfigItem::getAttribute(const std::string &name) cons
 		pCfgValue = it->second;
 	else
 	{
-		pCfgValue = std::make_shared<CfgValue>(name);
-		pCfgValue->setType(getType("none"));
+        // not found, build a default cfg value for the undefined attribute
+		pCfgValue = std::make_shared<CfgValue>(name, false); 
+		pCfgValue->setType(getType("default"));
 	}
 	return pCfgValue;
 }
 
 
-void ConfigItem::addKey(const std::string &keyName, const std::string &elementName, const std::string &attributeName)
+void ConfigItem::addUniqueAttributeValueSetDefinition(const std::string &setName, const std::string &elementPath, const std::string &attributeName, bool duplicateOk)
 {
-    std::shared_ptr<ConfigItem> pCfgItem = getChild(elementName);  // todo: validate pCfgItem found
-    std::shared_ptr<CfgValue> pAttribute = pCfgItem->getAttribute(attributeName);  
-    if (pAttribute)
-    {
-        pAttribute->setKey(true);
-        auto result = m_keyDefs.insert({ keyName, pAttribute });
-        if (!result.second)
+    m_uniqueAttributeValueSetDefs.insert({ setName, SetInfo(setName, elementPath, attributeName, duplicateOk) });   // these are processed later
+}
+
+
+void ConfigItem::addReferenceToUniqueAttributeValueSet(const std::string &setName, const std::string &elementPath, const std::string &attributeName)
+{
+    m_uniqueAttributeValueSetReferences.insert({ setName, SetInfo(setName, elementPath, attributeName) });   // these are processed later
+}
+
+
+
+void ConfigItem::processUniqueAttributeValueSetReferences()
+{
+    for (auto setRefIt = m_uniqueAttributeValueSetReferences.begin(); setRefIt != m_uniqueAttributeValueSetReferences.end(); ++setRefIt)
+    {  
+        auto keyIt = m_uniqueAttributeValueSets.find(setRefIt->second.m_setName);
+        if (keyIt != m_uniqueAttributeValueSets.end())
         {
-            throw(new ParseException("Duplicate key (" + keyName + ") found for element " + m_name));
+            for (auto cfgIt = keyIt->second.begin(); cfgIt != keyIt->second.end(); ++cfgIt)
+            {
+                std::shared_ptr<CfgValue> pKeyRefAttribute = *cfgIt;     // this is the reference attribute from which attributeName must be a member
+                std::string cfgValuePath = ((setRefIt->second.m_elementPath != ".") ? setRefIt->second.m_elementPath : "") + "@" + setRefIt->second.m_attributeName;
+                std::vector<std::shared_ptr<CfgValue>> cfgValues;
+                findCfgValues(cfgValuePath, cfgValues);
+                if (!cfgValues.empty())
+                {
+                    for (auto attrIt = cfgValues.begin(); attrIt != cfgValues.end(); ++attrIt)
+                    {
+                        (*attrIt)->setUniqueValueSetRef(pKeyRefAttribute);
+                    }
+                }
+                else
+                {
+                    throw(ParseException("Attribute " + (setRefIt->second.m_attributeName + " not found when adding keyRef for key " + (setRefIt->second.m_setName))));
+                }
+            }
+        }
+        else
+        {
+            throw(ParseException("Keyref to key '" + (setRefIt->second.m_setName + "' was not found")));
         }
     }
 }
 
 
-void ConfigItem::addKeyRef(const std::string &keyName, const std::string &elementName, const std::string &attributeName)
-{
-    auto keyIt = m_keyDefs.find(keyName);
-    if (keyIt != m_keyDefs.end())
-    {
-        std::shared_ptr<CfgValue> pKeyRefAttribute = keyIt->second;
-        std::shared_ptr<ConfigItem> pCfgItem = getChild(elementName);   // todo: validate pCfgItem
-        std::shared_ptr<CfgValue> pAttribute = pCfgItem->getAttribute(attributeName); 
-        if (pAttribute)
-        {
-            pAttribute->setKeyRef(pKeyRefAttribute);
-        }
-    }
-}
-
-
-std::vector<std::shared_ptr<ConfigItem>> ConfigItem::getChildren() const
-{
-    std::vector<std::shared_ptr<ConfigItem>> children;
-    
-    for (auto it = m_children.begin(); it != m_children.end(); ++it)
-        children.push_back(it->second);
-
-    return children;
-}
+//std::vector<std::shared_ptr<ConfigItem>> ConfigItem::getChildren() const
+//{
+//    std::vector<std::shared_ptr<ConfigItem>> children;
+//    for (auto it = m_children.begin(); it != m_children.end(); ++it)
+//        children.push_back(it->second);
+//    return children;
+//}
 
 
 std::shared_ptr<ConfigItem> ConfigItem::getChild(const std::string &name)
 {
-	std::shared_ptr<ConfigItem> pItem;
-	auto it = m_children.find(name);
+	std::shared_ptr<ConfigItem> pItem = std::make_shared<ConfigItem>(name, "default", shared_from_this());
+	auto it = m_children.find(name);  // only return the first one
 	if (it != m_children.end())
 	{
 		pItem = it->second;
 	}
-	else
-	{
-		pItem = std::make_shared<ConfigItem>(name, "undefined", shared_from_this());
-	}
 	return pItem;
+}
+
+
+std::shared_ptr<ConfigItem> ConfigItem::getChildByComponent(const std::string &name, std::string &componentName)
+{
+    std::shared_ptr<ConfigItem> pItem = std::make_shared<ConfigItem>(name, "default", shared_from_this());  
+    auto childItRange = m_children.equal_range(name);
+    for (auto childIt = childItRange.first; childIt != childItRange.second; ++childIt)
+    {
+        if (childIt->second->getComponentName() == componentName)
+        {
+            pItem = childIt->second;
+            break;
+        }
+    }
+
+    return pItem;
 }
 
 
@@ -223,7 +311,8 @@ void ConfigItem::resetEnvironment()
 }
 
 
-std::shared_ptr<CfgValue> ConfigItem::findCfgValue(const std::string &path)
+
+void ConfigItem::findCfgValues(const std::string &path, std::vector<std::shared_ptr<CfgValue>> &cfgValues)
 {
     bool rootPath = path[0] == '/';
     //
@@ -233,7 +322,7 @@ std::shared_ptr<CfgValue> ConfigItem::findCfgValue(const std::string &path)
         std::shared_ptr<ConfigItem> pParent = m_pParent.lock();
         if (pParent)
         {
-            return pParent->findCfgValue(path);
+            return pParent->findCfgValues(path, cfgValues);
         }
     }
 
@@ -247,7 +336,7 @@ std::shared_ptr<CfgValue> ConfigItem::findCfgValue(const std::string &path)
         {
             if (m_name == elem)
             {
-                return findCfgValue(path.substr(end + 1));
+                return findCfgValues(path.substr(end + 1), cfgValues);
             }
             else
             {
@@ -258,63 +347,126 @@ std::shared_ptr<CfgValue> ConfigItem::findCfgValue(const std::string &path)
         if (path[0] == '@')
         {
             std::string attrName = path.substr(1);
-            auto attrIt = m_attributes.find(attrName);
-            if (attrIt != m_attributes.end())
+            auto rangeIt = m_attributes.equal_range(attrName);
+            for (auto it = rangeIt.first; it != rangeIt.second; ++it)
             {
-                return attrIt->second;
-            }
-            else
-            {
-                // todo: throw
+                cfgValues.push_back(it->second);
             }
         }
 
         else
         {
-            auto cfgChild = m_children.find(elem);
-            if (cfgChild != m_children.end())
+            auto rangeIt = m_children.equal_range(elem);
+            for (auto it = rangeIt.first; it != rangeIt.second; ++it)
             {
-                return cfgChild->second->findCfgValue(path.substr(end + ((path[end]=='/') ? 1 : 0)));
+                return it->second->findCfgValues(path.substr(end + ((path[end] == '/') ? 1 : 0)), cfgValues);
+            }
+        }
+    }
+
+    return;
+}
+
+
+void ConfigItem::processUniqueAttributeValueSets()
+{
+    for (auto setIt = m_uniqueAttributeValueSetDefs.begin(); setIt != m_uniqueAttributeValueSetDefs.end(); ++setIt)
+    {
+        auto it = m_uniqueAttributeValueSets.find(setIt->first);
+        bool keyDefExists = it != m_uniqueAttributeValueSets.end();
+        if (!keyDefExists || setIt->second.m_duplicateOk)
+        {
+            //std::shared_ptr<ConfigItem> pCfgItem = getChild(elementName);  // todo: validate pCfgItem found
+            std::string cfgValuePath = ((setIt->second.m_elementPath != ".") ? setIt->second.m_elementPath : "") + "@" + setIt->second.m_attributeName;
+            std::vector<std::shared_ptr<CfgValue>> cfgValues;
+            findCfgValues(cfgValuePath, cfgValues);
+            if (!cfgValues.empty())
+            {
+                //
+                // For each attribute, if it does not already exist in the list of attributes making up this
+                // key value, add it.
+                for (auto attrIt = cfgValues.begin(); attrIt != cfgValues.end(); ++attrIt)
+                {
+                    (*attrIt)->setUniqueValue(true);
+
+                    if (!keyDefExists)
+                    {
+                        std::vector<std::shared_ptr<CfgValue>> values;
+                        values.push_back(*attrIt);
+                        it = m_uniqueAttributeValueSets.insert({ setIt->second.m_setName, values }).first;  // so the else condition will work
+                        keyDefExists = true;  // Now, it does exist
+                    }
+                    else
+                    {
+                        std::vector<std::shared_ptr<CfgValue>> &values = it->second;
+                        bool found = false;
+                        for (auto cfgIt = values.begin(); cfgIt != values.end() && !found; ++cfgIt)
+                        {
+                            found = (*cfgIt) == (*attrIt);
+                        }
+                        if (!found)
+                            values.push_back(*attrIt);
+                    }
+                }
             }
             else
             {
-                // todo: throw
+                throw(ParseException("Attribute " + setIt->second.m_attributeName + " not found for key " + setIt->second.m_setName));
             }
         }
-        //else if (path[end] == '@')
-        //{
-        //    return cfgChild->second->findCfgValue(path.substr(end1));
-        //    std::string attrName = path.substr(end);
-        //    auto attrIt = m_attributes.find(attrName);
-        //    if (attrIt != m_attributes.end())
-        //    {
-        //        return attrIt->second;
-        //    }
-        //    else
-        //    {
-        //        // todo: throw
-        //    }
-        //}
+        else
+        {
+            throw(ParseException("Duplicate key (" + setIt->second.m_setName + ") found for element " + m_name));
+        }
     }
 
-    return std::shared_ptr<CfgValue>(); 
+    //
+    // Post process all of our children now
+    for (auto it = m_children.begin(); it != m_children.end(); ++it)
+    {
+        it->second->processUniqueAttributeValueSets();
+    }
 }
+
 
 
 void ConfigItem::postProcessConfig()
 {
+
+    processUniqueAttributeValueSetReferences();
+
+
+    //
+    // Post process the attributes
     for (auto it = m_attributes.begin(); it != m_attributes.end(); ++it)
     {
+        //
+        // If this is a mirroed value, go find the source and attach ourselves so that if that value changes,
+        // it is replicated to us.
         if (it->second->isMirroredValue())
         {
-            std::shared_ptr<CfgValue> pSrcCfgValue = findCfgValue(it->second->getMirrorFromPath());
-            if (pSrcCfgValue)
+            std::vector<std::shared_ptr<CfgValue>> cfgValues;
+            findCfgValues(it->second->getMirrorFromPath(), cfgValues);
+            if (!cfgValues.empty() && cfgValues.size() == 1)
             {
-                pSrcCfgValue->addMirroredCfgValue(it->second);
+                if (cfgValues.size() == 1)
+                {
+                    it->second->addMirroredCfgValue(cfgValues[0]);
+                }
+                else
+                {
+                    throw(ParseException("Multiple sources found for mirror from path for attribute " + it->second->getName() + " (path=" + it->second->getMirrorFromPath()));
+                }
+            }
+            else
+            {
+                throw(ParseException("Mirrored from source not found for attribute " + it->second->getName() + " path=" + it->second->getMirrorFromPath()));
             }
         }
     }
 
+    //
+    // Post process all of our children now
     for (auto it = m_children.begin(); it!= m_children.end(); ++it)
     {
         it->second->postProcessConfig();

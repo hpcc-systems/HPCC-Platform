@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ class ConfigItemComponent : public ConfigItem
 {
     public:
 
-		ConfigItemComponent(const std::string &name, std::shared_ptr<ConfigItem> pParent) : ConfigItem(name, "component", pParent) { m_isConfigurable = true; };
+		ConfigItemComponent(const std::string &name, std::shared_ptr<ConfigItem> pParent) : ConfigItem(name, "component", pParent) { }
         virtual ~ConfigItemComponent() { };
    
 };

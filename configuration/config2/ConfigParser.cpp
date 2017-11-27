@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -16,11 +16,25 @@
 ############################################################################## */
 
 #include "ConfigParser.hpp"
+#include "ConfigExceptions.hpp"
 
 
-bool ConfigParser::parseEnvironmentConfig(const std::vector<std::string> &cfgParms)
+bool ConfigParser::parseEnvironmentConfig(const std::vector<std::string> &cfgParms, Status &status)
 {
-    return doParse(cfgParms);
+    try
+    {
+        doParse(cfgParms);
+    }
+    catch (const ParseException &pe)
+    {
+        std::string msg = "The following error was detected while parsing the configuration: " + static_cast<std::string>(pe.what());
+        status.addStatusMsg(statusMsg::fatal, "", "", "", msg);
+    }
+    catch (...)
+    {
+        int i = 8;
+    }
+    return status.isOk();
 }
 
 

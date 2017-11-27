@@ -7,12 +7,15 @@ SET(  SRCS
 	  ConfigItemValueSet.cpp
 	  ConfigItem.cpp
 	  CfgValue.cpp
+	  CfgLimits.cpp
+	  CfgIntegerLimits.cpp
+	  CfgStringLimits.cpp
 	  EnvironmentNode.cpp
 	  EnvValue.cpp
-	  NodeStatus.cpp
 	  XSDComponentParser.cpp
 	  XSDConfigParser.cpp
 	  XSDValueSetParser.cpp
+	  Status.cpp
 )
 
 INCLUDE_DIRECTORIES(

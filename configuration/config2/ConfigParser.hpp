@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@
 
 
 #include "ConfigItem.hpp"
+#include "Status.hpp"
 
 
 class ConfigParser 
@@ -33,7 +34,7 @@ class ConfigParser
 
         ConfigParser(const std::string &basePath, std::shared_ptr<ConfigItem> &pConfig) : m_basePath(basePath), m_pConfig(pConfig) { };
         virtual ~ConfigParser() { };
-        virtual bool parseEnvironmentConfig(const std::vector<std::string> &cfgParms);
+        virtual bool parseEnvironmentConfig(const std::vector<std::string> &cfgParms, Status &status);
     
 
     protected:

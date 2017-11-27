@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ void ConfigItemValueSet::addCfgValue(const std::shared_ptr<CfgValue> pNewValue)
     else 
     {
         std::string msg = "A value already exists for " + pNewValue->getName();
-        throw(new ParseException(msg));
+        throw(ParseException(msg));
     }
 }
 
@@ -61,7 +61,7 @@ std::shared_ptr<CfgValue> ConfigItemValueSet::findValue(const std::string &value
     else if (throwIfNotFound)
     {
         std::string msg = "Unable to find valueName(" + valueName + ")";
-        throw(new ValueException(msg));
+        throw(ValueException(msg));
     }
     return pValue;
 }

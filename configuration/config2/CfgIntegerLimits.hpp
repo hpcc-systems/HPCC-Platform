@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -28,7 +28,8 @@ class CfgIntegerLimits : public CfgLimits
         virtual ~CfgIntegerLimits() { };
         int getMin() const { return m_minInclusive; }
         int getMax() const { return m_maxInclusive; }
-
+        std::string getString() const override { return "integer limit string"; }
+        virtual bool isValueValid(const std::string &testValue);
 };
 
 #endif // _CONFIG2_CFGINTEGERLIMITS_HPP_

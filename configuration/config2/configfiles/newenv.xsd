@@ -21,6 +21,9 @@
     xmlns:hpcc="something hpcc.xsd">
   <xs:include schemaLocation="types.xsd"/>
   <xs:include schemaLocation="hardware.xsd"/>
+  <xs:include schemaLocation="esp.xsd"/>
+  <xs:include schemaLocation="esp_service_wsecl2.xsd"/>
+  <xs:include schemaLocation="esp_service_smc.xsd"/>
   <xs:include schemaLocation="dafilesrv.xsd"/>
   <xs:include schemaLocation="eclagent.xsd"/>
   <xs:element name="Environment" hpcc:category="root" hpcc:class="category">
@@ -29,14 +32,17 @@
         <xs:element name="EnvSettings" hpcc:class="category" hpcc:displayName="System Settings" hpcc:hidden="true"></xs:element>
         <xs:element type="hardware" hpcc:class="category" hpcc:displayName="Hardware" hpcc:required="true"></xs:element>
         <xs:element name="Programs" hpcc:class="category" hpcc:displayName="Programs" hpcc:hidden="true"></xs:element>
-        <xs:element name="EXTRA_SECTION" hpcc:class="category" hpcc:displayName="More Stuff" hpcc:required="false"></xs:element>
         <xs:element name="Software" hpcc:class="category" hpcc:displayName="Software">
           <xs:complexType>
             <xs:sequence>
               <xs:element type="dafilesrv"/>
-              <xs:element type="eclagent"/>
+              <xs:element type="eclAgent"/>
+              <xs:element type="ws_ecl"/> 
+              <xs:element type="espsmc"/> 
+              <xs:element type="espProcess"/> 
             </xs:sequence>
           </xs:complexType>
+          
         </xs:element>
       </xs:sequence>
     </xs:complexType>

@@ -1,6 +1,6 @@
 /*##############################################################################
 
-HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems®.
+HPCC SYSTEMS software Copyright (C) 2017 HPCC Systemsï¿½.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,99 +16,83 @@ limitations under the License.
 ############################################################################## */
 
 #include "EnvValue.hpp"
+#include "EnvironmentNode.hpp"
 
-bool EnvValue::setValue(const std::string &value, bool force) 
+bool EnvValue::setValue(const std::string &value, Status *pStatus, bool forceSet)
 { 
-	bool rc = true;
+    bool rc = true;
     std::string oldValue = m_value;
-	clearStatus();  // always clear the status since in can only be sigular
-	if (m_pCfgValue)
-	{
-		if (m_pCfgValue->isValueValid(value))
-		{
-			m_value = value;
+    if (m_pCfgValue)
+    {
+        m_forcedSet = false;
+        if (m_pCfgValue->isValueValid(value))
+        {
+            m_value = value;
+            m_valueSet = true;
             m_pCfgValue->mirrorValue(oldValue, value);
-		}
-		else if (force)
-		{
-			m_value = value;
-			addStatus(error, "Value is not valid");
-			rc = false;
-		}
-	}
-	else
-	{
-		addStatus(warning, "Value saved, but no configuration defined for this value, unable to validate");
-		rc = false;
-		m_value = value;
-	}
-	return rc;
+        }
+        else if (forceSet)
+        {
+            m_value = value;
+            m_valueSet = true;
+            m_forcedSet = true;
+            m_pCfgValue->mirrorValue(oldValue, value);
+            if (pStatus != nullptr)
+                pStatus->addStatusMsg(statusMsg::info, m_pMyEnvNode.lock()->getId(), m_name, "", "Attribute forced to invalid value");
+            rc = true;
+        }
+        else
+        {
+            if (pStatus != nullptr)
+                pStatus->addStatusMsg(statusMsg::error, m_pMyEnvNode.lock()->getId(), m_name, "", "New value is not valid");
+            //todo, use the cfgValue->cfgType->getstring or whatever to get a status message as to why it's not valid (in line after the not valid above)
+        }
+    }
+    return rc;
 }
 
 
 bool EnvValue::checkCurrentValue()
 {
-	bool rc = true;
-	clearStatus();  // always clear the status since in can only be sigular
-	if (m_pCfgValue)
-	{
-		if (!m_pCfgValue->isValueValid(m_value))
-		{
-			addStatus(error, "Value is not valid");
-			rc = false;
-		}
-	}
-	else
-	{
-		addStatus(warning, "no configuration defined for this value, unable to validate");
-		rc = false;
-	}
-	return rc;
+    bool rc = true;
+    if (m_pCfgValue)
+    {
+        if (!m_pCfgValue->isValueValid(m_value))
+        {
+            rc = false;
+        }
+    }
+    else
+    {
+        rc = false;
+    }
+    return rc;
+}
+
+
+std::vector<std::string> EnvValue::getAllValues() const
+{
+    std::shared_ptr<EnvironmentNode> pEnvNode = m_pMyEnvNode.lock();
+    return pEnvNode->getAllFieldValues(m_pCfgValue->getName());
 }
 
 
 bool EnvValue::isValueValid(const std::string &value) const
 {
-	bool rc = true;
-	if (m_pCfgValue)
-	{
-		//
-		// Check the value against the type
-		if (m_pCfgValue->isValueValid(value))
-		{
-			//
-			// If this is a key, make sure it's unique
-			if (m_pCfgValue->isKey())
-			{
-				std::string fieldName = m_pCfgValue->getName();
-				std::shared_ptr<EnvironmentNode> pMyEnvNode = m_pMyEnvNode.lock();
-				if (pMyEnvNode)
-				{
-                    // todo: use getAllFieldValues
-
-                    //
-                    // Is this a key value? If so, make sure our value is unique for all the values. Note that we are likely an attribute here
-                    //if (m_pCfgValue->isKey())
-                    //{
-                    //    pMyEnvNode
-                    //}
-
-					// need the parent of myenvnode
-					// then get from that parent, get all fieldNames for children with name myenvnode->getName()
-					// get all values for fieldname from pParent
-				}
-			}
-		}
-
-		//
-		// If this is a key, then we 
-	}
-	return rc;
+    return m_pCfgValue->isValueValid(value, this);
 }
 
 
-bool EnvValue::validate() const
+void EnvValue::validate(Status &status, const std::string &myId) const
 {
-    return isValueValid(m_value);
+
+    if (!m_pCfgValue->isConfigured())
+        status.addStatusMsg(statusMsg::warning, myId, m_name, "", "No configuration exists for this value");
+
+    if (m_forcedSet)
+        status.addStatusMsg(statusMsg::warning, myId, m_name, "", "Current value was force set");
+
+    // Will generate status based on current value and type
+    m_pCfgValue->validate(status, myId, this);
 }
 

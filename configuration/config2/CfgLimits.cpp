@@ -15,26 +15,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ############################################################################## */
 
+#include "CfgLimits.hpp"
 
-
-
-void NodeStatus::addStatus(nodeStatus status, const std::string &msg)
-{
-	m_messages.insert({ status, msg });
-	if (status > m_highestStatus)
-		m_highestStatus = status;
+std::vector<AllowedValue> CfgLimits::getAllowedValues() const 
+{ 
+    return m_allowedValues; 
 }
 
-
-std::string NodeStatus::getStatusString(nodeStatus status) const
-{
-	std::string result = "Not found";
-	switch (status)
-	{
-		case ok:      result = "Ok";       break;
-		case warning: result = "Warning";  break;
-		case error:   result = "Error";    break;
-		case fatal:   result = "Fatal";    break;
-	}
-	return result;
-}

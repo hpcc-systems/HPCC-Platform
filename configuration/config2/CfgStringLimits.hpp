@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -25,11 +25,13 @@ class CfgStringLimits : public CfgLimits
 {
     public:
 
-        CfgStringLimits() : m_removeWhiteSpace(true) { };
+        CfgStringLimits() : m_removeWhiteSpace(true) { m_minInclusive = 0; }
         virtual ~CfgStringLimits() { };
         void setRemoveWhiteSpace(bool remove) { m_removeWhiteSpace = true; }
-        int getMin() const { return m_minLength; }
-        int getMax() const { return m_maxLength; }
+        int getMin() const override { return m_minLength; }
+        int getMax() const override { return m_maxLength; }
+        std::string getString() const override;
+        virtual bool isValueValid(const std::string &testValue) const;
 
 
     protected:

@@ -1,6 +1,6 @@
 /*##############################################################################
 
-HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems®.
+HPCC SYSTEMS software Copyright (C) 2017 HPCC Systemsï¿½.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ bool XMLEnvironmentMgr::load(std::istream &in)
 	if (rootName == m_pConfig->getName())
 	{
 		m_pRootNode = std::make_shared<EnvironmentNode>(m_pConfig, rootName);
-		m_pRootNode->setPath(".");
+		m_pRootNode->setId(".");
 		addPath(m_pRootNode);
 		parse(rootIt->second, m_pConfig, m_pRootNode);
 	}
@@ -69,7 +69,7 @@ void XMLEnvironmentMgr::parse(const pt::ptree &envTree, const std::shared_ptr<Co
 		{
 			std::shared_ptr<CfgValue> pCfgValue = pConfigItem->getItemCfgValue();
 			std::shared_ptr<EnvValue> pEnvValue = std::make_shared<EnvValue>(pEnvNode, pCfgValue, "");  // node's value has no name
-			pEnvValue->setValue(value);
+			pEnvValue->setValue(value, nullptr);
 			pEnvNode->setNodeEnvValue(pEnvValue);
 		}
 	}
@@ -84,6 +84,9 @@ void XMLEnvironmentMgr::parse(const pt::ptree &envTree, const std::shared_ptr<Co
 	{
 		std::string elemName = it->first;
 
+        if (elemName == "EspService")
+            int i = 3;
+
 		//
 		// First see if there are attributes for this element (<xmlattr> === <element attr1="xx" attr2="yy" ...></element>  The attr1 and attr2 are in this)
 		if (elemName == "<xmlattr>")
@@ -91,9 +94,12 @@ void XMLEnvironmentMgr::parse(const pt::ptree &envTree, const std::shared_ptr<Co
 			for (auto attrIt = it->second.begin(); attrIt != it->second.end(); ++attrIt)
 			{
 				std::shared_ptr<CfgValue> pCfgValue = pConfigItem->getAttribute(attrIt->first);
-				std::shared_ptr<EnvValue> pEnvValue = std::make_shared<EnvValue>(pEnvNode, pCfgValue, attrIt->first);   // this is where we would use a variant
-				//pEnvNode->addStatus(NodeStatus::warning, "Attribute " + attrIt->first + " not defined in configuration schema, unable to validate value.");
-				pEnvValue->setValue(attrIt->second.get_value<std::string>());
+				std::string curValue = attrIt->second.get_value<std::string>();
+				std::shared_ptr<EnvValue> pEnvValue = std::make_shared<EnvValue>(pEnvNode, pCfgValue, attrIt->first, curValue);   // this is where we would use a variant
+                pCfgValue->addEnvValue(pEnvValue);
+                //auto x = pCfgValue.get();
+                //std::shared_ptr<CfgValue> pCopyCfg;
+                //pCopyCfg = pCfgValue;
 				pEnvNode->addAttribute(attrIt->first, pEnvValue);
 			}
 		}
@@ -103,9 +109,7 @@ void XMLEnvironmentMgr::parse(const pt::ptree &envTree, const std::shared_ptr<Co
 			std::shared_ptr<ConfigItem> pEnvConfig;
 			if (typeName != "")
 			{
-				pEnvConfig = pConfigItem->getChild(typeName);
-				// if pEnvConfig->getName == undefined  ....
-				//pEnvNode->addStatus(NodeStatus::warning, "Specified schema " + typeName + " was not found");
+				pEnvConfig = pConfigItem->getChildByComponent(elemName, typeName);
 			}
 			else
 			{
@@ -113,9 +117,8 @@ void XMLEnvironmentMgr::parse(const pt::ptree &envTree, const std::shared_ptr<Co
 				// if pEnvConfig->getName == undefined  ....  same, but not based on buildset
 			}
 
-			
 			std::shared_ptr<EnvironmentNode> pElementNode = std::make_shared<EnvironmentNode>(pEnvConfig, elemName, pEnvNode);
-			pElementNode->setPath(getUniqueKey());
+			pElementNode->setId(getUniqueKey());
 			addPath(pElementNode);
 			parse(it->second, pEnvConfig, pElementNode);
 			pEnvNode->addChild(pElementNode);

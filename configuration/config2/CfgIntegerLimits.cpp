@@ -15,26 +15,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ############################################################################## */
 
+#include "CfgIntegerLimits.hpp"
 
-
-
-void NodeStatus::addStatus(nodeStatus status, const std::string &msg)
+bool CfgIntegerLimits::isValueValid(const std::string &value)
 {
-	m_messages.insert({ status, msg });
-	if (status > m_highestStatus)
-		m_highestStatus = status;
-}
+    bool isValid = true;
+    int testValue = std::stoi(value);
 
+    isValid = testValue >= getMin() && testValue <= getMax();
 
-std::string NodeStatus::getStatusString(nodeStatus status) const
-{
-	std::string result = "Not found";
-	switch (status)
-	{
-		case ok:      result = "Ok";       break;
-		case warning: result = "Warning";  break;
-		case error:   result = "Error";    break;
-		case fatal:   result = "Fatal";    break;
-	}
-	return result;
+    return isValid;
 }

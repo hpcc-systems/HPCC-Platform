@@ -1,6 +1,6 @@
 /*##############################################################################
 
-HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems®.
+HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ limitations under the License.
 
 #include <exception>
 #include <string>
+#include <vector>
 
 class ParseException : public std::exception
 {
@@ -28,8 +29,25 @@ class ParseException : public std::exception
         ParseException(const std::string &reason) : m_reason(reason) { };
         ParseException(const char *reason) : m_reason(reason) { };
 
+        void addFilename(const std::string &filename) { m_filenames.push_back(filename); }
+
         virtual const char *what() const throw()
         {
+            std::string &msg = const_cast<std::string &>(m_reason);
+
+            if (m_filenames.size())
+            {
+                bool first = true;
+                msg += " While parsing: ";
+                for (auto it = m_filenames.begin(); it != m_filenames.end(); ++it)
+                {
+                    if (!first)
+                        msg += "-->";
+                    msg += (*it);
+                    first = false;
+                }
+            }
+
             return m_reason.c_str();
         }
 
@@ -37,6 +55,7 @@ class ParseException : public std::exception
     private:
 
         std::string m_reason;
+        std::vector<std::string> m_filenames;
 
 };
 

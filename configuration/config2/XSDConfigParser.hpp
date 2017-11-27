@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -55,6 +55,8 @@ class XSDConfigParser : public ConfigParser
         virtual std::shared_ptr<CfgType> getCfgType(const pt::ptree &typeTree, bool nameRequired=true);
         virtual std::shared_ptr<CfgValue> getCfgValue(const pt::ptree &attr);
         
+        virtual void parseKey(const pt::ptree &keyTree);
+        virtual void parseKeyRef(const pt::ptree &keyTree);
 
     protected:
     

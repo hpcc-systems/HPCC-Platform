@@ -15,7 +15,7 @@
         <xs:attribute name="thorConnectTimeout" type="xs:nonNegativeInteger" use="optional" default="600" hpcc:tooltip="Default connection timeout when sending query to Thor"/>
         <xs:attribute name="wuQueueName" type="xs:string" use="optional" default="" hpcc:tab="Eclagent" hpcc:tooltip="eclAgent Workunit Execution Queue Name" hpcc:autogenforwizard="true" hpcc:autogensuffix="_queue"/>
     </xs:attributeGroup>
-	<xs:complexType name="eclagent" hpcc:class="component" hpcc:category="agentprocess" hpcc:displayName="ECL Agent Process">
+	<xs:complexType name="eclAgent" hpcc:class="component" hpcc:category="agentprocess" hpcc:displayName="ECL Agent Process">
         <xs:sequence>
 			<xs:element name="EclAgentProcess" hpcc:docid="EA.t1">
 				<xs:complexType>

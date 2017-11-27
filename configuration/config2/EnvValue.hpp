@@ -1,6 +1,6 @@
 /*##############################################################################
 
-HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems®.
+HPCC SYSTEMS software Copyright (C) 2017 HPCC Systemsï¿½.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,28 +20,38 @@ limitations under the License.
 
 #include <string>
 #include "CfgValue.hpp"
-#include "NodeStatus.hpp"
+#include "Status.hpp"
 
 class EnvironmentNode;
 
-class EnvValue : public NodeStatus
+class EnvValue
 {
 	public:
-		EnvValue(const std::shared_ptr<EnvironmentNode> &pMyNode, const std::shared_ptr<CfgValue> &pCfgValue, const std::string &name="") : m_pMyEnvNode(pMyNode), m_pCfgValue(pCfgValue), m_name(name) { }
+
+		EnvValue(const std::shared_ptr<EnvironmentNode> &pMyNode, const std::shared_ptr<CfgValue> &pCfgValue, const std::string &name="") : 
+			m_pMyEnvNode(pMyNode), m_pCfgValue(pCfgValue), m_name(name), m_forcedSet(false), m_valueSet(false) { }
+		EnvValue(const std::shared_ptr<EnvironmentNode> &pMyNode, const std::shared_ptr<CfgValue> &pCfgValue, const std::string &name, const std::string initValue) :
+			EnvValue(pMyNode, pCfgValue, name) { m_value = initValue; m_valueSet = true; }
+
 		~EnvValue() { }
-		bool setValue(const std::string &value, bool force=false);
+		bool setValue(const std::string &value, Status *pStatus, bool forceSet=false);
+		bool isValueSet() const { return m_valueSet; }
 		bool checkCurrentValue();
 		const std::string &getValue() const { return m_value;  }
 		const std::string &getDefaultValue() const { return m_pCfgValue->getDefaultValue(); }
 		bool hasDefaultValue() const { return m_pCfgValue->hasDefaultValue(); }
 		const std::shared_ptr<CfgValue> &getCfgValue() const { return m_pCfgValue;  }
 		const std::string &getName() const { return m_name;  }
+		bool wasForced() const { return m_forcedSet; }
 		bool isValueValid(const std::string &value) const;
-        bool validate() const;
+        void validate(Status &status, const std::string &myId) const;
+        std::vector<std::string> getAllValues() const;
 	
 
 	private:
 
+		bool m_forcedSet;     // true when last set value was a forced set
+		bool m_valueSet;
 		std::string m_name;
 		std::string m_value;
 		std::shared_ptr<CfgValue> m_pCfgValue;   

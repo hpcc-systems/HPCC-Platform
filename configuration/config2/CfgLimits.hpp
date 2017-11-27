@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -18,10 +18,13 @@
 #ifndef _CONFIG2_CFGLIMITS_HPP_
 #define _CONFIG2_CFGLIMITS_HPP_
 
+
 #include <memory>
 #include <vector>
 #include <string>
 #include <limits.h>
+
+class EnvValue;
 
 struct AllowedValue 
 {
@@ -50,9 +53,12 @@ class CfgLimits
         void setMaxLength(int v)     { m_maxLength    = v; }
         void addPattern(const std::string &pattern) { m_patterns.push_back(pattern); }
         void addAllowedValue(const std::string &value, const std::string &desc="") { m_allowedValues.push_back(AllowedValue(value, desc)); }
-        bool isValueValid(const std::string &testValue) { return true; }
-		virtual int getMin() { return m_minInclusive; }
-        virtual int getMax() { return m_maxInclusive; }
+        std::vector<AllowedValue> getAllowedValues() const;
+        bool isEnumerated() const { return !m_allowedValues.empty();  }
+        virtual bool isValueValid(const std::string &testValue) { return true; }
+		virtual int getMin() const { return m_minInclusive; }
+        virtual int getMax() const { return m_maxInclusive; }
+        virtual std::string getString() const { return ""; }
 
 
     protected:
@@ -61,7 +67,7 @@ class CfgLimits
         int m_maxInclusive;
         int m_minExclusive;
         int m_maxExclusive;
-        int m_length;
+        unsigned m_length;
         int m_minLength;
         int m_maxLength;
         std::vector<std::string> m_patterns;

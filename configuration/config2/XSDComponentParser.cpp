@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ void XSDComponentParser::parseXSD(const pt::ptree &compTree)
     pt::ptree tree = compTree.get_child("", pt::ptree());
 
     //
-    // First time through look for attributeGroups that can be defined and for existence of a sequenc element that actually defines the component
+    // First time through look for attributeGroups that can be defined and for existence of a sequence element that actually defines the component
     for (auto it = tree.begin(); it != tree.end(); ++it)
     {
         //
@@ -59,6 +59,16 @@ void XSDComponentParser::parseXSD(const pt::ptree &compTree)
             int maxOccurs = (maxOccursStr != "unbounded") ? stoi(maxOccursStr) : -1;
             m_pConfig->setMinInstances(minOccurs);
             m_pConfig->setMaxInstances(maxOccurs);
+
+            //
+            // See if the element has a type. If so, then the element can have a value (other than attributes). Note does happen, but is rare
+            std::string elementDataType = elemTree.get("<xmlattr>.type", "");
+            if (elementDataType != "")
+            {
+                std::shared_ptr<CfgValue> pItemCfgValue = std::make_shared<CfgValue>("elementData");
+                pItemCfgValue->setType(m_pConfig->getType(elementDataType));
+                pItemCfgValue->setDefault(elemTree.get("<xmlattr>.default", ""));
+            }
 
             //
             // Parse any attributes, these are located in the xs:complexType section
@@ -104,42 +114,42 @@ void XSDComponentParser::parseXSD(const pt::ptree &compTree)
 }
 
 
-void XSDComponentParser::parseKey(const pt::ptree &keyTree)
-{
-    std::string keyName = getXSDAttributeValue(keyTree, "<xmlattr>.name");
-    std::string elementName = getXSDAttributeValue(keyTree, "xs:selector.<xmlattr>.xpath", false, "");
-    std::string attrName = getXSDAttributeValue(keyTree, "xs:field.<xmlattr>.xpath", false, "");
-    std::string attributeName;
-
-    if (attrName.find_first_of('@') != std::string::npos)
-    {
-        attributeName = attrName.substr(attrName.find_first_of('@') + 1);
-    }
-    else
-    {
-        attributeName = attrName;
-    }
-
-    m_pConfig->addKey(keyName, elementName, attributeName);
-}
-
-
-void XSDComponentParser::parseKeyRef(const pt::ptree &keyTree)
-{
-    std::string keyRefName = getXSDAttributeValue(keyTree, "<xmlattr>.refer");
-    std::string elementName = getXSDAttributeValue(keyTree, "xs:selector.<xmlattr>.xpath", false, "");
-    std::string attrName = getXSDAttributeValue(keyTree, "xs:field.<xmlattr>.xpath", false, "");
-    std::string attributeName;
-
-    if (attrName.find_first_of('@') != std::string::npos)
-    {
-        attributeName = attrName.substr(attrName.find_first_of('@') + 1);
-    }
-    else
-    {
-        attributeName = attrName;
-    }
-
-    m_pConfig->addKeyRef(keyRefName, elementName, attributeName);
-}
+//void XSDComponentParser::parseKey(const pt::ptree &keyTree)
+//{
+//    std::string keyName = getXSDAttributeValue(keyTree, "<xmlattr>.name");
+//    std::string elementName = getXSDAttributeValue(keyTree, "xs:selector.<xmlattr>.xpath", false, "");
+//    std::string attrName = getXSDAttributeValue(keyTree, "xs:field.<xmlattr>.xpath", false, "");
+//    std::string attributeName;
+//
+//    if (attrName.find_first_of('@') != std::string::npos)
+//    {
+//        attributeName = attrName.substr(attrName.find_first_of('@') + 1);
+//    }
+//    else
+//    {
+//        attributeName = attrName;
+//    }
+//
+//    m_pConfig->addKey(keyName, elementName, attributeName);
+//}
+//
+//
+//void XSDComponentParser::parseKeyRef(const pt::ptree &keyTree)
+//{
+//    std::string keyName = getXSDAttributeValue(keyTree, "<xmlattr>.refer");
+//    std::string elementName = getXSDAttributeValue(keyTree, "xs:selector.<xmlattr>.xpath", false, "");
+//    std::string attrName = getXSDAttributeValue(keyTree, "xs:field.<xmlattr>.xpath", false, "");
+//    std::string attributeName;
+//
+//    if (attrName.find_first_of('@') != std::string::npos)
+//    {
+//        attributeName = attrName.substr(attrName.find_first_of('@') + 1);
+//    }
+//    else
+//    {
+//        attributeName = attrName;
+//    }
+//
+//    m_pConfig->addKeyRef(keyName, elementName, attributeName);
+//}
 
