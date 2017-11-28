@@ -37,6 +37,8 @@ import ^ as root;
 boolean sprayFixed := #IFDEFINED(root.sprayFixed, true);
 boolean sprayEmpty := #IFDEFINED(root.sprayEmpty, false);
 
+dropzonePath := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
+
 unsigned VERBOSE := 0;
 
 Layout_Person := RECORD
@@ -54,18 +56,18 @@ allPeople := DATASET([ {'foo', 10, 1},
 
 #if (sprayFixed)
     sprayPrepFileName := prefix + 'spray_prep_fixed';
-    desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input_fixed';
+    desprayOutFileName := dropzonePath + 'spray_input_fixed';
     sprayOutFileName := prefix + 'spray_test_fixed';
     dsSetup := allPeople;
 #else
     #if (sprayEmpty)
         sprayPrepFileName := prefix + 'spray_prep_empty';
-        desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input_empty';
+        desprayOutFileName := dropzonePath + 'spray_input_empty';
         sprayOutFileName := prefix + 'spray_test_empty';
         dsSetup := empty;
     #else
         sprayPrepFileName := prefix + 'spray_prep';
-        desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input';
+        desprayOutFileName := dropzonePath + 'spray_input';
         sprayOutFileName := prefix + 'spray_test';
         dsSetup := allPeople;
     #end
