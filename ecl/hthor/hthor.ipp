@@ -374,16 +374,25 @@ class CHThorIndexWriteActivity : public CHThorActivityBase
     Owned<IFile> file;
     bool incomplete;
     offset_t sizeLimit;
+    unsigned __int64 duplicateKeyCount = 0;
+    unsigned __int64 cummulativeDuplicateKeyCount = 0;
 
     void close();
     void buildUserMetadata(Owned<IPropertyTree> & metadata);
     void buildLayoutMetadata(Owned<IPropertyTree> & metadata);
+    virtual void updateProgress(IStatisticGatherer &progress) const override
+    {
+        CHThorActivityBase::updateProgress(progress);
+        StatsActivityScope scope(progress, activityId);
+        progress.addStatistic(StNumDuplicateKeys, cummulativeDuplicateKeyCount);
+    }
+
 public:
     IMPLEMENT_SINKACTIVITY;
 
     CHThorIndexWriteActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexWriteArg &_arg, ThorActivityKind _kind);
     ~CHThorIndexWriteActivity();
-    virtual void execute();
+    virtual void execute() override;
 };
 
 class IPipeWriteOwner

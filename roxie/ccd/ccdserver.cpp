@@ -370,6 +370,7 @@ static const StatisticsMapping diskStatistics(&actStatistics, {StNumServerCacheH
 static const StatisticsMapping soapStatistics(&actStatistics, { StTimeSoapcall });
 static const StatisticsMapping groupStatistics(&actStatistics, { StNumGroups, StNumGroupMax });
 static const StatisticsMapping sortStatistics(&actStatistics, { StTimeSortElapsed });
+static const StatisticsMapping indexWriteStatistics(&actStatistics, { StNumDuplicateKeys });
 
 //=================================================================================
 
@@ -11920,6 +11921,8 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
     unsigned __int64 reccount;
     unsigned int fileCrc;
     StringBuffer filename;
+    unsigned __int64 duplicateKeyCount = 0;
+    unsigned __int64 cummulativeDuplicateKeyCount = 0;
 
     void updateWorkUnitResult()
     {
@@ -12120,6 +12123,8 @@ public:
                 }
                 reccount++;
             }
+            duplicateKeyCount = builder->getDuplicateCount();
+            cummulativeDuplicateKeyCount += duplicateKeyCount;
             builder->finish(metadata, &fileCrc);
         }
     }
@@ -12138,6 +12143,7 @@ public:
 
     virtual void reset()
     {
+        noteStatistic(StNumDuplicateKeys, cummulativeDuplicateKeyCount);
         CRoxieServerActivity::reset();
         writer.clear();
     }
@@ -12191,6 +12197,7 @@ public:
         properties.setProp("@kind", "key");
         properties.setPropInt64("@size", indexFileSize);
         properties.setPropInt64("@recordCount", reccount);
+        properties.setPropInt64("@duplicateKeyCount", duplicateKeyCount);
         WorkunitUpdate workUnit = ctx->updateWorkUnit();
         if (workUnit)
         {
@@ -12262,7 +12269,10 @@ public:
     {
         return true;
     }
-
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return indexWriteStatistics; // Overridden by anyone that needs more
+    }
 };
 
 IRoxieServerActivityFactory *createRoxieServerIndexWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)

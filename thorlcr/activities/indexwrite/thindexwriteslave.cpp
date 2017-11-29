@@ -51,6 +51,7 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
     unsigned __int64 totalCount;
 
     size32_t maxDiskRecordSize, lastRowSize, firstRowSize;
+    unsigned __int64 duplicateKeyCount;
     MemoryBuffer rowBuff;
     OwnedConstThorRow lastRow, firstRow;
     bool needFirstRow, enableTlkPart0, receivingTag2;
@@ -86,6 +87,7 @@ public:
         refactor = false;
         enableTlkPart0 = (0 != container.queryJob().getWorkUnitValueInt("enableTlkPart0", globals->getPropBool("@enableTlkPart0", true)));
         reInit = (0 != (TIWvarfilename & helper->getFlags()));
+        duplicateKeyCount = 0;
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
@@ -363,6 +365,7 @@ public:
                     close(*partDesc, partCrc);
                     throw;
                 }
+                duplicateKeyCount = builder->getDuplicateCount();
                 close(*partDesc, partCrc);
                 stop();
             }
@@ -421,6 +424,7 @@ public:
                     close(*partDesc, partCrc);
                     throw;
                 }
+                duplicateKeyCount = builder->getDuplicateCount();
                 close(*partDesc, partCrc);
                 stop();
 
@@ -558,6 +562,7 @@ public:
             return;
         rowcount_t _processed = processed & THORDATALINK_COUNT_MASK;
         mb.append(_processed);
+        mb.append(duplicateKeyCount);
         if (!singlePartKey || firstNode())
         {
             StringBuffer partFname;
