@@ -2746,7 +2746,8 @@ IPropertyTree * RunProcess(XRefCmd cmd, unsigned nclusters,const char **clusters
                     const char *cluster = *clusters;
                     CXRefNodeManager nodemanager;
                     Owned<IPropertyTree> tree = runXRef(nclusters,clusters,NULL,numthreads);
-                    if (tree) {
+                    if (tree)
+                    {
                         Owned<IXRefNode> xRefNode = nodemanager.getXRefNode(cluster);
                         if (!xRefNode.get())
                             xRefNode.setown( nodemanager.CreateXRefNode(cluster));

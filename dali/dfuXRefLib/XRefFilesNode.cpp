@@ -49,7 +49,7 @@ void CXRefFilesNode::Commit()
     m_bChanged = false;
 }
 
-MemoryBuffer &CXRefFilesNode::getData()
+MemoryBuffer &CXRefFilesNode::queryData()
 {
     if (m_bChanged || (0 == _data.length()))
     {
@@ -61,7 +61,7 @@ MemoryBuffer &CXRefFilesNode::getData()
 
 StringBuffer& CXRefFilesNode::Serialize(StringBuffer& outStr)
 {
-    MemoryBuffer &data = getData();
+    MemoryBuffer &_data = queryData();
     outStr.append(_data.length(), _data.toByteArray());
     return outStr;
 }
@@ -92,7 +92,7 @@ IPropertyTree& CXRefFilesNode::queryDataTree()
 {
     if (m_DataTree.get() == 0)
     {
-        MemoryBuffer &data = getData();
+        MemoryBuffer &data = queryData();
         m_DataTree.setown(createPTreeFromXMLString(data.length(), data.toByteArray()));
     }
     return *m_DataTree.get();
@@ -101,7 +101,8 @@ IPropertyTree& CXRefFilesNode::queryDataTree()
 static bool checkPartsInCluster(const char *title,const char *clustername, IPropertyTree *subBranch, StringBuffer &errstr,bool exists)
 {
     Owned<IGroup> group = queryNamedGroupStore().lookup(clustername);
-    if (!group) {
+    if (!group)
+    {
         ERRLOG("%s cluster not found",clustername);
         errstr.appendf("ERROR: %s cluster not found",clustername);
         return false;
@@ -110,12 +111,15 @@ static bool checkPartsInCluster(const char *title,const char *clustername, IProp
     unsigned i;
     StringBuffer xpath;
     unsigned n = group->ordinality();
-    ForEach(*partItr) {
+    ForEach(*partItr)
+    {
         IPropertyTree& part = partItr->query();
         unsigned pn = part.getPropInt("Num");
-        for (int rep=0;rep<2;rep++) {
+        for (int rep=0;rep<2;rep++)
+        {
             i = 0;
-            for (;;) {
+            for (;;)
+            {
                 i++;
                 xpath.clear().appendf(rep?"RNode[%d]":"Node[%d]",i);
                 if (!part.hasProp(xpath.str())) 
@@ -123,14 +127,17 @@ static bool checkPartsInCluster(const char *title,const char *clustername, IProp
                 SocketEndpoint ep(part.queryProp(xpath.str()));
                 ep.port = 0;
                 rank_t gn = group->rank(ep);
-                if (group->rank(ep)==RANK_NULL) {
+                if (group->rank(ep)==RANK_NULL)
+                {
                     StringBuffer eps;
                     ERRLOG("%s %s Part %d on %s is not in cluster %s",title,rep?"Replicate":"Primary",pn,ep.getUrlStr(eps).str(),clustername);
                     errstr.appendf("ERROR: %s %s part %d on %s is not in cluster %s",title,rep?"Replicate":"Primary",pn,ep.getUrlStr(eps).str(),clustername);
                     return false;
                 }
-                if (exists) {
-                    if ((pn-1+rep)%n==gn) {
+                if (exists)
+                {
+                    if ((pn-1+rep)%n==gn)
+                    {
                         ERRLOG("Logical file for %s exists (part not orphaned?)",title);
                         errstr.appendf("Logical file for %s exists (part not orphaned?)",title);
                         return false;
@@ -149,7 +156,8 @@ bool CXRefFilesNode::RemovePhysical(const char *Partmask,IUserDescriptor* udesc,
 {   
     size32_t startlen = errstr.length();
     IPropertyTree* subBranch = FindNode(Partmask);
-    if (!subBranch) {
+    if (!subBranch)
+    {
         ERRLOG("%s branch not found",Partmask);
         errstr.appendf("ERROR: %s branch not found",Partmask);
         return false;
@@ -157,7 +165,8 @@ bool CXRefFilesNode::RemovePhysical(const char *Partmask,IUserDescriptor* udesc,
     // sanity check file doesn't (now) exist 
     bool exists = false;
     StringBuffer lfn;
-    if (LogicalNameFromMask(Partmask,lfn)) {
+    if (LogicalNameFromMask(Partmask,lfn))
+    {
         if (queryDistributedFileDirectory().exists(lfn.str(),udesc,true)) 
             exists = true;
     }
@@ -176,7 +185,8 @@ bool CXRefFilesNode::RemovePhysical(const char *Partmask,IUserDescriptor* udesc,
         /////////////////////////////////
         StringBuffer xpath;
         unsigned i = 0;
-        for (;;) {
+        for (;;)
+        {
             i++;
             xpath.clear().appendf("Node[%d]",i);
             if (!part.hasProp(xpath.str())) 
@@ -187,7 +197,8 @@ bool CXRefFilesNode::RemovePhysical(const char *Partmask,IUserDescriptor* udesc,
             files.append(rmtFile);
         }
         i = 0;
-        for (;;) {
+        for (;;)
+        {
             i++;
             xpath.clear().appendf("RNode[%d]",i);
             if (!part.hasProp(xpath.str())) 
@@ -201,7 +212,6 @@ bool CXRefFilesNode::RemovePhysical(const char *Partmask,IUserDescriptor* udesc,
                 rmtFile.setPath(ip,remoteFile.str()); 
             files.append(rmtFile);
         }
-
     }
         
     CriticalSection crit;
@@ -221,8 +231,10 @@ bool CXRefFilesNode::RemovePhysical(const char *Partmask,IUserDescriptor* udesc,
             try{
                 Owned<IFile> _remoteFile =  createIFile(files.item(idx));
                 DBGLOG("Removing physical part at %s",_remoteFile->queryFilename());
-                if (_remoteFile->exists()) {
-                    if (!_remoteFile->remove()) {
+                if (_remoteFile->exists())
+                {
+                    if (!_remoteFile->remove())
+                    {
                         StringBuffer errname;
                         files.item(idx).getRemotePath(errname);
                         ERRLOG("Could not delete file %s",errname.str());
@@ -277,19 +289,22 @@ bool CXRefFilesNode::RemoveLogical(const char* LogicalName,IUserDescriptor* udes
         
 
     IPropertyTree* pLogicalFileNode =  queryDataTree().getBranch(xpath.str());
-    if (!pLogicalFileNode) {
+    if (!pLogicalFileNode)
+    {
         ERRLOG("Branch %s not found",xpath.str());
         errstr.appendf("Branch %s not found",xpath.str());
         return false;
     }
     if (!checkPartsInCluster(LogicalName,clustername,pLogicalFileNode,errstr,false))
         return false;
-    if (queryDistributedFileDirectory().existsPhysical(LogicalName,udesc)) {
+    if (queryDistributedFileDirectory().existsPhysical(LogicalName,udesc))
+    {
         ERRLOG("Logical file %s all parts exist (not lost?))",LogicalName);
         errstr.appendf("Logical file %s all parts exist (not lost?))",LogicalName);
         return false;
     }
-    if (!queryDataTree().removeTree(pLogicalFileNode)) {
+    if (!queryDataTree().removeTree(pLogicalFileNode))
+    {
         ERRLOG("Removing XRef Branch %s", xpath.str());
         errstr.appendf("Removing XRef Branch %s", xpath.str());
         return false;
@@ -302,7 +317,8 @@ bool CXRefFilesNode::RemoveLogical(const char* LogicalName,IUserDescriptor* udes
 bool CXRefFilesNode::AttachPhysical(const char *Partmask,IUserDescriptor* udesc, const char *clustername, StringBuffer &errstr)
 {
     IPropertyTree* subBranch = FindNode(Partmask);
-    if (!subBranch) {
+    if (!subBranch)
+    {
         ERRLOG("%s node not found",Partmask);
         errstr.appendf("ERROR: %s node not found",Partmask);
         return false;
@@ -311,7 +327,8 @@ bool CXRefFilesNode::AttachPhysical(const char *Partmask,IUserDescriptor* udesc,
         return false;
 
     StringBuffer logicalName;
-    if (!LogicalNameFromMask(Partmask,logicalName)) {
+    if (!LogicalNameFromMask(Partmask,logicalName))
+    {
         ERRLOG("%s - could not attach",Partmask);
         errstr.appendf("ERROR: %s - could not attach",Partmask);
         return false;
@@ -488,5 +505,5 @@ void CXRefOrphanFilesNode::CleanTree(IPropertyTree& inTree)
         Itr->next();
     }
     if(partcount != 0)
-            inTree.setPropInt("Partsfound",partcount);
+        inTree.setPropInt("Partsfound",partcount);
 }

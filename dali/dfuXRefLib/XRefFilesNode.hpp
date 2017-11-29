@@ -59,7 +59,7 @@ private:
     bool LogicalNameFromMask(const char* Partmask,StringBuffer& logicalName);
     bool RemoveTreeNode(const char* NodeName);
     bool RemoveRemoteFile(const char* fileName,  const char* ipAddress);
-    MemoryBuffer &getData();
+    MemoryBuffer &queryData();
     virtual void CleanTree(IPropertyTree& inTree){}
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
