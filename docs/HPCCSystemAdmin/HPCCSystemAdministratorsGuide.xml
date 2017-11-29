@@ -1662,8 +1662,93 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
 
         <para>The downside of running multiple Thors on the same hardware is
         that the physical memory on the nodes needs to be shared among each of
-        the Thors. This needs to be configured per Thor cluster
-        definition.</para>
+        the Thors. This needs to be configured per Thor cluster definition.
+        </para>
+
+        <para>Multiple Thors on the same cluster require them to share the
+        same build and installation. The environment defines each Thor
+        cluster, which can share the same machine set. There are slave and
+        master port settings that need to be set to avoid clashing. There are
+        also memory sharing/splitting considerations and settings that need to
+        be made. The table below indicates settings in the environment to
+        consider. </para>
+
+        <para><informaltable border="all" colsep="1" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="94.50pt" />
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold">Setting</emphasis></entry>
+
+                  <entry><emphasis role="bold">Description</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis
+                  role="bold">globalMemorySize</emphasis></entry>
+
+                  <entry>The maximum memory a slave process can use. Typically
+                  85 percent of the memory on the system divided by the total
+                  number of slaves running on the hardware across all
+                  Thors.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis
+                  role="bold">localThorPortInc</emphasis></entry>
+
+                  <entry>This value is the increment from the base slave port.
+                  </entry>
+                </row>
+
+                <row>
+                  <entry><emphasis
+                  role="bold">masterMemorySize</emphasis></entry>
+
+                  <entry>The maximum memory a Thor master can use. If left
+                  blank it will use the global value.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">masterport</emphasis></entry>
+
+                  <entry>This value must be unique between Thor instances
+                  running on the same hardware.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">name</emphasis></entry>
+
+                  <entry>The name of each Thor instance must be
+                  unique.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">nodeGroup</emphasis></entry>
+
+                  <entry>This value determines where the sprayed data goes and
+                  it must be the same for the same set of nodes (IP
+                  addresses).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">slaveport</emphasis></entry>
+
+                  <entry>This value must be unique between Thor instances
+                  running on the same hardware.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis
+                  role="bold">SlavesPerNode</emphasis></entry>
+
+                  <entry>The number of slaves per node per Thor
+                  instance.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
 
         <para>You must not place multiple Thors on hardware which does not
         have enough CPU cores to support it. You should not have more Thors
