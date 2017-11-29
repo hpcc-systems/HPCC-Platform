@@ -1,18 +1,17 @@
 ################################################################################
-# Copyright (C) 2013 HPCC Systems.
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 #
-# All rights reserved. This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Affero General Public License for more details.
+#       http://www.apache.org/licenses/LICENSE-2.0
 #
-# You should have received a copy of the GNU Affero General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
 ################################################################################
 # - Attempt to find the ANTLR jar needed to build and run ANTLR Lexers and Parsers
 # Once done this will define
@@ -24,33 +23,29 @@
 
 include(UseJava)
 
-option(ANTLR_VER "ANTLR runtime and buildtime version.")
-if(NOT ANTLR_VER)
-    set(ANTLR_VER 3.4)
-endif()
+set(ANTLR_BUILDTIME_DEP_URL "https://github.com/antlr/website-antlr3/raw/gh-pages/download/antlr-3.4-complete.jar" CACHE STRING "Antlr3 Buildtime dependency url")
+set(ANTLR_RUNTIME_DEP_URL   "https://github.com/antlr/website-antlr3/raw/gh-pages/download/antlr-runtime-3.4.jar" CACHE STRING "Antlr3 Buildtime dependency url")
+set(ANTLR_BUILDTIME_DEP "antlr-3.4-complete" CACHE STRING "ANTLR buildtime jar file name.")
+set(ANTLR_RUNTIME_DEP "antlr-runtime-3.4" CACHE STRING "ANTLR runtime jar file name.")
+set(ANTLR_PATH "/usr/local/ANTLR/3.4" CACHE PATH "Location of ANTLR runtime and buildtime jar files.")
 
-option(ANTLR_BUILDTIME_DEP "ANTLR buildtime jar file name.")
-if(NOT ANTLR_BUILDTIME_DEP)
-    set(ANTLR_BUILDTIME_DEP "antlr-${ANTLR_VER}-complete")
-    message(STATUS "Option ANTLR_BUILDTIME_DEP not set, setting to: ${ANTLR_BUILDTIME_DEP}")
-    message(STATUS "The jar can be downloaded directly from:\n\thttps://github.com/antlr/website-antlr3/raw/gh-pages/download/antlr-3.4-complete.jar")
-endif()
-
-option(ANTLR_RUNTIME_DEP "ANTLR runtime jar file name.")
-if(NOT ANTLR_RUNTIME_DEP)
-    set(ANTLR_RUNTIME_DEP "antlr-runtime-${ANTLR_VER}")
-    message(STATUS "Option ANTLR_RUNTIME_DEP not set, setting to: ${ANTLR_RUNTIME_DEP}")
-    message(STATUS "The jar can be downloaded directly from:\n\thttps://github.com/antlr/website-antlr3/raw/gh-pages/download/antlr-runtime-3.4.jar")
-endif()
-
-option(ANTLR_PATH "Location of ANTLR runtime and buildtime jar files.")
-if(NOT ANTLR_PATH)
-    set(ANTLR_PATH "/usr/local/ANTLR/${ANTLR_VER}")
-    message(STATUS "Option ANTLR_PATH not set, setting to: ${ANTLR_PATH}")
+find_jar(ANTLR_BUILDTIME_JAR ${ANTLR_BUILDTIME_DEP} PATHS ${ANTLR_PATH})
+if(ANTLR_BUILDTIME_JAR STREQUAL "ANTLR_BUILDTIME_JAR-NOTFOUND")
+    file(DOWNLOAD ${ANTLR_BUILDTIME_DEP_URL}
+        ${CMAKE_BINARY_DIR}/downloads/antlr-3.4-complete.jar
+        TIMEOUT 20
+        INACTIVITY_TIMEOUT 5)
+    find_jar(ANTLR_BUILDTIME_JAR antlr-3.4-complete PATHS ${CMAKE_BINARY_DIR}/downloads)
 endif()
 
 find_jar(ANTLR_RUNTIME_JAR ${ANTLR_RUNTIME_DEP} PATHS ${ANTLR_PATH})
-find_jar(ANTLR_BUILDTIME_JAR ${ANTLR_BUILDTIME_DEP} PATHS ${ANTLR_PATH})
+if(ANTLR_RUNTIME_JAR STREQUAL "ANTLR_RUNTIME_JAR-NOTFOUND")
+    file(DOWNLOAD ${ANTLR_RUNTIME_DEP_URL}
+        ${CMAKE_BINARY_DIR}/downloads/antlr-runtime-3.4.jar
+        TIMEOUT 20
+        INACTIVITY_TIMEOUT 5)
+    find_jar(ANTLR_RUNTIME_JAR antlr-runtime-3.4 PATHS ${CMAKE_BINARY_DIR}/downloads)
+endif()
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(

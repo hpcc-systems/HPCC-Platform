@@ -111,6 +111,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       option(USE_TBBMALLOC_ROXIE "Enable Threading Building Block scalable allocator proxy support in Roxie" OFF)
   endif()
   option(LOGGING_SERVICE "Configure use of logging service" ON)
+  option(WSSQL_SERVICE "Configure use of ws_sql service" ON)
 
   option(MAKE_CONFIGURATOR "Build Configurator" ON)
   option(CONFIGURATOR_LIB "Build Configurator static library (.a)" OFF)
