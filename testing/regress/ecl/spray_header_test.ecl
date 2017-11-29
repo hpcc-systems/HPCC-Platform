@@ -34,6 +34,8 @@ import ^ as root;
 
 isTerminated := #IFDEFINED(root.isTerminated, false);
 
+dropzonePath := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
+
 unsigned VERBOSE := 0;
 
 Layout := RECORD
@@ -51,14 +53,14 @@ header := DATASET([{'Id', 'Field1', 'Field2', 'Field3', 'Field4'}], Layout);
     // Create a one record CSV logical file with terminator a the end
     setupFile := output(header, , sprayPrepFileName, CSV, OVERWRITE);
 
-    desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input_terminated';
+    desprayOutFileName := dropzonePath + 'spray_input_terminated';
     sprayOutFileName := prefix + 'spray_test_terminated';
 #else
     sprayPrepFileName := prefix + 'spray_prep_not_terminated';
     // Create a one record CSV logical file without terminator a the end
     setupFile := output(header, , sprayPrepFileName, CSV(TERMINATOR('')), OVERWRITE);
 
-    desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input_not_terminated';
+    desprayOutFileName := dropzonePath + 'spray_input_not_terminated';
     sprayOutFileName := prefix + 'spray_test_not_terminated';
 #end
 

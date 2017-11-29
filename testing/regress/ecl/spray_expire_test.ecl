@@ -26,6 +26,9 @@ prefix := setup.Files(false, false).FilePrefix;
 //noThorLCR
 //noThor
 
+//class=spray
+
+dropzonePath := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
 
 unsigned VERBOSE := 0;
 
@@ -36,7 +39,7 @@ Layout_Person := RECORD
 END;
 
 sprayPrepFileName := prefix + 'spray_prep';
-desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input';
+desprayOutFileName := dropzonePath + 'spray_input';
 sprayOutFileName := prefix + 'spray_test';
 
 allPeople := DATASET([ {'foo', 10, 1},
@@ -128,8 +131,8 @@ expireDaysOut5 := 17;
 expireDaysIn5 := FileServices.GetLogicalFileAttribute(DestFile, 'expireDays');
 res5:=if(expireDaysIn5 = intformat(expireDaysOut5,2,0), 'Pass', 'Fail ('+intformat(expireDaysOut5,2,0)+','+expireDaysIn5+')');
 
-
 sequential (
+    //output(dropzonePath, NAMED('dropzonePath')),
     // Preparation
     setupCsv,
     setupXml,
@@ -137,7 +140,7 @@ sequential (
     desprayOutXml,
 
     // Spray tests
-      FileServices.SprayVariable(
+    FileServices.SprayVariable(
                         sourceIP := '.',
                         sourcePath := desprayOutFileName+'_CSV',
                         sourceMaxRecordSize :=8192,
@@ -218,3 +221,4 @@ sequential (
     FileServices.DeleteLogicalFile(sprayPrepFileName+'_CSV'),
     FileServices.DeleteLogicalFile(sprayPrepFileName+'_XML'),
 );
+

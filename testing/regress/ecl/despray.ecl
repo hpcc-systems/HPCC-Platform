@@ -20,7 +20,11 @@ prefix := setup.Files(false, false).IndexPrefix;
 
 //nothor
 
+//class=spray
+
 import Std.File AS FileServices;
+
+dropzonePath := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
 
 unsigned VERBOSE := 0;
 
@@ -72,7 +76,7 @@ end;
 
 
 // This should be fine based on valid target file path and SrcAddIp
-DestFile1 := '/var/lib/HPCCSystems/mydropzone/' + File;
+DestFile1 := dropzonePath + File;
 dst2 := NOFOLD(DATASET([{SourceFile, DestFile1, SrcAddrIp, True, '', ''}], rec));
 p2 := PROJECT(NOFOLD(dst2), t(LEFT));
 c2 := CATCH(NOFOLD(p2), ONFAIL(TRANSFORM(rec,
@@ -109,7 +113,7 @@ c3 := CATCH(NOFOLD(p3), ONFAIL(TRANSFORM(rec,
 
 
 // This should fail based on '/./' used in target path
-DestFile4 := '/var/lib/HPCCSystems/mydropzone/./' + File;
+DestFile4 := dropzonePath + './' + File;
 dst4 := NOFOLD(DATASET([{SourceFile, DestFile4, SrcAddrIp, True, '', ''}], rec));
 p4 := PROJECT(NOFOLD(dst4), t(LEFT));
 c4 := CATCH(NOFOLD(p4), ONFAIL(TRANSFORM(rec,
@@ -128,7 +132,7 @@ c4 := CATCH(NOFOLD(p4), ONFAIL(TRANSFORM(rec,
 
 
 // This should fail based on '/../' used in target path
-DestFile5 := '/var/lib/HPCCSystems/mydropzone/../' + File;
+DestFile5 := dropzonePath + '../' + File;
 dst5 := NOFOLD(DATASET([{SourceFile, DestFile5, SrcAddrIp, True, '', ''}], rec));
 p5 := PROJECT(NOFOLD(dst5), t(LEFT));
 c5 := CATCH(NOFOLD(p5), ONFAIL(TRANSFORM(rec,
@@ -207,7 +211,7 @@ c8 := CATCH(NOFOLD(p8), ONFAIL(TRANSFORM(rec,
 
 
 // This should pass based on valid target file path and valid source address used
-DestFile9 := '/var/lib/HPCCSystems/mydropzone/test/' + File;
+DestFile9 := dropzonePath + 'test/' + File;
 dst9 := NOFOLD(DATASET([{SourceFile, DestFile9, SrcAddrIp, True, '', ''}], rec));
 p9 := PROJECT(NOFOLD(dst9), t(LEFT));
 c9 := CATCH(NOFOLD(p9), ONFAIL(TRANSFORM(rec,
