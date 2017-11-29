@@ -6962,6 +6962,7 @@ void HqlCppTranslator::doBuildExprCast(BuildCtx & ctx, ITypeInfo * to, CHqlBound
             return;
         case type_unicode:
         case type_varunicode:
+        case type_utf8:
             if ((from->getTypeCode() == to->getTypeCode()) && (to->getSize() == UNKNOWN_LENGTH))
             {
                 tgt.set(pure);
