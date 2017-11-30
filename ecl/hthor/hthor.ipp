@@ -188,7 +188,7 @@ static bool verifyFormatCrcSuper(unsigned helperCrc, IDistributedFile * df, bool
 }
 
 #define IMPLEMENT_SINKACTIVITY \
-    virtual unsigned queryOutputs() { return 0; } \
+    virtual unsigned queryOutputs() const { return 0; } \
     virtual const void * nextRow() { throwUnexpected(); } \
     virtual bool isGrouped() { throwUnexpected(); } \
     virtual IOutputMetaData * queryOutputMeta() const   { throwUnexpected(); } 
@@ -223,7 +223,7 @@ public:
     virtual void resetEOF();
     virtual void setBoundGraph(IHThorBoundLoopGraph * graph) { UNIMPLEMENTED; }
     virtual __int64 getCount();
-    virtual unsigned queryOutputs() { return 1; }
+    virtual unsigned queryOutputs() const { return 1; }
     virtual void updateProgress(IStatisticGatherer &progress) const;
     virtual void updateProgressForOther(IStatisticGatherer &progress, unsigned otherActivity, unsigned otherSubgraph) const;
     unsigned __int64 queryProcessed() const { return processed; }

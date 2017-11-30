@@ -223,7 +223,8 @@ void CHThorActivityBase::resetEOF()
 
 void CHThorActivityBase::updateProgress(IStatisticGatherer &progress) const
 {
-    updateProgressForOther(progress, activityId, subgraphId);
+    if (queryOutputs()>0)
+        updateProgressForOther(progress, activityId, subgraphId);
     if (input)
         input->updateProgress(progress);
 }
