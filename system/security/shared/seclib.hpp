@@ -144,7 +144,7 @@ interface ISecCredentials : extends IInterface
     virtual const char * getPassword() = 0;
     virtual void setSessionToken(unsigned token) = 0;
     virtual unsigned getSessionToken() = 0;
-    virtual void setSignature(const char * const signature) = 0;
+    virtual void setSignature(const char * signature) = 0;
     virtual const char * getSignature() = 0;
     virtual bool setPasswordExpiration(CDateTime & expirationDate) = 0;
     virtual CDateTime & getPasswordExpiration(CDateTime & expirationDate) = 0;
