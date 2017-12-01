@@ -657,12 +657,6 @@
                 </row>
 
                 <row>
-                  <entry>--version &lt;ver&gt;</entry>
-
-                  <entry>ESDL service version</entry>
-                </row>
-
-                <row>
                   <entry>--help</entry>
 
                   <entry>display usage information for the given
