@@ -80,7 +80,6 @@ public:
         IOutputMetaData *diskRowMeta = queryDiskRowInterfaces()->queryRowMetaData()->querySerializedDiskMeta();
         isFixedDiskWidth = diskRowMeta->isFixedSize();
         diskRowMinSz = diskRowMeta->getMinRecordSize();
-        helper->createSegmentMonitors(this);
         recInfo = &diskRowMeta->queryRecordAccessor(true);
         numOffsets = recInfo->getNumVarFields() + 1;  // MORE - note max field used in segmonitors
         grouped = false;
@@ -116,7 +115,14 @@ public:
         else
             return NULL;
     }
-    
+
+    virtual void start()
+    {
+        CDiskReadSlaveActivityBase::start();
+        segMonitors.kill();
+        helper->createSegmentMonitors(this);
+    }
+
 friend class CDiskRecordPartHandler;
 };
 
@@ -380,7 +386,7 @@ public:
         virtual void getMetaInfo(ThorDataLinkMetaInfo &info, IPartDescriptor *partDesc)
         {
             CDiskRecordPartHandler::getMetaInfo(info, partDesc);
-            if (activity.helper->transformMayFilter() || activity.segMonitors.length())
+            if (activity.helper->transformMayFilter() || (TDRkeyed & activity.helper->getFlags()))
             {
                 info.totalRowsMin = 0; // all bets off! 
                 info.unknownRowsOutput = info.canReduceNumRows = true;
@@ -427,7 +433,7 @@ public:
         helper = (IHThorDiskReadArg *)queryHelper();
         unsorted = 0 != (TDRunsorted & helper->getFlags());
         grouped = 0 != (TDXgrouped & helper->getFlags());
-        needTransform = segMonitors.length() || helper->needTransform();
+        needTransform = helper->needTransform() || (TDRkeyed & helper->getFlags());
         appendOutputLinked(this);
     }
     ~CDiskReadSlaveActivity()
@@ -452,7 +458,6 @@ public:
         }
         if (grouped)
         {
-            needTransform = helper->needTransform();
             if (unsorted)
             {
                 Owned<IException> e = MakeActivityWarning(this, 0, "Diskread - ignoring 'unsorted' because marked 'grouped'");
