@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-#include "platform.h"
 
 #ifdef _WIN32
 // There's an issue with Python redefining ssize_t resulting in errors - hide their definition
@@ -26,6 +25,7 @@
 #include "Python.h"
 #endif
 
+#include "platform.h"
 #include "frameobject.h"
 #include "jexcept.hpp"
 #include "jthread.hpp"
