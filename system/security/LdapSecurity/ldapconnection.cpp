@@ -1493,7 +1493,7 @@ public:
                 filter.append("uid=");
             filter.append(username);
 
-            char* attrs[] = {"cn", "userAccountControl", "pwdLastSet", "givenName", "sn", "employeeNumber", "distinguishedName",NULL};
+            char* attrs[] = {"cn", "userAccountControl", "pwdLastSet", "givenName", "sn", "employeeId", "distinguishedName",NULL};
 
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* sys_ld = ((CLdapConnection*)lconn.get())->getLd();
@@ -1603,7 +1603,7 @@ public:
                         user.setPasswordExpiration(expiry);
                     }
                 }
-                else if(stricmp(attribute, "employeeNumber") == 0)
+                else if(stricmp(attribute, "employeeId") == 0)
                 {
                     CLDAPGetValuesLenWrapper vals(sys_ld, entry, attribute);
                     if (vals.hasValues())
@@ -2008,7 +2008,7 @@ public:
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
 
-            char        *attrs[] = {"cn", "givenName", "sn", "gidnumber", "uidnumber", "homedirectory", "loginshell", "objectClass", "employeeNumber", NULL};
+            char        *attrs[] = {"cn", "givenName", "sn", "gidnumber", "uidnumber", "homedirectory", "loginshell", "objectClass", "employeeId", NULL};
             CLDAPMessage searchResult;
             int rc = ldap_search_ext_s(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,   &searchResult.msg );
 
@@ -2057,7 +2057,7 @@ public:
                                 valind++;
                             }
                         }
-                        else if(stricmp(attribute, "employeeNumber") == 0)
+                        else if(stricmp(attribute, "employeeId") == 0)
                             user.setEmployeeID(vals.queryCharValue(0));
                     }
                 }
@@ -2427,7 +2427,7 @@ public:
             filter.appendf(")(|(%s=*%s*)(%s=*%s*)(%s=*%s*)))", act_fieldname, searchstr, "givenName", searchstr, "sn", searchstr);
         }
 
-        char *attrs[] = {act_fieldname, sid_fieldname, "cn", "userAccountControl", "pwdLastSet", "employeeNumber", NULL};
+        char *attrs[] = {act_fieldname, sid_fieldname, "cn", "userAccountControl", "pwdLastSet", "employeeId", NULL};
 
         CPagedLDAPSearch pagedSrch(ld, m_ldapconfig->getLdapTimeout(), (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs);
         for (message = pagedSrch.getFirstEntry(); message; message = pagedSrch.getNextEntry())
@@ -2506,7 +2506,7 @@ public:
                             ((CLdapSecUser*)user.get())->setUserID(atoi(vals.queryCharValue(0)));
                     }
                 }
-                else if(stricmp(attribute, "employeeNumber") == 0)
+                else if(stricmp(attribute, "employeeId") == 0)
                 {
                     CLDAPGetValuesLenWrapper vals(ld, message, attribute);
                     if (vals.hasValues())
@@ -2698,7 +2698,7 @@ public:
             LDAPMod employeeID_attr =
             {
                 LDAP_MOD_REPLACE,
-                "employeeNumber",
+                "employeeId",
                 employeeID_values
             };
 
@@ -5895,7 +5895,7 @@ private:
         LDAPMod employeeID_attr =
         {
             LDAP_MOD_ADD,
-            "EmployeeNumber",
+            "employeeId",
             employeeID_values
         };
 
