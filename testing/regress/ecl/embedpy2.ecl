@@ -93,6 +93,16 @@ set of data testSet9(set of data val) := EMBED(Python)
 return val
 ENDEMBED;
 
+real8 realdivide(integer v1, integer v2) := EMBED(Python)
+from __future__ import division
+return v1/v2
+ENDEMBED;
+
+unsigned8 truncdivide(integer v1, integer v2) := EMBED(Python)
+return v1/v2
+ENDEMBED;
+
+
 add1(10);
 add2('Hello');
 add3('World');
@@ -102,6 +112,8 @@ add6(U'Oh là là Straße');
 add7(U'Стоял');
 
 add2('Oh là là Straße');  // Passing latin chars - should be untranslated
+realdivide(3,2);
+truncdivide(3,2);
 
 testData(D'aa');
 testSet([1,3,2]);
