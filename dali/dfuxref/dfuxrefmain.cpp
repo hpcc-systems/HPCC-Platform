@@ -40,6 +40,8 @@ void usage(const char *progname)
 {
     printf("usage DFUXREF <dali-server> /c:<cluster-name> /d:<dir-name> [ /backupcheck ] \n");
     printf("or    DFUXREF <dali-server> /e:<cluster-name>  -- updates ECLwatch information\n");
+    printf("or    DFUXREF <dali-server> /lf:<cluster-name> [file-pattern] -- lists matching found files on cluster\n");
+    printf("or    DFUXREF <dali-server> /af:<cluster-name> [/u:username /p:password] [/y] [file-pattern] -- attach matching found files on cluster\n");
 }
 
 int main(int argc, char* argv[])
@@ -72,60 +74,130 @@ int main(int argc, char* argv[])
     ep.set(argv[1],DALI_SERVER_PORT);
     epa.append(ep);
     Owned<IGroup> group = createIGroup(epa); 
-    try {
+    try
+    {
         initClientProcess(group,DCR_Dfu);
         setPasswordsFromSDS();
-        unsigned ndirs = 0;
-        unsigned nclusters = 0;
-        const char **dirs = (const char **)malloc(argc*sizeof(const char *));
-        const char **clusters = (const char **)malloc(argc*sizeof(const char *));
+        StringArray args, clusters;
         bool backupcheck = false;
         unsigned mode = PMtextoutput|PMcsvoutput|PMtreeoutput;
-        for (i=2;i<(unsigned)argc;i++) {
-            if (argv[i][0]=='/') {
-                if (stricmp(argv[i],"/backupcheck")==0) {
+        const char *listMask = nullptr;
+        StringAttr username, password;
+        bool confirmed = false;
+        XRefCmd xrefCmd = xrefNulCmd;
+
+        for (i=2;i<(unsigned)argc;i++)
+        {
+            if (argv[i][0]=='/')
+            {
+                if (stricmp(argv[i],"/backupcheck")==0)
                     mode = PMbackupoutput;
+                else if (hasPrefix(argv[i], "/lf:", false))
+                {
+                    if (xrefCmd != xrefNulCmd)
+                        break;
+                    xrefCmd = xrefListFound;
+                    const char *arg = argv[i]+4;
+                    clusters.append(arg);
                 }
-                else  {
+                else if (hasPrefix(argv[i], "/af:", false))
+                {
+                    if (xrefCmd != xrefNulCmd)
+                        break;
+                    xrefCmd = xrefAttachFound;
+                    const char *arg = argv[i]+4;
+                    clusters.append(arg);
+                }
+                else
+                {
                     const char *arg="";
                     unsigned ni=i;
-                    if (argv[i][1]&&(argv[i][2]==':')) {
+                    if (argv[i][1]&&(argv[i][2]==':'))
                         arg = argv[i]+3;
-                    }
-                    else  if ((i+1<(unsigned)argc)&&argv[i+1][0]) {
+                    else if ((i+1<(unsigned)argc)&&(argv[i+1][0] != '/'))
+                    {
                         ni++;
                         arg = argv[ni];
                     }
-                    switch (toupper(argv[i][1])) {
+                    switch (toupper(argv[i][1]))
+                    {
                     case 'E':
-                        // fall through
-                        mode = PMtextoutput|PMupdateeclwatch;
+                        mode = PMtextoutput;
+                        if (xrefCmd != xrefNulCmd)
+                            break;
+                        xrefCmd = xrefUpdate;
+                        clusters.append(arg);
+                        break;
                     case 'C':
-                        clusters[nclusters++] = arg;
+                        if (xrefCmd != xrefNulCmd)
+                            break;
+                        xrefCmd = xrefScan;
+                        clusters.append(arg);
                         break;
                     case 'D':
-                        dirs[ndirs++] = arg;
+                        if ((xrefCmd != xrefScan))
+                            break;
+                        args.append(arg);
+                        break;
+                    case 'U':
+                        username.set(arg);
+                        break;
+                    case 'P':
+                        password.set(arg);
+                        break;
+                    case 'Y':
+                        confirmed = true;
                         break;
                     default:
-                        ni = argc;
-                        nclusters = 0;
+                        break;
                     }
                     i = ni;
                 }
             }
+            else
+                args.append(argv[i]);
         }
 
-        if (nclusters==0)
+        if (clusters.ordinality()==0 || xrefCmd == xrefNulCmd)
             usage(argv[0]);
-        else {
-            DBGLOG("Starting%s",cmdline.str());
-            IPropertyTree * pReturnTree = RunProcess(nclusters,clusters,ndirs,dirs,mode,NULL,4);
-            if (pReturnTree) {
-                saveXML("dfutree.xml",pReturnTree);
+        else
+        {
+            Owned<IUserDescriptor> userDesc;
+            if (username)
+            {
+                userDesc.setown(createUserDescriptor());
+                userDesc->set(username, password);
+                queryDistributedFileDirectory().setDefaultUser(userDesc);
             }
+            if (xrefAttachFound == xrefCmd)
+            {
+                const char *match = "*"; // default
+                if (args.ordinality())
+                    match = args.item(0);
+                PROGLOG("This will re-attach all found file matching: %s", match);
+                int ch;
+                if (!confirmed)
+                {
+                    PROGLOG("Are you sure? [Y/N]");
+                    do
+                    {
+                        ch = toupper(ch = getchar());
+                    } while (ch != 'Y' && ch != 'N');
+                    PROGLOG("%c",ch);
+                    if (ch == 'Y')
+                        confirmed = true;
+                }
+                if (!confirmed)
+                    throw MakeStringException(0, "Aborted");
+            }
+            DBGLOG("Starting%s",cmdline.str());
+            IPropertyTree * pReturnTree = RunProcess(xrefCmd, clusters.ordinality(), clusters.getArray(), args.ordinality(), args.getArray(), mode, NULL, 4);
+            if (pReturnTree)
+                saveXML("dfutree.xml",pReturnTree);
         }
     }
-    catch (IException *e) {
+    catch (IException *e)
+    {
         pexception("Exception",e);
         e->Release();
     }
