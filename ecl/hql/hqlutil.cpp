@@ -9648,7 +9648,7 @@ void getFieldTypeInfo(FieldTypeInfoStruct &out, ITypeInfo *type)
         }
         else
         {
-            out.fieldType |= (RFTMalien|RFTMinvalidxml|RFTMnoserialize|RFTMnoprefetch);
+            out.fieldType |= (RFTMalien|RFTMinvalidxml|RFTMnoserialize);
             out.fieldType |= RFTMunknownsize;
             //can't work out the size of the field - so keep it as unknown for the moment.
             //until the alien field type is supported
@@ -9799,11 +9799,14 @@ void getFieldTypeInfo(FieldTypeInfoStruct &out, ITypeInfo *type)
         out.locale = str(type->queryLocale());
         out.length = type->getStringLen();
         break;
+    case type_alien:
+        out.className = "RtlAlienTypeInfo";
+        out.fieldType |= (RFTMcontainsunknown|RFTMinvalidxml|RFTMnoserialize);
+        break;
     case type_pointer:
     case type_class:
     case type_array:
     case type_void:
-    case type_alien:
     case type_none:
     case type_any:
     case type_pattern:
@@ -9815,9 +9818,8 @@ void getFieldTypeInfo(FieldTypeInfoStruct &out, ITypeInfo *type)
     case type_scope:
     case type_transform:
     default:
-        out.className = "RtlUnimplementedTypeInfo";
-        out.fieldType |= (RFTMcontainsunknown|RFTMinvalidxml|RFTMnoserialize|RFTMnoprefetch);
-        break;
+        //Type information should not be generated for records containing any of the types above.
+        throwUnexpected();
     }
 }
 
@@ -9836,7 +9838,7 @@ unsigned buildRtlRecordFields(IRtlFieldTypeDeserializer &deserializer, unsigned 
         switch (field->getOperator())
         {
         case no_ifblock:
-            typeFlags |= (RFTMunknownsize|RFTMnoprefetch);
+            typeFlags |= (RFTMunknownsize);
             break;
         case no_field:
         {
@@ -9967,6 +9969,12 @@ const RtlTypeInfo *buildRtlType(IRtlFieldTypeDeserializer &deserializer, ITypeIn
     case type_keyedint:
         info.childType = buildRtlType(deserializer, type->queryChildType());
         break;
+    case type_alien:
+    {
+        ITypeInfo * physicalType = queryAlienType(type)->queryPhysicalType();
+        info.childType = buildRtlType(deserializer, physicalType);
+        break;
+    }
     }
     if (info.childType)
         info.fieldType |= info.childType->fieldType & RFTMinherited;

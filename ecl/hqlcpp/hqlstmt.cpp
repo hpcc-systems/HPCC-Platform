@@ -1602,7 +1602,7 @@ private:
 
 //Always convert rtlWriteInt(rtlReadInt()) the inline memcpy is going to be much better.
 //It should probably be converted earlier....
-bool isAwkwardIntSize(IHqlExpression * size)
+static bool isAwkwardIntSize(IHqlExpression * size)
 {
     IValue * value = size->queryValue();
     if (value)
@@ -1619,6 +1619,19 @@ bool isAwkwardIntSize(IHqlExpression * size)
     return false;
 }
 
+static bool isConstOrVar(IHqlExpression * expr)
+{
+    switch (expr->getOperator())
+    {
+    case no_constant:
+    case no_variable:
+        return true;
+    case no_add:
+    case no_mul:
+        return isConstOrVar(expr->queryChild(0)) && isConstOrVar(expr->queryChild(1));
+    }
+    return false;
+}
 
 bool SpecialFunction::canOptimize() const
 {
@@ -1966,6 +1979,9 @@ bool SpecialFunction::queryCombine(const SpecialFunction & next, bool memsetOnly
     if (name == deserializerSkipNId)
     {
         if (src != next.src)
+            return false;
+        //Only combine skips which are constants, or variables explicitly read from the file - not expressions that may be dependent on querySelf()
+        if (!isConstOrVar(srcLen) || !isConstOrVar(next.srcLen))
             return false;
         srcLen.setown(peepholeAddExpr(srcLen, next.srcLen));
         return true;

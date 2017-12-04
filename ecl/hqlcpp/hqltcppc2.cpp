@@ -264,8 +264,7 @@ void CColumnInfo::buildDeserializeToBuilder(HqlCppTranslator & translator, Build
     BuildCtx loopctx(ctx);
     buildDeserializeChildLoop(translator, loopctx, selector, helper, serializeForm);
 
-    BoundRow * selfRow = builder->buildDeserializeRow(loopctx, helper, serializeForm);
-    builder->finishRow(loopctx, selfRow);
+    builder->buildDeserializeRow(loopctx, helper, serializeForm);
 }
 
 
@@ -526,13 +525,15 @@ bool CChildLimitedDatasetColumnInfo::buildReadAhead(HqlCppTranslator & translato
             OwnedHqlExpr test = createValue(no_postdec, LINK(bound.expr));
             loopctx.addLoop(test, NULL, false);
 
+            StringBuffer helperCpp;
+            translator.generateExprCpp(helperCpp, state.helper);
             StringBuffer prefetcherInstanceName;
             translator.ensureRowPrefetcher(prefetcherInstanceName, ctx, column->queryRecord());
             
             StringBuffer s;
-            s.append(prefetcherInstanceName).append("->readAhead(");
-            translator.generateExprCpp(s, state.helper).append(");");
-            loopctx.addQuoted(s);
+            loopctx.addQuoted(s.clear().append(helperCpp).append(".noteStartChild();"));
+            loopctx.addQuoted(s.clear().append(prefetcherInstanceName).append("->readAhead(").append(helperCpp).append(");"));
+            loopctx.addQuoted(s.clear().append(helperCpp).append(".noteFinishChild();"));
             return true;
         }
     }

@@ -9,31 +9,34 @@
 
 //The CThorContiguousRowBuffer is the source for a readAhead call to ensure the entire row
 //is in a contiguous block of memory.  The read() and skip() functions must be implemented
-class ECLRTL_API CThorContiguousRowBuffer : implements IRowDeserializerSource
+class ECLRTL_API CThorContiguousRowBuffer : implements IRowPrefetcherSource
 {
 public:
     CThorContiguousRowBuffer(ISerialStream * _in);
 
     inline void setStream(ISerialStream *_in) { in.set(_in); maxOffset = 0; readOffset = 0; }
 
-    virtual const byte * peek(size32_t maxSize);
-    virtual offset_t beginNested();
-    virtual bool finishedNested(offset_t & len);
+    virtual const byte * peek(size32_t maxSize) override;
+    virtual offset_t beginNested() override;
+    virtual bool finishedNested(offset_t & len) override;
 
-    virtual size32_t read(size32_t len, void * ptr);
-    virtual size32_t readSize();
-    virtual size32_t readPackedInt(void * ptr);
-    virtual size32_t readUtf8(ARowBuilder & target, size32_t offset, size32_t fixedSize, size32_t len);
-    virtual size32_t readVStr(ARowBuilder & target, size32_t offset, size32_t fixedSize);
-    virtual size32_t readVUni(ARowBuilder & target, size32_t offset, size32_t fixedSize);
+    virtual size32_t read(size32_t len, void * ptr) override;
+    virtual size32_t readSize() override;
+    virtual size32_t readPackedInt(void * ptr) override;
+    virtual size32_t readUtf8(ARowBuilder & target, size32_t offset, size32_t fixedSize, size32_t len) override;
+    virtual size32_t readVStr(ARowBuilder & target, size32_t offset, size32_t fixedSize) override;
+    virtual size32_t readVUni(ARowBuilder & target, size32_t offset, size32_t fixedSize) override;
 
-    //These shouldn't really be called since this class is meant to be used for a deserialize.
-    //If we allowed padding/alignment fields in the input then the first function would make sense.
-    virtual void skip(size32_t size);
-    virtual void skipPackedInt();
-    virtual void skipUtf8(size32_t len);
-    virtual void skipVStr();
-    virtual void skipVUni();
+    //The following functions should only really be called when used by the readAhead() function
+    virtual void skip(size32_t size) override;
+    virtual void skipPackedInt() override;
+    virtual void skipUtf8(size32_t len) override;
+    virtual void skipVStr() override;
+    virtual void skipVUni() override;
+
+    virtual const byte * querySelf() override;
+    virtual void noteStartChild() override;
+    virtual void noteFinishChild() override;
 
     inline bool eos()
     {
@@ -92,6 +95,7 @@ protected:
     const byte * buffer;
     size32_t maxOffset;
     size32_t readOffset;
+    UnsignedArray childStartOffsets;
 };
 
 #endif

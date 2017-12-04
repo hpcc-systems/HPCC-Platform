@@ -76,9 +76,9 @@ public:
     inline CSourceRowPrefetcher(unsigned _activityId) { activityId = _activityId; ctx = NULL; }
     RTLIMPLEMENT_IINTERFACE
 
-    inline void onCreate(ICodeContext * _ctx) { ctx = _ctx; }
+    virtual void onCreate(ICodeContext * _ctx) { ctx = _ctx; }
 
-    virtual void readAhead(IRowDeserializerSource & in) override = 0;
+    virtual void readAhead(IRowPrefetcherSource & in) override = 0;
 
 protected:
     ICodeContext * ctx;
@@ -113,7 +113,7 @@ class CFixedSourceRowPrefetcher : public CSourceRowPrefetcher
 public:
     inline CFixedSourceRowPrefetcher(unsigned _activityId, unsigned _fixedSize) : CSourceRowPrefetcher(_activityId) { fixedSize = _fixedSize; }
 
-    virtual void readAhead(IRowDeserializerSource & in) { in.skip(fixedSize); }
+    virtual void readAhead(IRowPrefetcherSource & in) { in.skip(fixedSize); }
 
 protected:
     size32_t fixedSize;
@@ -220,10 +220,11 @@ public:
         return getOffset(variableOffsets, numFields);
     }
     size32_t getRecordSize(const void *data) const;
+    size32_t calculateOffset(const void *_row, unsigned field) const;
 
     size32_t getMinRecordSize() const;
     size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in) const;
-    void readAhead(IRowDeserializerSource & in) const;
+    void readAhead(IRowPrefetcherSource & in) const;
 
     inline unsigned getNumFields() const { return numFields; }
     unsigned getNumKeyedFields() const;

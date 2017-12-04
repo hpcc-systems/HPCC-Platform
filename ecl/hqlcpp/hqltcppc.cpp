@@ -1385,24 +1385,14 @@ void CIfBlockInfo::buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx,
     CContainerInfo::buildSerialize(translator, condctx, selector, helper, serializeForm);
 }
 
-bool CIfBlockInfo::prepareReadAhead(HqlCppTranslator & translator, ReadAheadState & state)
-{
-    gatherSelectExprs(state.requiredValues, condition);
-    return CContainerInfo::prepareReadAhead(translator, state);
-}
-
 bool CIfBlockInfo::buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, ReadAheadState & state)
 {
     try
     {
-        OwnedHqlExpr mappedCondition = quickFullReplaceExpressions(condition, state.requiredValues, state.mappedValues);
-        //Early check to see if all the values have been mapped, rather than relying on exception processing.
-        if (!containsSelector(mappedCondition, queryRootSelf()))
-        {
-            BuildCtx condctx(ctx);
-            translator.buildFilter(condctx, mappedCondition);
-            return CContainerInfo::buildReadAhead(translator, condctx, state);
-        }
+        OwnedHqlExpr mappedCondition = state.selector->queryRootRow()->bindToRow(condition, queryRootSelf());
+        BuildCtx condctx(ctx);
+        translator.buildFilter(condctx, mappedCondition);
+        return CContainerInfo::buildReadAhead(translator, condctx, state);
     }
     catch (IException * e)
     {
@@ -2186,6 +2176,7 @@ IHqlExpression * CAlienColumnInfo::doBuildSizeOfUnbound(HqlCppTranslator & trans
 
     BoundRow * cursor = selector->queryRootRow();
     IHqlExpression * lengthAttr = alien->queryLengthFunction();
+
     if (!lengthAttr->isFunctionDefinition())
     {
         OwnedHqlExpr absoluteLength = replaceSelector(lengthAttr, querySelfReference(), self);
@@ -2229,14 +2220,13 @@ void CAlienColumnInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx 
     doBuildDeserialize(translator, ctx, selector, helper, boundSize.expr);
 }
 
-bool CAlienColumnInfo::prepareReadAhead(HqlCppTranslator & translator, ReadAheadState & state)
-{
-    return false;  // too complicated to do safetly.  It really needs a rethink...
-}
-
 bool CAlienColumnInfo::buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, ReadAheadState & state)
 {
-    throwUnexpected();
+    OwnedHqlExpr skipSize = doBuildSizeOfUnbound(translator, ctx, state.selector, state.helper);
+    CHqlBoundExpr boundSize;
+    translator.buildExpr(ctx, skipSize, boundSize);
+    callDeserializerSkipInputTranslatedSize(translator, ctx, state.helper, boundSize.expr);
+    return true;
 }
 
 void CAlienColumnInfo::gatherSize(SizeStruct & target)
@@ -3157,11 +3147,11 @@ CMemberInfo * ColumnToOffsetMap::addColumn(CContainerInfo * container, IHqlExpre
 }
 
 
-bool ColumnToOffsetMap::buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * helper)
+bool ColumnToOffsetMap::buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper)
 {
     //prepare() allows Ifblock and a count/size on a dataset to tag the fields they depend on which need to be read.
     //The fallback (implemented in base class) is to call deserialize on a temporary row instead.  Ugly, but better than failing.
-    ReadAheadState state(helper);
+    ReadAheadState state(selector, helper);
     if (queryRootColumn()->prepareReadAhead(translator, state))
     {
         state.addDummyMappings();

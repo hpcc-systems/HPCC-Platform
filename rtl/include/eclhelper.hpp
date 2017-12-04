@@ -291,11 +291,19 @@ interface IRowDeserializerSource
     virtual size32_t readVStr(ARowBuilder & target, size32_t offset, size32_t fixedSize) = 0;
     virtual size32_t readVUni(ARowBuilder & target, size32_t offset, size32_t fixedSize) = 0;
 
+    //Generally called from a prefetcher rather than a deserializer, but could be called from a deserializer that also removed fields.
     virtual void skip(size32_t size) = 0;
     virtual void skipPackedInt() = 0;
     virtual void skipUtf8(size32_t len) = 0;
     virtual void skipVStr() = 0;
     virtual void skipVUni() = 0;
+};
+
+interface IRowPrefetcherSource : extends IRowDeserializerSource
+{
+    virtual const byte * querySelf() = 0; // What is the address of the start of the row being prefetched (or nested dataset)
+    virtual void noteStartChild() = 0;  // start of reading a child row - ensure that querySelf() refers to the child row
+    virtual void noteFinishChild() = 0; // called when finished reading a child row.
 };
 
 interface IOutputRowSerializer : public IInterface
@@ -313,7 +321,7 @@ public:
 interface ISourceRowPrefetcher : public IInterface
 {
 public:
-    virtual void readAhead(IRowDeserializerSource & in) = 0;
+    virtual void readAhead(IRowPrefetcherSource & in) = 0;
 };
 
 //This version number covers adding new functions into the metadata interface, and the serialized field/type information
@@ -351,13 +359,12 @@ enum RtlFieldTypeMask
     RFTMhasXpath            = 0x00800000,                   // field has xpath
     RFTMhasInitializer      = 0x01000000,                   // field has initialzer
 
-    RFTMnoprefetch          = 0x08000000,                   // readahead function cannot be derived for this field/record
     RFTMcontainsunknown     = 0x10000000,                   // contains a field of unknown type that we can't process properly
     RFTMinvalidxml          = 0x20000000,                   // cannot be called to generate xml
     RFTMhasxmlattr          = 0x40000000,                   // if specified, then xml output includes an attribute (recursive)
     RFTMnoserialize         = 0x80000000,                   // cannot serialize this typeinfo structure (contains aliens or other nasties)
 
-    RFTMinherited           = (RFTMnoprefetch|RFTMcontainsunknown|RFTMinvalidxml|RFTMhasxmlattr|RFTMnoserialize)    // These flags are recursively set on any parent records too
+    RFTMinherited           = (RFTMcontainsunknown|RFTMinvalidxml|RFTMhasxmlattr|RFTMnoserialize)    // These flags are recursively set on any parent records too
 };
 
 //MORE: Can we provide any more useful information about ifblocks  E.g., a pseudo field?  We can add later if actually useful.
@@ -388,7 +395,7 @@ interface RtlITypeInfo
     virtual double getReal(const void * ptr) const = 0;
     virtual size32_t getMinSize() const = 0;
     virtual size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in, size32_t offset) const = 0;
-    virtual void readAhead(IRowDeserializerSource & in) const = 0;
+    virtual void readAhead(IRowPrefetcherSource & in) const = 0;
     virtual int compare(const byte * left, const byte * right) const = 0;
     virtual unsigned hash(const byte * left, unsigned inHash) const = 0;
 protected:
@@ -403,7 +410,6 @@ struct RtlTypeInfo : public RtlITypeInfo
 
 // Some inline helper functions to avoid having to interpret the flags.
     inline bool canSerialize() const { return (fieldType & RFTMnoserialize) == 0; }
-    inline bool canPrefetch() const { return (fieldType & RFTMnoprefetch) == 0; }
     inline bool isEbcdic() const { return (fieldType & RFTMebcdic) != 0; }
     inline bool isFixedSize() const { return (fieldType & RFTMunknownsize) == 0; }
     inline bool isLinkCounted() const { return (fieldType & RFTMlinkcounted) != 0; }

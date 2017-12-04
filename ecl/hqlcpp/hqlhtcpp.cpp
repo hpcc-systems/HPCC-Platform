@@ -3558,11 +3558,14 @@ bool HqlCppTranslator::buildMetaPrefetcherClass(BuildCtx & ctx, IHqlExpression *
     OwnedHqlExpr dataset = createDataset(no_null, LINK(record));
     bool ok;
     {
-        MemberFunction func(*this, prefetcher.startctx, "virtual void readAhead(IRowDeserializerSource & in) override");
+        MemberFunction func(*this, prefetcher.startctx, "virtual void readAhead(IRowPrefetcherSource & in) override");
+        BoundRow * row = bindTableCursor(func.ctx, dataset, "in.querySelf()", false, no_self, NULL);
         OwnedHqlExpr helper = createVariable("in", makeBoolType());
 
-        ok = queryRecordOffsetMap(record, false)->buildReadAhead(*this, func.ctx, helper);
+        Owned<IReferenceSelector> selector = buildActiveRow(func.ctx, row->querySelector());
+        ok = queryRecordOffsetMap(record, false)->buildReadAhead(*this, func.ctx, selector, helper);
     }
+
 
     if (ok)
     {
@@ -3803,7 +3806,7 @@ unsigned HqlCppTranslator::buildRtlIfBlockField(StringBuffer & instanceName, IHq
     BuildCtx declarectx(*code, declareAtom);
 
     //First generate a pseudo type entry for an ifblock.
-    unsigned fieldType = type_ifblock|RFTMunknownsize|RFTMnoprefetch;
+    unsigned fieldType = type_ifblock|RFTMunknownsize;
     {
         unsigned length = 0;
         StringBuffer childTypeName;
@@ -3980,6 +3983,10 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
     case type_varunicode:
     case type_utf8:
         arguments.append(", \"").append(info.locale).append("\"").toLowerCase();
+        break;
+    case type_alien:
+        arguments.append(",&");
+        childType = buildRtlType(arguments, queryAlienType(type)->queryPhysicalType());
         break;
     }
     info.fieldType |= (childType & RFTMinherited);
