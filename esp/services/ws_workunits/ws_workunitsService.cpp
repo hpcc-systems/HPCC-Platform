@@ -2119,7 +2119,7 @@ void doWULightWeightQueryWithSort(IEspContext &context, IEspWULightWeightQueryRe
 class CArchivedWUsReader : public CInterface, implements IArchivedWUsReader
 {
     IEspContext& context;
-    unsigned pageFrom, pageSize;
+    unsigned pageSize;
     StringAttr sashaServerIP;
     unsigned sashaServerPort;
     unsigned cacheMinutes;
@@ -2137,7 +2137,7 @@ class CArchivedWUsReader : public CInterface, implements IArchivedWUsReader
             timeTo.setString(endDateReq, NULL, true);
             timeTo.getDate(year, month, day, true);
             timeTo.getTime(hour, minute, second, nano, true);
-            to.setf("%4d%02d%02d%02d%02d%02d", year, month, day, hour, minute, second);
+            to.setf("%4d%02d%02d-%02d%02d%02d", year, month, day, hour, minute, second);
         }
 
         if(isEmpty(startDateReq))
@@ -2150,7 +2150,7 @@ class CArchivedWUsReader : public CInterface, implements IArchivedWUsReader
         unsigned year0, month0, day0, hour0, minute0, second0, nano0;
         timeFrom.getDate(year0, month0, day0, true);
         timeFrom.getTime(hour0, minute0, second0, nano0, true);
-        from.setf("%4d%02d%02d%02d%02d%02d", year0, month0, day0, hour0, minute0, second0);
+        from.setf("%4d%02d%02d-%02d%02d%02d", year0, month0, day0, hour0, minute0, second0);
         return;
     }
 
@@ -2180,7 +2180,9 @@ class CArchivedWUsReader : public CInterface, implements IArchivedWUsReader
         addToFilterString("state", req.getState());
         addToFilterString("timeFrom", req.getStartDate());
         addToFilterString("timeTo", req.getEndDate());
-        addToFilterString("pageStart", pageFrom);
+        addToFilterString("beforeWU", req.getBeforeWU());
+        addToFilterString("afterWU", req.getAfterWU());
+        addToFilterString("descending", req.getDescending());
         addToFilterString("pageSize", pageSize);
         if (sashaServerIP && *sashaServerIP)
         {
@@ -2199,7 +2201,9 @@ class CArchivedWUsReader : public CInterface, implements IArchivedWUsReader
         addToFilterString("state", req.getState());
         addToFilterString("timeFrom", req.getStartDate());
         addToFilterString("timeTo", req.getEndDate());
-        addToFilterString("pageStart", pageFrom);
+        addToFilterString("beforeWU", req.getBeforeWU());
+        addToFilterString("afterWU", req.getAfterWU());
+        addToFilterString("descending", req.getDescending());
         addToFilterString("pageSize", pageSize);
         if (sashaServerIP && *sashaServerIP)
         {
@@ -2214,7 +2218,6 @@ class CArchivedWUsReader : public CInterface, implements IArchivedWUsReader
         cmd->setOutputFormat("owner,jobname,cluster,state");
         cmd->setOnline(false);
         cmd->setArchived(true);
-        cmd->setStart(pageFrom);
         cmd->setLimit(pageSize+1); //read an extra WU to check hasMoreWU
     }
 
@@ -2237,6 +2240,11 @@ class CArchivedWUsReader : public CInterface, implements IArchivedWUsReader
             cmd->setAfter(timeFrom.str());
         if (timeTo.length())
             cmd->setBefore(timeTo.str());
+        if (notEmpty(req.getBeforeWU()))
+            cmd->setBeforeWU(req.getBeforeWU());
+        if (notEmpty(req.getAfterWU()))
+            cmd->setAfterWU(req.getAfterWU());
+        cmd->setSortDescending(req.getDescending());
         return;
     }
 
@@ -2259,6 +2267,11 @@ class CArchivedWUsReader : public CInterface, implements IArchivedWUsReader
             cmd->setAfter(timeFrom.str());
         if (timeTo.length())
             cmd->setBefore(timeTo.str());
+        if (notEmpty(req.getBeforeWU()))
+            cmd->setBeforeWU(req.getBeforeWU());
+        if (notEmpty(req.getAfterWU()))
+            cmd->setAfterWU(req.getAfterWU());
+        cmd->setSortDescending(req.getDescending());
 
         return;
     }
@@ -2327,9 +2340,9 @@ public:
     IMPLEMENT_IINTERFACE_USING(CInterface);
 
     CArchivedWUsReader(IEspContext& _context, const char* _sashaServerIP, unsigned _sashaServerPort, ArchivedWuCache& _archivedWuCache,
-        unsigned _cacheMinutes, unsigned _pageFrom, unsigned _pageSize)
+        unsigned _cacheMinutes, unsigned _pageSize)
         : context(_context), sashaServerIP(_sashaServerIP), sashaServerPort(_sashaServerPort),
-        archivedWuCache(_archivedWuCache), cacheMinutes(_cacheMinutes), pageFrom(_pageFrom), pageSize(_pageSize)
+        archivedWuCache(_archivedWuCache), cacheMinutes(_cacheMinutes), pageSize(_pageSize)
     {
         hasMoreWU = false;
         numberOfWUsReturned = 0;
@@ -2418,10 +2431,6 @@ public:
                 archivedLWWUs.append(*info.getClear());
             }
         }
-        if (!lightWeight)
-            archivedWUs.sort(compareWuids);
-        else
-            archivedLWWUs.sort(compareLWWuids);
 
         archivedWuCache.add(filterStr, "AddWhenAvailable", hasMoreWU, numberOfWUsReturned, archivedWUs, archivedLWWUs);
         return;
@@ -2434,12 +2443,12 @@ public:
 void doWUQueryFromArchive(IEspContext &context, const char* sashaServerIP, unsigned sashaServerPort,
        ArchivedWuCache &archivedWuCache, unsigned cacheMinutes, IEspWUQueryRequest & req, IEspWUQueryResponse & resp)
 {
-    unsigned pageStart = (unsigned) req.getPageStartFrom();
+    //Sasha server does noy support the PageStartFrom due to inefficient access to archived workunits for pages>1.
     unsigned pageSize = (unsigned) req.getPageSize();
     if(pageSize < 1)
         pageSize=500;
     Owned<IArchivedWUsReader> archiveWUsReader = new CArchivedWUsReader(context, sashaServerIP, sashaServerPort, archivedWuCache,
-        cacheMinutes, pageStart, pageSize);
+        cacheMinutes, pageSize);
 
     IArrayOf<IEspECLWorkunit> archivedWUs;
     IArrayOf<IEspECLWorkunitLW> dummyWUs;
@@ -2453,29 +2462,15 @@ void doWUQueryFromArchive(IEspContext &context, const char* sashaServerIP, unsig
 
     resp.setType("archived only");
     resp.setPageSize(pageSize);
-    resp.setPageStartFrom(pageStart+1);
-    resp.setPageEndAt(pageStart + archiveWUsReader->getNumberOfWUsReturned());
-    if(pageStart > 0)
-    { //This is not the first page;
-        resp.setFirst(false);
-        resp.setPrevPage((pageStart > pageSize) ? pageStart - pageSize: 0);
-    }
-    if (archiveWUsReader->getHasMoreWU())
-        resp.setNextPage(pageStart + pageSize);
     return;
 }
 
 void doWULightWeightQueryFromArchive(IEspContext &context, const char* sashaServerIP, unsigned sashaServerPort,
        ArchivedWuCache &archivedWuCache, unsigned cacheMinutes, IEspWULightWeightQueryRequest & req, IEspWULightWeightQueryResponse & resp)
 {
-    int pageStart = 0;
-    int pageSize=500;
-    if (!req.getPageStartFrom_isNull())
-        pageStart = req.getPageStartFrom();
-    if (!req.getPageSize_isNull())
-        pageSize = req.getPageSize();
+    int pageSize = req.getPageSize_isNull()? 500 : req.getPageSize();
     Owned<IArchivedWUsReader> archiveWUsReader = new CArchivedWUsReader(context, sashaServerIP, sashaServerPort, archivedWuCache,
-        cacheMinutes, pageStart, pageSize);
+        cacheMinutes, pageSize);
     Owned<CWUQueryRequest> dummyReq = new CWUQueryRequest("WsWorkunits");
     IArrayOf<IEspECLWorkunit> dummyWUs;
     IArrayOf<IEspECLWorkunitLW> archivedWUs;
