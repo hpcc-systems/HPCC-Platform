@@ -406,7 +406,10 @@ public:
         }
         else
         {
-            if (memcmp(keyData,activeNode->getLastKeyValue(),keyedSize)==0)
+            int cmp = memcmp(keyData,activeNode->getLastKeyValue(),keyedSize);
+            if (cmp<0)
+                throw MakeStringException(JHTREE_KEY_NOT_SORTED, "Unable to build index - dataset not sorted in key order");
+            if (cmp==0)
                 ++duplicateCount;
         }
         if (!activeNode->add(pos, keyData, recsize, sequence))

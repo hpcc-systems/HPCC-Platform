@@ -27,6 +27,7 @@
 #include "jiface.hpp"
 #include "jfile.hpp"
 #include "jlog.hpp"
+#include "errorlist.h"
 
 interface jhtree_decl IDelayedFile : public IInterface
 {
@@ -258,5 +259,7 @@ public:
 };
 
 extern jhtree_decl bool isCompressedIndex(const char *filename);
+
+#define JHTREE_KEY_NOT_SORTED JHTREE_ERROR_START
 
 #endif
