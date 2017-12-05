@@ -3786,6 +3786,18 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             node_operator childOp = child->getOperator();
             switch(childOp)
             {
+            //None of the following change the format of the left hand side, and since the fetch is on the underlying
+            //dataset they can all be removed.  If they remain the disk file can be treated as if it is in memory format.
+            case no_preload:
+            case no_nofold:
+            case no_nocombine:
+            case no_dedup:
+            case no_group:
+            case no_compound_diskread:
+            case no_filter:
+            case no_sort:
+            case no_sorted:
+                return replaceChild(transformed, child->queryChild(0));
             case no_newusertable:
                 if (isAggregateDataset(child))
                     break;

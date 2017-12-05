@@ -7253,6 +7253,12 @@ ABoundActivity * HqlCppTranslator::doBuildActivityFetch(BuildCtx & ctx, IHqlExpr
         OwnedHqlExpr simple = replaceFetchInput(expr, null, no_right);
         OwnedHqlExpr transformed = replaceExpression(simple, tableExpr, projected);
         OwnedHqlExpr optSimple = optimizeHqlExpression(queryErrorProcessor(), transformed, optFlags);
+        IHqlExpression * newFetch = queryFetch(optSimple);
+        assertex(newFetch);
+        IHqlExpression * lhs = newFetch->queryChild(0);
+        if (lhs->getOperator() != no_table)
+            throwError1(HQLERR_ExpectedFileLhsFetch, getOpString(lhs->getOperator()));
+
         OwnedHqlExpr optimized = replaceFetchInput(optSimple, fetchRhs, no_right);
         return doBuildActivityFetch(ctx, optimized);
     }

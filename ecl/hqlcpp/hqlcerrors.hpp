@@ -225,6 +225,7 @@
 #define HQLERR_DedupBestWithKeepn               4206
 #define HQLERR_HashStoredDuplication            4207
 #define HQLERR_DatafileRequiresSigned           4208
+#define HQLERR_ExpectedFileLhsFetch             4209
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -529,6 +530,7 @@
 #define HQLERR_DedupBestWithKeepn_Text          "DEDUP with BEST does not support KEEP"
 #define HQLERR_HashStoredDuplication_Text       "Inconsistent #%s(%s, %s) and #%s(%s, %s)"
 #define HQLERR_DatafileRequiresSigned_Text      "Insufficient access rights to use datafiles"
+#define HQLERR_ExpectedFileLhsFetch_Text        "The first argument of FETCH must be a disk file (had %s)"
 
 //Warnings.
 #define HQLWRN_CannotRecreateDistribution_Text  "Cannot recreate the distribution for a persistent dataset"
