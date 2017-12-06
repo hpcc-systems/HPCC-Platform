@@ -197,7 +197,7 @@ bool extractEclCmdOption(StringAttr & option, IProperties * globals, const char 
 bool extractEclCmdOption(bool & option, IProperties * globals, const char * envName, const char * propertyName, bool defval);
 bool extractEclCmdOption(unsigned & option, IProperties * globals, const char * envName, const char * propertyName, unsigned defval);
 
-bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNamedValue> &values);
+bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNamedValue> &values, bool expandEclccOptions);
 void addNamedValue(const char * name, const char * value, IArrayOf<IEspNamedValue> &values);
 
 enum eclObjParameterType

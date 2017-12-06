@@ -990,7 +990,7 @@ public:
                 continue;
             if (iter.matchOption(optResultLimit, ECLOPT_RESULT_LIMIT))
                 continue;
-            if (matchVariableOption(iter, 'f', debugValues))
+            if (matchVariableOption(iter, 'f', debugValues, true))
                 continue;
             eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
             if (ind != EclCmdOptionMatch)

@@ -199,6 +199,7 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                     //This is a Pluggable Security Manager
                     m_secmgr.setown(SecLoader::loadPluggableSecManager(bindname, bnd_cfg, secMgrCfg));
                     m_authmap.setown(m_secmgr->createAuthMap(authcfg));
+                    m_feature_authmap.setown(m_secmgr->createFeatureMap(authcfg));
                 }
                 else
                 {

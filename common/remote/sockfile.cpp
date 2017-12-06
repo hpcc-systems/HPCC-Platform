@@ -6316,6 +6316,7 @@ static Owned<CSimpleInterface> serverThread;
 class RemoteFileTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(RemoteFileTest);
+        CPPUNIT_TEST(testRemoteFilename);
         CPPUNIT_TEST(testStartServer);
         CPPUNIT_TEST(testBasicFunctionality);
         CPPUNIT_TEST(testCopy);
@@ -6328,6 +6329,37 @@ class RemoteFileTest : public CppUnit::TestFixture
     size32_t testLen = 1024;
 
 protected:
+    void testRemoteFilename()
+    {
+        const char *rfns = "//1.2.3.4/dir1/file1|//1.2.3.4:7100/dir1/file1,"
+                           "//1.2.3.4:7100/dir1/file1|//1.2.3.4:7100/dir1/file1,"
+                           "//1.2.3.4/c$/dir1/file1|//1.2.3.4:7100/c$/dir1/file1,"
+                           "//1.2.3.4:7100/c$/dir1/file1|//1.2.3.4:7100/c$/dir1/file1,"
+                           "//1.2.3.4:7100/d$/dir1/file1|//1.2.3.4:7100/d$/dir1/file1";
+        StringArray tests;
+        tests.appendList(rfns, ",");
+
+        ForEachItemIn(i, tests)
+        {
+            StringArray inOut;
+            const char *pair = tests.item(i);
+            inOut.appendList(pair, "|");
+            const char *rfn = inOut.item(0);
+            const char *expected = inOut.item(1);
+            Owned<IFile> iFile = createIFile(rfn);
+            const char *res = iFile->queryFilename();
+            if (!streq(expected, res))
+            {
+                StringBuffer errMsg("testRemoteFilename MISMATCH");
+                errMsg.newline().append("Expected: ").append(expected);
+                errMsg.newline().append("Got: ").append(res);
+                PROGLOG("%s", errMsg.str());
+                CPPUNIT_ASSERT_MESSAGE(errMsg.str(), 0);
+            }
+            else
+                PROGLOG("MATCH: %s", res);
+        }
+    }
     void testStartServer()
     {
         Owned<ISocket> socket;

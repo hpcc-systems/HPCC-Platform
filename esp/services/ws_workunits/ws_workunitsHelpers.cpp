@@ -1789,7 +1789,7 @@ bool WsWuInfo::getResourceInfo(StringArray &viewnames, StringArray &urls, unsign
         return true;
     try
     {
-        Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false);
+        Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false, nullptr);
         if (wv)
         {
             if (flags & WUINFO_IncludeResultsViewNames)
@@ -1813,7 +1813,7 @@ unsigned WsWuInfo::getResourceURLCount()
 {
     try
     {
-        Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false);
+        Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false, nullptr);
         if (wv)
             return wv->getResourceURLCount();
     }
@@ -2102,7 +2102,7 @@ void WsWuInfo::getWorkunitResTxt(MemoryBuffer& buf)
 
 IConstWUQuery* WsWuInfo::getEmbeddedQuery()
 {
-    Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false);
+    Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false, nullptr);
     if (wv)
         return wv->getEmbeddedQuery();
 
@@ -3106,8 +3106,11 @@ void WsWuHelpers::submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, con
             IConstNamedValue &item = debugs->item(i);
             const char *name = item.getName();
             const char *value = item.getValue();
-            if (!name || !*name || *name=='-')
+            if (!name || !*name)
                 continue;
+            StringBuffer expanded;
+            if (*name=='-')
+                name=expanded.append("eclcc").append(name).str();
             if (!value)
             {
                 size_t len = strlen(name);

@@ -431,6 +431,11 @@ public:
             initMyNode(1); // Hack
     }
 
+    virtual IUserDescriptor *queryUserDescriptor()
+    {
+        return userdesc;
+    }
+
     static const char *getQuerySetPath(StringBuffer &buf, const char *id)
     {
         buf.appendf("QuerySets/QuerySet[@id='%s']", id);

@@ -11688,9 +11688,14 @@ public:
     {
         IConstWorkUnit *workUnit = ctx->queryWorkUnit();
         if (workUnit)
-            return workUnit->queryUserDescriptor();
+            return workUnit->queryUserDescriptor();//ad-hoc mode
         else
-            return NULL;
+        {
+            Owned<IRoxieDaliHelper> daliHelper = connectToDali(false);
+            if (daliHelper)
+                return daliHelper->queryUserDescriptor();//predeployed query mode
+        }
+        return NULL;
     }
 
     virtual bool isOutputTransformed() const { return false; }
@@ -12236,9 +12241,14 @@ public:
     {
         IConstWorkUnit *workUnit = ctx->queryWorkUnit();
         if (workUnit)
-            return workUnit->queryUserDescriptor();
+            return workUnit->queryUserDescriptor();//ad-hoc mode
         else
-            return NULL;
+        {
+            Owned<IRoxieDaliHelper> daliHelper = connectToDali(false);
+            if (daliHelper)
+                return daliHelper->queryUserDescriptor();//predeployed query mode
+        }
+        return NULL;
     }
 };
 

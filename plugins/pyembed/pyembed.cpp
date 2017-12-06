@@ -544,63 +544,66 @@ static void typeError(const char *expected, const RtlFieldInfo *field)
     VStringBuffer msg("pyembed: type mismatch - %s expected", expected);
     if (field)
         msg.appendf(" for field %s", field->name);
+    else
+        msg.appendf(" for return value");
     rtlFail(0, msg.str());
 }
 
 static bool getBooleanResult(const RtlFieldInfo *field, PyObject *obj)
 {
-    assertex(obj && obj != Py_None);
-    if (!PyBool_Check(obj))
-        typeError("boolean", field);
-    return obj == Py_True;
+    if (obj && obj != Py_None)
+    {
+        if (PyBool_Check(obj))
+            return obj == Py_True;
+    }
+    typeError("boolean", field);
 }
 
 static void getDataResult(const RtlFieldInfo *field, PyObject *obj, size32_t &chars, void * &result)
 {
-    assertex(obj && obj != Py_None);
-    if (!PyByteArray_Check(obj))
+    if (obj && obj != Py_None && PyByteArray_Check(obj))
+        rtlStrToDataX(chars, result, PyByteArray_Size(obj), PyByteArray_AsString(obj));
+    else
         typeError("bytearray", field);
-    rtlStrToDataX(chars, result, PyByteArray_Size(obj), PyByteArray_AsString(obj));
 }
 
 static double getRealResult(const RtlFieldInfo *field, PyObject *obj)
 {
-    assertex(obj && obj != Py_None);
-    if (!PyFloat_Check(obj))
-        typeError("real", field);
-    return PyFloat_AsDouble(obj);
+    if (obj && obj != Py_None)
+    {
+        if (PyFloat_Check(obj))
+            return PyFloat_AsDouble(obj);
+    }
+    typeError("real", field);
 }
 
 static __int64 getSignedResult(const RtlFieldInfo *field, PyObject *obj)
 {
-    assertex(obj && obj != Py_None);
-    __int64 ret;
-    if (PyInt_Check(obj))
-        ret = PyInt_AsUnsignedLongLongMask(obj);
-    else if (PyLong_Check(obj))
-        ret = (__int64) PyLong_AsLongLong(obj);
-    else
-        typeError("integer", field);
-    return ret;
+    if (obj && obj != Py_None)
+    {
+        if (PyInt_Check(obj))
+            return PyInt_AsUnsignedLongLongMask(obj);
+         else if (PyLong_Check(obj))
+            return (__int64) PyLong_AsLongLong(obj);
+    }
+    typeError("integer", field);
 }
 
 static unsigned __int64 getUnsignedResult(const RtlFieldInfo *field, PyObject *obj)
 {
-    assertex(obj && obj != Py_None);
-    unsigned __int64 ret;
-    if (PyInt_Check(obj))
-        ret = PyInt_AsUnsignedLongLongMask(obj);
-    else if (PyLong_Check(obj))
-        ret =  (unsigned __int64) PyLong_AsUnsignedLongLong(obj);
-    else
-        typeError("integer", field);
-    return ret;
+    if (obj && obj != Py_None)
+    {
+        if (PyInt_Check(obj))
+            return PyInt_AsUnsignedLongLongMask(obj);
+        else if (PyLong_Check(obj))
+            return (unsigned __int64) PyLong_AsUnsignedLongLong(obj);
+    }
+    typeError("integer", field);
 }
 
 static void getStringResult(const RtlFieldInfo *field, PyObject *obj, size32_t &chars, char * &result)
 {
-    assertex(obj && obj != Py_None);
-    if (PyString_Check(obj))
+    if (obj && obj != Py_None && PyString_Check(obj))
     {
         const char * text =  PyString_AsString(obj);
         checkPythonError();
@@ -613,8 +616,7 @@ static void getStringResult(const RtlFieldInfo *field, PyObject *obj, size32_t &
 
 static void getUTF8Result(const RtlFieldInfo *field, PyObject *obj, size32_t &chars, char * &result)
 {
-    assertex(obj && obj != Py_None);
-    if (PyUnicode_Check(obj))
+    if (obj && obj != Py_None && PyUnicode_Check(obj))
     {
         OwnedPyObject utf8 = PyUnicode_AsUTF8String(obj);
         checkPythonError();
@@ -631,8 +633,7 @@ static void getUTF8Result(const RtlFieldInfo *field, PyObject *obj, size32_t &ch
 static void getSetResult(PyObject *obj, bool & isAllResult, size32_t & resultBytes, void * & result, int elemType, size32_t elemSize)
 {
     // MORE - should probably recode to use the getResultDataset mechanism
-    assertex(obj && obj != Py_None);
-    if (!PyList_Check(obj) && !PySet_Check(obj))
+    if (!obj || obj == Py_None || (!PyList_Check(obj) && !PySet_Check(obj)))
         rtlFail(0, "pyembed: type mismatch - list or set expected");
     rtlRowBuilder out;
     size32_t outBytes = 0;
@@ -773,8 +774,7 @@ static void getSetResult(PyObject *obj, bool & isAllResult, size32_t & resultByt
 
 static void getUnicodeResult(const RtlFieldInfo *field, PyObject *obj, size32_t &chars, UChar * &result)
 {
-    assertex(obj && obj != Py_None);
-    if (PyUnicode_Check(obj))
+    if (obj && obj != Py_None && PyUnicode_Check(obj))
     {
         OwnedPyObject utf8 = PyUnicode_AsUTF8String(obj);
         checkPythonError();
@@ -849,8 +849,7 @@ public:
     {
         nextField(field);
         isAll = false;  // No concept of an 'all' set in Python
-        assertex(elem && elem != Py_None);
-        if (!PyList_Check(elem) && !PySet_Check(elem))
+        if (!elem || elem == Py_None || (!PyList_Check(elem) && !PySet_Check(elem)))
             typeError("list or set", field);
         push();
     }
@@ -1715,6 +1714,22 @@ public:
 extern DECL_EXPORT IEmbedContext* getEmbedContext()
 {
     return new Python27EmbedContext;
+}
+
+extern DECL_EXPORT bool syntaxCheck(const char *script)
+{
+    return true; // MORE
+}
+
+} // namespace
+
+// For back compatibility we also answer to the name "pyembed"...
+
+namespace pyembed {
+
+extern DECL_EXPORT IEmbedContext* getEmbedContext()
+{
+    return new py2embed::Python27EmbedContext;
 }
 
 extern DECL_EXPORT bool syntaxCheck(const char *script)

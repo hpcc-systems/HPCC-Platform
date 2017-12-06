@@ -255,6 +255,9 @@ int CEspHttpServer::processRequest()
         ctx->setHTTPMethod(method.str());
         ctx->setServiceMethod(methodName.str());
 
+        if(strieq(method.str(), OPTIONS_METHOD))
+            return onOptions();
+
         StringBuffer peerStr, pathStr;
         const char *userid=ctx->queryUserId();
         ESPLOG(LogMin, "%s %s, from %s@%s", method.str(), m_request->getPath(pathStr).str(), (userid) ? userid : "unknown", m_request->getPeer(peerStr).str());
@@ -344,10 +347,6 @@ int CEspHttpServer::processRequest()
                 if (!thebinding && m_defaultBinding)
                     thebinding=dynamic_cast<EspHttpBinding*>(m_defaultBinding.get());
             }
-
-            if(strieq(method.str(), OPTIONS_METHOD))
-                return onOptions();
-
             checkSetCORSAllowOrigin(m_request, m_response);
 
             if (thebinding!=NULL)

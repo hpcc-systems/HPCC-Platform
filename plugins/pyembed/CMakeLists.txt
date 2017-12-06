@@ -90,6 +90,10 @@ if(PY2EMBED)
             roxiemem
             jlib)
     endif()
+    if ( PLATFORM )
+        install ( PROGRAMS pyembed.install DESTINATION etc/init.d/install COMPONENT Runtime )
+        install ( PROGRAMS pyembed.uninstall DESTINATION etc/init.d/uninstall COMPONENT Runtime )
+    endif()
 endif()
 if(PLATFORM OR CLIENTTOOLS_ONLY)
     install(

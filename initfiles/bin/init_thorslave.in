@@ -99,11 +99,22 @@ start_slaves()
 
     # sync to current master slaves list
     if [[ "$localthor" != "true" ]]; then
-        log "rsync -e ssh -o LogLevel=QUIET -o StrictHostKeyChecking=no ${master}:${instancedir}/slaves ${instancedir}/slaves.tmp"
+        log "rsync -e \"ssh -o LogLevel=QUIET -o StrictHostKeyChecking=no\" --timeout=60 ${master}:${instancedir}/slaves ${instancedir}/slaves.tmp"
         slavesfname="$instancedir/slaves.tmp"
-        rsync -e "ssh -o LogLevel=QUIET -o StrictHostKeyChecking=no" $master:$instancedir/slaves $slavesfname
+        rsync_att=3
+        rsync_stat=1
+        while [[ $rsync_stat -ne 0 && $rsync_att -gt 0 ]] ; do
+            rsync -e "ssh -o LogLevel=QUIET -o StrictHostKeyChecking=no" --timeout=60 $master:$instancedir/slaves $slavesfname
+            rsync_stat=$?
+            ((rsync_att--))
+            log "rsync returns ${rsync_stat}"
+        done
     else
         slavesfname="$instancedir/slaves"
+    fi
+    if [ ! -f $slavesfname ] ; then
+        log "Error, $slavesfname file missing"
+        exit 1
     fi
 
     # NB: Would simply use slavesPerNode to create N slaves, but for backward compatilibty reasons, need to cater for clusters

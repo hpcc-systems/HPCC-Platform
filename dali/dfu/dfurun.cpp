@@ -1030,6 +1030,8 @@ public:
              foreignuserdesc.setown(createUserDescriptor());
              foreignuserdesc->set(fu.str(),fp.str());
         }
+        else
+            foreignuserdesc.set(userdesc);
         StringBuffer srcname;
         source->getLogicalName(srcname);
         if (!srcname.length())
@@ -1213,6 +1215,8 @@ public:
                                  foreignuserdesc.setown(createUserDescriptor());
                                  foreignuserdesc->set(fu.str(),fp.str());
                             }
+                            else
+                                foreignuserdesc.set(userdesc);
                         }
                     }
                     if (foreigncopy) {

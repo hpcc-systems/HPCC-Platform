@@ -585,10 +585,15 @@ bool CWsWorkunitsEx::onWUUpdate(IEspContext &context, IEspWUUpdateRequest &req, 
 
         ForEachItemIn(di, req.getDebugValues())
         {
-            IConstDebugValue& item = req.getDebugValues().item(di);
+            IConstDebugValue& item=req.getDebugValues().item(di);
             const char *debugName = item.getName();
-            if (notEmpty(debugName) && *debugName!='-')
-                wu->setDebugValue(item.getName(), item.getValue(), true);
+            if (notEmpty(debugName))
+            {
+                StringBuffer expanded;
+                if (*debugName=='-')
+                    debugName=expanded.append("eclcc").append(debugName).str();
+                wu->setDebugValue(debugName, item.getValue(), true);
+            }
         }
 
         ForEachItemIn(ai, req.getApplicationValues())
@@ -1206,8 +1211,13 @@ bool CWsWorkunitsEx::onWUSyntaxCheckECL(IEspContext &context, IEspWUSyntaxCheckR
         {
             IConstDebugValue& item=req.getDebugValues().item(di);
             const char *debugName = item.getName();
-            if (notEmpty(debugName) && *debugName!='-')
-                wu->setDebugValue(item.getName(), item.getValue(), true);
+            if (notEmpty(debugName))
+            {
+                StringBuffer expanded;
+                if (*debugName=='-')
+                    debugName=expanded.append("eclcc").append(debugName).str();
+                wu->setDebugValue(debugName, item.getValue(), true);
+            }
         }
 
         wu.setQueryText(req.getECL());
@@ -1636,7 +1646,7 @@ bool CWsWorkunitsEx::onWUResultView(IEspContext &context, IEspWUResultViewReques
     ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Read);
     PROGLOG("WUResultView: %s", wuid.str());
 
-    Owned<IWuWebView> wv = createWuWebView(wuid.str(), NULL, NULL, getCFD(), true);
+    Owned<IWuWebView> wv = createWuWebView(wuid.str(), NULL, NULL, getCFD(), true, nullptr);
     StringBuffer html;
     wv->renderSingleResult(req.getViewName(), req.getResultName(), html);
     resp.setResult(html.str());

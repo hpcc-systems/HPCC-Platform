@@ -1499,7 +1499,7 @@ OUTPUT(L);</programlisting></para>
           <listitem>
             <para>A dialog opens. <emphasis role="bold">Browse</emphasis> to
             and select the file to upload and then press the <emphasis
-            role="bold">Open</emphasis> button. </para>
+            role="bold">Open</emphasis> button.</para>
 
             <para>The file you selected should appear in the <emphasis
             role="bold">File Name</emphasis> field. The data file is named:
@@ -1519,7 +1519,7 @@ OUTPUT(L);</programlisting></para>
               </figure></para>
 
             <para>Press the <emphasis role="bold">Start</emphasis> button to
-            complete the file upload. </para>
+            complete the file upload.</para>
           </listitem>
         </orderedlist>
       </sect2>
@@ -3110,7 +3110,9 @@ add1(10);
         <para>By default the Python3 plugin will be present but disabled, and
         the Python2 plugin will be present and enabled. If you want to use
         Python3 modify the your environment.conf file according to the example
-        in the file.</para>
+        in the file. A cluster updated from an older version may not have the
+        appropriate entries in the environment.conf file to support either
+        version of Python.</para>
 
         <para>To enable Python support within the HPCC
         Systems<superscript>®</superscript> Platform:</para>
@@ -3166,6 +3168,13 @@ split_words('Once upon a time');
             url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/regress/ecl">https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/regress/ecl/</ulink></para>
           </listitem>
         </orderedlist>
+
+        <para>In order for Python to work properly it is important that the
+        version of Python and the HPCC system are set up correctly to support
+        using the installed version of Python. If you see "ld: cannot find
+        –lpy2embed" error then your system is likely set up for Python3.
+        Likewise, if you see "ld: cannot find –lpy3embed" then your system is
+        set up for Python2.</para>
 
         <sect3>
           <title>Python Scope Options</title>

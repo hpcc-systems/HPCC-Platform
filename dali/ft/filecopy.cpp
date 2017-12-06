@@ -3037,6 +3037,9 @@ void FileSprayer::updateTargetProperties()
         offset_t totalCompressedSize = 0;
         unsigned whichHeaderInput = 0;
         bool sameSizeHeaderFooter = isSameSizeHeaderFooter();
+        bool sameSizeSourceTarget = (sources.ordinality() == distributedTarget->numParts());
+        offset_t partCompressedLength = 0;
+
         ForEachItemIn(idx, partition)
         {
             PartitionPoint & cur = partition.item(idx);
@@ -3045,7 +3048,7 @@ void FileSprayer::updateTargetProperties()
             partCRC.addChildCRC(curProgress.outputLength, curProgress.outputCRC, false);
             totalCRC.addChildCRC(curProgress.outputLength, curProgress.outputCRC, false);
 
-            if (copyCompressed) {
+            if (copyCompressed && sameSizeSourceTarget) {
                 FilePartInfo & curSource = sources.item(cur.whichInput);
                 partLength = curSource.size;
                 totalLength += partLength;
@@ -3054,6 +3057,9 @@ void FileSprayer::updateTargetProperties()
                 partLength += curProgress.outputLength;  // AFAICS this might as well be =
                 totalLength += curProgress.outputLength;
             }
+
+            if (compressOutput)
+                partCompressedLength += curProgress.compressedPartSize;
 
             if (idx+1 == partition.ordinality() || partition.item(idx+1).whichOutput != cur.whichOutput)
             {
@@ -3103,8 +3109,8 @@ void FileSprayer::updateTargetProperties()
 
                 if (compressOutput)
                 {
-                    curProps.setPropInt64(FAcompressedSize, curProgress.compressedPartSize);
-                    totalCompressedSize += curProgress.compressedPartSize;
+                    curProps.setPropInt64(FAcompressedSize, partCompressedLength);
+                    totalCompressedSize += partCompressedLength;
                 } else if (copyCompressed)
                 {
                     curProps.setPropInt64(FAcompressedSize, curProgress.outputLength);
@@ -3145,6 +3151,7 @@ void FileSprayer::updateTargetProperties()
                 curPart->unlockProperties();
                 partCRC.clear();
                 partLength = 0;
+                partCompressedLength = 0;
             }
         }
 
