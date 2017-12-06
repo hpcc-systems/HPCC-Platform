@@ -156,7 +156,7 @@ typedef IArrayOf<CMemberInfo> CMemberInfoArray;
 struct ReadAheadState
 {
 public:
-    ReadAheadState(IHqlExpression * _helper) : helper(_helper) {};
+    ReadAheadState(IReferenceSelector * _selector, IHqlExpression * _helper) : helper(_helper), selector(_selector) {};
 
     void addDummyMappings()
     {
@@ -172,6 +172,7 @@ public:
     LinkedHqlExpr helper;
     HqlExprArray requiredValues;
     HqlExprArray mappedValues;
+    IReferenceSelector * selector;
 };
 
 class HQLCPP_API CContainerInfo : public CMemberInfo
@@ -264,7 +265,6 @@ public:
     virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
     virtual void buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
     virtual bool buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, ReadAheadState & state);
-    virtual bool prepareReadAhead(HqlCppTranslator & translator, ReadAheadState & state);
     virtual void setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * value);
 
     virtual void calcCachedSize(const SizeStruct & offset, SizeStruct & sizeSelf);
@@ -386,7 +386,6 @@ public:
     virtual void buildColumnExpr(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound);  // get() after conditions.
     virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
     virtual bool buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, ReadAheadState & state);
-    virtual bool prepareReadAhead(HqlCppTranslator & translator, ReadAheadState & state);
     virtual IHqlExpression * buildSizeOfUnbound(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector);
     virtual bool isFixedSize();
     virtual void gatherSize(SizeStruct & target);
@@ -573,7 +572,7 @@ public:
     bool usesAccessor() const                       { return root.usesAccessClass(); }
 
     AColumnInfo * queryRootColumn();
-    bool buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * helper);
+    bool buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper);
     void buildAccessor(StringBuffer & accessorName, HqlCppTranslator & translator, BuildCtx & declarectx, IHqlExpression * selector);
 
 protected:

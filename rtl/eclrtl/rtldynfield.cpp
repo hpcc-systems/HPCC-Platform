@@ -114,6 +114,10 @@ const RtlTypeInfo *FieldTypeInfoStruct::createRtlTypeInfo(IThorIndexCallback *_c
     case type_ifblock:
         ret = new RtlDynamicIfBlockTypeInfo(fieldType, length, fieldsArray);
         break;
+    case type_alien:
+        assert(childType);
+        ret = new RtlAlienTypeInfo(fieldType, length, childType);
+        break;
     default:
         throwUnexpected();
     }

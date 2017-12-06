@@ -443,7 +443,7 @@ size32_t RtlRecord::deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource
     return offset + lastFixedSize;
 }
 
-void RtlRecord::readAhead(IRowDeserializerSource & in) const
+void RtlRecord::readAhead(IRowPrefetcherSource & in) const
 {
     // Note - this should not and can not be used when ifblocks present - canprefetch flag should take care of that.
     dbgassertex(numIfBlocks==0);
@@ -536,6 +536,21 @@ size32_t RtlRecord::getRecordSize(const void *_row) const
         size = fixedOffsets[numFields] + varoffset;
     }
     return size;
+}
+
+size32_t RtlRecord::calculateOffset(const void *_row, unsigned field) const
+{
+    const byte * row = static_cast<const byte *>(_row);
+    size32_t varoffset = 0;
+    unsigned varFields = whichVariableOffset[field];
+    for (unsigned i = 0; i < varFields; i++)
+    {
+        unsigned fieldIndex = variableFieldIds[i];
+        size32_t offset = fixedOffsets[fieldIndex] + varoffset;
+        size32_t fieldSize = queryType(fieldIndex)->size(row + offset, row);
+        varoffset = offset + fieldSize;
+    }
+    return fixedOffsets[field] + varoffset;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -651,7 +666,7 @@ class CDefaultPrefetcher : public CInterfaceOf<ISourceRowPrefetcher>
 public:
     CDefaultPrefetcher(const RtlRecord & _record) : record(_record) {}
 
-    virtual void readAhead(IRowDeserializerSource & in)
+    virtual void readAhead(IRowPrefetcherSource & in)
     {
         record.readAhead(in);
     }
@@ -718,29 +733,6 @@ protected:
     IOutputMetaData * meta;
 };
 
-class ECLRTL_API CSimpleSourceRowPrefetcher : public ISourceRowPrefetcher, public RtlCInterface
-{
-public:
-    CSimpleSourceRowPrefetcher(IOutputMetaData & _meta, ICodeContext * _ctx, unsigned _activityId)
-    {
-        deserializer.setown(_meta.querySerializedDiskMeta()->createDiskDeserializer(_ctx, _activityId));
-        rowAllocator.setown(_ctx->getRowAllocator(&_meta, _activityId));
-    }
-
-    RTLIMPLEMENT_IINTERFACE
-
-    virtual void readAhead(IRowDeserializerSource & in)
-    {
-        RtlDynamicRowBuilder rowBuilder(rowAllocator);
-        size32_t len = deserializer->deserialize(rowBuilder, in);
-        rtlReleaseRow(rowBuilder.finalizeRowClear(len));
-    }
-
-protected:
-    Owned<IOutputRowDeserializer> deserializer;
-    Owned<IEngineRowAllocator> rowAllocator;
-};
-
 //---------------------------------------------------------------------------
 
 
@@ -754,9 +746,7 @@ ISourceRowPrefetcher * COutputMetaData::createDiskPrefetcher(ICodeContext * ctx,
     ISourceRowPrefetcher * fetcher = defaultCreateDiskPrefetcher(ctx, activityId);
     if (fetcher)
         return fetcher;
-    if (queryTypeInfo()->canPrefetch())
-        return new CDefaultPrefetcher(queryRecordAccessor(true));
-    return new CSimpleSourceRowPrefetcher(*this, ctx, activityId);
+    return new CDefaultPrefetcher(queryRecordAccessor(true));
 }
 
 IOutputRowDeserializer *COutputMetaData::createDiskDeserializer(ICodeContext * ctx, unsigned activityId)

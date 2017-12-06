@@ -280,7 +280,7 @@ public:
     {
     }
 
-    virtual void readAhead(IRowDeserializerSource & in)
+    virtual void readAhead(IRowPrefetcherSource & in)
     {
         in.skip(offset);
         original->readAhead(in);
@@ -421,7 +421,7 @@ public:
     {
     }
 
-    virtual void readAhead(IRowDeserializerSource & in)
+    virtual void readAhead(IRowPrefetcherSource & in)
     {
         original->readAhead(in);
         in.skip(offset);

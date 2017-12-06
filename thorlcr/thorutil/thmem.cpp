@@ -2511,7 +2511,7 @@ class COutputMetaWithChildRow : public CSimpleInterface, implements IOutputMetaD
         CPrefetcher(ISourceRowPrefetcher *_childPrefetcher, size32_t _extraSz) : childPrefetcher(_childPrefetcher), extraSz(_extraSz)
         {
         }
-        virtual void readAhead(IRowDeserializerSource &in)
+        virtual void readAhead(IRowPrefetcherSource &in)
         {
             in.skip(extraSz);
             byte b;

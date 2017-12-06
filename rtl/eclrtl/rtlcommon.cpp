@@ -142,11 +142,15 @@ const byte * CThorContiguousRowBuffer::peek(size32_t maxSize)
 offset_t CThorContiguousRowBuffer::beginNested()
 {
     size32_t len = readSize();
+    //Currently nested datasets are readahead by skipping the number of bytes in the datasets, rather than calling
+    //beginNested(). If this function was ever called from readAhead() then it would need to call noteStartChild()
+    //so that the self pointer is correct for the child rows
     return len+readOffset;
 }
 
 bool CThorContiguousRowBuffer::finishedNested(offset_t & endPos)
 {
+    //See note above, if this was ever called from readAhead() then it would need to call noteFinishChild() and noteStartChild() if incomplete;
     return readOffset >= endPos;
 }
 
@@ -182,4 +186,23 @@ void CThorContiguousRowBuffer::skipVUni()
     size32_t size = sizeVUni();
     ensureAccessible(readOffset+size);
     readOffset += size;
+}
+
+const byte * CThorContiguousRowBuffer::querySelf()
+{
+    if (maxOffset == 0)
+        doPeek(0);
+    if (childStartOffsets.ordinality())
+        return buffer + childStartOffsets.tos();
+    return buffer;
+}
+
+void CThorContiguousRowBuffer::noteStartChild()
+{
+    childStartOffsets.append(readOffset);
+}
+
+void CThorContiguousRowBuffer::noteFinishChild()
+{
+    childStartOffsets.pop();
 }

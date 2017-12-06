@@ -205,7 +205,7 @@ size32_t RtlTypeInfoBase::deserialize(ARowBuilder & builder, IRowDeserializerSou
     return offset + thisSize;
 }
 
-void RtlTypeInfoBase::readAhead(IRowDeserializerSource & in) const
+void RtlTypeInfoBase::readAhead(IRowPrefetcherSource & in) const
 {
     size32_t thisSize = size(nullptr, nullptr);
     in.skip(thisSize);
@@ -915,7 +915,7 @@ size32_t RtlPackedIntTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializ
     return offset + size;
 }
 
-void RtlPackedIntTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlPackedIntTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     in.skipPackedInt();
 }
@@ -1142,7 +1142,7 @@ size32_t RtlStringTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerS
     return offset;
 }
 
-void RtlStringTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlStringTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     if (isFixedSize())
     {
@@ -1370,7 +1370,7 @@ size32_t RtlDataTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSou
     return offset;
 }
 
-void RtlDataTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlDataTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     if (isFixedSize())
     {
@@ -1576,7 +1576,7 @@ size32_t RtlVarStringTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializ
         return offset + in.readVStr(builder, offset, 0);
 }
 
-void RtlVarStringTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlVarStringTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     if (isFixedSize())
     {
@@ -1747,7 +1747,7 @@ size32_t RtlQStringTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializer
     return offset;
 }
 
-void RtlQStringTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlQStringTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     if (isFixedSize())
     {
@@ -2203,7 +2203,7 @@ size32_t RtlUnicodeTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializer
     return offset;
 }
 
-void RtlUnicodeTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlUnicodeTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     if (isFixedSize())
     {
@@ -2414,7 +2414,7 @@ size32_t RtlVarUnicodeTypeInfo::deserialize(ARowBuilder & builder, IRowDeseriali
         return offset + in.readVUni(builder, offset, 0);
 }
 
-void RtlVarUnicodeTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlVarUnicodeTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     if (isFixedSize())
     {
@@ -2542,7 +2542,7 @@ size32_t RtlUtf8TypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSou
     return offset + sizeof(size32_t) + size;
 }
 
-void RtlUtf8TypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlUtf8TypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     assertex(!isFixedSize());
     size32_t thisLength = in.readSize();
@@ -2679,7 +2679,7 @@ static size32_t deserializeFields(const RtlFieldInfo * const * cur, ARowBuilder 
     return offset;
 }
 
-static void readAheadFields(const RtlFieldInfo * const * cur, IRowDeserializerSource & in)
+static void readAheadFields(const RtlFieldInfo * const * cur, IRowPrefetcherSource & in)
 {
     for (;;)
     {
@@ -2791,7 +2791,7 @@ size32_t RtlRecordTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerS
     return deserializeFields(fields, builder, in, offset);
 }
 
-void RtlRecordTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlRecordTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     //Will not generally be called because it will have been expanded
     return readAheadFields(fields, in);
@@ -3011,7 +3011,7 @@ size32_t RtlSetTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSour
 }
 
 
-void RtlSetTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlSetTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     in.skip(1);
     size32_t thisLength = in.readSize();
@@ -3137,7 +3137,7 @@ size32_t RtlRowTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSour
 }
 
 
-void RtlRowTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlRowTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     return child->readAhead(in);
 }
@@ -3357,7 +3357,7 @@ size32_t RtlDatasetTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializer
 }
 
 
-void RtlDatasetTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlDatasetTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     size32_t size = in.readSize();
     in.skip(size);
@@ -3573,7 +3573,7 @@ size32_t RtlDictionaryTypeInfo::deserialize(ARowBuilder & builder, IRowDeseriali
     }
 }
 
-void RtlDictionaryTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlDictionaryTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     size32_t size = in.readSize();
     in.skip(size);
@@ -3695,9 +3695,10 @@ size32_t RtlIfBlockTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializer
     return offset;
 }
 
-void RtlIfBlockTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlIfBlockTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
-    UNIMPLEMENTED;
+    if (getCondition(in.querySelf()))
+        readAheadFields(fields, in);
 }
 
 
@@ -3932,7 +3933,7 @@ size32_t RtlUnimplementedTypeInfo::deserialize(ARowBuilder & builder, IRowDeseri
     return offset;
 }
 
-void RtlUnimplementedTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlUnimplementedTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     rtlFailUnexpected();
 }
@@ -3964,6 +3965,91 @@ int RtlUnimplementedTypeInfo::compare(const byte * left, const byte * right) con
 }
 
 unsigned RtlUnimplementedTypeInfo::hash(const byte * self, unsigned inhash) const
+{
+    rtlFailUnexpected();
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+size32_t RtlAlienTypeInfo::getMinSize() const
+{
+    rtlFailUnexpected();
+}
+
+size32_t RtlAlienTypeInfo::size(const byte * self, const byte * selfrow) const
+{
+    if (isFixedSize())
+        return length;
+    rtlFailUnexpected();
+}
+
+size32_t RtlAlienTypeInfo::buildInt(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, __int64 val) const
+{
+    rtlFailUnexpected();
+}
+
+size32_t RtlAlienTypeInfo::buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const
+{
+    rtlFailUnexpected();
+}
+
+size32_t RtlAlienTypeInfo::buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const
+{
+    rtlFailUnexpected();
+}
+
+size32_t RtlAlienTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
+{
+    rtlFailUnexpected();
+}
+
+size32_t RtlAlienTypeInfo::toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const
+{
+    rtlFailUnexpected();
+}
+
+size32_t RtlAlienTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSource & in, size32_t offset) const
+{
+    if (isFixedSize())
+        return RtlCompoundTypeInfo::deserialize(builder, in, offset);
+    rtlFailUnexpected();
+}
+
+void RtlAlienTypeInfo::readAhead(IRowPrefetcherSource & in) const
+{
+    if (isFixedSize())
+        in.skip(length);
+    else
+        rtlFailUnexpected();
+}
+
+
+void RtlAlienTypeInfo::getString(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    resultLen = 0;
+    result = nullptr;
+    rtlFailUnexpected();
+}
+
+void RtlAlienTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    resultLen = 0;
+    result = nullptr;
+    rtlFailUnexpected();
+}
+
+__int64 RtlAlienTypeInfo::getInt(const void * ptr) const
+{
+    rtlFailUnexpected();
+    return 0;
+}
+
+int RtlAlienTypeInfo::compare(const byte * left, const byte * right) const
+{
+    rtlFailUnexpected();
+}
+
+unsigned RtlAlienTypeInfo::hash(const byte * self, unsigned inhash) const
 {
     rtlFailUnexpected();
 }
