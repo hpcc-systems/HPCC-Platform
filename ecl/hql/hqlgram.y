@@ -272,6 +272,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   KEYED
   KEYPATCH
   KEYUNICODE
+  LABEL
   LABELED
   LAST
   LEFT
@@ -1604,38 +1605,38 @@ failclause
     ;
 
 failure
-    : FAILURE '(' action ')'
+    : FAILURE '(' action commaIndependentOptions')'
                         {
-                            $$.setExpr(createValue(no_failure, $3.getExpr(), NULL), $1);
+                            $$.setExpr(createValueF(no_failure, makeNullType(), $3.getExpr(), $4.getExpr(), NULL), $1);
                         }
-    | SUCCESS '(' action ')'
+    | SUCCESS '(' action commaIndependentOptions ')'
                         {
-                            $$.setExpr(createValue(no_success, $3.getExpr(), NULL), $1);
+                            $$.setExpr(createValueF(no_success, makeNullType(), $3.getExpr(), $4.getExpr(), NULL), $1);
                         }
     | RECOVERY '(' action ')'
                         {
-                            $$.setExpr(createValue(no_recovery, $3.getExpr(), createConstant(1)), $1);
+                            $$.setExpr(createValue(no_recovery, makeNullType(), $3.getExpr(), createConstant(1)), $1);
                         }
     | RECOVERY '(' action ',' expression ')'
                         {
                             parser->normalizeExpression($5, type_int, true);
-                            $$.setExpr(createValue(no_recovery, $3.getExpr(), $5.getExpr()), $1);
+                            $$.setExpr(createValue(no_recovery, makeNullType(), $3.getExpr(), $5.getExpr()), $1);
                         }
     | WHEN '(' event ')'
                         {
                             parser->checkConstantEvent($3);
-                            $$.setExpr(createValue(no_when, $3.getExpr()), $1);
+                            $$.setExpr(createValue(no_when, makeNullType(), $3.getExpr()), $1);
                         }
     | WHEN '(' event ',' COUNT '(' expression ')'  ')'
                         {
                             parser->checkConstantEvent($3);
                             parser->normalizeExpression($7, type_int, true);
-                            $$.setExpr(createValue(no_when, $3.getExpr(), $7.getExpr()), $1);
+                            $$.setExpr(createValue(no_when, makeNullType(), $3.getExpr(), $7.getExpr()), $1);
                         }
     | PRIORITY '(' expression ')'
                         {
                             parser->normalizeExpression($3, type_int, true);
-                            $$.setExpr(createValue(no_priority, $3.getExpr()), $1);
+                            $$.setExpr(createValue(no_priority, makeNullType(), $3.getExpr()), $1);
                         }
     | PERSIST '(' expression ')'
                         {
@@ -1653,10 +1654,10 @@ failure
                             parser->normalizeExpression($5, type_string, true);
                             $$.setExpr(createValueF(no_persist, makeVoidType(), $3.getExpr(), $5.getExpr(), $6.getExpr(), NULL), $1);
                         }
-    | CRITICAL '(' expression ')'
+    | CRITICAL '(' expression commaIndependentOptions ')'
                         {
                             parser->normalizeExpression($3, type_string, true);
-                            $$.setExpr(createValueF(no_critical, makeVoidType(), $3.getExpr(), NULL), $1);
+                            $$.setExpr(createValueF(no_critical, makeVoidType(), $3.getExpr(), $4.getExpr(), NULL), $1);
                         }
     | STORED '(' startStoredAttrs expression ',' fewMany optStoredFieldFormat ')'
                         {
@@ -1675,28 +1676,28 @@ failure
                         }
     | GLOBAL                    
                         {
-                            $$.setExpr(createValue(no_global), $1);
+                            $$.setExpr(createValue(no_global, makeNullType()), $1);
                         }
     | GLOBAL '(' fewMany ')'
                         {
-                            $$.setExpr(createValue(no_global, $3.getExpr()), $1);
+                            $$.setExpr(createValue(no_global, makeNullType(), $3.getExpr()), $1);
                         }
     | GLOBAL '(' expression optFewMany ')'
                         {
                             parser->normalizeExpression($3, type_string, false);
-                            $$.setExpr(createValue(no_global, $3.getExpr(), $4.getExpr()), $1);
+                            $$.setExpr(createValue(no_global, makeNullType(), $3.getExpr(), $4.getExpr()), $1);
                         }
     | INDEPENDENT               
                         {
-                            $$.setExpr(createValue(no_independent), $1);
+                            $$.setExpr(createValue(no_independent, makeNullType()), $1);
                         }
-    | INDEPENDENT '(' fewMany ')'
+    | INDEPENDENT '(' independentOptions ')'
                         {
-                            $$.setExpr(createValue(no_independent, $3.getExpr()), $1);
+                            $$.setExpr(createValueF(no_independent, makeNullType(), $3.getExpr(), nullptr), $1);
                         }
-    | INDEPENDENT '(' expression optFewMany ')'
+    | INDEPENDENT '(' expression commaIndependentOptions ')'
                         {
-                            $$.setExpr(createValue(no_independent, $3.getExpr(), $4.getExpr()), $1);
+                            $$.setExpr(createValueF(no_independent, makeNullType(), $3.getExpr(), $4.getExpr(), nullptr), $1);
                         }
     | DEFINE '(' stringConstExpr ')'
                         {
@@ -1730,11 +1731,11 @@ failure
                         }
     | ONCE
                         {
-                            $$.setExpr(createValue(no_once, makeVoidType()), $1);
+                            $$.setExpr(createValue(no_once, makeNullType()), $1);
                         }
     | ONCE '(' fewMany ')'
                         {
-                            $$.setExpr(createValue(no_once, $3.getExpr()), $1);
+                            $$.setExpr(createValue(no_once, makeNullType(), $3.getExpr()), $1);
                         }
     ;
 
@@ -1777,6 +1778,11 @@ persistOpt
                             parser->normalizeExpression($3, type_int, true);
                             $$.setExpr(createExprAttribute(multipleAtom, $3.getExpr()), $1);
                         }
+    | LABEL '(' constExpression ')'
+                        {
+                            parser->normalizeExpression($3, type_string, true);
+                            $$.setExpr(createExprAttribute(labelAtom, $3.getExpr()), $1);
+                        }
     ;
 
 optStoredFieldFormat
@@ -1814,6 +1820,31 @@ optFewMany
     :                   {   $$.setNullExpr(); }
     | ',' FEW           {   $$.setExpr(createAttribute(fewAtom), $1); }
     | ',' MANY          {   $$.setExpr(createAttribute(manyAtom), $1); }
+    ;
+
+independentOptions
+    : independentOption
+    | independentOptions ',' independentOption
+                        {
+                            $$.setExpr(createComma($1.getExpr(), $3.getExpr()), $3);
+                        }
+    ;
+
+commaIndependentOptions
+    :                   { $$.setNullExpr(); }
+    | commaIndependentOptions ',' independentOption
+                        {
+                            $$.setExpr(createComma($1.getExpr(), $3.getExpr()), $3);
+                        }
+    ;
+
+independentOption
+    : fewMany
+    | LABEL '(' constExpression ')'
+                        {
+                            parser->normalizeExpression($3, type_string, true);
+                            $$.setExpr(createExprAttribute(labelAtom, $3.getExpr()), $1);
+                        }
     ;
 
 fewMany

@@ -678,6 +678,7 @@ interface IWorkflowItem : extends IRuntimeWorkflowItem
     virtual void syncRuntimeData(const IConstWorkflowItem & other) = 0;
     virtual void setScheduledWfid(unsigned wfid) = 0;
     virtual void setCluster(const char * cluster) = 0;
+    virtual void setLabel(const char * label) = 0;
 };
 
 

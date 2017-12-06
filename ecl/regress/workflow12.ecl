@@ -43,6 +43,6 @@ o2 := output(namesTable2,,'~names',overwrite);
 namesTable := dataset('~names',namesRecord,FLAT);
 
 p1 := namesTable(age <> 0) : success(o1);
-p2 := p1(age <> 10) : success(o1);
+p2 := p1(age <> 10) : success(o1, LABEL('When things go right'));
 
 output(p2);
