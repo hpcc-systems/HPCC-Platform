@@ -191,7 +191,7 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
     if (readBlocked)
         socket->set_block_mode(BF_SYNC_TRANSFER_PULL,0,60*1000);
 
-    MemoryBuffer remoteReadCursorMb;
+    StringBuffer remoteReadCursor;
     unsigned len;
     bool is_status;
     bool isBlockedResult;
@@ -343,12 +343,19 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
             {
                 response = (const char *)mb.readDirect(len);
                 responseTree.setown(createPTreeFromXMLString(len, response));
+                assertex(responseTree);
             }
             else if (strieq("json", outputFmtStr))
             {
                 response = (const char *)mb.readDirect(len);
-                responseTree.setown(createPTreeFromJSONString(len, response));
+                // JCSMORE - json string coming back from IXmlWriterExt is always rootless the moment, so workaround it by supplying ptr_noRoot to reader
+                // writer should be fixed.
+                Owned<IPropertyTree> tree = createPTreeFromJSONString(len, response, ipt_none, (PTreeReaderOptions)(ptr_ignoreWhiteSpace|ptr_noRoot));
+                responseTree.setown(tree->getPropTree("Response"));
+                assertex(responseTree);
             }
+            else if (!strieq("binary", outputFmtStr))
+                throw MakeStringException(0, "Unknown output format: %s", outputFmtStr);
             unsigned cursorHandle;
             if (responseTree)
                 cursorHandle = responseTree->getPropInt("cursor");
@@ -366,7 +373,7 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
                         fputs(response, stdout);
                         fflush(stdout);
                     }
-                    if (!responseTree->getPropBin("cursorBin", remoteReadCursorMb.clear()))
+                    if (!responseTree->getProp("cursorBin", remoteReadCursor))
                         break;
                 }
                 else
@@ -384,7 +391,7 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
                     if (!cursorLen)
                         break;
                     const void *cursor = mb.readDirect(cursorLen);
-                    memcpy(remoteReadCursorMb.clear().reserveTruncate(cursorLen), cursor, cursorLen);
+                    JBASE64_Encode(cursor, cursorLen, remoteReadCursor);
                 }
 
                 if (remoteStreamForceResend)
@@ -395,13 +402,16 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
 
                 // Only the handle is needed for continuation, but this tests the behaviour of some clients which may send cursor per request (e.g. to refresh)
                 if (remoteStreamSendCursor)
-                    requestTree->setPropBin("cursorBin", remoteReadCursorMb.length(), remoteReadCursorMb.toByteArray());
+                    requestTree->setProp("cursorBin", remoteReadCursor);
 
                 requestTree->setProp("format", outputFmtStr);
                 StringBuffer requestStr;
                 toJSON(requestTree, requestStr);
 #ifdef _DEBUG
+                fputs("\nNext request:", stdout);
                 fputs(requestStr, stdout);
+                fputs("\n", stdout);
+                fflush(stdout);
 #endif
 
                 sendlen = requestStr.length();
@@ -425,7 +435,7 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
             if (retrySend)
             {
                 PROGLOG("Retry send for handle: %u", cursorHandle);
-                requestTree->setPropBin("cursorBin", remoteReadCursorMb.length(), remoteReadCursorMb.toByteArray());
+                requestTree->setProp("cursorBin", remoteReadCursor);
                 StringBuffer requestStr;
                 toJSON(requestTree, requestStr);
 

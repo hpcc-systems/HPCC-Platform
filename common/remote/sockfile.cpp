@@ -5495,20 +5495,17 @@ public:
 
         const char *outputFmtStr = requestTree->queryProp("format");
         int cursorHandle = requestTree->getPropInt("cursor");
-        Owned<IPropertyTree> responseTree; // Used if xml/json
         OutputFormat outputFormat;
-        if (!outputFmtStr || strieq("xml", outputFmtStr))
+        if (nullptr == outputFmtStr)
+            outputFormat = outFmt_Xml; // default
+        else if (strieq("xml", outputFmtStr))
             outputFormat = outFmt_Xml;
         else if (strieq("json", outputFmtStr))
             outputFormat = outFmt_Json;
-        else
+        else if (strieq("binary", outputFmtStr))
             outputFormat = outFmt_Binary;
-        if (outFmt_Binary != outputFormat)
-            responseTree.setown(createPTree("Response"));
-
-        MemoryBuffer cursorMb;
-        if (requestTree->getPropBin("cursorBin", cursorMb))
-            cursorMb.setEndian(__BIG_ENDIAN);
+        else
+            throw MakeStringException(0, "Unrecognised output format: %s", outputFmtStr);
 
         Owned<IRemoteActivity> outputActivity;
         OpenFileInfo fileInfo;
@@ -5531,13 +5528,23 @@ public:
         else // known handle, continuation
             outputActivity.set(fileInfo.activity);
 
-        if (outputActivity && cursorMb.length()) // use handle if one provided
+        if (outputActivity && requestTree->hasProp("cursorBin")) // use handle if one provided
+        {
+            MemoryBuffer cursorMb;
+            cursorMb.setEndian(__BIG_ENDIAN);
+            JBASE64_Decode(requestTree->queryProp("cursorBin"), cursorMb);
             outputActivity->restoreCursor(cursorMb);
+        }
 
-        if (outFmt_Binary != outputFormat)
-            responseTree->setPropInt("cursor", cursorHandle);
-        else
+        Owned<IXmlWriterExt> responseWriter; // for xml or json response
+        if (outFmt_Binary == outputFormat)
             reply.append(cursorHandle);
+        else // outFmt_Xml || outFmt_Json
+        {
+            responseWriter.setown(createIXmlWriterExt(0, 0, nullptr, outFmt_Xml == outputFormat ? WTStandard : WTJSON));
+            responseWriter->outputBeginNested("Response", true);
+            responseWriter->outputUInt(cursorHandle, sizeof(cursorHandle), "cursor");
+        }
         if (cursorHandle)
         {
             IOutputMetaData *out = outputActivity->queryOutputMeta();
@@ -5558,10 +5565,13 @@ public:
                     reply.append(rowSz, row);
                 }
                 dataLenMarker.write();
+                DelayedSizeMarker cursorLenMarker(reply); // cursor length
+                if (!eoi)
+                    outputActivity->serializeCursor(reply);
+                cursorLenMarker.write();
             }
             else
             {
-                CPropertyTreeWriter iptWriter;
                 for (unsigned __int64 i=0; i<defaultDaFSNumRecs; i++)
                 {
                     size32_t rowSz;
@@ -5571,47 +5581,26 @@ public:
                         eoi = true;
                         break;
                     }
-                    IPropertyTree *rowNode = responseTree->addPropTree("Row");
-                    iptWriter.setRoot(*rowNode);
-                    out->toXML((const byte *)row, iptWriter);
+                    responseWriter->outputBeginNested("Row", true);
+                    out->toXML((const byte *)row, *responseWriter);
+                    responseWriter->outputEndNested("Row");
                 }
-            }
-            if (outFmt_Binary != outputFormat)
-            {
                 if (!eoi)
                 {
                     MemoryBuffer cursorMb;
                     cursorMb.setEndian(__BIG_ENDIAN);
                     outputActivity->serializeCursor(cursorMb);
-                    responseTree->setPropBin("cursorBin", cursorMb.length(), cursorMb.toByteArray());
+                    StringBuffer cursorBinStr;
+                    JBASE64_Encode(cursorMb.toByteArray(), cursorMb.length(), cursorBinStr);
+                    responseWriter->outputString(cursorBinStr.length(), cursorBinStr.str(), "cursorBin");
                 }
             }
-            else
-            {
-                DelayedSizeMarker cursorLenMarker(reply); // cursor length
-                if (!eoi)
-                    outputActivity->serializeCursor(reply);
-                cursorLenMarker.write();
-            }
         }
-        switch (outputFormat)
+        if (outFmt_Binary != outputFormat)
         {
-            case outFmt_Xml:
-            {
-                StringBuffer responseXmlStr;
-                toXML(responseTree, responseXmlStr);
-                reply.append(responseXmlStr.length(), responseXmlStr.str());
-                break;
-            }
-            case outFmt_Json:
-            {
-                StringBuffer responseJsonStr;
-                toJSON(responseTree, responseJsonStr);
-                reply.append(responseJsonStr.length(), responseJsonStr.str());
-                break;
-            }
-            default:
-                break;
+            responseWriter->outputEndNested("Response");
+            PROGLOG("Response: %s", responseWriter->str());
+            reply.append(responseWriter->length(), responseWriter->str());
         }
         return true;
     }
