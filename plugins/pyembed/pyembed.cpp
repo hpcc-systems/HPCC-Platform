@@ -245,6 +245,8 @@ static void releaseContext()
 
 // Use a global object to ensure that the Python interpreter is initialized on main thread
 
+static HINSTANCE keepLoadedHandle;
+
 static class Python27GlobalState
 {
 public:
@@ -282,6 +284,9 @@ public:
     }
     ~Python27GlobalState()
     {
+        if (keepLoadedHandle)
+            FreeSharedObject(keepLoadedHandle);  // Must be process termination - ok to free now (and helps stop lockups at closedown in some Python libraries eg Tensorflow).
+
         if (threadContext)
             delete threadContext;   // The one on the main thread won't get picked up by the thread hook mechanism
         threadContext = NULL;
@@ -458,7 +463,7 @@ protected:
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
-    // Make sure we are never unloaded (as Python may crash if we are)
+    // Make sure we are never dynamically unloaded (as Python may crash if we are)
     // we do this by doing a dynamic load of the pyembed library
     // This also allows eclcc to be able to use the library for constant folding
 #ifdef _WIN32
@@ -477,8 +482,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     StringBuffer modname;
     if (findLoadedModule(modname, "libpy2embed"))
     {
-        HINSTANCE h = LoadSharedObject(modname, false, false);
-        // Deliberately leak this handle
+        keepLoadedHandle = LoadSharedObject(modname, false, false);
     }
 #endif
     return true;

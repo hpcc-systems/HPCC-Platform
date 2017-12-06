@@ -252,6 +252,8 @@ static void releaseContext()
 
 // Use a global object to ensure that the Python interpreter is initialized on main thread
 
+static HINSTANCE keepLoadedHandle;
+
 static class Python3xGlobalState
 {
 public:
@@ -289,6 +291,9 @@ public:
     }
     ~Python3xGlobalState()
     {
+        if (keepLoadedHandle)
+            FreeSharedObject(keepLoadedHandle);  // Must be process termination - ok to free now (and helps stop lockups at closedown in some Python libraries eg Tensorflow).
+
         if (threadContext)
             delete threadContext;   // The one on the main thread won't get picked up by the thread hook mechanism
         threadContext = NULL;
@@ -493,7 +498,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
                     if (tail)
                     {
                         tail[strlen(SharedObjectExtension)] = 0;
-                        HINSTANCE h = LoadSharedObject(fullName, false, false);
+                        keepLoadedHandle = LoadSharedObject(fullName, false, false);
                         break;
                     }
                 }
