@@ -30,6 +30,7 @@
 #include "jexcept.hpp"
 #include "jutil.hpp"
 #include "jthread.hpp"
+#include "jregexp.hpp"
 #include "hqlplugins.hpp"
 #include "deftype.hpp"
 #include "eclhelper.hpp"
@@ -431,15 +432,30 @@ public:
 protected:
     static StringBuffer &wrapPythonText(StringBuffer &out, const char *in, const char *params)
     {
-        out.appendf("def __user__(%s):\n  ", params);
-        char c;
-        while ((c = *in++) != '\0')
+        // Complicated by needing to keep future import lines outside defined function
+        // Per python spec, a future statement must appear near the top of the module. The only lines that can appear before a future statement are:
+        //   the module docstring (if any),
+        //   comments,
+        //   blank lines, and
+        //   other future statements.
+        // We don't attempt to parse the python to spot these - instead, we pull all lines up to and including the last future statement out to the global scope.
+        // Because this is a little unsophisticated it will be fooled by code that includes things that look like future statements inside multiline strings.
+        // I don't care.
+        StringArray lines;
+        lines.appendList(in, "\n", false);
+        RegExpr expr("^ *from +__future__ +import ");
+        unsigned leadingLines = 0;
+        ForEachItemIn(idx, lines)
         {
-            out.append(c);
-            if (c=='\n')
-                out.append("  ");
+            if (expr.find(lines.item(idx)))
+                leadingLines = idx+1;
         }
-        out.appendf("\n__result__ = __user__(%s)\n", params);
+        for (unsigned leadingLine = 0; leadingLine < leadingLines; leadingLine++)
+            out.append(lines.item(leadingLine)).append('\n');
+        out.appendf("def __user__(%s):\n", params);
+        for (unsigned line = leadingLines; line < lines.length(); line++)
+            out.append("  ").append(lines.item(line)).append('\n');
+        out.appendf("__result__ = __user__(%s)\n", params);
         return out;
     }
     PyThreadState *tstate;
