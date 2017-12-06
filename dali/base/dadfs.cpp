@@ -9466,7 +9466,7 @@ class CInitGroups
                 }
             }
         }
-        if (!existingClusterGroup || (!matchExisting && !matchOldEnv))
+        if ((!existingClusterGroup && (grp_thorspares != groupType)) || (!matchExisting && !matchOldEnv))
         {
             VStringBuffer msg("New cluster layout for cluster %s", gname.str());
             WARNLOG("%s", msg.str());
