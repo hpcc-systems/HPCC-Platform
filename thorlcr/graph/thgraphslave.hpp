@@ -66,6 +66,8 @@ public:
         owner.ActPrintLog("ITDL starting for output %d", outputId);
 #endif
 #ifdef _TESTING
+        bool started = hasStarted();
+        bool stopped = hasStopped();
         assertex(!hasStarted() || hasStopped());      // ITDL started twice
 #endif
         icount = 0;
