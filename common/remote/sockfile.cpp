@@ -2049,6 +2049,11 @@ public:
         return ret;
     }
 
+    virtual IDirectoryIterator *directoryFilesSorted(SortDirectoryMode mode, bool rev, const char *mask,bool sub,bool includedirs)
+    {
+        UNIMPLEMENTED;
+    }
+
     IDirectoryDifferenceIterator *monitorDirectory(
                                   IDirectoryIterator *prev=NULL,    // in (NULL means use current as baseline)
                                   const char *mask=NULL,

@@ -85,213 +85,351 @@ static void mkDateCompare(bool dfu,const char *dt,StringBuffer &out,char fill)
 
 void WUiterate(ISashaCommand *cmd, const char *mask)
 {
-    bool dfu = cmd->getDFU();
-    const char *beforedt = cmd->queryBefore();
-    const char *afterdt = cmd->queryAfter();
-    const char *owner = cmd->queryOwner();
-    const char *state = cmd->queryState();
-    const char *cluster = cmd->queryCluster();
-    const char *jobname = cmd->queryJobName();
-    const char *outputformat = cmd->queryOutputFormat();
-    const char *priority = cmd->queryPriority();
-    const char *fileread = cmd->queryFileRead();
-    const char *filewritten = cmd->queryFileWritten();
-    const char *eclcontains = cmd->queryEclContains();
-    const char *cmdname = cmd->queryDfuCmdName();
-    unsigned start = cmd->getStart(); 
-    unsigned num = cmd->getLimit();
-    StringBuffer before;
-    StringBuffer after;
-    StringBuffer tmppath;
-    mkDateCompare(dfu,afterdt,after,'0');
-    mkDateCompare(dfu,beforedt,before,'9');
-    bool haswusoutput = cmd->getAction()==SCA_WORKUNIT_SERVICES_GET;
-    bool hasdtoutput = cmd->getAction()==SCA_LISTDT;
-    MemoryBuffer WUSbuf;
-    if (haswusoutput)
-        cmd->setWUSresult(WUSbuf);  // swap in/out (in case ever do multiple)
+    class CWUData : public CInterface
+    {
+    public:
+        CDateTime modifiedTime;
+        Owned<IPropertyTree> wuTree;
+    };
 
-    StringBuffer baseXPath = dfu ? "DFU/WorkUnits" : "WorkUnits";
-    Owned<IRemoteConnection> conn;
-    bool isWild = !mask || !*mask || isWildString(mask);
-    bool unfiltered = !mask || !*mask || (0==strcmp(mask,"*"));
-    if (cmd->getArchived()) {
-        // used to check not online
-        StringBuffer path;
-        if (dfu)
-            getLdsPath("Archive/DFUWorkUnits",path);
-        else
-            getLdsPath("Archive/WorkUnits",path);
-        Owned<IFile> dir = createIFile(path.str());
-        StringBuffer masktmp;
-        if (unfiltered&&after.length()&&before.length()) {
-            const char *lo = after.str();
-            const char *hi = before.str();
-            while (*lo&&(toupper(*lo)==toupper(*hi))) {
-                masktmp.append((char)toupper(*lo));
-                lo++;
-                hi++;
+    class CArchivedWUReader : public CSimpleInterface
+    {
+        StringBuffer mask, fromDT, toDT, fromDir, toDir, afterWU;
+        bool hasWUSOutput, outputModifiedTime, outputXML;
+        ISashaCommand* cmd;
+
+        void getMasks(const char *beforeWU, const char *afterWU, StringBuffer &dirMask, StringBuffer &fileMask)
+        {
+            //The fromDT and toDT are the filters which defines a search range.
+            //The afterWU (beforeWU) defines paging within the search range. 
+            //For the first page, a user may define the fromDT and/or toDT without afterWU or beforeWU.
+                    
+            StringBuffer from, to;
+            if (!isEmptyString(afterWU) && (fromDT.isEmpty() || (strcmp(afterWU, fromDT.str()) > 0)))
+                from.set(afterWU);
+            else if (!fromDT.isEmpty())
+                from.set(fromDT.str());
+            if (!isEmptyString(beforeWU) && (toDT.isEmpty() || (strcmp(beforeWU, toDT.str()) < 0)))
+                to.set(beforeWU);
+            else if (!toDT.isEmpty())
+                to.set(toDT.str());
+
+            if (!isEmptyString(from))
+                splitWUID(from, fromDir);
+            if (!isEmptyString(to))
+                splitWUID(to, toDir);
+
+            bool unfiltered = mask.isEmpty() || streq(mask.str(), "*");
+
+            //The following code is a clone of the pre-existing code. hmask -> dirMask. tmask -> fileMask.
+            //The dirMask is used to filter out the directories (ex: W20171010) which store archived WU files.
+            //The fileMask is used to filter out the WU files (ex: W20171010-101010*.xml).
+            StringBuffer masktmp;
+            if (unfiltered && !from.isEmpty() && !to.isEmpty())
+            {
+                const char *lo = from.str();
+                const char *hi = to.str();
+                while (*lo && (toupper(*lo) == toupper(*hi)))
+                {
+                    masktmp.append((char)toupper(*lo));
+                    lo++;
+                    hi++;
+                }
+                masktmp.append("*");
+                mask = masktmp.str();
             }
-            masktmp.append("*");
-            mask = masktmp.str();
+
+            StringBuffer head;
+            if (!mask.isEmpty())
+            {
+                splitWUID(mask.str(), head);
+                if (!head.isEmpty())
+                    dirMask = head.str();
+                fileMask.set(mask.str()).toUpperCase();
+            }
+            else
+                fileMask.append("*");
+            fileMask.append(".xml");
         }
-        StringBuffer head, tmask;
-        const char *hmask = NULL;
-        if (mask&&*mask) {
-            splitWUID(mask,head);
-            if (head.length())
-                hmask = head.str();
-            tmask.clear().append(mask).toUpperCase();
+        bool checkDirs(const char *dir)
+        {
+            if (!fromDir.isEmpty() && (strcmp(dir, fromDir.str()) < 0))
+                return false;
+            if (!toDir.isEmpty() && (strcmp(dir, toDir.str()) > 0))
+                return false;
+            return true;
         }
-        else
-            tmask.append("*");
-        tmask.append(".xml");
-        Owned<IDirectoryIterator> di = dir->directoryFiles(hmask,false,true);
-        StringBuffer name;
-        unsigned index = 0;
-        StringBuffer xb;
-        bool overflowed = false;
-        ForEach(*di) {
-            if (overflowed||(index>start+num))
-                break;
-            if (di->isDir()) {
-                Owned<IDirectoryIterator> di2 = di->query().directoryFiles(tmask.str(),false);
+        bool parseAndCheckWUID(bool &checkBeforeOrAfterWU, const char *beforeWU,
+            const char *afterWU, StringBuffer &name)
+        {
+            if (name.length() < 5)
+                return false;
+
+            name.setLength(name.length()-4);
+            name.toUpperCase();
+            const char *wuid = name.str();
+            if ((name.length()>6) && strieq(wuid+name.length()-6, "_HINTS"))
+                return false;
+
+            if (!mask.isEmpty() && !WildMatch(wuid, mask.str(),true))
+                return false;
+
+            if (checkBeforeOrAfterWU)
+            {
+                if (!isEmptyString(afterWU) && (stricmp(wuid, afterWU) <= 0))
+                    return false;
+                if (!isEmptyString(beforeWU) && (stricmp(wuid, beforeWU) >= 0))
+                    return false;
+                if (isEmptyString(beforeWU) || isEmptyString(afterWU))
+                    checkBeforeOrAfterWU = false; //Found the starting point. So, do not need to check anymore.
+            }
+            return true;
+        }
+        bool checkFilters(IPropertyTree *t)
+        {
+            const char *owner = cmd->queryOwner();
+            const char *cluster = cmd->queryCluster();
+            const char *jobName = cmd->queryJobName();
+            const char *state = cmd->queryState();
+            const char *priority = cmd->queryPriority();
+            const char *eclContains = cmd->queryEclContains();
+            const char *fileRead = cmd->queryFileRead();
+            const char *fileWritten = cmd->queryFileWritten();
+            const char *cmdName = cmd->queryDfuCmdName();
+
+            //The following code is a clone of the pre-existing code.
+            StringBuffer path, val;
+            if (!isEmptyString(owner) && (!t->getProp("@submitID", val.clear()) || !WildMatch(val.str(), owner, true)))
+                return false;
+            if (!isEmptyString(state) && (!t->getProp(cmd->getDFU()?"Progress/@state":"@state", val.clear()) || !WildMatch(val.str(), state, true)))
+                return false;
+            if (!isEmptyString(cluster) && (!t->getProp("@clusterName", val.clear()) || !WildMatch(val.str(), cluster, true)))
+                return false;
+            if (!isEmptyString(jobName) && (!t->getProp("@jobName", val.clear()) || !WildMatch(val.str(), jobName, true)))
+                return false;
+            if (!isEmptyString(cmdName) && (!t->getProp("@command", val.clear()) || !WildMatch(val.str(), cmdName, true)))
+                return false;
+            if (!isEmptyString(priority) && (!t->getProp("@priorityClass", val.clear()) || !WildMatch(val.str(), priority, true)))
+                return false;
+            if (!isEmptyString(fileRead) && !t->hasProp(path.setf("FilesRead/File[@name=~?\"%s\"]", fileRead).str()))
+                return false;
+            if (!isEmptyString(fileWritten) && !t->hasProp(path.setf("Files/File[@name=~?\"%s\"]", fileWritten).str()))
+                return false;
+            if (!isEmptyString(eclContains) && !t->hasProp(path.setf("Query[Text=~?\"*%s*\"]", eclContains).str()))
+                return false;
+            return true;
+        }
+        bool addOutput(StringArray &outputFields, IPropertyTree *wuTree, CDateTime &modifiedTime, MemoryBuffer &WUSbuf)
+        {
+            if (hasWUSOutput)
+            { //cmd->getAction()==SCA_WORKUNIT_SERVICES_GET
+                if (!serializeWUSrow(*wuTree, WUSbuf, false))
+                    return false; //Log overflowed?
+            }
+            else if (outputXML)
+            { //cmd->getAction()==SCA_GET
+                StringBuffer xml;
+                toXML(wuTree, xml);
+                if (!cmd->addResult(xml.str()))
+                    return false; //Log overflowed?
+            }
+            else
+            {
+                if (outputFields.length() == 0)
+                    cmd->addId(wuTree->queryName());
+                else
+                {
+                    StringBuffer output = wuTree->queryName();
+                    setWUDataTree(wuTree, outputFields, output);
+                    cmd->addId(output.str());
+                }
+                if (outputModifiedTime)
+                    cmd->addDT(modifiedTime);
+            }
+            return true;
+        }
+        void setWUDataTree(IPropertyTree *wu, StringArray &outputFields, StringBuffer &output)
+        {
+            ForEachItemIn(i, outputFields)
+            {
+                const char* outputField = (const char*)outputFields.item(i);
+
                 StringBuffer val;
-                ForEach(*di2) {
-                    di2->getName(name.clear());
-                    if (!di2->isDir()&&(name.length()>4)) {
-                        name.setLength(name.length()-4);
-                        name.toUpperCase();
-                        const char *wuid = name.str();
-                        if ((name.length()>6)&&(stricmp(wuid+name.length()-6,"_HINTS")==0))
+                bool found = true;
+                if (strieq(outputField, "owner"))
+                    wu->getProp("@submitID", val);
+                else if (strieq(outputField, "cluster"))
+                    wu->getProp("@clusterName", val);
+                else if (strieq(outputField, "jobname"))
+                    wu->getProp("@jobName",val);
+                else if (strieq(outputField,"state"))
+                    wu->getProp("@state", val);
+                else
+                    found = false;
+                if (found)
+                    output.append(',').append(val);
+            }
+        }
+
+    public:
+
+        CArchivedWUReader(ISashaCommand *_cmd, const char *_mask)
+        {
+            cmd = _cmd;
+            mask.set(_mask);
+            hasWUSOutput = cmd->getAction()==SCA_WORKUNIT_SERVICES_GET;
+            outputModifiedTime = cmd->getAction()==SCA_LISTDT;
+            outputXML = cmd->getAction()==SCA_GET;
+
+            //In WUiterate(), the queryAfter() is used as fromDT and the queryBefore() is used as toDT.
+            mkDateCompare(cmd->getDFU(), cmd->queryAfter(), fromDT, '0');
+            mkDateCompare(cmd->getDFU(), cmd->queryBefore(), toDT, '9');
+        }
+        void getWUs()
+        {
+            const char *owner = cmd->queryOwner();
+            const char *cluster = cmd->queryCluster();
+            const char *jobName = cmd->queryJobName();
+            const char *state = cmd->queryState();
+            const char *priority = cmd->queryPriority();
+            const char *eclContains = cmd->queryEclContains();
+            const char *fileRead = cmd->queryFileRead();
+            const char *fileWritten = cmd->queryFileWritten();
+            const char *cmdName = cmd->queryDfuCmdName();
+            const char *beforeWU = cmd->queryBeforeWU();
+            const char *afterWU = cmd->queryAfterWU();
+            unsigned numWUs = cmd->getLimit();
+            StringBuffer path;
+            if (cmd->getDFU())
+                getLdsPath("Archive/DFUWorkUnits", path);
+            else
+                getLdsPath("Archive/WorkUnits", path);
+            Owned<IFile> dir = createIFile(path.str());
+
+            StringArray outputFields;
+            const char *outputFormat = cmd->queryOutputFormat();
+            outputFields.appendList(outputFormat, "|,");
+
+            StringBuffer dirMask, fileMask;
+            getMasks(beforeWU, afterWU, dirMask, fileMask);
+            bool checkBeforeOrAfterWU = !isEmptyString(beforeWU) || !isEmptyString(afterWU);
+            bool sortInc = !isEmptyString(beforeWU) && isEmptyString(afterWU);
+
+            MemoryBuffer WUSbuf; //Not sure what this is.
+            if (hasWUSOutput)
+                cmd->setWUSresult(WUSbuf);  // swap in/out (in case ever do multiple)
+
+            CIArrayOf<CWUData> wus;
+            unsigned wuCount = 0;
+            bool overflowed = false;
+            StringBuffer output;
+            Owned<IDirectoryIterator> dirIterator = dir->directoryFilesSorted(SD_bynameNC, sortInc, dirMask.isEmpty() ? nullptr : dirMask.str(), false, true);
+            ForEach(*dirIterator)
+            {
+                dirIterator->getName(output.clear());
+                if (!dirIterator->isDir() || !checkDirs(output.str()))
+                    continue;
+
+                Owned<IDirectoryIterator> fileIterator = dirIterator->query().directoryFilesSorted(SD_bynameNC, sortInc, fileMask.str(), false);
+                ForEach(*fileIterator)
+                {
+                    fileIterator->getName(output.clear());
+                    if (!parseAndCheckWUID(checkBeforeOrAfterWU, beforeWU, afterWU, output))
+                        continue;
+    
+                    const char *wuid = output.str();
+   
+                    Owned<IPropertyTree> wuTree;
+                    if (outputXML || hasWUSOutput || !isEmptyString(outputFormat) || !isEmptyString(owner)
+                        || !isEmptyString(state) || !isEmptyString(cluster) || !isEmptyString(jobName)
+                        || !isEmptyString(cmdName) || !isEmptyString(priority) || !isEmptyString(fileRead)
+                        || !isEmptyString(fileWritten) || !isEmptyString(eclContains))
+                    {
+                        try
+                        {
+                            wuTree.setown(createPTree(fileIterator->query()));
+                            if (!wuTree || isEmptyString(wuTree->queryName()) || !checkFilters(wuTree))
+                                continue;
+                        }
+                        catch (IException *e)
+                        {
+                            VStringBuffer msg("WUiterate: Workunit %s failed to load", wuid);
+                            EXCLOG(e,msg.str());
+                            e->Release();
                             continue;
-                        if ((!mask||!*mask||WildMatch(wuid,mask,true)) &&
-                            ((before.length()==0)||(stricmp(wuid,before.str())<=0)) &&
-                            ((after.length()==0)||(stricmp(wuid,after.str())>=0))) {
-                            if (isWild) {
-                                if (!conn)
-                                    conn.setown(querySDS().connect(baseXPath.str(), myProcessSession(), 0, 5*60*1000)); // connection to all
-                            }
-                            else {
-                                VStringBuffer xpath("%s/%s", baseXPath.str(), mask);
-                                conn.setown(querySDS().connect(xpath.str(), myProcessSession(), 0, 5*60*1000));
-                            }
-                            if ((isWild && !conn->queryRoot()->hasProp(wuid)) || (!isWild && !conn)) { // check not online
-                                Owned<IPropertyTree> t;
-                                bool hasowner = owner&&*owner;
-                                bool hascluster = cluster&&*cluster;
-                                bool hasstate = state&&*state;
-                                bool hasjobname = jobname&&*jobname;
-                                bool hasoutput = outputformat&&*outputformat;
-                                bool inrange = (index>=start)&&(index<start+num);
-                                bool hascommand = cmdname&&*cmdname;
-                                bool haspriority = priority&&*priority;
-                                bool hasfileread = fileread&&*fileread;
-                                bool hasfilewritten = filewritten&&*filewritten;
-                                bool haseclcontains = eclcontains&&*eclcontains;
-                                if ((cmd->getAction()==SCA_GET)||haswusoutput||hasowner||hasstate||hascluster||hasjobname||hascommand||(hasoutput&&inrange)||haspriority||hasfileread||hasfilewritten||haseclcontains) {
-                                    try {
-                                        t.setown(createPTree(di2->query()));
-                                        if (!t)
-                                            continue;
-                                        if (hasowner&&(!t->getProp("@submitID",val.clear())||!WildMatch(val.str(),owner,true)))
-                                            continue;
-                                        if (hasstate&&(!t->getProp(dfu?"Progress/@state":"@state",val.clear())||!WildMatch(val.str(),state,true)))
-                                            continue;
-                                        if (hascluster&&(!t->getProp("@clusterName",val.clear())||!WildMatch(val.str(),cluster,true)))
-                                            continue;
-                                        if (hasjobname&&(!t->getProp("@jobName",val.clear())||!WildMatch(val.str(),jobname,true)))
-                                            continue;
-                                        if (hascommand&&(!t->getProp("@command",val.clear())||!WildMatch(val.str(),cmdname,true)))
-                                            continue;
-                                        if (haspriority&&(!t->getProp("@priorityClass",val.clear())||!WildMatch(val.str(),priority,true)))
-                                            continue;
-                                        if (hasfileread&&!t->hasProp(tmppath.clear().appendf("FilesRead/File[@name=~?\"%s\"]",fileread).str()))
-                                            continue;
-                                        if (hasfilewritten&&!t->hasProp(tmppath.clear().appendf("Files/File[@name=~?\"%s\"]",filewritten).str()))
-                                            continue;
-                                        if (haseclcontains&&!t->hasProp(tmppath.clear().appendf("Query[Text=~?\"*%s*\"]",eclcontains).str()))
-                                            continue;
-                                    }
-                                    catch (IException *e) {
-                                        StringBuffer msg;
-                                        msg.appendf("WUiterate: Workunit %s failed to load", wuid);
-                                        EXCLOG(e,msg.str());
-                                        e->Release();
-                                        continue;
-                                    }
-                                }
-                                index++;
-                                if (!inrange)
-                                    continue;
-                                if (hasoutput) {
-                                    char *saveptr;
-                                    char *parse = strdup(outputformat);
-                                    char *tok = strtok_r(parse, "|,",&saveptr);
-                                    while (tok) {
-                                        val.clear();
-                                        bool found = true;
-                                        if (stricmp(tok,"owner")==0)
-                                            t->getProp("@submitID",val);
-                                        else if (stricmp(tok,"cluster")==0)
-                                            t->getProp("@clusterName",val);
-                                        else if (stricmp(tok,"jobname")==0)
-                                            t->getProp("@jobName",val);
-                                        else if (stricmp(tok,"state")==0)
-                                            t->getProp(dfu?"Progress/@state":"@state",val);
-                                        else if (stricmp(tok,"command")==0)
-                                            t->getProp("@command",val);
-                                        else if (stricmp(tok,"wuid")==0)
-                                            t->getName(val);
-                                        else
-                                            found = false;
-                                        if (found) {
-                                            // remove commas TBD
-                                            name.append(',').append(val);
-                                        }
-                                        tok = strtok_r(NULL, "|,",&saveptr);
-                                    }
-                                    free(parse);
-                                }
-                                if (haswusoutput) {
-                                    if (!serializeWUSrow(*t,WUSbuf,false)) {
-                                        overflowed = true;
-                                        break;
-                                    }
-                                }
-                                else {
-                                    cmd->addId(name.str());
-                                    if (hasdtoutput) {
-                                        CDateTime dt;
-                                        di2->getModifiedTime(dt);
-                                        cmd->addDT(dt);
-                                    }
-                                }
-                                if (cmd->getAction()==SCA_GET) {
-                                    StringBuffer xml;
-                                    toXML(t,xml);
-                                    if (!cmd->addResult(xml.str()))
-                                        break;
-                                }
-                            }
                         }
                     }
-                    if (index>start+num)
+
+                    if (sortInc)
+                    {//The output should contain WUs from new to old. So, we need to reverse the order before output.
+                        Owned<CWUData> wu = new CWUData();
+                        if (outputXML || !isEmptyString(outputFormat))
+                            wu->wuTree.setown(wuTree.getClear());
+                        if (outputModifiedTime)
+                            fileIterator->getModifiedTime(wu->modifiedTime);
+                        wus.append(*wu.getClear());
+                    }
+                    else
+                    {
+                        CDateTime dt;
+                        if (outputModifiedTime)
+                            fileIterator->getModifiedTime(dt);
+
+                        if (!addOutput(outputFields, wuTree, dt, WUSbuf))
+                        {
+                            overflowed = true;
+                            break;
+                        }
+                    }
+                    wuCount++;
+                    if (wuCount == numWUs)
+                        break;
+                }
+                if (overflowed || (wuCount == numWUs))
+                    break;
+            }
+            if (sortInc)
+            {
+                ForEachItemInRev(i, wus)
+                {
+                    CWUData &wuData = wus.item(i);
+                    if (!addOutput(outputFields, wuData.wuTree, wuData.modifiedTime, WUSbuf))  //Log an error?
                         break;
                 }
             }
+
+            if (hasWUSOutput)
+                cmd->setWUSresult(WUSbuf);
         }
-    }
-    if (cmd->getOnline()) {
-        if (haswusoutput)
+    };
+
+    Owned<CArchivedWUReader> reader = new CArchivedWUReader(LINK(cmd), mask);
+    if (cmd->getArchived())
+        reader->getWUs();
+    if (cmd->getOnline())
+    {//The following code is from the pre-existing code.
+        bool dfu = cmd->getDFU();
+        const char *beforedt = cmd->queryBefore();
+        const char *afterdt = cmd->queryAfter();
+        const char *owner = cmd->queryOwner();
+        const char *state = cmd->queryState();
+        const char *cluster = cmd->queryCluster();
+        const char *jobname = cmd->queryJobName();
+        const char *outputformat = cmd->queryOutputFormat();
+        unsigned start = cmd->getStart(); 
+        unsigned num = cmd->getLimit();
+        StringBuffer before;
+        StringBuffer after;
+        StringBuffer tmppath;
+        mkDateCompare(dfu,afterdt,after,'0');
+        mkDateCompare(dfu,beforedt,before,'9');
+        if (cmd->getAction()==SCA_WORKUNIT_SERVICES_GET)
             throw MakeStringException(-1,"SCA_WORKUNIT_SERVICES_GET not implemented for online workunits!");
-        StringBuffer xpath(baseXPath);
-        if (!conn)
-        {
-            if (!isWild)
-                xpath.append("/").append(mask);
-            conn.setown(querySDS().connect(xpath.str(), myProcessSession(), 0, 5*60*1000));
-        }
+        bool isWild = !mask || !*mask || isWildString(mask);
+        StringBuffer xpath = dfu ? "DFU/WorkUnits" : "WorkUnits";
+        if (!isWild)
+            xpath.append("/").append(mask);
+        Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), 0, 5*60*1000);
         if (conn)
         {
             Owned<IPropertyTreeIterator> iter = conn->queryRoot()->getElements(isWild ? "*" : NULL);
@@ -372,10 +510,7 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
             }
         }
     }
-    if (haswusoutput)
-        cmd->setWUSresult(WUSbuf);
 }
-
 
 interface IBranchItem: extends IInterface
 {
