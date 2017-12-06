@@ -422,7 +422,7 @@ void CActivityInfo::readActiveWUsAndQueuedWUs(IEspContext& context, IPropertyTre
     readRunningWUsAndJobQueueforOtherStatusServers(context, serverStatusRoot);
     //TODO: add queued WUs for ECLCCServer/ECLServer here. Right now, they are under target clusters.
 
-    getDFUServersAndWUs(envRoot, serverStatusRoot);
+    getDFUServersAndWUs(context, envRoot, serverStatusRoot);
     getDFURecoveryJobs();
 }
 
@@ -699,7 +699,7 @@ void CActivityInfo::readRunningWUsAndJobQueueforOtherStatusServers(IEspContext& 
         if (!found || !*found)
         {
             uniqueServers.setValue(instanceName, true);
-            getServerJobQueue(queueName, instanceName, serverName, node, port);
+            getServerJobQueue(context, queueName, instanceName, serverName, node, port);
 
             //Now, we found a new server. we need to add queued jobs from the queues the server is monitoring.
             StringArray qList;
@@ -716,7 +716,7 @@ void CActivityInfo::readRunningWUsAndJobQueueforOtherStatusServers(IEspContext& 
     return;
 }
 
-void CActivityInfo::getDFUServersAndWUs(IPropertyTree* envRoot, IPropertyTree* serverStatusRoot)
+void CActivityInfo::getDFUServersAndWUs(IEspContext& context, IPropertyTree* envRoot, IPropertyTree* serverStatusRoot)
 {
     if (!envRoot)
         return;
@@ -738,7 +738,7 @@ void CActivityInfo::getDFUServersAndWUs(IPropertyTree* envRoot, IPropertyTree* s
             StringArray wuidList;
             const char *queueName = queues.item(q);
             readDFUWUDetails(queueName, serverName, wuidList, readDFUWUIDs(serverStatusRoot, queueName, wuidList));
-            getServerJobQueue(queueName, serverName, STATUS_SERVER_DFUSERVER, NULL, 0);
+            getServerJobQueue(context, queueName, serverName, STATUS_SERVER_DFUSERVER, NULL, 0);
         }
     }
 }
@@ -859,14 +859,22 @@ void CActivityInfo::getDFURecoveryJobs()
     }
 }
 
-void CActivityInfo::getServerJobQueue(const char* queueName, const char* serverName,
+void CActivityInfo::getServerJobQueue(IEspContext &context, const char* queueName, const char* serverName,
     const char* serverType, const char* networkAddress, unsigned port)
 {
     if (!queueName || !*queueName || !serverName || !*serverName || !serverType || !*serverType)
         return;
 
+    double version = context.getClientVersion();
     Owned<IEspServerJobQueue> jobQueue = createServerJobQueue("", "");
-    jobQueue->setQueueName(queueName);
+    if (version < 1.20)
+        jobQueue->setQueueName(queueName);
+    else
+    {
+        StringArray queueNames;
+        queueNames.appendListUniq(queueName, ",");
+        jobQueue->setQueueNames(queueNames);
+    }
     jobQueue->setServerName(serverName);
     jobQueue->setServerType(serverType);
     if (networkAddress && *networkAddress)
