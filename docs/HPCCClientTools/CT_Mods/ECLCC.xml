@@ -117,7 +117,7 @@
          ***END OF COMMENT***   --></para>
 
     <sect1 id="Stand-Alone-ECL-Compiler">
-      <title>Using the ECL Compiler as a Stand Alone option </title>
+      <title>Using the ECL Compiler as a Stand Alone option</title>
 
       <para>The ECL Compiler is normally used through the ECL IDE or Eclipse
       using the ECL plugin for Eclipse, however, you can use the ECL Compiler
@@ -203,6 +203,12 @@
                 <entry>-syntax</entry>
 
                 <entry>Perform a syntax check of the ECL</entry>
+              </row>
+
+              <row>
+                <entry>--nostdinc</entry>
+
+                <entry>Do not include the current directory in -I</entry>
               </row>
 
               <row>
@@ -434,6 +440,13 @@
                 etc.)</para><para><emphasis role="bold">pipe</emphasis>:
                 Disallow the PIPE command to send data to an external
                 program.</para></entry>
+              </row>
+
+              <row>
+                <entry>--fastsyntax </entry>
+
+                <entry>Delay expanding functions when parsing. May speed up
+                processing for some queries</entry>
               </row>
 
               <row>
