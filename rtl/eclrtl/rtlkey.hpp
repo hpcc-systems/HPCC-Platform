@@ -215,15 +215,18 @@ interface IValueSet : public IInterface
     virtual void killRawRange(const void * lower, const void * upper) = 0;
 
 //The following methods are for use once the value set has been created.
+    virtual bool isWild() const = 0;
     virtual unsigned numRanges() const = 0;
 
-    //find the last range where the lower bound <= the field, returns 0 if the field matches the lower bound, > 0 otherwise.
-    //matchRange is set to the range number, set to numRanges if there is no possible match.  Uses a binary chop
-    virtual int findCandidateRange(const byte * field, unsigned & matchRange) const = 0;
+    //compare the field with the lowest bound of the range
+    virtual int compareLowest(const byte * field, unsigned range) const = 0;
 
-    //find the last range where the lower bound <= the field, returns 0 if the field matches the lower bound, > 0 otherwise.
-    //starts searching from curRange (which is likely to match).  Uses a sequential search.
-    virtual int checkCandidateRange(const byte * field, unsigned & curRange) const = 0;
+    //compare the field with the highest bound of the range
+    virtual int compareHighest(const byte * field, unsigned range) const = 0;
+
+    //If field lies within a range return true and set matchRange to the index of the range.
+    //If field is outside a range return false and set matchRange to the index of the next range
+    virtual int findForwardMatchRange(const byte * field, unsigned & matchRange) const = 0;
 
     // Does this field match any range?
     virtual bool matches(const byte * field) const = 0;
@@ -283,22 +286,22 @@ interface IFieldFilter : public IInterface
 public:
 //Simple row matching
     virtual bool matches(const RtlRow & row) const = 0;
-
+    virtual unsigned queryFieldIndex() const = 0;
     virtual int compareRow(const RtlRow & left, const RtlRow & right) const = 0;
+    virtual int compareLowest(const RtlRow & left, unsigned range) const = 0;
+    virtual int compareHighest(const RtlRow & left, unsigned range) const = 0;
+    virtual bool isEmpty() const = 0;
+    virtual bool isWild() const = 0;
 
-    //MORE to come to support index lookups.
     virtual unsigned numRanges() const = 0;
-    virtual int findCandidateRange(const RtlRow & row, unsigned & matchRange) const = 0;
-    virtual int checkCandidateRange(const RtlRow & row, unsigned & curRange) const = 0;
-    virtual bool withinUpperRange(const RtlRow & row, unsigned range) const = 0; // is the row within the current upper limit?
-    virtual bool matches(const RtlRow & row, unsigned range) const = 0;
+    virtual int findForwardMatchRange(const RtlRow & row, unsigned & matchRange) const = 0;
 };
 
 //More types of IFieldFilter to come later
 extern ECLRTL_API IFieldFilter * createEmptyFieldFilter(unsigned _fieldId, const RtlTypeInfo & type);
 extern ECLRTL_API IFieldFilter * createFieldFilter(unsigned fieldId, const RtlTypeInfo & type, const void * value);
 extern ECLRTL_API IFieldFilter * createFieldFilter(unsigned fieldId, IValueSet * values);
-extern ECLRTL_API IFieldFilter * createWildFieldFilter(unsigned fieldId);
+extern ECLRTL_API IFieldFilter * createWildFieldFilter(unsigned fieldId, const RtlTypeInfo & type);
 
 
 

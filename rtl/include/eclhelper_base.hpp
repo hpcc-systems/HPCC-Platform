@@ -873,7 +873,7 @@ class ECLRTL_API CThorIndexGroupAggregateArg : public CThorArgOf<IHThorIndexGrou
     virtual bool getIndexLayout(size32_t & _retLen, void * & _retData) override;
     virtual void setCallback(IThorIndexCallback * _tc) override;
     virtual bool createGroupSegmentMonitors(IIndexReadContext *ctx) override;
-    virtual unsigned getGroupSegmentMonitorsSize() override;
+    virtual unsigned getGroupingMaxField() override;
     virtual size32_t initialiseCountGrouping(ARowBuilder & rowBuilder, const void * src) override;
     virtual size32_t processCountGrouping(ARowBuilder & rowBuilder, unsigned __int64 count) override;
     virtual size32_t mergeAggregate(ARowBuilder & rowBuilder, const void * src) override;
@@ -945,7 +945,7 @@ class ECLRTL_API CThorDiskGroupAggregateArg : public CThorArgOf<IHThorDiskGroupA
     virtual unsigned getFlags() override;
     virtual void setCallback(IThorDiskCallback * _tc) override;
     virtual bool createGroupSegmentMonitors(IIndexReadContext *ctx) override;
-    virtual unsigned getGroupSegmentMonitorsSize() override;
+    virtual unsigned getGroupingMaxField() override;
     virtual size32_t initialiseCountGrouping(ARowBuilder & rowBuilder, const void * src) override;
     virtual size32_t processCountGrouping(ARowBuilder & rowBuilder, unsigned __int64 count) override;
     virtual size32_t mergeAggregate(ARowBuilder & rowBuilder, const void * src) override;

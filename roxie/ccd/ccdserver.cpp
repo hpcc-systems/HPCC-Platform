@@ -21581,7 +21581,12 @@ public:
 
     virtual void append(FFoption option, IFieldFilter * filter)
     {
-        UNIMPLEMENTED;
+        if (!filter->isWild())
+        {
+            if (!cursor)
+                cursor.setown(manager->createCursor(diskSize.queryRecordAccessor(true)));
+            cursor->append(option, filter);
+        }
     }
 
     virtual unsigned ordinality() const
@@ -24312,29 +24317,12 @@ public:
 
     virtual void createSegmentMonitors(IKeyManager *key)
     {
-        unsigned groupSegSize;
         ThorActivityKind kind = factory->getKind();
+        CRoxieServerIndexActivity::createSegmentMonitors(key);
         if ((kind==TAKindexgroupcount || kind==TAKindexgroupexists)) 
-            groupSegSize = aggregateHelper.getGroupSegmentMonitorsSize();
+            groupSegCount = aggregateHelper.getGroupingMaxField();
         else
-            groupSegSize = 0;
-        if (groupSegSize)
-        {
-            CRoxieServerIndexActivity::createSegmentMonitors(key);
-            unsigned numSegs = tlk->ordinality();
-            for (unsigned segNo = 0; segNo < numSegs; segNo++)
-            {
-                IKeySegmentMonitor *seg = tlk->item(segNo);
-                if (seg->getOffset()+seg->getSize()==groupSegSize)
-                {
-                    groupSegCount = segNo+1;
-                    break;
-                }
-            }
-            assertex(groupSegCount);
-        }
-        else
-            CRoxieServerIndexActivity::createSegmentMonitors(key);
+            groupSegCount = 0;
     }
 
     virtual bool processSingleKey(IKeyIndex *key, IRecordLayoutTranslator * trans)

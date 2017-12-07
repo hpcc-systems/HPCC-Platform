@@ -160,7 +160,7 @@ public:
 
     bool isEqualityFilterBefore(IHqlExpression * select);
     unsigned queryKeySelectIndex(IHqlExpression * select)   { return keyableSelects.find(*select); }
-    bool createGroupingMonitor(BuildCtx ctx, const char * listName, IHqlExpression * select, unsigned & maxOffset);
+    bool createGroupingMonitor(BuildCtx ctx, const char * listName, IHqlExpression * select, unsigned & maxField);
 
 protected:
     void buildEmptyKeySegment(BuildMonitorState & buildState, BuildCtx & ctx, KeySelectorInfo & selectorInfo);
@@ -183,7 +183,7 @@ protected:
     void expandKeyableFields();
     void expandSelects(IHqlExpression * expr, IHqlSimpleScope * expandedScope, IHqlExpression * keySelector, IHqlExpression * expandedSelector);;
     bool extractOrFilter(KeyConditionInfo & matches, IHqlExpression * filter, KeyedKind keyedKind);
-    IHqlExpression * getMonitorValueAddress(BuildCtx & ctx, IHqlExpression * value);
+    IHqlExpression * getMonitorValueAddress(BuildCtx & ctx, IHqlExpression * expandedSelector, IHqlExpression * value);
     IHqlExpression * getRangeLimit(ITypeInfo * fieldType, IHqlExpression * lengthExpr, IHqlExpression * value, int whichBoundary);
     IHqlExpression * invertTransforms(IHqlExpression * left, IHqlExpression * right);
     bool isEqualityFilter(IHqlExpression * select);
@@ -235,7 +235,7 @@ protected:
     bool cleanlyKeyedExplicitly;
     bool keyedExplicitly;
     bool allowDynamicFormatChange;
-    bool createValueSets;
+    const bool createValueSets;
     IIdAtom * addRangeFunc;
     IIdAtom * killRangeFunc;
 };

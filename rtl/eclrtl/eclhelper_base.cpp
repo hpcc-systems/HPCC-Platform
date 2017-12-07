@@ -639,7 +639,7 @@ unsigned CThorIndexGroupAggregateArg::getFlags() { return 0; }
 bool CThorIndexGroupAggregateArg::getIndexLayout(size32_t & _retLen, void * & _retData) { return false; }
 void CThorIndexGroupAggregateArg::setCallback(IThorIndexCallback * _tc) { fpp = _tc; }
 bool CThorIndexGroupAggregateArg::createGroupSegmentMonitors(IIndexReadContext *ctx) { return false; }
-unsigned CThorIndexGroupAggregateArg::getGroupSegmentMonitorsSize() { return 0; }
+unsigned CThorIndexGroupAggregateArg::getGroupingMaxField() { return 0; }
 size32_t CThorIndexGroupAggregateArg::initialiseCountGrouping(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }
 size32_t CThorIndexGroupAggregateArg::processCountGrouping(ARowBuilder & rowBuilder, unsigned __int64 count) { rtlFailUnexpected(); return 0; }
 size32_t CThorIndexGroupAggregateArg::mergeAggregate(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }
@@ -688,7 +688,7 @@ void CThorDiskCountArg::onKeyedLimitExceeded() { }
 unsigned CThorDiskGroupAggregateArg::getFlags() { return 0; }
 void CThorDiskGroupAggregateArg::setCallback(IThorDiskCallback * _tc) { fpp = _tc; }
 bool CThorDiskGroupAggregateArg::createGroupSegmentMonitors(IIndexReadContext *ctx) { return false; }
-unsigned CThorDiskGroupAggregateArg::getGroupSegmentMonitorsSize() { return 0; }
+unsigned CThorDiskGroupAggregateArg::getGroupingMaxField() { return 0; }
 size32_t CThorDiskGroupAggregateArg::initialiseCountGrouping(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }
 size32_t CThorDiskGroupAggregateArg::processCountGrouping(ARowBuilder & rowBuilder, unsigned __int64 count) { rtlFailUnexpected(); return 0; }
 size32_t CThorDiskGroupAggregateArg::mergeAggregate(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }

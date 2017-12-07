@@ -26,18 +26,20 @@ BITMASK_ENUM(TransitionMask);
 /*
  * The RowFilter class represents a multiple-field filter of a row.
  */
+class RtlRecord;
 class RowFilter
 {
 public:
     void addFilter(IFieldFilter & filter);
     bool matches(const RtlRow & row) const;
 
+    void extractKeyFilter(const RtlRecord & record, IArrayOf<IFieldFilter> & keyFilters) const;
     int compareRows(const RtlRow & left, const RtlRow & right) const;
     unsigned numFilterFields() const { return filters.ordinality(); }
     const IFieldFilter & queryFilter(unsigned i) const { return filters.item(i); }
 
 protected:
-    IArrayOf<IFieldFilter> filters; // for an index must be in field order, and all values present - more thought required
+    IArrayOf<IFieldFilter> filters;
 };
 
 

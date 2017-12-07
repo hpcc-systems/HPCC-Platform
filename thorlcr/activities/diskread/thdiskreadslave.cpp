@@ -49,6 +49,7 @@ class CDiskReadSlaveActivityRecord : public CDiskReadSlaveActivityBase, implemen
 {
 protected:
     IArrayOf<IKeySegmentMonitor> segMonitors;
+    IArrayOf<IFieldFilter> fieldFilters;
     bool grouped;
     bool isFixedDiskWidth;
     size32_t diskRowMinSz;
@@ -58,7 +59,7 @@ protected:
 
     inline bool segMonitorsMatch(const void *buffer)
     {
-        if (segMonitors.length())
+        if (segMonitors || fieldFilters)
         {
             size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
             RtlRow rowinfo(*recInfo, nullptr, numOffsets, variableOffsets);
@@ -66,6 +67,12 @@ protected:
             ForEachItemIn(idx, segMonitors)
             {
                 if (!segMonitors.item(idx).matches(&rowinfo))
+                    return false;
+            }
+
+            ForEachItemIn(idx2, fieldFilters)
+            {
+                if (!fieldFilters.item(idx2).matches(rowinfo))
                     return false;
             }
         }
@@ -100,7 +107,14 @@ public:
 
     virtual void append(FFoption option, IFieldFilter * filter)
     {
-        UNIMPLEMENTED;
+        if (filter->isWild())
+            filter->Release();
+        else
+        {
+            fieldFilters.append(*filter);
+            if (filter->queryFieldIndex() > numSegFieldsUsed)
+                numSegFieldsUsed = filter->queryFieldIndex();
+        }
     }
 
     virtual unsigned ordinality() const
@@ -119,6 +133,7 @@ public:
     virtual void start()
     {
         CDiskReadSlaveActivityBase::start();
+        fieldFilters.kill();
         segMonitors.kill();
         helper->createSegmentMonitors(this);
     }

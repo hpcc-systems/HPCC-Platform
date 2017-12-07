@@ -4001,7 +4001,7 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
     if (options.spanMultipleCpp)
     {
         StringBuffer s;
-        s.append("extern const ").append(info.className).append("  ").append(name).append(";");
+        s.append("extern const ").append(info.className).append(" ").append(name).append(";");
         BuildCtx protoctx(*code, mainprototypesAtom);
         protoctx.addQuoted(s);
     }

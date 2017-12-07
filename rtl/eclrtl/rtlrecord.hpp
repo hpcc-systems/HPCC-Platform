@@ -225,6 +225,7 @@ public:
     size32_t getMinRecordSize() const;
     size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in) const;
     void readAhead(IRowPrefetcherSource & in) const;
+    int compare(const byte * left, const byte * right) const;
 
     inline unsigned getNumFields() const { return numFields; }
     unsigned getNumKeyedFields() const;

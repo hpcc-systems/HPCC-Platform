@@ -2430,24 +2430,26 @@ void SourceBuilder::buildGroupingMonitors(IHqlExpression * expr, MonitorExtracto
         translator.bindTableCursor(func.ctx, dataset, "_dummy");
     else
         translator.bindTableCursor(func.ctx, dataset, "_dummy", no_left, querySelSeq(aggregate));
-    unsigned maxOffset = 0;
+    unsigned maxField = 0;
     ForEachChild(i, grouping)
     {
-        unsigned nextOffset = 0;
-        if (!monitors.createGroupingMonitor(func.ctx, "irc", grouping->queryChild(i), nextOffset))
+        unsigned nextField = 0;
+        if (!monitors.createGroupingMonitor(func.ctx, "irc", grouping->queryChild(i), nextField))
         {
             monitorsForGrouping = false;
             func.setIncluded(false);
             break;
         }
-        if (maxOffset < nextOffset)
-            maxOffset = nextOffset;
+        if (maxField < nextField)
+            maxField = nextField;
     }
     if (monitorsForGrouping)
         func.ctx.addReturn(queryBoolExpr(true));
 
     if (monitorsForGrouping)
-        translator.doBuildUnsignedFunction(instance->classctx, "getGroupSegmentMonitorsSize", maxOffset);
+    {
+        translator.doBuildUnsignedFunction(instance->classctx, "getGroupingMaxField", maxField);
+    }
 }
 
 
@@ -3739,7 +3741,8 @@ const char * KeySelectorInfo::getFFOptions()
 
 //---------------------------------------------------------------------------------------------------------------------
 
-MonitorExtractor::MonitorExtractor(IHqlExpression * _tableExpr, HqlCppTranslator & _translator, int _numKeyableFields, bool _isDiskRead) : translator(_translator)
+MonitorExtractor::MonitorExtractor(IHqlExpression * _tableExpr, HqlCppTranslator & _translator, int _numKeyableFields, bool _isDiskRead)
+    : translator(_translator), createValueSets(translator.queryOptions().createValueSets)
 { 
     tableExpr = _tableExpr;
 
@@ -3762,7 +3765,6 @@ MonitorExtractor::MonitorExtractor(IHqlExpression * _tableExpr, HqlCppTranslator
     cleanlyKeyedExplicitly = false;
     keyedExplicitly = false;
     allowDynamicFormatChange = !tableExpr->hasAttribute(fixedAtom);
-    createValueSets = translator.queryOptions().createValueSets;
     if (createValueSets)
     {
         addRangeFunc = addRawRangeId;
@@ -3963,7 +3965,7 @@ static IHqlExpression * createExpandedRecord(IHqlExpression * expr)
 }
 
 
-bool MonitorExtractor::createGroupingMonitor(BuildCtx ctx, const char * listName, IHqlExpression * expr, unsigned & maxOffset)
+bool MonitorExtractor::createGroupingMonitor(BuildCtx ctx, const char * listName, IHqlExpression * expr, unsigned & maxField)
 {
     switch (expr->getOperator())
     {
@@ -3974,7 +3976,7 @@ bool MonitorExtractor::createGroupingMonitor(BuildCtx ctx, const char * listName
             {
                 BuildCtx subctx(ctx);
                 translator.buildFilter(subctx, expr->queryChild(0));
-                createGroupingMonitor(subctx, listName, expr->queryChild(1), maxOffset);
+                createGroupingMonitor(subctx, listName, expr->queryChild(1), maxField);
                 return true;        // may still be keyed
             }
             break;
@@ -3986,13 +3988,22 @@ bool MonitorExtractor::createGroupingMonitor(BuildCtx ctx, const char * listName
             {
                 IHqlExpression & cur = keyableSelects.item(i);
                 size32_t curSize = cur.queryType()->getSize();
-                if (curSize == UNKNOWN_LENGTH)
+                if (!createValueSets && curSize == UNKNOWN_LENGTH)
                     break;
                 if (expr == &cur)
                 {
-                    //MORE: Check the type of the field is legal.
-                    ctx.addQuotedF("%s->append(createWildKeySegmentMonitor(%u, %u, %u));", listName, 0, offset, curSize);
-                    maxOffset = offset+curSize;
+                    maxField = i+1;
+                    if (createValueSets)
+                    {
+                        StringBuffer type;
+                        translator.buildRtlFieldType(type, expr->queryChild(1), queryRecord(tableExpr));
+                        ctx.addQuotedF("%s->append(FFkeyed, createWildFieldFilter(%u, %s));", listName, i, type.str());
+                    }
+                    else
+                    {
+                        //MORE: Check the type of the field is legal.
+                        ctx.addQuotedF("%s->append(createWildKeySegmentMonitor(%u, %u, %u));", listName, i, offset, curSize);
+                    }
                     return true;
                 }
                 offset += curSize;
@@ -4024,7 +4035,10 @@ void MonitorExtractor::expandKeyableFields()
     }
     keyableRecord.setown(createRecord(fields));
 
-    expandedRecord.setown(createExpandedRecord(keyableRecord));
+    if (createValueSets)
+        expandedRecord.set(keyableRecord);
+    else
+        expandedRecord.setown(createExpandedRecord(keyableRecord));
     IHqlExpression * selector = tableExpr->queryNormalizedSelector();
 
     OwnedHqlExpr expandedSelector = createDataset(no_anon, LINK(expandedRecord), createUniqueId());
@@ -4151,7 +4165,7 @@ void MonitorExtractor::buildKeySegmentInExpr(BuildMonitorState & buildState, Key
             HqlExprArray args;
             args.append(*LINK(targetVar));
             unsigned srcSize = normalized->queryType()->getSize();
-            if (srcSize < curSize)
+            if (srcSize < curSize && curSize != UNKNOWN_LENGTH)
             {
                 OwnedHqlExpr lengthExpr = getSizetConstant(srcSize);
                 OwnedHqlExpr rangeLower = getRangeLimit(fieldType, lengthExpr, normalized, -1);
@@ -4165,7 +4179,7 @@ void MonitorExtractor::buildKeySegmentInExpr(BuildMonitorState & buildState, Key
             }
             else
             {
-                OwnedHqlExpr address = getMonitorValueAddress(subctx, normalized);
+                OwnedHqlExpr address = getMonitorValueAddress(subctx, expandedSelector, normalized);
                 args.append(*LINK(address));
                 args.append(*LINK(address));
             }
@@ -4185,7 +4199,7 @@ void MonitorExtractor::buildKeySegmentInExpr(BuildMonitorState & buildState, Key
             if (compare)
                 translator.buildFilter(subctx, compare);
 
-            OwnedHqlExpr address = getMonitorValueAddress(subctx, normalized);
+            OwnedHqlExpr address = getMonitorValueAddress(subctx, expandedSelector, normalized);
             HqlExprArray args;
             args.append(*LINK(targetVar));
             args.append(*LINK(address));
@@ -4274,7 +4288,7 @@ void MonitorExtractor::buildKeySegmentCompareExpr(BuildMonitorState & buildState
     OwnedHqlExpr normalized;
     BuildCtx subctx(ctx);
     extractCompareInformation(subctx, &thisKey, compare, normalized, selectorInfo.expandedSelector);
-    OwnedHqlExpr address = getMonitorValueAddress(subctx, normalized);
+    OwnedHqlExpr address = getMonitorValueAddress(subctx, selectorInfo.expandedSelector, normalized);
 
     HqlExprArray args;
     args.append(*LINK(targetVar));
@@ -4554,34 +4568,53 @@ void MonitorExtractor::buildKeySegmentExpr(BuildMonitorState & buildState, KeySe
 }
 
 
-IHqlExpression * MonitorExtractor::getMonitorValueAddress(BuildCtx & ctx, IHqlExpression * _value)
+IHqlExpression * MonitorExtractor::getMonitorValueAddress(BuildCtx & ctx, IHqlExpression * selector, IHqlExpression * _value)
 {
     LinkedHqlExpr value = _value;
     CHqlBoundExpr bound;
-    ITypeInfo * type = value->queryType();
-    switch (type->getTypeCode())
+    ITypeInfo * type = selector->queryType();
+    bool castViaRow = isUnknownSize(type);
+    if (castViaRow)
     {
-    case type_varstring: case type_varunicode:
+        IHqlExpression * field = selector->queryChild(1);
+        OwnedHqlExpr record = createRecord(field);
+        OwnedHqlExpr self = createSelector(no_self, record, nullptr);
+        OwnedHqlExpr assign = createValue(no_assign, makeVoidType(), createNewSelectExpr(LINK(self), LINK(field)), LINK(value));
+        OwnedHqlExpr transform = createValue(no_transform, makeTransformType(record->getType()), LINK(assign));
+        OwnedHqlExpr row = createRow(no_createrow, LINK(transform));
+        translator.buildAnyExpr(ctx, row, bound);
+    }
+    else
+    {
+        if (!createValueSet)
         {
-            assertex(type->getSize() != UNKNOWN_LENGTH);
-            CHqlBoundTarget tempTarget;
-            translator.createTempFor(ctx, type, tempTarget, typemod_none, FormatNatural);
-            //clear the variable.
-            HqlExprArray args;
-            args.append(*getPointer(tempTarget.expr));
-            args.append(*getZero());
-            args.append(*getSizetConstant(type->getSize()));
-            OwnedHqlExpr call = translator.bindTranslatedFunctionCall(memsetId, args);
-            ctx.addExpr(call);
-            //then assign over the top
-            translator.buildExprAssign(ctx, tempTarget, value);
-            bound.setFromTarget(tempTarget);
-            break;
+            //Need to ensure old segmonitors for varstrings are filled with \0s
+            switch (type->getTypeCode())
+            {
+            case type_varstring: case type_varunicode:
+                {
+                    assertex(type->getSize() != UNKNOWN_LENGTH);
+                    CHqlBoundTarget tempTarget;
+                    translator.createTempFor(ctx, type, tempTarget, typemod_none, FormatNatural);
+                    //clear the variable.
+                    HqlExprArray args;
+                    args.append(*getPointer(tempTarget.expr));
+                    args.append(*getZero());
+                    args.append(*getSizetConstant(type->getSize()));
+                    OwnedHqlExpr call = translator.bindTranslatedFunctionCall(memsetId, args);
+                    ctx.addExpr(call);
+                    //then assign over the top
+                    translator.buildExprAssign(ctx, tempTarget, value);
+                    bound.setFromTarget(tempTarget);
+                    break;
+                }
+            }
         }
-    default:
-        translator.buildExpr(ctx, value, bound);
-        translator.ensureHasAddress(ctx, bound);
-        break;
+        if (!bound.expr)
+        {
+            translator.buildExpr(ctx, value, bound);
+            translator.ensureHasAddress(ctx, bound);
+        }
     }
     return getPointer(bound.expr);
 }
@@ -4599,10 +4632,10 @@ bool MonitorExtractor::buildSingleKeyMonitor(StringBuffer & createMonitorText, K
     if (createValueSets)
     {
         StringBuffer type;
-        translator.buildRtlFieldType(type, selectorInfo.selector->queryChild(1), queryRecord(selectorInfo.selector->queryChild(0)));
+        translator.buildRtlFieldType(type, selectorInfo.selector->queryChild(1), tableExpr->queryRecord());
 
         //MORE: Need to ensure it is exactly the correct format - e.g. variable length strings are length prefixed
-        OwnedHqlExpr address = getMonitorValueAddress(subctx, normalized);
+        OwnedHqlExpr address = getMonitorValueAddress(subctx, selectorInfo.expandedSelector, normalized);
         StringBuffer addrText;
         translator.generateExprCpp(addrText, address);
 
@@ -4633,7 +4666,7 @@ bool MonitorExtractor::buildSingleKeyMonitor(StringBuffer & createMonitorText, K
         if (!funcName.length())
             funcName.append("createSingleKeySegmentMonitor");
 
-        OwnedHqlExpr address = getMonitorValueAddress(subctx, normalized);
+        OwnedHqlExpr address = getMonitorValueAddress(subctx, selectorInfo.expandedSelector, normalized);
         StringBuffer addrText;
         translator.generateExprCpp(addrText, address);
 
@@ -4854,24 +4887,12 @@ void MonitorExtractor::buildSegments(BuildCtx & ctx, const char * listName, bool
         IHqlExpression * expandedSelector = &expandedSelects.item(idx);
         IHqlExpression * field = selector->queryChild(1);
         unsigned curSize = expandedSelector->queryType()->getSize();
-        assertex(curSize != UNKNOWN_LENGTH);
+        assertex(createValueSet || curSize != UNKNOWN_LENGTH);
 
         //MORE: Should also allow nested record structures, and allow keying on first elements.
         //      and field->queryType()->getSize() doesn't work for alien datatypes etc.
         if(!field->hasAttribute(virtualAtom))
-        {
-            if (curSize)
-                buildKeySegment(buildState, ctx, idx, curSize);
-            else
-            {
-                ForEachItemIn(cond, keyed.conditions)
-                {
-                    KeyCondition & cur = keyed.conditions.item(cond);
-                    if (cur.selector == selector)
-                        cur.generated = true;
-                }
-            }
-        }
+            buildKeySegment(buildState, ctx, idx, curSize);
     }
 
     //check that all keyed entries have been matched
