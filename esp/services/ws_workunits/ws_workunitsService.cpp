@@ -56,7 +56,6 @@
 #endif
 
 #define ESP_WORKUNIT_DIR "workunits/"
-const char* zipFolder = "tempzipfiles" PATHSEPSTR;
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5 mins
 const unsigned CHECK_QUERY_STATUS_THREAD_POOL_SIZE = 25;
@@ -2970,7 +2969,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             }
             else if (strieq(File_Cpp,req.getType()) && notEmpty(req.getName()))
             {
-                winfo.getWorkunitCpp(req.getName(), req.getDescription(), req.getIPAddress(),mb, opt > 0);
+                winfo.getWorkunitCpp(req.getName(), req.getDescription(), req.getIPAddress(),mb, opt > 0, nullptr);
                 openSaveFile(context, opt, req.getSizeLimit(), req.getName(), HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_DLL,req.getType()))
@@ -2988,7 +2987,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             }
             else if (strncmp(req.getType(), File_ThorLog, 7) == 0)
             {
-                winfo.getWorkunitThorLog(req.getName(), mb);
+                winfo.getWorkunitThorLog(req.getName(), mb, nullptr);
                 openSaveFile(context, opt, req.getSizeLimit(), "thormaster.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_ThorSlaveLog,req.getType()))
@@ -2996,12 +2995,12 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
                 StringBuffer logDir;
                 getConfigurationDirectory(directories, "log", "thor", req.getProcess(), logDir);
 
-                winfo.getWorkunitThorSlaveLog(req.getClusterGroup(), req.getIPAddress(), req.getLogDate(), logDir.str(), req.getSlaveNumber(), mb, false);
+                winfo.getWorkunitThorSlaveLog(req.getClusterGroup(), req.getIPAddress(), req.getLogDate(), logDir.str(), req.getSlaveNumber(), mb, nullptr, false);
                 openSaveFile(context, opt, req.getSizeLimit(), "ThorSlave.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_EclAgentLog,req.getType()))
             {
-                winfo.getWorkunitEclAgentLog(req.getName(), req.getProcess(), mb);
+                winfo.getWorkunitEclAgentLog(req.getName(), req.getProcess(), mb, nullptr);
                 openSaveFile(context, opt, req.getSizeLimit(), "eclagent.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_XML,req.getType()) && notEmpty(req.getName()))
@@ -3013,7 +3012,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
                 else
                     ptr = name;
 
-                winfo.getWorkunitAssociatedXml(name, req.getIPAddress(), req.getPlainText(), req.getDescription(), opt > 0, true, mb);
+                winfo.getWorkunitAssociatedXml(name, req.getIPAddress(), req.getPlainText(), req.getDescription(), opt > 0, true, mb, nullptr);
                 openSaveFile(context, opt, req.getSizeLimit(), ptr, HTTP_TYPE_APPLICATION_XML, mb, resp);
             }
             else if (strieq(File_XML,req.getType()) || strieq(File_WUECL,req.getType()))
@@ -3022,7 +3021,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
                 if (strieq(File_WUECL,req.getType()))
                 {
                     fileName.setf("%s.ecl", wuid.get());
-                    winfo.getWorkunitQueryShortText(mb);
+                    winfo.getWorkunitQueryShortText(mb, nullptr);
                     mimeType.set(HTTP_TYPE_TEXT_PLAIN);
                 }
                 else
@@ -3045,236 +3044,6 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
                 openSaveFile(context, opt, req.getSizeLimit(), fileName.str(), mimeType.str(), mb, resp);
             }
             PROGLOG("%s -- done", logMsg.str());
-        }
-    }
-    catch(IException* e)
-    {
-        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
-    }
-    return true;
-}
-
-void CWsWorkunitsEx::readWUFile(const char *wuid, WsWuInfo &winfo, IConstWUFileOption &item, bool forDownload, MemoryBuffer &mb, StringBuffer &fileName, StringBuffer &fileMimeType)
-{
-    CWUFileType fileType = item.getFileType();
-    switch (fileType)
-    {
-    case CWUFileType_ArchiveQuery:
-        winfo.getWorkunitArchiveQuery(mb);
-        fileMimeType.set(HTTP_TYPE_APPLICATION_XML);
-        fileName.set("ArchiveQuery.xml");
-        break;
-    case CWUFileType_CPP:
-    {
-        const char *tail=pathTail(item.getName());
-        fileName.set(tail ? tail : item.getName());
-        fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
-        winfo.getWorkunitCpp(item.getName(), item.getDescription(), item.getIPAddress(),mb, forDownload);
-        break;
-    }
-    case CWUFileType_DLL:
-    {
-        const char *tail=pathTail(item.getName());
-        fileName.set(tail ? tail : item.getName());
-        fileMimeType.set(HTTP_TYPE_OCTET_STREAM);
-        break;
-    }
-    case CWUFileType_Res:
-        winfo.getWorkunitResTxt(mb);
-        fileName.set("res.txt");
-        fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
-        break;
-    case CWUFileType_ThorLog:
-        winfo.getWorkunitThorLog(item.getName(), mb);
-        fileName.set("thormaster.log");
-        fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
-        break;
-    case CWUFileType_ThorSlaveLog:
-    {
-        StringBuffer logDir;
-        getConfigurationDirectory(directories, "log", "thor", item.getProcess(), logDir);
-        winfo.getWorkunitThorSlaveLog(item.getClusterGroup(), item.getIPAddress(), item.getLogDate(), logDir.str(), item.getSlaveNumber(), mb, false);
-        fileName.set("ThorSlave.log");
-        fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
-        break;
-    }
-    case CWUFileType_EclAgentLog:
-        winfo.getWorkunitEclAgentLog(item.getName(), item.getProcess(), mb);
-        fileName.set("eclagent.log");
-        fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
-        break;
-    case CWUFileType_XML:
-    {
-        StringBuffer name  = item.getName();
-        if (!name.isEmpty())
-        {
-            const char *tail=pathTail(name.str());
-            fileName.set(tail ? tail : name.str());
-            winfo.getWorkunitAssociatedXml(fileName.str(), item.getIPAddress(), item.getPlainText(), item.getDescription(), forDownload, true, mb);
-        }
-        else
-        {
-            fileName.setf("%s.xml", wuid);
-            winfo.getWorkunitXml(item.getPlainText(), mb);
-        }
-        const char* plainText = item.getPlainText();
-        if (plainText && strieq(plainText, "yes"))
-            fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
-        else
-            fileMimeType.set(HTTP_TYPE_APPLICATION_XML);
-        break;
-    }
-    case CWUFileType_WUECL:
-        fileName.setf("%s.ecl", wuid);
-        winfo.getWorkunitQueryShortText(mb);
-        fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
-        break;
-    default:
-        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Unsupported file type %d.", fileType);
-    }
-}
-
-void CWsWorkunitsEx::zipAFolderToMB(const char *folderToZIP, const char *zipFileName, bool gzip, MemoryBuffer &mb)
-{
-    StringBuffer folderToZIPEx, zipFileNameWithPath, zipCommand;
-    zipFileNameWithPath.set(zipFolder).append(zipFileName);
-    folderToZIPEx.set(folderToZIP).append("/*");
-
-    {
-        Owned<IFile> oldZIPFile = createIFile(zipFileNameWithPath.str());
-        if (oldZIPFile->exists())
-            oldZIPFile->remove();
-    }
-
-    if (!gzip)
-        zipCommand.appendf("zip -j %s %s", zipFileNameWithPath.str(), folderToZIPEx.str());
-    else
-        zipCommand.appendf("tar -czf %s %s", zipFileNameWithPath.str(), folderToZIPEx.str());
-    if (system(zipCommand.str()) != 0)
-        throw MakeStringException(ECLWATCH_CANNOT_COMPRESS_DATA,"Failed to execute system command %s. Please make sure that zip utility is installed.", zipCommand.str());
-
-    Owned<IFile> f = createIFile(zipFileNameWithPath.str());
-    Owned<IFileIO> io = f->open(IFOread);
-    void * data = mb.reserve((unsigned)io->size());
-    size32_t read = io->read(0, (unsigned)io->size(), data);
-    mb.setLength(read);
-    io->close();
-    f->remove();
-}
-
-void CWsWorkunitsEx::setAttachmentFileName(IEspContext &context, const char *fileName)
-{
-    VStringBuffer headerStr("attachment;filename=%s", fileName);
-    context.addCustomerHeader("Content-disposition", headerStr.str());
-}
-
-bool CWsWorkunitsEx::onWUDownloadFiles(IEspContext &context, IEspWUDownloadFilesRequest &req, IEspWUDownloadFilesResponse &resp)
-{
-    try
-    {
-        StringBuffer wuid = req.getWuid();
-        if (wuid.trim().isEmpty())
-        {
-            StringBuffer querySet = req.getQuerySet();
-            StringBuffer queryReq = req.getQuery();
-            if (queryReq.trim().isEmpty() || querySet.trim().isEmpty())
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "WU ID or QuerySet/Query not specified");
-
-            Owned<IPropertyTree> registry = getQueryRegistry(querySet.str(), false);
-            if (!registry)
-                throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Queryset %s not found", querySet.str());
-            Owned<IPropertyTree> query = resolveQueryAlias(registry, queryReq.str());
-            if (!query)
-                throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "Query %s not found", queryReq.str());
-            resp.setQuerySet(querySet.str());
-            resp.setQueryName(query->queryProp("@name"));
-            resp.setQueryId(query->queryProp("@id"));
-            wuid.set(query->queryProp("@wuid"));
-        }
-
-        if (!looksLikeAWuid(wuid, 'W'))
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID");
-
-        ensureWsWorkunitAccess(context, wuid, SecAccess_Read);
-
-        IArrayOf<IConstWUFileOption> &wuFileOptions = req.getWUFileOptions();
-        if (!wuFileOptions.ordinality())
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "No WU file specified");
-
-        CWUFileDownloadOption opt = req.getDownloadOption();
-        if ((wuFileOptions.length() > 1) && ((opt == CWUFileDownloadOption_OriginalText) || (opt == CWUFileDownloadOption_Attachment)))
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Cannot download multiple files without zip");
-
-        Owned<IFile> zipDir;
-        StringBuffer folderToZIP, zipFileName;
-        if ((opt == CWUFileDownloadOption_ZIP) || (opt == CWUFileDownloadOption_GZIP))
-        {
-            StringBuffer userName;
-            if (context.queryUser())
-                userName.append(context.queryUser()->getName());
-
-            zipFileName.set("WUFiles_").append(wuid.str());
-            folderToZIP.set(zipFolder).append(zipFileName.str()).append('_').append(userName.str());
-            if (opt == CWUFileDownloadOption_ZIP)
-                zipFileName.append(".zip");
-            else
-                zipFileName.append(".gzip");
-
-            zipDir.setown(createIFile(folderToZIP));
-            if (!zipDir->exists())
-                zipDir->createDirectory();
-            else
-                cleanZAPFolder(zipDir, false);
-        }
-
-        resp.setWuid(wuid.str());
-        WsWuInfo winfo(context, wuid.str());
-        ForEachItemIn(i, wuFileOptions)
-        {
-            IConstWUFileOption &item = wuFileOptions.item(i);
-
-            MemoryBuffer mb;
-            StringBuffer downloadFileName, downloadFileMimeType;
-            readWUFile(wuid.str(), winfo, item, opt != CWUFileDownloadOption_OriginalText, mb, downloadFileName, downloadFileMimeType);
-
-            if (item.getFileType() == CWUFileType_DLL)
-            {
-                StringBuffer name;
-                winfo.getWorkunitDll(name, mb);
-                resp.setFileName(name.str());
-                resp.setDaliServer(daliServers.get());
-            }
-            if ((opt == CWUFileDownloadOption_OriginalText) || (opt == CWUFileDownloadOption_Attachment))
-            {
-                checkFileSizeLimit(mb.length(), item.getSizeLimit());
-                resp.setThefile(mb);
-                resp.setThefile_mimetype(downloadFileMimeType.str());
-                if (opt == CWUFileDownloadOption_Attachment)
-                    setAttachmentFileName(context, downloadFileName.str());
-                break;
-            }
-            else
-            {
-                StringBuffer aZIPFile = folderToZIP;
-                aZIPFile.append(PATHSEPCHAR).append(downloadFileName.str());
-                Owned<IFile> wuIFile = createIFile(aZIPFile.str());
-                Owned<IFileIO> wuIFileIO = wuIFile->open(IFOcreate);
-                if (wuIFileIO)
-                    wuIFileIO->write(0, mb.length(), mb.bufferBase());
-            }
-        }
-
-        if ((opt == CWUFileDownloadOption_ZIP) || (opt == CWUFileDownloadOption_GZIP))
-        {
-            MemoryBuffer mb;
-            zipAFolderToMB(folderToZIP.str(), zipFileName.str(), opt == CWUFileDownloadOption_GZIP, mb);
-
-            //Remove the temporary files and the folder
-            cleanZAPFolder(zipDir, true);
-
-            resp.setThefile(mb);
-            resp.setThefile_mimetype(HTTP_TYPE_OCTET_STREAM);
-            setAttachmentFileName(context, zipFileName.str());
         }
     }
     catch(IException* e)
@@ -4729,354 +4498,34 @@ bool CWsWorkunitsEx::onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkun
     return true;
 }
 
-
-void CWsWorkunitsEx::createZAPFile(const char* fileName, size32_t len, const void* data)
-{
-    if (!fileName || !*fileName)
-        throw MakeStringException(ECLWATCH_CANNOT_COMPRESS_DATA,"File name not specified.");
-    Owned<IFile> wuInfoIFile = createIFile(fileName);
-    Owned<IFileIO> wuInfoIO = wuInfoIFile->open(IFOcreate);
-    if (wuInfoIO)
-        wuInfoIO->write(0, len, data);
-}
-
-void CWsWorkunitsEx::cleanZAPFolder(IFile* zipDir, bool removeFolder)
-{
-    if (!zipDir)
-        throw MakeStringException(ECLWATCH_CANNOT_COMPRESS_DATA,"Invalid file interface for the zip folder.");
-    Owned<IDirectoryIterator> iter = zipDir->directoryFiles(NULL,false,false);
-    ForEach(*iter)
-    {
-        OwnedIFile thisFile = createIFile(iter->query().queryFilename());
-        if (thisFile->isFile() == foundYes)
-            thisFile->remove();
-    }
-    if (removeFolder)
-        zipDir->remove();
-}
-
-void CWsWorkunitsEx::addProcessLogfile(Owned<IConstWorkUnit>& cwu, WsWuInfo& winfo, const char* process, const char* path)
-{
-    Owned<IPropertyTreeIterator> procs = cwu->getProcesses(process, NULL);
-    ForEach (*procs)
-    {
-        StringBuffer logSpec;
-        IPropertyTree& proc = procs->query();
-        proc.getProp("@log",logSpec);
-        if (!logSpec.length())
-            continue;
-        const char* processName = proc.queryName();
-        if (isEmpty(processName))
-            continue;
-        StringBuffer pid;
-        pid.appendf("%d",proc.getPropInt("@pid"));
-        MemoryBuffer mb;
-        try
-        {
-            if (strieq(process, "EclAgent"))
-                winfo.getWorkunitEclAgentLog(logSpec.str(), pid.str(), mb);
-            else if (strieq(process, "Thor"))
-                winfo.getWorkunitThorLog(logSpec.str(), mb);
-        }
-        catch(IException *e)
-        {
-            StringBuffer s;
-            e->errorMessage(s);
-            DBGLOG("Error accessing Process Log file %s: %s", logSpec.str(), s.str());
-            mb.append(s.str());
-            e->Release();
-        }
-
-        if (!mb.length())
-            continue;
-
-        const char * logName = logSpec.str();
-        for (const char * p=logSpec; *p; p++)
-        {
-            if (*p == '\\' || *p == '/')
-                logName = p+1;
-        }
-        VStringBuffer fileName("%s%c%s_%s", path, PATHSEPCHAR, processName, logName);
-        createZAPFile(fileName.str(), mb.length(), mb.bufferBase());
-    }
-}
-
-void CWsWorkunitsEx::addThorSlaveLogfile(Owned<IConstWorkUnit>& cwu, WsWuInfo& winfo, const char* path)
-{
-    if (cwu->getWuidVersion() <= 0)
-        return;
-    StringAttr clusterName(cwu->queryClusterName());
-    if (clusterName.isEmpty()) //Cluster name may not be set yet
-        return;
-    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName.str());
-    if (!clusterInfo)
-    {
-        WARNLOG("Cannot find TargetClusterInfo for workunit %s", cwu->queryWuid());
-        return;
-    }
-
-    unsigned numberOfSlaveLogs = clusterInfo->getNumberOfSlaveLogs();
-    BoolHash uniqueProcesses;
-    Owned<IStringIterator> thorInstances = cwu->getProcesses("Thor");
-    ForEach (*thorInstances)
-    {
-        SCMStringBuffer processName;
-        thorInstances->str(processName);
-        if (processName.length() == 0)
-            continue;
-
-        bool* found = uniqueProcesses.getValue(processName.str());
-        if (found && *found)
-            continue;
-        uniqueProcesses.setValue(processName.str(), true);
-
-        StringBuffer groupName, logDir;
-        getClusterThorGroupName(groupName, processName.str());
-        if (groupName.isEmpty())
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Failed to get Thor Group Name for %s", processName.str());
-        getConfigurationDirectory(directories, "log", "thor", processName.str(), logDir);
-        Owned<IStringIterator> thorLogs = cwu->getLogs("Thor", processName.str());
-        ForEach (*thorLogs)
-        {
-            SCMStringBuffer logName;
-            thorLogs->str(logName);
-            if (logName.length() == 0)
-                continue;
-
-            const char* pStr = logName.str();
-            const char* ppStr = strstr(pStr, "/thormaster.");
-            if (!ppStr)
-            {
-                WARNLOG("Invalid thorlog entry in workunit xml: %s", logName.str());
-                continue;
-            }
-            ppStr += 12;
-            StringBuffer logDate = ppStr;
-            logDate.setLength(10);
-
-            for (unsigned i = 0; i < numberOfSlaveLogs; i++)
-            {
-                MemoryBuffer mb;
-                winfo.getWorkunitThorSlaveLog(groupName.str(), NULL, logDate.str(), logDir.str(), i+1, mb, false);
-                if (!mb.length())
-                    continue;
-
-                VStringBuffer fileName("%s%c%s_thorslave.%d.%s.log", path, PATHSEPCHAR, processName.str(), i+1, logDate.str());
-                createZAPFile(fileName.str(), mb.length(), mb.bufferBase());
-            }
-        }
-    }
-}
-
-void CWsWorkunitsEx::createZAPWUInfoFile(IEspWUCreateZAPInfoRequest &req, Owned<IConstWorkUnit>& cwu, const char* pathNameStr)
-{
-    StringBuffer sb;
-    sb.append("Workunit:     ").append(cwu->queryWuid()).append("\r\n");
-    sb.append("User:         ").append(cwu->queryUser()).append("\r\n");
-    sb.append("Build Version:").append(getBuildVersion()).append("\r\n");
-    sb.append("Cluster:      ").append(cwu->queryClusterName()).append("\r\n");
-    if (req.getESPIPAddress())
-        sb.append("ESP:          ").append(req.getESPIPAddress()).append("\r\n");
-    else
-    {
-        StringBuffer EspIP;
-        IpAddress ipaddr = queryHostIP();
-        ipaddr.getIpText(EspIP);
-        sb.append("ESP:          ").append(EspIP.str()).append("\r\n");
-    }
-    if (req.getThorIPAddress())
-        sb.append("Thor:         ").append(req.getThorIPAddress()).append("\r\n");
-    //Exceptions/Warnings/Info
-    Owned<IConstWUExceptionIterator> exceptions = &cwu->getExceptions();
-    StringBuffer info, warn, err, alert;
-    ForEach(*exceptions)
-    {
-        SCMStringBuffer temp;
-        switch (exceptions->query().getSeverity())
-        {
-        case SeverityInformation:
-            info.append("\t").append(exceptions->query().getExceptionMessage(temp)).append("\r\n\r\n");
-            break;
-        case SeverityWarning:
-            warn.append("\t").append(exceptions->query().getExceptionMessage(temp)).append("\r\n\r\n");
-            break;
-        case SeverityError:
-            err.append("\t").append(exceptions->query().getExceptionMessage(temp)).append("\r\n\r\n");
-            break;
-        case SeverityAlert:
-            alert.append("\t").append(exceptions->query().getExceptionMessage(temp)).append("\r\n\r\n");
-            break;
-        }
-    }
-    if (err.length())
-        sb.append("Exceptions:   ").append("\r\n").append(err);
-    if (warn.length())
-        sb.append("Warnings:     ").append("\r\n").append(warn);
-    if (info.length())
-        sb.append("Information:  ").append("\r\n").append(info);
-    if (alert.length())
-        sb.append("Alert:        ").append("\r\n").append(alert);
-
-    //User provided Information
-    sb.append("Problem:      ").append(req.getProblemDescription()).append("\r\n\r\n");
-    sb.append("What Changed: ").append(req.getWhatChanged()).append("\r\n\r\n");
-    sb.append("Timing:       ").append(req.getWhereSlow()).append("\r\n\r\n");
-
-    VStringBuffer fileName("%s.txt", pathNameStr);
-    createZAPFile(fileName.str(), sb.length(), sb.str());
-}
-
-void CWsWorkunitsEx::createZAPWUXMLFile(WsWuInfo &winfo, const char* pathNameStr)
-{
-    MemoryBuffer mb;
-    winfo.getWorkunitXml(NULL, mb);
-    VStringBuffer fileName("%s.xml", pathNameStr);
-    createZAPFile(fileName.str(), mb.length(), mb.bufferBase());
-}
-
-void CWsWorkunitsEx::createZAPECLQueryArchiveFiles(Owned<IConstWorkUnit>& cwu, const char* pathNameStr)
-{
-    Owned<IConstWUQuery> query = cwu->getQuery();
-    if(!query)
-        return;
-
-    //Add archive if present
-    Owned<IConstWUAssociatedFileIterator> iter = &query->getAssociatedFiles();
-    ForEach(*iter)
-    {
-        IConstWUAssociatedFile & cur = iter->query();
-        SCMStringBuffer ssb, ip;
-        cur.getDescription(ssb);
-        if (!strieq(ssb.str(), "archive"))
-            continue;
-
-        cur.getName(ssb);
-        cur.getIp(ip);
-        if (!ssb.length() || !ip.length())
-            continue;
-
-        StringBuffer fileName, archiveContents;
-        try
-        {
-            SocketEndpoint ep(ip.str());
-            RemoteFilename rfn;
-            rfn.setRemotePath(ssb.str());
-            rfn.setIp(ep);
-            Owned<IFile> rFile = createIFile(rfn);
-            if (!rFile)
-            {
-                DBGLOG("Cannot open %s on %s", ssb.str(), ip.str());
-                continue;
-            }
-            archiveContents.loadFile(rFile);
-        }
-        catch (IException *e)
-        {
-            StringBuffer s;
-            e->errorMessage(s);
-            DBGLOG("Error accessing archive file %s: %s", ssb.str(), s.str());
-            archiveContents.insert(0, "Error accessing archive file ").appendf("%s: %s\r\n\r\n", ssb.str(), s.str());
-            e->Release();
-        }
-        fileName.setf("%s.archive", pathNameStr);
-        createZAPFile(fileName.str(), archiveContents.length(), archiveContents.str());
-        break;
-    }
-
-    //Add Query
-    SCMStringBuffer temp;
-    query->getQueryText(temp);
-    if (temp.length())
-    {
-        VStringBuffer fileName("%s.ecl", pathNameStr);
-        createZAPFile(fileName.str(), temp.length(), temp.str());
-    }
-}
-
-void CWsWorkunitsEx::createZAPWUGraphProgressFile(const char* wuid, const char* pathNameStr)
-{
-    Owned<IPropertyTree> graphProgress = getWUGraphProgress(wuid, true);
-    if (graphProgress)
-    {
-        StringBuffer graphProgressXML;
-        toXML(graphProgress, graphProgressXML, 1, XML_Format);
-
-        VStringBuffer fileName("%s.graphprogress", pathNameStr);
-        createZAPFile(fileName.str(), graphProgressXML.length(), graphProgressXML.str());
-    }
-}
-
 bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfoRequest &req, IEspWUCreateZAPInfoResponse &resp)
 {
     try
     {
-        StringBuffer wuid = req.getWuid();
-        WsWuHelpers::checkAndTrimWorkunit("WUCreateZAPInfo", wuid);
+        CWsWuZAPInfoReq zapInfoReq;
+        zapInfoReq.wuid = req.getWuid();
+
+        WsWuHelpers::checkAndTrimWorkunit("WUCreateZAPInfo", zapInfoReq.wuid);
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        Owned<IConstWorkUnit> cwu = factory->openWorkUnit(wuid.str());
+        Owned<IConstWorkUnit> cwu = factory->openWorkUnit(zapInfoReq.wuid.str());
         if(!cwu.get())
-            throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Cannot open workunit %s.", req.getWuid());
+            throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Cannot open workunit %s.", zapInfoReq.wuid.str());
         ensureWsWorkunitAccess(context, *cwu, SecAccess_Read);
-        PROGLOG("WUCreateZAPInfo: %s", wuid.str());
+        PROGLOG("WUCreateZAPInfo(): %s", zapInfoReq.wuid.str());
 
-        StringBuffer userName, nameStr, fileName;
-        StringBuffer zipFileName, zipFileNameWithPath, zipCommand, folderToZIP;
-        if (context.queryUser())
-            userName.append(context.queryUser()->getName());
-        nameStr.append("ZAPReport_").append(req.getWuid()).append('_').append(userName.str());
-
-        //create a folder for WU ZAP files
-        folderToZIP.append(zipFolder).append(nameStr.str());
-        Owned<IFile> zipDir = createIFile(folderToZIP.str());
-        if (!zipDir->exists())
-            zipDir->createDirectory();
-        else
-            cleanZAPFolder(zipDir, false);
-
-        //create WU ZAP files
-        VStringBuffer pathNameStr("%s/%s", folderToZIP.str(), nameStr.str());
-        createZAPWUInfoFile(req, cwu, pathNameStr.str());
-        createZAPECLQueryArchiveFiles(cwu, pathNameStr.str());
-
-        WsWuInfo winfo(context, cwu);
-        createZAPWUXMLFile(winfo, pathNameStr.str());
-        createZAPWUGraphProgressFile(req.getWuid(), pathNameStr.str());
-        addProcessLogfile(cwu, winfo, "EclAgent", folderToZIP.str());
-        addProcessLogfile(cwu, winfo, "Thor", folderToZIP.str());
-        if (req.getIncludeThorSlaveLog())
-            addThorSlaveLogfile(cwu, winfo, folderToZIP.str());
-
-        //Write out to ZIP file
-        const char* zipFName = req.getZAPFileName();
-        if (!zipFName || !*zipFName)
-            zipFileName.append(nameStr.str()).append(".zip");
-        else
-        {
-            zipFileName.set(zipFName);
-            const char* ext = pathExtension(zipFName);
-            if (!ext || !strieq(ext, ".zip"))
-                zipFileName.append(".zip");
-        }
-        zipFileNameWithPath.append(zipFolder).append(zipFileName.str());
-        pathNameStr.set(folderToZIP.str()).append("/*");
-
-        const char* password;
-        double version = context.getClientVersion();
-        if (version >= 1.70)
-            password = req.getZAPPassword();
-        else
-            password = req.getPassword();
-        if (password && *password)
-            zipCommand.appendf("zip -j --password %s %s %s", password, zipFileNameWithPath.str(), pathNameStr.str());
-        else
-            zipCommand.appendf("zip -j %s %s", zipFileNameWithPath.str(), pathNameStr.str());
-        int zipRet = system(zipCommand.str());
-
-        //Remove the temporary files and the folder
-        cleanZAPFolder(zipDir, true);
-
-        if (zipRet != 0)
-            throw MakeStringException(ECLWATCH_CANNOT_COMPRESS_DATA,"Failed to execute system command 'zip'. Please make sure that zip utility is installed.");
+        zapInfoReq.espIP = req.getESPIPAddress();
+        zapInfoReq.thorIP = req.getThorIPAddress();
+        zapInfoReq.problemDesc = req.getProblemDescription();
+        zapInfoReq.whatChanged = req.getWhatChanged();
+        zapInfoReq.whereSlow = req.getWhereSlow();
+        zapInfoReq.includeThorSlaveLog = req.getIncludeThorSlaveLog();
+        zapInfoReq.zapFileName = req.getZAPFileName();
+        zapInfoReq.password = req.getZAPPassword();
+    
+        StringBuffer zipFileName, zipFileNameWithPath;
+        //CWsWuFileHelper may need ESP's <Directories> settings to locate log files. 
+        CWsWuFileHelper helper(directories);
+        helper.createWUZAPFile(context, cwu, zapInfoReq, zipFileName, zipFileNameWithPath);
 
         //Download ZIP file to user
         Owned<IFile> f = createIFile(zipFileNameWithPath.str());

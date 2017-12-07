@@ -861,12 +861,6 @@ ESPrequest WUDownloadFilesRequest
 
 ESPresponse [exceptions_inline] WUDownloadFilesResponse
 {
-    string Wuid;
-    string QuerySet;
-    string QueryName;
-    string QueryId;
-    string FileName; //For DLL
-    string DaliServer; //For DLL
     [http_content("application/octet-stream")] binary thefile;
 };
 
@@ -2171,7 +2165,6 @@ ESPservice [
 
     //ESPmethod WUAction(WUActionRequest, WUActionResponse);
     ESPmethod [cache_seconds(60)]WUFile(WULogFileRequest, WULogFileResponse);
-    ESPmethod [cache_seconds(60)]WUDownloadFiles(WUDownloadFilesRequest, WUDownloadFilesResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/graphStats.xslt")] WUProcessGraph(WUProcessGraphRequest, WUProcessGraphResponse);
     ESPmethod [cache_seconds(30), min_ver("1.57")] WUGetGraphNameAndTypes(WUGetGraphNameAndTypesRequest, WUGetGraphNameAndTypesResponse);
     ESPmethod [cache_seconds(30)] WUGetGraph(WUGetGraphRequest, WUGetGraphResponse);
