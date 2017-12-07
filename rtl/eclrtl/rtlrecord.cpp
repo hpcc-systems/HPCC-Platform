@@ -798,9 +798,9 @@ IOutputRowSerializer * COutputMetaData::createDiskSerializer(ICodeContext * ctx,
     return new CVariableOutputRowSerializer(activityId, this);
 }
 
-ISourceRowPrefetcher * COutputMetaData::createDiskPrefetcher(ICodeContext * ctx, unsigned activityId)
+ISourceRowPrefetcher * COutputMetaData::createDiskPrefetcher()
 {
-    ISourceRowPrefetcher * fetcher = defaultCreateDiskPrefetcher(ctx, activityId);
+    ISourceRowPrefetcher * fetcher = defaultCreateDiskPrefetcher();
     if (fetcher)
         return fetcher;
     return new CDefaultPrefetcher(queryRecordAccessor(true));
@@ -811,14 +811,14 @@ IOutputRowDeserializer *COutputMetaData::createDiskDeserializer(ICodeContext * c
     return new CDefaultDeserializer(queryRecordAccessor(true));
 }
 
-ISourceRowPrefetcher *COutputMetaData::defaultCreateDiskPrefetcher(ICodeContext * ctx, unsigned activityId)
+ISourceRowPrefetcher *COutputMetaData::defaultCreateDiskPrefetcher()
 {
     if (getMetaFlags() & MDFneedserializedisk)
-        return querySerializedDiskMeta()->createDiskPrefetcher(ctx, activityId);
-    CSourceRowPrefetcher * fetcher = doCreateDiskPrefetcher(activityId);
+        return querySerializedDiskMeta()->createDiskPrefetcher();
+    CSourceRowPrefetcher * fetcher = doCreateDiskPrefetcher();
     if (fetcher)
     {
-        fetcher->onCreate(ctx);
+        fetcher->onCreate();
         return fetcher;
     }
     return NULL;
@@ -834,12 +834,12 @@ IOutputRowDeserializer *CFixedOutputMetaData::createDiskDeserializer(ICodeContex
     return new CFixedOutputRowDeserializer(activityId, fixedSize);
 }
 
-ISourceRowPrefetcher *CFixedOutputMetaData::createDiskPrefetcher(ICodeContext * ctx, unsigned activityId)
+ISourceRowPrefetcher *CFixedOutputMetaData::createDiskPrefetcher()
 {
-    ISourceRowPrefetcher * fetcher = defaultCreateDiskPrefetcher(ctx, activityId);
+    ISourceRowPrefetcher * fetcher = defaultCreateDiskPrefetcher();
     if (fetcher)
         return fetcher;
-    return new CFixedSourceRowPrefetcher(activityId, fixedSize);
+    return new CFixedSourceRowPrefetcher(fixedSize);
 }
 
 IOutputRowSerializer * CActionOutputMetaData::createDiskSerializer(ICodeContext * ctx, unsigned activityId)
@@ -852,9 +852,9 @@ IOutputRowDeserializer * CActionOutputMetaData::createDiskDeserializer(ICodeCont
     return new CFixedOutputRowDeserializer(activityId, 0);
 }
 
-ISourceRowPrefetcher * CActionOutputMetaData::createDiskPrefetcher(ICodeContext * ctx, unsigned activityId)
+ISourceRowPrefetcher * CActionOutputMetaData::createDiskPrefetcher()
 {
-    return new CFixedSourceRowPrefetcher(activityId, 0);
+    return new CFixedSourceRowPrefetcher(0);
 }
 
 

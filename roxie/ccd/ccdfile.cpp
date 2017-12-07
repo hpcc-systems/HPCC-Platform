@@ -1725,9 +1725,9 @@ public:
         IOutputMetaData *actualLayout = actualLayouts.item(subFile);
         assertex(actualLayout);
         if (addGroupFlag && actualLayout->isGrouped())
-            return new CSuffixedRowPrefetcher(1, actualLayout->createDiskPrefetcher(ctx, actId));
+            return new CSuffixedRowPrefetcher(1, actualLayout->createDiskPrefetcher());
         else
-            return actualLayout->createDiskPrefetcher(ctx, actId);
+            return actualLayout->createDiskPrefetcher();
     }
 
     virtual IOutputMetaData *queryActualLayout(unsigned subFile) const override

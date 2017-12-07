@@ -337,9 +337,9 @@ public:
     {
         return new CPrefixedRowDeserializer(offset, original->createDiskDeserializer(ctx, activityId));
     }
-    virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId) 
+    virtual ISourceRowPrefetcher * createDiskPrefetcher()
     {
-        return new CPrefixedRowPrefetcher(offset, original->createDiskPrefetcher(ctx, activityId));
+        return new CPrefixedRowPrefetcher(offset, original->createDiskPrefetcher());
     }
     virtual IOutputMetaData * querySerializedDiskMeta()
     {
@@ -475,9 +475,9 @@ public:
     {
         return new CSuffixedRowDeserializer(offset, original->createDiskDeserializer(ctx, activityId));
     }
-    virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId) 
+    virtual ISourceRowPrefetcher * createDiskPrefetcher()
     {
-        return new CSuffixedRowPrefetcher(offset, original->createDiskPrefetcher(ctx, activityId));
+        return new CSuffixedRowPrefetcher(offset, original->createDiskPrefetcher());
     }
     virtual IOutputMetaData * querySerializedDiskMeta()
     {

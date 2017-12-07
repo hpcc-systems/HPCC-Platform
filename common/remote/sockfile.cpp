@@ -3558,7 +3558,7 @@ class CRemoteDiskReadActivity : public CSimpleInterfaceOf<IRemoteActivity>
 
             inputStream.setown(createFileSerialStream(iFileIO, startPos));
             prefetchBuffer.setStream(inputStream);
-            prefetcher.setown(helper->queryDiskRecordSize()->createDiskPrefetcher(nullptr, 0));
+            prefetcher.setown(helper->queryDiskRecordSize()->createDiskPrefetcher());
 
             outBuilder = new MemoryBufferBuilder(resultBuffer, helper->queryOutputMeta()->getMinRecordSize());
             chooseN = helper->getChooseNLimit();
