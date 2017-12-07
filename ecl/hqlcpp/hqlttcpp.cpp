@@ -1156,9 +1156,10 @@ IHqlExpression * ThorScalarTransformer::createTransformed(IHqlExpression * expr)
 {
     if (expr->isConstant())
     {
-        //THOR(NULL) is marked as constant (probably incorrectly), but still needs hoisting.
-//      if ((expr->getOperator() != no_thor) || (expr->numChildren() == 0))
-            return LINK(expr);
+        //THOR(NULL) is marked as constant (probably incorrectly), but if it is constant can be evaluated inline
+        if ((expr->getOperator() == no_thor) && (expr->numChildren() != 0))
+            return LINK(expr->queryChild(0));
+        return LINK(expr);
     }
 
     IHqlExpression * ret = queryTransformAnnotation(expr);

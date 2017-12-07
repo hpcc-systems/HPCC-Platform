@@ -820,10 +820,13 @@ extern ECLRTL_API void getFieldVal(size32_t & __lenResult,char * & __result, int
     if (column >= 0)
     {
         const RtlRecord &r = metaVal.queryRecordAccessor(true);
-        unsigned numOffsets = r.getNumVarFields() + 1;
-        size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
-        RtlRow offsetCalculator(r, row, numOffsets, variableOffsets);
-        offsetCalculator.getUtf8(__lenResult, __result, column);
+        if (column < r.getNumFields())
+        {
+            unsigned numOffsets = r.getNumVarFields() + 1;
+            size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
+            RtlRow offsetCalculator(r, row, numOffsets, variableOffsets);
+            offsetCalculator.getUtf8(__lenResult, __result, column);
+        }
     }
 }
 
