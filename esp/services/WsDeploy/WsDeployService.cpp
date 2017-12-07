@@ -598,7 +598,7 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
           else
             toXML(&m_constEnvRdOnly->getPTree(), sbxml);
           
-          Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+          Owned<IEnvironmentFactory> factory = getEnvironmentFactory(false);
           m_Environment.setown(factory->loadLocalEnvironment(sbxml.str()));
           m_userWithLock.clear().append(req.getReqInfo().getUserId());
           context.getPeer(m_userIp.clear());
@@ -2779,7 +2779,7 @@ void CWsDeployFileInfo::setEnvironment(IEspContext &context, IConstWsDeployReqIn
   
   try
   {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(false);
     Owned<IConstEnvironment>    constEnv = factory->loadLocalEnvironment(pszEnv);
 
     Owned<IPropertyTree> pEnvRoot = createPTreeFromXMLString(pszEnv);
@@ -5647,7 +5647,7 @@ void CWsDeployFileInfo::updateConfigFromFile()
   Owned <IPropertyTree> pTree = createPTree(*m_pFileIO);
   toXML(pTree, sbxml.clear());
 
-  Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+  Owned<IEnvironmentFactory> factory = getEnvironmentFactory(false);
 
   m_constEnvRdOnly.clear();
   m_constEnvRdOnly.setown(factory->loadLocalEnvironment(sbxml.str()));
@@ -5894,7 +5894,7 @@ void CWsDeployFileInfo::saveEnvironment(IEspContext* pContext, IConstWsDeployReq
     m_lastSaved.setNow();
 
     //reset the readonly tree
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(false);
     m_constEnvRdOnly.setown(factory->loadLocalEnvironment(sXML.str()));
 
     if (valerrs.length())
@@ -6069,7 +6069,7 @@ void CWsDeployFileInfo::unlockEnvironment(IEspContext* context, IConstWsDeployRe
 
     m_pSubscription.clear();
     m_pSubscription.setown( new CSdsSubscription(this) );
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     m_constEnvRdOnly.setown(factory->openEnvironment());
   }
 
@@ -6136,7 +6136,7 @@ bool CWsDeployFileInfo::updateEnvironment(const char* xml)
   if (!xml || !*xml)
     return false;
 
-  Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+  Owned<IEnvironmentFactory> factory = getEnvironmentFactory(false);
   m_constEnvRdOnly.setown(factory->loadLocalEnvironment(xml));
   return true;
 }
@@ -6179,7 +6179,7 @@ bool CWsDeployFileInfo::buildEnvironment(IEspContext &context, IEspBuildEnvironm
           {
             m_Environment.clear();
           }
-          Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+          Owned<IEnvironmentFactory> factory = getEnvironmentFactory(false);
           m_Environment.setown(factory->loadLocalEnvironment(envXml.str()));
         }
         else
@@ -6400,7 +6400,7 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite, bool bClearEnv)
     }
   }
 
-  Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+  Owned<IEnvironmentFactory> factory = getEnvironmentFactory(false);
   m_Environment.setown(factory->loadLocalEnvironment(sbxml.str()));
 
   //add env 

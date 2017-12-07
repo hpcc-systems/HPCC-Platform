@@ -180,14 +180,8 @@ IPluginContext * parentCtx = NULL;
 
 static void getSashaNodes(SocketEndpointArray &epa)
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (!env)
-    {
-        ERRLOG("getSashaNodes: cannot connect to /Environment!");
-        return;
-    }
-
     Owned<IPropertyTree> root = &env->getPTree();
     StringBuffer tmp;
     Owned<IPropertyTreeIterator> siter = root->getElements("Software/SashaServerProcess/Instance");

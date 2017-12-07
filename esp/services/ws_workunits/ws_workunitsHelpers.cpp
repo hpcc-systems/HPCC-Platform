@@ -184,10 +184,8 @@ WsWUExceptions::WsWUExceptions(IConstWorkUnit& wu): numerr(0), numwrn(0), numinf
 
 void getSashaNode(SocketEndpoint &ep)
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (!env)
-        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO,"Cannot get environment information.");
     Owned<IPropertyTree> root = &env->getPTree();
     IPropertyTree *pt = root->queryPropTree("Software/SashaServerProcess[1]/Instance[1]");
     if (!pt)
@@ -1156,7 +1154,7 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
         }
 
         StringBuffer logDir;
-        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IPropertyTree> logTree = &constEnv->getPTree();
         if (logTree)
@@ -1247,11 +1245,9 @@ bool WsWuInfo::getClusterInfo(IEspECLWorkunit &info, unsigned long flags)
     {
         int clusterTypeFlag = 0;
 
-        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IPropertyTree> root = &constEnv->getPTree();
-        if (!root)
-            throw MakeStringException(ECLWATCH_CANNOT_CONNECT_DALI,"Cannot connect to DALI server.");
 
         Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName.str());
         if (clusterInfo.get())

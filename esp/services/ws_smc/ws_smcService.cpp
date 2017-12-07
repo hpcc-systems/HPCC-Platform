@@ -239,10 +239,8 @@ bool CActivityInfo::isCachedActivityInfoValid(unsigned timeOutSeconds)
 
 void CActivityInfo::createActivityInfo(IEspContext& context)
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (!env)
-        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO,"Failed to get environment information.");
 
     CConstWUClusterInfoArray clusters;
     Owned<IPropertyTree> envRoot= &env->getPTree();
@@ -1847,7 +1845,7 @@ bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesReques
 
         double version = context.getClientVersion();
 
-        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = factory->openEnvironment();
 
         //The resource files will be downloaded from the same box of ESP (not dali)

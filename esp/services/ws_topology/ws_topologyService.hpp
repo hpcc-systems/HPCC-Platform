@@ -78,7 +78,6 @@ private:
 
     CTpWrapper m_TpWrapper;
     bool         m_displayRoxieCluster;
-    Owned<IEnvironmentFactory> m_envFactory;
     StringBuffer                    m_preflightProcessFilter;
     unsigned int                    m_cpuThreshold;
     unsigned int                    m_memThreshold;

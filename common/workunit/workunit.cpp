@@ -6616,10 +6616,8 @@ void getRoxieProcessServers(IPropertyTree *roxie, SocketEndpointArray &endpoints
 
 void getRoxieProcessServers(const char *process, SocketEndpointArray &servers)
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (!env)
-        return;
     Owned<IPropertyTree> root = &env->getPTree();
     getRoxieProcessServers(queryRoxieProcessTree(root, process), servers);
 }
@@ -6816,27 +6814,24 @@ IStringVal &getProcessQueueNames(IStringVal &ret, const char *process, const cha
 {
     if (process)
     {
-        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> env = factory->openEnvironment();
-        if (env)
+        Owned<IPropertyTree> root = &env->getPTree();
+        StringBuffer queueNames;
+        StringBuffer xpath;
+        xpath.appendf("%s[@process=\"%s\"]", type, process);
+        Owned<IPropertyTreeIterator> targets = root->getElements("Software/Topology/Cluster");
+        ForEach(*targets)
         {
-            Owned<IPropertyTree> root = &env->getPTree();
-            StringBuffer queueNames;
-            StringBuffer xpath;
-            xpath.appendf("%s[@process=\"%s\"]", type, process);
-            Owned<IPropertyTreeIterator> targets = root->getElements("Software/Topology/Cluster");
-            ForEach(*targets)
+            IPropertyTree &target = targets->query();
+            if (target.hasProp(xpath))
             {
-                IPropertyTree &target = targets->query();
-                if (target.hasProp(xpath))
-                {
-                    if (queueNames.length())
-                        queueNames.append(',');
-                    queueNames.append(target.queryProp("@name")).append(suffix);
-                }
+                if (queueNames.length())
+                    queueNames.append(',');
+                queueNames.append(target.queryProp("@name")).append(suffix);
             }
-            ret.set(queueNames);
         }
+        ret.set(queueNames);
     }
     return ret;
 }
@@ -6850,10 +6845,8 @@ IStringVal &getProcessQueueNames(IStringVal &ret, const char *process, const cha
 
 extern WORKUNIT_API void getDFUServerQueueNames(StringArray &ret, const char *process)
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (!env)
-        return;
 
     StringBuffer xpath = "Software/DfuServerProcess";
     if (!isEmptyString(process))
@@ -6907,17 +6900,14 @@ extern WORKUNIT_API StringBuffer &getClusterThorQueueName(StringBuffer &ret, con
 
 extern WORKUNIT_API StringBuffer &getClusterThorGroupName(StringBuffer &ret, const char *cluster)
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (env)
-    {
-        Owned<IPropertyTree> root = &env->getPTree();
-        StringBuffer path;
-        path.append("Software/ThorCluster[@name=\"").append(cluster).append("\"]");
-        IPropertyTree * child = root->queryPropTree(path);
-        if (child)
-            getClusterGroupName(*child, ret);
-    }
+    Owned<IPropertyTree> root = &env->getPTree();
+    StringBuffer path;
+    path.append("Software/ThorCluster[@name=\"").append(cluster).append("\"]");
+    IPropertyTree * child = root->queryPropTree(path);
+    if (child)
+        getClusterGroupName(*child, ret);
 
     return ret;
 }
@@ -6945,23 +6935,20 @@ extern WORKUNIT_API StringBuffer &getClusterEclAgentQueueName(StringBuffer &ret,
 extern WORKUNIT_API IStringIterator *getTargetClusters(const char *processType, const char *processName)
 {
     Owned<CStringArrayIterator> ret = new CStringArrayIterator;
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (env)
+    Owned<IPropertyTree> root = &env->getPTree();
+    StringBuffer xpath;
+    xpath.appendf("%s", processType ? processType : "*");
+    if (processName && *processName)
+        xpath.appendf("[@process=\"%s\"]", processName);
+    Owned<IPropertyTreeIterator> targets = root->getElements("Software/Topology/Cluster");
+    ForEach(*targets)
     {
-        Owned<IPropertyTree> root = &env->getPTree();
-        StringBuffer xpath;
-        xpath.appendf("%s", processType ? processType : "*");
-        if (processName && *processName)
-            xpath.appendf("[@process=\"%s\"]", processName);
-        Owned<IPropertyTreeIterator> targets = root->getElements("Software/Topology/Cluster");
-        ForEach(*targets)
+        IPropertyTree &target = targets->query();
+        if (target.hasProp(xpath))
         {
-            IPropertyTree &target = targets->query();
-            if (target.hasProp(xpath))
-            {
-                ret->append(target.queryProp("@name"));
-            }
+            ret->append(target.queryProp("@name"));
         }
     }
     return ret.getClear();
@@ -6971,11 +6958,8 @@ extern WORKUNIT_API bool isProcessCluster(const char *process)
 {
     if (!process || !*process)
         return false;
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (!env)
-        return false;
-
     Owned<IPropertyTree> root = &env->getPTree();
     VStringBuffer xpath("Software/*Cluster[@name=\"%s\"]", process);
     return root->hasProp(xpath.str());
@@ -7048,11 +7032,8 @@ IPropertyTree* getTopologyCluster(Owned<IPropertyTree> &envRoot, const char *clu
 {
     if (!clustname || !*clustname)
         return NULL;
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (!env)
-        return NULL;
-
     envRoot.setown(&env->getPTree());
     StringBuffer xpath;
     xpath.appendf("Software/Topology/Cluster[@name=\"%s\"]", clustname);
@@ -7077,11 +7058,8 @@ IConstWUClusterInfo* getTargetClusterInfo(const char *clustname)
 
 unsigned getEnvironmentClusterInfo(CConstWUClusterInfoArray &clusters)
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (!env)
-        return 0;
-
     Owned<IPropertyTree> root = &env->getPTree();
     return getEnvironmentClusterInfo(root, clusters);
 }
@@ -7106,11 +7084,8 @@ const char *getTargetClusterComponentName(const char *clustname, const char *pro
     if (!clustname)
         return NULL;
 
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (!env)
-        return NULL;
-
     Owned<IPropertyTree> root = &env->getPTree();
     StringBuffer xpath;
 
@@ -7127,11 +7102,8 @@ const char *getTargetClusterComponentName(const char *clustname, const char *pro
 
 unsigned getEnvironmentThorClusterNames(StringArray &thorNames, StringArray &groupNames, StringArray &targetNames, StringArray &queueNames)
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (!env)
-        return 0;
-
     Owned<IPropertyTree> root = &env->getPTree();
     Owned<IPropertyTreeIterator> allTargets = root->getElements("Software/Topology/Cluster");
     ForEach(*allTargets)
@@ -7166,11 +7138,8 @@ unsigned getEnvironmentThorClusterNames(StringArray &thorNames, StringArray &gro
 
 unsigned getEnvironmentHThorClusterNames(StringArray &eclAgentNames, StringArray &groupNames, StringArray &targetNames)
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (!env)
-        return 0;
-
     Owned<IPropertyTree> root = &env->getPTree();
     Owned<IPropertyTreeIterator> allEclAgents = root->getElements("Software/EclAgentProcess");
     ForEach(*allEclAgents)

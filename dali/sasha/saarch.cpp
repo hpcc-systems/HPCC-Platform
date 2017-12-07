@@ -1183,7 +1183,7 @@ public:
     CSashaArchiverServer()
         : Thread("CSashaArchiverServer")
     {
-        Owned<IEnvironmentFactory> f = getEnvironmentFactory();
+        Owned<IEnvironmentFactory> f = getEnvironmentFactory(true);
         env.setown(f->openEnvironment());
         stopped = false;
     }

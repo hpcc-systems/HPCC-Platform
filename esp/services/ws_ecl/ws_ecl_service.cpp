@@ -214,7 +214,7 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
             daliAddress.append(*daliServers++);
     }
 
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> environment = factory->openEnvironment();
     Owned<IPropertyTree> pRoot = &environment->getPTree();
 

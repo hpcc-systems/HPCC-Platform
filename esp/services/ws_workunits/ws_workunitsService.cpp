@@ -3767,11 +3767,9 @@ bool CWsWorkunitsEx::onWUShowScheduled(IEspContext &context, IEspWUShowScheduled
         if(notEmpty(req.getPushEventText()))
             resp.setPushEventText(req.getPushEventText());
 
-        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> environment = factory->openEnvironment();
         Owned<IPropertyTree> root = &environment->getPTree();
-        if (!root)
-            throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
 
         unsigned i = 0;
         Owned<IPropertyTreeIterator> ic = root->getElements("Software/Topology/Cluster");
@@ -4035,37 +4033,6 @@ bool CWsWorkunitsEx::onWUAddLocalFileToWorkunit(IEspContext& context, IEspWUAddL
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
    return true;
-}
-
-void getClusterConfig(char const * clusterType, char const * clusterName, char const * processName, StringBuffer& netAddress)
-{
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-    Owned<IConstEnvironment> environment = factory->openEnvironment();
-    Owned<IPropertyTree> pRoot = &environment->getPTree();
-
-    VStringBuffer xpath("Software/%s[@name='%s']", clusterType, clusterName);
-    IPropertyTree* pCluster = pRoot->queryPropTree(xpath.str());
-    if (!pCluster)
-        throw MakeStringException(ECLWATCH_CLUSTER_NOT_IN_ENV_INFO, "'%s %s' is not defined.", clusterType, clusterName);
-
-    const char* port = pCluster->queryProp(xpath.set(processName).append("@port").str());
-    const char* computer = pCluster->queryProp(xpath.set(processName).append("@computer").str());
-    if (isEmpty(computer))
-        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_INFO, "'%s %s: %s' is not defined.", clusterType, clusterName, processName);
-
-    Owned<IConstMachineInfo> pMachine = environment->getMachine(computer);
-    if (pMachine)
-    {
-        StringBufferAdaptor s(netAddress);
-        pMachine->getNetAddress(s);
-#ifdef MACHINE_IP
-        if (streq(netAddress.str(), "."))
-            netAddress = MACHINE_IP;
-#endif
-        netAddress.append(':').append(port);
-    }
-
-    return;
 }
 
 bool CWsWorkunitsEx::onWUGetGraphNameAndTypes(IEspContext &context,IEspWUGetGraphNameAndTypesRequest &req, IEspWUGetGraphNameAndTypesResponse &resp)
@@ -4430,11 +4397,9 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
         StringBuffer xslt;
         if(strieq(method,"WUQuery") || strieq(method,"WUJobList"))
         {
-            Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+            Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
             Owned<IConstEnvironment> environment = factory->openEnvironment();
             Owned<IPropertyTree> root = &environment->getPTree();
-            if (!root)
-                throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
             if(strieq(method,"WUQuery"))
             {
                 SecAccessFlags accessOwn;
