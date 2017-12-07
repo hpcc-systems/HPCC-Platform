@@ -1761,7 +1761,7 @@ FUNCTIONMACRO|MACRO {
                             start++;
                         }
                         unsigned ep;
-                        if(!lexer->checkUnicodeLiteral(CUR_TOKEN_TEXT + start, CUR_TOKEN_LENGTH - (start+1), ep, msg))
+                        if(!checkUnicodeLiteral(CUR_TOKEN_TEXT + start, CUR_TOKEN_LENGTH - (start+1), ep, msg))
                         {
                             int delta = ep + start;
                             returnToken.setPosition(lexer->yyLineNo, oldColumn+delta, oldPosition+delta, lexer->querySourcePath());

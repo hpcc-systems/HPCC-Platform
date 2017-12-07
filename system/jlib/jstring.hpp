@@ -552,6 +552,7 @@ inline StringBuffer& operator << (StringBuffer& s, const TValue& value)
     return s.append(value);
 }
 
+extern jlib_decl bool checkUnicodeLiteral(char const * str, unsigned length, unsigned & ep, StringBuffer & msg);
 extern jlib_decl void decodeCppEscapeSequence(StringBuffer & out, const char * in, bool errorIfInvalid);
 extern jlib_decl bool strToBool(const char * text);
 inline const char *boolToStr(bool b) { return b ? "true" : "false"; }
