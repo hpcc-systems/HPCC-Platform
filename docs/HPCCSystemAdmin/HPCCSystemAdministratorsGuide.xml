@@ -1662,8 +1662,8 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
 
         <para>The downside of running multiple Thors on the same hardware is
         that the physical memory on the nodes needs to be shared among each of
-        the Thors. This needs to be configured per Thor cluster definition.
-        </para>
+        the Thors. This needs to be configured per Thor cluster
+        definition.</para>
 
         <para>Multiple Thors on the same cluster require them to share the
         same build and installation. The environment defines each Thor
@@ -1671,7 +1671,7 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
         master port settings that need to be set to avoid clashing. There are
         also memory sharing/splitting considerations and settings that need to
         be made. The table below indicates settings in the environment to
-        consider. </para>
+        consider.</para>
 
         <para><informaltable border="all" colsep="1" rowsep="1">
             <tgroup cols="2">
@@ -1698,8 +1698,8 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
                   <entry><emphasis
                   role="bold">localThorPortInc</emphasis></entry>
 
-                  <entry>This value is the increment from the base slave port.
-                  </entry>
+                  <entry>This value is the increment from the base slave
+                  port.</entry>
                 </row>
 
                 <row>
@@ -1707,7 +1707,8 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
                   role="bold">masterMemorySize</emphasis></entry>
 
                   <entry>The maximum memory a Thor master can use. If left
-                  blank it will use the global value.</entry>
+                  blank it will use the <emphasis>globalMemorySize</emphasis>
+                  value.</entry>
                 </row>
 
                 <row>
@@ -1727,9 +1728,16 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
                 <row>
                   <entry><emphasis role="bold">nodeGroup</emphasis></entry>
 
-                  <entry>This value determines where the sprayed data goes and
-                  it must be the same for the same set of nodes (IP
-                  addresses).</entry>
+                  <entry>This value is associated with files published by this
+                  Thor instance. Normally it is left blank and defaults to the
+                  same as the <emphasis>name</emphasis> attribute. In
+                  environments with multiple Thors sharing the same group of
+                  nodes, the <emphasis>name</emphasis> value of each Thor must
+                  be different. However, the <emphasis>nodeGroup</emphasis>
+                  value of all the Thors sharing the same physical nodes
+                  should be set to the same name. It is very important to make
+                  the <emphasis>nodeGroup</emphasis> value equal to one of the
+                  Thor instance name values.</entry>
                 </row>
 
                 <row>
