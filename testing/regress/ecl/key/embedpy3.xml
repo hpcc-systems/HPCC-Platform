@@ -44,7 +44,7 @@
  <Row><Result_15><Item>green</Item><Item>red</Item><Item>yellow</Item></Result_15></Row>
 </Dataset>
 <Dataset name='Result 16'>
- <Row><Result_16><Item>one</Item><Item>three</Item><Item>two</Item></Result_16></Row>
+ <Row><Result_16><Item>one     </Item><Item>three   </Item><Item>two     </Item></Result_16></Row>
 </Dataset>
 <Dataset name='Result 17'>
  <Row><Result_17><Item>Oh</Item><Item>Straße</Item><Item>là</Item></Result_17></Row>
@@ -59,7 +59,7 @@
  <Row><Result_20><Item>On</Item><Item>Straße</Item><Item>der</Item></Result_20></Row>
 </Dataset>
 <Dataset name='Result 21'>
- <Row><Result_21><Item>Aus</Item><Item>Straße</Item><Item>zum</Item></Result_21></Row>
+ <Row><Result_21><Item>Aus     </Item><Item>Straße  </Item><Item>zum     </Item></Result_21></Row>
 </Dataset>
 <Dataset name='Result 22'>
  <Row><Result_22><Item>417573</Item><Item>7A756D</Item><Item>537472616465</Item></Result_22></Row>
