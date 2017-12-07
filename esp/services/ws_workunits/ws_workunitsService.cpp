@@ -395,6 +395,24 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
         sashaServerPort = cfg->getPropInt(xpath.str(), DEFAULT_SASHA_PORT);
     }
 
+    xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/ZAPEmail", process, service);
+    IPropertyTree *zapEmail = cfg->queryPropTree(xpath.str());
+    if (zapEmail)
+    {
+        zapEmailTo = zapEmail->queryProp("@to");
+        if (zapEmailTo.isEmpty())
+            throw MakeStringException(-1, "ZAPEmail: EmailTo not specified.");
+        zapEmailFrom = zapEmail->queryProp("@from");
+        if (zapEmailFrom.isEmpty())
+            throw MakeStringException(-1, "ZAPEmail: EmailFrom not specified.");
+        zapEmailServer = zapEmail->queryProp("@serverURL");
+        if (zapEmailServer.isEmpty())
+            throw MakeStringException(-1, "ZAPEmail: EmailServer not specified.");
+
+        zapEmailServerPort = zapEmail->getPropInt("@serverPort", WUDEFAULT_ZAPEMAILSERVER_PORT);
+        zapEmailMaxAttachmentSize = zapEmail->getPropInt("@maxAttachmentSize", MAX_ZAP_BUFFER_SIZE);
+    }
+
     maxRequestEntityLength = cfg->getPropInt("Software[1]/EspProcess[1]/EspProtocol[@type='http_protocol'][1]/@maxRequestEntityLength");
     directories.set(cfg->queryPropTree("Software/Directories"));
 
@@ -4817,6 +4835,12 @@ bool CWsWorkunitsEx::onWUGetZAPInfo(IEspContext &context, IEspWUGetZAPInfoReques
         }
         if (ThorIP.length())
             resp.setThorIPAddress(ThorIP.str());
+        double version = context.getClientVersion();
+        if (version >= 1.73)
+        {
+            resp.setEmailTo(zapEmailTo.get());
+            resp.setEmailFrom(zapEmailFrom.get());
+        }
     }
     catch(IException* e)
     {

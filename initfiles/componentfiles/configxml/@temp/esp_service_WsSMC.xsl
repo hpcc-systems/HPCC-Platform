@@ -239,15 +239,23 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
                 <xsl:variable name="sashaServerPort" select="/Environment/Software/SashaServerProcess[@name=$sashaServer]/Instance/@port"/>
                 <serverForArchivedECLWU netAddress="{$sashaServerIP}" port="{$sashaServerPort}" />
             </xsl:if>
-                        <xsl:if test="string(@allowNewRoxieOnDemandQuery) != ''">
+            <xsl:if test="string(@allowNewRoxieOnDemandQuery) != ''">
                 <AllowNewRoxieOnDemandQuery><xsl:value-of select="@allowNewRoxieOnDemandQuery"/></AllowNewRoxieOnDemandQuery>
             </xsl:if>
             <LayoutProgram>dot/dot -Tsvg -Gordering=out</LayoutProgram>
 
-             <xsl:if test="string(@syntaxCheckQueue) != ''">
+            <xsl:if test="string(@syntaxCheckQueue) != ''">
                 <SyntaxCheckQueue><xsl:value-of select="@syntaxCheckQueue"/></SyntaxCheckQueue>
-             </xsl:if>
-
+            </xsl:if>
+            
+            <xsl:if test="string(@ZAPEmailServer) != ''">
+                <xsl:variable name="emailServer" select="@ZAPEmailServer"/>
+                <xsl:variable name="emailTo" select="@ZAPEmailTo"/>
+                <xsl:variable name="emailFrom" select="@ZAPEmailFrom"/>
+                <xsl:variable name="emailServerPort" select="@ZAPEmailServerPort"/>
+                <xsl:variable name="emailMaxAttachment" select="@ZAPEmailMaxAttachmentSize"/>
+                <ZAPEmail serverURL="{$emailServer}" serverPort="{$emailServerPort}" to="{$emailTo}" from="{$emailFrom}" maxAttachmentSize="{$emailMaxAttachment}"/>
+            </xsl:if>
             <StyleSheets>
                 <xslt name="atts">/esp/xslt/atts.xslt</xslt>
                 <xslt name="dot_update">/esp/xslt/dot_update.xslt</xslt>

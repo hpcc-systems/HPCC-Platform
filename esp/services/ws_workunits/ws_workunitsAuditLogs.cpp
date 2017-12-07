@@ -1406,6 +1406,28 @@ void CWsWorkunitsSoapBindingEx::createAndDownloadWUZAPFile(IEspContext& context,
     request->getParameter("WhereSlow", zapInfoReq.whereSlow);
     request->getParameter("IncludeThorSlaveLog", zapInfoReq.includeThorSlaveLog);
     request->getParameter("ZAPFileName", zapInfoReq.zapFileName);
+
+    StringBuffer sendEmailStr, attachZAPReportToEmailStr, portStr;
+    request->getParameter("SendEmail", sendEmailStr);
+    zapInfoReq.sendEmail = atoi(sendEmailStr.str()) ? true : false;
+    if (zapInfoReq.sendEmail)
+    {
+        request->getParameter("AttachZAPReportToEmail", attachZAPReportToEmailStr);
+        zapInfoReq.attachZAPReportToEmail = atoi(attachZAPReportToEmailStr.str()) ? true : false;
+
+        request->getParameter("EmailSubject", zapInfoReq.emailSubject);
+        request->getParameter("EmailBody", zapInfoReq.emailBody);
+        //Read maxAttachmentSize from setting.
+        zapInfoReq.maxAttachmentSize = wswService->zapEmailMaxAttachmentSize;
+        zapInfoReq.emailServer.set(wswService->zapEmailServer.get());
+        zapInfoReq.port = wswService->zapEmailServerPort;
+        zapInfoReq.emailTo.set(wswService->zapEmailTo.str());
+
+        request->getParameter("EmailFrom", zapInfoReq.emailFrom);
+        if (zapInfoReq.emailFrom.isEmpty())
+            zapInfoReq.emailFrom.set(wswService->zapEmailFrom.str());
+    }
+
     double version = context.getClientVersion();
     if (version >= 1.70)
         request->getParameter("ZAPPassword", zapInfoReq.password);

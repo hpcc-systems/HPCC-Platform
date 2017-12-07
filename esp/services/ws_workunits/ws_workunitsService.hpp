@@ -342,8 +342,12 @@ private:
     Owned<IPropertyTree> directories;
     int maxRequestEntityLength;
     Owned<IThreadPool> clusterQueryStatePool;
+
 public:
     QueryFilesInUse filesInUse;
+    StringAttr zapEmailTo, zapEmailFrom, zapEmailServer;
+    unsigned zapEmailMaxAttachmentSize = 0;
+    unsigned zapEmailServerPort = 0;
 };
 
 class CWsWorkunitsSoapBindingEx : public CWsWorkunitsSoapBinding
