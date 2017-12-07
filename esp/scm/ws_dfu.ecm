@@ -335,6 +335,19 @@ ESPresponse DFURecordTypeInfoResponse
     binary binInfo;
 };
 
+ESPrequest EclRecordTypeInfoRequest
+{
+    string Ecl;
+    bool IncludeJsonTypeInfo(true);
+    bool IncludeBinTypeInfo(true);
+};
+
+ESPresponse EclRecordTypeInfoResponse
+{
+    [json_inline(1)] string jsonInfo;
+    binary binInfo;
+};
+
 ESPrequest SuperfileActionRequest
 {
     string action;
@@ -788,6 +801,7 @@ ESPservice [
     ESPmethod ListHistory(ListHistoryRequest, ListHistoryResponse);
     ESPmethod EraseHistory(EraseHistoryRequest, EraseHistoryResponse);
     ESPmethod DFURecordTypeInfo(DFURecordTypeInfoRequest, DFURecordTypeInfoResponse);
+    ESPmethod EclRecordTypeInfo(EclRecordTypeInfoRequest, EclRecordTypeInfoResponse);
 };
 
 SCMexportdef(WSDFU);

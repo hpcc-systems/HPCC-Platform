@@ -1604,6 +1604,32 @@ bool CWsDfuEx::onDFURecordTypeInfo(IEspContext &context, IEspDFURecordTypeInfoRe
     }
     return true;
 }
+
+bool CWsDfuEx::onEclRecordTypeInfo(IEspContext &context, IEspEclRecordTypeInfoRequest &req, IEspEclRecordTypeInfoResponse &resp)
+{
+    try
+    {
+        OwnedHqlExpr record = getEclRecordDefinition(req.getEcl());
+        if (req.getIncludeJsonTypeInfo())
+        {
+            StringBuffer jsonFormat;
+            exportJsonType(jsonFormat,record);
+            resp.setJsonInfo(jsonFormat);
+        }
+        if (req.getIncludeBinTypeInfo())
+        {
+            MemoryBuffer binFormat;
+            exportBinaryType(binFormat,record);
+            resp.setBinInfo(binFormat);
+        }
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
 void CWsDfuEx::xsltTransformer(const char* xsltPath,StringBuffer& source,StringBuffer& returnStr)
 {
     if (m_xsl.get() == 0)
