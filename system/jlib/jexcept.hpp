@@ -148,6 +148,8 @@ void  jlib_decl printStackReport(__int64 startIP = 0);
 // Macro for legacy name of above function
 #define PrintStackReport printStackReport
 
+bool jlib_decl getAllStacks(StringBuffer &output);
+
 #ifdef _DEBUG
 #define RELEASE_CATCH_ALL       int*********
 #else

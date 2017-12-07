@@ -517,16 +517,7 @@ public:
                         unsigned retcode = pipe->wait();
                         StringBuffer buf;
                         Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
-                        const size32_t chunkSize = 128;
-                        for (;;)
-                        {
-                            size32_t sizeRead = pipeReader->read(chunkSize, buf.reserve(chunkSize));
-                            if (sizeRead < chunkSize)
-                            {
-                                buf.setLength(buf.length() - (chunkSize - sizeRead));
-                                break;
-                            }
-                        }
+                        readSimpleStream(buf, *pipeReader, 128);
                         if (retcode)
                             WARNLOG("Failed to run git status for %s: returned %d (%s)", sourcePath->queryStr(), retcode, buf.str());
                         else if (buf.length())

@@ -1452,6 +1452,31 @@ void printStackReport(__int64 startIP)
 
 //---------------------------------------------------------------------------------------------------------------------
 
+bool getAllStacks(StringBuffer &output)
+{
+#ifdef __linux__
+    const char *exePath = queryCurrentProcessPath();
+    if (!exePath)
+    {
+        output.append("Unable to capture stacks");
+        return false;
+    }
+    VStringBuffer cmd("gdb --batch -n -ex 'thread apply all bt' %s %u", exePath, GetCurrentProcessId());
+    Owned<IPipeProcess> pipe = createPipeProcess();
+    if (pipe->run("get stacks", cmd, nullptr, false, true, false))
+    {
+        Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
+        readSimpleStream(output, *pipeReader);
+    }
+    int retcode = pipe->wait();
+    return 0 == retcode;
+#else
+    return false; // unsupported
+#endif
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
 class jlib_decl CError : public CInterfaceOf<IError>
 {
 public:
