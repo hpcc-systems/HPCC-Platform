@@ -1228,120 +1228,7 @@ void RowFilter::extractKeyFilter(const RtlRecord & record, IArrayOf<IFieldFilter
 //---------------------------------------------------------------------------------------------------------------------
 
 
-class RowCursor;
-class ISourceRowCursor
-{
-public:
-    //Find the first row that is >= the search cursor
-    virtual const byte * findGE(const RowCursor & current) = 0;
-    //Find the first row that is larger than search within the first numSeekFields
-    virtual const byte * findGT(const RowCursor & current) = 0;
-    //select the next row
-    virtual const byte * next() = 0;
-    //prepare ready for a new set of seeks
-    virtual void reset() = 0;
-};
 
-
-//This class represents the current set of values which have been matched in the filter sets.
-//A field can either have a valid current value, or it has an index of the next filter range which must match
-//for that field.
-//Note: If any field is matching a range, then all subsequent fields must be matching the lowest possible filter range
-//      Therefore it is only necessary to keep track of the number of exactly matched fields, and which range the next
-//      field (if any) is matched against.
-class RowCursor
-{
-public:
-    RowCursor(const RtlRecord & record, RowFilter & filter) : currentRow(record, nullptr)
-    {
-        filter.extractKeyFilter(record, filters);
-        ForEachItemIn(i, filters)
-            matchedRanges.append(0);
-    }
-
-    void selectFirst()
-    {
-        eos = false;
-        numMatched = 0;
-        nextUnmatchedRange = 0;
-    }
-
-    //Compare the incoming row against the current search row
-    int compareGE(const RtlRow & candidate) const
-    {
-        unsigned i;
-        for (i = 0; i < numMatched; i++)
-        {
-            //Use sequential searches for the values that have previously been matched
-            int c = queryFilter(i).compareRow(candidate, currentRow);
-            if (c != 0)
-                return c;
-        }
-        unsigned nextRange = nextUnmatchedRange;
-        for (; i < numFilterFields(); i++)
-        {
-            //Compare the row against each of the potential ranges.
-            int c = queryFilter(i).compareLowest(candidate, nextRange);
-            if (c != 0)
-                return c;
-            nextRange = 0;
-        }
-        return 0;
-    }
-
-    //Compare with the row that is larger than the first numMatched fields.
-    //Could combine with the function above relatively simply.
-    int compareGT(const RtlRow & left) const
-    {
-        assertex(nextUnmatchedRange == -1U);
-        assertex(numMatched != filters.ordinality());
-        unsigned i;
-        int c = 0;
-        //Note field numMatched is not matched, but we are searching for the next highest value => loop until <= numMatched
-        for (i = 0; i <= numMatched; i++)
-        {
-            //Use sequential searches for the values that have previously been matched
-            c = queryFilter(i).compareRow(left, currentRow);
-            if (c != 0)
-                return c;
-        }
-
-        //If the next value of the trailing field isn't known then no limit can be placed on the
-        //subsequent fields.
-        //If it is possible to increment a key value, then it should be going through the compareGE() code instead
-        return -1;
-    }
-
-    bool matches() const
-    {
-        ForEachItemIn(i, filters)
-        {
-            if (!filters.item(i).matches(currentRow))
-                return false;
-        }
-        return true;
-    }
-
-    unsigned numFilterFields() const { return filters.ordinality(); }
-    const RtlRow & queryRow() const { return currentRow; }
-    bool setRowForward(const byte * row);
-    bool nextSeekIsGT() const { return (nextUnmatchedRange == -1U); }
-    bool noMoreMatches() const { return eos; }
-
-protected:
-    unsigned matchPos(unsigned i) const { return matchedRanges.item(i); }
-    bool isValid(unsigned i) const { return matchPos(i) < queryFilter(i).numRanges(); }
-    const IFieldFilter & queryFilter(unsigned i) const { return filters.item(i); }
-    bool findNextRange(unsigned field);
-
-protected:
-    RtlDynRow currentRow;
-    unsigned numMatched = 0;
-    unsigned nextUnmatchedRange = 0;
-    UnsignedArray matchedRanges;
-    bool eos = false;
-    IArrayOf<IFieldFilter> filters; // for an index must be in field order, and all values present - more thought required
-};
 
 
 bool RowCursor::setRowForward(const byte * row)
@@ -1473,16 +1360,7 @@ public:
             if (cursor.noMoreMatches())
                 return false;
             const byte * match;
-            if (cursor.nextSeekIsGT())
-            {
-                //Find the first row where the first numSeekFields are larger than the current values.
-                match = rows->findGT(cursor); // more - return the row pointer to avoid recalculation
-            }
-            else
-            {
-                //Search for the first item that is GE the number of matching fields, and GE the lowest for all the others
-                match = rows->findGE(cursor);
-            }
+            match = rows->findNext(cursor); // more - return the row pointer to avoid recalculation
             if (!match)
                 return false;
             if (cursor.setRowForward(match))
@@ -1526,7 +1404,7 @@ public:
     {
     }
 
-    virtual const byte * findGE(const RowCursor & search) override
+    virtual const byte * findNext(const RowCursor & search) override
     {
         size_t numRows = source.numRows();
         if (numRows == 0)
@@ -1546,7 +1424,7 @@ public:
         {
             size_t mid = low + (high - low) / 2;
             seekRow.setRow(source.queryRow(mid), search.numFilterFields());
-            int rc = search.compareGE(seekRow);  // compare seekRow with the row we are hoping to find
+            int rc = search.compareNext(seekRow);  // compare seekRow with the row we are hoping to find
             if (rc < 0)
                 low = mid + 1;  // if this row is lower than the seek row, exclude mid from the potential positions
             else
@@ -1554,28 +1432,6 @@ public:
         }
         cur = low;
         if (low == numRows)
-            return nullptr;
-        return source.queryRow(cur);
-    }
-    //Find the first row that is larger than search within the first numSeekFields
-    //RowCursor is not the correct type
-    virtual const byte * findGT(const RowCursor & search) override
-    {
-        size_t numRows = source.numRows();
-        size_t high = numRows;
-        size_t low = 0; // could be cur+1
-        while (low<high)
-        {
-            size_t mid = low + (high - low) / 2;
-            seekRow.setRow(source.queryRow(mid), search.numFilterFields());
-            int rc = search.compareGT(seekRow);
-            if (rc <= 0)
-                low = mid + 1;
-            else
-                high = mid;
-        }
-        cur = low;
-        if (cur == numRows)
             return nullptr;
         return source.queryRow(cur);
     }
