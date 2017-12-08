@@ -192,12 +192,37 @@ EspServiceStart
  {
     CurService=new EspServInfo($3.getName());
     CurService->tags = getClearCurMetaTags();
+    if (CurService)
+    {
+        VStrBuffer reqname("%sHeartBeatRequest", $3.getName());
+        CurEspMessage = new EspMessageInfo(reqname.str(), EspMessageInfo::espm_request);
+        CurEspMessage->write_cpp_interfaces();
+        CurEspMessage->tags = getClearCurMetaTags();
+//CurParam=NULL;
+        AddEspMessage();
+        CurEspMessage=NULL;
+
+        VStrBuffer respname("%sHeartBeatResponse", $3.getName());
+        CurEspMessage = new EspMessageInfo(respname.str(), EspMessageInfo::espm_response);
+        CurEspMessage->write_cpp_interfaces();
+        CurEspMessage->tags = getClearCurMetaTags();
+        AddEspMessage();
+        CurParam=NULL;
+    
+    
+        EspMethodInfo *method=new EspMethodInfo("HeartBeat", reqname.str(), respname.str());
+
+        method->tags = getClearCurMetaTags();
+
+        method->next=CurService->methods;
+        CurService->methods=method;
+    }
  }
  ;
 
 EspServiceBody
  : '{' EspServiceEntryList '}' 
- | '{' '}' 
+ | '{' '}'
  ;
 
 EspServiceEntryList
