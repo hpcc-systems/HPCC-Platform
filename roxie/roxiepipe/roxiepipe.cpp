@@ -458,6 +458,27 @@ MODULE_EXIT()
     ::Release(smartSocketFactory);
 }
 
+void usage()
+{
+    printf("roxiepipe - pipes data to/from roxie\n");
+    printf("Options:\n");
+    printf("  -vip         Virtual IP mode (do not retry)\n");
+    printf("  -iw   N      Input width in bytes (required)\n");
+    printf("  -ow   N      Output width in bytes\n");
+    printf("  -q    name   Query name (required)\n");
+    printf("  -h    hosts  Target hostname or ip (required)\n");
+    printf("  -r    name   Result name\n");
+    printf("  -i    name   Input from file (default is stdin)\n");
+    printf("  -o    name   Output from file (default is stdout)\n");
+    printf("  -t    N      Number of threads\n");
+    printf("  -b    N      Records per query\n");
+    printf("  -mr   N      Max retries\n");
+    printf("  -to   N      Read timeout\n");
+    printf("  -wu   wuid   Workunit id\n");
+    printf("  -l    name   Logfile name\n");
+    printf("  -ssl         Use SSL connections\n");
+}
+
 int main(int argc, char *argv[])
 {
     InitModuleObjects();
@@ -475,11 +496,20 @@ int main(int argc, char *argv[])
     {
         cmdLine.append(' ').append(argv[i]);
     }
-    PROGLOG("roxiepipe starting, command line %s", cmdLine.str());
+    if (argc==1)
+    {
+        usage();
+        exit(2);
+    }
 
     for (i=1; i<argc; i++)
     {
-        if (stricmp(argv[i], "-vip") == 0)      //no retry
+        if (stricmp(argv[i], "-help") == 0 || stricmp(argv[i], "--help") == 0)      //no retry
+        {
+            usage();
+            exit(2);
+        }
+        else if (stricmp(argv[i], "-vip") == 0)      //no retry
         {
             retryMode = false;
         }
@@ -598,6 +628,8 @@ int main(int argc, char *argv[])
             break;
         }
     }
+
+    PROGLOG("roxiepipe starting, command line %s", cmdLine.str());
 
     StringBuffer logDir;
     if (!logFile.length())

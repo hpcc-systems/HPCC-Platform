@@ -29,11 +29,7 @@
 class CConfigFileComponentUtils : public CInterface
 {
 public:
-
-    IMPLEMENT_IINTERFACE
-
     CConfigFileComponentUtils();
-    virtual ~CConfigFileComponentUtils();
 
     void getAvailableComponets(::StringArray& compArray) const;
     void getAvailableESPServices(::StringArray& compArray) const;

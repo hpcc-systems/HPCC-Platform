@@ -1249,7 +1249,7 @@ static bool scopePermissionsAvail = true;
 static SecAccessFlags getScopePermissions(const char *scopename,IUserDescriptor *user,unsigned auditflags)
 {  // scope must be normalized already
     SecAccessFlags perms = SecAccess_Full;
-    if (scopePermissionsAvail && scopename && *scopename && (*scopename != '.' || scopename[1])) {
+    if (scopePermissionsAvail && scopename && *scopename) {
         if (!user)
         {
 #ifdef NULL_DALIUSER_STACKTRACE
@@ -3017,6 +3017,7 @@ public:
                     queryLogicalName(), (superBlocked?"blocked":"unblocked"));
 
 #ifdef SUBFILE_COMPATIBILITY_CHECKING
+        // MORE - this first check looks completely useless to me
         bool subSoft = subProp.hasProp("_record_layout");
         bool superSoft = superProp.hasProp("_record_layout");
         if (superSoft != subSoft)
@@ -3202,7 +3203,7 @@ protected:
     StringAttr partmask;
     FileClusterInfoArray clusters;
 
-    void savePartsAttr(bool force)
+    void savePartsAttr(bool force) override
     {
         CriticalBlock block (sect);
         IPropertyTree *pt;
@@ -3411,7 +3412,7 @@ protected: friend class CDistributedFilePart;
         return parts;
     }
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_O;
 
     CDistributedFile(CDistributedFileDirectory *_parent, IRemoteConnection *_conn,const CDfsLogicalFileName &lname,IUserDescriptor *user) // takes ownership of conn
     {
@@ -3513,7 +3514,7 @@ public:
         clusters.kill();
     }
 
-    IFileDescriptor *getFileDescriptor(const char *_clusterName)
+    IFileDescriptor *getFileDescriptor(const char *_clusterName) override
     {
         CriticalBlock block (sect);
         Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(root,&queryNamedGroupStore(),0);
@@ -3588,17 +3589,17 @@ public:
             ERRLOG("No cluster specified for %s",logicalName.get());
     }
 
-    unsigned numClusters()
+    virtual unsigned numClusters() override
     {
         return clusters.ordinality();
     }
 
-    unsigned findCluster(const char *clustername)
+    virtual unsigned findCluster(const char *clustername) override
     {
         return clusters.find(clustername);
     }
 
-    unsigned getClusterNames(StringArray &clusternames)
+    virtual unsigned getClusterNames(StringArray &clusternames) override
     {
         return clusters.getNames(clusternames);
     }
@@ -3668,7 +3669,7 @@ public:
             CDistributedFileBase<IDistributedFile>::conn->commit(); // should only be cluster changes but a bit dangerous
     }
 
-    void addCluster(const char *clustername,const ClusterPartDiskMapSpec &mspec)
+    virtual void addCluster(const char *clustername,const ClusterPartDiskMapSpec &mspec) override
     {
         if (!clustername&&!*clustername)
             return;
@@ -3689,7 +3690,7 @@ public:
         saveClusters();
     }
 
-    bool removeCluster(const char *clustername)
+    virtual bool removeCluster(const char *clustername) override
     {
         CClustersLockedSection cls(CDistributedFileBase<IDistributedFile>::logicalName, true);
         reloadClusters();
@@ -3717,7 +3718,7 @@ public:
         return false;
     }
 
-    void setPreferredClusters(const char *clusterlist)
+    virtual void setPreferredClusters(const char *clusterlist) override
     {
         clusters.setPreferred(clusterlist,CDistributedFileBase<IDistributedFile>::logicalName);
     }
@@ -3759,7 +3760,7 @@ public:
     }
 
 
-    StringBuffer &getClusterName(unsigned clusternum,StringBuffer &name)
+    virtual StringBuffer &getClusterName(unsigned clusternum,StringBuffer &name) override
     {
         return clusters.getName(clusternum,name);
     }
@@ -3769,13 +3770,13 @@ public:
         return clusters.copyNum(part,copy, numParts(),replicate);
     }
 
-    ClusterPartDiskMapSpec &queryPartDiskMapping(unsigned clusternum)
+    virtual ClusterPartDiskMapSpec &queryPartDiskMapping(unsigned clusternum) override
     {
         assertex(clusternum<clusters.ordinality());
         return clusters.queryPartDiskMapping(clusternum);
     }
 
-    void updatePartDiskMapping(const char *clustername,const ClusterPartDiskMapSpec &spec)
+    virtual void updatePartDiskMapping(const char *clustername,const ClusterPartDiskMapSpec &spec) override
     {
         CClustersLockedSection cls(CDistributedFileBase<IDistributedFile>::logicalName, true);
         reloadClusters();
@@ -3786,22 +3787,22 @@ public:
         }
     }
 
-    IGroup *queryClusterGroup(unsigned clusternum)
+    virtual IGroup *queryClusterGroup(unsigned clusternum) override
     {
         return clusters.queryGroup(clusternum);
     }
 
-    StringBuffer &getClusterGroupName(unsigned clusternum, StringBuffer &name)
+    virtual StringBuffer &getClusterGroupName(unsigned clusternum, StringBuffer &name) override
     {
         return clusters.item(clusternum).getGroupName(name, &queryNamedGroupStore());
     }
 
-    virtual unsigned numCopies(unsigned partno)
+    virtual unsigned numCopies(unsigned partno) override
     {
         return clusters.numCopies(partno,numParts());
     }
 
-    void setSingleClusterOnly()
+    virtual void setSingleClusterOnly() override
     {
         clusters.setSingleClusterOnly();
     }
@@ -3885,19 +3886,19 @@ public:
         }
     }
 
-    unsigned numParts()
+    virtual unsigned numParts() override
     {
         return parts.ordinality();
     }
 
-    IDistributedFilePart &queryPart(unsigned idx)
+    virtual IDistributedFilePart &queryPart(unsigned idx) override
     {
         if (idx<parts.ordinality())
             return queryParts().item(idx);
         return *(IDistributedFilePart *)NULL;
     }
 
-    IDistributedFilePart* getPart(unsigned idx)
+    virtual IDistributedFilePart* getPart(unsigned idx) override
     {
         if (idx>=parts.ordinality())
             return NULL;
@@ -3905,12 +3906,12 @@ public:
         return LINK(ret);
     }
 
-    IDistributedFilePartIterator *getIterator(IDFPartFilter *filter=NULL)
+    virtual IDistributedFilePartIterator *getIterator(IDFPartFilter *filter=NULL) override
     {
         return new CDistributedFilePartIterator(queryParts(),filter);
     }
 
-    void rename(const char *_logicalname,IUserDescriptor *user)
+    virtual void rename(const char *_logicalname,IUserDescriptor *user) override
     {
         StringBuffer prevname;
         Owned<IFileRelationshipIterator> reliter;
@@ -3943,13 +3944,13 @@ public:
     }
 
 
-    const char *queryDefaultDir()
+    virtual const char *queryDefaultDir() override
     {
         CriticalBlock block (sect);
         return directory.get();
     }
 
-    const char *queryPartMask()
+    virtual const char *queryPartMask() override
     {
         CriticalBlock block (sect);
         if (partmask.isEmpty()) {
@@ -3964,7 +3965,7 @@ public:
         return (!logicalName.isSet());
     }
 
-    void attach(const char *_logicalname,IUserDescriptor *user)
+    virtual void attach(const char *_logicalname,IUserDescriptor *user) override
     {
         CriticalBlock block (sect);
         assertex(isAnon()); // already attached!
@@ -4010,12 +4011,12 @@ public:
     }
 
 public:
-    virtual void detach(unsigned timeoutMs=INFINITE, ICodeContext *ctx=NULL)
+    virtual void detach(unsigned timeoutMs=INFINITE, ICodeContext *ctx=NULL) override
     {
         detach(timeoutMs, true, ctx);
     }
 
-    bool existsPhysicalPartFiles(unsigned short port)
+    virtual bool existsPhysicalPartFiles(unsigned short port) override
     {
         unsigned width = numParts();
         CriticalSection errcrit;
@@ -4109,10 +4110,10 @@ public:
         return false;
     }
 
-    bool renamePhysicalPartFiles(const char *newname,
-                                 const char *cluster,
-                                 IMultiException *mexcept,
-                                 const char *newbasedir)
+    virtual bool renamePhysicalPartFiles(const char *newname,
+                                         const char *cluster,
+                                         IMultiException *mexcept,
+                                         const char *newbasedir) override
     {
         // cluster TBD
         unsigned width = numParts();
@@ -4404,7 +4405,7 @@ public:
 
     IPropertyTree *queryRoot() { return root; }
 
-    __int64 getFileSize(bool allowphysical,bool forcephysical)
+    virtual __int64 getFileSize(bool allowphysical,bool forcephysical) override
     {
         __int64 ret = (__int64)(forcephysical?-1:queryAttributes().getPropInt64("@size",-1));
         if (ret==-1)
@@ -4426,7 +4427,7 @@ public:
         return ret;
     }
 
-    __int64 getDiskSize(bool allowphysical,bool forcephysical)
+    virtual __int64 getDiskSize(bool allowphysical,bool forcephysical) override
     {
         if (!isCompressed(NULL))
             return getFileSize(allowphysical, forcephysical);
@@ -4451,7 +4452,7 @@ public:
         return ret;
     }
 
-    bool getFileCheckSum(unsigned &checkSum)
+    virtual bool getFileCheckSum(unsigned &checkSum) override
     {
         if (queryAttributes().hasProp("@checkSum"))
             checkSum = (unsigned)queryAttributes().getPropInt64("@checkSum");
@@ -4470,7 +4471,7 @@ public:
         return true;
     }
 
-    virtual bool getFormatCrc(unsigned &crc)
+    virtual bool getFormatCrc(unsigned &crc) override
     {
         if (queryAttributes().hasProp("@formatCrc")) {
             // NB pre record_layout CRCs are not valid
@@ -4480,12 +4481,12 @@ public:
         return false;
     }
 
-    virtual bool getRecordLayout(MemoryBuffer &layout)
+    virtual bool getRecordLayout(MemoryBuffer &layout, const char *attrname) override
     {
-        return queryAttributes().getPropBin("_record_layout",layout);
+        return queryAttributes().getPropBin(attrname, layout);
     }
 
-    virtual bool getRecordSize(size32_t &rsz)
+    virtual bool getRecordSize(size32_t &rsz) override
     {
         if (queryAttributes().hasProp("@recordSize")) {
             rsz = (size32_t)queryAttributes().getPropInt("@recordSize");
@@ -4494,7 +4495,7 @@ public:
         return false;
     }
 
-    virtual unsigned getPositionPart(offset_t pos, offset_t &base)
+    virtual unsigned getPositionPart(offset_t pos, offset_t &base) override
     {
         unsigned n = numParts();
         base = 0;
@@ -4511,12 +4512,12 @@ public:
         return NotFound;
     }
 
-    IDistributedSuperFile *querySuperFile()
+    IDistributedSuperFile *querySuperFile() override
     {
         return NULL; // i.e. this isn't super file
     }
 
-    virtual bool checkClusterCompatible(IFileDescriptor &fdesc, StringBuffer &err)
+    virtual bool checkClusterCompatible(IFileDescriptor &fdesc, StringBuffer &err) override
     {
         unsigned n = numParts();
         if (fdesc.numParts()!=n) {
@@ -4559,7 +4560,7 @@ public:
         return true;
     }
 
-    void enqueueReplicate()
+    virtual void enqueueReplicate() override
     {
         MemoryBuffer mb;
         mb.append((byte)DRQ_REPLICATE).append(queryLogicalName());
@@ -4572,7 +4573,7 @@ public:
         qchannel->put(mb);
     }
 
-    bool getAccessedTime(CDateTime &dt)
+    virtual bool getAccessedTime(CDateTime &dt) override
     {
         StringBuffer str;
         if (!root->getProp("@accessed",str))
@@ -4581,7 +4582,7 @@ public:
         return true;
     }
 
-    virtual void setAccessedTime(const CDateTime &dt)
+    virtual void setAccessedTime(const CDateTime &dt) override
     {
         if (logicalName.isForeign())
             parent->setFileAccessed(logicalName,udesc,dt);
@@ -4610,14 +4611,14 @@ public:
         }
     }
 
-    void setAccessed()
+    virtual void setAccessed() override
     {
         CDateTime dt;
         dt.setNow();
         setAccessedTime(dt);
     }
 
-    virtual void validate()
+    virtual void validate() override
     {
         if (!existsPhysicalPartFiles(0))
         {
@@ -5278,7 +5279,7 @@ protected:
 
 public:
 
-    void checkFormatAttr(IDistributedFile *sub, const char* exprefix="")
+    virtual void checkFormatAttr(IDistributedFile *sub, const char* exprefix="") override
     {
         IDistributedSuperFile *superSub = sub->querySuperFile();
         if (superSub && (0 == superSub->numSubFiles(true)))
@@ -5298,7 +5299,7 @@ public:
         return NotFound;
     }
 
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_O;
 
     void commonInit(CDistributedFileDirectory *_parent, IPropertyTree *_root)
     {
@@ -5354,7 +5355,7 @@ public:
         subfiles.kill();
     }
 
-    StringBuffer &getClusterName(unsigned clusternum,StringBuffer &name)
+    virtual StringBuffer &getClusterName(unsigned clusternum,StringBuffer &name) override
     {
         // returns the cluster name if all the same
         CriticalBlock block (sect);
@@ -5376,7 +5377,7 @@ public:
         return name;
     }
 
-    IFileDescriptor *getFileDescriptor(const char *clustername)
+    virtual IFileDescriptor *getFileDescriptor(const char *clustername) override
     {
         CriticalBlock block (sect);
         if (subfiles.ordinality()==1)
@@ -5499,7 +5500,7 @@ public:
         return fdesc.getClear();
     }
 
-    unsigned numParts()
+    virtual unsigned numParts() override
     {
         CriticalBlock block(sect);
         unsigned ret=0;
@@ -5508,7 +5509,7 @@ public:
         return ret;
     }
 
-    IDistributedFilePart &queryPart(unsigned idx)
+    virtual IDistributedFilePart &queryPart(unsigned idx) override
     {
         CriticalBlock block(sect);
         if (subfiles.ordinality()==1)
@@ -5520,13 +5521,13 @@ public:
         return partscache.item(idx);
     }
 
-    IDistributedFilePart* getPart(unsigned idx)
+    virtual IDistributedFilePart* getPart(unsigned idx) override
     {
         IDistributedFilePart* ret = &queryPart(idx);
         return LINK(ret);
     }
 
-    IDistributedFilePartIterator *getIterator(IDFPartFilter *filter=NULL)
+    virtual IDistributedFilePartIterator *getIterator(IDFPartFilter *filter=NULL) override
     {
         CriticalBlock block(sect);
         if (subfiles.ordinality()==1)
@@ -5536,7 +5537,7 @@ public:
         return ret;
     }
 
-    void rename(const char *_logicalname,IUserDescriptor *user)
+    virtual void rename(const char *_logicalname,IUserDescriptor *user) override
     {
         StringBuffer prevname;
         Owned<IFileRelationshipIterator> reliter;
@@ -5561,7 +5562,7 @@ public:
     }
 
 
-    const char *queryDefaultDir()
+    virtual const char *queryDefaultDir() override
     {
         // returns the directory if all the same
         const char *ret = NULL;
@@ -5581,7 +5582,7 @@ public:
         return ret;
     }
 
-    const char *queryPartMask()
+    virtual const char *queryPartMask() override
     {
         // returns the part mask if all the same
         const char *ret = NULL;
@@ -5598,7 +5599,7 @@ public:
         return ret;
     }
 
-    void attach(const char *_logicalname,IUserDescriptor *user)
+    virtual void attach(const char *_logicalname,IUserDescriptor *user) override
     {
         assertex(!conn.get()); // already attached
         CriticalBlock block (sect);
@@ -5616,7 +5617,7 @@ public:
         loadSubFiles(NULL, 0, true);
     }
 
-    void detach(unsigned timeoutMs=INFINITE, ICodeContext *ctx=NULL)
+    virtual void detach(unsigned timeoutMs=INFINITE, ICodeContext *ctx=NULL) override
     {
         assertex(conn.get()); // must be attached
         CriticalBlock block(sect);
@@ -5645,7 +5646,7 @@ public:
         logicalName.clear();
     }
 
-    bool existsPhysicalPartFiles(unsigned short port)
+    virtual bool existsPhysicalPartFiles(unsigned short port) override
     {
         CriticalBlock block (sect);
         ForEachItemIn(i,subfiles) {
@@ -5656,7 +5657,7 @@ public:
         return true;
     }
 
-    bool renamePhysicalPartFiles(const char *newlfn,const char *cluster,IMultiException *mexcept,const char *newbasedir)
+    virtual bool renamePhysicalPartFiles(const char *newlfn,const char *cluster,IMultiException *mexcept,const char *newbasedir) override
     {
         throw MakeStringException(-1,"renamePhysicalPartFiles not supported for SuperFiles");
         return false;
@@ -5667,7 +5668,7 @@ public:
         UNIMPLEMENTED; // not yet needed
     }
 
-    virtual unsigned numCopies(unsigned partno)
+    virtual unsigned numCopies(unsigned partno) override
     {
         unsigned ret = (unsigned)-1;
         CriticalBlock block (sect);
@@ -5680,7 +5681,7 @@ public:
         return (ret==(unsigned)-1)?1:ret;
     }
 
-    __int64 getFileSize(bool allowphysical,bool forcephysical)
+    virtual __int64 getFileSize(bool allowphysical,bool forcephysical) override
     {
         __int64 ret = (__int64)(forcephysical?-1:queryAttributes().getPropInt64("@size",-1));
         if (ret==-1)
@@ -5697,7 +5698,7 @@ public:
         return ret;
     }
 
-    __int64 getDiskSize(bool allowphysical,bool forcephysical)
+    virtual __int64 getDiskSize(bool allowphysical,bool forcephysical) override
     {
         if (!isCompressed(NULL))
             return getFileSize(allowphysical, forcephysical);
@@ -5734,7 +5735,7 @@ public:
         return ret;
     }
 
-    bool getFileCheckSum(unsigned &checkSum)
+    virtual bool getFileCheckSum(unsigned &checkSum) override
     {
         if (queryAttributes().hasProp("@checkSum"))
             checkSum = (unsigned)queryAttributes().getPropInt64("@checkSum");
@@ -5751,12 +5752,12 @@ public:
         return true;
     }
 
-    IDistributedSuperFile *querySuperFile()
+    virtual IDistributedSuperFile *querySuperFile() override
     {
         return this;
     }
 
-    virtual IDistributedFile &querySubFile(unsigned idx,bool sub)
+    virtual IDistributedFile &querySubFile(unsigned idx,bool sub) override
     {
         CriticalBlock block (sect);
         if (sub) {
@@ -5777,7 +5778,7 @@ public:
         return subfiles.item(idx);
     }
 
-    virtual IDistributedFile *querySubFileNamed(const char *name, bool sub)
+    virtual IDistributedFile *querySubFileNamed(const char *name, bool sub) override
     {
         CriticalBlock block (sect);
         unsigned idx=findSubFileOrd(name);
@@ -5800,13 +5801,13 @@ public:
         return NULL;
     }
 
-    virtual IDistributedFile *getSubFile(unsigned idx,bool sub)
+    virtual IDistributedFile *getSubFile(unsigned idx,bool sub) override
     {
         CriticalBlock block (sect);
         return LINK(&querySubFile(idx,sub));
     }
 
-    virtual unsigned numSubFiles(bool sub)
+    virtual unsigned numSubFiles(bool sub) override
     {
         CriticalBlock block (sect);
         unsigned ret = 0;
@@ -5825,7 +5826,7 @@ public:
         return ret;
     }
 
-    virtual bool getFormatCrc(unsigned &crc)
+    virtual bool getFormatCrc(unsigned &crc) override
     {
         if (queryAttributes().hasProp("@formatCrc")) {
             crc = (unsigned)queryAttributes().getPropInt("@formatCrc");
@@ -5844,15 +5845,15 @@ public:
         return found;
     }
 
-    virtual bool getRecordLayout(MemoryBuffer &layout)
+    virtual bool getRecordLayout(MemoryBuffer &layout, const char *attrname) override
     {
         layout.clear();
-        if (queryAttributes().getPropBin("_record_layout",layout))
+        if (queryAttributes().getPropBin(attrname, layout))
             return true;
         bool found = false;
         ForEachItemIn(i,subfiles) {
             MemoryBuffer b;
-            if (subfiles.item(i).getRecordLayout(found?b:layout)) {
+            if (subfiles.item(i).getRecordLayout(found?b:layout, attrname)) {
                 if (found) {
                     if ((b.length()!=layout.length())||(memcmp(b.bufferBase(),layout.bufferBase(),b.length())!=0))
                         return false;
@@ -5864,7 +5865,7 @@ public:
         return found;
     }
 
-    virtual bool getRecordSize(size32_t &rsz)
+    virtual bool getRecordSize(size32_t &rsz) override
     {
         if (queryAttributes().hasProp("@recordSize")) {
             rsz = (size32_t)queryAttributes().getPropInt("@recordSize");
@@ -5883,12 +5884,12 @@ public:
         return found;
     }
 
-    virtual bool isInterleaved()
+    virtual bool isInterleaved() override
     {
         return interleaved!=0;
     }
 
-    virtual IDistributedFile *querySubPart(unsigned partidx,unsigned &subfileidx)
+    virtual IDistributedFile *querySubPart(unsigned partidx,unsigned &subfileidx) override
     {
         CriticalBlock block (sect);
         subfileidx = 0;
@@ -5910,7 +5911,7 @@ public:
         return NULL;
     }
 
-    virtual unsigned getPositionPart(offset_t pos, offset_t &base)
+    virtual unsigned getPositionPart(offset_t pos, offset_t &base) override
     {   // not very quick!
         CriticalBlock block (sect);
         unsigned n = numParts();
@@ -5928,7 +5929,7 @@ public:
         return NotFound;
     }
 
-    IDistributedFileIterator *getSubFileIterator(bool supersub=false)
+    virtual IDistributedFileIterator *getSubFileIterator(bool supersub=false) override
     {
         CriticalBlock block (sect);
         return new cSubFileIterator(subfiles,supersub);
@@ -5948,10 +5949,11 @@ public:
         root->removeProp("Attr/@size");
         root->removeProp("Attr/@compressedSize");
         root->removeProp("Attr/@checkSum");
-        root->removeProp("Attr/@recordCount");  // recordCount not currently supported by superfiles
-        root->removeProp("Attr/@formatCrc");    // formatCrc set if all consistant
-        root->removeProp("Attr/@recordSize");   // record size set if all consistant
-        root->removeProp("Attr/_record_layout");
+        root->removeProp("Attr/@recordCount");   // recordCount not currently supported by superfiles
+        root->removeProp("Attr/@formatCrc");     // formatCrc set if all consistant
+        root->removeProp("Attr/@recordSize");    // record size set if all consistant
+        root->removeProp("Attr/_record_layout"); // legacy info - set if all consistent
+        root->removeProp("Attr/_rtlType");       // new info - set if all consistent
         __int64 fs = getFileSize(false,false);
         if (fs!=-1)
             root->setPropInt64("Attr/@size",fs);
@@ -5974,9 +5976,10 @@ public:
         if (getRecordSize(rsz))
             root->setPropInt("Attr/@recordSize", rsz);
         MemoryBuffer mb;
-        if (getRecordLayout(mb))
+        if (getRecordLayout(mb, "_record_layout"))
             root->setPropBin("Attr/_record_layout", mb.length(), mb.bufferBase());
-
+        if (getRecordLayout(mb, "_rtlType"))
+            root->setPropBin("Attr/_rtlType", mb.length(), mb.bufferBase());
     }
 
     void updateParentFileAttrs(IDistributedFileTransaction *transaction)
@@ -6008,7 +6011,7 @@ public:
             throw MakeStringException(-1,"addSubFile: File %s is already a subfile of %s", sub->queryLogicalName(),queryLogicalName());
     }
 
-    void validate()
+    virtual void validate() override
     {
         unsigned numSubfiles = root->getPropInt("@numsubfiles",0);
         if (numSubfiles)
@@ -6153,12 +6156,12 @@ private:
     }
 
 public:
-    void addSubFile(const char * subfile,
-                    bool before=false,              // if true before other
-                    const char *other=NULL,     // in NULL add at end (before=false) or start(before=true)
-                    bool addcontents=false,
-                    IDistributedFileTransaction *transaction=NULL
-                   )
+    virtual void addSubFile(const char * subfile,
+                            bool before=false,              // if true before other
+                            const char *other=NULL,     // in NULL add at end (before=false) or start(before=true)
+                            bool addcontents=false,
+                            IDistributedFileTransaction *transaction=NULL
+                   ) override
     {
         CriticalBlock block (sect);
         if (!subfile||!*subfile)
@@ -6203,9 +6206,9 @@ public:
     }
 
     virtual bool removeSubFile(const char *subfile,         // if NULL removes all
-                                bool remsub,                // if true removes subfiles from DFS
-                                bool remcontents,           // if true, recurse super-files
-                                IDistributedFileTransaction *transaction)
+                               bool remsub,                // if true removes subfiles from DFS
+                               bool remcontents,           // if true, recurse super-files
+                               IDistributedFileTransaction *transaction) override
     {
         CriticalBlock block (sect);
         if (subfile&&!*subfile)
@@ -6264,7 +6267,7 @@ public:
     }
 
     virtual bool removeOwnedSubFiles(bool remsub, // if true removes subfiles from DFS
-                                     IDistributedFileTransaction *transaction)
+                                     IDistributedFileTransaction *transaction) override
     {
         CriticalBlock block (sect);
         checkModify("removeOwnedSubFiles");
@@ -6292,7 +6295,7 @@ public:
     }
 
     virtual bool swapSuperFile( IDistributedSuperFile *_file,
-                                IDistributedFileTransaction *transaction)
+                                IDistributedFileTransaction *transaction) override
     {
         CriticalBlock block (sect);
         if (!_file)
@@ -6319,7 +6322,7 @@ public:
         return true;
     }
 
-    void savePartsAttr(bool force)
+    virtual void savePartsAttr(bool force) override
     {
     }
 
@@ -6342,35 +6345,35 @@ public:
         }
     }
 
-    unsigned getClusterNames(StringArray &clusters)
+    virtual unsigned getClusterNames(StringArray &clusters) override
     {
         CriticalBlock block (sect);
         fillClustersCache();
         return clusterscache.getNames(clusters);
     }
 
-    unsigned numClusters()
+    virtual unsigned numClusters() override
     {
         CriticalBlock block (sect);
         fillClustersCache();
         return clusterscache.ordinality();
     }
 
-    unsigned findCluster(const char *clustername)
+    virtual unsigned findCluster(const char *clustername) override
     {
         CriticalBlock block (sect);
         fillClustersCache();
         return clusterscache.find(clustername);
     }
 
-    ClusterPartDiskMapSpec &queryPartDiskMapping(unsigned clusternum)
+    virtual ClusterPartDiskMapSpec &queryPartDiskMapping(unsigned clusternum) override
     {
         CriticalBlock block (sect);
         fillClustersCache();
         return clusterscache.queryPartDiskMapping(clusternum);
     }
 
-    void updatePartDiskMapping(const char *clustername,const ClusterPartDiskMapSpec &spec)
+    virtual void updatePartDiskMapping(const char *clustername,const ClusterPartDiskMapSpec &spec) override
     {
         if (!clustername||!*clustername)
             return;
@@ -6382,21 +6385,21 @@ public:
         }
     }
 
-    IGroup *queryClusterGroup(unsigned clusternum)
+    virtual IGroup *queryClusterGroup(unsigned clusternum) override
     {
         CriticalBlock block (sect);
         fillClustersCache();
         return clusterscache.queryGroup(clusternum);
     }
 
-    StringBuffer &getClusterGroupName(unsigned clusternum, StringBuffer &name)
+    virtual StringBuffer &getClusterGroupName(unsigned clusternum, StringBuffer &name) override
     {
         CriticalBlock block (sect);
         fillClustersCache();
         return clusterscache.item(clusternum).getGroupName(name, &queryNamedGroupStore());
     }
 
-    void addCluster(const char *clustername,const ClusterPartDiskMapSpec &mspec)
+    virtual void addCluster(const char *clustername,const ClusterPartDiskMapSpec &mspec) override
     {
         if (!clustername||!*clustername)
             return;
@@ -6405,7 +6408,7 @@ public:
         subfiles.item(0).addCluster(clustername,mspec);
     }
 
-    virtual bool removeCluster(const char *clustername)
+    virtual bool removeCluster(const char *clustername) override
     {
         bool clusterRemoved=false;
         CriticalBlock block (sect);
@@ -6417,7 +6420,7 @@ public:
         return clusterRemoved;
     }
 
-    void setPreferredClusters(const char *clusters)
+    virtual void setPreferredClusters(const char *clusters) override
     {
         CriticalBlock block (sect);
         clusterscache.clear();
@@ -6427,7 +6430,7 @@ public:
         }
     }
 
-    virtual bool checkClusterCompatible(IFileDescriptor &fdesc, StringBuffer &err)
+    virtual bool checkClusterCompatible(IFileDescriptor &fdesc, StringBuffer &err) override
     {
         CriticalBlock block (sect);
         if (subfiles.ordinality()!=1) {
@@ -6443,7 +6446,7 @@ public:
     }
 
 
-    void setSingleClusterOnly()
+    virtual void setSingleClusterOnly() override
     {
         CriticalBlock block (sect);
         ForEachItemIn(i,subfiles) {
@@ -6453,7 +6456,7 @@ public:
     }
 
 
-    void enqueueReplicate()
+    virtual void enqueueReplicate() override
     {
         CriticalBlock block (sect);
         ForEachItemIn(i,subfiles) {
@@ -6462,7 +6465,7 @@ public:
         }
     }
 
-    bool getAccessedTime(CDateTime &dt)
+    virtual bool getAccessedTime(CDateTime &dt) override
     {
         bool set=false;
         CriticalBlock block (sect);
@@ -6481,7 +6484,7 @@ public:
         return set;
     }
 
-    void setAccessedTime(const CDateTime &dt)
+    virtual void setAccessedTime(const CDateTime &dt) override
     {
         {
             CriticalBlock block (sect);

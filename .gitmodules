@@ -7,30 +7,12 @@
 [submodule "esp/src/dgrid"]
 	path = esp/src/dgrid
 	url = https://github.com/hpcc-systems/dgrid.git
-[submodule "esp/src/dojo"]
-	path = esp/src/dojo
-	url = https://github.com/hpcc-systems/dojo.git
-[submodule "esp/src/dijit"]
-	path = esp/src/dijit
-	url = https://github.com/hpcc-systems/dijit.git
-[submodule "esp/src/dojox"]
-	path = esp/src/dojox
-	url = https://github.com/hpcc-systems/dojox.git
-[submodule "esp/src/themes"]
-	path = esp/src/themes
-	url = https://github.com/hpcc-systems/themes.git
-[submodule "esp/src/util"]
-	path = esp/src/util
-	url = https://github.com/hpcc-systems/util.git
 [submodule "plugins/cassandra/libuv"]
 	path = plugins/cassandra/libuv
 	url = https://github.com/hpcc-systems/libuv.git
 [submodule "plugins/cassandra/cpp-driver"]
 	path = plugins/cassandra/cpp-driver
 	url = https://github.com/hpcc-systems/cpp-driver.git
-[submodule "esp/src/Visualization"]
-	path = esp/src/Visualization
-	url = https://github.com/hpcc-systems/Visualization.git
 [submodule "esp/src/crossfilter"]
 	path = esp/src/crossfilter
 	url = https://github.com/hpcc-systems/crossfilter.git

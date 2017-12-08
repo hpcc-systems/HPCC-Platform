@@ -190,6 +190,12 @@ public:
         assertex(pos <= SELF::used);
         return &head[pos];
     }
+    MEMBER * detach()
+    {
+        MEMBER * head = (MEMBER *)SELF::_head;
+        SELF::_init();
+        return head;
+    }
     void sort(CompareFunc cf)
     {
         SELF::_doSort(sizeof(MEMBER), (StdCompare)cf);
@@ -408,6 +414,11 @@ public:
 // An array which stores owned pointers to elements of type INTERFACE
 template <typename INTERFACE>
 class OwnedPointerArrayOf : public ArrayOf<INTERFACE *, INTERFACE *, OwnedPointerArrayMapper<INTERFACE> >
+{
+};
+
+template <typename INTERFACE>
+class OwnedConstPointerArrayOf : public ArrayOf<const INTERFACE *, const INTERFACE *, OwnedPointerArrayMapper<const INTERFACE> >
 {
 };
 

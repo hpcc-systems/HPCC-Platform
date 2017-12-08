@@ -32,7 +32,12 @@ define([
     "hpcc/Utility",
 
     "dojox/html/entities",
-    "dojox/widget/Toaster"
+    "dojox/widget/Toaster",
+
+    "css!hpcc/css/ecl.css",
+    "css!dojo-themes/flat/flat.css",
+    "css!hpcc/css/hpcc.css"
+
 ], function (fx, dom, domStyle, ioQuery, ready, lang, arrayUtil, topic, xhr, cookie,
             Dialog, Button,
             ESPUtil, Utility,
@@ -122,13 +127,11 @@ define([
         }).play();
     }
 
-    function initUi() {
+    function initUI() {
         var params = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) === "?" ? 1 : 0)));
         var hpccWidget = params.Widget ? params.Widget : "HPCCPlatformWidget";
 
-        require([
-                "hpcc/" + hpccWidget
-        ], function (WidgetClass) {
+            Utility.resolve(hpccWidget, function (WidgetClass) {
                 var webParams = {
                     id: "stub",
                     "class": "hpccApp"
@@ -143,7 +146,7 @@ define([
                         readOnly: params.ReadOnly
                     });
                 }
-                var widget = WidgetClass.fixCircularDependency ? new WidgetClass.fixCircularDependency(webParams) : new WidgetClass(webParams);
+                var widget = new WidgetClass(webParams);
 
                 var myToaster = new Toaster({
                     id: 'hpcc_toaster',
@@ -202,11 +205,22 @@ define([
         );
     }
 
-    return {
-        init: function () {
-            ready(function () {
-                initUi();
-            });
-        }
-    };
+    function parseUrl() {
+        var baseHost = (typeof debugConfig !== "undefined") ? "http://" + debugConfig.IP + ":" + debugConfig.Port : "";
+        var hashNodes = location.hash.split("#");
+        var searchNodes = location.search.split("?");
+
+        dojoConfig.urlInfo = {
+            baseHost: baseHost,
+            pathname: location.pathname,
+            hash: hashNodes.length >= 2 ? hashNodes[1] : "",
+            resourcePath: baseHost + "/esp/files/eclwatch",
+            basePath: baseHost + "/esp/files"
+        };
+    }
+        
+    ready(function () {
+        parseUrl();
+        initUI();
+    });
 });

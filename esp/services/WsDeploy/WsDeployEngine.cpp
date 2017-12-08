@@ -206,8 +206,7 @@ void CWsDeployEngine::deploy(CDeployOptions& pOptions)
 {
   try
   {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-    factory->validateCache();   
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> constEnv(factory->openEnvironment());
 
     m_pEnvDepEngine.setown( createEnvDeploymentEngine(*constEnv, *this, m_pDeploy->queryPropTree("SelectedComponents")) );
@@ -360,8 +359,7 @@ void CWsDeployEngine::deploy()
 {
   try
   {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-    factory->validateCache();   
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> constEnv(factory->openEnvironment());
 
     m_pEnvDepEngine.setown( createEnvDeploymentEngine(*constEnv, *this, m_pDeploy->queryPropTree("SelectedComponents")) );

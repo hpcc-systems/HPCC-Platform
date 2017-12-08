@@ -4465,6 +4465,7 @@ IDefRecordElement * RecordMetaCreator::createIfBlock(IHqlExpression * cur, IHqlE
             return NULL;
         break;
     default:
+//        EclIR::dump_ir(cond);
         return NULL;
     }
 
@@ -5135,6 +5136,14 @@ IHqlExpression * removeOperand(IHqlExpression * expr, IHqlExpression * operand)
     HqlExprArray args;
     unwindChildren(args, expr);
     args.zap(*operand);
+    return expr->clone(args);
+}
+
+extern HQL_API IHqlExpression * removeChild(IHqlExpression * expr, unsigned child)
+{
+    HqlExprArray args;
+    unwindChildren(args, expr);
+    args.remove(child);
     return expr->clone(args);
 }
 
@@ -6473,7 +6482,7 @@ IHqlExpression *notePayloadFields(IHqlExpression *record, unsigned payloadCount)
             break;
         case no_field:
         case no_ifblock:
-            fields.replace(*appendOwnedOperand(cur, createAttribute(_payload_Atom)), idx);
+            fields.replace(*appendOwnedOperand(cur, createAttribute(_payload_Atom)), idx); // MORE - should we mark contained fields too?
             payloadCount--;
             break;
         }
@@ -7705,6 +7714,8 @@ IHqlExpression * createDefaultAssertMessage(IHqlExpression * cond)
     IHqlExpression * lhs = cond->queryChild(0);
     IHqlExpression * rhs = cond->queryChild(1);
     if (!lhs->queryType()->isScalar() || !rhs->queryType()->isScalar())
+        return createConstant(temp.append("Assert failed: ").append(suffix));
+    if (lhs->queryType()->getTypeCode() == type_data || rhs->queryType()->getTypeCode() == type_data)
         return createConstant(temp.append("Assert failed: ").append(suffix));
 
     StringBuffer prefix;
@@ -9637,7 +9648,7 @@ void getFieldTypeInfo(FieldTypeInfoStruct &out, ITypeInfo *type)
         }
         else
         {
-            out.fieldType |= (RFTMalien|RFTMinvalidxml|RFTMnoserialize|RFTMnoprefetch);
+            out.fieldType |= (RFTMalien|RFTMinvalidxml|RFTMnoserialize);
             out.fieldType |= RFTMunknownsize;
             //can't work out the size of the field - so keep it as unknown for the moment.
             //until the alien field type is supported
@@ -9667,6 +9678,20 @@ void getFieldTypeInfo(FieldTypeInfoStruct &out, ITypeInfo *type)
         out.className = "RtlIntTypeInfo";
         if (!type->isSigned())
             out.fieldType |= RFTMunsigned;
+        break;
+    case type_keyedint:
+        out.className = "RtlKeyedIntTypeInfo";
+        if (!type->isSigned())
+            out.fieldType |= RFTMunsigned;
+        break;
+    case type_filepos:
+        out.className = "RtlSwapIntTypeInfo";
+        out.length = sizeof(offset_t);
+        if (!type->isSigned())
+            out.fieldType |= RFTMunsigned;
+        break;
+    case type_blob:
+        out.className = "RtlBlobTypeInfo";
         break;
     case type_swapint:
         out.className = "RtlSwapIntTypeInfo";
@@ -9749,7 +9774,6 @@ void getFieldTypeInfo(FieldTypeInfoStruct &out, ITypeInfo *type)
     case type_dictionary:
         {
             out.className = "RtlDictionaryTypeInfo";
-            out.fieldType |= RFTMnoserialize;
             if (hasLinkCountedModifier(type))
             {
                 out.fieldType |= RFTMlinkcounted;
@@ -9775,12 +9799,14 @@ void getFieldTypeInfo(FieldTypeInfoStruct &out, ITypeInfo *type)
         out.locale = str(type->queryLocale());
         out.length = type->getStringLen();
         break;
-    case type_blob:
+    case type_alien:
+        out.className = "RtlAlienTypeInfo";
+        out.fieldType |= (RFTMcontainsunknown|RFTMinvalidxml|RFTMnoserialize);
+        break;
     case type_pointer:
     case type_class:
     case type_array:
     case type_void:
-    case type_alien:
     case type_none:
     case type_any:
     case type_pattern:
@@ -9792,9 +9818,8 @@ void getFieldTypeInfo(FieldTypeInfoStruct &out, ITypeInfo *type)
     case type_scope:
     case type_transform:
     default:
-        out.className = "RtlUnimplementedTypeInfo";
-        out.fieldType |= (RFTMcontainsunknown|RFTMinvalidxml|RFTMnoserialize|RFTMnoprefetch);
-        break;
+        //Type information should not be generated for records containing any of the types above.
+        throwUnexpected();
     }
 }
 
@@ -9813,7 +9838,7 @@ unsigned buildRtlRecordFields(IRtlFieldTypeDeserializer &deserializer, unsigned 
         switch (field->getOperator())
         {
         case no_ifblock:
-            typeFlags |= (RFTMnoserialize|RFTMnoprefetch);
+            typeFlags |= (RFTMunknownsize);
             break;
         case no_field:
         {
@@ -9939,9 +9964,17 @@ const RtlTypeInfo *buildRtlType(IRtlFieldTypeDeserializer &deserializer, ITypeIn
         }
     case type_dictionary:
         return nullptr;  // MORE - does this leak?
+    case type_blob:
     case type_set:
+    case type_keyedint:
         info.childType = buildRtlType(deserializer, type->queryChildType());
         break;
+    case type_alien:
+    {
+        ITypeInfo * physicalType = queryAlienType(type)->queryPhysicalType();
+        info.childType = buildRtlType(deserializer, physicalType);
+        break;
+    }
     }
     if (info.childType)
         info.fieldType |= info.childType->fieldType & RFTMinherited;

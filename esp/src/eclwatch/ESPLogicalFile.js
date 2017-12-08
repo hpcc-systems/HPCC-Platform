@@ -26,9 +26,10 @@ define([
     "hpcc/FileSpray",
     "hpcc/ESPRequest",
     "hpcc/ESPUtil",
-    "hpcc/ESPResult"
+    "hpcc/ESPResult",
+    "hpcc/Utility"
 ], function (declare, arrayUtil, lang, Deferred, Observable, QueryResults, Stateful,
-        WsDfu, FileSpray, ESPRequest, ESPUtil, ESPResult) {
+        WsDfu, FileSpray, ESPRequest, ESPUtil, ESPResult, Utility) {
 
     var _logicalFiles = {};
 
@@ -402,19 +403,19 @@ define([
             }
         },
         getStateImageHTML: function () {
-            return dojoConfig.getImageHTML(this.getStateImageName());
+            return Utility.getImageHTML(this.getStateImageName());
         },
         getProtectedImage: function () {
             if (this.IsProtected) {
-                return dojoConfig.getImageURL("locked.png");
+                return Utility.getImageURL("locked.png");
             }
-            return dojoConfig.getImageURL("unlocked.png");
+            return Utility.getImageURL("unlocked.png");
         },
         getCompressedImage: function () {
             if (this.IsCompressed) {
-                return dojoConfig.getImageURL("compressed.png");
+                return Utility.getImageURL("compressed.png");
             }
-            return dojoConfig.getImageURL("");
+            return Utility.getImageURL("");
         },
         isDeleted: function () {
             return this.StateID === 999;

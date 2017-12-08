@@ -40,13 +40,14 @@ define([
     "hpcc/FileSpray",
     "hpcc/WsDfu",
     "hpcc/DelayLoadWidget",
-    "hpcc/ESPUtil"
+    "hpcc/ESPUtil",
+    "hpcc/Utility"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, Observable, on, all,
                 Button,
                 Standby, validate,
                 selector,
-                GridDetailsWidget, WsWorkunits, ESPWorkunit, ESPDFUWorkunit, ESPLogicalFile, ESPQuery, FileSpray, WsDfu, DelayLoadWidget, ESPUtil) {
+                GridDetailsWidget, WsWorkunits, ESPWorkunit, ESPDFUWorkunit, ESPLogicalFile, ESPQuery, FileSpray, WsDfu, DelayLoadWidget, ESPUtil, Utility) {
     return declare("SearchResultsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 
@@ -154,7 +155,7 @@ define([
 
             this.standby = new Standby({
                 target: this.domNode,
-                image: dojoConfig.getImageURL("loadingBar.gif"),
+                image: Utility.getImageURL("loadingBar.gif"),
                 color: null
             });
             document.body.appendChild(this.standby.domNode);

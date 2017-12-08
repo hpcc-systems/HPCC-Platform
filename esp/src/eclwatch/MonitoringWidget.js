@@ -34,12 +34,13 @@ define([
     "hpcc/ws_machine",
     "hpcc/ESPWorkunit",
     "hpcc/DelayLoadWidget",
-    "hpcc/ESPUtil"
+    "hpcc/ESPUtil",
+    "hpcc/Utility"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, domClass, topic,
                 registry, ToggleButton, ToolbarSeparator,
                 tree, ColumnHider,
-                GridDetailsWidget, WsMachine, ESPWorkunit, DelayLoadWidget, ESPUtil) {
+                GridDetailsWidget, WsMachine, ESPWorkunit, DelayLoadWidget, ESPUtil, Utility) {
     return declare("MonitoringWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 
@@ -82,11 +83,11 @@ define([
                         formatter: function (Name, row) {
                             switch (row.Status) {
                                 case "Normal":
-                                    return dojoConfig.getImageHTML("normal.png") + Name;
+                                    return Utility.getImageHTML("normal.png") + Name;
                                 case "Warning":
-                                    return dojoConfig.getImageHTML("warning.png") + Name;
+                                    return Utility.getImageHTML("warning.png") + Name;
                                 case "Error":
-                                    return dojoConfig.getImageHTML("error.png") + Name;
+                                    return Utility.getImageHTML("error.png") + Name;
                             }
                             return "";
                         }

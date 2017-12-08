@@ -481,19 +481,21 @@ class WorkflowItem : public CInterface
 {
     friend class WorkflowTransformer;
 public:
-    WorkflowItem(unsigned _wfid, node_operator _workflowOp) : wfid(_wfid), workflowOp(_workflowOp) { }
+    WorkflowItem(unsigned _wfid, node_operator _workflowOp, const char * _label) : wfid(_wfid), workflowOp(_workflowOp), label(_label) { }
     WorkflowItem(IHqlExpression * _function);
 
     bool isFunction() const { return function != NULL; }
     IHqlExpression * getFunction() const;
     unsigned queryWfid() const { return wfid; }
     HqlExprArray & queryExprs() { return exprs; }
+    const char * queryGraphLabel() const { return label ? label.str() : nullptr; }
 
 private:
     LinkedHqlExpr function;
     HqlExprArray exprs;
     UnsignedArray dependencies;
     unsigned wfid;
+    StringBuffer label;
     node_operator workflowOp;
 };
 
@@ -791,6 +793,7 @@ struct HqlCppOptions
     bool                translateDFSlayouts;
     bool                timeTransforms;
     bool                useGlobalCompareClass;
+    bool                createValueSets;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
@@ -1056,12 +1059,13 @@ public:
            { return bindTableCursor(ctx, dataset, bound, no_none, NULL); }
 
 
-    IHqlExpression * getRtlFieldKey(IHqlExpression * expr, IHqlExpression * ownerRecord);
+    IHqlExpression * getRtlFieldKey(IHqlExpression * expr, IHqlExpression * ownerRecord, bool &isPayload);
     unsigned buildRtlField(StringBuffer & instanceName, IHqlExpression * field, IHqlExpression * rowRecord);
+    unsigned buildRtlFieldType(StringBuffer & instanceName, IHqlExpression * field, IHqlExpression * rowRecord);
     unsigned buildRtlType(StringBuffer & instanceName, ITypeInfo * type);
     unsigned buildRtlRecordFields(StringBuffer & instanceName, IHqlExpression * record, IHqlExpression * rowRecord);
     unsigned expandRtlRecordFields(StringBuffer & fieldListText, IHqlExpression * record, IHqlExpression * rowRecord);
-    unsigned buildRtlIfBlockField(StringBuffer & instanceName, IHqlExpression * ifblock, IHqlExpression * rowRecord);
+    unsigned buildRtlIfBlockField(StringBuffer & instanceName, IHqlExpression * ifblock, IHqlExpression * rowRecord, bool isPayload);
 
     void buildMetaInfo(MetaInstance & instance);
     IHqlExpression * buildMetaParameter(IHqlExpression * arg);
@@ -1816,7 +1820,7 @@ public:
     void endNestedClass(IHqlStmt * stmt);
 
     void buildEncryptHelper(BuildCtx & ctx, IHqlExpression * encryptAttr, const char * funcname = NULL);
-    void buildFormatCrcFunction(BuildCtx & ctx, const char * name, IHqlExpression * dataset, IHqlExpression * expr, unsigned payloadDelta);
+    void buildFormatCrcFunction(BuildCtx & ctx, const char * name, bool removeFilepos, IHqlExpression * dataset, IHqlExpression * expr, unsigned payloadDelta);
     void buildLimitHelpers(BuildCtx & ctx, IHqlExpression * expr, IHqlExpression * filename, unique_id_t id);
     void buildLimitHelpers(BuildCtx & ctx, IHqlExpression * rowLimit, IHqlExpression * failAction, bool isSkip, IHqlExpression * filename, unique_id_t id);
 

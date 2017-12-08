@@ -3,9 +3,10 @@
 
 EXPORT sq(boolean multiPart) := MODULE
 
+IMPORT $;
+SHARED STRING NamePrefix := $.Files(multiPart, false).filePrefix;
+
 //MORE: This is currently hard-wired to hthor since it is a tiny dataset
-STRING prefix := IF(multiPart, 'multi', 'single');
-EXPORT NamePrefix := '~REGRESS::' + prefix + '::';
 
 EXPORT HouseRec :=
             record

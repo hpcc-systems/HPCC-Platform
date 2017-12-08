@@ -742,12 +742,34 @@ bool CJHTreeNode::getValueAt(unsigned int index, char *dst) const
     if (index >= hdr.numKeys) return false;
     if (dst)
     {
-        if (rowexp.get()) {
-            rowexp->expandRow(dst,index,sizeof(__int64),keyLen);
+        if (keyHdr->hasSpecialFileposition())
+        {
+            //It would make sense to have the fileposition at the start of the row from he perspective of the
+            //internal representation, but that would complicate everything else which assumes the keyed
+            //fields start at the begining of the row.
+            if (rowexp.get())
+            {
+                rowexp->expandRow(dst,index,sizeof(offset_t),keyLen);
+                rowexp->expandRow(dst+keyLen,index,0,sizeof(offset_t));
+            }
+            else
+            {
+                const char * p = keyBuf + index*keyRecLen;
+                memcpy(dst, p + sizeof(offset_t), keyLen);
+                memcpy(dst+keyLen, p, sizeof(offset_t));
+            }
         }
-        else {
-            const char * p = keyBuf + index*keyRecLen + sizeof(__int64);
-            memcpy(dst, p, keyLen);
+        else
+        {
+            if (rowexp.get())
+            {
+                rowexp->expandRow(dst,index,0,keyLen);
+            }
+            else
+            {
+                const char * p = keyBuf + index*keyRecLen;
+                memcpy(dst, p, keyLen);
+            }
         }
     }
     return true;
@@ -755,7 +777,10 @@ bool CJHTreeNode::getValueAt(unsigned int index, char *dst) const
 
 size32_t CJHTreeNode::getSizeAt(unsigned int index) const
 {
-    return keyLen;
+    if (keyHdr->hasSpecialFileposition())
+        return keyLen + sizeof(offset_t);
+    else
+        return keyLen;
 }
 
 offset_t CJHTreeNode::getFPosAt(unsigned int index) const
@@ -913,7 +938,13 @@ bool CJHVarTreeNode::getValueAt(unsigned int num, char *dst) const
         const char * p = recArray[num];
         KEYRECSIZE_T reclen = ((KEYRECSIZE_T *) p)[-1];
         _WINREV(reclen);
-        memcpy(dst, p + sizeof(offset_t), reclen);
+        if (keyHdr->hasSpecialFileposition())
+        {
+            memcpy(dst, p + sizeof(offset_t), reclen);
+            memcpy(dst+reclen, p, sizeof(offset_t));
+        }
+        else
+            memcpy(dst, p, reclen);
     }
     return true;
 }
@@ -923,7 +954,10 @@ size32_t CJHVarTreeNode::getSizeAt(unsigned int num) const
     const char * p = recArray[num];
     KEYRECSIZE_T reclen = ((KEYRECSIZE_T *) p)[-1];
     _WINREV(reclen);
-    return reclen;
+    if (keyHdr->hasSpecialFileposition())
+        return reclen + sizeof(offset_t);
+    else
+        return reclen;
 }
 
 offset_t CJHVarTreeNode::getFPosAt(unsigned int num) const

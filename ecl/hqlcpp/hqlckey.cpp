@@ -110,10 +110,9 @@ bool isKeyableType(ITypeInfo * type)
 }
 
 
-IHqlExpression * getHozedKeyValue(IHqlExpression * _value)
+ITypeInfo * getHozedKeyType(IHqlExpression * expr)
 {
-    HqlExprAttr value = _value;
-    Linked<ITypeInfo> type = _value->queryType()->queryPromotedType();
+    Linked<ITypeInfo> type = expr->queryType();
 
     type_t tc = type->getTypeCode();
     switch (tc)
@@ -125,11 +124,7 @@ IHqlExpression * getHozedKeyValue(IHqlExpression * _value)
     case type_int:
     case type_swapint:
         if (type->isSigned())
-        {
             type.setown(makeIntType(type->getSize(), false));
-            value.setown(ensureExprType(value, type));
-            value.setown(createValue(no_add, LINK(type), LINK(value), getHozedBias(type)));
-        }
         if ((type->getTypeCode() == type_littleendianint) && (type->getSize() != 1))
             type.setown(makeSwapIntType(type->getSize(), false));
         break;
@@ -150,7 +145,31 @@ IHqlExpression * getHozedKeyValue(IHqlExpression * _value)
         break;
     }
 
-    return ensureExprType(value, type);
+    return type.getClear();
+}
+
+
+IHqlExpression * getHozedKeyValue(IHqlExpression * _value)
+{
+    HqlExprAttr value = _value;
+    Linked<ITypeInfo> type = _value->queryType()->queryPromotedType();
+    Owned<ITypeInfo> hozedType = getHozedKeyType(value);
+
+    type_t tc = type->getTypeCode();
+    switch (tc)
+    {
+    case type_int:
+    case type_swapint:
+        if (type->isSigned())
+        {
+            type.setown(makeIntType(type->getSize(), false));
+            value.setown(ensureExprType(value, type));
+            value.setown(createValue(no_add, LINK(type), LINK(value), getHozedBias(type)));
+        }
+        break;
+    }
+
+    return ensureExprType(value, hozedType);
 }
 
 
@@ -486,7 +505,7 @@ void KeyedJoinInfo::buildExtractIndexReadFields(BuildCtx & ctx)
 void KeyedJoinInfo::buildExtractJoinFields(ActivityInstance & instance)
 {
     //virtual size32_t extractJoinFields(void *dest, const void *diskRow, IBlobProvider * blobs) = 0;
-    MemberFunction func(translator, instance.startctx, "virtual size32_t extractJoinFields(ARowBuilder & crSelf, const void *_left, unsigned __int64 _filepos, IBlobProvider * blobs) override");
+    MemberFunction func(translator, instance.startctx, "virtual size32_t extractJoinFields(ARowBuilder & crSelf, const void *_left, IBlobProvider * blobs) override");
     translator.ensureRowAllocated(func.ctx, "crSelf");
     if (needToExtractJoinFields())
     {
@@ -499,10 +518,6 @@ void KeyedJoinInfo::buildExtractJoinFields(ActivityInstance & instance)
         {
             OwnedHqlExpr left = createSelector(no_left, raw, joinSeq);
             translator.associateBlobHelper(func.ctx, left, "blobs");
-
-            OwnedHqlExpr fileposExpr = getFilepos(left, false);
-            OwnedHqlExpr fileposVar = createVariable("_filepos", fileposExpr->getType());
-            func.ctx.associateExpr(fileposExpr, fileposVar);
         }
 
         translator.doBuildTransformBody(func.ctx, extractJoinFieldsTransform, selfCursor);
@@ -528,13 +543,10 @@ void KeyedJoinInfo::buildIndexReadMatch(BuildCtx & ctx)
 
     if (matchExpr)
     {
-        MemberFunction func(translator, ctx, "virtual bool indexReadMatch(const void * _left, const void * _right, unsigned __int64 _filepos, IBlobProvider * blobs) override");
+        MemberFunction func(translator, ctx, "virtual bool indexReadMatch(const void * _left, const void * _right, IBlobProvider * blobs) override");
 
         func.ctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
         func.ctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
-
-        OwnedHqlExpr fileposExpr = getFilepos(rawKey, false);
-        OwnedHqlExpr fileposVar = createVariable("_filepos", fileposExpr->getType());
 
         if (translator.queryOptions().spotCSE)
             matchExpr.setown(spotScalarCSE(matchExpr, NULL, translator.queryOptions().spotCseInIfDatasetConditions));
@@ -543,7 +555,6 @@ void KeyedJoinInfo::buildIndexReadMatch(BuildCtx & ctx)
 
         translator.bindTableCursor(func.ctx, keyAccessDataset, "left", no_left, joinSeq);
         translator.bindTableCursor(func.ctx, rawKey, "right");
-        func.ctx.associateExpr(fileposExpr, fileposVar);
 
         translator.buildReturn(func.ctx, matchExpr);
     }
@@ -564,8 +575,6 @@ void KeyedJoinInfo::buildLeftOnly(BuildCtx & ctx)
 
 void KeyedJoinInfo::buildMonitors(BuildCtx & ctx)
 {
-    monitors->optimizeSegments(keyAccessDataset->queryRecord());
-
     //---- virtual void createSegmentMonitors(struct IIndexReadContext *) { ... } ----
     MemberFunction func(translator, ctx, "virtual void createSegmentMonitors(IIndexReadContext *irc, const void * _left) override");
     func.ctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
@@ -684,11 +693,12 @@ void KeyedJoinInfo::buildTransformBody(BuildCtx & ctx, IHqlExpression * transfor
 
     newTransform.setown(replaceMemorySelectorWithSerializedSelector(newTransform, rhsRecord, no_right, joinSeq, diskAtom));
 
-    OwnedHqlExpr fileposExpr = getFilepos(extractedRight, false);
+    OwnedHqlExpr fileposExpr;
+    IHqlExpression * fileposField = isFullJoin() ? queryVirtualFileposField(file->queryRecord()) : nullptr;
+    fileposExpr.setown(getFilepos(extractedRight, false));
     if (extractJoinFieldsTransform)
     {
-        IHqlExpression * fileposField = isFullJoin() ? queryVirtualFileposField(file->queryRecord()) : queryLastField(key->queryRecord());
-        if (keyHasFileposition && fileposField && (expr->getOperator() != no_denormalizegroup))
+        if (fileposField && (expr->getOperator() != no_denormalizegroup))
         {
             HqlMapTransformer fileposMapper;
             OwnedHqlExpr select = createSelectExpr(LINK(serializedRight), LINK(fileposField));
@@ -721,8 +731,11 @@ void KeyedJoinInfo::buildTransformBody(BuildCtx & ctx, IHqlExpression * transfor
 
     //Map the file position field in the file to the incoming parameter
     //MORE: This doesn't cope with local/global file position distinctions.
-    OwnedHqlExpr fileposVar = createVariable("_filepos", makeIntType(8, false));
-    ctx.associateExpr(fileposExpr, fileposVar);
+    if (fileposField && (expr->getOperator() != no_denormalizegroup))
+    {
+        OwnedHqlExpr fileposVar = createVariable("_filepos", makeIntType(8, false));
+        ctx.associateExpr(fileposExpr, fileposVar);
+    }
     translator.doBuildTransformBody(ctx, newTransform, selfCursor);
 
     if (isFullJoin())
@@ -978,7 +991,6 @@ void KeyedJoinInfo::optimizeExtractJoinFields()
 {
     HqlExprArray fieldsAccessed;
     bool doExtract = false;
-    IHqlExpression * fileposField = NULL;
     OwnedHqlExpr right = createSelector(no_right, expr->queryChild(1), joinSeq);
     IHqlExpression * rightRecord = right->queryRecord();
     OwnedHqlExpr extractedRecord;
@@ -990,15 +1002,11 @@ void KeyedJoinInfo::optimizeExtractJoinFields()
         OwnedHqlExpr rows = createDataset(no_rows, LINK(right), LINK(expr->queryAttribute(_rowsid_Atom)));
         if (isFullJoin())
         {
-            //unwindFields(fieldsAccessed, file->queryRecord());
             extractedRecord.set(file->queryRecord());
         }
         else
         {
-//          unwindFields(fieldsAccessed, key->queryRecord());
             extractedRecord.set(key->queryRecord());
-            if (keyHasFileposition)
-                fileposField = queryLastField(key->queryRecord());
         }
     }
     else
@@ -1017,12 +1025,9 @@ void KeyedJoinInfo::optimizeExtractJoinFields()
         else
         {
             IHqlExpression * keyRecord = key->queryRecord();
-            IHqlExpression * filepos = queryLastField(keyRecord);
-            if (filepos && keyHasFileposition)
-                fieldsAccessed.zap(*filepos);
 
             if (translator.getTargetClusterType() != HThorCluster)
-                doExtract = (fieldsAccessed.ordinality() < getFlatFieldCount(keyRecord)-1);
+                doExtract = (fieldsAccessed.ordinality() < getFlatFieldCount(keyRecord));
 
             if (!doExtract && recordContainsBlobs(keyRecord))
                 doExtract = true;
@@ -1052,9 +1057,7 @@ void KeyedJoinInfo::optimizeExtractJoinFields()
                 {
                     IHqlExpression * curMemoryField = extractedRecord->queryChild(i);
                     IHqlExpression * curSerializedField = extractJoinFieldsRecord->queryChild(i);
-                    if (curMemoryField == fileposField)
-                        assigns.append(*createAssign(createSelectExpr(LINK(self), LINK(curSerializedField)), getFilepos(left, false)));
-                    else if (!curMemoryField->isAttribute())
+                    if (!curMemoryField->isAttribute())
                         assigns.append(*createAssign(createSelectExpr(LINK(self), LINK(curSerializedField)), createSelectExpr(LINK(left), LINK(curMemoryField))));      // no
                 }
             }
@@ -1070,9 +1073,7 @@ void KeyedJoinInfo::optimizeExtractJoinFields()
                 {
                     IHqlExpression * curMemoryField = extractedRecord->queryChild(i);
                     IHqlExpression * curSerializedField = extractJoinFieldsRecord->queryChild(i);
-                    if (curMemoryField == fileposField)
-                        assigns.append(*createAssign(createSelectExpr(LINK(self), LINK(curSerializedField)), getFilepos(left, false)));
-                    else if (!curMemoryField->isAttribute())
+                    if (!curMemoryField->isAttribute())
                     {
                         OwnedHqlExpr tgt = createSelectExpr(LINK(self), LINK(curSerializedField));
                         OwnedHqlExpr src = createSelectExpr(LINK(memorySelf), LINK(curMemoryField));
@@ -1240,10 +1241,13 @@ void KeyedJoinInfo::splitFilter(IHqlExpression * filter, SharedHqlExpr & keyTarg
 
 void HqlCppTranslator::buildKeyedJoinExtra(ActivityInstance & instance, IHqlExpression * expr, KeyedJoinInfo * info)
 {
-    //virtual IOutputMetaData * queryDiskRecordSize() = 0;  // Excluding fpos and sequence
+    //virtual IOutputMetaData * queryDiskRecordSize() = 0;
+    //virtual IOutputMetaData * queryProjectedDiskRecordSize() = 0;
     if (info->isFullJoin())
+    {
         buildMetaMember(instance.classctx, info->queryRawRhs(), false, "queryDiskRecordSize");
-
+        buildMetaMember(instance.classctx, info->queryRawRhs(), false, "queryProjectedDiskRecordSize");
+    }
     //virtual unsigned __int64 extractPosition(const void * _right) = 0;  // Gets file position value from rhs row
     if (info->isFullJoin())
     {
@@ -1297,8 +1301,20 @@ void HqlCppTranslator::buildKeyJoinIndexReadHelper(ActivityInstance & instance, 
     //virtual const char * getIndexFileName() = 0;
     buildFilenameFunction(instance, instance.startctx, "getIndexFileName", info->queryKeyFilename(), hasDynamicFilename(info->queryKey()));
 
-    //virtual IOutputMetaData * queryIndexRecordSize() = 0; //Excluding fpos and sequence
-    buildMetaMember(instance.classctx, info->queryRawKey(), false, "queryIndexRecordSize");
+    //virtual IOutputMetaData * queryIndexRecordSize() = 0;
+    LinkedHqlExpr indexExpr = info->queryOriginalKey();
+    OwnedHqlExpr serializedRecord;
+    unsigned numPayload = numPayloadFields(indexExpr);
+    if (numPayload)
+        serializedRecord.setown(notePayloadFields(indexExpr->queryRecord(), numPayload));
+    else
+        serializedRecord.set(indexExpr->queryRecord());
+    serializedRecord.setown(getSerializedForm(serializedRecord, diskAtom));
+
+    bool hasFilePosition = getBoolAttribute(indexExpr, filepositionAtom, true);
+    serializedRecord.setown(createMetadataIndexRecord(serializedRecord, hasFilePosition));
+    buildMetaMember(instance.classctx, serializedRecord, false, "queryIndexRecordSize");
+    buildMetaMember(instance.classctx, serializedRecord, false, "queryProjectedIndexRecordSize");
 
     //virtual void createSegmentMonitors(IIndexReadContext *ctx, const void *lhs) = 0;
     info->buildMonitors(instance.startctx);
@@ -1448,13 +1464,13 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedJoinOrDenormalize(BuildCt
     //virtual unsigned getKeepLimit()
     doBuildJoinRowLimitHelper(*instance, rowlimit, info.queryKeyFilename(), implicitLimit);
 
-    buildFormatCrcFunction(instance->classctx, "getIndexFormatCrc", info.queryRawKey(), info.queryRawKey(), 1);
+    buildFormatCrcFunction(instance->classctx, "getIndexFormatCrc", true, info.queryRawKey(), info.queryRawKey(), 1);
     if (info.isFullJoin())
     {
         //Remove virtual attributes from the record, so the crc will be compatible with the disk read record
         //can occur with a (highly unusual) full keyed join to a persist file... (see indexread14.ecl)
         OwnedHqlExpr noVirtualRecord = removeVirtualAttributes(info.queryRawRhs()->queryRecord());
-        buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", noVirtualRecord, NULL, 0);
+        buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", false, noVirtualRecord, NULL, 0);
         buildEncryptHelper(instance->startctx, info.queryFile()->queryAttribute(encryptAtom), "getFileEncryptKey");
     }
 
@@ -1542,8 +1558,19 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedDistribute(BuildCtx & ctx
     //virtual const char * getIndexFileName() = 0;
     buildFilenameFunction(*instance, instance->startctx, "getIndexFileName", keyFilename, dynamic);
 
-    //virtual IOutputMetaData * queryIndexRecordSize() = 0; //Excluding fpos and sequence
-    buildMetaMember(instance->classctx, info.queryRawKey(), false, "queryIndexRecordSize");
+    //virtual IOutputMetaData * queryIndexRecordSize() = 0;
+    LinkedHqlExpr indexExpr = info.queryRawKey();
+    OwnedHqlExpr serializedRecord;
+    unsigned numPayload = numPayloadFields(indexExpr);
+    if (numPayload)
+        serializedRecord.setown(notePayloadFields(indexExpr->queryRecord(), numPayload));
+    else
+        serializedRecord.set(indexExpr->queryRecord());
+    serializedRecord.setown(getSerializedForm(serializedRecord, diskAtom));
+
+    bool hasFilePosition = getBoolAttribute(indexExpr, filepositionAtom, true);
+    serializedRecord.setown(createMetadataIndexRecord(serializedRecord, hasFilePosition));
+    buildMetaMember(instance->classctx, serializedRecord, false, "queryIndexRecordSize");
 
     //virtual void createSegmentMonitors(IIndexReadContext *ctx, const void *lhs) = 0;
     info.buildMonitors(instance->startctx);
@@ -1568,7 +1595,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedDistribute(BuildCtx & ctx
 
     doCompareLeftRight(instance->nestedctx, "CompareRowKey", leftDs, rightDs, joinInfo.queryLeftReq(), normalizedRight);
 
-    buildFormatCrcFunction(instance->classctx, "getFormatCrc", info.queryRawKey(), info.queryRawKey(), 1);
+    buildFormatCrcFunction(instance->classctx, "getFormatCrc", true, info.queryRawKey(), info.queryRawKey(), 1);
     buildSerializedLayoutMember(instance->classctx, indexRecord, "getIndexLayout", numKeyedFields);
 
     OwnedHqlExpr matchExpr = info.getMatchExpr(true);

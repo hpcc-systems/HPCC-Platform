@@ -375,6 +375,7 @@ class CBitSetThreadSafe : public CBitSetBase<CBitSetArrayHelper>
             }
         }
     }
+
 public:
     CBitSetThreadSafe()
     {
@@ -476,6 +477,14 @@ public:
             memset(mem, 0, bitSetUnits*sizeof(bits_t));
         fixedMemory = true;
     }
+    CBitSet(unsigned initialBits)
+    {
+        size32_t memRequired = getBitSetMemoryRequirement(initialBits);
+        mb.appendBytes(0, memRequired);
+        mem = (bits_t *)mb.bufferBase();
+        bitSetUnits = memRequired/sizeof(bits_t);
+        fixedMemory = false;
+    }
     CBitSet(MemoryBuffer &buffer)
     {
         deserialize(buffer);
@@ -494,6 +503,11 @@ public:
 extern jlib_decl IBitSet *createBitSet(unsigned maxBits, const void *mem, bool reset)
 {
     return new CBitSet(maxBits, mem, reset);
+}
+
+extern jlib_decl IBitSet *createBitSet(unsigned initialBits)
+{
+    return new CBitSet(initialBits);
 }
 
 extern jlib_decl IBitSet *createBitSet()

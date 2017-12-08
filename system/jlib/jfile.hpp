@@ -632,4 +632,7 @@ const static bool filenamesAreCaseSensitive = false;
 const static bool filenamesAreCaseSensitive = true;
 #endif
 
+extern jlib_decl IDirectoryIterator *getSortedDirectoryIterator(IFile *directory, SortDirectoryMode mode = SD_byname, bool rev = false, const char *mask = nullptr, bool sub = false, bool includedirs = false);
+extern jlib_decl IDirectoryIterator *getSortedDirectoryIterator(const char *dirName, SortDirectoryMode mode = SD_byname, bool rev = false, const char *mask = nullptr, bool sub = false, bool includedirs = false);
+
 #endif

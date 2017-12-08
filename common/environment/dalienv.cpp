@@ -113,7 +113,7 @@ protected:
 
 SDSPasswordProvider::SDSPasswordProvider() 
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     env.setown(factory->openEnvironment());
     map = new CIpPasswordHashTable();
 }
@@ -217,17 +217,13 @@ EnvMachineOS queryOS(const IpAddress & ip)
     if (match) 
         ret = match->os;
     else {
-        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-        if (factory) {
-            Owned<IConstEnvironment> env = factory->openEnvironment();
-            if (env) {
-                StringBuffer ipText;
-                ip.getIpText(ipText);
-                Owned<IConstMachineInfo> machine = env->getMachineByAddress(ipText.str());
-                if (machine) 
-                    ret = machine->getOS();
-            }
-        }
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
+        Owned<IConstEnvironment> env = factory->openEnvironment();
+        StringBuffer ipText;
+        ip.getIpText(ipText);
+        Owned<IConstMachineInfo> machine = env->getMachineByAddress(ipText.str());
+        if (machine)
+            ret = machine->getOS();
         if (ret==MachineOsUnknown) { // lets try asking dafilesrv
             SocketEndpoint ep(0,ip);
             switch (getDaliServixOs(ep)) { 
@@ -334,14 +330,14 @@ MODULE_EXIT()
 
 const char * querySlaveExecutable(const char * keyName, const char * exeName, const char * version, const IpAddress &ip, StringBuffer &progpath, StringBuffer &workdir)
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
     StringBuffer addr;
     ip.getIpText(addr);
 
     StringBufferAdaptor spp(progpath);
     StringBufferAdaptor swd(workdir);
-    if (!env || !env->getRunInfo(spp, swd, keyName, version, addr.str(), exeName)) {
+    if (!env->getRunInfo(spp, swd, keyName, version, addr.str(), exeName)) {
 #ifdef _DEBUG
         //printf("slave path not found\n");
         progpath.append(exeName);
@@ -450,15 +446,12 @@ bool envGetConfigurationDirectory(const char *category, const char *component,co
     if (!sessid)
         return false;
 
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (env)
-    {
-        Owned<IPropertyTree> root = &env->getPTree();
-        IPropertyTree * child = root->queryPropTree("Software/Directories");
-        if (child)
-            return getConfigurationDirectory(child,category,component,instance,dirout);
-    }
+    Owned<IPropertyTree> root = &env->getPTree();
+    IPropertyTree * child = root->queryPropTree("Software/Directories");
+    if (child)
+        return getConfigurationDirectory(child,category,component,instance,dirout);
     return false;
 }
 
@@ -493,15 +486,12 @@ IPropertyTree *envGetNASConfiguration()
     if (!sessid)
         return NULL;
 
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (env)
-    {
-        Owned<IPropertyTree> root = &env->getPTree();
-        IPropertyTree * hardware = root->queryPropTree("Hardware");
-        if (hardware)
-            return envGetNASConfiguration(hardware);
-    }
+    Owned<IPropertyTree> root = &env->getPTree();
+    IPropertyTree * hardware = root->queryPropTree("Hardware");
+    if (hardware)
+        return envGetNASConfiguration(hardware);
     return NULL;
 }
 

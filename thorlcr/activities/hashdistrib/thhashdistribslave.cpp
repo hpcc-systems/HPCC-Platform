@@ -2379,7 +2379,7 @@ class IndexDistributeSlaveActivity : public HashDistributeSlaveBase
         CKeyLookup(IndexDistributeSlaveActivity &_owner, IHThorKeyedDistributeArg *_helper, IKeyIndex *_tlk)
             : owner(_owner), helper(_helper), tlk(_tlk)
         {
-            tlkManager.setown(createLocalKeyManager(tlk, tlk->keySize(), NULL));
+            tlkManager.setown(createLocalKeyManager(helper->queryIndexRecordSize()->queryRecordAccessor(true), tlk, nullptr));
             numslaves = owner.queryContainer().queryJob().querySlaves();
         }
         unsigned hash(const void *data)
@@ -2389,7 +2389,7 @@ class IndexDistributeSlaveActivity : public HashDistributeSlaveBase
             tlkManager->reset();
             verifyex(tlkManager->lookup(false));
             tlkManager->releaseSegmentMonitors();
-            offset_t partNo = tlkManager->queryFpos();
+            offset_t partNo = extractFpos(tlkManager);
             if (partNo)
                 partNo--; // note that partNo==0 means lower than anything in the key - should be treated same as partNo==1 here
             return ((unsigned)partNo % numslaves);

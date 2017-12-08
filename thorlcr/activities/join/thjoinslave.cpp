@@ -658,7 +658,6 @@ public:
     {
         processor.afterProcessing();
         CThorNarySlaveActivity::stop();
-        dataLinkStop();
     }
     CATCH_NEXTROW()
     {

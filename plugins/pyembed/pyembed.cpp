@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-#include "platform.h"
 
 #ifdef _WIN32
 // There's an issue with Python redefining ssize_t resulting in errors - hide their definition
@@ -26,9 +25,11 @@
 #include "Python.h"
 #endif
 
+#include "platform.h"
 #include "frameobject.h"
 #include "jexcept.hpp"
 #include "jthread.hpp"
+#include "jregexp.hpp"
 #include "hqlplugins.hpp"
 #include "deftype.hpp"
 #include "eclhelper.hpp"
@@ -436,15 +437,30 @@ public:
 protected:
     static StringBuffer &wrapPythonText(StringBuffer &out, const char *in, const char *params)
     {
-        out.appendf("def __user__(%s):\n  ", params);
-        char c;
-        while ((c = *in++) != '\0')
+        // Complicated by needing to keep future import lines outside defined function
+        // Per python spec, a future statement must appear near the top of the module. The only lines that can appear before a future statement are:
+        //   the module docstring (if any),
+        //   comments,
+        //   blank lines, and
+        //   other future statements.
+        // We don't attempt to parse the python to spot these - instead, we pull all lines up to and including the last future statement out to the global scope.
+        // Because this is a little unsophisticated it will be fooled by code that includes things that look like future statements inside multiline strings.
+        // I don't care.
+        StringArray lines;
+        lines.appendList(in, "\n", false);
+        RegExpr expr("^ *from +__future__ +import ");
+        unsigned leadingLines = 0;
+        ForEachItemIn(idx, lines)
         {
-            out.append(c);
-            if (c=='\n')
-                out.append("  ");
+            if (expr.find(lines.item(idx)))
+                leadingLines = idx+1;
         }
-        out.appendf("\n__result__ = __user__(%s)\n", params);
+        for (unsigned leadingLine = 0; leadingLine < leadingLines; leadingLine++)
+            out.append(lines.item(leadingLine)).append('\n');
+        out.appendf("def __user__(%s):\n", params);
+        for (unsigned line = leadingLines; line < lines.length(); line++)
+            out.append("  ").append(lines.item(line)).append('\n');
+        out.appendf("__result__ = __user__(%s)\n", params);
         return out;
     }
     PyThreadState *tstate = nullptr;
@@ -528,63 +544,66 @@ static void typeError(const char *expected, const RtlFieldInfo *field)
     VStringBuffer msg("pyembed: type mismatch - %s expected", expected);
     if (field)
         msg.appendf(" for field %s", field->name);
+    else
+        msg.appendf(" for return value");
     rtlFail(0, msg.str());
 }
 
 static bool getBooleanResult(const RtlFieldInfo *field, PyObject *obj)
 {
-    assertex(obj && obj != Py_None);
-    if (!PyBool_Check(obj))
-        typeError("boolean", field);
-    return obj == Py_True;
+    if (obj && obj != Py_None)
+    {
+        if (PyBool_Check(obj))
+            return obj == Py_True;
+    }
+    typeError("boolean", field);
 }
 
 static void getDataResult(const RtlFieldInfo *field, PyObject *obj, size32_t &chars, void * &result)
 {
-    assertex(obj && obj != Py_None);
-    if (!PyByteArray_Check(obj))
+    if (obj && obj != Py_None && PyByteArray_Check(obj))
+        rtlStrToDataX(chars, result, PyByteArray_Size(obj), PyByteArray_AsString(obj));
+    else
         typeError("bytearray", field);
-    rtlStrToDataX(chars, result, PyByteArray_Size(obj), PyByteArray_AsString(obj));
 }
 
 static double getRealResult(const RtlFieldInfo *field, PyObject *obj)
 {
-    assertex(obj && obj != Py_None);
-    if (!PyFloat_Check(obj))
-        typeError("real", field);
-    return PyFloat_AsDouble(obj);
+    if (obj && obj != Py_None)
+    {
+        if (PyFloat_Check(obj))
+            return PyFloat_AsDouble(obj);
+    }
+    typeError("real", field);
 }
 
 static __int64 getSignedResult(const RtlFieldInfo *field, PyObject *obj)
 {
-    assertex(obj && obj != Py_None);
-    __int64 ret;
-    if (PyInt_Check(obj))
-        ret = PyInt_AsUnsignedLongLongMask(obj);
-    else if (PyLong_Check(obj))
-        ret = (__int64) PyLong_AsLongLong(obj);
-    else
-        typeError("integer", field);
-    return ret;
+    if (obj && obj != Py_None)
+    {
+        if (PyInt_Check(obj))
+            return PyInt_AsUnsignedLongLongMask(obj);
+         else if (PyLong_Check(obj))
+            return (__int64) PyLong_AsLongLong(obj);
+    }
+    typeError("integer", field);
 }
 
 static unsigned __int64 getUnsignedResult(const RtlFieldInfo *field, PyObject *obj)
 {
-    assertex(obj && obj != Py_None);
-    unsigned __int64 ret;
-    if (PyInt_Check(obj))
-        ret = PyInt_AsUnsignedLongLongMask(obj);
-    else if (PyLong_Check(obj))
-        ret =  (unsigned __int64) PyLong_AsUnsignedLongLong(obj);
-    else
-        typeError("integer", field);
-    return ret;
+    if (obj && obj != Py_None)
+    {
+        if (PyInt_Check(obj))
+            return PyInt_AsUnsignedLongLongMask(obj);
+        else if (PyLong_Check(obj))
+            return (unsigned __int64) PyLong_AsUnsignedLongLong(obj);
+    }
+    typeError("integer", field);
 }
 
 static void getStringResult(const RtlFieldInfo *field, PyObject *obj, size32_t &chars, char * &result)
 {
-    assertex(obj && obj != Py_None);
-    if (PyString_Check(obj))
+    if (obj && obj != Py_None && PyString_Check(obj))
     {
         const char * text =  PyString_AsString(obj);
         checkPythonError();
@@ -597,8 +616,7 @@ static void getStringResult(const RtlFieldInfo *field, PyObject *obj, size32_t &
 
 static void getUTF8Result(const RtlFieldInfo *field, PyObject *obj, size32_t &chars, char * &result)
 {
-    assertex(obj && obj != Py_None);
-    if (PyUnicode_Check(obj))
+    if (obj && obj != Py_None && PyUnicode_Check(obj))
     {
         OwnedPyObject utf8 = PyUnicode_AsUTF8String(obj);
         checkPythonError();
@@ -615,8 +633,7 @@ static void getUTF8Result(const RtlFieldInfo *field, PyObject *obj, size32_t &ch
 static void getSetResult(PyObject *obj, bool & isAllResult, size32_t & resultBytes, void * & result, int elemType, size32_t elemSize)
 {
     // MORE - should probably recode to use the getResultDataset mechanism
-    assertex(obj && obj != Py_None);
-    if (!PyList_Check(obj) && !PySet_Check(obj))
+    if (!obj || obj == Py_None || (!PyList_Check(obj) && !PySet_Check(obj)))
         rtlFail(0, "pyembed: type mismatch - list or set expected");
     rtlRowBuilder out;
     size32_t outBytes = 0;
@@ -757,8 +774,7 @@ static void getSetResult(PyObject *obj, bool & isAllResult, size32_t & resultByt
 
 static void getUnicodeResult(const RtlFieldInfo *field, PyObject *obj, size32_t &chars, UChar * &result)
 {
-    assertex(obj && obj != Py_None);
-    if (PyUnicode_Check(obj))
+    if (obj && obj != Py_None && PyUnicode_Check(obj))
     {
         OwnedPyObject utf8 = PyUnicode_AsUTF8String(obj);
         checkPythonError();
@@ -833,8 +849,7 @@ public:
     {
         nextField(field);
         isAll = false;  // No concept of an 'all' set in Python
-        assertex(elem && elem != Py_None);
-        if (!PyList_Check(elem) && !PySet_Check(elem))
+        if (!elem || elem == Py_None || (!PyList_Check(elem) && !PySet_Check(elem)))
             typeError("list or set", field);
         push();
     }
@@ -1699,6 +1714,22 @@ public:
 extern DECL_EXPORT IEmbedContext* getEmbedContext()
 {
     return new Python27EmbedContext;
+}
+
+extern DECL_EXPORT bool syntaxCheck(const char *script)
+{
+    return true; // MORE
+}
+
+} // namespace
+
+// For back compatibility we also answer to the name "pyembed"...
+
+namespace pyembed {
+
+extern DECL_EXPORT IEmbedContext* getEmbedContext()
+{
+    return new py2embed::Python27EmbedContext;
 }
 
 extern DECL_EXPORT bool syntaxCheck(const char *script)

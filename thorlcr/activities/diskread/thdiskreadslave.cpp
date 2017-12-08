@@ -49,6 +49,7 @@ class CDiskReadSlaveActivityRecord : public CDiskReadSlaveActivityBase, implemen
 {
 protected:
     IArrayOf<IKeySegmentMonitor> segMonitors;
+    IArrayOf<IFieldFilter> fieldFilters;
     bool grouped;
     bool isFixedDiskWidth;
     size32_t diskRowMinSz;
@@ -58,7 +59,7 @@ protected:
 
     inline bool segMonitorsMatch(const void *buffer)
     {
-        if (segMonitors.length())
+        if (segMonitors || fieldFilters)
         {
             size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
             RtlRow rowinfo(*recInfo, nullptr, numOffsets, variableOffsets);
@@ -68,28 +69,31 @@ protected:
                 if (!segMonitors.item(idx).matches(&rowinfo))
                     return false;
             }
+
+            ForEachItemIn(idx2, fieldFilters)
+            {
+                if (!fieldFilters.item(idx2).matches(rowinfo))
+                    return false;
+            }
         }
         return true;
     }
 
 public:
     CDiskReadSlaveActivityRecord(CGraphElementBase *_container, IHThorArg *_helper=NULL) 
-        : CDiskReadSlaveActivityBase(_container)
+        : CDiskReadSlaveActivityBase(_container, _helper)
     {
-        if (_helper)
-            baseHelper.set(_helper);
         helper = (IHThorDiskReadArg *)queryHelper();
         IOutputMetaData *diskRowMeta = queryDiskRowInterfaces()->queryRowMetaData()->querySerializedDiskMeta();
         isFixedDiskWidth = diskRowMeta->isFixedSize();
         diskRowMinSz = diskRowMeta->getMinRecordSize();
-        helper->createSegmentMonitors(this);
         recInfo = &diskRowMeta->queryRecordAccessor(true);
         numOffsets = recInfo->getNumVarFields() + 1;  // MORE - note max field used in segmonitors
         grouped = false;
     }
 
 // IIndexReadContext impl.
-    void append(IKeySegmentMonitor *segment)
+    virtual void append(IKeySegmentMonitor *segment)
     {
         if (segment->isWild())
             segment->Release();
@@ -101,22 +105,37 @@ public:
         }
     }
 
-    unsigned ordinality() const
+    virtual void append(FFoption option, IFieldFilter * filter)
+    {
+        if (filter->isWild())
+            filter->Release();
+        else
+        {
+            fieldFilters.append(*filter);
+            if (filter->queryFieldIndex() > numSegFieldsUsed)
+                numSegFieldsUsed = filter->queryFieldIndex();
+        }
+    }
+
+    virtual unsigned ordinality() const
     {
         return segMonitors.length();
     }
 
-    IKeySegmentMonitor *item(unsigned idx) const
+    virtual IKeySegmentMonitor *item(unsigned idx) const
     {
         if (segMonitors.isItem(idx))
             return &segMonitors.item(idx);
         else
             return NULL;
     }
-    
-    virtual void setMergeBarrier(unsigned barrierOffset)
+
+    virtual void start()
     {
-        // We don't merge them so no issue... afaik
+        CDiskReadSlaveActivityBase::start();
+        fieldFilters.kill();
+        segMonitors.kill();
+        helper->createSegmentMonitors(this);
     }
 
 friend class CDiskRecordPartHandler;
@@ -382,7 +401,7 @@ public:
         virtual void getMetaInfo(ThorDataLinkMetaInfo &info, IPartDescriptor *partDesc)
         {
             CDiskRecordPartHandler::getMetaInfo(info, partDesc);
-            if (activity.helper->transformMayFilter() || activity.segMonitors.length())
+            if (activity.helper->transformMayFilter() || (TDRkeyed & activity.helper->getFlags()))
             {
                 info.totalRowsMin = 0; // all bets off! 
                 info.unknownRowsOutput = info.canReduceNumRows = true;
@@ -429,7 +448,7 @@ public:
         helper = (IHThorDiskReadArg *)queryHelper();
         unsorted = 0 != (TDRunsorted & helper->getFlags());
         grouped = 0 != (TDXgrouped & helper->getFlags());
-        needTransform = segMonitors.length() || helper->needTransform();
+        needTransform = helper->needTransform() || (TDRkeyed & helper->getFlags());
         appendOutputLinked(this);
     }
     ~CDiskReadSlaveActivity()
@@ -454,7 +473,6 @@ public:
         }
         if (grouped)
         {
-            needTransform = helper->needTransform();
             if (unsorted)
             {
                 Owned<IException> e = MakeActivityWarning(this, 0, "Diskread - ignoring 'unsorted' because marked 'grouped'");

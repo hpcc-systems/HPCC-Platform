@@ -73,9 +73,6 @@ layout_actor_movie := record
   unsigned1 movie_rank := (unsigned)(matchtext(m_rank/number));
   end;
 
-//Actor_Movie_Init := parse(accurint_test.File_Actors,IMDB_Actor_Desc,line,layout_actor_movie,whole,first);
-d := dataset('~thor_data50::in::actors_list',{string inline},csv(separator('')));
-
 Actor_Movie_Init := parse(File_Actors,inline,line,layout_actor_movie,whole,first);
 
 // Iterate to propagate actor name
@@ -86,6 +83,4 @@ END;
 
 Actor_Movie_Base := ITERATE(Actor_Movie_Init, PropagateName(LEFT, RIGHT));
 
-//OUTPUT(CHOOSEN(Actor_Movie_Base,1000));
-//count(Actor_Movie_Base)
 OUTPUT(Actor_Movie_Init);

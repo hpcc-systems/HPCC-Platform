@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+import $.setup;
+prefix := setup.Files(false, false).IndexPrefix;
+
 namesRecord := 
             RECORD
 string10        forename;
@@ -34,11 +37,11 @@ wuid := TRIM(lastWriter[1].wuid) : independent;   // trim should not be needed
 
 ds := dataset(workunit(WUID,'ExportedNames'), namesRecord);
 
-p := ds : persist('readExported', single);
+p := ds : persist(prefix + 'readExported', single);
 
 import Std.File;
 sequential(
     output(NOFOLD(wuid)[1..1]); /// yuk - output the wuid so it gets evaluated before the check in the persist call
-    File.DeleteLogicalFile('~readExported'),
+    File.DeleteLogicalFile(prefix +'readExported'),
     output(p);
 );

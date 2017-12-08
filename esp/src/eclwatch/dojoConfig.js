@@ -1,112 +1,89 @@
-var dojoConfig = (function () {
-    var initUrl = function () {
-        var baseHost = (typeof debugConfig !== "undefined" ) ? "http://" + debugConfig.IP + ":" + debugConfig.Port : "";
-        var hashNodes = location.hash.split("#");
-        var searchNodes = location.search.split("?");
-        var pathnodes = location.pathname.split("/");
-        pathnodes.pop();
+var dojoConfig;
 
-        return {
-            hostname: location.hostname,
-            port: location.port,
-            pathname: location.pathname,
-            hash: hashNodes.length >= 2 ? hashNodes[1] : "",
-            params: searchNodes.length >= 2 ? searchNodes[1] : "",
-            baseHost: baseHost,
-            basePath: baseHost + "/esp/files",
-            pluginsPath: baseHost + "/esp/files",
-            resourcePath: baseHost + "/esp/files/eclwatch",
-            scriptsPath: baseHost + "/esp/files/eclwatch",
-            thisPath: pathnodes.join("/")
-        };
-    }
-
-    var urlInfo = initUrl();
-    var vizDebug = false;
-    var paths = vizDebug ? {
-        "crossfilter": urlInfo.basePath + "/crossfilter/crossfilter.min",
-        "font-awesome.css": urlInfo.basePath + "/Visualization/dist-amd/font-awesome/css/font-awesome.min.css",
-        "src": urlInfo.basePath + "/Visualization/src",
-        "css": urlInfo.basePath + "/Visualization/node_modules/require-css/css",
-        "d3": urlInfo.basePath + "/Visualization/bower_components/d3/d3",
-        "c3": urlInfo.basePath + "/Visualization/bower_components/c3/c3",
-        "dagre": urlInfo.basePath + "/Visualization/bower_components/dagre/index",
-        "topojson": urlInfo.basePath + "/Visualization/bower_components/topojson/topojson",
-        "colorbrewer": urlInfo.basePath + "/Visualization/bower_components/colorbrewer/colorbrewer",
-        "d3-cloud": urlInfo.basePath + "/Visualization/bower_components/d3-cloud/build/d3.layout.cloud",
-        "font-awesome": urlInfo.basePath + "/Visualization/bower_components/font-awesome/css/font-awesome",
-        "es6-promise": urlInfo.basePath + "/Visualization/bower_components/es6-promise/promise"
-    } : {
-        "crossfilter": urlInfo.basePath + "/crossfilter/crossfilter.min",
-        "font-awesome.css": urlInfo.basePath + "/Visualization/dist-amd/font-awesome/css/font-awesome.min.css",
-        "dist-amd": urlInfo.basePath + "/Visualization/dist-amd",
-        "src": urlInfo.basePath + "/Visualization/dist-amd"
-    };
+function getConfig(env) {
+    // dojoRoot is defined if we're running in node (i.e. building)
+    var dojoRoot = env.dojoRoot;
+    var baseUrl = dojoRoot ? "." : "/esp/files";
 
     return {
+        baseUrl: baseUrl,
+        deps: ["hpcc/stub"],
         async: true,
+
         parseOnLoad: false,
-        urlInfo: urlInfo,
         isDebug: (typeof debugConfig !== "undefined"),
-        vizDebug: vizDebug,
+        vizDebug: false,
         selectorEngine: "lite",
-        getURL: function (name) {
-            return this.urlInfo.resourcePath + "/" + name;
+        blankGif: "/esp/files/eclwatch/img/blank.gif",
+        paths: {
+            "hpcc": baseUrl + "/eclwatch",
+            "src": baseUrl + "/lib",
+            "templates": baseUrl + "/eclwatch/templates",
+            "ecl": baseUrl + "/eclwatch/ecl",
+            "css": baseUrl + "/loader/css",
+            "d3-selection": baseUrl + "/node_modules/d3-selection/build/d3-selection",
+            "@hpcc-js/api": baseUrl + "/node_modules/@hpcc-js/api/dist/api",
+            "@hpcc-js/chart": baseUrl + "/node_modules/@hpcc-js/chart/dist/chart",
+            "@hpcc-js/common": baseUrl + "/node_modules/@hpcc-js/common/dist/common",
+            "@hpcc-js/comms": baseUrl + "/node_modules/@hpcc-js/comms/dist/comms",
+            "@hpcc-js/composite": baseUrl + "/node_modules/@hpcc-js/composite/dist/composite",
+            "@hpcc-js/form": baseUrl + "/node_modules/@hpcc-js/form/dist/form",
+            "@hpcc-js/graph": baseUrl + "/node_modules/@hpcc-js/graph/dist/graph",
+            "@hpcc-js/layout": baseUrl + "/node_modules/@hpcc-js/layout/dist/layout",
+            "@hpcc-js/map": baseUrl + "/node_modules/@hpcc-js/map/dist/map",
+            "@hpcc-js/other": baseUrl + "/node_modules/@hpcc-js/other/dist/other",
+            "@hpcc-js/util": baseUrl + "/node_modules/@hpcc-js/util/dist/util",
+            "@hpcc-js/TopoJSON": dojoRoot ? "/esp/files/dist/TopoJSON" : baseUrl + "/node_modules/@hpcc-js/map/TopoJSON",
+            "clipboard": baseUrl + "/node_modules/clipboard/dist/clipboard",
+            "codemirror": baseUrl + "/node_modules/codemirror",
+            "crossfilter": baseUrl + "/crossfilter/crossfilter.min",
+            "font-awesome": baseUrl + "/node_modules/@hpcc-js/common/font-awesome",
+            "tslib": baseUrl + "/node_modules/tslib/tslib"
         },
-        getImageURL: function (name) {
-            return this.getURL("img/" + name);
-        },
-        getImageHTML: function (name, tooltip) {
-            return "<img src='" + this.getImageURL(name) + "'" + (tooltip ? " title='" + tooltip + "'" : "") + " class='iconAlign'/>";
-        },
-        isPluginInstalled: function () {
-            try {
-                var o = new ActiveXObject("HPCCSystems.HPCCSystemsGraphViewControl.1");
-                o = null;
-                return true;
-            } catch (e) { 
+        packages: [
+            {
+                name: 'dojo',
+                location: baseUrl + '/node_modules/dojo',
+                lib: '.'
+            },
+            {
+                name: 'dijit',
+                location: baseUrl + '/node_modules/dijit',
+                lib: '.'
+            },
+            {
+                name: 'dojox',
+                location: baseUrl + '/node_modules/dojox',
+                lib: '.'
+            },
+            {
+                name: 'dojo-themes',
+                location: baseUrl + '/node_modules/dojo-themes',
+                lib: '.'
+            },
+            {
+                name: 'dgrid',
+                location: baseUrl + '/dgrid',
+                lib: '.'
+            },
+            {
+                name: 'xstyle',
+                location: baseUrl + '/xstyle',
+                lib: '.'
+            },
+            {
+                name: 'put-selector',
+                location: baseUrl + '/put-selector',
+                lib: '.'
             }
-            if (navigator.plugins) {
-                for (var i = 0, p = navigator.plugins, l = p.length; i < l; i++) {
-                    if (p[i].name.indexOf("HPCCSystemsGraphViewControl") > -1) {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        },
-        paths: paths,
-        packages: [{
-            name: "hpcc",
-            location: urlInfo.scriptsPath
-        }, {
-            name: "templates",
-            location: urlInfo.resourcePath + "/templates"
-        }, {
-            name: "ecl",
-            location: urlInfo.resourcePath + "/ecl"
-        }, {
-            name: "plugins",
-            location: urlInfo.pluginsPath
-        }, {
-            name: "this",
-            location: urlInfo.thisPath
-        }],
-        debounce: function (func, threshold, execAsap) {
-            var timeout;
-            return function debounced() {
-                var obj = this, args = arguments;
-                function delayed() {
-                    if (!execAsap)
-                        func.apply(obj, args);
-                    timeout = null;
-                }
-                if (timeout)
-                    clearTimeout(timeout);
-                else if (execAsap)
-                    func.apply(obj, args);
-                timeout = setTimeout(delayed, threshold || 100);
-            }
-        }
+        ]
     };
-})();
+}
+
+// For Webpack, export the config.  This is needed both at build time and on the client at runtime
+// for the packed application.
+if (typeof module !== 'undefined' && module) {
+    module.exports = getConfig;
+} else {
+    dojoConfig = getConfig({});
+}

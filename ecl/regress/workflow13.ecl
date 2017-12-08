@@ -37,7 +37,7 @@ of2 := output(-3) : persist('of2');
 
 ofs := sequential(of1, of2);
 
-o5 := o4 : failure(ofs);
+o5 := o4 : failure(ofs, LABEL('When things go wrong'));
 
 
 o5;

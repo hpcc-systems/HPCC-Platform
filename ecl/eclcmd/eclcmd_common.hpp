@@ -43,6 +43,9 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_HELP "--help"
 #define ECLARG_HELP "help"
 
+#define ECLOPT_OUTPUT "--output"
+#define ECLOPT_OUTPUT_S "-O"
+
 #define ECLOPT_SERVER "--server"
 #define ECLOPT_SERVER_S "-s"
 #define ECLOPT_SERVER_INI "eclWatchIP"
@@ -78,6 +81,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_ALLOW_FOREIGN "--allow-foreign"
 
 #define ECLOPT_ACTIVE "--active"
+#define ECLOPT_ACTIVE_ONLY "--active-only"
 #define ECLOPT_ALL "--all"
 #define ECLOPT_INACTIVE "--inactive"
 #define ECLOPT_NO_ACTIVATE "--no-activate"
@@ -108,6 +112,8 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_UPDATE_CLONE_FROM "--update-clone-from"
 #define ECLOPT_DONT_APPEND_CLUSTER "--dont-append-cluster"
 #define ECLOPT_PART_NAME "--part-name"
+#define ECLOPT_PROTECT "--protect"
+#define ECLOPT_USE_EXISTING "--use-existing"
 
 #define ECLOPT_MAIN "--main"
 #define ECLOPT_MAIN_S "-main"  //eclcc compatible format
@@ -154,6 +160,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_PMID "--pmid"
 #define ECLOPT_PMID_S "-pm"
 #define ECLOPT_QUERYID "--queryid"
+#define ECLOPT_QUERIES "--queries"
 
 #define ECLOPT_DALIIP "--daliip"
 #define ECLOPT_PROCESS "--process"
@@ -190,7 +197,7 @@ bool extractEclCmdOption(StringAttr & option, IProperties * globals, const char 
 bool extractEclCmdOption(bool & option, IProperties * globals, const char * envName, const char * propertyName, bool defval);
 bool extractEclCmdOption(unsigned & option, IProperties * globals, const char * envName, const char * propertyName, unsigned defval);
 
-bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNamedValue> &values);
+bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNamedValue> &values, bool expandEclccOptions);
 void addNamedValue(const char * name, const char * value, IArrayOf<IEspNamedValue> &values);
 
 enum eclObjParameterType

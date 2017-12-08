@@ -1,3 +1,6 @@
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
+
 origReadRec :=       RECORD
    string fn {xpath('fname')};
    string ln {xpath('lname')};
@@ -45,6 +48,6 @@ readL1rec := RECORD
    DATASET(scalarReadRec) deep{xpath('L1/L2')};
 END;
 
-output(Dataset(xrow),,'REGRESS::TEMP::output_scalar_xpath.xml',overwrite, xml);
-readWrittenXml := dataset(DYNAMIC('REGRESS::TEMP::output_scalar_xpath.xml'), readL1Rec, xml('Dataset/Row'));
+output(Dataset(xrow),,prefix+'TEMP_output_scalar_xpath.xml',overwrite, xml);
+readWrittenXml := dataset(DYNAMIC(prefix+'TEMP_output_scalar_xpath.xml'), readL1Rec, xml('Dataset/Row'));
 output(readWrittenXml, named('readWrittenDataset'));

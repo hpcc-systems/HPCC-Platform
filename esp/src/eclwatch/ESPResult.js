@@ -27,10 +27,11 @@ define([
 
     "hpcc/ESPBase",
     "hpcc/ESPRequest",
-    "hpcc/WsWorkunits"
+    "hpcc/WsWorkunits",
+    "hpcc/Utility"
 ], function (declare, arrayUtil, i18n, nlsHPCC, Deferred, lang, domConstruct,
             parser, entities,
-            ESPBase, ESPRequest, WsWorkunits) {
+    ESPBase, ESPRequest, WsWorkunits, Utility) {
 
     var safeEncode = function (item) {
         switch (Object.prototype.toString.call(item)) {
@@ -39,8 +40,10 @@ define([
                 return item;
             case "[object String]":
                 return entities.encode(item);
+            case "[object Undefined]":
+                return "";
             default:
-                console.log("Unknown cell type.")
+                console.log("Unknown cell type:  " + Object.prototype.toString.call(item))
         }
         return item;
     }
@@ -477,7 +480,7 @@ define([
                         column.sortable = false;
                         column.width += keyed ? 16 : 0;
                         column.renderHeaderCell = function (node) {
-                            node.innerHTML = this.label + (this.__hpcc_keyed ? dojoConfig.getImageHTML("index.png", context.i18n.Index) : "");
+                            node.innerHTML = this.label + (this.__hpcc_keyed ? Utility.getImageHTML("index.png", context.i18n.Index) : "");
                         };
                         if (children) {
                             column.children = children;

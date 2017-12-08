@@ -942,6 +942,7 @@ protected:
     PointerArrayOf<CThorRowArrayWithFlushMarker> rhsSlaveRows;
     IArrayOf<IRowStream> gatheredRHSNodeStreams;
     bool rhsConstant = false;
+    bool rhsStartedBefore = false;
 
     unsigned keepLimit;
     unsigned joined;
@@ -1488,7 +1489,7 @@ public:
         currentHashEntry.index = 0;
         currentHashEntry.count = 0;
 
-        if (hasStarted() && isRhsConstant()) // if this is the 2nd+ iteration and the RHS is constant, don't both restarting right, it will not be used.
+        if (rhsStartedBefore && isRhsConstant()) // if this is the 2nd+ iteration and the RHS is constant, don't bother restarting right, it will not be used.
         {
             startLeftInput();
         }
@@ -1498,6 +1499,7 @@ public:
             try
             {
                 startInput(1);
+                rhsStartedBefore = true;
             }
             catch (CATCHALL)
             {

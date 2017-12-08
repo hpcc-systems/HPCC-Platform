@@ -340,9 +340,10 @@ enum {
     RFCsetthrottle2,
     RFCsetfileperms,
 // 2.0
-    RFCreadfilteredindex,
+    RFCreadfilteredindex,    // No longer used
     RFCreadfilteredindexcount,
     RFCreadfilteredindexblob,
+    RFCmaxnormal,
     RFCStreamRead = '{',
     RFCmax,
     RFCunknown = 255 // 0 would have been more sensible, but can't break backward compatibility
@@ -399,9 +400,14 @@ const char *RFCStrings[] =
 };
 static const char *getRFCText(RemoteFileCommandType cmd)
 {
-    if (cmd > RFCmax)
-        cmd = RFCmax;
-    return RFCStrings[cmd];
+    if (cmd==RFCStreamRead)
+        return "RFCStreamRead";
+    else
+    {
+        if (cmd > RFCmaxnormal)
+            cmd = RFCmaxnormal;
+        return RFCStrings[cmd];
+    }
 }
 
 static const char *getRFSERRText(unsigned err)
@@ -1956,9 +1962,12 @@ public:
         catch (IDAFS_Exception *e)
         {
             if (e->errorCode() == RFSERR_InvalidCommand)
+            {
                 WARNLOG("umask setFilePermissions (0%o) not supported on remote server", fPerms);
+                e->Release();
+            }
             else
-                throw e;
+                throw;
         }
 
     }
@@ -2023,7 +2032,7 @@ public:
             return createDirectoryIterator("",""); // NULL iterator
 
         CRemoteDirectoryIterator *ret = new CRemoteDirectoryIterator(ep, filename);
-        byte stream=1;
+        byte stream = (sub || !mask || containsFileWildcard(mask)) ? 1 : 0; // no point in streaming if mask without wildcards or sub, as will only be <= 1 match.
 
         Owned<CEndpointCS> crit = dirCSTable->getCrit(ep); // NB dirCSTable doesn't own, last reference will remove from table
         CriticalBlock block(*crit);
@@ -2035,7 +2044,7 @@ public:
             sendRemoteCommand(sendBuffer, replyBuffer);
             if (ret->appendBuf(replyBuffer))
                 break;
-            stream = 2;
+            stream = 2; // NB: will never get here if streaming was off (if stream==0 above)
         }
         return ret;
     }
@@ -2912,404 +2921,6 @@ unsigned getRemoteVersion(ISocket *origSock, StringBuffer &ver)
 
 /////////////////////////
 
-class CRemoteKeyManager : public CSimpleInterfaceOf<IKeyManager>
-{
-    StringAttr filename;
-    Linked<IDelayedFile> delayedFile;
-    SegMonitorList segs;
-    size32_t rowDataRemaining = 0;
-    MemoryBuffer rowDataBuffer;
-    MemoryBuffer keyCursorMb;        // used for continuation
-    unsigned __int64 totalGot = 0;
-    size32_t keySize = 0;
-    size32_t currentSize = 0;
-    offset_t currentFpos = 0;
-    const byte *currentRow = nullptr;
-    bool first = true;
-    unsigned __int64 chooseNLimit = 0;
-    ConstPointerArray activeBlobs;
-    unsigned crc = 0;
-    mutable bool hasRemoteSupport = false; // must check 1st
-    mutable Owned<IKeyManager> directKM; // failover manager if remote key support is unavailable
-
-    CRemoteFileIO *prepKeySend(MemoryBuffer &sendBuffer, RemoteFileCommandType cmd, bool segmentMonitors)
-    {
-        Owned<IFileIO> iFileIO = delayedFile->getFileIO();
-        if (!iFileIO)
-            throw MakeStringException(0, "CRemoteKeyManager: Failed to open key file: %s", filename.get());
-        Linked<CRemoteFileIO> remoteIO = QUERYINTERFACE(iFileIO.get(), CRemoteFileIO);
-        assertex(remoteIO);
-        initSendBuffer(sendBuffer);
-        sendBuffer.append(cmd).append(remoteIO->getHandle()).append(filename).append(keySize);
-        if (segmentMonitors)
-            segs.serialize(sendBuffer);
-        return remoteIO.getClear();
-    }
-    bool remoteSupport() const
-    {
-        if (hasRemoteSupport)
-            return true;
-        else if (directKM)
-            return false;
-        Owned<IFileIO> iFileIO = delayedFile->getFileIO();
-        if (!iFileIO)
-            throw MakeStringException(0, "CRemoteKeyManager: Failed to open key file: %s", filename.get());
-        Linked<CRemoteFileIO> remoteIO = QUERYINTERFACE(iFileIO.get(), CRemoteFileIO);
-        bool useRemote = nullptr != remoteIO.get();
-        if (useRemote)
-        {
-            StringBuffer verString;
-            unsigned ver = getRemoteVersion(*remoteIO, verString);
-            if (ver < MIN_KEYFILTSUPPORT_VERSION)
-                useRemote = false;
-        }
-        if (useRemote)
-        {
-            PROGLOG("Using remote key manager for file: %s", filename.get());
-            hasRemoteSupport = true;
-        }
-        else
-        {
-            Owned<IKeyIndex> keyIndex = createKeyIndex(filename, crc, *delayedFile, false, false);
-            directKM.setown(createLocalKeyManager(keyIndex, keySize, nullptr));
-            return false;
-        }
-        return true;
-    }
-    unsigned __int64 _checkCount(unsigned __int64 limit)
-    {
-        MemoryBuffer sendBuffer;
-        Owned<CRemoteFileIO> remoteIO = prepKeySend(sendBuffer, RFCreadfilteredindexcount, true);
-        sendBuffer.append(limit);
-        MemoryBuffer replyBuffer;
-        remoteIO->sendRemoteCommand(sendBuffer, replyBuffer);
-        unsigned __int64 count;
-        replyBuffer.read(count);
-        return count;
-    }
-public:
-    CRemoteKeyManager(const char *_filename, unsigned _keySize, unsigned _crc, IDelayedFile *_delayedFile) : filename(_filename), keySize(_keySize), crc(_crc), delayedFile(_delayedFile)
-    {
-    }
-    ~CRemoteKeyManager()
-    {
-        releaseBlobs();
-    }
-// IKeyManager impl.
-    virtual void reset(bool crappyHack = false) override
-    {
-        if (!remoteSupport())
-        {
-            directKM->reset(crappyHack);
-            return;
-        }
-        rowDataBuffer.clear();
-        rowDataRemaining = 0;
-        keyCursorMb.clear();
-        currentSize = 0;
-        currentFpos = 0;
-        currentRow = nullptr;
-        first = true;
-        totalGot = 0;
-    }
-    virtual void releaseSegmentMonitors() override
-    {
-        if (!remoteSupport())
-        {
-            directKM->releaseSegmentMonitors();
-            return;
-        }
-        segs.reset();
-    }
-    virtual const byte *queryKeyBuffer(offset_t & fpos) override
-    {
-        if (!remoteSupport())
-            return directKM->queryKeyBuffer(fpos);;
-        fpos = currentFpos;
-        return currentRow;
-    }
-    virtual offset_t queryFpos() override
-    {
-        if (!remoteSupport())
-            return directKM->queryFpos();
-        return currentFpos;
-    }
-    virtual unsigned queryRecordSize() override
-    {
-        if (!remoteSupport())
-            return directKM->queryRecordSize();
-        return currentSize;
-    }
-    virtual bool lookup(bool exact) override
-    {
-        if (!remoteSupport())
-            return directKM->lookup(exact);
-        while (true)
-        {
-            if (rowDataRemaining)
-            {
-                rowDataBuffer.read(currentFpos);
-                rowDataBuffer.read(currentSize);
-                currentRow = rowDataBuffer.readDirect(currentSize);
-                rowDataRemaining -= sizeof(currentFpos) + sizeof(currentSize) + currentSize;
-                return true;
-            }
-            else
-            {
-                if (!first && (0 == keyCursorMb.length())) // No keyCursor implies there is nothing more to fetch
-                    return false;
-                unsigned maxRecs = 0;
-                if (chooseNLimit)
-                {
-                    if (totalGot == chooseNLimit)
-                        break;
-                    unsigned __int64 max = chooseNLimit-totalGot;
-                    if (max > UINT_MAX)
-                        maxRecs = UINT_MAX;
-                    else
-                        maxRecs = (unsigned)max;
-                }
-                MemoryBuffer sendBuffer;
-                Owned<CRemoteFileIO> remoteIO = prepKeySend(sendBuffer, RFCreadfilteredindex, true);
-                sendBuffer.append(first).append(maxRecs);
-                if (first)
-                    first = false;
-                else
-                {
-                    dbgassertex(keyCursorMb.length());
-                    sendBuffer.append(keyCursorMb);
-                }
-                rowDataBuffer.clear();
-                remoteIO->sendRemoteCommand(sendBuffer, rowDataBuffer);
-                unsigned recsGot;
-                rowDataBuffer.read(recsGot);
-                if (0 == recsGot)
-                {
-                    keyCursorMb.clear(); // signals no more data if called again.
-                    break; // end
-                }
-                totalGot += recsGot;
-                rowDataBuffer.read(rowDataRemaining);
-                unsigned pos = rowDataBuffer.getPos(); // start of row data
-                const void *rowData = rowDataBuffer.readDirect(rowDataRemaining);
-                size32_t keyCursorSz;
-                rowDataBuffer.read(keyCursorSz);
-                keyCursorMb.clear();
-                if (keyCursorSz)
-                    keyCursorMb.append(keyCursorSz, rowDataBuffer.readDirect(keyCursorSz));
-                rowDataBuffer.reset(pos); // reposition to start of row data
-            }
-        }
-        return false;
-    }
-    virtual unsigned __int64 getCount() override
-    {
-        if (!remoteSupport())
-            return directKM->getCount();
-        return _checkCount((unsigned __int64)-1);
-    }
-    virtual unsigned __int64 getCurrentRangeCount(unsigned groupSegCount) override
-    {
-        if (!remoteSupport())
-            return directKM->getCurrentRangeCount(groupSegCount);
-        UNIMPLEMENTED;
-    }
-    virtual bool nextRange(unsigned groupSegCount) override
-    {
-        if (!remoteSupport())
-            return directKM->nextRange(groupSegCount);
-        UNIMPLEMENTED;
-    }
-    virtual void setKey(IKeyIndexBase * _key) override
-    {
-        if (!remoteSupport())
-        {
-            directKM->setKey(_key);
-            return;
-        }
-        UNIMPLEMENTED;
-    }
-    virtual void setChooseNLimit(unsigned __int64 _chooseNLimit) override
-    {
-        if (!remoteSupport())
-        {
-            directKM->setChooseNLimit(_chooseNLimit);
-            return;
-        }
-        chooseNLimit = _chooseNLimit;
-    }
-    virtual unsigned __int64 checkCount(unsigned __int64 limit) override
-    {
-        if (!remoteSupport())
-            directKM->checkCount(limit);
-        return _checkCount(limit);
-    }
-    virtual void serializeCursorPos(MemoryBuffer &mb) override
-    {
-        if (!remoteSupport())
-        {
-            directKM->serializeCursorPos(mb);
-            return;
-        }
-        UNIMPLEMENTED;
-    }
-    virtual void deserializeCursorPos(MemoryBuffer &mb) override
-    {
-        if (!remoteSupport())
-        {
-            directKM->deserializeCursorPos(mb);
-            return;
-        }
-        UNIMPLEMENTED;
-    }
-    virtual unsigned querySeeks() const override
-    {
-        if (!remoteSupport())
-            return directKM->querySeeks();
-        return 0;
-    }
-    virtual unsigned queryScans() const override
-    {
-        if (!remoteSupport())
-            return directKM->queryScans();
-        return 0;
-    }
-    virtual unsigned querySkips() const override
-    {
-        if (!remoteSupport())
-            return directKM->querySkips();
-        return 0;
-    }
-    virtual unsigned queryNullSkips() const override
-    {
-        if (!remoteSupport())
-            return directKM->queryNullSkips();
-        return 0;
-    }
-    virtual const byte *loadBlob(unsigned __int64 blobId, size32_t &blobSize) override
-    {
-        if (!remoteSupport())
-            return directKM->loadBlob(blobId, blobSize);
-        MemoryBuffer sendBuffer;
-        Owned<CRemoteFileIO> remoteIO = prepKeySend(sendBuffer, RFCreadfilteredindexblob, false);
-        sendBuffer.append(blobId);
-        MemoryBuffer replyBuffer;
-        remoteIO->sendRemoteCommand(sendBuffer, replyBuffer);
-        replyBuffer.read(blobSize);
-        const byte *blobData = replyBuffer.readDirect(blobSize);
-        activeBlobs.append(replyBuffer.detach()); // NB: don't need to retain size, but keep sz+data to avoid copy
-        return blobData;
-    }
-    virtual void releaseBlobs() override
-    {
-        if (!remoteSupport())
-            return directKM->releaseBlobs();
-        ForEachItemIn(idx, activeBlobs)
-        {
-            free((void *) activeBlobs.item(idx));
-        }
-        activeBlobs.kill();
-    }
-    virtual void resetCounts() override
-    {
-        if (!remoteSupport())
-        {
-            directKM->resetCounts();
-            return;
-        }
-        UNIMPLEMENTED;
-    }
-
-    virtual void setLayoutTranslator(IRecordLayoutTranslator * trans) override
-    {
-        if (!remoteSupport())
-        {
-            directKM->setLayoutTranslator(trans);
-            return;
-        }
-        UNIMPLEMENTED;
-    }
-    virtual void setSegmentMonitors(SegMonitorList &segmentMonitors) override
-    {
-        if (!remoteSupport())
-        {
-            directKM->setSegmentMonitors(segmentMonitors);
-            return;
-        }
-        segs.swapWith(segmentMonitors);
-    }
-    virtual void deserializeSegmentMonitors(MemoryBuffer &mb) override
-    {
-        if (!remoteSupport())
-        {
-            directKM->deserializeSegmentMonitors(mb);
-            return;
-        }
-        segs.deserialize(mb);
-    }
-    virtual void finishSegmentMonitors() override
-    {
-        if (!remoteSupport())
-        {
-            directKM->finishSegmentMonitors();
-            return;
-        }
-    }
-    virtual bool lookupSkip(const void *seek, size32_t seekGEOffset, size32_t seeklen) override
-    {
-        if (!remoteSupport())
-            return directKM->lookupSkip(seek, seekGEOffset, seeklen);
-        UNIMPLEMENTED;
-    }
-    virtual void append(IKeySegmentMonitor *segment) override
-    {
-        if (!remoteSupport())
-        {
-            directKM->append(segment);
-            return;
-        }
-        segs.append(segment);
-    }
-    virtual unsigned ordinality() const override
-    {
-        if (!remoteSupport())
-            return directKM->ordinality();
-        return segs.ordinality();
-    }
-    virtual IKeySegmentMonitor *item(unsigned idx) const override
-    {
-        if (!remoteSupport())
-            return directKM->item(idx);
-        return segs.item(idx);
-    }
-    virtual void setMergeBarrier(unsigned offset) override
-    {
-        if (!remoteSupport())
-        {
-            directKM->setMergeBarrier(offset);
-            return;
-        }
-        UNIMPLEMENTED;
-    }
-};
-
-IKeyManager *createRemoteKeyManager(const char *filename, unsigned keySize, unsigned crc, IDelayedFile *delayedFile)
-{
-    return new CRemoteKeyManager(filename, keySize, crc, delayedFile);
-}
-
-IKeyManager *createKeyManager(const char *filename, unsigned keySize, unsigned crc, IDelayedFile *delayedFile, bool allowRemote, bool forceRemote)
-{
-    RemoteFilename rfn;
-    rfn.setRemotePath(filename);
-    if (forceRemote || (allowRemote && !rfn.isLocal()))
-        return createRemoteKeyManager(filename, keySize, crc, delayedFile);
-    else
-    {
-        Owned<IKeyIndex> keyIndex = createKeyIndex(filename, crc, *delayedFile, false, false);
-        return createLocalKeyManager(keyIndex, keySize, nullptr);
-    }
-}
 
 //////////////
 
@@ -3866,13 +3477,14 @@ static IOutputMetaData *getTypeInfoOutputMetaData(IPropertyTree &actNode, const 
 {
     IPropertyTree *inputJson = actNode.queryPropTree(typePropName);
     if (inputJson)
-        return createTypeInfoOutputMetaData(*inputJson);
+        return createTypeInfoOutputMetaData(*inputJson, nullptr);
     else
     {
         StringBuffer binTypePropName(typePropName);
         MemoryBuffer mb;
         actNode.getPropBin(binTypePropName.append("Bin").str(), mb);
-        return createTypeInfoOutputMetaData(mb);
+        bool grouped = actNode.getPropBool(binTypePropName.append("_grouped").str(), false);
+        return createTypeInfoOutputMetaData(mb, grouped, nullptr);
     }
 }
 
@@ -4764,9 +4376,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
         while (keyManager->lookup(true))
         {
             unsigned size = keyManager->queryRecordSize();
-            offset_t fpos;
-            const byte *result = keyManager->queryKeyBuffer(fpos);
-            reply.append(fpos);
+            const byte *result = keyManager->queryKeyBuffer();
             reply.append(size);
             reply.append(size, result);
             ++numRecs;
@@ -4783,46 +4393,6 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
         }
         keyDataSzReturned.write();
         return numRecs;
-    }
-
-    IKeyManager *prepKey(int handle, const char *keyname, unsigned keySize, SegMonitorList *segs)
-    {
-        OpenFileInfo fileInfo;
-        if (!lookupFileIOHandle(handle, fileInfo, of_key))
-        {
-            VStringBuffer errStr("Error opening key file : %s", keyname);
-            throw createDafsException(RFSERR_InvalidFileIOHandle, errStr.str());
-        }
-        Owned<IKeyIndex> index = createKeyIndex(keyname, 0, *fileInfo.fileIO, false, false);
-        if (!index)
-        {
-            VStringBuffer errStr("Error opening key file : %s", keyname);
-            throw createDafsException(RFSERR_KeyIndexFailed, errStr.str());
-        }
-        Owned<IKeyManager> keyManager = createLocalKeyManager(index, keySize, nullptr);
-        if (segs)
-        {
-            keyManager->setSegmentMonitors(*segs);
-            keyManager->finishSegmentMonitors();
-        }
-        keyManager->reset();
-        return keyManager.getLink();
-    }
-
-    IKeyManager *prepKey(MemoryBuffer &mb, bool segmentMonitors)
-    {
-        int handle;
-        StringBuffer keyName;
-        size32_t keySize;
-        mb.read(handle).read(keyName).read(keySize);
-        if (segmentMonitors)
-        {
-            SegMonitorList segs;
-            segs.deserialize(mb);
-            return prepKey(handle, keyName, keySize, &segs);
-        }
-        else
-            return prepKey(handle, keyName, keySize, nullptr);
     }
 
     class cCommandProcessor: public CInterface, implements IPooledThread
@@ -5182,61 +4752,6 @@ public:
         return true;
     }
 
-    bool cmdReadFilteredIndex(MemoryBuffer & msg, MemoryBuffer & reply, CClientStats &stats)
-    {
-        Owned<IKeyManager> keyManager = prepKey(msg, true);
-        bool first;
-        unsigned maxRecs;
-        msg.read(first).read(maxRecs);
-        if (!first)
-            keyManager->deserializeCursorPos(msg);
-
-        reply.append((unsigned)RFEnoerror);
-        DelayedMarker<unsigned> numReturned(reply);
-        bool maxHit;
-        unsigned numRecs = readKeyData(keyManager, maxRecs, reply, maxHit);
-        numReturned.write(numRecs);
-
-        DelayedSizeMarker keyCursorSzMarker(reply);
-        if (maxHit) // if maximum hit, either supplied maxRecs limit, or buffer limit, return cursor
-            keyManager->serializeCursorPos(reply);
-        keyCursorSzMarker.write();
-        return true;
-    }
-
-    bool cmdReadFilteredIndexCount(MemoryBuffer & msg, MemoryBuffer & reply, CClientStats &stats)
-    {
-        Owned<IKeyManager> keyManager = prepKey(msg, true);
-
-        unsigned __int64 limit;
-        msg.read(limit);
-        unsigned __int64 count;
-        if (((unsigned __int64)-1) != limit)
-            count = keyManager->checkCount(limit);
-        else
-            count = keyManager->getCount();
-        reply.append((unsigned)RFEnoerror);
-        reply.append(count);
-        return true;
-    }
-
-    bool cmdReadFilteredIndexBlob(MemoryBuffer & msg, MemoryBuffer & reply, CClientStats &stats)
-    {
-        Owned<IKeyManager> keyManager = prepKey(msg, false);
-        unsigned __int64 blobId;
-        msg.read(blobId);
-
-        size32_t blobSize;
-        const byte *blobData = keyManager->loadBlob(blobId, blobSize);
-
-        reply.append((unsigned)RFEnoerror);
-        reply.append(blobSize);
-        reply.append(blobSize, blobData);
-
-        keyManager->releaseBlobs();
-        return true;
-    }
-
     bool cmdSize(MemoryBuffer & msg, MemoryBuffer & reply)
     {
         int handle;
@@ -5533,36 +5048,72 @@ public:
         bool sub;
         byte stream = 0;
         msg.read(name).read(mask).read(includedir).read(sub);
-        if (msg.remaining()>=sizeof(byte)) {
+        if (msg.remaining()>=sizeof(byte))
+        {
             msg.read(stream);
             if (stream==1)
                 client.opendir.clear();
         }
-
         if (TF_TRACE)
-            PROGLOG("GetDir,  '%s', '%s'",name.get(),mask.get());
-        Owned<IFile> dir=createIFile(name);
+            PROGLOG("GetDir,  '%s', '%s', stream='%u'",name.get(),mask.get(),stream);
+        if (!stream && !containsFileWildcard(mask))
+        {
+            // if no streaming, and mask contains no wildcard, it is much more efficient to get the info without a directory iterator!
+            StringBuffer fullFilename(name);
+            addPathSepChar(fullFilename).append(mask);
+            Owned<IFile> iFile = createIFile(fullFilename);
+            if (!iFile->exists())
+            {
+                reply.append((unsigned)RFSERR_GetDirFailed);
+                return false;
+            }
+            else
+            {
+                reply.append((unsigned)RFEnoerror);
+                // NB: This must preserve same serialization format as CRemoteDirectoryIterator::serialize produces for 1 file.
+                byte b=1;
+                reply.append(b);
+                bool isDir = foundYes == iFile->isDirectory();
+                reply.append(isDir);
+                reply.append(isDir ? 0 : iFile->size());
+                CDateTime dt;
+                iFile->getTime(nullptr, &dt, nullptr);
+                dt.serialize(reply);
+                reply.append(iFile->queryFilename());
+                b = 0;
+                reply.append(b);
+                return true;
+            }
+        }
+        else
+        {
+            Owned<IFile> dir=createIFile(name);
 
-        Owned<IDirectoryIterator> iter;
-        if (stream>1)
-            iter.set(client.opendir);
-        else {
-            iter.setown(dir->directoryFiles(mask.length()?mask.get():NULL,sub,includedir));
-            if (stream != 0)
-                client.opendir.set(iter);
-        }
-        if (!iter) {
-            reply.append((unsigned)RFSERR_GetDirFailed);
-            return false;
-        }
-        reply.append((unsigned)RFEnoerror);
-        if (CRemoteDirectoryIterator::serialize(reply,iter,stream?0x100000:0,stream<2)) {
-            if (stream != 0)
-                client.opendir.clear();
-        }
-        else {
-            bool cont=true;
-            reply.append(cont);
+            Owned<IDirectoryIterator> iter;
+            if (stream>1)
+                iter.set(client.opendir);
+            else
+            {
+                iter.setown(dir->directoryFiles(mask.length()?mask.get():NULL,sub,includedir));
+                if (stream != 0)
+                    client.opendir.set(iter);
+            }
+            if (!iter)
+            {
+                reply.append((unsigned)RFSERR_GetDirFailed);
+                return false;
+            }
+            reply.append((unsigned)RFEnoerror);
+            if (CRemoteDirectoryIterator::serialize(reply,iter,stream?0x100000:0,stream<2))
+            {
+                if (stream != 0)
+                    client.opendir.clear();
+            }
+            else
+            {
+                bool cont=true;
+                reply.append(cont);
+            }
         }
         return true;
     }
@@ -5945,20 +5496,17 @@ public:
 
         const char *outputFmtStr = requestTree->queryProp("format");
         int cursorHandle = requestTree->getPropInt("cursor");
-        Owned<IPropertyTree> responseTree; // Used if xml/json
         OutputFormat outputFormat;
-        if (!outputFmtStr || strieq("xml", outputFmtStr))
+        if (nullptr == outputFmtStr)
+            outputFormat = outFmt_Xml; // default
+        else if (strieq("xml", outputFmtStr))
             outputFormat = outFmt_Xml;
         else if (strieq("json", outputFmtStr))
             outputFormat = outFmt_Json;
-        else
+        else if (strieq("binary", outputFmtStr))
             outputFormat = outFmt_Binary;
-        if (outFmt_Binary != outputFormat)
-            responseTree.setown(createPTree("Response"));
-
-        MemoryBuffer cursorMb;
-        if (requestTree->getPropBin("cursorBin", cursorMb))
-            cursorMb.setEndian(BIG_ENDIAN);
+        else
+            throw MakeStringException(0, "Unrecognised output format: %s", outputFmtStr);
 
         Owned<IRemoteActivity> outputActivity;
         OpenFileInfo fileInfo;
@@ -5981,13 +5529,23 @@ public:
         else // known handle, continuation
             outputActivity.set(fileInfo.activity);
 
-        if (outputActivity && cursorMb.length()) // use handle if one provided
+        if (outputActivity && requestTree->hasProp("cursorBin")) // use handle if one provided
+        {
+            MemoryBuffer cursorMb;
+            cursorMb.setEndian(__BIG_ENDIAN);
+            JBASE64_Decode(requestTree->queryProp("cursorBin"), cursorMb);
             outputActivity->restoreCursor(cursorMb);
+        }
 
-        if (outFmt_Binary != outputFormat)
-            responseTree->setPropInt("cursor", cursorHandle);
-        else
+        Owned<IXmlWriterExt> responseWriter; // for xml or json response
+        if (outFmt_Binary == outputFormat)
             reply.append(cursorHandle);
+        else // outFmt_Xml || outFmt_Json
+        {
+            responseWriter.setown(createIXmlWriterExt(0, 0, nullptr, outFmt_Xml == outputFormat ? WTStandard : WTJSON));
+            responseWriter->outputBeginNested("Response", true);
+            responseWriter->outputUInt(cursorHandle, sizeof(cursorHandle), "cursor");
+        }
         if (cursorHandle)
         {
             IOutputMetaData *out = outputActivity->queryOutputMeta();
@@ -6008,10 +5566,13 @@ public:
                     reply.append(rowSz, row);
                 }
                 dataLenMarker.write();
+                DelayedSizeMarker cursorLenMarker(reply); // cursor length
+                if (!eoi)
+                    outputActivity->serializeCursor(reply);
+                cursorLenMarker.write();
             }
             else
             {
-                CPropertyTreeWriter iptWriter;
                 for (unsigned __int64 i=0; i<defaultDaFSNumRecs; i++)
                 {
                     size32_t rowSz;
@@ -6021,47 +5582,26 @@ public:
                         eoi = true;
                         break;
                     }
-                    IPropertyTree *rowNode = responseTree->addPropTree("Row");
-                    iptWriter.setRoot(*rowNode);
-                    out->toXML((const byte *)row, iptWriter);
+                    responseWriter->outputBeginNested("Row", true);
+                    out->toXML((const byte *)row, *responseWriter);
+                    responseWriter->outputEndNested("Row");
                 }
-            }
-            if (outFmt_Binary != outputFormat)
-            {
                 if (!eoi)
                 {
                     MemoryBuffer cursorMb;
-                    cursorMb.setEndian(BIG_ENDIAN);
+                    cursorMb.setEndian(__BIG_ENDIAN);
                     outputActivity->serializeCursor(cursorMb);
-                    responseTree->setPropBin("cursorBin", cursorMb.length(), cursorMb.toByteArray());
+                    StringBuffer cursorBinStr;
+                    JBASE64_Encode(cursorMb.toByteArray(), cursorMb.length(), cursorBinStr);
+                    responseWriter->outputString(cursorBinStr.length(), cursorBinStr.str(), "cursorBin");
                 }
             }
-            else
-            {
-                DelayedSizeMarker cursorLenMarker(reply); // cursor length
-                if (!eoi)
-                    outputActivity->serializeCursor(reply);
-                cursorLenMarker.write();
-            }
         }
-        switch (outputFormat)
+        if (outFmt_Binary != outputFormat)
         {
-            case outFmt_Xml:
-            {
-                StringBuffer responseXmlStr;
-                toXML(responseTree, responseXmlStr);
-                reply.append(responseXmlStr.length(), responseXmlStr.str());
-                break;
-            }
-            case outFmt_Json:
-            {
-                StringBuffer responseJsonStr;
-                toJSON(responseTree, responseJsonStr);
-                reply.append(responseJsonStr.length(), responseJsonStr.str());
-                break;
-            }
-            default:
-                break;
+            responseWriter->outputEndNested("Response");
+            PROGLOG("Response: %s", responseWriter->str());
+            reply.append(responseWriter->length(), responseWriter->str());
         }
         return true;
     }
@@ -6190,9 +5730,6 @@ public:
             {
                 MAPCOMMANDSTATS(RFCread, cmdRead, *stats);
                 MAPCOMMANDSTATS(RFCwrite, cmdWrite, *stats);
-                MAPCOMMANDSTATS(RFCreadfilteredindex, cmdReadFilteredIndex, *stats);
-                MAPCOMMANDSTATS(RFCreadfilteredindexcount, cmdReadFilteredIndexCount, *stats);
-                MAPCOMMANDSTATS(RFCreadfilteredindexblob, cmdReadFilteredIndexBlob, *stats);
                 MAPCOMMANDCLIENTSTATS(RFCappend, cmdAppend, *client, *stats);
                 MAPCOMMAND(RFCcloseIO, cmdCloseFileIO);
                 MAPCOMMANDCLIENT(RFCopenIO, cmdOpenFileIO, *client);
@@ -6769,6 +6306,7 @@ static Owned<CSimpleInterface> serverThread;
 class RemoteFileTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(RemoteFileTest);
+        CPPUNIT_TEST(testRemoteFilename);
         CPPUNIT_TEST(testStartServer);
         CPPUNIT_TEST(testBasicFunctionality);
         CPPUNIT_TEST(testCopy);
@@ -6781,6 +6319,37 @@ class RemoteFileTest : public CppUnit::TestFixture
     size32_t testLen = 1024;
 
 protected:
+    void testRemoteFilename()
+    {
+        const char *rfns = "//1.2.3.4/dir1/file1|//1.2.3.4:7100/dir1/file1,"
+                           "//1.2.3.4:7100/dir1/file1|//1.2.3.4:7100/dir1/file1,"
+                           "//1.2.3.4/c$/dir1/file1|//1.2.3.4:7100/c$/dir1/file1,"
+                           "//1.2.3.4:7100/c$/dir1/file1|//1.2.3.4:7100/c$/dir1/file1,"
+                           "//1.2.3.4:7100/d$/dir1/file1|//1.2.3.4:7100/d$/dir1/file1";
+        StringArray tests;
+        tests.appendList(rfns, ",");
+
+        ForEachItemIn(i, tests)
+        {
+            StringArray inOut;
+            const char *pair = tests.item(i);
+            inOut.appendList(pair, "|");
+            const char *rfn = inOut.item(0);
+            const char *expected = inOut.item(1);
+            Owned<IFile> iFile = createIFile(rfn);
+            const char *res = iFile->queryFilename();
+            if (!streq(expected, res))
+            {
+                StringBuffer errMsg("testRemoteFilename MISMATCH");
+                errMsg.newline().append("Expected: ").append(expected);
+                errMsg.newline().append("Got: ").append(res);
+                PROGLOG("%s", errMsg.str());
+                CPPUNIT_ASSERT_MESSAGE(errMsg.str(), 0);
+            }
+            else
+                PROGLOG("MATCH: %s", res);
+        }
+    }
     void testStartServer()
     {
         Owned<ISocket> socket;

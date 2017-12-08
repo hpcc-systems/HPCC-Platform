@@ -141,6 +141,7 @@ unsigned defaultFullKeyedJoinPreload = 0;
 unsigned defaultKeyedJoinPreload = 0;
 unsigned dafilesrvLookupTimeout = 10000;
 bool defaultCheckingHeap = false;
+bool defaultDisableLocalOptimizations = false;
 unsigned defaultStrandBlockSize = 512;
 unsigned defaultForceNumStrands = 0;
 unsigned defaultHeapFlags = roxiemem::RHFnofragment;
@@ -547,6 +548,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             topology->setProp("@traceLevel", globals->queryProp("--traceLevel"));
             topology->setPropInt("@allFilesDynamic", globals->getPropInt("--allFilesDynamic", 1));
             topology->setProp("@memTraceLevel", globals->queryProp("--memTraceLevel"));
+            topology->setProp("@disableLocalOptimizations", globals->queryProp("--disableLocalOptimizations"));
         }
         if (topology->hasProp("PreferredCluster"))
         {
@@ -753,7 +755,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         udpSnifferEnabled = topology->getPropBool("@udpSnifferEnabled", true);
         udpInlineCollation = topology->getPropBool("@udpInlineCollation", false);
         udpInlineCollationPacketLimit = topology->getPropInt("@udpInlineCollationPacketLimit", 50);
-        udpSendCompletedInData = topology->getPropBool("@udpSendCompletedInData", false);
         udpRetryBusySenders = topology->getPropInt("@udpRetryBusySenders", 0);
 
         // Historically, this was specified in seconds. Assume any value <= 10 is a legacy value specified in seconds!
@@ -827,6 +828,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         defaultStrandBlockSize = topology->getPropInt("@defaultStrandBlockSize", 512);
         defaultForceNumStrands = topology->getPropInt("@defaultForceNumStrands", 0);
         defaultCheckingHeap = topology->getPropBool("@checkingHeap", false);  // NOTE - not in configmgr - too dangerous!
+        defaultDisableLocalOptimizations = topology->getPropBool("@disableLocalOptimizations", false);  // NOTE - not in configmgr - too dangerous!
 
         slaveQueryReleaseDelaySeconds = topology->getPropInt("@slaveQueryReleaseDelaySeconds", 60);
         coresPerQuery = topology->getPropInt("@coresPerQuery", 0);
@@ -836,7 +838,11 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         const char *val = topology->queryProp("@fieldTranslationEnabled");
         if (val)
         {
-            if (strieq(val, "payload"))
+            if (strieq(val, "alwaysDisk"))
+                fieldTranslationEnabled = IRecordLayoutTranslator::TranslateAlwaysDisk;
+            else if (strieq(val, "alwaysECL"))
+                fieldTranslationEnabled = IRecordLayoutTranslator::TranslateAlwaysECL;
+            else if (strieq(val, "payload"))
                 fieldTranslationEnabled = IRecordLayoutTranslator::TranslatePayload;
             else if (strToBool(val))
                 fieldTranslationEnabled = IRecordLayoutTranslator::TranslateAll;
@@ -934,9 +940,13 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 
 
         topology->getProp("@pluginDirectory", pluginDirectory);
-        if (pluginDirectory.length() == 0)
-            pluginDirectory.append(codeDirectory).append("plugins");
-        getAdditionalPluginsPath(pluginDirectory, codeDirectory);
+        StringBuffer packageDirectory;
+        getPackageFolder(packageDirectory);
+        if (pluginDirectory.length() == 0 && packageDirectory.length() != 0)
+        {
+            pluginDirectory.append(packageDirectory).append("plugins");
+        }
+        getAdditionalPluginsPath(pluginDirectory, packageDirectory);
         if (queryDirectory.length() == 0)
         {
             topology->getProp("@queryDir", queryDirectory);

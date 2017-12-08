@@ -257,29 +257,9 @@ void RowTransformer::createRowRecord(FieldMapping const & mapping, CIArrayOf<Row
     switch(mapping.queryType())
     {
     case FieldMapping::Simple:
-        if(mapping.isDiskFieldFpos())
-            if(mapping.isActivityFieldFpos())
-            {
-                ensureItem(records, activityFieldNum).setVals(0, 0, diskSize, false).setFpos(true, true);
-                prevActivityField = false;
-            }
-            else
-            {
-                ensureItem(records, activityFieldNum).setVals(0, 0, diskSize, false).setFpos(false, true);
-                prevActivityField = false;
-            }
-        else
-            if(mapping.isActivityFieldFpos())
-            {
-                ensureItem(records, activityFieldNum).setVals(diskOffset, numVarFields, diskSize, false).setFpos(true, false);
-                prevActivityField = false;
-            }
-            else
-            {
-                ensureItem(records, activityFieldNum).setVals(diskOffset, numVarFields, diskSize, (prevActivityField && (activityFieldNum == (prevActivityFieldNum+1))));
-                prevActivityField = true;
-                prevActivityFieldNum = activityFieldNum;
-            }
+        ensureItem(records, activityFieldNum).setVals(diskOffset, numVarFields, diskSize, (prevActivityField && (activityFieldNum == (prevActivityFieldNum+1))));
+        prevActivityField = true;
+        prevActivityFieldNum = activityFieldNum;
         break;
 
     case FieldMapping::ChildDataset:
@@ -337,47 +317,13 @@ void RowTransformer::generateSimpleCopy(unsigned & seq, RowRecord const & record
         copy.setChildTransformer(new RowTransformer(seq, *childMappings));
 }
 
-void RowTransformer::generateCopyToFpos(RowRecord const & record)
-{
-    copyToFpos = true;
-    copyToFposRelOffset = record.queryRelOffset();
-    copyToFposRelBase = record.queryRelBase();
-    copyToFposSize = record.querySize();
-    assertex(copyToFposSize != UNKNOWN_LENGTH);
-    assertex(copyToFposSize <= sizeof(offset_t));
-}
-
-void RowTransformer::generateCopyFromFpos(RowRecord const & record)
-{
-    assertex(sequence == 0);
-    copies.append(*new FieldCopy(static_cast<unsigned>(-1), 0, 0));
-    size32_t size = record.querySize();
-    assertex(size != UNKNOWN_LENGTH);
-    assertex(size <= sizeof(offset_t));
-    copies.tos().addFixedSize(size);
-}
-
 void RowTransformer::generateCopies(unsigned & seq, CIArrayOf<RowRecord> const & records)
 {
     sequence = seq++;
     ForEachItemIn(fieldNum, records)
     {
         RowRecord const & record = records.item(fieldNum);
-        if(record.isToFpos())
-        {
-            assertex(sequence == 0);
-            if(record.isFromFpos())
-                keepFpos = true;
-            else
-                generateCopyToFpos(record);
-        }
-        else
-        {
-            if(record.isFromFpos())
-                generateCopyFromFpos(record);
-            else
-                generateSimpleCopy(seq, record);
-        }
+        generateSimpleCopy(seq, record);
     }
 }
 
@@ -406,25 +352,6 @@ void RowTransformer::transform(IRecordLayoutTranslator::RowTransformContext * ct
         copies.item(copyIdx).copy(ctx, out, outOffset);
 }
 
-void RowTransformer::getFposOut(IRecordLayoutTranslator::RowTransformContext const * ctx, offset_t & fpos) const
-{
-    if(copyToFpos)
-    {
-        fpos = 0;
-        const byte * in = ctx->queryPointer(0, copyToFposRelBase) + copyToFposRelOffset;
-        // integer field in row is big-endian
-#if __BYTE_ORDER == __BIG_ENDIAN
-        memcpy(reinterpret_cast<byte const *>(&fpos) + sizeof(offset_t) - copyToFposSize, in, copyToFposSize);
-#else
-        _cpyrevn(&fpos, in, copyToFposSize);
-#endif
-    }
-    else if(!keepFpos)
-    {
-        fpos = 0;
-    }
-}
-
 void RowTransformer::createRowTransformContext(IRecordLayoutTranslator::RowTransformContext * ctx) const
 {
     ctx->init(sequence, diskVarFieldRelOffsets.ordinality()+1);
@@ -438,19 +365,6 @@ void RowTransformer::createRowTransformContext(IRecordLayoutTranslator::RowTrans
 
 void FieldCopy::copy(IRecordLayoutTranslator::RowTransformContext * ctx, IMemoryBlock & out, size32_t & outOffset) const
 {
-    if(sequence == static_cast<unsigned>(-1))
-    {
-        byte * target = out.ensure(outOffset+fixedSize);
-        // integer field in row is big-endian
-#if __BYTE_ORDER == __BIG_ENDIAN
-        memcpy(target+outOffset, reinterpret_cast<byte const *>(ctx->queryFposIn()) + sizeof(offset_t) - fixedSize, fixedSize);
-#else
-        _cpyrevn(target+outOffset, ctx->queryFposIn(), fixedSize);
-#endif
-        outOffset += fixedSize;
-        return;
-    }
-
     size32_t diskFieldSize = fixedSize;
     ForEachItemIn(varIdx, varFields)
         diskFieldSize += ctx->querySize(sequence, varFields.item(varIdx));
@@ -594,7 +508,7 @@ void CRecordLayoutTranslator::createDiskSegmentMonitors(SegmentMonitorContext co
             //fall through
 
         case FieldMapping::None:
-            monitor.setown(createWildKeySegmentMonitor(diskOffset, size));
+            monitor.setown(createWildKeySegmentMonitor(diskFieldNum, diskOffset, size));
             break;
 
         case FieldMapping::ChildDataset:
@@ -617,28 +531,21 @@ IRecordLayoutTranslator::RowTransformContext * CRecordLayoutTranslator::getRowTr
     return ctx.getClear();
 }
 
-size32_t CRecordLayoutTranslator::transformRow(RowTransformContext * ctx, byte const * in, size32_t inSize, IMemoryBlock & out, offset_t & fpos) const
+size32_t CRecordLayoutTranslator::transformRow(RowTransformContext * ctx, byte const * in, size32_t inSize, IMemoryBlock & out) const
 {
     size32_t inOffset = 0;
     size32_t outOffset = 0;
-    ctx->setFposIn(fpos);
     transformer.transform(ctx, in, inSize, inOffset, out, outOffset);
-    transformer.getFposOut(ctx, fpos);
     return outOffset;
 }
 
 void ExpandedSegmentMonitorList::append(IKeySegmentMonitor * monitor)
 {
     if(owner->failure) return;
-    while(monitor->getSize() > owner->activityKeySizes[monitors.ordinality()])
+    if(monitor->getSize() > owner->activityKeySizes[monitors.ordinality()])
     {
-        Owned<IKeySegmentMonitor> split = monitor->split(owner->activityKeySizes[monitors.ordinality()]);
-        if(!split)
-        {
-            owner->failure.setown(makeFailure(IRecordLayoutTranslator::Failure::UnsupportedFilter)->append("Unsupported filter (segment monitor) type (was larger than keyed field and unsplittable)"));
-            return;
-        }
-        monitors.append(*split.getLink());
+        owner->failure.setown(makeFailure(IRecordLayoutTranslator::Failure::UnsupportedFilter)->append("Unsupported filter (segment monitor) type (was larger than keyed field)"));
+        return;
     }
     if(monitor->getSize() < owner->activityKeySizes[monitors.ordinality()])
     {
@@ -646,11 +553,6 @@ void ExpandedSegmentMonitorList::append(IKeySegmentMonitor * monitor)
         return;
     }
     monitors.append(*monitor);
-}
-
-void ExpandedSegmentMonitorList::setMergeBarrier(unsigned offset)
-{
-    // MORE - It's possible that I need to do something here??
 }
 
 IRecordLayoutTranslator * createRecordLayoutTranslator(IDefRecordMeta const * diskMeta, IDefRecordMeta const * activityMeta, IRecordLayoutTranslator::Mode _mode)

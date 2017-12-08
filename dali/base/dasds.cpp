@@ -689,6 +689,11 @@ public:
         const MemoryAttr &ma = subscriber->queryData();
         MemoryBuffer mb(ma.length(), ma.get());
         mb.read(xpath);
+        if (xpath.length() && ('/' != xpath.get()[xpath.length()-1]))
+        {
+            StringBuffer _xpath(xpath);
+            xpath.set(_xpath.append('/'));
+        }
         mb.read(sub);
         if (mb.remaining()) // remaining
             mb.read(sendValue);
@@ -1713,11 +1718,11 @@ public:
 
     void noteChange(PDState _local, PDState _state) { local = _local; state = _state; }
 
-    void addChildBranch(CBranchChange &child) { children.append(child); }
+    void addChildBranch(CBranchChange &child) { changedChildren.append(child); }
 
     const void *queryFindParam() const { return (const void *) &tree; }
 
-    CBranchChangeChildren children;
+    CBranchChangeChildren changedChildren;
     Linked<CRemoteTreeBase> tree;
     PDState local, state; // change info
 };
@@ -2505,7 +2510,7 @@ public:
             serverId = 0;
         }
     }
-    virtual bool removeTree(IPropertyTree *_child)
+    virtual bool removeTree(IPropertyTree *_child) override
     {
         if (!_child)
             return false;
@@ -2518,31 +2523,31 @@ public:
         return true;
     }
 
-    virtual bool isOrphaned() const { return IptFlagTst(flags, ipt_ext5); }
+    virtual bool isOrphaned() const override { return IptFlagTst(flags, ipt_ext5); }
 
-    virtual void setServerId(__int64 _serverId)
+    virtual void setServerId(__int64 _serverId) override
     {
         if (serverId && serverId != _serverId)
             WARNLOG("Unexpected - client server id mismatch in %s, id=%" I64F "x", queryName(), _serverId);
         CRemoteTreeBase::setServerId(_serverId);
     }
 
-    virtual CSubscriberContainerList *getSubscribers(const char *xpath, CPTStack &stack)
+    virtual CSubscriberContainerList *getSubscribers(const char *xpath, CPTStack &stack) override
     {
         return SDSManager->getSubscribers(xpath, stack);
     }
 
-    IPropertyTree *create(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false)
+    IPropertyTree *create(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false) override
     {
         return new CServerRemoteTree(name, value, children);
     }
 
-    IPropertyTree *create(MemoryBuffer &mb)
+    IPropertyTree *create(MemoryBuffer &mb) override
     {
         return new CServerRemoteTree(mb);
     }
 
-    virtual void createChildMap() { children = new COrphanHandler(); }
+    virtual void createChildMap() override { children = new COrphanHandler(); }
 
     inline bool testExternalCandidate()
     {
@@ -2612,7 +2617,7 @@ public:
         mb.append(STIInfo);
     }
 
-    virtual void deserializeSelfRT(MemoryBuffer &src)
+    virtual void deserializeSelfRT(MemoryBuffer &src) override
     {
         CRemoteTreeBase::deserializeSelfRT(src);
         assertex(!isnocase());
@@ -2620,13 +2625,13 @@ public:
         src.read(STIInfo);
     }
 
-    virtual void removingElement(IPropertyTree *tree, unsigned pos)
+    virtual void removingElement(IPropertyTree *tree, unsigned pos) override
     {
         COrphanHandler::setOrphans(*(CServerRemoteTree *)tree, true);       
         CRemoteTreeBase::removingElement(tree, pos);
     }
 
-    virtual bool isCompressed(const char *xpath=NULL) const
+    virtual bool isCompressed(const char *xpath=NULL) const override
     {
         if (isAttribute(xpath)) return false;
         if (CRemoteTreeBase::isCompressed(xpath)) return true;
@@ -2635,7 +2640,7 @@ public:
         return child->hasProp(EXT_ATTR);
     }
 
-    bool getProp(const char *xpath, StringBuffer &ret) const
+    bool getProp(const char *xpath, StringBuffer &ret) const override
     {
         if (xpath)
             return CRemoteTreeBase::getProp(xpath, ret);
@@ -8313,7 +8318,7 @@ public:
             {
                 if ('\0' == *head)
                     return subCommitExact; // absolute match
-                else if (!wild && '/' != *head) // e.g. change=/a/bc, subscriber=/a/b
+                else if (!wild && '/' != *(head-1)) // e.g. change=/a/bc, subscriber=/a/b
                     return subCommitNone;
                 return subCommitBelow; // e.g. change=/a/b/c, subscriber=/a/b
             }
@@ -8405,7 +8410,7 @@ public:
             }
             else
             {
-                if (0 == changes.children.ordinality())
+                if (0 == changes.changedChildren.ordinality())
                 {
                     ForEachItemInRev(s, subs)
                     {
@@ -8426,12 +8431,16 @@ public:
                 }
                 else
                 {
-                    ForEachItemIn (c, changes.children)
+                    /* NB: scan the changes in reverse, so that new values proceed recorded delete changes
+                     * This ensures that a tree that has been deleted but replaced with a new tree will
+                     * cause a notification of the new value in favour of the delete.
+                     */
+                    ForEachItemInRev (c, changes.changedChildren)
                     {
-                        CBranchChange &childChange = changes.children.item(c);
+                        CBranchChange &childChange = changes.changedChildren.item(c);
                         PushPop pp(stack, *childChange.tree);
                         size32_t parentLength = xpath.length();
-                        xpath.append('/').append(childChange.tree->queryName());
+                        xpath.append(childChange.tree->queryName()).append('/');
                         CSubscriberArray _pruned;
                         scanAll(state, childChange, stack, _pruned);
                         ForEachItemIn(i, _pruned) subs.append(*LINK(&_pruned.item(i)));
@@ -8498,11 +8507,15 @@ public:
                 }
             }
         }
-        ForEachItemIn(c, changes.children)
+        /* NB: scan the changes in reverse, so that new values proceed recorded delete changes
+         * This ensures that a tree that has been deleted but replaced with a new tree will
+         * cause a notification of the new value in favour of the delete.
+         */
+        ForEachItemInRev(c, changes.changedChildren)
         {
-            CBranchChange &childChanges = changes.children.item(c);
+            CBranchChange &childChanges = changes.changedChildren.item(c);
             size32_t parentLength = xpath.length();
-            xpath.append('/').append(childChanges.tree->queryName());
+            xpath.append(childChanges.tree->queryName()).append('/');
             CSubscriberArray pruned;
             scan(childChanges, stack, pruned);
             ForEachItemIn(i, pruned) subs.append(*LINK(&pruned.item(i)));

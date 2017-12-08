@@ -20,6 +20,7 @@
 
 #include "eclhelper.hpp"
 #include "eclrtl_imp.hpp"
+#include "rtlfield.hpp"
 
 //These interfaces aren't always used (because of speed), although may be sensible to switch to them if they prove useful
 //either for hiding the implementations, or because I can then write general library functions.
@@ -699,5 +700,26 @@ protected:
     size32_t reserved;
 };
 
+class ECLRTL_API CHThorDictHelper : public IHash, public ICompare
+{
+public:
+    inline CHThorDictHelper(const RtlRecordTypeInfo &_rec) : rec(_rec) {}
+    virtual unsigned hash(const void * _self) override;
+    virtual int docompare(const void *,const void *) const override;
+protected:
+    const RtlRecordTypeInfo &rec;
+};
 
+class ECLRTL_API CHThorHashLookupInfo : public IHThorHashLookupInfo
+{
+public:
+    inline CHThorHashLookupInfo(const RtlRecordTypeInfo &_keyrec) : helper(_keyrec) {}
+    virtual IHash * queryHash() override { return &helper; }
+    virtual ICompare * queryCompare() override { return &helper; }
+    virtual IHash * queryHashLookup() override { return &helper; }
+    virtual ICompare * queryCompareLookup() override { return &helper; }
+
+protected:
+    CHThorDictHelper helper;
+};
 #endif

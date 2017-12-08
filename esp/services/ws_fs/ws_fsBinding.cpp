@@ -200,9 +200,9 @@ int CFileSpraySoapBindingEx::onGetInstantQuery(IEspContext &context, CHttpReques
 
 IPropertyTree* CFileSpraySoapBindingEx::createPTreeForXslt(double clientVersion, const char* method, const char* dfuwuid)
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-    Owned<IConstEnvironment> m_constEnv = factory->openEnvironment();
-    Owned<IPropertyTree> pEnvRoot = &m_constEnv->getPTree();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
+    Owned<IConstEnvironment> constEnv = factory->openEnvironment();
+    Owned<IPropertyTree> pEnvRoot = &constEnv->getPTree();
     IPropertyTree* pEnvSoftware = pEnvRoot->queryPropTree("Software");
 
     Owned<IPropertyTree> pRoot = createPTreeFromXMLString("<Environment/>");
@@ -229,7 +229,7 @@ IPropertyTree* CFileSpraySoapBindingEx::createPTreeForXslt(double clientVersion,
             }
         }
 
-        appendDropZones(clientVersion, m_constEnv, dfuwuidSourcePartIP.str(), pSoftware);
+        appendDropZones(clientVersion, constEnv, dfuwuidSourcePartIP.str(), pSoftware);
 
         //For Spray files on Thor Cluster, fetch all the group names for all the thor instances (and dedup them)
         BoolHash uniqueThorClusterGroupNames;

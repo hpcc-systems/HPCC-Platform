@@ -59,9 +59,8 @@ public:
     {
         if(keyCursor->next(row))
         {
-            if(isVar)
-                thisrowsize = keyCursor->getSize();
-            *fpos = keyCursor->getFPos();
+            thisrowsize = keyCursor->getSize() - sizeof(offset_t);
+            *fpos = rtlReadBigUInt8(row + thisrowsize);
             return true;
         }
         *fpos = 0;
@@ -285,7 +284,8 @@ public:
         {
             if(keyCursor->next(buff))
             {
-                offset_t fpos = keyCursor->getFPos();
+                size32_t offset = keyCursor->getSize() - sizeof(offset_t);
+                offset_t fpos = rtlReadBigUInt8(buff + offset);
                 crc.tally(rowsize, buff);
                 crc.tally(sizeof(fpos), &fpos);
             }
@@ -423,7 +423,7 @@ public:
     ~CKeyWriter()
     {
         if (keyBuilder)
-            keyBuilder->finish();
+            keyBuilder->finish(nullptr, nullptr);
     }
 
     void put(RowBuffer & buffer)

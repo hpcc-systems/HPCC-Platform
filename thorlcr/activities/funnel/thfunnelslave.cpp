@@ -948,11 +948,13 @@ public:
                 selectedInputJunctions.append(queryInputJunction(nextIndex-1));
             }
         }
-        // NB: Whatever pulls this IThorNWayInput, starts and stops the selectedInputs and selectedInputJunctions
+        // NB: Whatever pulls this IThorNWayInput, starts the selectedInputs and selectedInputJunctions
+        dataLinkStart();
     }
     virtual void stop() override
     {
-        // NB: Whatever pulls this IThorNWayInput, starts and stops the selectedInputs
+        stopAllInputs();
+        dataLinkStop();
     }
     CATCH_NEXTROW()
     {

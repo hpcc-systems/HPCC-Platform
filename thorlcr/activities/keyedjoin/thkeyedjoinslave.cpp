@@ -835,7 +835,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                                 const void *fJoinFieldsRow = NULL;
                                 if (owner.helper->fetchMatch(fetchKey, diskFetchRow))
                                 {
-                                    size32_t sz = owner.helper->extractJoinFields(joinFieldsRow, diskFetchRow.get(), fpos, (IBlobProvider*)NULL); // JCSMORE it right that passing NULL IBlobProvider here??
+                                    size32_t sz = owner.helper->extractJoinFields(joinFieldsRow, diskFetchRow.get(), (IBlobProvider*)NULL); // JCSMORE it right that passing NULL IBlobProvider here??
                                     fJoinFieldsRow = joinFieldsRow.finalizeRowClear(sz);
                                     replySz += FETCHKEY_HEADER_SIZE + sz;
                                     owner.statsArr[AS_DiskAccepted]++;
@@ -1156,6 +1156,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         Linked<IRowStream> in;
         unsigned nextTlk;
         Owned<IKeyManager> tlkManager;
+        const RtlRecord &keyRecInfo;
         bool eos, eog;
         IKeyIndex *currentTlk;
         CJoinGroup *currentJG;
@@ -1196,9 +1197,9 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-        CKeyLocalLookup(CKeyedJoinSlave &_owner) : owner(_owner), indexReadFieldsRow(_owner.indexInputAllocator)
+        CKeyLocalLookup(CKeyedJoinSlave &_owner, const RtlRecord &_keyRecInfo) : owner(_owner), keyRecInfo(_keyRecInfo), indexReadFieldsRow(_owner.indexInputAllocator)
         {
-            tlkManager.setown(owner.keyHasTlk ? createLocalKeyManager(nullptr, owner.fixedRecordSize, nullptr) : nullptr);
+            tlkManager.setown(owner.keyHasTlk ? createLocalKeyManager(keyRecInfo, nullptr, nullptr) : nullptr);
 
             if (owner.getKeyManagers(partKeyManagers)) // true signifies that dealing with a local mergable set of index parts
                 currentPartKeyManager = &partKeyManagers.item(0);
@@ -1289,9 +1290,10 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                             if (candidateCount > owner.atMost)
                                 break;
                             KLBlobProviderAdapter adapter(currentPartKeyManager);
-                            offset_t fpos;
-                            byte const * keyRow = currentPartKeyManager->queryKeyBuffer(fpos);
-                            if (owner.helper->indexReadMatch(indexReadFieldsRow.getSelf(), keyRow, fpos, &adapter))
+                            byte const * keyRow = currentPartKeyManager->queryKeyBuffer();
+                            size_t fposOffset = currentPartKeyManager->queryRowSize() - sizeof(offset_t);
+                            offset_t fpos = rtlReadBigUInt8(keyRow + fposOffset);
+                            if (owner.helper->indexReadMatch(indexReadFieldsRow.getSelf(), keyRow, &adapter))
                             {
                                 if (currentJG->rowsSeen() >= owner.keepLimit)
                                     break;
@@ -1309,7 +1311,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                                 {
                                     void *joinFieldsPtr = (void *)(lookupRowResult+1);
                                     RtlDynamicRowBuilder joinFieldsRow(owner.joinFieldsAllocator);
-                                    size32_t sz = owner.helper->extractJoinFields(joinFieldsRow, keyRow, fpos, &adapter);
+                                    size32_t sz = owner.helper->extractJoinFields(joinFieldsRow, keyRow, &adapter);
                                     const void *fJoinFieldsRow = joinFieldsRow.finalizeRowClear(sz);
                                     memcpy(joinFieldsPtr, &fJoinFieldsRow, sizeof(const void *));
                                 }
@@ -1349,9 +1351,10 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                         for (;;)
                         {
                             if (!tlkManager->lookup(false)) break;
-                            if (tlkManager->queryFpos()) // don't bail out if part0 match, test again for 'real' tlk match.
+                            offset_t node = extractFpos(tlkManager);
+                            if (node) // don't bail out if part0 match, test again for 'real' tlk match.
                             {
-                                unsigned partNo = (unsigned)tlkManager->queryFpos();
+                                unsigned partNo = (unsigned)node;
                                 partNo = owner.superWidth ? owner.superWidth*nextTlk+(partNo-1) : partNo-1;
 
                                 currentPartKeyManager = &partKeyManagers.item(partNo);
@@ -1491,7 +1494,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 
             CKeyLookupPoolMember(CPRowStream &_owner) : owner(_owner)
             {
-                lookupStream.setown(new CKeyLocalLookup(owner.owner));
+                lookupStream.setown(new CKeyLocalLookup(owner.owner, owner.owner.helper->queryIndexRecordSize()->queryRecordAccessor(true)));
             }
             virtual void init(void *param) override
             {
@@ -1586,16 +1589,15 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             }
             else
             {
-                bool allowRemote = getOptBool("remoteKeyFilteringEnabled");
-                bool forceRemote = allowRemote ? getOptBool("forceDafilesrv") : false; // can only force remote, if forceDafilesrv and remoteKeyFilteringEnabled are enabled.
-                klManager.setown(createKeyManager(filename, fixedRecordSize, crc, lfile, allowRemote, forceRemote));
+                Owned<IKeyIndex> keyIndex = createKeyIndex(filename, crc, *lfile, false, false);
+                klManager.setown(createLocalKeyManager(helper->queryIndexRecordSize()->queryRecordAccessor(true), keyIndex, nullptr));
                 keyManagers.append(*klManager.getClear());
             }
         }
         if (localMergedKey)
         {
             dbgassertex(0 == keyManagers.ordinality());
-            keyManagers.append(*createKeyMerger(partKeySet, fixedRecordSize, 0, nullptr));
+            keyManagers.append(*createKeyMerger(helper->queryIndexRecordSize()->queryRecordAccessor(true), partKeySet, 0, nullptr));
             return true;
         }
         else
@@ -2030,7 +2032,7 @@ public:
         else
         {
             parallelLookups = 0;
-            resultDistStream = new CKeyLocalLookup(*this);
+            resultDistStream = new CKeyLocalLookup(*this, helper->queryIndexRecordSize()->queryRecordAccessor(true));
         }
     }
     virtual void abort()

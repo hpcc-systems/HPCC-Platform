@@ -524,6 +524,7 @@
     "roxie_deploy_map.xml",
     "RoxieServer",
     "roxie.xsd",
+    "_rtlType",
     "run",
     "running",
     "Running",

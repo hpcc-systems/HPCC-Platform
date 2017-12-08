@@ -226,9 +226,9 @@ class jlib_decl StringArray : public ArrayOf<const char *, const char *, StringP
     typedef ArrayOf<const char *, const char *, StringPointerArrayMapper> PARENT;
 public:
     // Appends a list in a string delimited by 'delim'
-    void appendList(const char *list, const char *delim);
+    void appendList(const char *list, const char *delim, bool trimSpaces = true);
     // Appends a list in a string delimited by 'delim' without duplicates
-    void appendListUniq(const char *list, const char *delim);
+    void appendListUniq(const char *list, const char *delim, bool trimSpaces = true);
     StringBuffer &getString(StringBuffer &ret, const char *delim); // get CSV string of array contents
     void sortAscii(bool nocase=false);
     void sortAsciiReverse(bool nocase=false);
@@ -385,7 +385,15 @@ extern jlib_decl bool queryDafsSecSettings(DAFSConnectCfg *_connectMethod,
 extern jlib_decl const char * matchConfigurationDirectoryEntry(const char *path,const char *mask,StringBuffer &name, StringBuffer &component, StringBuffer &instance);
 extern jlib_decl bool replaceConfigurationDirectoryEntry(const char *path,const char *frommask,const char *tomask,StringBuffer &out);
 
-extern jlib_decl const char *queryCurrentProcessPath(); 
+extern jlib_decl const char *queryCurrentProcessPath();
+
+/**
+ * Locate the 'package home' directory - normally /opt/HPCCSystems - by detecting the current executable's location
+ *
+ * @param path     Returns the package home location
+ * @return         True if the home directory was located
+ */
+extern jlib_decl bool getPackageFolder(StringBuffer & path);
 
 extern jlib_decl int parseCommandLine(const char * cmdline, MemoryBuffer &mb, const char** &argvout); // parses cmdline into argvout returning arg count (mb used as buffer)
 

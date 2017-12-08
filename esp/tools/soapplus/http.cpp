@@ -1600,9 +1600,9 @@ int HttpClient::sendRequest(StringBuffer& req, IFileIO* request_output, IFileIO*
         bufptr = &buf;
     Owned<IByteOutputStream> ostream = createOutputStream(*bufptr);
     bool isRoxie;
-    int resplen = Http::receiveData(socket.get(), ostream.get(), true, isRoxie, NULL, full_output, content_output);
+    __int64 resplen = Http::receiveData(socket.get(), ostream.get(), true, isRoxie, NULL, full_output, content_output);
     if(http_tracelevel >= 5)
-        fprintf(m_logfile, ">>received response. Response length: %d.\n", resplen);
+        fprintf(m_logfile, ">>received response. Response length: %" I64F "d.\n", resplen);
     if(http_tracelevel >= 10)
         fprintf(m_logfile, "%s\n", bufptr->str());
 

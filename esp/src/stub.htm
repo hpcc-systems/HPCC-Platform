@@ -17,44 +17,29 @@
 ##############################################################################
 -->
 <html>
+
 <head>
     <meta charset="utf-8">
     <title>ECL Watch</title>
+    <script src="/esp/files/node_modules/es6-promise/dist/es6-promise.auto.min.js"></script>
     <link rel="icon" type="image/png" href="/esp/files/img/favlogo.png">
-    <link rel="stylesheet" href="/esp/files/CodeMirror2/lib/codemirror.css">
-    <link rel="stylesheet" href="/esp/files/CodeMirror2/addon/dialog/dialog.css">
-    <link rel="stylesheet" href="/esp/files/CodeMirror2/addon/search/matchesonscrollbar.css">
-    <link rel="stylesheet" href="/esp/files/CodeMirror2/addon/fold/foldgutter.css">
-    <script src="/esp/files/CodeMirror2/codemirror-compressed.js"></script>
-    <script src="/esp/files/CodeMirror2/addon/scroll/annotatescrollbar.js"></script>
-    <script src="/esp/files/CodeMirror2/addon/search/matchesonscrollbar.js"></script>
-    <link href="/esp/files/eclwatch/css/ecl.css" rel="stylesheet">
-    <link href="/esp/files/themes/flat/flat.css" media="screen" rel="stylesheet">
-    <link href="/esp/files/dojox/grid/resources/Grid.css" rel="stylesheet">
-    <link href="/esp/files/dojox/grid/enhanced/resources/claro/EnhancedGrid.css" rel="stylesheet">
-    <link href="/esp/files/dojox/grid/resources/claroGrid.css" rel="stylesheet">
-    <link href="/esp/files/dojox/widget/Toaster/Toaster.css" rel="stylesheet">
-    <link href="/esp/files/dojox/widget/UpgradeBar/UpgradeBar.css" rel="stylesheet">
-    <link href="/esp/files/dojox/form/resources/FileUploader.css" rel="stylesheet">
-    <link href="/esp/files/dojox/form/resources/UploaderFileList.css" rel="stylesheet">
-    <link href="/esp/files/dojox/widget/ColorPicker/ColorPicker.css" rel="stylesheet">
-    <link href="/esp/files/dgrid/css/dgrid.css" rel="stylesheet">
-    <link href="/esp/files/dgrid/css/skins/claro.css" rel="stylesheet">
-    <link href="/esp/files/eclwatch/css/hpcc.css" rel="stylesheet">
     <!-- load dojo and provide config via dojoConfig global -->
-    <script src="/esp/files/eclwatch/dojoConfig.js"></script>
-    <script src="/esp/files/dojo/dojo.js"></script>
-    <script src="/esp/files/eclwatch/hpcc.js"></script>
-    <script>
-        require(["hpcc/stub"], function (stub) {
-            stub.init();
-        });
+    <script type="text/javascript">
+        if (/[?&]nopack=(1|true)/i.test(location.search)) {
+            document.write("<script type=\"text/javascript\" src=\"/esp/files/eclwatch/dojoConfig.js\" charset=\"utf-8\"><" + "/script>");
+            document.write("<script type=\"text/javascript\" src=\"/esp/files/node_modules/dojo/dojo.js\" charset=\"utf-8\"><" + "/script>");
+        } else {
+            document.write("<script type=\"text/javascript\" src=\"/esp/files/dist/node_modules.js\" charset=\"utf-8\"><" + "/script>");
+            document.write("<script type=\"text/javascript\" src=\"/esp/files/dist/stub.eclwatch.js\" charset=\"utf-8\"><" + "/script>");
+        }
     </script>
 </head>
+
 <body class="flat">
     <!-- overlay -->
     <div id="loadingOverlay" class="loadingOverlay pageOverlay">
     </div>
     <!-- application -->
 </body>
+
 </html>

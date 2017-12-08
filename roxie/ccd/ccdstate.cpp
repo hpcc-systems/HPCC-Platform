@@ -724,7 +724,14 @@ public:
         Owned<IRoxieDaliHelper> daliHelper = connectToDali();
         bool onlyLocal = fileNameServiceDali.isEmpty();
         bool onlyDFS = !resolveLocally() && !onlyLocal;
-        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, NULL, onlyLocal, onlyDFS, true);
+
+        IUserDescriptor *user = NULL;
+        if (wu)
+            user = wu->queryUserDescriptor();//ad-hoc mode
+        else if (daliHelper)
+            user = daliHelper->queryUserDescriptor();//predeployed query mode
+
+        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, user, onlyLocal, onlyDFS, true);
         if (!ldFile)
             throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s", fileName.str());
         return createRoxieWriteHandler(daliHelper, ldFile.getClear(), clusters);
@@ -2205,7 +2212,11 @@ private:
                 const char *val = control->queryProp("@val");
                 if (val)
                 {
-                    if (strieq(val, "payload"))
+                    if (strieq(val, "alwaysDisk"))
+                        fieldTranslationEnabled = IRecordLayoutTranslator::TranslateAlwaysDisk;
+                    else if (strieq(val, "alwaysECL"))
+                        fieldTranslationEnabled = IRecordLayoutTranslator::TranslateAlwaysECL;
+                    else if (strieq(val, "payload"))
                         fieldTranslationEnabled = IRecordLayoutTranslator::TranslatePayload;
                     else if (!val || strToBool(val))
                         fieldTranslationEnabled = IRecordLayoutTranslator::TranslateAll;
@@ -2546,6 +2557,10 @@ private:
                 }
                 reply.appendf("<State hash='%" I64F "u' topologyHash='%" I64F "u'/>", shash, thash);
             }
+            else if (stricmp(queryName, "control:resetcache")==0)
+            {
+                releaseSlaveDynamicFileCache();
+            }
             else if (stricmp(queryName, "control:resetindexmetrics")==0)
             {
                 resetIndexMetrics();
@@ -2853,6 +2868,7 @@ IRoxieQueryPackageManagerSet *globalPackageSetManager = NULL;
 
 extern void loadPlugins()
 {
+    DBGLOG("Preloading plugins from %s", pluginDirectory.str());
     if (pluginDirectory.length())
     {
         plugins = new SafePluginMap(&PluginCtx, traceLevel >= 1);

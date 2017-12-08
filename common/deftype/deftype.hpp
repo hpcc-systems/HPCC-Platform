@@ -170,6 +170,8 @@ extern DEFTYPE_API ITypeInfo *makeIntType(int size, bool isSigned);
 extern DEFTYPE_API ITypeInfo *makeSwapIntType(int size, bool isSigned);
 extern DEFTYPE_API ITypeInfo *makePackedIntType(ITypeInfo * basetype);
 extern DEFTYPE_API ITypeInfo *makePackedIntType(int size, bool isSigned);
+extern DEFTYPE_API ITypeInfo *makeFilePosType(ITypeInfo *basetype);
+extern DEFTYPE_API ITypeInfo *makeKeyedType(ITypeInfo *basetype);
 extern DEFTYPE_API ITypeInfo *makeRealType(int size);
 extern DEFTYPE_API ITypeInfo *makeDataType(int size);
 extern DEFTYPE_API ITypeInfo *makeBitfieldType(int sizeInBits, ITypeInfo * basetype = NULL);
@@ -242,6 +244,7 @@ extern DEFTYPE_API ITypeInfo * getPromotedCompareType(ITypeInfo * left, ITypeInf
 extern DEFTYPE_API bool isNumericType(ITypeInfo * type);
 extern DEFTYPE_API bool isStringType(ITypeInfo * type);
 extern DEFTYPE_API bool isSimpleStringType(ITypeInfo * type);
+extern DEFTYPE_API bool isSimpleIntegralType(ITypeInfo * type);
 extern DEFTYPE_API bool isIntegralType(ITypeInfo * type);
 extern DEFTYPE_API bool isPatternType(ITypeInfo * type);
 extern DEFTYPE_API bool isUnicodeType(ITypeInfo * type);

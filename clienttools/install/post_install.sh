@@ -48,6 +48,7 @@ CUR_DIR=$(pwd)
 SRC_DIR=$(pwd)
 CT_HOME=$(echo $SRC_DIR | sed -n "s/^\(.*clienttools\)\(.*\)/\1/p")
 CT_BIN=${CT_HOME}/bin
+PY2_BIN=${CT_HOME}/versioned/python2
 ECL_TEST_DIR=${CT_HOME}/testing/regress
 cd $CUR_DIR
 
@@ -67,6 +68,8 @@ then
     done
     [ -e ${ECL_TEST_DIR}/ecl-test ] && \
            ln -sf ${ECL_TEST_DIR}/ecl-test  ${TARGET_DIR}/ecl-test  
+    [ -e ${PY2_BIN}/libpy2embed.so ] && \
+           ln -sf ${PY2_BIN}/libpy2embed.so ${PY2_BIN}/libpyembed.so  
     
 
 else
@@ -81,6 +84,11 @@ else
     then
        ls -l ${TARGET_DIR}/ecl-test | egrep -q "${ECL_TEST_DIR}/ecl-test"
        [ $? -eq 0 ] && rm -rf ${TARGET_DIR}/ecl-test
+    fi
+    if [ -e ${PY2_BIN}/libpyembed.so ]
+    then
+       ls -l ${PY2_BIN}/libpyembed.so | egrep -q "${PY2_BIN}/libpy2embed.so"
+       [ $? -eq 0 ] && rm -rf ${PY2_BIN}/libpyembed.so 
     fi
 fi
 

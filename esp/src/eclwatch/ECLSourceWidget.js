@@ -26,6 +26,8 @@ define([
     "dijit/layout/ContentPane",
     "dijit/registry",
 
+    "src/CodeMirror",
+
     "hpcc/_Widget",
     "hpcc/ESPWorkunit",
 
@@ -37,6 +39,7 @@ define([
 
 ], function (declare, lang, i18n, nlsHPCC, dom, xhr, topic,
             BorderContainer, ContentPane, registry,
+            CodeMirror,
             _Widget, ESPWorkunit,
             template) {
         return declare("ECLSourceWidget", [_Widget], {

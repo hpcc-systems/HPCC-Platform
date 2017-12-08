@@ -832,18 +832,12 @@ void CPropertyTreeWriter::outputQuoted(const char *text)
 
 void CPropertyTreeWriter::outputString(unsigned len, const char *field, const char *fieldname)
 {
-    unsigned olen = len;
     if (flags & XWFtrim)
         len = rtlTrimStrLen(len, field);
     if ((flags & XWFopt) && (rtlTrimStrLen(len, field) == 0))
         return;
-    if (olen != len)
-    {
-        StringBuffer tmp(len, field);
-        target->setProp(fieldname, tmp.str());
-    }
-    else
-        target->setProp(fieldname, field);
+    StringBuffer tmp(len, field);
+    target->setProp(fieldname, tmp.str());
 }
 
 
@@ -940,14 +934,12 @@ void CPropertyTreeWriter::outputBeginDataset(const char *dsname, bool nestChildr
         return;
     StringBuffer dsNameUtf8;
     outputXmlUtf8(rtlUtf8Length(strlen(dsname), dsname), dsname, nullptr, dsNameUtf8);
-    target = target->addPropTree(dsNameUtf8);
-    nestedLevels.append(*target);
+    target->addProp("@name", dsNameUtf8);
 }
 
 void CPropertyTreeWriter::outputEndDataset(const char *dsname)
 {
     outputEndNested("Dataset");
-    target = &nestedLevels.popGet();
 }
 
 void CPropertyTreeWriter::outputBeginNested(const char *fieldname, bool nestChildren)
@@ -964,8 +956,8 @@ void CPropertyTreeWriter::outputBeginNested(const char *fieldname, bool nestChil
         return;
     }
 
-    target = target->addPropTree(fieldname);
     nestedLevels.append(*target);
+    target = target->addPropTree(fieldname);
 }
 
 void CPropertyTreeWriter::outputEndNested(const char *fieldname)

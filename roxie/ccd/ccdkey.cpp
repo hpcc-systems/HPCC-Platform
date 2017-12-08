@@ -29,6 +29,7 @@
 #include "ccdstate.hpp"
 #include "rtlrecord.hpp"
 #include "rtlkey.hpp"
+#include "rtldynfield.hpp"
 
 #ifdef _DEBUG
 //#define _LIMIT_FILECOUNT 5    // Useful for debugging queries when not enough memory to load data...
@@ -38,7 +39,7 @@
 #define BASED_POINTERS
 #endif
 
-class PtrToOffsetMapper 
+class PtrToOffsetMapper
 {
     struct FragmentInfo
     {
@@ -151,13 +152,13 @@ public:
         return makeLocalFposOffset(frag.partNo, ptr - frag.base);
     }
 
-    offset_t makeFilePositionLocal(offset_t pos)
+    offset_t makeFilePositionLocal(offset_t pos) const
     {
         FragmentInfo &frag = findBase(pos);
         return makeLocalFposOffset(frag.partNo, pos - frag.baseOffset);
     }
 
-    void splitPos(offset_t &offset, offset_t &size, unsigned partNo, unsigned numParts)
+    void splitPos(offset_t &offset, offset_t &size, unsigned partNo, unsigned numParts) const
     {
         assert(numParts > 0);
         assert(partNo < numParts);
@@ -269,11 +270,13 @@ public:
         ForEach(*fields)
         {
             IPropertyTree &field = fields->query();
+            unsigned fieldNum = field.getPropInt("@fieldNum", -1);
+            assertex(fieldNum != (unsigned) -1);
             unsigned offset = field.getPropInt("@offset", 0);
             unsigned size = field.getPropInt("@size", 0);
             bool isSigned = field.getPropBool("@isSigned", false);
             bool isLittleEndian = field.getPropBool("@isLittleEndian", false);
-            append(createDummyKeySegmentMonitor(offset, size, isSigned, isLittleEndian));
+            append(createDummyKeySegmentMonitor(fieldNum, offset, size, isSigned, isLittleEndian));
         }
     }
 
@@ -289,9 +292,9 @@ public:
         totalCount += segment->getSize();
     }
 
-    virtual void setMergeBarrier(unsigned barrierOffset)
+    virtual void append(FFoption option, IFieldFilter * filter)
     {
-        // We don't merge segmonitors so nothing to do
+        UNIMPLEMENTED;
     }
 
     virtual unsigned ordinality() const
@@ -326,7 +329,7 @@ public:
 #endif
         ForEachItemIn(idx, segMonitors)
         {
-            int ret = segMonitors.item(idx).docompareraw(l, r);
+            int ret = segMonitors.item(idx).docompare(l, r);
             if (ret)
                 return ret;
         }
@@ -386,7 +389,7 @@ public:
         ForEachItemIn(idx, segMonitors)
         {
             IKeySegmentMonitor &item = segMonitors.item(idx);
-            ret.pad(indent+1).appendf("<Field offset='%d' size='%d' isSigned='%d' isLittleEndian='%d'/>\n", item.getOffset(), item.getSize(), item.isSigned(), item.isLittleEndian());
+            ret.pad(indent+1).appendf("<Field fieldNum='%d' offset='%d' size='%d' isSigned='%d' isLittleEndian='%d'/>\n", item.getFieldIdx(), item.getOffset(), item.getSize(), item.isSigned(), item.isLittleEndian());
         }
         ret.pad(indent).append("</FieldSet>\n");
         return ret;
@@ -547,7 +550,50 @@ typedef IArrayOf<InMemoryIndex> InMemoryIndexSet;
  *   giving entire file, and uses getRecordSize(). Will avoid a one or more virtual peek() calls per row.
  *====================================================================================================*/
 
-class InMemoryDirectReader : implements IDirectReader, implements IThorDiskCallback, implements ISimpleReadStream, public CInterface
+class CDirectReaderBase : public CInterface, implements IDirectReader, implements IThorDiskCallback, implements ISimpleReadStream
+{
+protected:
+    MemoryBuffer buf;  // Used if translating to hold on to current row;
+    CThorContiguousRowBuffer deserializeSource;
+    Owned<ISourceRowPrefetcher> prefetcher;
+    Linked<const ITranslatorSet> translators;
+    const IDynamicTransform *translator = nullptr;
+
+public:
+    CDirectReaderBase(const ITranslatorSet *_translators) : translators(_translators) {}
+    virtual const byte *nextRow() override
+    {
+        if (prefetcher)
+            prefetcher->readAhead(deserializeSource);
+        if (translator)
+        {
+            MemoryBufferBuilder aBuilder(buf, 0);
+            translator->translate(aBuilder, deserializeSource.queryRow());
+            return reinterpret_cast<const byte *>(buf.toByteArray());
+        }
+        else
+            return deserializeSource.queryRow();
+    }
+    virtual bool eog() const override
+    {
+        size32_t sizeRead = deserializeSource.queryRowSize();
+        return (bool) deserializeSource.queryRow()[sizeRead-1];
+    }
+
+    virtual void finishedRow() override
+    {
+        buf.setLength(0);
+        deserializeSource.finishedRow();
+    }
+
+    virtual bool isTranslating() const override
+    {
+        // Note that this returns true if I will translate for ANY file part, not just whether I am translating for current file part
+        return translators && translators->isTranslating();
+    }
+};
+
+class InMemoryDirectReader : public CDirectReaderBase
 {
     // MORE - might be able to use some of the jlib IStream implementations. But I don't want any indirections...
 public:
@@ -555,11 +601,17 @@ public:
     memsize_t pos;
     const char *start;
     offset_t memsize;
-    PtrToOffsetMapper &baseMap;
+    const PtrToOffsetMapper &baseMap;
 
-    InMemoryDirectReader(offset_t _readPos, const char *_start, memsize_t _memsize, PtrToOffsetMapper &_baseMap, unsigned _partNo, unsigned _numParts)
-        : baseMap(_baseMap)
+    InMemoryDirectReader(offset_t _readPos, const char *_start, memsize_t _memsize,
+                         const PtrToOffsetMapper &_baseMap, unsigned _partNo, unsigned _numParts,
+                         const ITranslatorSet *_translators,
+                         ICodeContext *ctx, unsigned id)
+        : CDirectReaderBase(_translators), baseMap(_baseMap)
     {
+        translator = translators->queryTranslator(0);  // Any one would do
+        prefetcher.setown(translators->getPrefetcher(0, false, ctx, id));
+        deserializeSource.setStream(this);
         if (_numParts == 1)
         {
             memsize = _memsize;
@@ -577,7 +629,7 @@ public:
 
     // Interface ISerialStream
 
-    virtual const void * peek(size32_t wanted,size32_t &got)
+    virtual const void * peek(size32_t wanted,size32_t &got) override
     {
         offset_t remaining = memsize - pos;
         if (remaining)
@@ -594,7 +646,7 @@ public:
             return NULL;
         }
     }
-    virtual void get(size32_t len, void * ptr)
+    virtual void get(size32_t len, void * ptr) override
     {
         offset_t remaining = memsize - pos;
         if (len > remaining)
@@ -602,20 +654,20 @@ public:
         memcpy(ptr, start+pos, len);
         pos += len;
     }
-    virtual bool eos()
+    virtual bool eos() override
     {
         return pos == memsize;
     }
-    virtual void skip(size32_t sz)
+    virtual void skip(size32_t sz) override
     {
         assertex(pos + sz <= memsize);
         pos += sz;
     }
-    virtual offset_t tell()
+    virtual offset_t tell() override
     {
         return pos;
     }
-    virtual void reset(offset_t _offset, offset_t _flen)
+    virtual void reset(offset_t _offset, offset_t _flen) override
     {
         assertex(_offset <= memsize);
         pos = (memsize_t) _offset;
@@ -623,7 +675,7 @@ public:
 
     // Interface ISimpleReadStream
 
-    virtual size32_t read(size32_t max_len, void * data)
+    virtual size32_t read(size32_t max_len, void * data) override
     {
         size32_t got;
         const void *ptr = peek(max_len, got);
@@ -636,47 +688,56 @@ public:
 
     // Interface IDirectReader
 
-    virtual ISimpleReadStream *querySimpleStream()
+    virtual ISimpleReadStream *querySimpleStream() override
     {
         return this;
     }
 
-    virtual IThorDiskCallback *queryThorDiskCallback()
+    virtual IThorDiskCallback *queryThorDiskCallback() override
     {
         return this;
     }
 
-    virtual unsigned queryFilePart() const
+    virtual unsigned queryFilePart() const override
     {
         throwUnexpected(); // only supported for disk files
     }
 
     // Interface IThorDiskCallback 
 
-    virtual unsigned __int64 getFilePosition(const void *_ptr)
+    virtual unsigned __int64 getFilePosition(const void *_ptr) override
     {
+        if (translator)
+        {
+            assertex(_ptr==buf.toByteArray());
+            _ptr = deserializeSource.queryRow();
+        }
         return baseMap.ptrToFilePosition(_ptr);
     }
 
-    virtual unsigned __int64 getLocalFilePosition(const void *_ptr)
+    virtual unsigned __int64 getLocalFilePosition(const void *_ptr) override
     {
+        if (translator)
+        {
+            assertex(_ptr==buf.toByteArray());
+            _ptr = deserializeSource.queryRow();
+        }
         return baseMap.ptrToLocalFilePosition(_ptr);
     }
 
-    virtual unsigned __int64 makeFilePositionLocal(offset_t pos)
+    virtual unsigned __int64 makeFilePositionLocal(offset_t pos) override
     {
         return baseMap.makeFilePositionLocal(pos);
     }
 
-    virtual const char * queryLogicalFilename(const void * row) 
+    virtual const char * queryLogicalFilename(const void * row) override
     { 
         UNIMPLEMENTED;
     }
 };
 
-class BufferedDirectReader : implements IDirectReader, implements IThorDiskCallback, implements ISimpleReadStream, public CInterface
+class BufferedDirectReader : public CDirectReaderBase
 {
-    // MORE - could combine some code with in memory version.
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -685,10 +746,14 @@ public:
     offset_t completedStreamsSize;
     Owned<IFileIO> thisPart;
     Owned<ISerialStream> curStream;
+    ICodeContext *ctx;
+    unsigned activityId;
     unsigned thisPartIdx;
 
-    BufferedDirectReader(offset_t _startPos, IFileIOArray *_f, unsigned _partNo, unsigned _numParts) : f(_f)
+    BufferedDirectReader(offset_t _startPos, IFileIOArray *_f, unsigned _partNo, unsigned _numParts, const ITranslatorSet *_translators, ICodeContext *_ctx, unsigned _id)
+    : CDirectReaderBase(_translators), f(_f), ctx(_ctx), activityId(_id)
     {
+        deserializeSource.setStream(this);
         thisFileStartPos = 0;
         completedStreamsSize = 0;
 
@@ -712,6 +777,9 @@ public:
         if (thisPart)
         {       
             curStream.setown(createFileSerialStream(thisPart, _startPos));
+            unsigned subFileIdx = f->getSubFile(thisPartIdx);
+            prefetcher.setown(translators->getPrefetcher(subFileIdx, true, ctx, activityId));
+            translator = translators->queryTranslator(subFileIdx);
         }
         else
         {
@@ -726,6 +794,7 @@ public:
         unsigned maxParts = f->length();
         thisPart.clear();
         curStream.clear();
+        prefetcher.clear();
         while (!thisPart && ++thisPartIdx < maxParts)
         {
             thisPart.setown(f->getFilePart(thisPartIdx, thisFileStartPos ));
@@ -733,10 +802,13 @@ public:
         if (thisPart)
         {
             curStream.setown(createFileSerialStream(thisPart));
+            unsigned subFileIdx = f->getSubFile(thisPartIdx);
+            prefetcher.setown(translators->getPrefetcher(subFileIdx, true, ctx, activityId));
+            translator = translators->queryTranslator(subFileIdx);
         }
     }
 
-    virtual const void * peek(size32_t wanted,size32_t &got)
+    virtual const void * peek(size32_t wanted,size32_t &got) override
     {
         if (curStream)
         {
@@ -758,14 +830,14 @@ public:
         }
     }
 
-    virtual void get(size32_t len, void * ptr)
+    virtual void get(size32_t len, void * ptr) override
     {
         if (curStream)
             curStream->get(len, ptr);
         else
             throw MakeStringException(-1, "BufferedDirectReader::get: requested %u bytes at eof", len);
     }
-    virtual bool eos() 
+    virtual bool eos() override
     {
         for (;;)
         {
@@ -777,14 +849,14 @@ public:
                 return false;
         }
     }
-    virtual void skip(size32_t len)
+    virtual void skip(size32_t len) override
     {
         if (curStream)
             curStream->skip(len);
         else
             throw MakeStringException(-1, "BufferedDirectReader::skip: tried to skip %u bytes at eof", len);
     }
-    virtual offset_t tell()
+    virtual offset_t tell() override
     {
         // Note that tell() means the position with this stream, not the file position within the overall logical file.
         if (curStream)
@@ -792,14 +864,14 @@ public:
         else
             return completedStreamsSize;
     }
-    virtual void reset(offset_t _offset,offset_t _flen)
+    virtual void reset(offset_t _offset,offset_t _flen) override
     {
         throwUnexpected(); // Not designed to be reset
     }
 
     // Interface ISimpleReadStream
 
-    virtual size32_t read(size32_t max_len, void * data)
+    virtual size32_t read(size32_t max_len, void * data) override
     {
         size32_t got;
         const void *ptr = peek(max_len, got);
@@ -814,50 +886,59 @@ public:
 
     // Interface IDirectReader
 
-    virtual ISimpleReadStream *querySimpleStream()
+    virtual ISimpleReadStream *querySimpleStream() override
     {
         return this;
     }
 
-    virtual IThorDiskCallback *queryThorDiskCallback()
+    virtual IThorDiskCallback *queryThorDiskCallback() override
     {
         return this;
     }
 
-    virtual unsigned queryFilePart() const
+    virtual unsigned queryFilePart() const override
     {
         return thisPartIdx;
     }
 
     // Interface IThorDiskCallback
 
-    virtual unsigned __int64 getFilePosition(const void *_ptr)
+    virtual unsigned __int64 getFilePosition(const void *_ptr) override
     {
         // MORE - could do with being faster than this!
         assertex(curStream != NULL);
-        size32_t dummy;
-        return thisFileStartPos + curStream->tell() + ((const char *)_ptr - (const char *)curStream->peek(1, dummy));
+        unsigned __int64 pos = curStream->tell();
+        if (_ptr != buf.toByteArray())
+        {
+            size32_t dummy;
+            pos +=  (const char *)_ptr - (const char *)curStream->peek(1, dummy);
+        }
+        return pos + thisFileStartPos;
     }
 
-    virtual unsigned __int64 getLocalFilePosition(const void *_ptr)
+    virtual unsigned __int64 getLocalFilePosition(const void *_ptr) override
     {
         // MORE - could do with being faster than this!
         assertex(curStream != NULL);
-        size32_t dummy;
-        return makeLocalFposOffset(thisPartIdx-1, curStream->tell() + (const char *)_ptr - (const char *)curStream->peek(1, dummy));
+        unsigned __int64 pos = curStream->tell();
+        if (_ptr != buf.toByteArray())
+        {
+            size32_t dummy;
+            pos +=  (const char *)_ptr - (const char *)curStream->peek(1, dummy);
+        }
+        return makeLocalFposOffset(thisPartIdx-1, pos);
     }
 
-    virtual unsigned __int64 makeFilePositionLocal(offset_t pos)
+    virtual unsigned __int64 makeFilePositionLocal(offset_t pos) override
     {
         assertex(pos >= thisFileStartPos);
         return makeLocalFposOffset(thisPartIdx-1, pos - thisFileStartPos);
     }
 
-    virtual const char * queryLogicalFilename(const void * row) 
+    virtual const char * queryLogicalFilename(const void * row) override
     { 
         return f->queryLogicalFilename(thisPartIdx);
     }
-
 };
 
 class InMemoryIndexManager : implements IInMemoryIndexManager, public CInterface
@@ -870,7 +951,7 @@ class InMemoryIndexManager : implements IInMemoryIndexManager, public CInterface
     unsigned *hits;
     unsigned trackLimit;
     unsigned numTracked;
-    CriticalSection trackedCrit;
+    mutable CriticalSection trackedCrit;
     CriticalSection activeCrit;
     CriticalSection pendingCrit;
     CriticalSection loadCrit;
@@ -968,7 +1049,7 @@ class InMemoryIndexManager : implements IInMemoryIndexManager, public CInterface
         }
     }
 
-    void getTrackedInfo(const char *id, StringBuffer &xml)
+    virtual void getTrackedInfo(const char *id, StringBuffer &xml) const override
     {
         CriticalBlock cb(trackedCrit);
         xml.appendf("<File id='%s' numKeys='%d' fileName='%s'>", id, numKeys, fileName.get());
@@ -979,8 +1060,7 @@ class InMemoryIndexManager : implements IInMemoryIndexManager, public CInterface
             ForEachItemIn(idx, m)
             {
                 IKeySegmentMonitor &seg = m.item(idx);
-                xml.appendf("<Field offset='%d' size='%d' isSigned='%d' isLittleEndian='%d'/>\n", seg.getOffset(), seg.getSize(), seg.isSigned(), seg.isLittleEndian());
-//              xml.appendf("<Field offset='%d' size='%d' flags='%d'/>\n", seg.getOffset(), seg.getSize(), seg.getFlags());
+                xml.appendf("<Field fieldNum='%d' offset='%d' size='%d' isSigned='%d' isLittleEndian='%d'/>\n", seg.getFieldIdx(), seg.getOffset(), seg.getSize(), seg.isSigned(), seg.isLittleEndian());
             }
             xml.append("</FieldSet>\n");
         }
@@ -1104,7 +1184,7 @@ class InMemoryIndexManager : implements IInMemoryIndexManager, public CInterface
 
 public:
     IMPLEMENT_IINTERFACE;
-    virtual bool IsShared() const { return CInterface::IsShared(); }
+    virtual bool IsShared() const override { return CInterface::IsShared(); }
 
     InMemoryIndexManager(bool _isOpt, const char *_fileName) : fileName(_fileName)
     {
@@ -1142,7 +1222,7 @@ public:
     }
 
     void deserializeCursorPos(MemoryBuffer &mb, InMemoryIndexCursor *cursor);
-    virtual IInMemoryIndexCursor *createCursor(const RtlRecord &recInfo);
+    virtual IInMemoryIndexCursor *createCursor(const RtlRecord &recInfo) override;
     bool selectKey(InMemoryIndexCursor *cursor);
 
     inline const char *queryFileName() const
@@ -1173,12 +1253,12 @@ public:
         return false;
     }
 
-    virtual IDirectReader *createReader(offset_t readPos, unsigned partNo, unsigned numParts)
+    virtual IDirectReader *createReader(offset_t readPos, unsigned partNo, unsigned numParts, const ITranslatorSet *translators, ICodeContext *ctx, unsigned id) const override
     {
         if (loadedIntoMemory)
-            return new InMemoryDirectReader(readPos, fileStart, fileEnd-fileStart, baseMap, partNo, numParts);
+            return new InMemoryDirectReader(readPos, fileStart, fileEnd-fileStart, baseMap, partNo, numParts, translators, ctx, id);
         else
-            return new BufferedDirectReader(readPos, files, partNo, numParts);
+            return new BufferedDirectReader(readPos, files, partNo, numParts, translators, ctx, id);
     }
 
     StringBuffer &queryId(StringBuffer &ret)
@@ -1188,7 +1268,7 @@ public:
         return ret;
     }
 
-    virtual void load(IFileIOArray *_files, IRecordSize *recordSize, bool preload, int _numKeys)
+    virtual void load(IFileIOArray *_files, IOutputMetaData *preloadLayout, bool preload, int _numKeys) override
     {
         // MORE - if numKeys is greater than previously then we may need to take action here....
         CriticalBlock b(loadCrit);
@@ -1221,6 +1301,12 @@ public:
         }
         if (preload && !loadedIntoMemory) // loaded but NOT originally seen as preload, lets try to generate keys...
         {
+            if (!files->allFormatsMatch())
+            {
+                IException *E = makeStringException(ROXIE_MEMORY_ERROR, "Cannot load superfile with mismatching formats into memory");
+                EXCLOG(MCoperatorError, E);
+                throw E;
+            }
             if ((size_t)totalSize != totalSize)
             {
                 IException *E = makeStringException(ROXIE_MEMORY_ERROR, "Preload file is larger than maximum object size");
@@ -1257,7 +1343,7 @@ public:
                 }
             }
             if (_numKeys > 0)
-                processInMemoryKeys(recordSize, _numKeys);
+                processInMemoryKeys(preloadLayout, _numKeys);
             loadedIntoMemory = true;
         }
         else if (_numKeys > numKeys)  // already in memory, but more in memory keys are requested, so let's try to create them
@@ -1307,11 +1393,12 @@ public:
             {
                 // MORE - we could share them, then comparison would be faster (pointer compare)
                 IKeySegmentMonitor &seg = perfect.item(idx);
+                unsigned fieldNum = seg.getFieldIdx();
                 unsigned offset = seg.getOffset();
                 unsigned size = seg.getSize();
                 bool isSigned = seg.isSigned();
                 bool isLittleEndian = seg.isLittleEndian();
-                newEntry->append(*createDummyKeySegmentMonitor(offset, size, isSigned, isLittleEndian));
+                newEntry->append(*createDummyKeySegmentMonitor(fieldNum, offset, size, isSigned, isLittleEndian));
             }
             tracked[a] = newEntry;
             hits[a] = noteHits ? noteHits : 1;
@@ -1379,7 +1466,7 @@ public:
             numKeys = n;
     }
 
-    virtual void setKeyInfo(IPropertyTree &indexInfo)
+    virtual void setKeyInfo(IPropertyTree &indexInfo) override
     {
         StringBuffer x;
         toXML(&indexInfo, x);
@@ -1516,7 +1603,7 @@ class InMemoryIndexCursor : implements IInMemoryIndexCursor, public CInterface
     unsigned keySize;
     bool canMatch;
     bool postFiltering;
-    PtrToOffsetMapper &baseMap;
+    const PtrToOffsetMapper &baseMap;
     const RtlRecord &recInfo;
     RtlDynRow rowinfo;
     unsigned numSegFieldsRequired = 0;
@@ -1816,9 +1903,9 @@ public:
         segment->Release();
     }
 
-    virtual void setMergeBarrier(unsigned)
+    virtual void append(FFoption option, IFieldFilter * filter)
     {
-        // we don't merge segmonitors - nothing to do
+        UNIMPLEMENTED;
     }
 
     virtual unsigned ordinality() const
@@ -2054,14 +2141,14 @@ protected:
         di.load(testarray, sizeof(testarray), &x, 1);
         unsigned searchval = 1;
         InMemoryIndex order;
-        order.append(createSingleKeySegmentMonitor(false, 0, sizeof(unsigned), &searchval));
+        order.append(createSingleKeySegmentMonitor(false, 0, 0, sizeof(unsigned), &searchval));
         di.setBuilding();
         di.resort(order);
         InMemoryIndexManager indexes(false, "test1");
         indexes.append(*LINK(&di));
 
         Owned<IInMemoryIndexCursor> d = indexes.createCursor(dummy);
-        d->append(createSingleKeySegmentMonitor(false, 0, sizeof(unsigned), &searchval));
+        d->append(createSingleKeySegmentMonitor(false, 0, 0, sizeof(unsigned), &searchval));
         d->selectKey();
         d->reset();
         ASSERT(d->nextMatch()==&testarray[0]);
@@ -2070,7 +2157,7 @@ protected:
 
         d.setown(indexes.createCursor(dummy));
         searchval = 10;
-        d->append(createSingleKeySegmentMonitor(false, 0, sizeof(unsigned), &searchval));
+        d->append(createSingleKeySegmentMonitor(false, 0, 0, sizeof(unsigned), &searchval));
         d->selectKey();
         d->reset();
         ASSERT(d->nextMatch()==NULL);
@@ -2078,7 +2165,7 @@ protected:
         d.clear();
         di.deprecate();
 
-        Owned<IPropertyTree> keyInfo = createPTreeFromXMLString("<R><FieldSet><Field isLittleEndian='1' isSigned='0' offset='0' size='4'/><Field isLittleEndian='1' isSigned='1' offset='0' size='4'/></FieldSet></R>");
+        Owned<IPropertyTree> keyInfo = createPTreeFromXMLString("<R><FieldSet><Field isLittleEndian='1' isSigned='0' offset='0' fieldNum='0' size='4'/><Field isLittleEndian='1' isSigned='1' offset='0' fieldNum='0' size='4'/></FieldSet></R>");
         indexes.setKeyInfo(*keyInfo.get());
         Sleep(1000); // to give key time to build!
 
@@ -2088,7 +2175,7 @@ protected:
         set->addRange(&searchval, &searchval);
         searchval = 9;
         set->addRange(&searchval, &searchval);
-        d->append(createKeySegmentMonitor(false, set, 0, sizeof(unsigned)));
+        d->append(createKeySegmentMonitor(false, set, 0, 0, sizeof(unsigned)));
         d->selectKey();
         d->reset();
         ASSERT(*(int *) d->nextMatch()==2);
@@ -2108,19 +2195,19 @@ protected:
         const RtlFieldInfo * const fields [] = {&f1, nullptr};
         RtlRecord dummy(fields, true); // NOTE - not accurate but good enough for these tests
 
-        IKeySegmentMonitor *ksm = createSingleLittleKeySegmentMonitor(false, 8, sizeof(unsigned), &searchval);
+        IKeySegmentMonitor *ksm = createSingleLittleKeySegmentMonitor(false, 2, 8, sizeof(unsigned), &searchval);
         ASSERT(ksm->isSigned()==false);
         ASSERT(ksm->isLittleEndian()==true);
         di.append(ksm);
-        di.append(createSingleKeySegmentMonitor(false, 4, sizeof(unsigned), &searchval));
-        di.append(createSingleKeySegmentMonitor(false, 0, sizeof(unsigned), &searchval));
+        di.append(createSingleKeySegmentMonitor(false, 1, 4, sizeof(unsigned), &searchval));
+        di.append(createSingleKeySegmentMonitor(false, 0, 0, sizeof(unsigned), &searchval));
         di.setBuilding();
         di.undeprecate();
 
         InMemoryIndex di2;
-        di2.append(createSingleKeySegmentMonitor(false, 12, sizeof(unsigned), &searchval));
-        di2.append(createSingleKeySegmentMonitor(false, 16, sizeof(unsigned), &searchval));
-        di2.append(createSingleKeySegmentMonitor(false, 0, sizeof(unsigned), &searchval));
+        di2.append(createSingleKeySegmentMonitor(false, 3, 12, sizeof(unsigned), &searchval));
+        di2.append(createSingleKeySegmentMonitor(false, 4, 16, sizeof(unsigned), &searchval));
+        di2.append(createSingleKeySegmentMonitor(false, 0, 0, sizeof(unsigned), &searchval));
         di2.setBuilding();
         di2.undeprecate();
         
@@ -2131,8 +2218,8 @@ protected:
         Owned<IInMemoryIndexCursor> dd = indexes.createCursor(dummy);
         InMemoryIndexCursor *d = QUERYINTERFACE(dd.get(), InMemoryIndexCursor);
         ASSERT(d != nullptr);
-        dd->append(createSingleKeySegmentMonitor(false, 4, sizeof(unsigned), &searchval));
-        dd->append(createSingleKeySegmentMonitor(false, 8, sizeof(unsigned), &searchval));
+        dd->append(createSingleKeySegmentMonitor(false, 1, 4, sizeof(unsigned), &searchval));
+        dd->append(createSingleKeySegmentMonitor(false, 2, 8, sizeof(unsigned), &searchval));
         ASSERT(d->postFilter.length()==2);
         ASSERT(d->segMonitors.length()==0);
         ASSERT(d->postFilter.item(0).getOffset()==4);
@@ -2146,8 +2233,8 @@ protected:
         dd.setown(indexes.createCursor(dummy));
         d = QUERYINTERFACE(dd.get(), InMemoryIndexCursor);
         ASSERT(d != nullptr);
-        dd->append(createSingleKeySegmentMonitor(false, 16, sizeof(unsigned), &searchval));
-        dd->append(createSingleKeySegmentMonitor(false, 8, sizeof(unsigned), &searchval));
+        dd->append(createSingleKeySegmentMonitor(false, 4, 16, sizeof(unsigned), &searchval));
+        dd->append(createSingleKeySegmentMonitor(false, 2, 8, sizeof(unsigned), &searchval));
         ASSERT(d->postFilter.length()==2);
         ASSERT(d->segMonitors.length()==0);
         ASSERT(d->postFilter.item(0).getOffset()==8);
@@ -2161,9 +2248,9 @@ protected:
         dd.setown(indexes.createCursor(dummy));
         d = QUERYINTERFACE(dd.get(), InMemoryIndexCursor);
         ASSERT(d != nullptr);
-        dd->append(createSingleKeySegmentMonitor(false, 12, sizeof(unsigned), &searchval));
-        dd->append(createSingleKeySegmentMonitor(false, 16, sizeof(unsigned), &searchval));
-        dd->append(createSingleKeySegmentMonitor(false, 8, sizeof(unsigned), &searchval));
+        dd->append(createSingleKeySegmentMonitor(false, 3, 12, sizeof(unsigned), &searchval));
+        dd->append(createSingleKeySegmentMonitor(false, 4, 16, sizeof(unsigned), &searchval));
+        dd->append(createSingleKeySegmentMonitor(false, 2, 8, sizeof(unsigned), &searchval));
         ASSERT(d->postFilter.length()==3);
         ASSERT(d->segMonitors.length()==0);
         ASSERT(d->postFilter.item(0).getOffset()==8);
@@ -2183,48 +2270,48 @@ protected:
 
         SegMonitorArray q;
         unsigned char searchval;
-        q.append(*createSingleKeySegmentMonitor(false, 'p', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'q', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 0, 'p', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 1, 'q', 1, &searchval));
         unsigned i;
         for (i = 0; i < 104; i++)
             stats.noteQuery(q, 0);
 
         q.kill();
-        q.append(*createSingleKeySegmentMonitor(false, 'a', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'b', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'x', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'y', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 0, 'a', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 1, 'b', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 2, 'x', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 3, 'y', 1, &searchval));
         for (i = 0; i < 103; i++)
             stats.noteQuery(q, 0);
 
         q.kill();
-        q.append(*createSingleKeySegmentMonitor(false, 'c', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'd', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'x', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'y', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 0, 'c', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 1, 'd', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 2, 'x', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 3, 'y', 1, &searchval));
         for (i = 0; i < 102; i++)
             stats.noteQuery(q, 0);
 
         q.kill();
-        q.append(*createSingleKeySegmentMonitor(false, 'e', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'f', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'x', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'y', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 0, 'e', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 1, 'f', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 2, 'x', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 3, 'y', 1, &searchval));
         for (i = 0; i < 101; i++)
             stats.noteQuery(q, 0);
 
         q.kill();
-        q.append(*createSingleKeySegmentMonitor(false, 'g', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'h', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'x', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'y', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 0, 'g', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 1, 'h', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 2, 'x', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 3, 'y', 1, &searchval));
         for (i = 0; i < 100; i++)
             stats.noteQuery(q, 0);
 
         q.kill();
-        q.append(*createSingleKeySegmentMonitor(false, 'g', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'x', 1, &searchval));
-        q.append(*createSingleKeySegmentMonitor(false, 'y', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 0, 'g', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 1, 'x', 1, &searchval));
+        q.append(*createSingleKeySegmentMonitor(false, 2, 'y', 1, &searchval));
         for (i = 0; i < 100; i++)
             stats.noteQuery(q, 0);
 

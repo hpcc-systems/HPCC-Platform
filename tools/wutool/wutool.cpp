@@ -237,7 +237,7 @@ static void process(IConstWorkUnit &w, IProperties *globals, const StringArray &
             if (!filter.onlyIncludeScopes())
             {
                 printf("<scope scope='%s' type='%s'>\n", iter->queryScope(), queryScopeTypeName(iter->getScopeType()));
-                iter->playProperties(PTall, dumper);
+                iter->playProperties(dumper);
                 printf("</scope>\n");
             }
             else
@@ -1228,7 +1228,7 @@ protected:
         ret = wu->getRunningGraph(s, subid);
         ASSERT(!ret);
 
-        Owned<IWUGraphStats> progress = wu->updateStats("graph1", SCThthor, queryStatisticsComponentName(), 1);
+        Owned<IWUGraphStats> progress = wu->updateStats("graph1", SCThthor, queryStatisticsComponentName(), 0, 1);
         IStatisticGatherer & stats = progress->queryStatsBuilder();
         {
             StatsSubgraphScope subgraph(stats, 1);
@@ -2175,7 +2175,7 @@ protected:
                 ASSERT(compareScopeName(prevScope.str(), scope) < 0);
             prevScope.set(scope);
 
-            iter->playProperties(PTall, visitor);
+            iter->playProperties(visitor);
         }
     }
 

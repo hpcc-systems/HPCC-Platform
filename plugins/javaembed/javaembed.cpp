@@ -30,7 +30,7 @@
 #include "build-config.h"
 #include "roxiemem.hpp"
 #include "nbcd.hpp"
-#include "thorxmlwrite.hpp"
+#include "rtlformat.hpp"
 #include "esdl_def.hpp"
 
 #ifndef _WIN32

@@ -92,7 +92,6 @@ IAtom * _spill_Atom;
 IAtom * _spillReason_Atom;
 IAtom * _steppedMeta_Atom;
 IAtom * subgraphAtom;
-IAtom * _translated_Atom;
 IAtom * userFunctionAtom;
 IAtom * utf8Atom;
 IAtom * wrapperAtom;
@@ -104,6 +103,7 @@ IIdAtom * acosId;
 IIdAtom * addAggregateRowId;
 IIdAtom * addAllId;
 IIdAtom * addRangeId;
+IIdAtom * addRawRangeId;
 IIdAtom * addWorkunitAssertFailureId;
 IIdAtom * an2bId;
 IIdAtom * an2fId;
@@ -421,6 +421,7 @@ IIdAtom * isResultId;
 IIdAtom * keyUnicodeXId;
 IIdAtom * keyUnicodeStrengthXId;
 IIdAtom * killRangeId;
+IIdAtom * killRawRangeId;
 IIdAtom * l42anId;
 IIdAtom * l42axId;
 IIdAtom * l42vnId;
@@ -755,6 +756,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(addAggregateRow);
     MAKEID(addAll);
     MAKEID(addRange);
+    MAKEID(addRawRange);
     MAKEID(addWorkunitAssertFailure);
     MAKEID(an2b);
     MAKEID(an2f);
@@ -1077,6 +1079,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(keyUnicodeX);
     MAKEID(keyUnicodeStrengthX);
     MAKEID(killRange);
+    MAKEID(killRawRange);
     MAKEID(l42an);
     MAKEID(l42ax);
     MAKEID(l42vn);
@@ -1501,6 +1504,5 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKESYSATOM(spill);
     MAKESYSATOM(spillReason);
     MAKESYSATOM(steppedMeta);
-    MAKESYSATOM(translated);
     return true;
 }

@@ -146,6 +146,7 @@ WorkflowItem::WorkflowItem(IHqlExpression * _function) : wfid(0), function(_func
     assertex(body->getOperator() == no_outofline);
     IHqlExpression * ecl = body->queryChild(0);
     exprs.append(*createValue(no_return_stmt, makeVoidType(), LINK(ecl)));
+    label.append(function->queryId());
 }
 
 IHqlExpression * WorkflowItem::getFunction() const
@@ -1799,7 +1800,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.optimizeSortAllFieldsStrict,"optimizeSortAllFieldsStrict",false),
         DebugOption(options.alwaysReuseGlobalSpills,"alwaysReuseGlobalSpills",true),
         DebugOption(options.forceAllDatasetsParallel,"forceAllDatasetsParallel",false),  // Purely for regression testing.
-        DebugOption(options.embeddedWarningsAsErrors,"embeddedWarningsFatal",true),
+        DebugOption(options.embeddedWarningsAsErrors,"embeddedWarningsAreFatal",true),
         DebugOption(options.optimizeCriticalFunctions,"optimizeCriticalFunctions",true),
         DebugOption(options.addLikelihoodToGraph,"addLikelihoodToGraph", true),
         DebugOption(options.varFieldAccessorThreshold,"varFieldAccessorThreshold",3),   // Generate accessor classes for rows with #variable width fields >= threshold
@@ -1807,6 +1808,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.timeTransforms,"timeTransforms", false),
         DebugOption(options.reportDFSinfo,"reportDFSinfo", 0),
         DebugOption(options.useGlobalCompareClass,"useGlobalCompareClass", false),
+        DebugOption(options.createValueSets,"createValueSets", false),
     };
 
     //get options values from workunit

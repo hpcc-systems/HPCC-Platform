@@ -462,4 +462,10 @@ EXPORT BOOLEAN StartsWith(unicode src, unicode pref, string form) :=
 EXPORT BOOLEAN EndsWith(unicode src, unicode suff, string form) :=
 	lib_unicodelib.UnicodeLib.UnicodeLocaleEndsWith(src, suff, form);
 
+/**
+ * Returns a string containing the version of icu being used to implement the unicode library.
+ */
+
+EXPORT STRING Version() := lib_unicodelib.UnicodeLib.UnicodeVersion();
+
 END;

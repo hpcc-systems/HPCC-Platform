@@ -21,6 +21,7 @@
 #include "eclhelper.hpp"
 #include "rtlds_imp.hpp"
 #include "rtlread_imp.hpp"
+#include "rtlrecord.hpp"
 
 #include "roxiemem.hpp"
 
@@ -960,6 +961,16 @@ extern ECLRTL_API bool rtlDictionaryLookupExistsUnsignedN(size32_t tableSize, co
         if (rowidx==tableSize)
             rowidx = 0;
     }
+}
+
+unsigned CHThorDictHelper::hash(const void * self)
+{
+    return hashFields(rec.fields, (const byte *) self, HASH32_INIT, true);
+}
+
+int CHThorDictHelper::docompare(const void *left, const void *right) const
+{
+    return compareFields(rec.fields, (const byte *) left, (const byte *) right, true);
 }
 
 //---------------------------------------------------------------------------------------------------------------------

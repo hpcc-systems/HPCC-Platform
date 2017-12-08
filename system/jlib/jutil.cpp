@@ -1435,7 +1435,7 @@ void JBASE32_Decode(const char *bi,StringBuffer &out)
 }
 
 
-static void DelimToStringArray(const char *csl, StringArray &dst, const char *delim, bool deldup)
+static void DelimToStringArray(const char *csl, StringArray &dst, const char *delim, bool deldup, bool trimSpaces)
 {
     if (!csl)
         return;
@@ -1449,9 +1449,11 @@ static void DelimToStringArray(const char *csl, StringArray &dst, const char *de
         c = 0;
     StringBuffer str;
     unsigned dstlen=dst.ordinality();
-    for (;;) {
-        while (isspace(*s))
-            s++;
+    for (;;)
+    {
+        if (trimSpaces)
+            while (isspace(*s))
+                s++;
         if (!*s&&(dst.ordinality()==dstlen)) // this check is to allow trailing separators (e.g. ",," is 3 (NULL) entries) but not generate an entry for ""
             break;
         const char *e = s;
@@ -1464,7 +1466,9 @@ static void DelimToStringArray(const char *csl, StringArray &dst, const char *de
                 break;
             e++;
         }
-        str.clear().append((size32_t)(e-s),s).clip();
+        str.clear().append((size32_t)(e-s),s);
+        if (trimSpaces)
+            str.clip();
         if (deldup) {
             const char *s1 = str.str();
             unsigned i;
@@ -1482,14 +1486,14 @@ static void DelimToStringArray(const char *csl, StringArray &dst, const char *de
     }
 }
 
-void StringArray::appendList(const char *list, const char *delim)
+void StringArray::appendList(const char *list, const char *delim, bool trimSpaces)
 {
-    DelimToStringArray(list, *this, delim, false);
+    DelimToStringArray(list, *this, delim, false, trimSpaces);
 }
 
-void StringArray::appendListUniq(const char *list, const char *delim)
+void StringArray::appendListUniq(const char *list, const char *delim, bool trimSpaces)
 {
-    DelimToStringArray(list, *this, delim, true);
+    DelimToStringArray(list, *this, delim, true, trimSpaces);
 }
 
 StringBuffer &StringArray::getString(StringBuffer &ret, const char *delim)
@@ -2690,6 +2694,25 @@ const char * queryCurrentProcessPath()
         return NULL;
     return processPath.str();
 }
+
+bool getPackageFolder(StringBuffer & path)
+{
+    StringBuffer folder;
+    splitDirTail(queryCurrentProcessPath(), folder);
+    removeTrailingPathSepChar(folder);
+    if (folder.length())
+    {
+        StringBuffer foldersFolder;
+        splitDirTail(folder.str(), foldersFolder);
+        if (foldersFolder.length())
+        {
+            path = foldersFolder;
+            return true;
+        }
+    }
+    return false;
+}
+
 
 inline bool isOctChar(char c) 
 { 

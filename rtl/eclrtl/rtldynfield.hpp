@@ -37,7 +37,7 @@ public:
     const RtlTypeInfo *childType = nullptr;
     const RtlFieldInfo * * fieldsArray = nullptr;
 
-    const RtlTypeInfo *createRtlTypeInfo() const;
+    const RtlTypeInfo *createRtlTypeInfo(IThorIndexCallback *_callback) const;
 };
 
 interface ITypeInfo;
@@ -111,17 +111,23 @@ interface IDynamicTransform : public IInterface
 
 extern ECLRTL_API const IDynamicTransform *createRecordTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo);
 
-extern ECLRTL_API IRtlFieldTypeDeserializer *createRtlFieldTypeDeserializer();
+extern ECLRTL_API IRtlFieldTypeDeserializer *createRtlFieldTypeDeserializer(IThorIndexCallback *callback);
 
 extern ECLRTL_API StringBuffer &dumpTypeInfo(StringBuffer &ret, const RtlTypeInfo *t);
 
-extern ECLRTL_API MemoryBuffer &dumpTypeInfo(MemoryBuffer &ret, const RtlTypeInfo *t);
+extern ECLRTL_API bool dumpTypeInfo(MemoryBuffer &ret, const RtlTypeInfo *t);
 
 /**
  * Serialize metadata of supplied record to JSON, and return it to ECL caller as a string. Used for testing serializer.
  *
  */
 extern ECLRTL_API void dumpRecordType(size32_t & __lenResult, char * & __result, IOutputMetaData &  metaVal);
+
+/**
+ * Serialize metadata of supplied record to DATA.
+ *
+ */
+extern ECLRTL_API void serializeRecordType(size32_t & __lenResult, void * & __result, IOutputMetaData &  metaVal);
 
 /**
  * Extract a field from a record via dynamic column number

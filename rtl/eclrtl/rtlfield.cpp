@@ -205,7 +205,7 @@ size32_t RtlTypeInfoBase::deserialize(ARowBuilder & builder, IRowDeserializerSou
     return offset + thisSize;
 }
 
-void RtlTypeInfoBase::readAhead(IRowDeserializerSource & in) const
+void RtlTypeInfoBase::readAhead(IRowPrefetcherSource & in) const
 {
     size32_t thisSize = size(nullptr, nullptr);
     in.skip(thisSize);
@@ -300,6 +300,12 @@ int RtlBoolTypeInfo::compare(const byte * left, const byte * right) const
     return (!leftValue && rightValue) ? -1 : (leftValue && !rightValue) ? +1 : 0;
 }
 
+unsigned RtlBoolTypeInfo::hash(const byte *self, unsigned inhash) const
+{
+    __int64 val = getInt(self);
+    return rtlHash32Data8(&val, inhash);
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 double RtlRealTypeInfo::value(const void * self) const
@@ -379,6 +385,13 @@ int RtlRealTypeInfo::compare(const byte * left, const byte * right) const
     return (leftValue < rightValue) ? -1 : (leftValue > rightValue) ? +1 : 0;
 }
 
+unsigned RtlRealTypeInfo::hash(const byte *self, unsigned inhash) const
+{
+    double val = getReal(self);
+    return rtlHash32Data8(&val, inhash);
+}
+
+
 //-------------------------------------------------------------------------------------------------------------------
 
 size32_t RtlIntTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
@@ -432,7 +445,7 @@ void RtlIntTypeInfo::getString(size32_t & resultLen, char * & result, const void
     if (isUnsigned())
         rtlUInt8ToStrX(resultLen, result,  rtlReadUInt(ptr, length));
     else
-        rtlInt8ToStrX(resultLen, result,  rtlReadInt(ptr, length));
+        rtlInt8ToStrX(resultLen, result, rtlReadInt(ptr, length));
 }
 
 void RtlIntTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
@@ -443,7 +456,7 @@ void RtlIntTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void *
 __int64 RtlIntTypeInfo::getInt(const void * ptr) const
 {
     if (isUnsigned())
-         return rtlReadUInt(ptr, length);
+        return rtlReadUInt(ptr, length);
     else
         return rtlReadInt(ptr, length);
 }
@@ -472,6 +485,22 @@ int RtlIntTypeInfo::compare(const byte * left, const byte * right) const
     }
 }
 
+bool RtlIntTypeInfo::canMemCmp() const
+{
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    return false;
+#else
+    return isUnsigned();
+#endif
+}
+
+unsigned RtlIntTypeInfo::hash(const byte *self, unsigned inhash) const
+{
+    __int64 val = getInt(self);
+    return rtlHash32Data8(&val, inhash);
+}
+
+
 bool RtlIntTypeInfo::canTruncate() const
 {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
@@ -491,6 +520,90 @@ bool RtlIntTypeInfo::canExtend(char &fillChar) const
 #endif
 }
 
+
+//-------------------------------------------------------------------------------------------------------------------
+
+size32_t RtlBlobTypeInfo::getMinSize() const
+{
+    return sizeof(offset_t);
+}
+
+size32_t RtlBlobTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
+{
+    throwUnexpected();  // This is only expected to be used for reading at present
+}
+
+size32_t RtlBlobTypeInfo::buildInt(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, __int64 val) const
+{
+    throwUnexpected();  // This is only expected to be used for reading at present
+}
+
+size32_t RtlBlobTypeInfo::buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const
+{
+    throwUnexpected();  // This is only expected to be used for reading at present
+}
+
+size32_t RtlBlobTypeInfo::buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const
+{
+    throwUnexpected();  // This is only expected to be used for reading at present
+}
+
+size32_t RtlBlobTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
+{
+    assertex(callback);
+    UNIMPLEMENTED;
+}
+
+size32_t RtlBlobTypeInfo::toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const
+{
+    assertex(callback);
+    UNIMPLEMENTED;
+}
+
+void RtlBlobTypeInfo::getString(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    assertex(callback);
+    UNIMPLEMENTED;
+}
+
+void RtlBlobTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    UNIMPLEMENTED;
+}
+
+__int64 RtlBlobTypeInfo::getInt(const void * ptr) const
+{
+    UNIMPLEMENTED;
+}
+
+double RtlBlobTypeInfo::getReal(const void * ptr) const
+{
+    UNIMPLEMENTED;
+}
+
+bool RtlBlobTypeInfo::canTruncate() const
+{
+    return false;
+}
+
+bool RtlBlobTypeInfo::canExtend(char &fillChar) const
+{
+    return false;
+}
+
+void RtlBlobTypeInfo::setCallback(IThorIndexCallback *_callback)
+{
+    callback = _callback;
+}
+
+int RtlBlobTypeInfo::compare(const byte * left, const byte * right) const
+{
+    UNIMPLEMENTED;
+}
+unsigned RtlBlobTypeInfo::hash(const byte *self, unsigned inhash) const
+{
+    UNIMPLEMENTED;
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -567,7 +680,7 @@ double RtlSwapIntTypeInfo::getReal(const void * ptr) const
     if (isUnsigned())
         return (double) rtlReadSwapUInt(ptr, length);
     else
-        return (double) rtlReadSwapInt(ptr, length);
+        return (double) (rtlReadSwapInt(ptr, length));
 }
 
 int RtlSwapIntTypeInfo::compare(const byte * left, const byte * right) const
@@ -586,6 +699,22 @@ int RtlSwapIntTypeInfo::compare(const byte * left, const byte * right) const
     }
 }
 
+bool RtlSwapIntTypeInfo::canMemCmp() const
+{
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    return isUnsigned();
+#else
+    return false;
+#endif
+}
+
+unsigned RtlSwapIntTypeInfo::hash(const byte *self, unsigned inhash) const
+{
+    __int64 val = getInt(self);
+    return rtlHash32Data8(&val, inhash);
+}
+
+
 bool RtlSwapIntTypeInfo::canTruncate() const
 {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
@@ -603,6 +732,120 @@ bool RtlSwapIntTypeInfo::canExtend(char &fillChar) const
     fillChar = 0;
     return true;
 #endif
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+size32_t RtlKeyedIntTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
+{
+    __int64 val = isUnsigned() ? (__int64) source.getUnsignedResult(field) : source.getSignedResult(field);
+    return buildInt(builder, offset, field, val);
+}
+
+size32_t RtlKeyedIntTypeInfo::buildInt(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, __int64 val) const
+{
+    builder.ensureCapacity(length+offset, queryName(field));
+    if (isUnsigned())
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+        rtlWriteSwapInt(builder.getSelf() + offset, val, length);
+#else
+        rtlWriteInt(builder.getSelf() + offset, val, length);
+#endif
+    else
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+        rtlWriteSwapInt(builder.getSelf() + offset, addBias(val, length), length);
+#else
+        rtlWriteInt(builder.getSelf() + offset, addBias(val, length), length);
+#endif
+    offset += length;
+    return offset;
+}
+
+size32_t RtlKeyedIntTypeInfo::buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const
+{
+    return buildInt(builder, offset, field, rtlStrToInt8(size, value));
+}
+
+size32_t RtlKeyedIntTypeInfo::buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const
+{
+    size32_t size = rtlUtf8Length(len, value);
+    return buildInt(builder, offset, field, rtlStrToInt8(size, value));
+}
+
+size32_t RtlKeyedIntTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
+{
+    if (isUnsigned())
+        target.processUInt(getUInt(self), field);
+    else
+        target.processInt(getInt(self), field);
+    return length;
+}
+
+size32_t RtlKeyedIntTypeInfo::toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const
+{
+    if (isUnsigned())
+        target.outputUInt(getUInt(self), length, queryScalarXPath(field));
+    else
+        target.outputInt(getInt(self), length, queryScalarXPath(field));
+    return length;
+}
+
+void RtlKeyedIntTypeInfo::getString(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    if (isUnsigned())
+        rtlUInt8ToStrX(resultLen, result, getUInt(ptr));
+    else
+        rtlInt8ToStrX(resultLen, result, getInt(ptr));
+}
+
+void RtlKeyedIntTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    getString(resultLen, result, ptr);
+}
+
+__int64 RtlKeyedIntTypeInfo::getInt(const void * ptr) const
+{
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    if (isUnsigned())
+        return rtlReadSwapUInt(ptr, length);
+    else
+        return removeBias(rtlReadSwapUInt(ptr, length), length);
+#else
+    if (isUnsigned())
+        return rtlReadUInt(ptr, length);
+    else
+        return removeBias(rtlReadInt(ptr, length), length);
+#endif
+}
+
+double RtlKeyedIntTypeInfo::getReal(const void * ptr) const
+{
+    if (isUnsigned())
+        return (double) getUInt(ptr);
+    else
+        return (double) getInt(ptr);
+}
+
+int RtlKeyedIntTypeInfo::compare(const byte * left, const byte * right) const
+{
+    // The whole point of biased ints is that we can do this:
+    return memcmp(left, right, length);
+}
+
+unsigned RtlKeyedIntTypeInfo::hash(const byte *self, unsigned inhash) const
+{
+    __int64 val = getInt(self);
+    return rtlHash32Data8(&val, inhash);
+}
+
+unsigned __int64 RtlKeyedIntTypeInfo::addBias(__int64 value, unsigned length)
+{
+    return value + ((unsigned __int64)1 << (length*8-1));
+}
+
+__int64 RtlKeyedIntTypeInfo::removeBias(unsigned __int64 value, unsigned length)
+{
+    return value - ((unsigned __int64)1 << (length*8-1));
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -672,7 +915,7 @@ size32_t RtlPackedIntTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializ
     return offset + size;
 }
 
-void RtlPackedIntTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlPackedIntTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     in.skipPackedInt();
 }
@@ -721,6 +964,12 @@ int RtlPackedIntTypeInfo::compare(const byte * left, const byte * right) const
         __int64 rightValue = rtlGetPackedSigned(right);
         return (leftValue < rightValue) ? -1 : (leftValue > rightValue) ? +1 : 0;
     }
+}
+
+unsigned RtlPackedIntTypeInfo::hash(const byte *self, unsigned inhash) const
+{
+    __int64 val = getInt(self);
+    return rtlHash32Data8(&val, inhash);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -893,7 +1142,7 @@ size32_t RtlStringTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerS
     return offset;
 }
 
-void RtlStringTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlStringTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     if (isFixedSize())
     {
@@ -956,10 +1205,14 @@ __int64 RtlStringTypeInfo::getInt(const void * ptr) const
 
 int RtlStringTypeInfo::compare(const byte * left, const byte * right) const
 {
-    if (isEbcdic())
+    if (isFixedSize())
+        return memcmp(left, right, length);
+    else if (isEbcdic())
     {
-        if (isFixedSize())
-            return rtlCompareEStrEStr(length, (const char *)left, length, (const char *)right);
+        // Logically this should be
+        // if (isFixedSize())
+        //    return rtlCompareEStrEStr(length, (const char *)left, length, (const char *)right);
+        // but that's the same as a memcmp if lengths match
 
         size32_t lenLeft = rtlReadSize32t(left);
         size32_t lenRight = rtlReadSize32t(right);
@@ -967,13 +1220,33 @@ int RtlStringTypeInfo::compare(const byte * left, const byte * right) const
     }
     else
     {
-        if (isFixedSize())
-            return rtlCompareStrStr(length, (const char *)left, length, (const char *)right);
+        // Logically this should be
+        // if (isFixedSize())
+        //    return rtlCompareStrStr(length, (const char *)left, length, (const char *)right);  // Actually this is a memcmp
+        // but that's the same as a memcmp if lengths match
 
         size32_t lenLeft = rtlReadSize32t(left);
         size32_t lenRight = rtlReadSize32t(right);
         return rtlCompareStrStr(lenLeft, (const char *)left + sizeof(size32_t), lenRight, (const char *)right + sizeof(size32_t));
     }
+}
+
+bool RtlStringTypeInfo::canMemCmp() const
+{
+    return isFixedSize();
+}
+
+unsigned RtlStringTypeInfo::hash(const byte * self, unsigned inhash) const
+{
+    size32_t len;
+    if (isFixedSize())
+        len = length;
+    else
+    {
+        len = rtlReadSize32t(self);
+        self += sizeof(size32_t);
+    }
+    return rtlHash32Data(rtlTrimStrLen(len, (const char *) self), self, inhash);
 }
 
 bool RtlStringTypeInfo::canExtend(char &fillChar) const
@@ -1097,7 +1370,7 @@ size32_t RtlDataTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSou
     return offset;
 }
 
-void RtlDataTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlDataTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     if (isFixedSize())
     {
@@ -1149,11 +1422,31 @@ __int64 RtlDataTypeInfo::getInt(const void * ptr) const
 int RtlDataTypeInfo::compare(const byte * left, const byte * right) const
 {
     if (isFixedSize())
-        return rtlCompareDataData(length, (const char *)left, length, (const char *)right);
+        // Logically this should be return rtlCompareDataData(length, (const char *)left, length, (const char *)right);
+        // but that acts as a memcmp if lengths match
+        return memcmp(left, right, length);
 
     size32_t lenLeft = rtlReadSize32t(left);
     size32_t lenRight = rtlReadSize32t(right);
     return rtlCompareDataData(lenLeft, (const char *)left + sizeof(size32_t), lenRight, (const char *)right + sizeof(size32_t));
+}
+
+bool RtlDataTypeInfo::canMemCmp() const
+{
+    return isFixedSize();
+}
+
+unsigned RtlDataTypeInfo::hash(const byte *self, unsigned inhash) const
+{
+    size32_t len;
+    if (isFixedSize())
+        len = length;
+    else
+    {
+        len = rtlReadSize32t(self);
+        self += sizeof(size32_t);
+    }
+    return rtlHash32Data(len, self, inhash);
 }
 
 bool RtlDataTypeInfo::canExtend(char &fillChar) const
@@ -1283,7 +1576,7 @@ size32_t RtlVarStringTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializ
         return offset + in.readVStr(builder, offset, 0);
 }
 
-void RtlVarStringTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlVarStringTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     if (isFixedSize())
     {
@@ -1294,7 +1587,6 @@ void RtlVarStringTypeInfo::readAhead(IRowDeserializerSource & in) const
         in.skipVStr();
     }
 }
-
 
 void RtlVarStringTypeInfo::getString(size32_t & resultLen, char * & result, const void * ptr) const
 {
@@ -1324,6 +1616,12 @@ int RtlVarStringTypeInfo::compare(const byte * left, const byte * right) const
     }
     return rtlCompareVStrVStr((const char *)left, (const char *)right);
 }
+
+unsigned RtlVarStringTypeInfo::hash(const byte * self, unsigned inhash) const
+{
+    return rtlHash32VStr((const char *) self, inhash);
+}
+
 
 bool RtlVarStringTypeInfo::canExtend(char &fillChar) const
 {
@@ -1449,7 +1747,7 @@ size32_t RtlQStringTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializer
     return offset;
 }
 
-void RtlQStringTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlQStringTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     if (isFixedSize())
     {
@@ -1495,13 +1793,27 @@ __int64 RtlQStringTypeInfo::getInt(const void * ptr) const
 int RtlQStringTypeInfo::compare(const byte * left, const byte * right) const
 {
     if (isFixedSize())
-        return rtlCompareQStrQStr(length, left, length, right);
+        // Logically this should be return rtlCompareQStrQStr(length, left, length, right);
+        // but that acts as a memcmp if lengths match
+        return memcmp(left, right, length);
 
     size32_t lenLeft = rtlReadSize32t(left);
     size32_t lenRight = rtlReadSize32t(right);
     return rtlCompareQStrQStr(lenLeft, left + sizeof(size32_t), lenRight, right + sizeof(size32_t));
 }
 
+bool RtlQStringTypeInfo::canMemCmp() const
+{
+    return isFixedSize();
+}
+
+unsigned RtlQStringTypeInfo::hash(const byte * self, unsigned inhash) const
+{
+    rtlDataAttr val;
+    unsigned len;
+    getString(len, val.refstr(), self);
+    return rtlHash32Data(rtlTrimStrLen(len, val.getstr()), val.getstr(), inhash);
+}
 
 bool RtlQStringTypeInfo::canExtend(char &fillChar) const
 {
@@ -1649,6 +1961,10 @@ int RtlDecimalTypeInfo::compare(const byte * left, const byte * right) const
         return decCompareDecimal(calcSize(), left, right);
 }
 
+unsigned RtlDecimalTypeInfo::hash(const byte * self, unsigned inhash) const
+{
+    return rtlHash32Data(calcSize(), self, inhash);
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -1716,6 +2032,12 @@ int RtlCharTypeInfo::compare(const byte * left, const byte * right) const
     else
         return rtlCompareStrStr(1, (const char *)left, 1, (const char *)right);
 }
+
+unsigned RtlCharTypeInfo::hash(const byte * self, unsigned inhash) const
+{
+    return rtlHash32Data(1, self, inhash);  // MORE - should we trim?
+}
+
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -1881,7 +2203,7 @@ size32_t RtlUnicodeTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializer
     return offset;
 }
 
-void RtlUnicodeTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlUnicodeTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     if (isFixedSize())
     {
@@ -1946,6 +2268,21 @@ int RtlUnicodeTypeInfo::compare(const byte * left, const byte * right) const
     const UChar * valueRight = reinterpret_cast<const UChar *>(right + sizeof(size32_t));
     return rtlCompareUnicodeUnicode(lenLeft, valueLeft, lenRight, valueRight, locale);
 }
+
+unsigned RtlUnicodeTypeInfo::hash(const byte * self, unsigned inhash) const
+{
+    size32_t len;
+    if (isFixedSize())
+        len = length;
+    else
+    {
+        len = rtlReadSize32t(self);
+        self += sizeof(size32_t);
+    }
+    const UChar * uself = reinterpret_cast<const UChar *>(self);
+    return rtlHash32Unicode(rtlTrimUnicodeStrLen(len, uself), uself, inhash);
+}
+
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -2077,7 +2414,7 @@ size32_t RtlVarUnicodeTypeInfo::deserialize(ARowBuilder & builder, IRowDeseriali
         return offset + in.readVUni(builder, offset, 0);
 }
 
-void RtlVarUnicodeTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlVarUnicodeTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     if (isFixedSize())
     {
@@ -2116,6 +2453,12 @@ int RtlVarUnicodeTypeInfo::compare(const byte * left, const byte * right) const
     size32_t lenLeft = rtlUnicodeStrlen(valueLeft);
     size32_t lenRight = rtlUnicodeStrlen(valueRight);
     return rtlCompareUnicodeUnicode(lenLeft, valueLeft, lenRight, valueRight, locale);
+}
+
+unsigned RtlVarUnicodeTypeInfo::hash(const byte * _self, unsigned inhash) const
+{
+    const UChar * self = reinterpret_cast<const UChar *>(_self);
+    return rtlHash32VUnicode(self, inhash);
 }
 
 
@@ -2199,7 +2542,7 @@ size32_t RtlUtf8TypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSou
     return offset + sizeof(size32_t) + size;
 }
 
-void RtlUtf8TypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlUtf8TypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     assertex(!isFixedSize());
     size32_t thisLength = in.readSize();
@@ -2250,6 +2593,14 @@ int RtlUtf8TypeInfo::compare(const byte * left, const byte * right) const
     const char * valueLeft = reinterpret_cast<const char *>(left) + sizeof(size32_t);
     const char * valueRight = reinterpret_cast<const char *>(right) + sizeof(size32_t);
     return rtlCompareUtf8Utf8(lenLeft, valueLeft, lenRight, valueRight, locale);
+}
+
+unsigned RtlUtf8TypeInfo::hash(const byte * self, unsigned inhash) const
+{
+    assertex(!isFixedSize());
+    size32_t len = rtlReadSize32t(self);
+    const char * uself = reinterpret_cast<const char *>(self + sizeof(size32_t));
+    return rtlHash32Utf8(rtlTrimUtf8StrLen(len, uself), uself,inhash);
 }
 
 
@@ -2328,7 +2679,7 @@ static size32_t deserializeFields(const RtlFieldInfo * const * cur, ARowBuilder 
     return offset;
 }
 
-static void readAheadFields(const RtlFieldInfo * const * cur, IRowDeserializerSource & in)
+static void readAheadFields(const RtlFieldInfo * const * cur, IRowPrefetcherSource & in)
 {
     for (;;)
     {
@@ -2340,14 +2691,14 @@ static void readAheadFields(const RtlFieldInfo * const * cur, IRowDeserializerSo
     }
 }
 
-static int compareFields(const RtlFieldInfo * const * cur, const byte * left, const byte * right)
+int ECLRTL_API compareFields(const RtlFieldInfo * const * cur, const byte * left, const byte * right, bool excludePayload)
 {
     size32_t leftOffset = 0;
     size32_t rightOffset = 0;
     for (;;)
     {
         const RtlFieldInfo * child = *cur;
-        if (!child)
+        if (!child || (excludePayload && (child->flags & RFTMispayloadfield)))
             return 0;
         auto type = child->type;
         int rc = type->compare(left + leftOffset, right + rightOffset);
@@ -2357,6 +2708,44 @@ static int compareFields(const RtlFieldInfo * const * cur, const byte * left, co
         rightOffset += type->size(right + rightOffset, right);
         cur++;
     }
+}
+
+unsigned ECLRTL_API hashFields(const RtlFieldInfo * const * cur, const byte *self, unsigned inhash, bool excludePayload)
+{
+    size32_t offset = 0;
+    for (;;)
+    {
+        const RtlFieldInfo * child = *cur;
+        if (!child || (excludePayload && (child->flags & RFTMispayloadfield)))
+            break;
+        auto type = child->type;
+        inhash = type->hash(self + offset, inhash);
+        offset += type->size(self + offset, self);
+        cur++;
+    }
+    return inhash;
+}
+
+extern bool ECLRTL_API hasTrailingFileposition(const RtlFieldInfo * const * fields)
+{
+    if (!*fields)
+        return false;
+    while (*fields)
+        fields++;
+    return (fields[-1]->type->getType() == type_filepos);  // note - filepos is created as an RtlSwapIntTypeInfo with type set to type_filepos
+}
+
+extern bool ECLRTL_API hasTrailingFileposition(const RtlTypeInfo * type)
+{
+    switch (type->getType())
+    {
+    case type_record:
+    {
+        const RtlRecordTypeInfo * record = static_cast<const RtlRecordTypeInfo *>(type);
+        return hasTrailingFileposition(record->fields);
+    }
+    }
+    return false;
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -2402,7 +2791,7 @@ size32_t RtlRecordTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerS
     return deserializeFields(fields, builder, in, offset);
 }
 
-void RtlRecordTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlRecordTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     //Will not generally be called because it will have been expanded
     return readAheadFields(fields, in);
@@ -2462,6 +2851,12 @@ int RtlRecordTypeInfo::compare(const byte * left, const byte * right) const
 {
     return compareFields(fields, left, right);
 }
+
+unsigned RtlRecordTypeInfo::hash(const byte * self, unsigned inhash) const
+{
+    return hashFields(fields, self, inhash);
+}
+
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -2616,7 +3011,7 @@ size32_t RtlSetTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSour
 }
 
 
-void RtlSetTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlSetTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     in.skip(1);
     size32_t thisLength = in.readSize();
@@ -2662,6 +3057,33 @@ int RtlSetTypeInfo::compare(const byte * left, const byte * right) const
         offLeft += child->size(ptrLeft + offLeft, ptrLeft + offLeft);
         offRight += child->size(ptrRight + offRight, ptrRight + offRight);
     }
+}
+
+unsigned RtlSetTypeInfo::hash(const byte * self, unsigned inhash) const
+{
+    const bool allLeft = *(const bool *) self;
+    self += sizeof(bool);
+    if (allLeft)
+    {
+        // Nothing - this is unfortunate as it means hash(all) and hash([]) are the same...
+        // But it matches generated code
+    }
+    else
+    {
+        size32_t size = rtlReadSize32t(self);
+        self += sizeof(size32_t);
+#if 0
+        // This might be the smart way to hash - since it means that the hash depends on the value, not the type,
+        // and that things that compare equal will hash equal. But that is not what the code generator does
+        for (size32_t offset = 0; offset < size; offset += child->size(self + offset, self + offset))
+        {
+            inhash = child->hash(self + offset, inhash);
+        }
+#else
+        inhash = rtlHash32Data(size, self, inhash);
+#endif
+    }
+    return inhash;
 }
 
 
@@ -2715,7 +3137,7 @@ size32_t RtlRowTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSour
 }
 
 
-void RtlRowTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlRowTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     return child->readAhead(in);
 }
@@ -2737,6 +3159,19 @@ int RtlRowTypeInfo::compare(const byte * left, const byte * right) const
     }
     return child->compare(left, right);
 }
+
+unsigned RtlRowTypeInfo::hash(const byte * self, unsigned inhash) const
+{
+    if (isLinkCounted())
+    {
+        const byte * selfRow = *(const byte * *)self;
+        if (selfRow)
+            inhash = child->hash(selfRow, inhash);
+        return inhash;
+    }
+    return child->hash(self, inhash);
+}
+
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -2910,8 +3345,8 @@ size32_t RtlDatasetTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializer
         }
         else
         {
-            offset_t startOffset = offset + sizeof(size32_t);
-            offset_t nextOffset = startOffset;
+            size32_t startOffset = offset + sizeof(size32_t);
+            size32_t nextOffset = startOffset;
             offset_t endOffset = in.beginNested();
             while (in.finishedNested(endOffset))
                 nextOffset = child->deserialize(builder, in, nextOffset);
@@ -2922,7 +3357,7 @@ size32_t RtlDatasetTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializer
 }
 
 
-void RtlDatasetTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlDatasetTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     size32_t size = in.readSize();
     in.skip(size);
@@ -2983,6 +3418,30 @@ int RtlDatasetTypeInfo::compare(const byte * left, const byte * right) const
     }
 }
 
+unsigned RtlDatasetTypeInfo::hash(const byte * self, unsigned inhash) const
+{
+    if (isLinkCounted())
+    {
+        const size32_t count = rtlReadSize32t(self);
+        self += sizeof(size32_t);
+        const byte * * rows = (const byte * *) self;
+        for (size32_t row = 0; row < count; row++)
+        {
+            inhash = child->hash(rows[row], inhash);
+            row++;
+        }
+    }
+    else
+    {
+        size32_t len = rtlReadSize32t(self);
+        self += sizeof(size32_t);
+        for (size32_t offset = 0; offset < len; offset += child->size(self + offset, self + offset))
+        {
+            inhash = child->hash(self + offset, inhash);
+        }
+    }
+    return inhash;
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -3009,7 +3468,8 @@ size32_t RtlDictionaryTypeInfo::build(ARowBuilder &builder, size32_t offset, con
         size32_t sizeInBytes = sizeof(size32_t) + sizeof(void *);
         builder.ensureCapacity(offset+sizeInBytes, queryName(field));
         Owned<IEngineRowAllocator> childAllocator = builder.queryAllocator()->createChildRowAllocator(child);
-        RtlLinkedDictionaryBuilder dictBuilder(childAllocator, hashInfo);
+        CHThorHashLookupInfo hashInfo(*static_cast<const RtlRecordTypeInfo *>(child));
+        RtlLinkedDictionaryBuilder dictBuilder(childAllocator, &hashInfo);
         RtlFieldStrInfo dummyField("<nested row>", NULL, child);
         while (source.processNextRow(field))
         {
@@ -3113,7 +3573,7 @@ size32_t RtlDictionaryTypeInfo::deserialize(ARowBuilder & builder, IRowDeseriali
     }
 }
 
-void RtlDictionaryTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlDictionaryTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     size32_t size = in.readSize();
     in.skip(size);
@@ -3163,6 +3623,32 @@ int RtlDictionaryTypeInfo::compare(const byte * left, const byte * right) const
     }
 }
 
+unsigned RtlDictionaryTypeInfo::hash(const byte * self, unsigned inhash) const
+{
+    if (isLinkCounted())
+    {
+        const size32_t count = rtlReadSize32t(self);
+        self += sizeof(size32_t);
+        const byte * * rows = (const byte * *) self;
+        size32_t row = 0;
+        for (;;)
+        {
+            //Dictionaries are compared as datasets => skip until the first non-null entry
+            while ((row != count) && !rows[row])
+                row++;
+            if (row == count)
+                break;
+            inhash = child->hash(rows[row], inhash);
+            row++;
+        }
+    }
+    else
+    {
+        //Non LCR dictionaries are not supported.
+        throwUnexpected();
+    }
+    return inhash;
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -3209,9 +3695,10 @@ size32_t RtlIfBlockTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializer
     return offset;
 }
 
-void RtlIfBlockTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlIfBlockTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
-    UNIMPLEMENTED;
+    if (getCondition(in.querySelf()))
+        readAheadFields(fields, in);
 }
 
 
@@ -3249,6 +3736,23 @@ int RtlIfBlockTypeInfo::compare(const byte * left, const byte * right) const
         return -1;
     else
         return 0;
+}
+
+unsigned RtlIfBlockTypeInfo::hash(const byte * self, unsigned inhash) const
+{
+    bool included = getCondition(self);
+    if (included)
+        inhash = hashFields(fields, self, inhash);
+    return inhash;
+}
+
+bool RtlDynamicIfBlockTypeInfo::getCondition(const byte * selfrow) const
+{
+#ifdef _DEBUG
+    // Temporary code to help my testing, until proper implementation available
+    return selfrow[3] != 2;
+#endif
+    UNIMPLEMENTED;
 }
 
 
@@ -3377,6 +3881,11 @@ int RtlBitfieldTypeInfo::compare(const byte * left, const byte * right) const
     }
 }
 
+unsigned RtlBitfieldTypeInfo::hash(const byte * self, unsigned inhash) const
+{
+    __int64 val = getInt(self);
+    return rtlHash32Data8(&val, inhash);
+}
 
 size32_t RtlBitfieldTypeInfo::getSize() const
 {
@@ -3424,7 +3933,7 @@ size32_t RtlUnimplementedTypeInfo::deserialize(ARowBuilder & builder, IRowDeseri
     return offset;
 }
 
-void RtlUnimplementedTypeInfo::readAhead(IRowDeserializerSource & in) const
+void RtlUnimplementedTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
     rtlFailUnexpected();
 }
@@ -3451,6 +3960,96 @@ __int64 RtlUnimplementedTypeInfo::getInt(const void * ptr) const
 }
 
 int RtlUnimplementedTypeInfo::compare(const byte * left, const byte * right) const
+{
+    rtlFailUnexpected();
+}
+
+unsigned RtlUnimplementedTypeInfo::hash(const byte * self, unsigned inhash) const
+{
+    rtlFailUnexpected();
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+size32_t RtlAlienTypeInfo::getMinSize() const
+{
+    rtlFailUnexpected();
+}
+
+size32_t RtlAlienTypeInfo::size(const byte * self, const byte * selfrow) const
+{
+    if (isFixedSize())
+        return length;
+    rtlFailUnexpected();
+}
+
+size32_t RtlAlienTypeInfo::buildInt(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, __int64 val) const
+{
+    rtlFailUnexpected();
+}
+
+size32_t RtlAlienTypeInfo::buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const
+{
+    rtlFailUnexpected();
+}
+
+size32_t RtlAlienTypeInfo::buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const
+{
+    rtlFailUnexpected();
+}
+
+size32_t RtlAlienTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
+{
+    rtlFailUnexpected();
+}
+
+size32_t RtlAlienTypeInfo::toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const
+{
+    rtlFailUnexpected();
+}
+
+size32_t RtlAlienTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerSource & in, size32_t offset) const
+{
+    if (isFixedSize())
+        return RtlCompoundTypeInfo::deserialize(builder, in, offset);
+    rtlFailUnexpected();
+}
+
+void RtlAlienTypeInfo::readAhead(IRowPrefetcherSource & in) const
+{
+    if (isFixedSize())
+        in.skip(length);
+    else
+        rtlFailUnexpected();
+}
+
+
+void RtlAlienTypeInfo::getString(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    resultLen = 0;
+    result = nullptr;
+    rtlFailUnexpected();
+}
+
+void RtlAlienTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
+{
+    resultLen = 0;
+    result = nullptr;
+    rtlFailUnexpected();
+}
+
+__int64 RtlAlienTypeInfo::getInt(const void * ptr) const
+{
+    rtlFailUnexpected();
+    return 0;
+}
+
+int RtlAlienTypeInfo::compare(const byte * left, const byte * right) const
+{
+    rtlFailUnexpected();
+}
+
+unsigned RtlAlienTypeInfo::hash(const byte * self, unsigned inhash) const
 {
     rtlFailUnexpected();
 }

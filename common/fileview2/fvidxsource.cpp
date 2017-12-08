@@ -24,6 +24,8 @@
 #include "fvidxsource.ipp"
 #include "fverror.hpp"
 #include "dasess.hpp"
+#include "rtlrecord.hpp"
+#include "rtldynfield.hpp"
 
 //cloned from hthor - a candidate for commoning up.
 static IKeyIndex *openKeyFile(IDistributedFilePart *keyFile)
@@ -122,7 +124,8 @@ IndexDataSource::IndexDataSource(const char * _logicalName, IHqlExpression * _di
 {
     logicalName.set(_logicalName);
     diskRecord.set(_diskRecord);
-
+    deserializer.setown(createRtlFieldTypeDeserializer(nullptr));
+    diskRecordMeta.setown(new CDynamicOutputMetaData(* static_cast<const RtlRecordTypeInfo *>(queryRtlType(*deserializer.get(), diskRecord))));
     Owned<IUserDescriptor> udesc;
     if(_username != NULL && *_username != '\0')
     {
@@ -139,6 +142,8 @@ IndexDataSource::IndexDataSource(IndexDataSource * _other)
 {
     logicalName.set(_other->logicalName);
     diskRecord.set(_other->diskRecord);
+    deserializer.set(_other->deserializer);
+    diskRecordMeta.set(_other->diskRecordMeta);
     df.set(_other->df);
     original.set(_other);       // stop any work units etc. being unloaded.
     diskMeta.set(_other->diskMeta);     // optimization - would be handled by init anyway
@@ -197,10 +202,7 @@ bool IndexDataSource::init()
         values.append(*set);
     }
 
-    fileposFieldType = diskMeta->queryType(diskMeta->numColumns()-1);
-    assertex(fileposFieldType && fileposFieldType->isInteger());
-
-    //Now gather all the 
+    diskMeta->patchIndexFileposition(); // Now returned as a bigendian field on the end of the row
 
     //Default cursor if no filter is applied
     applyFilter();
@@ -307,26 +309,10 @@ bool IndexDataSource::getNextRow(MemoryBuffer & out, bool extractRow)
                 }
                 else
                 {
-                    unsigned fileposSize = fileposFieldType->getSize();
-    //              unsigned thisSize = manager->queryRecordSize();             // Should be possible - needs a new function to call cursor->getSize()
-                    offset_t filepos;
-                    const byte * thisRow = manager->queryKeyBuffer(filepos);
-                    unsigned thisSize = diskMeta->getRecordSize(thisRow) - fileposSize;
+                    const byte * thisRow = manager->queryKeyBuffer();
+                    unsigned thisSize = diskMeta->getRecordSize(thisRow);
                     void * temp = out.reserve(thisSize);
                     memcpy(temp, thisRow, thisSize);
-
-                    //Append the fileposition, in the correct size/endianness
-                    assertex(sizeof(filepos) >= 8);
-
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-                    void * data = &filepos;
-#else
-                    void * data = (byte *)&filepos + sizeof(filepos) - fileposSize;
-#endif
-                    if (fileposFieldType->isSwappedEndian())
-                        out.appendSwap(fileposSize, data);
-                    else
-                        out.append(fileposSize, data);
                 }
             }
             return true;
@@ -446,12 +432,12 @@ bool IndexDataSource::addFilter(unsigned column, unsigned matchLen, unsigned siz
 
 void IndexDataSource::applyFilter()
 {
-    manager.setown(createLocalKeyManager(tlk, tlk->keySize(), NULL));
+    manager.setown(createLocalKeyManager(diskRecordMeta->queryRecordAccessor(true), tlk, NULL));
     ForEachItemIn(i, values)
     {
         IStringSet & cur = values.item(i);
         bool extend = true; // almost certainly better
-        manager->append(createKeySegmentMonitor(extend, LINK(&cur), keyedOffsets.item(i), fieldSize(i)));
+        manager->append(createKeySegmentMonitor(extend, LINK(&cur), i, keyedOffsets.item(i), fieldSize(i)));
     }
     manager->finishSegmentMonitors();
 
@@ -469,7 +455,7 @@ void IndexDataSource::applyFilter()
         manager->reset();
         while (manager->lookup(false))
         {
-            offset_t node = manager->queryFpos();
+            offset_t node = extractFpos(manager);
             if (node)
                 matchingParts.append((unsigned)(node-1));
         }

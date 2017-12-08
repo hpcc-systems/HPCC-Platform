@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
+
 //noRoxie
 //noHthor
 import Std.System.ThorLib;
@@ -62,12 +65,12 @@ dsdel := NORMALIZE(one_per_node, numrecsdel, generatePseudoRandom(LEFT, counter)
 dsold := dsbase+dsdel;
 dsnew := dsbase+dsadd;
 
-outold := OUTPUT(dsold,,'regress::kd_old_dat',overwrite);
-outnew := OUTPUT(dsnew,,'regress::kd_new_dat',overwrite);
+outold := OUTPUT(dsold,,prefix + 'kd_old_dat',overwrite);
+outnew := OUTPUT(dsnew,,prefix + 'kd_new_dat',overwrite);
 
-oldindex := INDEX(dataset('regress::kd_old_dat',irec ,FLAT), {key,filepos} , {payload}, 'regress::kd_old');
-newindex := INDEX(dataset('regress::kd_new_dat',irec ,FLAT), {key,filepos} , {payload}, 'regress::kd_new');
-patchedindex := INDEX(dataset('regress::kd_new_dat',irec ,FLAT), {key,filepos} , {payload}, 'regress::kd_patched');
+oldindex := INDEX(dataset(prefix + 'kd_old_dat',irec ,FLAT), {key,filepos} , {payload}, prefix + 'kd_old');
+newindex := INDEX(dataset(prefix + 'kd_new_dat',irec ,FLAT), {key,filepos} , {payload}, prefix + 'kd_new');
+patchedindex := INDEX(dataset(prefix + 'kd_new_dat',irec ,FLAT), {key,filepos} , {payload}, prefix + 'kd_patched');
 
 bldold := buildindex(oldindex,overwrite);
 bldnew := buildindex(newindex,overwrite);
@@ -95,8 +98,8 @@ SEQUENTIAL(
   outnew,
   bldold,
   bldnew,
-  KEYDIFF(oldindex, newindex, 'regress::kd_diff', OVERWRITE),
-  KEYPATCH(oldindex, 'regress::kd_diff', 'regress::kd_patched', OVERWRITE),
+  KEYDIFF(oldindex, newindex, prefix + 'kd_diff', OVERWRITE),
+  KEYPATCH(oldindex, prefix + 'kd_diff', prefix + 'kd_patched', OVERWRITE),
   OUTPUT(
     COUNT(
       (PROJECT(newindex,T1(LEFT,COUNTER))-PROJECT(patchedindex,T2(LEFT,COUNTER)))+

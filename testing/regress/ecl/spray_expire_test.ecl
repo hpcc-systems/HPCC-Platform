@@ -16,6 +16,8 @@
 ############################################################################## */
 
 import Std.File AS FileServices;
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
 
 // This is not an engine test, but a DFU.
 // Doesn't matter much which engine does it, so we restrict to only one
@@ -24,6 +26,9 @@ import Std.File AS FileServices;
 //noThorLCR
 //noThor
 
+//class=spray
+
+dropzonePath := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
 
 unsigned VERBOSE := 0;
 
@@ -33,9 +38,9 @@ Layout_Person := RECORD
   BOOLEAN good;
 END;
 
-sprayPrepFileName := '~REGRESS::spray_prep';
-desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input';
-sprayOutFileName := '~REGRESS::spray_test';
+sprayPrepFileName := prefix + 'spray_prep';
+desprayOutFileName := dropzonePath + 'spray_input';
+sprayOutFileName := prefix + 'spray_test';
 
 allPeople := DATASET([ {'foo', 10, 1},
                        {'bar', 12, 0},
@@ -103,7 +108,7 @@ c2 := CATCH(NOFOLD(p2), ONFAIL(TRANSFORM(rec,
 
 
 ClusterName := 'mythor';
-DestFile := '~regress::spray_expire.txt';
+DestFile := prefix + 'spray_expire.txt';
 ESPportIP := 'http://127.0.0.1:8010/FileSpray';
 
 expireDaysOut1 := 9;
@@ -126,8 +131,8 @@ expireDaysOut5 := 17;
 expireDaysIn5 := FileServices.GetLogicalFileAttribute(DestFile, 'expireDays');
 res5:=if(expireDaysIn5 = intformat(expireDaysOut5,2,0), 'Pass', 'Fail ('+intformat(expireDaysOut5,2,0)+','+expireDaysIn5+')');
 
-
 sequential (
+    //output(dropzonePath, NAMED('dropzonePath')),
     // Preparation
     setupCsv,
     setupXml,
@@ -135,7 +140,7 @@ sequential (
     desprayOutXml,
 
     // Spray tests
-      FileServices.SprayVariable(
+    FileServices.SprayVariable(
                         sourceIP := '.',
                         sourcePath := desprayOutFileName+'_CSV',
                         sourceMaxRecordSize :=8192,
@@ -216,3 +221,4 @@ sequential (
     FileServices.DeleteLogicalFile(sprayPrepFileName+'_CSV'),
     FileServices.DeleteLogicalFile(sprayPrepFileName+'_XML'),
 );
+

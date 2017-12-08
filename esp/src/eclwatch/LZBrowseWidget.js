@@ -47,6 +47,7 @@ define([
     "hpcc/TargetComboBoxWidget",
     "hpcc/SelectionGridWidget",
     "hpcc/FilterDropDownWidget",
+    "hpcc/Utility",
 
     "dojo/text!../templates/LZBrowseWidget.html",
 
@@ -73,7 +74,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, domClass, iframe, on, topic,
                 registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 tree, editor, selector,
-                _TabContainerWidget, FileSpray, ESPUtil, ESPRequest, ESPDFUWorkunit, DelayLoadWidget, TargetSelectWidget, TargetComboBoxWidget, SelectionGridWidget, FilterDropDownWidget,
+                _TabContainerWidget, FileSpray, ESPUtil, ESPRequest, ESPDFUWorkunit, DelayLoadWidget, TargetSelectWidget, TargetComboBoxWidget, SelectionGridWidget, FilterDropDownWidget, Utility,
                 template) {
     return declare("LZBrowseWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,
@@ -671,14 +672,14 @@ define([
                             var img = "";
                             var name = _name;
                             if (row.isDir === undefined) {
-                                img = dojoConfig.getImageHTML("server.png");
+                                img = Utility.getImageHTML("server.png");
                                 name += " [" + row.Path + "]";
                             } else if (row.isMachine) {
-                                 img = dojoConfig.getImageHTML("machine.png");
+                                img = Utility.getImageHTML("machine.png");
                             } else if (row.isDir) {
-                                img = dojoConfig.getImageHTML("folder.png");
+                                img = Utility.getImageHTML("folder.png");
                             } else {
-                                img = dojoConfig.getImageHTML("file.png");
+                                img = Utility.getImageHTML("file.png");
                             }
                             return img + "&nbsp;" + name;
                         }

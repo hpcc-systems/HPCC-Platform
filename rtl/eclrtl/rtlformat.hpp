@@ -7,54 +7,6 @@
 #include "eclrtl.hpp"
 #include "eclhelper.hpp"
 
-
-class ECLRTL_API SimpleOutputWriter : implements IXmlWriter, public CInterface
-{
-    void outputFieldSeparator();
-    bool separatorNeeded;
-public:
-    SimpleOutputWriter();
-    IMPLEMENT_IINTERFACE;
-
-    SimpleOutputWriter & clear();
-    unsigned length() const                                 { return out.length(); }
-    const char * str() const                                { return out.str(); }
-
-    virtual void outputQuoted(const char *text);
-    virtual void outputQString(unsigned len, const char *field, const char *fieldname);
-    virtual void outputString(unsigned len, const char *field, const char *fieldname);
-    virtual void outputBool(bool field, const char *fieldname);
-    virtual void outputData(unsigned len, const void *field, const char *fieldname);
-    virtual void outputReal(double field, const char *fieldname);
-    virtual void outputDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname);
-    virtual void outputUDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname);
-    virtual void outputUnicode(unsigned len, const UChar *field, const char *fieldname);
-    virtual void outputUtf8(unsigned len, const char *field, const char *fieldname);
-    virtual void outputBeginNested(const char *fieldname, bool nestChildren);
-    virtual void outputEndNested(const char *fieldname);
-    virtual void outputBeginDataset(const char *dsname, bool nestChildren){}
-    virtual void outputEndDataset(const char *dsname){}
-    virtual void outputBeginArray(const char *fieldname){}
-    virtual void outputEndArray(const char *fieldname){}
-    virtual void outputSetAll();
-    virtual void outputInlineXml(const char *text){} //for appending raw xml content
-    virtual void outputXmlns(const char *name, const char *uri){}
-
-    virtual void outputInt(__int64 field, unsigned size, const char *fieldname);
-    virtual void outputUInt(unsigned __int64 field, unsigned size, const char *fieldname);
-
-    void newline();
-
-protected:
-    StringBuffer out;
-};
-
-
-interface IXmlStreamFlusher
-{
-    virtual void flushXML(StringBuffer &current, bool isClose) = 0;
-};
-
 interface IXmlWriterExt : extends IXmlWriter
 {
     virtual IXmlWriterExt & clear() = 0;
@@ -65,6 +17,59 @@ interface IXmlWriterExt : extends IXmlWriter
     virtual void cutFrom(IInterface *location, StringBuffer& databuf) = 0;
     virtual void outputNumericString(const char *field, const char *fieldname) = 0;
     virtual void outputInline(const char* text) = 0;
+};
+
+class ECLRTL_API SimpleOutputWriter : implements IXmlWriterExt, public CInterface
+{
+    void outputFieldSeparator();
+    bool separatorNeeded;
+public:
+    SimpleOutputWriter();
+    IMPLEMENT_IINTERFACE;
+
+    virtual SimpleOutputWriter & clear() override;
+    virtual size32_t length() const override                { return out.length(); }
+    virtual const char * str() const override               { return out.str(); }
+
+    virtual void outputQuoted(const char *text) override;
+    virtual void outputQString(unsigned len, const char *field, const char *fieldname) override;
+    virtual void outputString(unsigned len, const char *field, const char *fieldname) override;
+    virtual void outputBool(bool field, const char *fieldname) override;
+    virtual void outputData(unsigned len, const void *field, const char *fieldname) override;
+    virtual void outputReal(double field, const char *fieldname) override;
+    virtual void outputDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname) override;
+    virtual void outputUDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname) override;
+    virtual void outputUnicode(unsigned len, const UChar *field, const char *fieldname) override;
+    virtual void outputUtf8(unsigned len, const char *field, const char *fieldname) override;
+    virtual void outputBeginNested(const char *fieldname, bool nestChildren) override;
+    virtual void outputEndNested(const char *fieldname) override;
+    virtual void outputBeginDataset(const char *dsname, bool nestChildren) override {}
+    virtual void outputEndDataset(const char *dsname) override {}
+    virtual void outputBeginArray(const char *fieldname) override {}
+    virtual void outputEndArray(const char *fieldname) override {}
+    virtual void outputSetAll() override;
+    virtual void outputInlineXml(const char *text) override {} //for appending raw xml content
+    virtual void outputXmlns(const char *name, const char *uri) override {}
+
+    virtual void outputInt(__int64 field, unsigned size, const char *fieldname) override;
+    virtual void outputUInt(unsigned __int64 field, unsigned size, const char *fieldname) override;
+
+    void newline();
+
+    virtual IInterface *saveLocation() const override { UNIMPLEMENTED; }
+    virtual void rewindTo(IInterface *location) override { UNIMPLEMENTED; }
+    virtual void cutFrom(IInterface *location, StringBuffer& databuf) override { UNIMPLEMENTED; }
+    virtual void outputNumericString(const char *field, const char *fieldname) override { UNIMPLEMENTED; }
+    virtual void outputInline(const char* text) override { UNIMPLEMENTED; }
+
+protected:
+    StringBuffer out;
+};
+
+
+interface IXmlStreamFlusher
+{
+    virtual void flushXML(StringBuffer &current, bool isClose) = 0;
 };
 
 class ECLRTL_API CommonXmlPosition : public CInterface, implements IInterface

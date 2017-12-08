@@ -150,6 +150,7 @@ public:
     inline KeyHdr *getHdrStruct() { return &hdr; }
     inline static size32_t getSize() { return sizeof(KeyHdr); }
     inline unsigned getNodeSize() { return hdr.nodeSize; }
+    inline bool hasSpecialFileposition() const { return true; }
 };
 
 class jhtree_decl CNodeBase : public CInterface

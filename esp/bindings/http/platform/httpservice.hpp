@@ -69,7 +69,7 @@ protected:
 
     bool m_viewConfig;
     int m_MaxRequestEntityLength;
-    int lastSessionCleanUpTime = 0;
+    time_t lastSessionCleanUpTime = 0;
 
     int unsupported();
     EspHttpBinding* getBinding();
@@ -78,12 +78,12 @@ protected:
     EspAuthState preCheckAuth(EspAuthRequest& authReq);
     EspAuthState checkUserAuthPerRequest(EspAuthRequest& authReq);
     EspAuthState checkUserAuthPerSession(EspAuthRequest& authReq);
-    EspAuthState authNewSession(EspAuthRequest& authReq, const char* _userName, const char* _password, const char* sessionStartURL);
+    EspAuthState authNewSession(EspAuthRequest& authReq, const char* _userName, const char* _password, const char* sessionStartURL, bool unlock);
     EspAuthState authExistingSession(EspAuthRequest& req, unsigned sessionID);
-    void logoutSession(EspAuthRequest& authReq, unsigned sessionID, IPropertyTree* domainSessions);
+    void logoutSession(EspAuthRequest& authReq, unsigned sessionID, IPropertyTree* domainSessions, bool lock);
     void askUserLogin(EspAuthRequest& authReq);
-    void handleUserNameOnlyMode(EspAuthRequest& authReq);
-    EspAuthState handleAuthFailed(bool sessionAuth, EspAuthRequest& authReq);
+    EspAuthState handleUserNameOnlyMode(EspAuthRequest& authReq);
+    EspAuthState handleAuthFailed(bool sessionAuth, EspAuthRequest& authReq, bool unlock);
     EspHttpBinding* getEspHttpBinding(EspAuthRequest& req);
     bool isAuthRequiredForBinding(EspAuthRequest& req);
     void authOptionalGroups(EspAuthRequest& req);

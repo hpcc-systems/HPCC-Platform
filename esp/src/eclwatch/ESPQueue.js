@@ -24,10 +24,11 @@ define([
     "hpcc/ESPUtil",
     "hpcc/ESPRequest",
     "hpcc/ESPWorkunit",
-    "hpcc/ESPDFUWorkunit"
+    "hpcc/ESPDFUWorkunit",
+    "hpcc/Utility"
 
 ], function (declare, arrayUtil, lang, Memory, Observable,
-    WsSMC, ESPUtil, ESPRequest, ESPWorkunit, ESPDFUWorkunit) {
+    WsSMC, ESPUtil, ESPRequest, ESPWorkunit, ESPDFUWorkunit, Utility) {
 
     var Store = declare([Memory], {
         idProperty: "__hpcc_id"
@@ -272,7 +273,7 @@ define([
         },
 
         getStateImage: function () {
-            return dojoConfig.getImageURL(this.getStateImageName());
+            return Utility.getImageURL(this.getStateImageName());
         }
     });
 
@@ -346,7 +347,7 @@ define([
         },
 
         getStateImage: function () {
-            return dojoConfig.getImageURL(this.getStateImageName());
+            return Utility.getImageURL(this.getStateImageName());
         }
 
     });

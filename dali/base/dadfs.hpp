@@ -380,7 +380,7 @@ interface IDistributedFile: extends IInterface
 
     virtual bool getFormatCrc(unsigned &crc) =0;   // CRC for record format
     virtual bool getRecordSize(size32_t &rsz) =0;
-    virtual bool getRecordLayout(MemoryBuffer &layout) =0;
+    virtual bool getRecordLayout(MemoryBuffer &layout, const char *attrname) =0;
 
 
     virtual void enqueueReplicate()=0;

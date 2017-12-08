@@ -58,8 +58,8 @@ interface IWuWebView : extends IInterface
 
 };
 
-extern WUWEBVIEW_API IWuWebView *createWuWebView(IConstWorkUnit &wu, const char *target, const char *queryname, const char*dir, bool mapEspDir);
-extern WUWEBVIEW_API IWuWebView *createWuWebView(const char *wuid, const char *target, const char *queryname, const char*dir, bool mapEspDir);
+extern WUWEBVIEW_API IWuWebView *createWuWebView(IConstWorkUnit &wu, const char *target, const char *queryname, const char*dir, bool mapEspDir, IPropertyTree *xsltcfg);
+extern WUWEBVIEW_API IWuWebView *createWuWebView(const char *wuid, const char *target, const char *queryname, const char*dir, bool mapEspDir, IPropertyTree *xsltcfg);
 
 extern WUWEBVIEW_API void getWuResourceUrlListByPath(const char *path, StringBuffer &fmt, StringBuffer &content, const char *prefix);
 extern WUWEBVIEW_API void getWuManifestByPath(const char *path, StringBuffer &mf);

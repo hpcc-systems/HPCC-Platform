@@ -722,9 +722,7 @@ void EclGraphElement::updateProgress(IStatisticGatherer &progress)
         return;
     }
     if(isSink && activity)
-    {
         activity->updateProgress(progress);
-    }
 }
 
 IHThorException * EclGraphElement::makeWrappedException(IException * e)
@@ -735,7 +733,7 @@ IHThorException * EclGraphElement::makeWrappedException(IException * e)
 //---------------------------------------------------------------------------
 
 EclSubGraph::EclSubGraph(IAgentContext & _agent, EclGraph & _parent, EclSubGraph * _owner, unsigned _seqNo, bool enableProbe, CHThorDebugContext * _debugContext, IProbeManager * _probeManager)
-    : parent(_parent), owner(_owner), seqNo(_seqNo), probeEnabled(enableProbe), debugContext(_debugContext), probeManager(_probeManager)
+    : parent(_parent), owner(_owner), seqNo(_seqNo), probeEnabled(enableProbe), debugContext(_debugContext), probeManager(_probeManager), isLoopBody(false)
 {
     executed = false;
     created = false;
@@ -760,10 +758,10 @@ void EclSubGraph::createFromXGMML(EclGraph * graph, ILoadedDllEntry * dll, IProp
     bool multiInstance = node->getPropBool("@multiInstance");
     if (multiInstance)
         agent = &subgraphAgentContext;
-
     isSink = xgmml->getPropBool("att[@name=\"rootGraph\"]/@value", false);
     parentActivityId = node->getPropInt("att[@name=\"_parentActivity\"]/@value", 0);
     numResults = xgmml->getPropInt("att[@name=\"_numResults\"]/@value", 0);
+    isLoopBody = xgmml->getPropBool("@loopBody",false);
     if (multiInstance || numResults)
     {
         localResults.setown(new GraphResults(numResults));
@@ -853,15 +851,34 @@ void EclSubGraph::updateProgress()
 {
     if (!isChildGraph && agent->queryRemoteWorkunit())
     {
-        Owned<IWUGraphStats> progress = parent.updateStats(queryStatisticsComponentType(), queryStatisticsComponentName(), id);
+        Owned<IWUGraphStats> progress = parent.updateStats(queryStatisticsComponentType(), queryStatisticsComponentName(), agent->getWorkflowId(), id);
         IStatisticGatherer & stats = progress->queryStatsBuilder();
         updateProgress(stats);
+
+        if (startGraphTime || elapsedGraphCycles)
+        {
+            WorkunitUpdate lockedwu(agent->updateWorkUnit());
+            StringBuffer subgraphid;
+            subgraphid.append(parent.queryGraphName()).append(":").append(SubGraphScopePrefix).append(id);
+            if (startGraphTime)
+                parent.updateWUStatistic(lockedwu, SSTsubgraph, subgraphid, StWhenStarted, nullptr, startGraphTime);
+            if (elapsedGraphCycles)
+                parent.updateWUStatistic(lockedwu, SSTsubgraph, subgraphid, StTimeElapsed, nullptr, cycle_to_nanosec(elapsedGraphCycles));
+        }
     }
 }
 
 void EclSubGraph::updateProgress(IStatisticGatherer &progress)
 {
-    StatsSubgraphScope subgraph(progress, id);
+    OwnedPtr<StatsScopeBlock> subGraph;
+    OwnedPtr<StatsScopeBlock> activityScope;
+    if ((isChildGraph || isLoopBody) && owner && parentActivityId != owner->parentActivityId)
+    {
+        activityScope.setown(new StatsActivityScope(progress, parentActivityId));
+        subGraph.setown(new StatsChildGraphScope(progress, id));
+    }
+    else
+        subGraph.setown(new StatsSubgraphScope(progress, id));
     if (startGraphTime)
         progress.addStatistic(StWhenStarted, startGraphTime);
     if (elapsedGraphCycles)
@@ -1172,7 +1189,7 @@ void EclGraph::execute(const byte * parentExtract)
 
     {
         Owned<IWorkUnit> wu(agent->updateWorkUnit());
-        addTimeStamp(wu, SSTgraph, queryGraphName(), StWhenStarted);
+        addTimeStamp(wu, SSTgraph, queryGraphName(), StWhenStarted, agent->getWorkflowId());
     }
 
     try
@@ -1263,7 +1280,7 @@ void EclGraph::updateLibraryProgress()
     ForEachItemIn(idx, graphs)
     {
         EclSubGraph & cur = graphs.item(idx);
-        Owned<IWUGraphStats> progress = wu->updateStats(queryGraphName(), queryStatisticsComponentType(), queryStatisticsComponentName(), cur.id);
+        Owned<IWUGraphStats> progress = wu->updateStats(queryGraphName(), queryStatisticsComponentType(), queryStatisticsComponentName(), agent->getWorkflowId(), cur.id);
         cur.updateProgress(progress->queryStatsBuilder());
     }
 }
@@ -1404,9 +1421,14 @@ void GraphResults::setResult(unsigned id, IHThorGraphResult * result)
 
 //---------------------------------------------------------------------------
 
-IWUGraphStats *EclGraph::updateStats(StatisticCreatorType creatorType, const char * creator, unsigned subgraph)
+IWUGraphStats *EclGraph::updateStats(StatisticCreatorType creatorType, const char * creator, unsigned wfid, unsigned subgraph)
 {
-    return wu->updateStats (queryGraphName(), creatorType, creator, subgraph);
+    return wu->updateStats (queryGraphName(), creatorType, creator, wfid, subgraph);
+}
+
+void EclGraph::updateWUStatistic(IWorkUnit *lockedwu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * descr, unsigned __int64 value)
+{
+    updateWorkunitTimeStat(lockedwu, scopeType, scope, kind, descr, value, agent->getWorkflowId());
 }
 
 IThorChildGraph * EclGraph::resolveChildQuery(unsigned subgraphId)

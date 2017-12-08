@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+import $;
+Files := $.Files(false, false);
+
 countryRecord := RECORD
     string country;
     integer4 population;
@@ -30,10 +33,10 @@ ds2 := DATASET([{'Spain', 40397842},
                 {'Switzerland', 7523934},
                 {'United Kingdom', 60609153}], countryRecord);
 
-pds1 := ds1:PERSIST('~REGRESS::PersistRefresh', SINGLE, REFRESH(true));
+pds1 := ds1:PERSIST(Files.FilePrefix + 'PersistRefresh', SINGLE, REFRESH(true));
 output(pds1);
 
-pds2 := ds2:PERSIST('~REGRESS::PersistNoRefresh', SINGLE, REFRESH(true));
+pds2 := ds2:PERSIST(Files.FilePrefix + 'PersistNoRefresh', SINGLE, REFRESH(true));
 output(pds2);
 
 

@@ -47,7 +47,7 @@ results :=
         string tree := 'Tree: '+parseLib.getParseTree();
     end;
 
-outfile1 := PARSE(d,line,progeny,results,scan all);// : persist('kjv::relationships');
+outfile1 := PARSE(d,line,progeny,results,scan all);
 
 count(outfile1);
 output(choosen(outfile1,1000));

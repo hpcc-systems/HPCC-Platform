@@ -907,6 +907,12 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
                     <WorkunitTimeout><xsl:value-of select="@workunitTimeout"/></WorkunitTimeout>
                 </xsl:if>
                 <WorkunitTimeout><xsl:value-of select="@workunitTimeout"/></WorkunitTimeout>
+                <xsl:if test="string(@xsltMaxDepth)!=''">
+                    <xsltMaxDepth><xsl:value-of select="@xsltMaxDepth"/></xsltMaxDepth>
+                </xsl:if>
+                <xsl:if test="string(@xsltMaxVars)!=''">
+                    <xsltMaxVars><xsl:value-of select="@xsltMaxVars"/></xsltMaxVars>
+                </xsl:if>
                 <VIPS>
                     <xsl:for-each select="ProcessCluster">
                         <xsl:if test="string(@roxie) != '' and string(@vip) != ''">

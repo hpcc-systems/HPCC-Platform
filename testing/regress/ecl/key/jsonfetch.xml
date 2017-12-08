@@ -1,4 +1,3 @@
-<Warning><Code>4523</Code><Filename>jsonfetch.ecl</Filename><Line>74</Line><Source>eclcc</Source><Message>Neither LIMIT() nor CHOOSEN() supplied for index read on  'REGRESS::TEMP::jsonfetch.json.index'</Message></Warning>
 <Dataset name='Result 1'>
 </Dataset>
 <Dataset name='Result 2'>

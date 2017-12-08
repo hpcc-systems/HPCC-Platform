@@ -16,6 +16,8 @@
 ############################################################################## */
 
 import Std.File AS FileServices;
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
 
 // This is not an engine test, but a DFU.
 // Doesn't matter much which engine does it, so we restrict to only one
@@ -35,6 +37,8 @@ import ^ as root;
 boolean sprayFixed := #IFDEFINED(root.sprayFixed, true);
 boolean sprayEmpty := #IFDEFINED(root.sprayEmpty, false);
 
+dropzonePath := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
+
 unsigned VERBOSE := 0;
 
 Layout_Person := RECORD
@@ -51,26 +55,26 @@ allPeople := DATASET([ {'foo', 10, 1},
             ,Layout_Person);
 
 #if (sprayFixed)
-    sprayPrepFileName := '~REGRESS::spray_prep_fixed';
-    desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input_fixed';
-    sprayOutFileName := '~REGRESS::spray_test_fixed';
+    sprayPrepFileName := prefix + 'spray_prep_fixed';
+    desprayOutFileName := dropzonePath + 'spray_input_fixed';
+    sprayOutFileName := prefix + 'spray_test_fixed';
     dsSetup := allPeople;
 #else
     #if (sprayEmpty)
-        sprayPrepFileName := '~REGRESS::spray_prep_empty';
-        desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input_empty';
-        sprayOutFileName := '~REGRESS::spray_test_empty';
+        sprayPrepFileName := prefix + 'spray_prep_empty';
+        desprayOutFileName := dropzonePath + 'spray_input_empty';
+        sprayOutFileName := prefix + 'spray_test_empty';
         dsSetup := empty;
     #else
-        sprayPrepFileName := '~REGRESS::spray_prep';
-        desprayOutFileName := '/var/lib/HPCCSystems/mydropzone/spray_input';
-        sprayOutFileName := '~REGRESS::spray_test';
+        sprayPrepFileName := prefix + 'spray_prep';
+        desprayOutFileName := dropzonePath + 'spray_input';
+        sprayOutFileName := prefix + 'spray_test';
         dsSetup := allPeople;
     #end
 #end
 
 //  Create a small logical file
-setup := output(dsSetup, , sprayPrepFileName, CSV, OVERWRITE);
+setupFile := output(dsSetup, , sprayPrepFileName, CSV, OVERWRITE);
 
 rec := RECORD
   string result;
@@ -156,7 +160,7 @@ END;
 
 
 SEQUENTIAL(
-  setup,
+  setupFile,
   desprayOut,
   sprayOut,
   output(compareDatasets(dsSetup,ds))

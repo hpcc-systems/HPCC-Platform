@@ -562,13 +562,13 @@ define([
                     }),
                     IsProtected: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("locked.png", context.i18n.Protected);
+                            node.innerHTML = Utility.getImageHTML("locked.png", context.i18n.Protected);
                         },
                         width: 25,
                         sortable: false,
                         formatter: function (_protected) {
                             if (_protected === true) {
-                                return dojoConfig.getImageHTML("locked.png");
+                                return Utility.getImageHTML("locked.png");
                             }
                             return "";
                         }
@@ -576,11 +576,11 @@ define([
                     IsCompressed: {
                         width: 25, sortable: false,
                         renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("compressed.png", context.i18n.Compressed);
+                            node.innerHTML = Utility.getImageHTML("compressed.png", context.i18n.Compressed);
                         },
                         formatter: function (compressed) {
                             if (compressed === true) {
-                                return dojoConfig.getImageHTML("compressed.png");
+                                return Utility.getImageHTML("compressed.png");
                             }
                             return "";
                         }
@@ -588,11 +588,11 @@ define([
                     IsKeyFile: {
                         width: 25, sortable: false,
                         renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("index.png", context.i18n.Index);
+                            node.innerHTML = Utility.getImageHTML("index.png", context.i18n.Index);
                         },
                         formatter: function (keyfile, row) {
                             if (row.ContentType === "key") {
-                                return dojoConfig.getImageHTML("index.png");
+                                return Utility.getImageHTML("index.png");
                             }
                             return "";
                         }

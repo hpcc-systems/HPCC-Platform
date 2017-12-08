@@ -184,10 +184,8 @@ WsWUExceptions::WsWUExceptions(IConstWorkUnit& wu): numerr(0), numwrn(0), numinf
 
 void getSashaNode(SocketEndpoint &ep)
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (!env)
-        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO,"Cannot get environment information.");
     Owned<IPropertyTree> root = &env->getPTree();
     IPropertyTree *pt = root->queryPropTree("Software/SashaServerProcess[1]/Instance[1]");
     if (!pt)
@@ -423,7 +421,7 @@ void WsWuInfo::doGetTimers(IArrayOf<IEspECLTimer>& timers)
     WuScopeFilter filter(timerFilterText);
     Owned<IConstWUScopeIterator> it = &cw->getScopeIterator(filter);
     ForEach(*it)
-        it->playProperties(PTstatistics, visitor);
+        it->playProperties(visitor);
 
     visitor.addSummary();
 }
@@ -474,7 +472,7 @@ unsigned WsWuInfo::getTimerCount()
         WuScopeFilter filter(timerFilterText);
         Owned<IConstWUScopeIterator> it = &cw->getScopeIterator(filter);
         ForEach(*it)
-            it->playProperties(PTstatistics, visitor);
+            it->playProperties(visitor);
     }
     catch(IException* e)
     {
@@ -788,7 +786,7 @@ void WsWuInfo::doGetGraphs(IArrayOf<IEspECLGraph>& graphs)
 
 void WsWuInfo::getGraphInfo(IEspECLWorkunit &info, unsigned long flags)
 {
-     if (version > 1.01)
+     if ((version > 1.01) && (version < 1.71))
      {
         info.setHaveSubGraphTimings(false);
 
@@ -867,7 +865,7 @@ void WsWuInfo::getGraphTimingData(IArrayOf<IConstECLTimingData> &timingData)
     WuScopeFilter filter("stype[subgraph],stat[TimeElapsed],nested[0]");
     Owned<IConstWUScopeIterator> it = &cw->getScopeIterator(filter);
     ForEach(*it)
-        it->playProperties(PTstatistics, visitor);
+        it->playProperties(visitor);
 }
 
 
@@ -1156,7 +1154,7 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
         }
 
         StringBuffer logDir;
-        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IPropertyTree> logTree = &constEnv->getPTree();
         if (logTree)
@@ -1247,11 +1245,9 @@ bool WsWuInfo::getClusterInfo(IEspECLWorkunit &info, unsigned long flags)
     {
         int clusterTypeFlag = 0;
 
-        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IPropertyTree> root = &constEnv->getPTree();
-        if (!root)
-            throw MakeStringException(ECLWATCH_CANNOT_CONNECT_DALI,"Cannot connect to DALI server.");
 
         Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName.str());
         if (clusterInfo.get())
@@ -1639,7 +1635,7 @@ void WsWuInfo::getStats(const WuScopeFilter & filter, const StatisticsFilter& st
     FilteredStatisticsVisitor visitor(*this, createDescriptions, statistics, statsFilter);
     Owned<IConstWUScopeIterator> it = &cw->getScopeIterator(filter);
     ForEach(*it)
-        it->playProperties(PTstatistics, visitor);
+        it->playProperties(visitor);
 }
 
 bool WsWuInfo::getFileSize(const char* fileName, const char* IPAddress, offset_t& fileSize)
@@ -1789,7 +1785,7 @@ bool WsWuInfo::getResourceInfo(StringArray &viewnames, StringArray &urls, unsign
         return true;
     try
     {
-        Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false);
+        Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false, nullptr);
         if (wv)
         {
             if (flags & WUINFO_IncludeResultsViewNames)
@@ -1813,7 +1809,7 @@ unsigned WsWuInfo::getResourceURLCount()
 {
     try
     {
-        Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false);
+        Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false, nullptr);
         if (wv)
             return wv->getResourceURLCount();
     }
@@ -2102,7 +2098,7 @@ void WsWuInfo::getWorkunitResTxt(MemoryBuffer& buf)
 
 IConstWUQuery* WsWuInfo::getEmbeddedQuery()
 {
-    Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false);
+    Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false, nullptr);
     if (wv)
         return wv->getEmbeddedQuery();
 
@@ -3106,8 +3102,11 @@ void WsWuHelpers::submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, con
             IConstNamedValue &item = debugs->item(i);
             const char *name = item.getName();
             const char *value = item.getValue();
-            if (!name || !*name || *name=='-')
+            if (!name || !*name)
                 continue;
+            StringBuffer expanded;
+            if (*name=='-')
+                name=expanded.append("eclcc").append(name).str();
             if (!value)
             {
                 size_t len = strlen(name);

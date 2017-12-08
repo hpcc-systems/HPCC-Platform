@@ -49,12 +49,11 @@ static const char * skipws(const char * str)
 
 class CDummyScopeIterator : public IIterator, public CInterface
 {
-    IXmlScope *parent;
+    Linked<IXmlScope> parent;
 public:
     IMPLEMENT_IINTERFACE;
-    CDummyScopeIterator(IXmlScope *_parent)
+    CDummyScopeIterator(IXmlScope *_parent) : parent(_parent)
     {
-        parent = _parent;
     }
     ~CDummyScopeIterator ()
     {
@@ -1686,9 +1685,8 @@ void HqlLex::checkNextLoop(const YYSTYPE & errpos, bool first, int startLine, in
 #ifdef TIMING_DEBUG
             MTIME_SECTION(timer, "HqlLex::checkNextLoopcond");
 #endif
-            IValue *value = parseConstExpression(errpos, forFilter, subscope,startLine,startCol);
+            Owned<IValue> value = parseConstExpression(errpos, forFilter, subscope,startLine,startCol);
             filtered = !value || !value->getBoolValue();
-            ::Release(value);
         }
         else
             filtered = false;
@@ -2079,58 +2077,6 @@ static StringBuffer& mangle(IErrorReceiver* errReceiver,const char* src, StringB
     mangled.append('\'');
 
     return mangled;
-}
-
-bool HqlLex::checkUnicodeLiteral(char const * str, unsigned length, unsigned & ep, StringBuffer & msg)
-{
-    unsigned i;
-    for(i = 0; i < length; i++)
-    {
-        if (str[i] == '\\')
-        {
-            unsigned char next = str[++i];
-            if (next == '\'' || next == '\\' || next == 'n' || next == 'r' || next == 't' || next == 'a' || next == 'b' || next == 'f' || next == 'v' || next == '?' || next == '"')
-            {
-                continue;
-            }
-            else if (isdigit(next) && next < '8')
-            {
-                unsigned count;
-                for(count = 1; count < 3; count++)
-                {
-                    next = str[++i];
-                    if(!isdigit(next) || next >= '8')
-                    {
-                        msg.append("3-digit numeric escape sequence contained non-octal digit: ").append(next);
-                        ep = i;
-                        return false;
-                    }
-                }
-            }
-            else if (next == 'u' || next == 'U')
-            {
-                unsigned count;
-                unsigned max = (next == 'u') ? 4 : 8;
-                for(count = 0; count < max; count++)
-                {
-                    next = str[++i];
-                    if(!isdigit(next) && (!isalpha(next) || tolower(next) > 'f'))
-                    {
-                        msg.append((max == 4) ? '4' : '8').append("-digit unicode escape sequence contained non-hex digit: ").append(next);
-                        ep = i;
-                        return false;
-                    }
-                }
-            }
-            else
-            {
-                msg.append("Unrecognized escape sequence: ").append("\\").append(next);
-                ep = i;
-                return false;
-            }
-        }
-    }
-    return true;
 }
 
 int HqlLex::processStringLiteral(YYSTYPE & returnToken, char *CUR_TOKEN_TEXT, unsigned CUR_TOKEN_LENGTH, int oldColumn, int oldPosition)

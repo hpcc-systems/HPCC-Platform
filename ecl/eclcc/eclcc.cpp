@@ -163,24 +163,6 @@ static bool extractOption(StringAttr & option, IProperties * globals, const char
     return ret;
 }
 
-static bool getPackageFolder(StringBuffer & path)
-{
-    StringBuffer folder;
-    splitDirTail(queryCurrentProcessPath(), folder);
-    removeTrailingPathSepChar(folder);
-    if (folder.length())
-    {
-        StringBuffer foldersFolder;
-        splitDirTail(folder.str(), foldersFolder);
-        if (foldersFolder.length())
-        {
-            path = foldersFolder;
-            return true;
-        }
-    }
-    return false;
-}
-
 static bool getHomeFolder(StringBuffer & homepath)
 {
     if (!getHomeDir(homepath))
@@ -1722,7 +1704,7 @@ void EclCC::generateOutput(EclCompileInstance & instance)
                 if (optCheckDirty)
                 {
                     Owned<IPipeProcess> pipe = createPipeProcess();
-                    if (!pipe->run("git", "git describe --tags --dirty --long", ".", false, true, false, 0, false))
+                    if (!pipe->run("git", "git describe --always --tags --dirty --long", ".", false, true, false, 0, false))
                     {
                         WARNLOG("Failed to run git describe");
                     }
@@ -1881,7 +1863,7 @@ static void checkForOverlappingPaths(const char * path)
         if (hasPrefix(next, prev, filenamesAreCaseSensitive))
         {
             if (!streq(next, prev))
-                throw MakeStringException(99, "Include paths -I '%s' and '%s' overlap", prev, next);
+                fprintf(stderr, "Warning: Include paths -I '%s' and '%s' overlap\n", prev, next);
         }
     }
 }
@@ -2020,7 +2002,7 @@ void EclCompileInstance::logStats(bool logTimings)
         StatsLogger logger;
         Owned<IConstWUScopeIterator> scopes = &wu->getScopeIterator(filter);
         ForEach(*scopes)
-            scopes->playProperties(PTall, logger);
+            scopes->playProperties(logger);
     }
 }
 
@@ -2127,6 +2109,8 @@ IHqlExpression *EclCC::lookupDFSlayout(const char *filename, IErrorReceiver &err
                     else
                     {
                         diskRecord.set(diskRecord->queryBody());  // Remove location info - it's meaningless
+                        // MORE - if we already have the payload size info from the parsing of the ECL (we should, for all files built since 2017)
+                        // then don't parse _record_layout (which we expect to remove, eventually).
                         if (dfsFile->queryAttributes().hasProp("_record_layout"))
                         {
                             MemoryBuffer mb;

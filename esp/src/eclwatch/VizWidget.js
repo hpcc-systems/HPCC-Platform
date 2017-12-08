@@ -32,12 +32,15 @@ define([
 
     "dgrid/editor",
 
+    "@hpcc-js/common",
+
     "hpcc/TableContainer",
     "hpcc/_Widget",
     "hpcc/ESPWorkunit",
     "hpcc/WsWorkunits",
     "hpcc/SelectionGridWidget",
-
+    "hpcc/Utility",
+    
     "dojo/text!../templates/VizWidget.html",
 
     "dijit/layout/BorderContainer",
@@ -54,7 +57,8 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, domConstruct, domForm, ioQuery, all,
                 registry, ContentPane, Select, CheckBox,
                 editor,
-                TableContainer, _Widget, ESPWorkunit, WsWorkunits, SelectionGridWidget,
+                hpccCommon,
+                TableContainer, _Widget, ESPWorkunit, WsWorkunits, SelectionGridWidget, Utility,
                 template) {
     return declare("VizWidget", [_Widget], {
         templateString: template,
@@ -369,7 +373,7 @@ define([
             var context = this;
 
             function requireWidget() {
-                require(["src/layout/Grid", "hpcc/viz/" + context.vizType], function (Grid, D3Viz) {
+                Utility.resolve("viz/" + context.vizType, function (D3Viz) {
                     context.d3Viz = new D3Viz();
                     context.d3Viz._chartType = chartType;
                     domConstruct.empty(context.id + "VizCP");
@@ -383,19 +387,7 @@ define([
             if (this.vizType !== value || this.chartType !== chartType) {
                 this.vizType = value;
                 this.chartType = chartType;
-                if (dojoConfig.vizDebug) {
-                    requireWidget();
-                } else {
-                    require(["dist-amd/hpcc-viz"], function () {
-                        require(["dist-amd/hpcc-viz-common"], function () {
-                            require(["dist-amd/hpcc-viz-api"], function () {
-                                require(["dist-amd/hpcc-viz-chart", "dist-amd/hpcc-viz-layout", "dist-amd/hpcc-viz-other", "dist-amd/hpcc-viz-map"], function () {
-                                    requireWidget();
-                                });
-                            });
-                        });
-                    });
-                }
+                requireWidget();
             }
 
             return deferred.promise;
@@ -434,7 +426,7 @@ define([
                 }
             }, this);
             var context = this;
-            var data = d3.nest()
+            var data = hpccCommon.nest()
                 .key(function (d) { return d[request.label] })
                 .rollup(function (leaves) {
                     var retVal = {
@@ -446,7 +438,7 @@ define([
                                     retVal[row.id] = leaves.length;
                                     break;
                                 default:
-                                    retVal[row.id] = d3[row.aggregation || "mean"](leaves, function (d) {
+                                    retVal[row.id] = hpccCommon[row.aggregation || "mean"](leaves, function (d) {
                                         return d[row.field];
                                     });
                                     break;
@@ -456,12 +448,11 @@ define([
                     return retVal;
                 })
                 .entries(this.rows).map(function (d) {
-                    var retVal = d.values;
+                    var retVal = d.value;
                     retVal.label = d.key;
                     return retVal;
                 })
             ;
-
             this.d3Viz.setData(data, null, request);
 
             this.params.limit = this.limit.get("value");

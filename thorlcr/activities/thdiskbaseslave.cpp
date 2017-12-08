@@ -202,8 +202,10 @@ const char * CDiskPartHandlerBase::queryLogicalFilename(const void * row)
 
 //////////////////////////////////////////////
 
-CDiskReadSlaveActivityBase::CDiskReadSlaveActivityBase(CGraphElementBase *_container) : CSlaveActivity(_container)
+CDiskReadSlaveActivityBase::CDiskReadSlaveActivityBase(CGraphElementBase *_container, IHThorArg *_helper) : CSlaveActivity(_container)
 {
+    if (_helper)
+        baseHelper.set(_helper);
     helper = (IHThorDiskReadBaseArg *)queryHelper();
     reInit = 0 != (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename));
     crcCheckCompressed = getOptBool(THOROPT_READCOMPRESSED_CRC, false);

@@ -429,7 +429,7 @@ private:
 
     inline bool fileExists(const char *lfn)
     {
-        Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(lfn, NULL);  // MORE - need a userdescriptor from workunit
+        Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(lfn, queryUserDescriptor());
         if (f)
             return true;
         return false;
@@ -437,7 +437,15 @@ private:
 
     inline IUserDescriptor *queryUserDescriptor()
     {
-        return workunit->queryUserDescriptor();
+        if (workunit)
+            return workunit->queryUserDescriptor();//ad-hoc mode
+        else
+        {
+            Owned<IRoxieDaliHelper> daliHelper = connectToDali(false);
+            if (daliHelper)
+                return daliHelper->queryUserDescriptor();//predeployed query mode
+        }
+        return NULL;
     }
 
     bool checkPersistUptoDate(IRuntimeWorkflowItem & item, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile, StringBuffer &errText)
@@ -1435,7 +1443,7 @@ public:
         if (debugContext)
             debugContext->checkBreakpoint(DebugStateGraphStart, NULL, graphName);
         if (workUnit)
-            graphStats.setown(workUnit->updateStats(graph->queryName(), SCTroxie, queryStatisticsComponentName(), 0));
+            graphStats.setown(workUnit->updateStats(graph->queryName(), SCTroxie, queryStatisticsComponentName(), 0, 0));
     }
 
     virtual void endGraph(unsigned __int64 startTimeStamp, cycle_t startCycles, bool aborting)
@@ -3677,7 +3685,15 @@ public:
     }
     IUserDescriptor *queryUserDescriptor()
     {
-        return NULL; // TBD - Richard, where do user credentials for a roxie query come from
+        if (workUnit)
+            return workUnit->queryUserDescriptor();//ad-hoc mode
+        else
+        {
+            Owned<IRoxieDaliHelper> daliHelper = connectToDali(false);
+            if (daliHelper)
+                return daliHelper->queryUserDescriptor();//predeployed query mode
+        }
+        return NULL;
     }
 
     virtual bool isResult(const char * name, unsigned sequence)

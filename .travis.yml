@@ -1,7 +1,9 @@
 sudo : false
 language: node_js
 node_js:
-  - "6.9.1"
-before_script:
+  - '6'
+before_install:
   - cd ./esp/src
-  - npm install
+after_script:
+  - npm run copy-res;
+  - npm run bundle;

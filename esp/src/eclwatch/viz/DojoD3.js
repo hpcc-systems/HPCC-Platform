@@ -6,10 +6,10 @@
   "dojo/dom-geometry",
   "dojo/Evented",
 
-  "d3"
+  "d3-selection"
 
 ], function (declare, lang, dom, domConstruct, domGeom, Evented,
-    d3) {
+    d3Selection) {
     return declare([Evented], {
         constructor: function () {
         },
@@ -40,7 +40,7 @@
             this._target = _target;
             this.calcGeom();
             this.injectStyleSheet();
-            this.Svg = d3.select(this.target.domDivID).append("svg")
+            this.Svg = d3Selection.select(this.target.domDivID).append("svg")
                 .attr("width", this.target.width)
                 .attr("height", this.target.height)
             ;

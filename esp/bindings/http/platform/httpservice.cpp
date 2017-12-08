@@ -255,6 +255,9 @@ int CEspHttpServer::processRequest()
         ctx->setHTTPMethod(method.str());
         ctx->setServiceMethod(methodName.str());
 
+        if(strieq(method.str(), OPTIONS_METHOD))
+            return onOptions();
+
         StringBuffer peerStr, pathStr;
         const char *userid=ctx->queryUserId();
         ESPLOG(LogMin, "%s %s, from %s@%s", method.str(), m_request->getPath(pathStr).str(), (userid) ? userid : "unknown", m_request->getPeer(peerStr).str());
@@ -344,10 +347,6 @@ int CEspHttpServer::processRequest()
                 if (!thebinding && m_defaultBinding)
                     thebinding=dynamic_cast<EspHttpBinding*>(m_defaultBinding.get());
             }
-
-            if(strieq(method.str(), OPTIONS_METHOD))
-                return onOptions();
-
             checkSetCORSAllowOrigin(m_request, m_response);
 
             if (thebinding!=NULL)
@@ -946,7 +945,7 @@ EspAuthState CEspHttpServer::checkUserAuth()
 
     //HTTP authentication failed. Send out a login page or 401.
     bool authSession = (domainAuthType == AuthPerSessionOnly) || ((domainAuthType == AuthTypeMixed) && authorizationHeader.isEmpty());
-    return handleAuthFailed(authSession, authReq);
+    return handleAuthFailed(authSession, authReq, false);
 }
 
 //Read authentication related information into EspAuthRequest.
@@ -990,7 +989,7 @@ EspHttpBinding* CEspHttpServer::getEspHttpBinding(EspAuthRequest& authReq)
         return espHttpBinding;
     }
 
-    for (unsigned index=0; index<ordinality; index++)
+    for (unsigned index=0; index<(unsigned)ordinality; index++)
     {
         CEspBindingEntry *entry = m_apport->queryBindingItem(index);
         EspHttpBinding* lbind = (entry) ? dynamic_cast<EspHttpBinding*>(entry->queryBinding()) : nullptr;
@@ -1012,7 +1011,7 @@ EspAuthState CEspHttpServer::preCheckAuth(EspAuthRequest& authReq)
     if (!isAuthRequiredForBinding(authReq))
     {
         if (authReq.authBinding->getDomainAuthType() == AuthUserNameOnly)
-            handleUserNameOnlyMode(authReq);
+            return handleUserNameOnlyMode(authReq);
         return authSucceeded;
     }
 
@@ -1055,17 +1054,17 @@ EspAuthState CEspHttpServer::preCheckAuth(EspAuthRequest& authReq)
     return authUnknown;
 }
 
-void CEspHttpServer::handleUserNameOnlyMode(EspAuthRequest& authReq)
+EspAuthState CEspHttpServer::handleUserNameOnlyMode(EspAuthRequest& authReq)
 {
     if (authReq.authBinding->isDomainAuthResources(authReq.httpPath.str()))
-        return;//Give the permission to send out some pages used for getUserName page.
+        return authSucceeded;//Give the permission to send out some pages used for getUserName page.
 
     StringBuffer userName;
     readCookie(USER_NAME_COOKIE, userName);
     if (!userName.isEmpty())
     {
         authReq.ctx->setUserID(userName.str());
-        return;
+        return authSucceeded;
     }
 
     const char* userNameIn = (authReq.requestParams) ? authReq.requestParams->queryProp("username") : NULL;
@@ -1073,7 +1072,7 @@ void CEspHttpServer::handleUserNameOnlyMode(EspAuthRequest& authReq)
     {
         //Display a GetUserName (similar to login) page to get a user name.
         askUserLogin(authReq);
-        return;
+        return authFailed;
     }
 
     //We just got the user name. Let's add it into cookie for future use.
@@ -1083,6 +1082,7 @@ void CEspHttpServer::handleUserNameOnlyMode(EspAuthRequest& authReq)
     readCookie(SESSION_START_URL_COOKIE, urlCookie);
     clearCookie(SESSION_START_URL_COOKIE);
     m_response->redirect(*m_request, urlCookie.isEmpty() ? "/" : urlCookie.str());
+    return authSucceeded;
 }
 
 bool CEspHttpServer::isAuthRequiredForBinding(EspAuthRequest& authReq)
@@ -1125,13 +1125,23 @@ EspAuthState CEspHttpServer::checkUserAuthPerSession(EspAuthRequest& authReq)
         return authSucceeded;
     }
 
-    if (authReq.serviceName.isEmpty() || authReq.methodName.isEmpty() || !strieq(authReq.serviceName.str(), "esp") || !strieq(authReq.methodName.str(), "login"))
+    if (authReq.serviceName.isEmpty() || authReq.methodName.isEmpty() || !strieq(authReq.serviceName.str(), "esp"))
+        return authUnknown;
+    const char* method = authReq.methodName.str();
+    bool unlock = strieq(method, "unlock");
+    if (!unlock && !strieq(authReq.methodName.str(), "login"))
         return authUnknown;
 
     const char* userName = (authReq.requestParams) ? authReq.requestParams->queryProp("username") : NULL;
     const char* password = (authReq.requestParams) ? authReq.requestParams->queryProp("password") : NULL;
     if (!isEmptyString(userName) && !isEmptyString(password))
-        return authNewSession(authReq, userName, password, urlCookie.isEmpty() ? "/" : urlCookie.str());
+        return authNewSession(authReq, userName, password, urlCookie.isEmpty() ? "/" : urlCookie.str(), unlock);
+
+    if (unlock)
+    {
+        sendMessage("Unlock failed: empty user name or password.", "text/html; charset=UTF-8");
+        return authTaskDone;
+    }
 
     if (authReq.isSoapPost) //from SOAP Test page
         sendMessage("Authentication failed: empty user name or password.", "text/html; charset=UTF-8");
@@ -1172,7 +1182,7 @@ void CEspHttpServer::sendMessage(const char* msg, const char* msgType)
     m_response->send();
 }
 
-EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char* _userName, const char* _password, const char* sessionStartURL)
+EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char* _userName, const char* _password, const char* sessionStartURL, bool unlock)
 {
     StringBuffer peer;
     m_request->getPeer(peer);
@@ -1185,7 +1195,7 @@ EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char*
     if (!authReq.authBinding->doAuth(authReq.ctx))
     {
         ESPLOG(LogMin, "Authentication failed for %s@%s", _userName, peer.str());
-        return handleAuthFailed(true, authReq);
+        return handleAuthFailed(true, authReq, unlock);
     }
 
     // authenticate optional groups
@@ -1201,8 +1211,13 @@ EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char*
     cookieStr.setf("%u", authReq.authBinding->getClientSessionTimeoutSeconds());
     addCookie(SESSION_TIMEOUT_COOKIE, cookieStr.str(), 0, false);
     clearCookie(SESSION_START_URL_COOKIE);
-    m_response->redirect(*m_request, sessionStartURL);
+    if (unlock)
+    {
+        sendMessage("Unlock successed.", "text/html; charset=UTF-8");
+        return authTaskDone;
+    }
 
+    m_response->redirect(*m_request, sessionStartURL);
     return authSucceeded;
 }
 
@@ -1364,8 +1379,14 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
     authReq.ctx->setSessionToken(sessionID);
 
     ESPLOG(LogMax, "Authenticated for %s<%u> %s@%s", PropSessionID, sessionID, userName.str(), sessionTree->queryProp(PropSessionNetworkAddress));
+    if (!authReq.serviceName.isEmpty() && !authReq.methodName.isEmpty() && strieq(authReq.serviceName.str(), "esp") && strieq(authReq.methodName.str(), "lock"))
+    {
+        logoutSession(authReq, sessionID, espSessions, true);
+        return authTaskDone;
+    }
+
     if (!authReq.serviceName.isEmpty() && !authReq.methodName.isEmpty() && strieq(authReq.serviceName.str(), "esp") && strieq(authReq.methodName.str(), "logout"))
-        logoutSession(authReq, sessionID, espSessions);
+        logoutSession(authReq, sessionID, espSessions, false);
     else
     {
         //The "ECLWatchAutoRefresh" returns a flag: '1' means that the request is generated by a UI auto refresh action and '0' means not.
@@ -1393,7 +1414,7 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
     return authSucceeded;
 }
 
-void CEspHttpServer::logoutSession(EspAuthRequest& authReq, unsigned sessionID, IPropertyTree* espSessions)
+void CEspHttpServer::logoutSession(EspAuthRequest& authReq, unsigned sessionID, IPropertyTree* espSessions, bool lock)
 {
     //delete this session before logout
     VStringBuffer path("%s[@port=\"%d\"]", PathSessionApplication, authReq.authBinding->getPort());
@@ -1416,13 +1437,13 @@ void CEspHttpServer::logoutSession(EspAuthRequest& authReq, unsigned sessionID, 
     clearCookie(authReq.authBinding->querySessionIDCookieName());
     clearCookie(SESSION_TIMEOUT_COOKIE);
     const char* logoutURL = authReq.authBinding->queryLogoutURL();
-    if (!isEmptyString(logoutURL))
+    if (!isEmptyString(logoutURL) && !lock)
         m_response->redirect(*m_request, authReq.authBinding->queryLogoutURL());
     else
         sendMessage(nullptr, "text/html; charset=UTF-8");
 }
 
-EspAuthState CEspHttpServer::handleAuthFailed(bool sessionAuth, EspAuthRequest& authReq)
+EspAuthState CEspHttpServer::handleAuthFailed(bool sessionAuth, EspAuthRequest& authReq, bool unlock)
 {
     ISecUser *user = authReq.ctx->queryUser();
     if (user && user->getAuthenticateStatus() == AS_PASSWORD_VALID_BUT_EXPIRED)
@@ -1436,6 +1457,13 @@ EspAuthState CEspHttpServer::handleAuthFailed(bool sessionAuth, EspAuthRequest& 
 
     if (user && (user->getAuthenticateStatus() == AS_PASSWORD_EXPIRED))
         ESPLOG(LogMin, "ESP password expired for %s", authReq.ctx->queryUserId());
+
+    if (unlock)
+    {
+        ESPLOG(LogMin, "Unlock failed: invalid user name or password.");
+        sendMessage("Unlock failed: invalid user name or password.", "text/html; charset=UTF-8");
+        return authTaskDone;
+    }
 
     if (!sessionAuth)
     {

@@ -75,6 +75,7 @@ public:
     void initResultChildTags()
     {
         resultChildTags.setValue("Dataset", true);
+        resultChildTags.setValue("Tracing", true);
         resultChildTags.setValue("Exception", true);
         resultChildTags.setValue("Warning", true);
         resultChildTags.setValue("Alert", true);
@@ -291,15 +292,15 @@ class WuWebView : public CInterface,
 public:
     IMPLEMENT_IINTERFACE
 
-    WuWebView(IConstWorkUnit &wu, const char *_target, const char *queryname, const char *wdir, bool mapEspDir, bool delay=true) :
-        manifestIncludePathsSet(false), dir(wdir), mapEspDirectories(mapEspDir), delayedDll(delay), target(_target)
+    WuWebView(IConstWorkUnit &wu, const char *_target, const char *queryname, const char *wdir, bool mapEspDir, bool delay, IPropertyTree *xsltcfg) :
+        manifestIncludePathsSet(false), dir(wdir), mapEspDirectories(mapEspDir), delayedDll(delay), target(_target), xsltConfig(xsltcfg)
     {
         name.set(queryname);
         setWorkunit(wu);
     }
 
-    WuWebView(const char *wuid, const char *_target, const char *queryname, const char *wdir, bool mapEspDir, bool delay=true) :
-        manifestIncludePathsSet(false), dir(wdir), mapEspDirectories(mapEspDir), delayedDll(delay), target(_target)
+    WuWebView(const char *wuid, const char *_target, const char *queryname, const char *wdir, bool mapEspDir, bool delay, IPropertyTree *xsltcfg) :
+        manifestIncludePathsSet(false), dir(wdir), mapEspDirectories(mapEspDir), delayedDll(delay), target(_target), xsltConfig(xsltcfg)
     {
         name.set(queryname);
         setWorkunit(wuid);
@@ -356,6 +357,7 @@ protected:
     Owned<IConstWorkUnit> cw;
     Owned<ILoadedDllEntry> dll;
     Owned<IPropertyTree> manifest;
+    Linked<IPropertyTree> xsltConfig;
     StringAttr target;
     StringAttr dir;
     StringAttr username;
@@ -662,7 +664,7 @@ void WuWebView::renderExpandedResults(const char *viewName, WuExpandedResultBuff
     if (strieq(type, "xml"))
         return out.swapWith(expanded.buffer);
 
-    Owned<IXslTransform> t = getXslProcessor()->createXslTransform();
+    Owned<IXslTransform> t = getXslProcessor()->createXslTransform(xsltConfig);
     StringBuffer cacheId(viewName);
     cacheId.append('@').append(dllname.str()); //using dllname, cloned workunits can share cache entry
     t->setIncludeHandler(this);
@@ -759,7 +761,7 @@ void WuWebView::applyResultsXSLT(const char *filename, const char *xml, StringBu
     buffer.appendDatasetsFromXML(xml);
     buffer.appendManifestSchemas(*ensureManifest(), loadDll());
 
-    Owned<IXslTransform> t = getXslProcessor()->createXslTransform();
+    Owned<IXslTransform> t = getXslProcessor()->createXslTransform(xsltConfig);
     t->setIncludeHandler(this);
     //override default behavior using filename as cache identifier, there's a chance includes are
     //mapped to resources and need to be distinguished in cache
@@ -935,11 +937,11 @@ IConstWUQuery* WuWebView::getEmbeddedQuery()
     return embeddedWU->getQuery();
 }
 
-extern WUWEBVIEW_API IWuWebView *createWuWebView(IConstWorkUnit &wu, const char *target, const char *queryname, const char *dir, bool mapEspDirectories)
+extern WUWEBVIEW_API IWuWebView *createWuWebView(IConstWorkUnit &wu, const char *target, const char *queryname, const char *dir, bool mapEspDirectories, IPropertyTree *xsltcfg)
 {
     try
     {
-        return new WuWebView(wu, target, queryname, dir, mapEspDirectories);
+        return new WuWebView(wu, target, queryname, dir, mapEspDirectories, true, xsltcfg);
     }
     catch (IException *e)
     {
@@ -954,11 +956,11 @@ extern WUWEBVIEW_API IWuWebView *createWuWebView(IConstWorkUnit &wu, const char 
     return NULL;
 }
 
-extern WUWEBVIEW_API IWuWebView *createWuWebView(const char *wuid, const char *target, const char *queryname, const char *dir, bool mapEspDirectories)
+extern WUWEBVIEW_API IWuWebView *createWuWebView(const char *wuid, const char *target, const char *queryname, const char *dir, bool mapEspDirectories, IPropertyTree *xsltcfg)
 {
     try
     {
-        return new WuWebView(wuid, target, queryname, dir, mapEspDirectories);
+        return new WuWebView(wuid, target, queryname, dir, mapEspDirectories, true, xsltcfg);
     }
     catch (IException *e)
     {
@@ -1033,7 +1035,7 @@ extern WUWEBVIEW_API void getWuResourceByPath(const char *path, MemoryBuffer &mb
     StringBuffer wuid, target, queryname;
     getQueryInfoFromPath(path, "res", target, queryname, wuid);
 
-    Owned<IWuWebView> web = createWuWebView(wuid, target, queryname, NULL, true);
+    Owned<IWuWebView> web = createWuWebView(wuid, target, queryname, NULL, true, nullptr);
     if (!web)
         throw MakeStringException(WUWEBERR_WorkUnitNotFound, "Cannot open workunit");
     mimetype.append(mimeTypeFromFileExt(strrchr(path, '.')));
@@ -1046,7 +1048,7 @@ extern WUWEBVIEW_API void getWuManifestByPath(const char *path, StringBuffer &mf
     StringBuffer wuid, target, queryname;
     getQueryInfoFromPath(path, "manifest", target, queryname, wuid);
 
-    Owned<IWuWebView> web = createWuWebView(wuid, target, queryname, NULL, true);
+    Owned<IWuWebView> web = createWuWebView(wuid, target, queryname, NULL, true, nullptr);
     if (!web)
         throw MakeStringException(WUWEBERR_WorkUnitNotFound, "Cannot open workunit");
     if (!web->getManifest(mf).length())
@@ -1061,7 +1063,7 @@ extern WUWEBVIEW_API void getWuResourceUrlListByPath(const char *path, StringBuf
     if (!fmt.length())
         fmt.set("xml");
 
-    Owned<IWuWebView> web = createWuWebView(wuid, target, queryname, NULL, true);
+    Owned<IWuWebView> web = createWuWebView(wuid, target, queryname, NULL, true, nullptr);
     if (!web)
         throw MakeStringException(WUWEBERR_WorkUnitNotFound, "Cannot open workunit");
     StringArray urls;

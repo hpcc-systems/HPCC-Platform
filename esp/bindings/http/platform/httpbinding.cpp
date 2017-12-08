@@ -199,6 +199,7 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                     //This is a Pluggable Security Manager
                     m_secmgr.setown(SecLoader::loadPluggableSecManager(bindname, bnd_cfg, secMgrCfg));
                     m_authmap.setown(m_secmgr->createAuthMap(authcfg));
+                    m_feature_authmap.setown(m_secmgr->createFeatureMap(authcfg));
                 }
                 else
                 {
@@ -283,12 +284,14 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                 const char* unrestrictedResources = authcfg->queryProp("@getUserNameUnrestrictedResources");
                 if (!isEmptyString(unrestrictedResources))
                     readUnrestrictedResources(unrestrictedResources);
+                else
+                    readUnrestrictedResources(DEFAULT_UNRESTRICTED_RESOURCES);
 
                 const char* getUserNameURL = authcfg->queryProp("@getUserNameURL");
                 if (!isEmptyString(getUserNameURL))
                     loginURL.set(getUserNameURL);
                 else
-                    loginURL.set(DEFAULT_LOGIN_URL);
+                    loginURL.set(DEFAULT_GET_USER_NAME_URL);
                 domainAuthType = AuthUserNameOnly;
             }
         }
@@ -359,11 +362,11 @@ void EspHttpBinding::readAuthDomainCfg(IPropertyTree* procCfg)
         //Considering possible network delay, serverSessionTimeoutMinutes should be greater than clientSessionTimeoutMinutes.
         int serverSessionTimeoutMinutes = authDomainTree->getPropInt("@serverSessionTimeoutMinutes", 0);
         if ((serverSessionTimeoutMinutes < 0) || (clientSessionTimeoutMinutes < 0))
-            serverSessionTimeoutMinutes = ESP_SESSION_NEVER_TIMEOUT;
+            serverSessionTimeoutSeconds = ESP_SESSION_NEVER_TIMEOUT;
         else
-            serverSessionTimeoutMinutes = serverSessionTimeoutMinutes * 60;
-        if (serverSessionTimeoutMinutes < clientSessionTimeoutSeconds)
-            serverSessionTimeoutMinutes = 2 * clientSessionTimeoutSeconds;
+            serverSessionTimeoutSeconds = serverSessionTimeoutMinutes * 60;
+        if (serverSessionTimeoutSeconds < clientSessionTimeoutSeconds)
+            serverSessionTimeoutSeconds = 2 * clientSessionTimeoutSeconds;
 
         //The @unrestrictedResources contains URLs which may be used before a user is authenticated.
         //For example, an icon file on the login page.

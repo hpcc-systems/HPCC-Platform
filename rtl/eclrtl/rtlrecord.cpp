@@ -64,10 +64,14 @@
  *    the last bitfield in a bitfield container has the size of the container, the others have 0 size.
  *
  * c. ifblocks
- *    Nasty.  Allowing direct access means the flag would need checking, and a field would need a pointer
- *    to its containing ifblock.  Cleanest to have a different derived implementation which was used if the record
- *    contained ifblocks which added calls to check ifblocks before size()/getValue() etc.
- *    Will require an extra row parameter to every RtlTypeInfo::getX() function.
+ *    A field in an ifblock can be viewed as a variable size field - size is either 0 or normal size
+ *    depending on the condition in question. We add a flag and a pointer to the ifblock info into
+ *    each contained field. Only properly supported in expanded mode.
+ *    Might be cleanest to have a different derived implementation which was used if the record
+ *    contained ifblocks, though this would mean we would need to make some functions virtual or else move
+ *    the responsibility for knowing about ifblocks out to all customers?
+ *    Added calls to check ifblocks before size()/getValue() etc. will require an extra row parameter
+ *    to every RtlTypeInfo::getX() function? Not if it is required that the offsets have been set first.
  *    Evaluating the test expression without compiling will require expression interpreting.
  *
  * d. alien datatypes
@@ -84,18 +88,20 @@
  *   For nested selects the code would need to be consistent.
  */
 
-static unsigned countFields(const RtlFieldInfo * const * fields, bool & containsNested)
+static unsigned countFields(const RtlFieldInfo * const * fields, bool & containsNested, unsigned &numIfBlocks)
 {
     unsigned cnt = 0;
     for (;*fields;fields++)
     {
         const RtlTypeInfo * type = (*fields)->type;
-        if (type->getType() == type_record)
+        if (type->getType() == type_record || type->getType()==type_ifblock)
         {
             containsNested = true;
+            if (type->getType()==type_ifblock)
+                numIfBlocks++;
             const RtlFieldInfo * const * nested = type->queryFields();
             if (nested)
-                cnt += countFields(nested, containsNested);
+                cnt += countFields(nested, containsNested, numIfBlocks);
         }
         else
             cnt++;
@@ -103,21 +109,71 @@ static unsigned countFields(const RtlFieldInfo * const * fields, bool & contains
     return cnt;
 }
 
+class IfBlockInfo
+{
+public:
+    IfBlockInfo(const RtlFieldInfo &_field, const IfBlockInfo *_parent, unsigned _idx, unsigned _startIdx)
+    : field(_field), parent(_parent), idx(_idx), startIdx(_startIdx)
+    {
+    }
 
-static unsigned expandNestedRows(unsigned idx, const char *prefix, const RtlFieldInfo * const * fields, const RtlFieldInfo * * target, const char * *names)
+    bool excluded(const byte *row, byte *conditions) const
+    {
+        if (conditions[idx]==2)
+        {
+            if (parent && parent->excluded(row, conditions))
+                conditions[idx] = 0;
+            else
+            {
+                const RtlIfBlockTypeInfo *cond = static_cast<const RtlIfBlockTypeInfo *>(field.type);
+                conditions[idx] = cond->getCondition(row) ? 1 : 0;
+            }
+        }
+        return conditions[idx]==0;
+    }
+    inline unsigned queryStartField() const { return startIdx; }
+private:
+    const RtlFieldInfo &field;
+    const IfBlockInfo *parent = nullptr;  // for nested ifblocks
+    unsigned idx;
+    unsigned startIdx; // For ifblocks inside child records
+};
+
+class RtlCondFieldStrInfo : public RtlFieldStrInfo
+{
+public:
+    RtlCondFieldStrInfo(const RtlFieldInfo &from, const IfBlockInfo &_ifblock)
+    : RtlFieldStrInfo(from.name, from.xpath, from.type, from.flags | (RFTMinifblock|RFTMdynamic), (const char *) from.initializer),
+      origField(from),ifblock(_ifblock)
+    {
+    }
+public:
+    const RtlFieldInfo &origField;
+    const IfBlockInfo &ifblock;
+};
+
+static unsigned expandNestedRows(unsigned idx, unsigned startIdx, const char *prefix, const RtlFieldInfo * const * fields, const RtlFieldInfo * * target, const char * *names, const IfBlockInfo *inIfBlock, ConstPointerArrayOf<IfBlockInfo> &ifblocks)
 {
     for (;*fields;fields++)
     {
         const RtlFieldInfo * cur = *fields;
         const RtlTypeInfo * type = cur->type;
-        if (type->getType() == type_record)
+        bool isIfBlock  = type->getType()==type_ifblock;
+        if (isIfBlock || type->getType() == type_record)
         {
+            const IfBlockInfo *nestIfBlock = inIfBlock;
+            if (isIfBlock)
+            {
+                nestIfBlock = new IfBlockInfo(*cur, inIfBlock, ifblocks.ordinality(), startIdx);
+                ifblocks.append(nestIfBlock);
+            }
             const RtlFieldInfo * const * nested = type->queryFields();
             if (nested)
             {
                 StringBuffer newPrefix(prefix);
-                newPrefix.append(cur->name).append('.');
-                idx = expandNestedRows(idx, newPrefix.str(), nested, target, names);
+                if (cur->name && *cur->name)
+                    newPrefix.append(cur->name).append('.');
+                idx = expandNestedRows(idx, isIfBlock ? startIdx : idx, newPrefix.str(), nested, target, names, nestIfBlock, ifblocks);
             }
         }
         else
@@ -130,7 +186,13 @@ static unsigned expandNestedRows(unsigned idx, const char *prefix, const RtlFiel
             }
             else
                 names[idx] = nullptr;
-            target[idx++] = cur;
+            if (inIfBlock && !(cur->flags & RFTMinifblock))
+                target[idx++] = new RtlCondFieldStrInfo(*cur, *inIfBlock);
+            else
+            {
+                dbgassertex((cur->flags & RFTMdynamic) == 0);
+                target[idx++] = cur;
+            }
         }
     }
     return idx;
@@ -163,20 +225,23 @@ RtlRecord::RtlRecord(const RtlRecordTypeInfo & record, bool expandFields)
 
 RtlRecord::RtlRecord(const RtlFieldInfo * const *_fields, bool expandFields) : fields(_fields), originalFields(_fields), names(nullptr), nameMap(nullptr)
 {
-    //MORE: Does not cope with ifblocks.
     numVarFields = 0;
     numTables = 0;
+    numIfBlocks = 0;
+    ifblocks = nullptr;
     //Optionally expand out nested rows.
     if (expandFields)
     {
         bool containsNested = false;
-        numFields = countFields(fields, containsNested);
+        numFields = countFields(fields, containsNested, numIfBlocks);
         if (containsNested)
         {
+            ConstPointerArrayOf<IfBlockInfo> _ifblocks;
             const RtlFieldInfo * * allocated  = new const RtlFieldInfo * [numFields+1];
             names = new const char *[numFields];
             fields = allocated;
-            unsigned idx = expandNestedRows(0, nullptr, originalFields, allocated, names);
+            unsigned idx = expandNestedRows(0, 0, nullptr, originalFields, allocated, names, nullptr, _ifblocks);
+            ifblocks = _ifblocks.detach();
             assertex(idx == numFields);
             allocated[idx] = nullptr;
         }
@@ -188,7 +253,7 @@ RtlRecord::RtlRecord(const RtlFieldInfo * const *_fields, bool expandFields) : f
     for (unsigned i=0; i < numFields; i++)
     {
         const RtlTypeInfo *curType = queryType(i);
-        if (!curType->isFixedSize())
+        if (!curType->isFixedSize() || (fields[i]->flags & RFTMinifblock))
             numVarFields++;
         if (curType->getType()==type_table || curType->getType()==type_record)
             numTables++;
@@ -218,7 +283,7 @@ RtlRecord::RtlRecord(const RtlFieldInfo * const *_fields, bool expandFields) : f
             break;
 
         const RtlTypeInfo * curType = queryType(i);
-        if (curType->isFixedSize())
+        if (curType->isFixedSize() && !(fields[i]->flags & RFTMinifblock))
         {
             size_t thisSize = curType->size(nullptr, nullptr);
             fixedOffset += thisSize;
@@ -256,7 +321,21 @@ RtlRecord::~RtlRecord()
     }
     if (fields != originalFields)
     {
+        for (const RtlFieldInfo * const * finger = fields; *finger; finger++)
+        {
+            const RtlFieldInfo *thisField = *finger;
+            if (thisField->flags & RFTMdynamic)
+                delete thisField;
+        }
         delete [] fields;
+    }
+    if (ifblocks)
+    {
+        for (unsigned i = 0; i < numIfBlocks; i++)
+        {
+            delete(ifblocks[i]);
+        }
+        delete [] ifblocks;
     }
     delete [] fixedOffsets;
     delete [] whichVariableOffset;
@@ -272,18 +351,59 @@ RtlRecord::~RtlRecord()
     delete nameMap;
 }
 
+unsigned RtlRecord::getNumKeyedFields() const
+{
+    unsigned ret = 0;
+    for (const RtlFieldInfo * const * finger = originalFields; *finger; finger++)
+    {
+        if ((*finger)->flags & RFTMispayloadfield)
+            break;
+        ret++;
+    }
+    return ret;
+}
+
 void RtlRecord::calcRowOffsets(size_t * variableOffsets, const void * _row, unsigned numFieldsUsed) const
 {
     const byte * row = static_cast<const byte *>(_row);
     unsigned maxVarField = (numFieldsUsed>=numFields) ? numVarFields : whichVariableOffset[numFieldsUsed];
-    size32_t varoffset = 0;
-    for (unsigned i = 0; i < maxVarField; i++)
+    if (numIfBlocks)
     {
-        unsigned fieldIndex = variableFieldIds[i];
-        size32_t offset = fixedOffsets[fieldIndex] + varoffset;
-        size32_t fieldSize = queryType(fieldIndex)->size(row + offset, row);
-        varoffset = offset+fieldSize;
-        variableOffsets[i+1] = varoffset;
+        byte *conditions = (byte *) alloca(numIfBlocks * sizeof(byte));
+        memset(conditions, 2, numIfBlocks);    // Meaning condition not yet calculated
+        for (unsigned i = 0; i < maxVarField; i++)
+        {
+            unsigned fieldIndex = variableFieldIds[i];
+            const RtlFieldInfo *field = fields[fieldIndex];
+            size_t offset = getOffset(variableOffsets, fieldIndex);
+            if (field->flags & RFTMinifblock)
+            {
+                const RtlCondFieldStrInfo *condfield = static_cast<const RtlCondFieldStrInfo *>(field);
+                unsigned startField = condfield->ifblock.queryStartField();
+                const byte *childRow = row;
+                if (startField)
+                    childRow += getOffset(variableOffsets, startField);
+                if (condfield->ifblock.excluded(childRow, conditions))
+                {
+                    variableOffsets[i+1] = offset; // (meaning size ends up as zero);
+                    continue;
+                }
+            }
+            size_t fieldSize = queryType(fieldIndex)->size(row + offset, row);
+            variableOffsets[i+1] = offset+fieldSize;
+        }
+    }
+    else
+    {
+        size32_t varoffset = 0;
+        for (unsigned i = 0; i < maxVarField; i++)
+        {
+            unsigned fieldIndex = variableFieldIds[i];
+            size32_t offset = fixedOffsets[fieldIndex] + varoffset;
+            size32_t fieldSize = queryType(fieldIndex)->size(row + offset, row);
+            varoffset = offset+fieldSize;
+            variableOffsets[i+1] = varoffset;
+        }
     }
 #ifdef _DEBUG
     for (unsigned i = maxVarField; i < numVarFields; i++)
@@ -300,20 +420,28 @@ size32_t RtlRecord::getMinRecordSize() const
 
     size32_t minSize = 0;
     for (unsigned i=0; i < numFields; i++)
-        minSize += queryType(i)->getMinSize();
-
+    {
+        const RtlFieldInfo *field = fields[i];
+        if (!(field->flags & RFTMinifblock))
+            minSize += queryType(i)->getMinSize();
+    }
     return minSize;
 }
 
 size32_t RtlRecord::deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in) const
 {
     size32_t offset = 0;
+    byte *conditionValues = (byte *) alloca(numIfBlocks);
+    memset(conditionValues, 2, numIfBlocks);
     for (unsigned i = 0; i < numVarFields; i++)
     {
         unsigned fieldIndex = variableFieldIds[i];
+        const RtlFieldInfo *field = fields[fieldIndex];
         size32_t fixedSize = fixedOffsets[fieldIndex];
-        byte * self = rowBuilder.ensureCapacity(offset + fixedSize, "");
+        byte * self = rowBuilder.ensureCapacity(offset + fixedSize, ""); // Why not field->name?
         in.read(fixedSize, self + offset);
+        if (excluded(field, self, conditionValues))
+            continue;
         offset = queryType(fieldIndex)->deserialize(rowBuilder, in, offset);
     }
     size32_t lastFixedSize = fixedOffsets[numFields];
@@ -322,8 +450,10 @@ size32_t RtlRecord::deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource
     return offset + lastFixedSize;
 }
 
-void RtlRecord::readAhead(IRowDeserializerSource & in) const
+void RtlRecord::readAhead(IRowPrefetcherSource & in) const
 {
+    // Note - this should not and can not be used when ifblocks present - canprefetch flag should take care of that.
+    dbgassertex(numIfBlocks==0);
     for (unsigned i=0; i < numVarFields; i++)
     {
         unsigned fieldIndex = variableFieldIds[i];
@@ -331,6 +461,12 @@ void RtlRecord::readAhead(IRowDeserializerSource & in) const
         queryType(fieldIndex)->readAhead(in);
     }
     in.skip(fixedOffsets[numFields]);
+}
+
+int RtlRecord::compare(const byte * left, const byte * right) const
+{
+    //Use originalFields so that ifblocks are processed correctly
+    return compareFields(originalFields, left, right, false);
 }
 
 static const FieldNameToFieldNumMap *setupNameMap(const RtlRecord &record, std::atomic<const FieldNameToFieldNumMap *> &aNameMap)
@@ -375,23 +511,87 @@ const RtlRecord *RtlRecord::queryNested(unsigned fieldId) const
     return nullptr;
 }
 
+const RtlFieldInfo *RtlRecord::queryOriginalField(unsigned idx) const
+{
+    const RtlFieldInfo *field = queryField(idx);
+    if (field->flags & RFTMdynamic)
+        return &static_cast<const RtlCondFieldStrInfo *>(field)->origField;
+    else
+        return field;
+}
+
+
+bool RtlRecord::excluded(const RtlFieldInfo *field, const byte *row, byte *conditionValues) const
+{
+    if (!field->omitable())
+        return false;
+    const RtlCondFieldStrInfo *condfield = static_cast<const RtlCondFieldStrInfo *>(field);
+    unsigned startField = condfield->ifblock.queryStartField();
+    const byte *childRow = row;
+    if (startField)
+        childRow += calculateOffset(row, startField);
+    return condfield->ifblock.excluded(childRow, conditionValues);
+}
+
+size_t RtlRecord::getFixedOffset(unsigned field) const
+{
+    assert(whichVariableOffset[field]==0);
+    return fixedOffsets[field];
+}
+
 size32_t RtlRecord::getRecordSize(const void *_row) const
 {
-    size32_t size = getFixedSize();
-    if (!size)
+    if (numIfBlocks)
+    {
+        unsigned numOffsets = getNumVarFields() + 1;
+        size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
+        RtlRow sourceRow(*this, _row, numOffsets, variableOffsets);
+        return sourceRow.getOffset(numFields+1);
+    }
+    else
+    {
+        size32_t size = getFixedSize();
+        if (!size)
+        {
+            const byte * row = static_cast<const byte *>(_row);
+            size32_t varoffset = 0;
+            for (unsigned i = 0; i < numVarFields; i++)
+            {
+                unsigned fieldIndex = variableFieldIds[i];
+                size32_t offset = fixedOffsets[fieldIndex] + varoffset;
+                size32_t fieldSize = queryType(fieldIndex)->size(row + offset, row);
+                varoffset = offset + fieldSize;
+            }
+            size = fixedOffsets[numFields] + varoffset;
+        }
+        return size;
+    }
+}
+
+size32_t RtlRecord::calculateOffset(const void *_row, unsigned field) const
+{
+    if (numIfBlocks)
+    {
+        unsigned numOffsets = getNumVarFields() + 1;
+        size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
+        RtlRow sourceRow(*this, nullptr, numOffsets, variableOffsets);
+        sourceRow.setRow(_row, field);
+        return sourceRow.getOffset(field);
+    }
+    else
     {
         const byte * row = static_cast<const byte *>(_row);
         size32_t varoffset = 0;
-        for (unsigned i = 0; i < numVarFields; i++)
+        unsigned varFields = whichVariableOffset[field];
+        for (unsigned i = 0; i < varFields; i++)
         {
             unsigned fieldIndex = variableFieldIds[i];
             size32_t offset = fixedOffsets[fieldIndex] + varoffset;
             size32_t fieldSize = queryType(fieldIndex)->size(row + offset, row);
             varoffset = offset + fieldSize;
         }
-        size = fixedOffsets[numFields] + varoffset;
+        return fixedOffsets[field] + varoffset;
     }
-    return size;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -407,36 +607,82 @@ RtlRow::RtlRow(const RtlRecord & _info, const void * optRow, unsigned numOffsets
 __int64 RtlRow::getInt(unsigned field) const
 {
     const byte * self = reinterpret_cast<const byte *>(row);
-    const RtlTypeInfo * type = info.queryType(field);
-    return type->getInt(self + getOffset(field));
+    const RtlFieldInfo *fieldInfo = info.queryField(field);
+    const RtlTypeInfo * type = fieldInfo->type;
+    if (!fieldInfo->omitable() || getSize(field))
+        return type->getInt(self + getOffset(field));
+    else if (fieldInfo->initializer)
+        return type->getInt(fieldInfo->initializer);
+    else
+        return 0;
 }
 
 double RtlRow::getReal(unsigned field) const
 {
     const byte * self = reinterpret_cast<const byte *>(row);
-    const RtlTypeInfo * type = info.queryType(field);
-    return type->getReal(self + getOffset(field));
+    const RtlFieldInfo *fieldInfo = info.queryField(field);
+    const RtlTypeInfo * type = fieldInfo->type;
+    if (!fieldInfo->omitable() || getSize(field))
+        return type->getReal(self + getOffset(field));
+    else if (fieldInfo->initializer)
+        return type->getReal(fieldInfo->initializer);
+    else
+        return 0;
 }
 
 void RtlRow::getString(size32_t & resultLen, char * & result, unsigned field) const
 {
     const byte * self = reinterpret_cast<const byte *>(row);
-    const RtlTypeInfo * type = info.queryType(field);
-    return type->getString(resultLen, result, self + getOffset(field));
+    const RtlFieldInfo *fieldInfo = info.queryField(field);
+    const RtlTypeInfo * type = fieldInfo->type;
+    if (!fieldInfo->omitable() || getSize(field))
+        type->getString(resultLen, result, self + getOffset(field));
+    else if (fieldInfo->initializer)
+        type->getString(resultLen, result, fieldInfo->initializer);
+    else
+    {
+        resultLen = 0;
+        result = nullptr;
+    }
 }
 
 void RtlRow::getUtf8(size32_t & resultLen, char * & result, unsigned field) const
 {
     const byte * self = reinterpret_cast<const byte *>(row);
-    const RtlTypeInfo * type = info.queryType(field);
-    return type->getUtf8(resultLen, result, self + getOffset(field));
+    const RtlFieldInfo *fieldInfo = info.queryField(field);
+    const RtlTypeInfo * type = fieldInfo->type;
+    if (!fieldInfo->omitable() || getSize(field))
+        type->getUtf8(resultLen, result, self + getOffset(field));
+    else if (fieldInfo->initializer)
+        type->getUtf8(resultLen, result, fieldInfo->initializer);
+    else
+    {
+        resultLen = 0;
+        result = nullptr;
+    }
 }
 
 void RtlRow::setRow(const void * _row)
 {
     row = (const byte *)_row;
     if (_row)
+    {
         info.calcRowOffsets(variableOffsets, _row);
+#if defined(_DEBUG) && defined(TRACE_ROWOFFSETS)
+        for (unsigned i = 0; i < info.getNumFields(); i++)
+        {
+            printf("Field %d (%s) offset %d", i, info.queryName(i), (int) getOffset(i));
+            if (getSize(i))
+            {
+                unsigned bufflen;
+                rtlDataAttr buff;
+                getString(bufflen, buff.refstr(), i);
+                printf(" value %.*s", bufflen, buff.getstr());
+            }
+            printf("\n");
+        }
+#endif
+    }
 }
 
 void RtlRow::setRow(const void * _row, unsigned _numFields)
@@ -477,7 +723,7 @@ class CDefaultPrefetcher : public CInterfaceOf<ISourceRowPrefetcher>
 public:
     CDefaultPrefetcher(const RtlRecord & _record) : record(_record) {}
 
-    virtual void readAhead(IRowDeserializerSource & in)
+    virtual void readAhead(IRowPrefetcherSource & in)
     {
         record.readAhead(in);
     }
@@ -544,29 +790,6 @@ protected:
     IOutputMetaData * meta;
 };
 
-class ECLRTL_API CSimpleSourceRowPrefetcher : public ISourceRowPrefetcher, public RtlCInterface
-{
-public:
-    CSimpleSourceRowPrefetcher(IOutputMetaData & _meta, ICodeContext * _ctx, unsigned _activityId)
-    {
-        deserializer.setown(_meta.querySerializedDiskMeta()->createDiskDeserializer(_ctx, _activityId));
-        rowAllocator.setown(_ctx->getRowAllocator(&_meta, _activityId));
-    }
-
-    RTLIMPLEMENT_IINTERFACE
-
-    virtual void readAhead(IRowDeserializerSource & in)
-    {
-        RtlDynamicRowBuilder rowBuilder(rowAllocator);
-        size32_t len = deserializer->deserialize(rowBuilder, in);
-        rtlReleaseRow(rowBuilder.finalizeRowClear(len));
-    }
-
-protected:
-    Owned<IOutputRowDeserializer> deserializer;
-    Owned<IEngineRowAllocator> rowAllocator;
-};
-
 //---------------------------------------------------------------------------
 
 
@@ -580,9 +803,7 @@ ISourceRowPrefetcher * COutputMetaData::createDiskPrefetcher(ICodeContext * ctx,
     ISourceRowPrefetcher * fetcher = defaultCreateDiskPrefetcher(ctx, activityId);
     if (fetcher)
         return fetcher;
-    if (queryTypeInfo()->canPrefetch())
-        return new CDefaultPrefetcher(queryRecordAccessor(true));
-    return new CSimpleSourceRowPrefetcher(*this, ctx, activityId);
+    return new CDefaultPrefetcher(queryRecordAccessor(true));
 }
 
 IOutputRowDeserializer *COutputMetaData::createDiskDeserializer(ICodeContext * ctx, unsigned activityId)

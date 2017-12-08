@@ -14062,16 +14062,21 @@ void exportMap(IPropertyTree *dataNode, IHqlExpression *destTable, IHqlExpressio
 
 void exportJsonType(StringBuffer &ret, IHqlExpression *table)
 {
-    Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer());
+    Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer(nullptr));
     const RtlTypeInfo *typeInfo = buildRtlType(*deserializer.get(), table->queryType());
     dumpTypeInfo(ret, typeInfo);
 }
 
-void exportBinaryType(MemoryBuffer &ret, IHqlExpression *table)
+bool exportBinaryType(MemoryBuffer &ret, IHqlExpression *table)
 {
-    Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer());
+    Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer(nullptr));
     const RtlTypeInfo *typeInfo = buildRtlType(*deserializer.get(), table->queryType());
-    dumpTypeInfo(ret, typeInfo);
+    return dumpTypeInfo(ret, typeInfo);
+}
+
+const RtlTypeInfo *queryRtlType(IRtlFieldTypeDeserializer &deserializer, IHqlExpression *table)
+{
+    return buildRtlType(deserializer, table->queryType());
 }
 
 void exportData(IPropertyTree *data, IHqlExpression *table, bool flatten)
@@ -15947,7 +15952,15 @@ unsigned numPayloadFields(IHqlExpression * index)
 
 unsigned numKeyedFields(IHqlExpression * index)
 {
-    return getFlatFieldCount(index->queryRecord())-numPayloadFields(index);
+    IHqlExpression *record = index->queryRecord();
+    unsigned fields = 0;
+    ForEachChild(idx, record)
+    {
+        IHqlExpression * child = record->queryChild(idx);
+        if (!child->isAttribute())
+            fields++;
+    }
+    return fields - numPayloadFields(index);
 }
 
 unsigned firstPayloadField(IHqlExpression * index)

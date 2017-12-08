@@ -112,6 +112,42 @@ public:
 		return authmap;
 	}
 
+    IAuthMap * createFeatureMap(IPropertyTree * authconfig)
+    {
+        CAuthMap* feature_authmap = new CAuthMap(this);
+
+        Owned<IPropertyTreeIterator> feature_iter;
+        feature_iter.setown(authconfig->getElements(".//Feature"));
+        ForEach(*feature_iter)
+        {
+            IPropertyTree *feature = NULL;
+            feature = &feature_iter->query();
+            if (feature)
+            {
+                StringBuffer pathstr, rstr, required, description;
+                feature->getProp("@path", pathstr);
+                feature->getProp("@resource", rstr);
+                feature->getProp("@required", required);
+                feature->getProp("@description", description);
+                ISecResourceList* rlist = feature_authmap->queryResourceList(pathstr.str());
+                if(rlist == NULL)
+                {
+                    rlist = createResourceList(pathstr.str());
+                    feature_authmap->add(pathstr.str(), rlist);
+                }
+                if (!rstr.isEmpty())
+                {
+                    ISecResource* rs = rlist->addResource(rstr.str());
+                    SecAccessFlags requiredaccess = str2perm(required.str());
+                    rs->setRequiredAccessFlags(requiredaccess);
+                    rs->setDescription(description.str());
+                    rs->setAccessFlags(SecAccess_Full);//grant full access to authenticated users
+                }
+            }
+        }
+
+        return feature_authmap;
+    }
 protected:
 
     //ISecManager

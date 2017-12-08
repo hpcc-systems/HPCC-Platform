@@ -1915,6 +1915,17 @@ static ITypeInfo * commonUpType(CHashedTypeInfo * candidate)
     return match;
 }
 
+extern DEFTYPE_API ITypeInfo *makeFilePosType(ITypeInfo *basetype)
+{
+    assertex(basetype);
+    return commonUpType(new CFilePosTypeInfo(basetype));
+}
+
+extern DEFTYPE_API ITypeInfo *makeKeyedType(ITypeInfo *basetype)
+{
+    assertex(basetype);
+    return commonUpType(new CKeyedTypeInfo(basetype));
+}
 
 extern DEFTYPE_API ITypeInfo *makeDecimalType(unsigned digits, unsigned prec, bool isSigned)
 {
@@ -2190,6 +2201,17 @@ bool isIntegralType(ITypeInfo * type)
     case type_int:
     case type_swapint:
     case type_packedint:
+        return true;
+    }
+    return false;
+}
+
+bool isSimpleIntegralType(ITypeInfo * type)
+{
+    switch (type->getTypeCode())
+    {
+    case type_int:
+    case type_swapint:
         return true;
     }
     return false;

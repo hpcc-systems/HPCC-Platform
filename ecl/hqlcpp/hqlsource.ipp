@@ -80,6 +80,7 @@ struct BuildMonitorState
     BuildMonitorState(BuildCtx & _funcctx, const char * _listName) : funcctx(_funcctx) 
     { 
         listName = _listName; 
+        curFieldIdx = 0;
         curOffset = 0;
         wildOffset = (unsigned) -1;
         numActiveSets = 0;
@@ -91,7 +92,7 @@ struct BuildMonitorState
     inline bool wildPending() { return wildOffset != (unsigned)-1; }
     inline void clearWild() { wildOffset = (unsigned) -1; }
 
-    const char * getSetName();
+    const char * getSetName(bool createValueSets);
     void popSetName();
 
 //Constant while building monitors
@@ -105,6 +106,7 @@ struct BuildMonitorState
     bool doneImplicitWarning;
     bool warnedAllConditionsWild;
     bool wildWasKeyed;
+    unsigned curFieldIdx;
     unsigned curOffset;
     unsigned wildOffset;
 };
@@ -114,32 +116,30 @@ enum MonitorFilterKind { NoMonitorFilter, MonitorFilterSkipEmpty, MonitorFilterS
 struct KeySelectorInfo
 {
 public:
-    KeySelectorInfo(KeyedKind _keyedKind, IHqlExpression * _selector, IHqlExpression * _expandedSelector, size32_t _offset, size32_t _size, bool _mapOffset, bool _isComputed)
+    KeySelectorInfo(KeyedKind _keyedKind, IHqlExpression * _selector, IHqlExpression * _expandedSelector, unsigned _fieldIdx, size32_t _offset, size32_t _size)
     {
         keyedKind = _keyedKind; 
         selector = _selector; 
-        expandedSelector = _expandedSelector; 
+        expandedSelector = _expandedSelector;
+        fieldIdx = _fieldIdx;
         offset = _offset; 
         size = _size;
-        expandNeeded = (selector->queryType() != expandedSelector->queryType());
-        mapOffset = _mapOffset;
-        isComputed = _isComputed;
     }
+
+    const char * getFFOptions();
 
     IHqlExpression * selector;
     IHqlExpression * expandedSelector;
+    unsigned fieldIdx;
     size32_t offset;
     size32_t size;
     KeyedKind keyedKind;
-    bool expandNeeded;
-    bool mapOffset;
-    bool isComputed;
 };
 
 class MonitorExtractor
 {
 public:
-    MonitorExtractor(IHqlExpression * _tableExpr, HqlCppTranslator & _translator, int _numKeyableFields, bool _allowTranslatedConds);
+    MonitorExtractor(IHqlExpression * _tableExpr, HqlCppTranslator & _translator, int _numKeyableFields, bool isDiskRead);
 
     void appendFilter(IHqlExpression * expr)                { keyed.appendPostFilter(expr); }
     void buildSegments(BuildCtx & ctx, const char * listName, bool _ignoreUnkeyed);
@@ -153,7 +153,6 @@ public:
     bool isKeyedExplicitly()                                { return keyedExplicitly; }
     bool isFiltered()                                       { return keyed.postFilter || isKeyed(); }
     bool isKeyed();
-    void optimizeSegments(IHqlExpression * leftRecord);
     IHqlExpression * queryGlobalGuard()                     { return keyed.preFilter; }
     void reportFailureReason(IHqlExpression * cond)         { failReason.reportError(translator, cond); }
     const char * queryKeyName(StringBuffer & s);
@@ -161,13 +160,10 @@ public:
 
     bool isEqualityFilterBefore(IHqlExpression * select);
     unsigned queryKeySelectIndex(IHqlExpression * select)   { return keyableSelects.find(*select); }
-    bool createGroupingMonitor(BuildCtx ctx, const char * listName, IHqlExpression * select, unsigned & maxOffset);
+    bool createGroupingMonitor(BuildCtx ctx, const char * listName, IHqlExpression * select, unsigned & maxField);
 
 protected:
-    void buildArbitaryKeySegment(BuildMonitorState & buildState, BuildCtx & ctx, unsigned curSize, IHqlExpression * condition);
     void buildEmptyKeySegment(BuildMonitorState & buildState, BuildCtx & ctx, KeySelectorInfo & selectorInfo);
-    void buildWildKeySegment(BuildMonitorState & buildState, BuildCtx & ctx, KeySelectorInfo & selectorInfo);
-    void buildWildKeySegment(BuildMonitorState & buildState, BuildCtx & ctx, unsigned offset, unsigned size);
     void buildKeySegment(BuildMonitorState & buildState, BuildCtx & ctx, unsigned whichField, unsigned curSize);
     void buildKeySegmentExpr(BuildMonitorState & buildState, KeySelectorInfo & selectorInfo, BuildCtx & ctx, const char * target, IHqlExpression & thisKey, MonitorFilterKind filterKind);
     void buildKeySegmentCompareExpr(BuildMonitorState & buildState, KeySelectorInfo & selectorInfo, BuildCtx & ctx, const char * requiredSet, IHqlExpression & thisKey);
@@ -177,7 +173,7 @@ protected:
     IHqlExpression * castToFieldAndBack(IHqlExpression * left, IHqlExpression * right);
     bool containsTableSelects(IHqlExpression * expr);
     IHqlExpression * createRangeCompare(IHqlExpression * selector, IHqlExpression * value, IHqlExpression * lengthExpr, bool compareEqual);
-    void createStringSet(BuildCtx & ctx, const char * target, unsigned size, ITypeInfo * type);
+    void createStringSet(BuildCtx & ctx, const char * target, unsigned size, IHqlExpression * selector);
     KeyCondition * createTranslatedCondition(IHqlExpression * cond, KeyedKind keyedKind);
     bool extractBoolFieldFilter(KeyConditionInfo & matches, IHqlExpression * selector, KeyedKind keyedKind, bool compareValue);
     bool extractFilters(KeyConditionInfo & matches, IHqlExpression * filter, KeyedKind keyedKind);
@@ -187,9 +183,7 @@ protected:
     void expandKeyableFields();
     void expandSelects(IHqlExpression * expr, IHqlSimpleScope * expandedScope, IHqlExpression * keySelector, IHqlExpression * expandedSelector);;
     bool extractOrFilter(KeyConditionInfo & matches, IHqlExpression * filter, KeyedKind keyedKind);
-    void generateFormatWrapping(StringBuffer & createMonitorText, IHqlExpression * selector, IHqlExpression * expandedSelector, unsigned curOffset);
-    void generateOffsetWrapping(StringBuffer & createMonitorText, IHqlExpression * selector, unsigned curOffset);
-    IHqlExpression * getMonitorValueAddress(BuildCtx & ctx, IHqlExpression * value);
+    IHqlExpression * getMonitorValueAddress(BuildCtx & ctx, IHqlExpression * expandedSelector, IHqlExpression * value);
     IHqlExpression * getRangeLimit(ITypeInfo * fieldType, IHqlExpression * lengthExpr, IHqlExpression * value, int whichBoundary);
     IHqlExpression * invertTransforms(IHqlExpression * left, IHqlExpression * right);
     bool isEqualityFilter(IHqlExpression * select);
@@ -201,8 +195,8 @@ protected:
     bool okToKey(IHqlExpression * select, KeyedKind keyedKind);
     IHqlExpression * queryKeyableSelector(IHqlExpression * expr);
     IHqlExpression * querySimpleJoinValue(IHqlExpression * field);
-    void extractCompareInformation(BuildCtx & ctx, IHqlExpression * expr, SharedHqlExpr & compare, SharedHqlExpr & normalized, IHqlExpression * expandedSelector, bool isTranslated);
-    void extractCompareInformation(BuildCtx & ctx, IHqlExpression * lhs, IHqlExpression * value, SharedHqlExpr & compare, SharedHqlExpr & normalized, IHqlExpression * expandedSelector, bool isTranslated);
+    void extractCompareInformation(BuildCtx & ctx, IHqlExpression * expr, SharedHqlExpr & compare, SharedHqlExpr & normalized, IHqlExpression * expandedSelector);
+    void extractCompareInformation(BuildCtx & ctx, IHqlExpression * lhs, IHqlExpression * value, SharedHqlExpr & compare, SharedHqlExpr & normalized, IHqlExpression * expandedSelector);
     IHqlExpression * unwindConjunction(HqlExprArray & matches, IHqlExpression * expr);
 
 protected:
@@ -225,7 +219,6 @@ protected:
 //  LinkedHqlExpr filter;
 //  LinkedHqlExpr globalGuard;
     KeyConditionInfo keyed;
-    UnsignedArray mergedSizes;
     unsigned numKeyableFields;
     KeyFailureInfo failReason;
 
@@ -238,11 +231,13 @@ protected:
     HqlExprCopyArray noMergeSelects;    // don't merge these fields (even for wildcards) because they are separate stepping fields.
     unsigned firstOffsetField;          // first field where the keyed offset is adjusted
     bool onlyHozedCompares;
-    bool allowTranslatedConds;
     bool ignoreUnkeyed;
     bool cleanlyKeyedExplicitly;
     bool keyedExplicitly;
     bool allowDynamicFormatChange;
+    const bool createValueSets;
+    IIdAtom * addRangeFunc;
+    IIdAtom * killRangeFunc;
 };
 
 //---------------------------------------------------------------------------
@@ -274,5 +269,6 @@ public:
 //---------------------------------------------------------------------------
 
 unsigned getProjectCount(IHqlExpression * expr);
+IHqlExpression * createMetadataIndexRecord(IHqlExpression * record, bool hasInternalFilePosition);
 
 #endif

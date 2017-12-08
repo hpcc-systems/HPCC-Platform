@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+import $.setup;
+Files := setup.Files(false, false);
+
 namesRecord := 
             RECORD
 string20        surname;
@@ -45,9 +48,9 @@ d := dataset([
             }
         ], houseRecord);
 
-output(d,,'~regresstemp::houses1',overwrite);
+output(d,,Files.filePrefix+'houses1',overwrite);
 
-houseTable := dataset('~regresstemp::houses1', houseRecord, thor);
+houseTable := dataset(Files.filePrefix+'houses1', houseRecord, thor);
 
 //--- End of common ---
 

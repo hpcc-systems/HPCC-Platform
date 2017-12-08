@@ -169,13 +169,22 @@ void doDescheduleWorkkunit(char const * wuid)
  * Graph progress support
  */
 
-CWuGraphStats::CWuGraphStats(IPropertyTree *_progress, StatisticCreatorType _creatorType, const char * _creator, const char * _rootScope, unsigned _id)
+CWuGraphStats::CWuGraphStats(IPropertyTree *_progress, StatisticCreatorType _creatorType, const char * _creator, unsigned wfid, const char * _rootScope, unsigned _id)
     : progress(_progress), creatorType(_creatorType), creator(_creator), id(_id)
 {
-    StatisticScopeType scopeType = SSTgraph;
-    StatsScopeId rootScopeId;
-    verifyex(rootScopeId.setScopeText(_rootScope));
-    collector.setown(createStatisticsGatherer(_creatorType, _creator, rootScopeId));
+    StatsScopeId graphScopeId;
+    verifyex(graphScopeId.setScopeText(_rootScope));
+
+    if (wfid)
+    {
+        StatsScopeId rootScopeId(SSTworkflow,wfid);
+        collector.setown(createStatisticsGatherer(_creatorType, _creator, rootScopeId));
+        collector->beginScope(graphScopeId);
+    }
+    else
+    {
+        collector.setown(createStatisticsGatherer(_creatorType, _creator, graphScopeId));
+    }
 }
 
 void CWuGraphStats::beforeDispose()
@@ -284,6 +293,11 @@ protected:
                 tag = "node";
                 id += strlen(SubGraphScopePrefix);
                 break;
+            case SSTchildgraph:
+            case SSTworkflow:
+            case SSTgraph:
+                // SSTworkflow and SSTgraph may be safely ignored.  They are not required to produce the statistics.
+                continue;
             case SSTfunction:
                 //MORE:Should function scopes be included in the graph scope somehow, and if so how?
                 continue;
@@ -716,6 +730,15 @@ protected:
         if (!beginCollection(*collection))
             return false;
 
+        // When workflow is root element, it is just a container.  Ignore the workflow element here
+        // as WorkUnitStatisticsScopeIterator will produce workflow scope - don't want duplicates.
+        // (Note: workflow element never contains stats).
+        if (collection->queryScopeType() == SSTworkflow)
+        {
+            if (!next())
+                return false;
+        }
+
         //The root element of a collection is a graph - but it is only there to nest the subgraphs in.
         //Do not iterate it as a separate element - unless it has some stats.
         IStatisticCollection & curCollection = collections.tos();
@@ -807,7 +830,7 @@ protected:
         return true;
     }
 
-    virtual void playProperties(WuPropertyTypes whichProperties, IWuScopeVisitor & visitor) override
+    virtual void playProperties(IWuScopeVisitor & visitor, WuPropertyTypes whichProperties) override
     {
         if ((whichProperties & PTstatistics))
         {
@@ -1087,7 +1110,7 @@ public:
         return statistics.item(curIndex).getScopeType();
     }
 
-    virtual void playProperties(WuPropertyTypes whichProperties, IWuScopeVisitor & visitor) override
+    virtual void playProperties(IWuScopeVisitor & visitor, WuPropertyTypes whichProperties) override
     {
         if (whichProperties & PTstatistics)
         {
@@ -1252,7 +1275,7 @@ public:
         return scopeType;
     }
 
-    virtual void playProperties(WuPropertyTypes whichProperties, IWuScopeVisitor & visitor) override
+    virtual void playProperties(IWuScopeVisitor & visitor, WuPropertyTypes whichProperties) override
     {
         switch (scopeType)
         {
@@ -1782,14 +1805,14 @@ public:
         return iters.item(firstMatchIter).getScopeType();
     }
 
-    virtual void playProperties(WuPropertyTypes whichProperties, IWuScopeVisitor & visitor) override
+    virtual void playProperties(IWuScopeVisitor & visitor, WuPropertyTypes whichProperties) override
     {
         VisitorMapper mappedVisitor(filter, visitor);
         whichProperties &= filter.properties;
         ForEachItemIn(i, iters)
         {
             if (iterMatchesCurrentScope(i))
-                iters.item(i).playProperties(whichProperties, mappedVisitor);
+                iters.item(i).playProperties(mappedVisitor, whichProperties);
         }
     }
 
@@ -2189,7 +2212,7 @@ static unsigned readOptValue(const char * start, const char * end, unsigned dft,
     if (start == end)
         return dft;
     char * next;
-    unsigned value = strtoll(start, &next, 10);
+    unsigned value = (unsigned)strtoll(start, &next, 10);
     if (next != end)
         throw makeStringExceptionV(0, "Unexpected characters in %s option '%s'", type, next);
     return value;
@@ -2201,7 +2224,7 @@ static unsigned readValue(const char * start, const char * type)
         throw makeStringExceptionV(0, "Expected a value for the %s option", type);
 
     char * next;
-    unsigned value = strtoll(start, &next, 10);
+    unsigned value = (unsigned)strtoll(start, &next, 10);
     if (*next != '\0')
         throw makeStringExceptionV(0, "Unexpected characters in %s option '%s'", type, next);
     return value;
@@ -2936,8 +2959,8 @@ extern IConstWorkUnitInfo *createConstWorkUnitInfo(IPropertyTree &p)
 class CDaliWuGraphStats : public CWuGraphStats
 {
 public:
-    CDaliWuGraphStats(IRemoteConnection *_conn, StatisticCreatorType _creatorType, const char * _creator, const char * _rootScope, unsigned _id)
-        : CWuGraphStats(LINK(_conn->queryRoot()), _creatorType, _creator, _rootScope, _id), conn(_conn)
+    CDaliWuGraphStats(IRemoteConnection *_conn, StatisticCreatorType _creatorType, const char * _creator, unsigned _wfid, const char * _rootScope, unsigned _id)
+        : CWuGraphStats(LINK(_conn->queryRoot()), _creatorType, _creator, _wfid, _rootScope, _id), conn(_conn)
     {
     }
 protected:
@@ -3229,9 +3252,9 @@ public:
             }
         }
     }
-    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned subgraph) const
+    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph) const override
     {
-        return new CDaliWuGraphStats(getWritableProgressConnection(graphName), creatorType, creator, graphName, subgraph);
+        return new CDaliWuGraphStats(getWritableProgressConnection(graphName), creatorType, creator, _wfid, graphName, subgraph);
     }
 
 protected:
@@ -3493,8 +3516,8 @@ public:
             { c->setGraphState(graphName, state); }
     virtual void setNodeState(const char *graphName, WUGraphIDType nodeId, WUGraphState state) const
             { c->setNodeState(graphName, nodeId, state); }
-    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned subgraph) const
-            { return c->updateStats(graphName, creatorType, creator, subgraph); }
+    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph) const override
+            { return c->updateStats(graphName, creatorType, creator, _wfid, subgraph); }
     virtual void clearGraphProgress() const
             { c->clearGraphProgress(); }
     virtual IStringVal & getAbortBy(IStringVal & str) const
@@ -5822,8 +5845,8 @@ bool modifyAndWriteWorkUnitXML(char const * wuid, StringBuffer & buf, StringBuff
                 break;
         }
         assertex('>' == *bufPtr);
-        size32_t l = (size32_t)strlen(wuid);
-        assertex(bufPtr-bufStart > l+2); // e.g. at least </W20171111-111111>
+        size_t l = strlen(wuid);
+        assertex((size_t)(bufPtr-bufStart) > l+2); // e.g. at least </W20171111-111111>
         bufPtr -= l+2; // skip back over </wuid
         assertex(0 == memcmp(bufPtr, "</", 2) );
         assertex(0 == memcmp(bufPtr+2, wuid, l));
@@ -6593,10 +6616,8 @@ void getRoxieProcessServers(IPropertyTree *roxie, SocketEndpointArray &endpoints
 
 void getRoxieProcessServers(const char *process, SocketEndpointArray &servers)
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (!env)
-        return;
     Owned<IPropertyTree> root = &env->getPTree();
     getRoxieProcessServers(queryRoxieProcessTree(root, process), servers);
 }
@@ -6793,27 +6814,24 @@ IStringVal &getProcessQueueNames(IStringVal &ret, const char *process, const cha
 {
     if (process)
     {
-        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> env = factory->openEnvironment();
-        if (env)
+        Owned<IPropertyTree> root = &env->getPTree();
+        StringBuffer queueNames;
+        StringBuffer xpath;
+        xpath.appendf("%s[@process=\"%s\"]", type, process);
+        Owned<IPropertyTreeIterator> targets = root->getElements("Software/Topology/Cluster");
+        ForEach(*targets)
         {
-            Owned<IPropertyTree> root = &env->getPTree();
-            StringBuffer queueNames;
-            StringBuffer xpath;
-            xpath.appendf("%s[@process=\"%s\"]", type, process);
-            Owned<IPropertyTreeIterator> targets = root->getElements("Software/Topology/Cluster");
-            ForEach(*targets)
+            IPropertyTree &target = targets->query();
+            if (target.hasProp(xpath))
             {
-                IPropertyTree &target = targets->query();
-                if (target.hasProp(xpath))
-                {
-                    if (queueNames.length())
-                        queueNames.append(',');
-                    queueNames.append(target.queryProp("@name")).append(suffix);
-                }
+                if (queueNames.length())
+                    queueNames.append(',');
+                queueNames.append(target.queryProp("@name")).append(suffix);
             }
-            ret.set(queueNames);
         }
+        ret.set(queueNames);
     }
     return ret;
 }
@@ -6827,10 +6845,8 @@ IStringVal &getProcessQueueNames(IStringVal &ret, const char *process, const cha
 
 extern WORKUNIT_API void getDFUServerQueueNames(StringArray &ret, const char *process)
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (!env)
-        return;
 
     StringBuffer xpath = "Software/DfuServerProcess";
     if (!isEmptyString(process))
@@ -6884,17 +6900,14 @@ extern WORKUNIT_API StringBuffer &getClusterThorQueueName(StringBuffer &ret, con
 
 extern WORKUNIT_API StringBuffer &getClusterThorGroupName(StringBuffer &ret, const char *cluster)
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (env)
-    {
-        Owned<IPropertyTree> root = &env->getPTree();
-        StringBuffer path;
-        path.append("Software/ThorCluster[@name=\"").append(cluster).append("\"]");
-        IPropertyTree * child = root->queryPropTree(path);
-        if (child)
-            getClusterGroupName(*child, ret);
-    }
+    Owned<IPropertyTree> root = &env->getPTree();
+    StringBuffer path;
+    path.append("Software/ThorCluster[@name=\"").append(cluster).append("\"]");
+    IPropertyTree * child = root->queryPropTree(path);
+    if (child)
+        getClusterGroupName(*child, ret);
 
     return ret;
 }
@@ -6922,23 +6935,20 @@ extern WORKUNIT_API StringBuffer &getClusterEclAgentQueueName(StringBuffer &ret,
 extern WORKUNIT_API IStringIterator *getTargetClusters(const char *processType, const char *processName)
 {
     Owned<CStringArrayIterator> ret = new CStringArrayIterator;
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (env)
+    Owned<IPropertyTree> root = &env->getPTree();
+    StringBuffer xpath;
+    xpath.appendf("%s", processType ? processType : "*");
+    if (processName && *processName)
+        xpath.appendf("[@process=\"%s\"]", processName);
+    Owned<IPropertyTreeIterator> targets = root->getElements("Software/Topology/Cluster");
+    ForEach(*targets)
     {
-        Owned<IPropertyTree> root = &env->getPTree();
-        StringBuffer xpath;
-        xpath.appendf("%s", processType ? processType : "*");
-        if (processName && *processName)
-            xpath.appendf("[@process=\"%s\"]", processName);
-        Owned<IPropertyTreeIterator> targets = root->getElements("Software/Topology/Cluster");
-        ForEach(*targets)
+        IPropertyTree &target = targets->query();
+        if (target.hasProp(xpath))
         {
-            IPropertyTree &target = targets->query();
-            if (target.hasProp(xpath))
-            {
-                ret->append(target.queryProp("@name"));
-            }
+            ret->append(target.queryProp("@name"));
         }
     }
     return ret.getClear();
@@ -6948,11 +6958,8 @@ extern WORKUNIT_API bool isProcessCluster(const char *process)
 {
     if (!process || !*process)
         return false;
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (!env)
-        return false;
-
     Owned<IPropertyTree> root = &env->getPTree();
     VStringBuffer xpath("Software/*Cluster[@name=\"%s\"]", process);
     return root->hasProp(xpath.str());
@@ -7025,11 +7032,8 @@ IPropertyTree* getTopologyCluster(Owned<IPropertyTree> &envRoot, const char *clu
 {
     if (!clustname || !*clustname)
         return NULL;
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (!env)
-        return NULL;
-
     envRoot.setown(&env->getPTree());
     StringBuffer xpath;
     xpath.appendf("Software/Topology/Cluster[@name=\"%s\"]", clustname);
@@ -7054,11 +7058,8 @@ IConstWUClusterInfo* getTargetClusterInfo(const char *clustname)
 
 unsigned getEnvironmentClusterInfo(CConstWUClusterInfoArray &clusters)
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (!env)
-        return 0;
-
     Owned<IPropertyTree> root = &env->getPTree();
     return getEnvironmentClusterInfo(root, clusters);
 }
@@ -7083,11 +7084,8 @@ const char *getTargetClusterComponentName(const char *clustname, const char *pro
     if (!clustname)
         return NULL;
 
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (!env)
-        return NULL;
-
     Owned<IPropertyTree> root = &env->getPTree();
     StringBuffer xpath;
 
@@ -7104,11 +7102,8 @@ const char *getTargetClusterComponentName(const char *clustname, const char *pro
 
 unsigned getEnvironmentThorClusterNames(StringArray &thorNames, StringArray &groupNames, StringArray &targetNames, StringArray &queueNames)
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (!env)
-        return 0;
-
     Owned<IPropertyTree> root = &env->getPTree();
     Owned<IPropertyTreeIterator> allTargets = root->getElements("Software/Topology/Cluster");
     ForEach(*allTargets)
@@ -7143,11 +7138,8 @@ unsigned getEnvironmentThorClusterNames(StringArray &thorNames, StringArray &gro
 
 unsigned getEnvironmentHThorClusterNames(StringArray &eclAgentNames, StringArray &groupNames, StringArray &targetNames)
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
-    if (!env)
-        return 0;
-
     Owned<IPropertyTree> root = &env->getPTree();
     Owned<IPropertyTreeIterator> allEclAgents = root->getElements("Software/EclAgentProcess");
     ForEach(*allEclAgents)
@@ -9214,9 +9206,9 @@ void CLocalWorkUnit::setNodeState(const char *graphName, WUGraphIDType nodeId, W
 {
     throwUnexpected();   // Should only be used for persisted workunits
 }
-IWUGraphStats *CLocalWorkUnit::updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned subgraph) const
+IWUGraphStats *CLocalWorkUnit::updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph) const
 {
-    return new CWuGraphStats(LINK(p), creatorType, creator, graphName, subgraph);
+    return new CWuGraphStats(LINK(p), creatorType, creator, _wfid, graphName, subgraph);
 }
 
 void CLocalWUGraph::setName(const char *str)
@@ -12737,9 +12729,14 @@ extern WORKUNIT_API void descheduleWorkunit(char const * wuid)
         doDescheduleWorkkunit(wuid);
 }
 
-extern WORKUNIT_API void updateWorkunitTimeStat(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * description, unsigned __int64 value)
+extern WORKUNIT_API void updateWorkunitTimeStat(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * description, unsigned __int64 value, unsigned wfid)
 {
-    wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, description, value, 1, 0, StatsMergeReplace);
+    StringBuffer scopestr;
+    if (wfid && scope && *scope)
+        scopestr.append(WorkflowScopePrefix).append(wfid).append(":").append(scope);
+    else
+        scopestr.set(scope);
+    wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scopestr, kind, description, value, 1, 0, StatsMergeReplace);
 }
 
 class WuTimingUpdater : implements ITimeReportInfo
@@ -12774,9 +12771,15 @@ extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, StatisticScopeTyp
 }
 
 
-extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind)
+extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, unsigned wfid)
 {
-    wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, kind, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
+    StringBuffer scopestr;
+    if (wfid && scope && *scope)
+        scopestr.append(WorkflowScopePrefix).append(wfid).append(":").append(scope);
+    else
+        scopestr.set(scope);
+
+    wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scopestr, kind, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
 }
 
 
@@ -12785,7 +12788,7 @@ void aggregateStatistic(StatsAggregation & result, IConstWorkUnit * wu, const Wu
     SimpleReferenceAggregator aggregator(search, result);
     Owned<IConstWUScopeIterator> it = &wu->getScopeIterator(filter);
     ForEach(*it)
-        it->playProperties(PTstatistics, aggregator);
+        it->playProperties(aggregator);
 }
 
 
@@ -12815,6 +12818,11 @@ public:
     virtual void beginEdgeScope(unsigned id, unsigned oid)
     {
         StatsScopeId scopeId(SSTedge, id, oid);
+        beginScope(scopeId);
+    }
+    virtual void beginChildGraphScope(unsigned id)
+    {
+        StatsScopeId scopeId(SSTchildgraph, id);
         beginScope(scopeId);
     }
     virtual void endScope()

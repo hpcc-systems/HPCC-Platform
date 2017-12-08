@@ -512,7 +512,7 @@ public:
         m_pGraphXml.clear();
         m_pNavTree.clear();
 
-        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();       
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory(false);
         m_constEnvRdOnly.set(factory->openEnvironment());
         m_constEnvRdOnly->clearCache();
     }

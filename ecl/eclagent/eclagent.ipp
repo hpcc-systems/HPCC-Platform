@@ -1069,6 +1069,7 @@ public:
     IProbeManager * probeManager;
     CriticalSection evaluateCrit;
     bool isChildGraph;
+    bool isLoopBody;
 };
 
 typedef EclSubGraph * EclSubGraphPtr;
@@ -1115,7 +1116,8 @@ public:
     void createFromXGMML(ILoadedDllEntry * dll, IPropertyTree * xgmml, bool enableProbe);
     void execute(const byte * parentExtract);
     void executeLibrary(const byte * parentExtract, IHThorGraphResults * results);
-    IWUGraphStats *updateStats(StatisticCreatorType creatorType, const char * creator, unsigned subgraph);
+    IWUGraphStats *updateStats(StatisticCreatorType creatorType, const char * creator, unsigned wfid, unsigned subgraph);
+    void updateWUStatistic(IWorkUnit* lockedwu, StatisticScopeType scopeType, const char* scope, StatisticKind kind, const char* descr, long long unsigned int value);
 
     EclSubGraph * idToGraph(unsigned id);
     EclGraphElement * idToActivity(unsigned id);

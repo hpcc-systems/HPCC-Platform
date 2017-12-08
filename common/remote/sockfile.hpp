@@ -64,9 +64,8 @@ interface IRemoteFileServer : extends IInterface
 
 interface IKeyManager;
 interface IDelayedFile;
+
 extern REMOTE_API IFile * createRemoteFile(SocketEndpoint &ep,const char * _filename);
-extern REMOTE_API IKeyManager *createKeyManager(const char *filename, unsigned keySize, unsigned crc, IDelayedFile *delayedFile, bool allowRemote, bool forceRemote);
-extern REMOTE_API IKeyManager * createRemoteKeyManager(const char *filename, unsigned keySize, unsigned crc, IDelayedFile *delayedFile);
 extern REMOTE_API unsigned getRemoteVersion(ISocket * _socket, StringBuffer &ver);
 extern REMOTE_API unsigned stopRemoteServer(ISocket * _socket);
 extern REMOTE_API const char *remoteServerVersionString();

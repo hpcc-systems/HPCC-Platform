@@ -57,12 +57,10 @@ public:
     char const * queryDiskFieldName() const { return str(diskRecord->queryChild(diskFieldNum)->queryName()); }
     unsigned queryDiskFieldNum() const { return diskFieldNum; }
     size32_t queryDiskFieldSize() const { return diskRecord->queryChild(diskFieldNum)->queryType()->getSize(); }
-    bool isDiskFieldFpos() const { return ((type != ChildDataset) && !diskFieldKeyed && (diskFieldNum == diskRecord->numChildren()-1) && diskRecord->queryChild(diskFieldNum)->queryType()->isInteger()); }
     bool isDiskFieldSet() const { return (diskRecord->queryChild(diskFieldNum)->queryType()->getTypeCode() == type_set); }
     char const * queryActivityFieldName() const { return str(activityRecord->queryChild(activityFieldNum)->queryName()); }
     unsigned queryActivityFieldNum() const { return activityFieldNum; }
     size32_t queryActivityFieldSize() const { return activityRecord->queryChild(activityFieldNum)->queryType()->getSize(); }
-    bool isActivityFieldFpos() const { return ((type == Simple) && !activityFieldKeyed && (activityFieldNum == activityRecord->numChildren()-1) && activityRecord->queryChild(activityFieldNum)->queryType()->isInteger()); }
     List const & queryChildMappings() const { return childMappings; }
 
 private:
@@ -101,12 +99,12 @@ class ExpandedSegmentMonitorList : public IRecordLayoutTranslator::SegmentMonito
 public:
     ExpandedSegmentMonitorList(CRecordLayoutTranslator * _owner) : owner(_owner) {}
     IMPLEMENT_IINTERFACE;
-    virtual void setMergeBarrier(unsigned barrierOffset);
-    virtual void append(IKeySegmentMonitor * monitor);
-    virtual bool isLastSegmentWild() const { return false; }
-    virtual unsigned ordinality() const { return monitors.ordinality(); }
-    virtual IKeySegmentMonitor * item(unsigned i) const { return &monitors.item(i); }
-    virtual void reset() { monitors.kill(); }
+    virtual void append(IKeySegmentMonitor * monitor) override;
+    virtual unsigned ordinality() const override { return monitors.ordinality(); }
+    virtual IKeySegmentMonitor * item(unsigned i) const override { return &monitors.item(i); }
+    virtual void reset() override { monitors.kill(); }
+    virtual void append(FFoption option, IFieldFilter * filter) override { UNIMPLEMENTED; }
+
 private:
     CRecordLayoutTranslator * owner;
     IArrayOf<IKeySegmentMonitor> monitors;
@@ -121,23 +119,19 @@ public:
     RowTransformer(unsigned & seq, FieldMapping::List const & mappings) { build(seq, mappings); }
     void build(unsigned & seq, FieldMapping::List const & mappings);
     void transform(IRecordLayoutTranslator::RowTransformContext * ctx, byte const * in, size32_t inSize, size32_t & inOffset, IMemoryBlock & out, size32_t & outOffset) const;
-    void getFposOut(IRecordLayoutTranslator::RowTransformContext const * ctx, offset_t & fpos) const;
     void createRowTransformContext(IRecordLayoutTranslator::RowTransformContext * ctx) const;
 
 private:
     class RowRecord : public CInterface
     {
     public:
-        RowRecord() : relOffset(0), relBase(0), size(0), followOn(false), childMappings(NULL), toFpos(false), fromFpos(false) {}
+        RowRecord() : relOffset(0), relBase(0), size(0), followOn(false), childMappings(NULL) {}
         RowRecord & setVals(size32_t _relOffset, unsigned _relBase, size32_t _size, bool _followOn) { relOffset = _relOffset; relBase = _relBase; size = _size; followOn = _followOn; return *this; }
         RowRecord & setChildMappings(FieldMapping::List const * _mappings) { childMappings = _mappings; return *this; }
-        RowRecord & setFpos(bool to, bool from) { toFpos = to; fromFpos = from; return *this; }
         size32_t queryRelOffset() const { return relOffset; }
         unsigned queryRelBase() const { return relBase; }
         size32_t querySize() const { return size; }
         bool queryFollowOn() const { return followOn; }
-        bool isToFpos() const { return toFpos; }
-        bool isFromFpos() const { return fromFpos; }
         FieldMapping::List const * queryChildMappings() const { return childMappings; }
     private:
         size32_t relOffset;
@@ -145,16 +139,12 @@ private:
         size32_t size;
         bool followOn;
         FieldMapping::List const * childMappings;
-        bool toFpos;
-        bool fromFpos;
     };
 
     RowRecord & ensureItem(CIArrayOf<RowRecord> & arr, unsigned pos);
     void createRowRecord(FieldMapping const & mapping, CIArrayOf<RowRecord> & records, size32_t diskOffset, unsigned numVarFields, bool & prevActivityField, unsigned & prevActivityFieldNum);
     void analyseMappings(FieldMapping::List const & mappings, CIArrayOf<RowRecord> & records);
     void generateSimpleCopy(unsigned & seq, RowRecord const & record);
-    void generateCopyToFpos(RowRecord const & record);
-    void generateCopyFromFpos(RowRecord const & record);
     void generateCopies(unsigned & seq, CIArrayOf<RowRecord> const & records);
 
 private:
@@ -201,7 +191,7 @@ public:
     virtual SegmentMonitorContext * getSegmentMonitorContext() { return new ExpandedSegmentMonitorList(this); }
     virtual void createDiskSegmentMonitors(SegmentMonitorContext const & in, IIndexReadContext & out);
     virtual RowTransformContext * getRowTransformContext();
-    virtual size32_t transformRow(RowTransformContext * ctx, byte const * in, size32_t inSize, IMemoryBlock & out, offset_t & fpos) const;
+    virtual size32_t transformRow(RowTransformContext * ctx, byte const * in, size32_t inSize, IMemoryBlock & out) const;
 #ifdef DEBUG_HELPERS_REQUIRED
     virtual StringBuffer & getMappingsAsString(StringBuffer & out) const;
 #endif

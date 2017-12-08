@@ -624,7 +624,7 @@ StringBuffer & EclAgent::getTempfileBase(StringBuffer & buff)
 const char *EclAgent::queryTemporaryFile(const char *fname)
 {
     StringBuffer tempfilename;
-    getTempfileBase(tempfilename).append('.').append(fname);
+    getTempfileBase(tempfilename).append(PATHSEPCHAR).append(fname);
     CriticalBlock crit(tfsect);
     ForEachItemIn(idx, tempFiles)
     {
@@ -640,7 +640,7 @@ const char *EclAgent::queryTemporaryFile(const char *fname)
 const char *EclAgent::noteTemporaryFile(const char *fname)
 {
     StringBuffer tempfilename;
-    getTempfileBase(tempfilename).append('.').append(fname);
+    getTempfileBase(tempfilename).append(PATHSEPCHAR).append(fname);
     CriticalBlock crit(tfsect);
     tempFiles.append(tempfilename.str());
     return tempFiles.item(tempFiles.length()-1);
@@ -1980,6 +1980,25 @@ void EclAgent::doProcess()
             w->deleteTempFiles(NULL, false, deleteJobTemps);
             if (deleteJobTemps)
                 w->deleteTemporaries();
+            deleteTempFiles();
+            StringBuffer jobTempDir;
+            getTempfileBase(jobTempDir);
+            OwnedIFile dir = createIFile(jobTempDir);
+            StringBuffer rmMsg;
+            unsigned errCode = 0;
+            try
+            {
+               if (!dir->remove())
+                    rmMsg.append("Failed to remove temporary directory: ").append(jobTempDir.str());
+            }
+            catch (IException *e)
+            {
+                errCode = e->errorCode();
+                e->errorMessage(rmMsg);
+                e->Release();
+            }
+            if (rmMsg.length())
+                WARNLOG(errCode, "%s", rmMsg.str());
         }
 
         if (globals->getPropBool("DUMPFINALWU", false))
@@ -3508,18 +3527,21 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             {
                 EclAgent agent(w, wuid.str(), globals->getPropInt("IGNOREVERSION", 0)==0, globals->getPropBool("WFRESET", false), globals->getPropBool("NORETRY", false), logfilespec.str(), globals->queryProp("allowedPipePrograms"), query.getClear(), globals, agentTopology, logMsgHandler);
                 const bool isRemoteWorkunit = (daliServers.length() != 0);
-                const bool resolveFilesLocally = !isRemoteWorkunit || globals->getPropBool("USELOCALFILES", false);
-                const bool writeResultsToStdout = !isRemoteWorkunit || globals->getPropBool("RESULTSTOSTDOUT", false);
+                const bool resolveFilesLocally = standAloneExe && (!isRemoteWorkunit || globals->getPropBool("USELOCALFILES", false));
+                const bool writeResultsToStdout = standAloneExe && (!isRemoteWorkunit || globals->getPropBool("RESULTSTOSTDOUT", true));
 
                 outputFmts outputFmt = ofSTD;
-                if (globals->getPropBool("-xml", false))
-                    outputFmt = ofXML;
-                else if (globals->getPropBool("-raw", false))
-                    outputFmt = ofRAW;
-                else if (globals->getPropBool("-csv", false))
+                if (writeResultsToStdout)
                 {
-                    fprintf(stdout,"\nCSV output format not supported\n");
-                    return false;
+                    if (globals->getPropBool("-xml", false))
+                        outputFmt = ofXML;
+                    else if (globals->getPropBool("-raw", false))
+                        outputFmt = ofRAW;
+                    else if (globals->getPropBool("-csv", false))
+                    {
+                        fprintf(stdout,"\nCSV output format not supported\n");
+                        return false;
+                    }
                 }
 
                 agent.setStandAloneOptions(standAloneExe, isRemoteWorkunit, resolveFilesLocally, writeResultsToStdout, outputFmt, standAloneUDesc);

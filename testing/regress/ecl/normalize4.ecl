@@ -56,7 +56,7 @@ streamed dataset(out1Rec) extractResult3(doneRec done) := BEGINC++
         myStream(IEngineRowAllocator * _allocator, unsigned _id) : allocator(_allocator), id(_id), idx(0) {}
         RTLIMPLEMENT_IINTERFACE
 
-        virtual const void *nextRow()
+        virtual const void *nextRow() override
         {
             if (idx >= 10)
                return NULL;
@@ -65,7 +65,7 @@ streamed dataset(out1Rec) extractResult3(doneRec done) := BEGINC++
             *(unsigned __int64 *)row = id + ++idx;
             return allocator->finalizeRow(allocSize, row, allocSize);
         }
-        virtual void stop() {}
+        virtual void stop() override {}
     private:
         Linked<IEngineRowAllocator> allocator;
         unsigned id;

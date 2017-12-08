@@ -76,9 +76,9 @@ public:
     inline CSourceRowPrefetcher(unsigned _activityId) { activityId = _activityId; ctx = NULL; }
     RTLIMPLEMENT_IINTERFACE
 
-    inline void onCreate(ICodeContext * _ctx) { ctx = _ctx; }
+    virtual void onCreate(ICodeContext * _ctx) { ctx = _ctx; }
 
-    virtual void readAhead(IRowDeserializerSource & in) override = 0;
+    virtual void readAhead(IRowPrefetcherSource & in) override = 0;
 
 protected:
     ICodeContext * ctx;
@@ -113,7 +113,7 @@ class CFixedSourceRowPrefetcher : public CSourceRowPrefetcher
 public:
     inline CFixedSourceRowPrefetcher(unsigned _activityId, unsigned _fixedSize) : CSourceRowPrefetcher(_activityId) { fixedSize = _fixedSize; }
 
-    virtual void readAhead(IRowDeserializerSource & in) { in.skip(fixedSize); }
+    virtual void readAhead(IRowPrefetcherSource & in) { in.skip(fixedSize); }
 
 protected:
     size32_t fixedSize;
@@ -192,6 +192,8 @@ protected:
 
 class FieldNameToFieldNumMap;
 
+class IfBlockInfo;
+
 class ECLRTL_API RtlRecord
 {
 public:
@@ -212,24 +214,30 @@ public:
         return fixedOffsets[field] + variableOffsets[whichVariableOffset[field]];
     }
 
-
+    size_t getFixedOffset(unsigned field) const;
     size_t getRecordSize(size_t * variableOffsets) const
     {
         return getOffset(variableOffsets, numFields);
     }
     size32_t getRecordSize(const void *data) const;
+    size32_t calculateOffset(const void *_row, unsigned field) const;
 
     size32_t getMinRecordSize() const;
     size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in) const;
-    void readAhead(IRowDeserializerSource & in) const;
+    void readAhead(IRowPrefetcherSource & in) const;
+    int compare(const byte * left, const byte * right) const;
 
     inline unsigned getNumFields() const { return numFields; }
+    unsigned getNumKeyedFields() const;
     inline unsigned getNumVarFields() const { return numVarFields; }
+    inline unsigned getNumIfBlocks() const { return numIfBlocks; }
     inline const RtlFieldInfo * queryField(unsigned field) const { return fields[field]; }
+    const RtlFieldInfo * queryOriginalField(unsigned field) const;
     inline const RtlTypeInfo * queryType(unsigned field) const { return fields[field]->type; }
     const char * queryName(unsigned field) const;
     unsigned getFieldNum(const char *fieldName) const;
     const RtlRecord *queryNested(unsigned field) const;
+    bool excluded(const RtlFieldInfo *field, const byte *row, byte *conditions) const;
 protected:
     size_t * fixedOffsets;         // fixed portion of the field offsets + 1 extra
     unsigned * whichVariableOffset;// which variable offset should be added to the fixed
@@ -238,10 +246,12 @@ protected:
     unsigned numFields;
     unsigned numVarFields;
     unsigned numTables;
+    unsigned numIfBlocks;
     const RtlFieldInfo * const * fields;
     const RtlFieldInfo * const * originalFields;
     const RtlRecord **nestedTables;
     const char **names;
+    const IfBlockInfo **ifblocks;
     mutable const FieldNameToFieldNumMap *nameMap;
 };
 

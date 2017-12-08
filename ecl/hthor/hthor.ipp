@@ -188,7 +188,7 @@ static bool verifyFormatCrcSuper(unsigned helperCrc, IDistributedFile * df, bool
 }
 
 #define IMPLEMENT_SINKACTIVITY \
-    virtual unsigned queryOutputs() { return 0; } \
+    virtual unsigned queryOutputs() const { return 0; } \
     virtual const void * nextRow() { throwUnexpected(); } \
     virtual bool isGrouped() { throwUnexpected(); } \
     virtual IOutputMetaData * queryOutputMeta() const   { throwUnexpected(); } 
@@ -223,7 +223,7 @@ public:
     virtual void resetEOF();
     virtual void setBoundGraph(IHThorBoundLoopGraph * graph) { UNIMPLEMENTED; }
     virtual __int64 getCount();
-    virtual unsigned queryOutputs() { return 1; }
+    virtual unsigned queryOutputs() const { return 1; }
     virtual void updateProgress(IStatisticGatherer &progress) const;
     virtual void updateProgressForOther(IStatisticGatherer &progress, unsigned otherActivity, unsigned otherSubgraph) const;
     unsigned __int64 queryProcessed() const { return processed; }
@@ -2290,6 +2290,7 @@ class CHThorBinaryDiskReadBase : public CHThorDiskReadBaseActivity, implements I
 {
 protected:
     IArrayOf<IKeySegmentMonitor> segMonitors;
+    IArrayOf<IFieldFilter> fieldFilters;
     IHThorCompoundBaseArg & segHelper;
     Owned<ISourceRowPrefetcher> prefetcher;
     Owned<IOutputRowDeserializer> deserializer;
@@ -2307,7 +2308,7 @@ public:
     virtual void append(IKeySegmentMonitor *segment);
     virtual unsigned ordinality() const;
     virtual IKeySegmentMonitor *item(unsigned idx) const;
-    virtual void setMergeBarrier(unsigned barrierOffset);
+    virtual void append(FFoption option, IFieldFilter * filter);
 
 protected:
     virtual void verifyRecordFormatCrc() { ::verifyFormatCrcSuper(helper.getFormatCrc(), ldFile?ldFile->queryDistributedFile():NULL, false, true); }
@@ -2319,12 +2320,20 @@ protected:
     inline bool segMonitorsMatch(const void * buffer)
     {
         bool match = true;
-        if (segMonitors.length())
+        if (segMonitors || fieldFilters)
         {
             rowInfo.setRow(buffer, numFieldsRequired);
             ForEachItemIn(idx, segMonitors)
             {
                 if (!segMonitors.item(idx).matches(&rowInfo))
+                {
+                    match = false;
+                    break;
+                }
+            }
+            ForEachItemIn(idx2, fieldFilters)
+            {
+                if (!fieldFilters.item(idx2).matches(rowInfo))
                 {
                     match = false;
                     break;

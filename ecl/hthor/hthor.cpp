@@ -48,6 +48,7 @@
 #include "eclagent.ipp"
 #include "roxierowbuff.hpp"
 #include "ftbase.ipp"
+#include "rtldynfield.hpp"
 
 #define EMPTY_LOOP_LIMIT 1000
 
@@ -222,7 +223,8 @@ void CHThorActivityBase::resetEOF()
 
 void CHThorActivityBase::updateProgress(IStatisticGatherer &progress) const
 {
-    updateProgressForOther(progress, activityId, subgraphId);
+    if (queryOutputs()>0)
+        updateProgressForOther(progress, activityId, subgraphId);
     if (input)
         input->updateProgress(progress);
 }
@@ -304,7 +306,7 @@ private:
     virtual void getTempFilename(StringAttr & out) const
     {
         StringBuffer buff;
-        agent.getTempfileBase(buff).appendf(".cluster_write_%p.%" I64F "d_%u", this, (__int64)GetCurrentThreadId(), GetCurrentProcessId());
+        agent.getTempfileBase(buff).append(PATHSEPCHAR).appendf("cluster_write_%p.%" I64F "d_%u", this, (__int64)GetCurrentThreadId(), GetCurrentProcessId());
         out.set(buff.str());
     }
 };
@@ -746,6 +748,12 @@ void CHThorDiskWriteActivity::setFormat(IFileDescriptor * desc)
     const char *recordECL = helper.queryRecordECL();
     if (recordECL && *recordECL)
         desc->queryProperties().setProp("ECL", recordECL);
+    if (helper.queryDiskRecordSize()->queryTypeInfo())
+    {
+        MemoryBuffer out;
+        dumpTypeInfo(out, helper.queryDiskRecordSize()->queryTypeInfo());
+        desc->queryProperties().setPropBin("_rtlType", out.length(), out.toByteArray());
+    }
     desc->queryProperties().setProp("@kind", "flat");
 }
 
@@ -883,6 +891,12 @@ void CHThorCsvWriteActivity::setFormat(IFileDescriptor * desc)
     const char *recordECL = helper.queryRecordECL();
     if (recordECL && *recordECL)
         desc->queryProperties().setProp("ECL", recordECL);
+    if (helper.queryDiskRecordSize()->queryTypeInfo())
+    {
+        MemoryBuffer out;
+        dumpTypeInfo(out, helper.queryDiskRecordSize()->queryTypeInfo());
+        desc->queryProperties().setPropBin("_rtlType", out.length(), out.toByteArray());
+    }
 }
 
 //=====================================================================================================
@@ -971,6 +985,12 @@ void CHThorXmlWriteActivity::setFormat(IFileDescriptor * desc)
     const char *recordECL = helper.queryRecordECL();
     if (recordECL && *recordECL)
         desc->queryProperties().setProp("ECL", recordECL);
+    if (helper.queryDiskRecordSize()->queryTypeInfo())
+    {
+        MemoryBuffer out;
+        dumpTypeInfo(out, helper.queryDiskRecordSize()->queryTypeInfo());
+        desc->queryProperties().setPropBin("_rtlType", out.length(), out.toByteArray());
+    }
 }
 
 //=====================================================================================================
@@ -1083,6 +1103,9 @@ void CHThorIndexWriteActivity::execute()
         buildLayoutMetadata(metadata);
         unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;
         size32_t keyMaxSize = helper.queryDiskRecordSize()->getRecordSize(NULL);
+        if (hasTrailingFileposition(helper.queryDiskRecordSize()->queryTypeInfo()))
+            keyMaxSize -= sizeof(offset_t);
+
         Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, keyMaxSize, nodeSize, helper.getKeyedSize(), 0);
         class BcWrapper : implements IBlobCreator
         {
@@ -1123,10 +1146,7 @@ void CHThorIndexWriteActivity::execute()
             }
             reccount++;
         }
-        if(metadata)
-            builder->finish(metadata,&fileCrc);
-        else
-            builder->finish(&fileCrc);
+        builder->finish(metadata, &fileCrc);
         out->flush();
         out.clear();
     }
@@ -1186,11 +1206,6 @@ void CHThorIndexWriteActivity::execute()
     properties.setProp("@owner", agent.queryWorkUnit()->queryUser());
     properties.setProp("@workunit", agent.queryWorkUnit()->queryWuid());
     properties.setProp("@job", agent.queryWorkUnit()->queryJobName());
-#if 0
-    IRecordSize * irecsize = helper.queryDiskRecordSize();
-    if(irecsize && (irecsize->isFixedSize()))
-        properties.setPropInt("@recordSize", irecsize->getFixedSize());
-#endif
     char const * rececl = helper.queryRecordECL();
     if(rececl && *rececl)
         properties.setProp("ECL", rececl);
@@ -1209,6 +1224,7 @@ void CHThorIndexWriteActivity::execute()
 
     properties.setPropInt("@fileCrc", fileCrc);
     properties.setPropInt("@formatCrc", helper.getFormatCrc());
+    // Legacy record layout info
     void * layoutMetaBuff;
     size32_t layoutMetaSize;
     if(helper.getIndexLayout(layoutMetaSize, layoutMetaBuff))
@@ -1216,6 +1232,14 @@ void CHThorIndexWriteActivity::execute()
         properties.setPropBin("_record_layout", layoutMetaSize, layoutMetaBuff);
         rtlFree(layoutMetaBuff);
     }
+    // New record layout info
+    if (helper.queryDiskRecordSize()->queryTypeInfo())
+    {
+        MemoryBuffer out;
+        dumpTypeInfo(out, helper.queryDiskRecordSize()->queryTypeInfo());
+        properties.setPropBin("_rtlType", out.length(), out.toByteArray());
+    }
+
     StringBuffer lfn;
     Owned<IDistributedFile> dfile = NULL;
     if (!agent.queryResolveFilesLocally())
@@ -1279,12 +1303,11 @@ void CHThorIndexWriteActivity::buildLayoutMetadata(Owned<IPropertyTree> & metada
     if(!metadata) metadata.setown(createPTree("metadata"));
     metadata->setProp("_record_ECL", helper.queryRecordECL());
 
-    void * layoutMetaBuff;
-    size32_t layoutMetaSize;
-    if(helper.getIndexLayout(layoutMetaSize, layoutMetaBuff))
+    if (helper.queryDiskRecordSize()->queryTypeInfo())
     {
-        metadata->setPropBin("_record_layout", layoutMetaSize, layoutMetaBuff);
-        rtlFree(layoutMetaBuff);
+        MemoryBuffer out;
+        dumpTypeInfo(out, helper.queryDiskRecordSize()->queryTypeInfo());
+        metadata->setPropBin("_rtlType", out.length(), out.toByteArray());
     }
 }
 
@@ -3978,7 +4001,7 @@ bool CHThorGroupSortActivity::sortAndSpillRows()
     if(!diskMerger)
     {
         StringBuffer fbase;
-        agent.getTempfileBase(fbase).appendf(".spill_sort_%p", this);
+        agent.getTempfileBase(fbase).append(PATHSEPCHAR).appendf("spill_sort_%p", this);
         PROGLOG("SORT: spilling to disk, filename base %s", fbase.str());
         class CHThorRowLinkCounter : implements IRowLinkCounter, public CSimpleInterface
         {
@@ -8363,7 +8386,10 @@ void CHThorDiskReadBaseActivity::open()
 //=====================================================================================================
 
 CHThorBinaryDiskReadBase::CHThorBinaryDiskReadBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, IHThorCompoundBaseArg & _segHelper, ThorActivityKind _kind)
-: CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind), segHelper(_segHelper), prefetchBuffer(NULL), recInfo(outputMeta.queryOriginal()->queryRecordAccessor(true)),rowInfo(recInfo)
+: CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind),
+  segHelper(_segHelper), prefetchBuffer(NULL),
+  recInfo(outputMeta.queryRecordAccessor(true)),  // MORE - is this right - should it be diskMeta->queryRecordAccessor() ?
+  rowInfo(recInfo)
 {
 }
 
@@ -8384,9 +8410,16 @@ void CHThorBinaryDiskReadBase::append(IKeySegmentMonitor *segment)
     }
 }
 
-void CHThorBinaryDiskReadBase::setMergeBarrier(unsigned barrierOffset)
+void CHThorBinaryDiskReadBase::append(FFoption option, IFieldFilter * filter)
 {
-    // nothing to do - we don't merge...
+    if (filter->isWild())
+        filter->Release();
+    else
+    {
+        fieldFilters.append(*filter);
+        if (filter->queryFieldIndex() > numFieldsRequired)
+            numFieldsRequired = filter->queryFieldIndex();
+    }
 }
 
 unsigned CHThorBinaryDiskReadBase::ordinality() const
@@ -8408,6 +8441,7 @@ void CHThorBinaryDiskReadBase::ready()
     if (!diskMeta)
         diskMeta.set(outputMeta);
     segMonitors.kill();
+    fieldFilters.kill();
     numFieldsRequired = 0;
     segHelper.createSegmentMonitors(this);
     prefetcher.setown(diskMeta->createDiskPrefetcher(agent.queryCodeContext(), activityId));
@@ -8473,7 +8507,7 @@ void CHThorDiskReadActivity::ready()
     outBuilder.setAllocator(rowAllocator);
     eogPending = false;
     lastGroupProcessed = processed;
-    needTransform = helper.needTransform() || segMonitors.length();
+    needTransform = helper.needTransform() || segMonitors.length() || fieldFilters.length();
     limit = helper.getRowLimit();
     if (helper.getFlags() & TDRlimitskips)
         limit = (unsigned __int64) -1;
@@ -8794,8 +8828,9 @@ const void *CHThorDiskCountActivity::nextRow()
     if (finished) return NULL;
 
     unsigned __int64 totalCount = 0;
-    if ((segMonitors.ordinality() == 0) && !helper.hasFilter() && (fixedDiskRecordSize != 0) && !(helper.getFlags() & (TDXtemporary | TDXjobtemp))
-        && !((helper.getFlags() & TDXcompress) && agent.queryResolveFilesLocally()) )
+    if ((segMonitors.ordinality() == 0) && (fieldFilters.ordinality() == 0) && !helper.hasFilter() &&
+        (fixedDiskRecordSize != 0) && !(helper.getFlags() & (TDXtemporary | TDXjobtemp)) &&
+        !((helper.getFlags() & TDXcompress) && agent.queryResolveFilesLocally()) )
     {
         resolve();
         if (segHelper.canMatchAny() && ldFile)

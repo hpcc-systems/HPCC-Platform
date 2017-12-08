@@ -16,6 +16,11 @@
 ############################################################################## */
 
 #option ('warnOnImplicitReadLimit', true);
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
+
+#onwarning (4522, ignore);
+#onwarning (4523, ignore);
 
 phoneRecord :=
             RECORD
@@ -63,12 +68,12 @@ namesTable := dataset([
         {'Rowling','J.K.', 1, 2, '09876',654321,false,'','',false,[{'Animal Farm',''},{'Slaughterhouse-five','Vonnegut'}], ['Blue','Green']}
         ], personRecord);
 
-output(namesTable,,'REGRESS::TEMP::xmlfetch2.xml',overwrite, XML);
+output(namesTable,,prefix + 'TEMP_xmlfetch2.xml',overwrite, XML);
 
-xmlWithPos := dataset(DYNAMIC('REGRESS::TEMP::xmlfetch2.xml'), {personRecord, UNSIGNED8 RecPtr{virtual(fileposition)}}, XML('Dataset/Row'));
-BUILD(xmlWithPos, {surname, RecPtr}, 'REGRESS::TEMP::xmlfetch2.xml.index', OVERWRITE);
+xmlWithPos := dataset(DYNAMIC(prefix + 'TEMP_xmlfetch2.xml'), {personRecord, UNSIGNED8 RecPtr{virtual(fileposition)}}, XML('Dataset/Row'));
+BUILD(xmlWithPos, {surname, RecPtr}, prefix + 'TEMP_xmlfetch2.xml.index', OVERWRITE);
 
-xmlIndex := INDEX(xmlWithPos, {surname, RecPtr}, DYNAMIC('REGRESS::TEMP::xmlfetch2.xml.index'));
+xmlIndex := INDEX(xmlWithPos, {surname, RecPtr}, DYNAMIC(prefix + 'TEMP_xmlfetch2.xml.index'));
 
 fetcheddata := LIMIT(SORT(FETCH(xmlWithPos, xmlIndex(surname = 'Mitchell'), RIGHT.RecPtr), RECORD), 10);
 fetchednopos := project(fetcheddata, personRecord); //don't output positions

@@ -3092,10 +3092,10 @@ public:
     {
     }
 
-    virtual IHash * queryHash() { return &hasher; }
-    virtual ICompare * queryCompare() { return &comparer; }
-    virtual IHash * queryHashLookup() { throwUnexpected(); }
-    virtual ICompare * queryCompareLookup() { throwUnexpected(); }
+    virtual IHash * queryHash() override { return &hasher; }
+    virtual ICompare * queryCompare() override { return &comparer; }
+    virtual IHash * queryHashLookup() override { throwUnexpected(); }
+    virtual ICompare * queryCompareLookup() override { throwUnexpected(); }
 
 protected:
     EclccCHash hasher;

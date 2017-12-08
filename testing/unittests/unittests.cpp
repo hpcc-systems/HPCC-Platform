@@ -176,6 +176,7 @@ int main(int argc, char* argv[])
     {
         excludeNames.append("*stress*");
         excludeNames.append("*timing*");
+        excludeNames.append("*slow*");
     }
 
     if (useDefaultLocations)

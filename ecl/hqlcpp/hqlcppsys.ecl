@@ -722,6 +722,8 @@ const char * cppSystemText[]  = {
     "   addAll() : method,include='rtlkey.hpp',entrypoint='addAll';",
     "   addRange(const data1 lo, const data1 hi) : method,include='rtlkey.hpp',entrypoint='addRange';",
     "   killRange(const data1 lo, const data1 hi) : method,include='rtlkey.hpp',entrypoint='killRange';",
+    "   addRawRange(const data1 lo, const data1 hi) : method,entrypoint='addRawRange';",
+    "   killRawRange(const data1 lo, const data1 hi) : method,entrypoint='killRawRange';",
 
     "   boolean columnGetBool(const varstring name) : method,pure,entrypoint='getBool';",
     "   columnGetData(noconst data result, const varstring name) : method,pure,entrypoint='getData';",

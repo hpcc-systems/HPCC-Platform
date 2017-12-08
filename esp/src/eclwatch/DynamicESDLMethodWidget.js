@@ -50,13 +50,13 @@ define([
         init: function (params) {
             if (this.inherited(arguments))
                 return;
-
-            this.refresh();
-            this._refreshActionState();
+            this.refresh(params);
         },
 
-        refresh: function () {
+        refresh: function (params) {
+            this._params = params;
             this.refreshGrid();
+            this._refreshActionState();
         },
 
         startup: function (args) {
@@ -120,7 +120,7 @@ define([
             var results = this.store.query();
 
             arrayUtil.forEach(results, function(row, idx){
-                if (row.__hpcc_parentName !== null && row.Value !="") {
+                if (row.__hpcc_parentName !== null && row.Value !== "") {
                     userXML += row.Value;
                 }
             });
@@ -128,10 +128,10 @@ define([
             var xmlBuilder = "<Methods>" + userXML +  "</Methods>";
             WsESDLConfig.PublishESDLBinding({
                 request: {
-                    EspProcName: context.params.Configuration.__hpcc_parentName,
-                    EspBindingName: context.params.Configuration.Name,
-                    EspServiceName: context.params.Configuration.Service,
-                    EsdlDefinitionID: context.params.Configuration.DefinitionID,
+                    EspProcName: this._params.Configuration.__hpcc_parentName,
+                    EspBindingName: this._params.Configuration.Name,
+                    EspServiceName: this._params.Configuration.Service,
+                    EsdlDefinitionID: this._params.Configuration.DefinitionID,
                     Overwrite: true,
                     Config: xmlBuilder
                 }
@@ -156,8 +156,8 @@ define([
 
             WsESDLConfig.GetESDLBinding({
                 request: {
-                    EspProcName: context.params.Configuration.__hpcc_parentName,
-                    EspBindingName: context.params.Configuration.Name,
+                    EspProcName: this._params.Configuration.__hpcc_parentName,
+                    EspBindingName: this._params.Configuration.Name,
                     ReportMethodsAvailable: true
                 }
             }).then(function (response) {

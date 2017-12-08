@@ -237,7 +237,7 @@ ESPStruct [nil_remove] ECLWorkunit
     [min_ver("1.30")] bool IsPausing(false);
     [min_ver("1.30")] bool ThorLCR(false);
     [min_ver("1.01")] int EventSchedule;
-    [min_ver("1.02")] bool HaveSubGraphTimings;
+    [min_ver("1.02"), depr_ver("1.71")] bool HaveSubGraphTimings;
     [min_ver("1.28"), depr_ver("1.53")] string TotalThorTime;
     [min_ver("1.53")] string TotalClusterTime;
     [min_ver("1.59")] string AbortBy;
@@ -1215,6 +1215,7 @@ ESPrequest [nil_remove] WUShowScheduledRequest
     string PushEventName("");
     string PushEventText("");
     [min_ver("1.51")] string State("");
+    [min_ver("1.71")] string JobName("");
 };
 
 ESPStruct [nil_remove] ScheduledWU
@@ -1626,6 +1627,62 @@ ESPresponse [exceptions_inline] WUMultiQuerySetDetailsResponse
     ESParray<ESPstruct WUQuerySetDetail> Querysets;
 };
 
+ESPrequest WUQuerysetExportRequest
+{
+    string  Target;
+    bool Compress(true);
+    bool ActiveOnly(false);
+    bool Protect(false);
+};
+
+ESPresponse [exceptions_inline] WUQuerysetExportResponse
+{
+    string Target;
+    bool Compressed;
+    binary Data;
+};
+
+ESPenum QuerysetImportActivation : string
+{
+    None("None"),
+    ImportedActive("ActivateImportedActive")
+};
+
+
+ESPrequest WUQuerysetImportRequest
+{
+    string Target;
+    string QueryMask;
+    bool Replace(false);
+    bool ActiveOnly(false);
+    ESPenum QuerysetImportActivation Activation;
+    bool Compressed(true);
+    binary Data;
+
+    bool AllowForeignFiles(true);
+
+    string DfsServer;
+    bool CopyFiles(true);
+    bool OverwriteDfs(false);
+    string SourceProcess;
+    bool UpdateSuperFiles(false); //usually wouldn't be needed, packagemap referencing superfiles?
+    bool UpdateCloneFrom(false); //explicity wan't to change where roxie will grab from
+    bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
+    bool IncludeFileErrors(false);
+};
+
+ESPresponse [exceptions_inline] WUQuerysetImportResponse
+{
+    string  Target;
+    bool ClearedExisting(true);
+    bool Success(false);
+
+    ESParray<string, QueryId> ImportedQueries;
+    ESParray<string, QueryId> ExistingQueries;
+    ESParray<string, QueryId> MissingWuids;
+    ESParray<ESPStruct LogicalFileError, File> FileErrors;
+};
+
 ESPrequest [nil_remove] WUUpdateQueryEntryRequest
 {
     string QuerySet;
@@ -1931,9 +1988,138 @@ ESPresponse [exceptions_inline, nil_remove] WUGetNumFileToCopyResponse
     [min_ver("1.69")] int64 Total;
 };
 
+// ----------------------------------------------------------------------------------
+// WUDetails service
+//
+// Request related structures
+ESPstruct WUPropertyFilter
+{
+    string Name;                                // Attribute Name to match
+                                                // Match attribute's RawValue
+    [optional] string ExactValue;
+    [optional] string MinValue;
+    [optional] string MaxValue;
+};
+
+// Filters that indicates which nodes are explicitly matched
+// Scopes can be used at the same time as Ids.
+// ScopeTypes cannot be used at the same time as Scopes or Ids.
+// PropertyFilters (attributes or statistics) is applied to all matches
+ESPStruct WUScopeFilter
+{
+    [optional] integer MaxDepth(9999);          // Maximum depth to return matches from (omitted means no limit)
+    [optional] ESParray<string, Scope> Scopes;  // Fully qualified scope (See definition of "Scope" in workunit.hpp)
+    [optional] ESParray<string, id> Ids;        // Return scope with given node id
+    [optional] ESParray<string, ScopeType> ScopeTypes;   // Return scope of a given type
+    [optional] ESParray<ESPstruct WUPropertyFilter, PropertyFilter> PropertyFilters;
+};
+
+// This provides the filter which indicates which nodes are implicitly matched
+// Once a match is found, all nested scopes to a depth of depth are implicitly matched, provided they match the nested filter
+ESPStruct WUNestedFilter
+{
+    [optional] unsigned Depth(9999);            // How many nodes deep relative to matched scope id(s)
+                                                // 0 - implies return only the given scope id
+                                                // 1 - return only the immediate child of the given scope
+                                                // n - return children to 'n' level deep
+    [optional] ESParray<string, ScopeType> ScopeTypes;   // Return scope of a given type
+};
+
+// Additional properties that are returned for a scopeType
+ESPStruct WUExtraProperties
+{
+    string scopeType;                   // A type of scope e.g., activity/edge
+    [optional] ESParray<string, Property> Properties; // a list of properties to return, omitted means none
+};
+
+// If measure and attributes are omitted then all matches are returned
+// Measure and Attributes/ScopeAttributes are mutually exclusive.
+// Measure set to blank or Attributes set to empty will prevent any attributes being returned.
+ESPStruct WUPropertiesToReturn
+{
+    bool AllStatistics(false);
+    bool AllAttributes(false);
+    bool AllHints(false);
+    [optional] uint64 MinVersion;       // Only return properties where the version is later than this version.
+    [optional] string Measure;          // E.g. Time, Num, Size
+    [optional] ESParray<string, Property> Properties; // a list of properties to return
+    [optional] ESParray<ESPstruct WUExtraProperties, Extra> ExtraProperties;
+};
+
+ESPStruct WUScopeOptions
+{
+    bool IncludeMatchedScopesInResults(true);
+    bool IncludeScope(true);
+    bool IncludeId(false);
+    bool IncludeScopeType(false);
+};
+
+// Controls which information is returned for the statistics
+ESPStruct WUPropertyOptions
+{
+    bool IncludeName(true);
+    bool IncludeRawValue(false);
+    bool IncludeFormatted(true);
+    bool IncludeMeasure(true);
+    bool IncludeCreator(false);
+    bool IncludeCreatorType(false);
+};
+
+ESPRequest WUDetailsRequest
+{
+    string WUID;
+    [optional] ESPstruct WUScopeFilter ScopeFilter;               // which scopes are matched
+    [optional] ESPstruct WUNestedFilter NestedFilter;             // what nested scopes are returned
+    [optional] ESPstruct WUPropertiesToReturn PropertiesToReturn; // List of properties to return
+    [optional] string    Filter;                                  // Filter as a string text
+    [optional] ESPstruct WUScopeOptions ScopeOptions;             // Which scope details are returned
+    [optional] ESPstruct WUPropertyOptions PropertyOptions;       // Which attribute details are returned
+};
+
+// ----------------------------------------------------------------------------------
+// Response related structures
+ESPstruct [nil_remove] WUResponseProperty
+{
+    [optional] string Name;         // Name of attribute
+    [optional] string RawValue;     // Value of attribute
+    [optional] string Formatted;    // Formatted value of attribute
+    [optional] string Measure;      // What type is this attribute
+    [optional] string Creator;      // Which engine created it
+    [optional] string CreatorType;  // What type of engine created it.
+};
+
+ESPstruct [nil_remove] WUResponseScope
+{
+    [optional] string ScopeName;        // Fully qualified scope (See definition of "Scope" in workunit.hpp)
+    [optional] string Id;               // Node/Graph id
+    [optional] string ScopeType;        // e.g. Activity, Edge
+    [optional] ESParray<ESPstruct WUResponseProperty, Property> Properties;
+};
+
+
+ESPResponse [exceptions_inline] WUDetailsResponse
+{
+    uint64 MaxVersion;                              // largest version for any matches
+    string WUID;                                    // all    [optional] ESParray<string, Attribute> Attributes; // a list of attributes to returnows wildcarded requests to be interpreted.
+    ESParray<ESPstruct WUResponseScope, Scope> Scopes;
+};
+
+// ----------------------------------------------------------------------------------
+ESPRequest WUDetailsMetaRequest
+{
+};
+
+ESPResponse [exceptions_inline] WUDetailsMetaResponse
+{
+    ESParray<string, Statistic> Statistics;
+    ESParray<string, Attribute> Attributes;
+    ESParray<string, ScopeType> ScopeTypes;
+    ESParray<string, Measure> Measures;
+};
+// ----------------------------------------------------------------------------------
 ESPservice [
     auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
-    version("1.70"), default_client_version("1.70"),
+    version("1.71"), default_client_version("1.71"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
@@ -1997,6 +2183,8 @@ ESPservice [
     ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/WUQuerysetQueries.xslt")] WUQuerysetDetails(WUQuerySetDetailsRequest, WUQuerySetDetailsResponse);
     ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/WUQueryDetails.xslt")] WUQueryDetails(WUQueryDetailsRequest, WUQueryDetailsResponse);
     ESPmethod [cache_seconds(60)] WUMultiQuerysetDetails(WUMultiQuerySetDetailsRequest, WUMultiQuerySetDetailsResponse);
+    ESPmethod [min_ver("1.71")] WUQuerysetImport(WUQuerysetImportRequest, WUQuerysetImportResponse);
+    ESPmethod [min_ver("1.71")] WUQuerysetExport(WUQuerysetExportRequest, WUQuerysetExportResponse);
     ESPmethod WUQuerysetQueryAction(WUQuerySetQueryActionRequest, WUQuerySetQueryActionResponse);
     ESPmethod WUQuerysetAliasAction(WUQuerySetAliasActionRequest, WUQuerySetAliasActionResponse);
     ESPmethod WUQuerysetCopyQuery(WUQuerySetCopyQueryRequest, WUQuerySetCopyQueryResponse);
@@ -2014,6 +2202,8 @@ ESPservice [
     ESPmethod [cache_seconds(60), min_ver("1.57")] WUListArchiveFiles(WUListArchiveFilesRequest, WUListArchiveFilesResponse);
     ESPmethod [cache_seconds(60), min_ver("1.57")] WUGetArchiveFile(WUGetArchiveFileRequest, WUGetArchiveFileResponse);
     ESPmethod [cache_seconds(60), min_ver("1.61")] WUGetNumFileToCopy(WUGetNumFileToCopyRequest, WUGetNumFileToCopyResponse);
+    ESPmethod [min_ver("1.71")] WUDetails(WUDetailsRequest, WUDetailsResponse);
+    ESPmethod [min_ver("1.71")] WUDetailsMeta(WUDetailsMetaRequest, WUDetailsMetaResponse);
 };
 
 

@@ -21,10 +21,17 @@ define([
     "dojo/_base/array",
     "dojo/Evented",
 
+    "@hpcc-js/common",
+    "@hpcc-js/graph",
+    "@hpcc-js/layout",
+    
     "hpcc/WsWorkunits",
     "hpcc/GraphWidget",
-    "hpcc/ESPGraph"
+    "hpcc/ESPGraph",
+
+    "css!font-awesome/css/font-awesome.css"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Evented,
+            hpccCommon, hpccGraph, hpccLayout,
             WsWorkunits, GraphWidget, ESPGraph) {
 
     var Persist = declare([], {
@@ -110,419 +117,410 @@ define([
         return "\uf063";
     };
 
-    var loadJSPlugin = function (callback) {
-        function requireWidgets() {
-            require(["src/common/Shape", "src/common/Icon", "src/common/TextBox", "src/common/Surface", "src/graph/Graph", "src/graph/Vertex", "src/graph/Edge", "src/layout/Layered"], function (Shape, Icon, TextBox, Surface, Graph, Vertex, Edge, Layered) {
-                callback(declare([Evented], {
-                    KeyState_None: 0,
-                    KeyState_Shift: 1,
-                    KeyState_Control: 2,
-                    KeyState_Menu: 4,
+    var JSPlugin = declare([Evented], {
+        KeyState_None: 0,
+        KeyState_Shift: 1,
+        KeyState_Control: 2,
+        KeyState_Menu: 4,
 
-                    constructor: function (domNode) {
-                        this.graphData = new ESPGraph();
-                        this.graphWidget = new Graph()
-                            .allowDragging(false)
-                        ;
-                        var context = this;
-                        this.graphWidget.vertex_click = function (item, event) {
-                            context.emit("SelectionChanged", [item]);
-                        }
-                        this.graphWidget.edge_click = function (item, event) {
-                            context.emit("SelectionChanged", [item]);
-                        }
-                        this.graphWidget.vertex_dblclick = function (item, event) {
-                            context.emit("MouseDoubleClick", item, (event.shiftKey ? context.KeyState_Shift : 0) + (event.ctrlKey ? context.KeyState_Control : 0) + (event.altKey ? context.KeyState_Menu : 0));
-                        }
-                        this.messageWidget = new TextBox()
-                            .shape_colorFill("#006CCC")
-                            .shape_colorStroke("#003666")
-                            .text_colorFill("#FFFFFF")
-                        ;
-                        this.layout = new Layered()
-                            .target(domNode.id)
-                            .widgets([this.messageWidget, this.graphWidget])
-                            .render()
-                        ;
-                        this._options = {};
-                    },
+        constructor: function (domNode) {
+            this.graphData = new ESPGraph();
+            this.graphWidget = new hpccGraph.Graph()
+                .allowDragging(false)
+                .zoomToolbar(false)
+            ;
+            var context = this;
+            this.graphWidget.vertex_click = function (item, event) {
+                context.emit("SelectionChanged", [item]);
+            }
+            this.graphWidget.edge_click = function (item, event) {
+                context.emit("SelectionChanged", [item]);
+            }
+            this.graphWidget.vertex_dblclick = function (item, event) {
+                context.emit("MouseDoubleClick", item, (event.shiftKey ? context.KeyState_Shift : 0) + (event.ctrlKey ? context.KeyState_Control : 0) + (event.altKey ? context.KeyState_Menu : 0));
+            }
+            this.messageWidget = new hpccCommon.TextBox()
+                .shape_colorFill("#006CCC")
+                .shape_colorStroke("#003666")
+                .text_colorFill("#FFFFFF")
+            ;
+            this.layout = new hpccLayout.Layered()
+                .target(domNode.id)
+                .widgets([this.messageWidget, this.graphWidget])
+                .render()
+            ;
+            this._options = {};
+        },
 
-                    option: function (key, _) {
-                        if (arguments.length < 1) throw Error("Invalid Call:  option");
-                        if (arguments.length === 1) return this._options[key];
-                        this._options[key] = _ instanceof Array ? _.length > 0 : _;
-                        return this;
-                    },
+        option: function (key, _) {
+            if (arguments.length < 1) throw Error("Invalid Call:  option");
+            if (arguments.length === 1) return this._options[key];
+            this._options[key] = _ instanceof Array ? _.length > 0 : _;
+            return this;
+        },
 
-                    optionsReset: function (options) {
-                        options = options || this._optionsDefault;
-                        for (var key in options) {
-                            this.option(key, options[key]);
-                        }
-                    },
+        optionsReset: function (options) {
+            options = options || this._optionsDefault;
+            for (var key in options) {
+                this.option(key, options[key]);
+            }
+        },
 
-                    setMessage: function (msg) {
-                        if (msg !== this._prevMsg) {
-                            this.messageWidget.text(msg).render();
-                            if ((msg && this.graphWidget.visible()) || (!msg && !this.graphWidget.visible())) {
-                                this.graphWidget.visible(msg ? false : true).render();
-                            }
-                            this._prevMsg = msg;
-                        }
-                    },
+        setMessage: function (msg) {
+            if (msg !== this._prevMsg) {
+                this.messageWidget
+                    .text(msg)
+                    .visible(msg ? true : false)
+                    .render()
+                    ;
+                if ((msg && this.graphWidget.visible()) || (!msg && !this.graphWidget.visible())) {
+                    this.graphWidget.visible(msg ? false : true).render();
+                }
+                this._prevMsg = msg;
+            }
+        },
 
-                    setScale: function (scale) {
-                        this.graphWidget.zoom.scale(scale / 100);
-                        this.graphWidget.applyZoom(this.graphWidget._transitionDuration);
-                    },
+        setScale: function (scale) {
+            this.graphWidget.zoomTo(undefined, scale / 100);
+        },
 
-                    centerOnItem: function (item, scaleToFit, widthOnly) {
-                        var bounds = item === 0 ? this.graphWidget.getVertexBounds() : this.graphWidget.getBounds([item.__widget]);
-                        if (scaleToFit) {
-                            if (widthOnly) {
-                                bounds[0][1] = 0;
-                                bounds[1][1] = 0;
-                            }
-                            this.graphWidget.shrinkToFit(bounds);
-                        } else {
-                            this.graphWidget.centerOn(bounds);
-                        }
-                    },
+        centerOnItem: function (item, scaleToFit, widthOnly) {
+            if (item) {
+                if (scaleToFit) {
+                    var bbox = item.__widget.getBBox();
+                    this.graphWidget.zoomToBBox(bbox);
+                } else {
+                    var bounds = this.graphWidget.getBounds([item.__widget]);
+                    this.graphWidget.centerOn(bounds);
+                }    
+            } else {
+                if (scaleToFit) {
+                    this.graphWidget.zoomToFit();
+                } else {
+                    var bounds = this.graphWidget.getVertexBounds();
+                    this.graphWidget.centerOn(bounds);
+                }    
+            }
+        },
 
-                    getSelectionAsGlobalID: function () {
-                        var selection = this.graphWidget.selection();
-                        return selection.map(function (item) {
-                            return item.__hpcc_globalID;
-                        });
-                    },
+        getSelectionAsGlobalID: function () {
+            var selection = this.graphWidget.selection();
+            return selection.map(function (item) {
+                return item.__hpcc_globalID;
+            });
+        },
 
-                    setSelectedAsGlobalID: function (globalIDs) {
-                        var selection = [];
-                        globalIDs.forEach(function (globalID, idx) {
-                            var item = this.getItem(globalID);
-                            if (item && item.__widget) {
-                                selection.push(item.__widget);
-                            }
-                        }, this);
-                        this.graphWidget.selection(selection);
-                    },
+        setSelectedAsGlobalID: function (globalIDs) {
+            var selection = [];
+            globalIDs.forEach(function (globalID, idx) {
+                var item = this.getItem(globalID);
+                if (item && item.__widget) {
+                    selection.push(item.__widget);
+                }
+            }, this);
+            this.graphWidget.selection(selection);
+        },
 
-                    getGlobalType: function (item) {
-                        return this.graphData.getGlobalTypeString(item);
-                    },
+        getGlobalType: function (item) {
+            return this.graphData.getGlobalTypeString(item);
+        },
 
-                    getGlobalID: function (item) {
-                        return item.__hpcc_id;
-                    },
+        getGlobalID: function (item) {
+            return item.__hpcc_id;
+        },
 
-                    getItem: function (globalID) {
-                        return this.graphData.idx[globalID];
-                    },
+        getItem: function (globalID) {
+            return this.graphData.idx[globalID];
+        },
 
-                    setSelected: function (items) {
-                        this.graphWidget.selection(items);
-                    },
+        setSelected: function (items) {
+            this.graphWidget.selection(items);
+        },
 
-                    getSelection: function () {
-                        return this.graphWidget.selection();
-                    },
+        getSelection: function () {
+            return this.graphWidget.selection();
+        },
 
-                    getSVG: function () {
-                        return "";  //TODO - Should be Serialized Layout to prevent re-calculation on prev/next  ---
-                    },
+        getSVG: function () {
+            return "";  //TODO - Should be Serialized Layout to prevent re-calculation on prev/next  ---
+        },
 
-                    getDOT: function () {
-                        return "";
-                    },
+        getDOT: function () {
+            return "";
+        },
 
-                    getVertices: function () {
-                        return this.graphData.vertices;
-                    },
+        getVertices: function () {
+            return this.graphData.vertices;
+        },
 
-                    find: function (findText) {
-                        var findProp = "";
-                        var findTerm = findText;
-                        var findTextParts = findText.split(":");
-                        if (findTextParts.length > 1) {
-                            findProp = findTextParts[0];
-                            findTextParts.splice(0, 1);
-                            findTerm = findTextParts.join(":");
-                        }
-                        return arrayUtil.filter(this.graphData.vertices, function (item) {
-                            if (findProp) {
-                                if (item.hasOwnProperty(findProp)) {
-                                    return (item[findProp].toString().toLowerCase().indexOf(findTerm.toLowerCase()) >= 0);
-                                }
-                            } else {
-                                for (var key in item) {
-                                    if (item.hasOwnProperty(key) && item[key].toString().toLowerCase().indexOf(findTerm.toLowerCase()) >= 0) {
-                                        return true;
-                                    }
-                                }
-                            }
-                            return false;
-                        });
-                    },
-
-                    cleanObject: function (object) {
-                        var retVal = {};
-                        for (var key in object) {
-                            if (object.hasOwnProperty(key) && typeof object[key] !== "function") {
-                                retVal[key] = object[key];
-                            }
-                        }
-                        return retVal;
-                    },
-
-                    cleanObjects: function (objects) {
-                        return objects.map(function (object) {
-                            return this.cleanObject(object);
-                        }, this);
-                    },
-
-                    gatherTreeWithProperties: function (subgraph) {
-                        subgraph = subgraph || this.graphData.subgraphs[0];
-                        var retVal = subgraph.getProperties();
-                        retVal._children = [];
-                        arrayUtil.forEach(subgraph.__hpcc_subgraphs, function (subgraph, idx) {
-                            retVal._children.push(this.gatherTreeWithProperties(subgraph));
-                        }, this);
-                        arrayUtil.forEach(subgraph.__hpcc_vertices, function (vertex, idx) {
-                            retVal._children.push(vertex.getProperties());
-                        }, this);
-                        return retVal;
-                    },
-
-                    getProperties: function (item) {
-                        return item.getProperties();
-                    },
-
-                    getTreeWithProperties: function () {
-                        return [this.gatherTreeWithProperties()];
-                    },
-
-                    getSubgraphsWithProperties: function () {
-                        return this.cleanObjects(this.graphData.subgraphs);
-                    },
-
-                    getVerticesWithProperties: function () {
-                        return this.cleanObjects(this.graphData.vertices);
-                    },
-
-                    getEdgesWithProperties: function () {
-                        return this.cleanObjects(this.graphData.edges);
-                    },
-
-                    getLocalisedXGMML2: function (selectedItems, depth, distance, noSpills) {
-                        return this.graphData.getLocalisedXGMML(selectedItems, depth, distance, noSpills);
-                    },
-
-                    startLayout: function (layout) {
-                        var context = this;
-                        setTimeout(function (layout) {
-                            context.graphWidget
-                                .layout("Hierarchy")
-                                .render()
-                            ;
-                            context.emit("LayoutFinished", {});
-                        }, 100);
-                    },
-
-                    clear: function () {
-                        this.graphData.clear();
-                        this.graphWidget.clear();
-                    },
-
-                    mergeXGMML: function (xgmml) {
-                        this._loadXGMML(xgmml, true);
-                    },
-
-                    loadXGMML: function (xgmml) {
-                        this._loadXGMML(xgmml, false);
-                    },
-
-                    _loadXGMML: function (xgmml, merge) {
-                        if (merge) {
-                            this.graphData.merge(xgmml, {});
-                        } else {
-                            this.graphData.load(xgmml, {});
-                        }
-                        if (!this._skipRender) {
-                            this.rebuild(merge);
-                        }
-                    },
-
-                    format: function (labelTpl, obj) {
-                        var retVal = "";
-                        var lpos = labelTpl.indexOf("%");
-                        var rpos = -1;
-                        while (lpos >= 0) {
-                            retVal += labelTpl.substring(rpos + 1, lpos);
-                            rpos = labelTpl.indexOf("%", lpos + 1);
-                            if (rpos < 0) {
-                                console.log("Invalid Label Template");
-                                break;
-                            }
-                            var key = labelTpl.substring(lpos + 1, rpos);
-                            retVal += !key ? "%" : (obj[labelTpl.substring(lpos + 1, rpos)] || "");
-                            lpos = labelTpl.indexOf("%", rpos + 1);
-                        }
-                        retVal += labelTpl.substring(rpos + 1, labelTpl.length);
-                        return retVal.split("\\n").join("\n");
-                    },
-
-                    rebuild: function (merge) {
-                        merge = merge || false;
-                        var vertices = [];
-                        var edges = [];
-                        var hierarchy = [];
-
-                        if (this.option("subgraph")) {
-                            arrayUtil.forEach(this.graphData.subgraphs, function (subgraph, idx) {
-                                if (!merge || !subgraph.__widget) {
-                                    subgraph.__widget = new Surface()
-                                        .classed({ subgraph: true })
-                                        .showIcon(false)
-                                        .width(0)
-                                        .height(0)
-                                        .title(subgraph.__hpcc_id)
-                                    ;
-                                    subgraph.__widget.__hpcc_globalID = subgraph.__hpcc_id;
-                                }
-                                vertices.push(subgraph.__widget);
-                            }, this);
-                        }
-                        var labelTpl = this.option("vlabel");
-                        var tooltipTpl = this.option("vtooltip");
-                        arrayUtil.forEach(this.graphData.vertices, function (item, idx) {
-                            if (!this.option("vhidespills") || !item.isSpill()) {
-                                if (!merge || !item.__widget) {
-                                    switch (item._kind) {
-                                        case "point":
-                                            item.__widget = new Shape()
-                                                .radius(7)
-                                            ;
-                                            break;
-                                        default:
-                                            if (this.option("vicon") && this.option("vlabel")) {
-                                                item.__widget = new Vertex()
-                                                    .faChar(faCharFactory(item._kind))
-                                                ;
-                                            } else if (this.option("vicon")) {
-                                                item.__widget = new Icon()
-                                                    .faChar(faCharFactory(item._kind))
-                                                ;
-                                            } else if (this.option("vlabel")) {
-                                                item.__widget = new TextBox()
-                                                ;
-                                            } else {
-                                                item.__widget = new Shape()
-                                                    .radius(7)
-                                                ;
-                                            }
-                                            break;
-                                    }
-                                    item.__widget.__hpcc_globalID = item.__hpcc_id;
-                                }
-                                if (item.__widget.text) {
-                                    var label = this.format(labelTpl, item);
-                                    item.__widget.text(label);
-                                }
-                                if (item.__widget.tooltip) {
-                                    var tooltip = this.format(tooltipTpl, item);
-                                    item.__widget.tooltip(tooltip);
-                                }
-                                vertices.push(item.__widget);
-                            }
-                        }, this);
-                        labelTpl = this.option("elabel");
-                        tooltipTpl = this.option("etooltip");
-                        arrayUtil.forEach(this.graphData.edges, function (item, idx) {
-                            var source = item.getSource();
-                            var target = item.getTarget();
-                            if (!this.option("vhidespills") || !target.isSpill()) {
-                                var label = this.format(labelTpl, item);
-                                var tooltip = this.format(tooltipTpl, item);
-                                var slavesTotal = parseInt(item.NumSlaves);
-                                var started = parseInt(item.NumStarted) > 0;
-                                var finished = parseInt(item.NumStopped) === parseInt(item.NumSlaves);
-                                var active = started && !finished;
-
-                                var strokeDasharray = null;
-                                var weight = 100;
-                                if (item._dependsOn) {
-                                    weight = 10;
-                                    strokeDasharray = "1,5";
-                                } else if (item._childGraph) {
-                                    strokeDasharray = "5,5";
-                                } else if (item._isSpill) {
-                                    weight = 25;
-                                    strokeDasharray = "5,5,10,5";
-                                }
-                                if (this.option("vhidespills") && source.isSpill()) {
-                                    label += "\n(" + nlsHPCC.Spill + ")";
-                                    weight = 25;
-                                    strokeDasharray = "5,5,10,5";
-                                    while (source.isSpill()) {
-                                        var inputs = source.getInVertices();
-                                        source = inputs[0];
-                                    }
-                                }
-                                if (!merge || !item.__widget) {
-                                    item.__widget = new Edge()
-                                        .sourceVertex(source.__widget)
-                                        .targetVertex(target.__widget)
-                                        .targetMarker("arrowHead")
-                                        .weight(weight)
-                                        .strokeDasharray(strokeDasharray)
-                                    ;
-                                    item.__widget.__hpcc_globalID = item.__hpcc_id;
-                                }
-                                item.__widget.text(label);
-                                item.__widget.tooltip(tooltip);
-                                item.__widget.classed({
-                                    started: started && !finished && !active,
-                                    finished: finished && !active,
-                                    active: active
-                                });
-                                edges.push(item.__widget);
-                            }
-                        }, this);
-                        if (this.option("subgraph")) {
-                            arrayUtil.forEach(this.graphData.subgraphs, function (subgraph, idx) {
-                                arrayUtil.forEach(subgraph.__hpcc_subgraphs, function (item, idx) {
-                                    if (subgraph.__widget && item.__widget) {
-                                        hierarchy.push({ parent: subgraph.__widget, child: item.__widget });
-                                    }
-                                }, this);
-                                arrayUtil.forEach(subgraph.__hpcc_vertices, function (item, idx) {
-                                    if (subgraph.__widget && item.__widget) {
-                                        hierarchy.push({ parent: subgraph.__widget, child: item.__widget });
-                                    }
-                                }, this);
-                            }, this);
-                        }
-                        this.graphWidget.data({ vertices: vertices, edges: edges, hierarchy: hierarchy, merge: merge });
+        find: function (findText) {
+            var findProp = "";
+            var findTerm = findText;
+            var findTextParts = findText.split(":");
+            if (findTextParts.length > 1) {
+                findProp = findTextParts[0];
+                findTextParts.splice(0, 1);
+                findTerm = findTextParts.join(":");
+            }
+            return arrayUtil.filter(this.graphData.vertices, function (item) {
+                if (findProp) {
+                    if (item.hasOwnProperty(findProp)) {
+                        return (item[findProp].toString().toLowerCase().indexOf(findTerm.toLowerCase()) >= 0);
                     }
-                }));
+                } else {
+                    for (var key in item) {
+                        if (item.hasOwnProperty(key) && item[key].toString().toLowerCase().indexOf(findTerm.toLowerCase()) >= 0) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
             });
-        }
-        if (dojoConfig.vizDebug) {
-            requireWidgets();
-        } else {
-            require(["dist-amd/hpcc-viz"], function() {
-                require(["dist-amd/hpcc-viz-common"], function () {
-                    require(["dist-amd/hpcc-viz-api"], function () {
-                        require(["dist-amd/hpcc-viz-graph"], function () {
-                            require(["dist-amd/hpcc-viz-layout"], function () {
-                                requireWidgets();
-                            });
-                        });
+        },
+
+        cleanObject: function (object) {
+            var retVal = {};
+            for (var key in object) {
+                if (object.hasOwnProperty(key) && typeof object[key] !== "function") {
+                    retVal[key] = object[key];
+                }
+            }
+            return retVal;
+        },
+
+        cleanObjects: function (objects) {
+            return objects.map(function (object) {
+                return this.cleanObject(object);
+            }, this);
+        },
+
+        gatherTreeWithProperties: function (subgraph) {
+            subgraph = subgraph || this.graphData.subgraphs[0];
+            var retVal = subgraph.getProperties();
+            retVal._children = [];
+            arrayUtil.forEach(subgraph.__hpcc_subgraphs, function (subgraph, idx) {
+                retVal._children.push(this.gatherTreeWithProperties(subgraph));
+            }, this);
+            arrayUtil.forEach(subgraph.__hpcc_vertices, function (vertex, idx) {
+                retVal._children.push(vertex.getProperties());
+            }, this);
+            return retVal;
+        },
+
+        getProperties: function (item) {
+            return item.getProperties();
+        },
+
+        getTreeWithProperties: function () {
+            return [this.gatherTreeWithProperties()];
+        },
+
+        getSubgraphsWithProperties: function () {
+            return this.cleanObjects(this.graphData.subgraphs);
+        },
+
+        getVerticesWithProperties: function () {
+            return this.cleanObjects(this.graphData.vertices);
+        },
+
+        getEdgesWithProperties: function () {
+            return this.cleanObjects(this.graphData.edges);
+        },
+
+        getLocalisedXGMML2: function (selectedItems, depth, distance, noSpills) {
+            return this.graphData.getLocalisedXGMML(selectedItems, depth, distance, noSpills);
+        },
+
+        startLayout: function (layout) {
+            var context = this;
+            setTimeout(function (layout) {
+                context.graphWidget
+                    .layout("Hierarchy")
+                    .render()
+                ;
+                context.emit("LayoutFinished", {});
+            }, 100);
+        },
+
+        clear: function () {
+            this.graphData.clear();
+            this.graphWidget.clear();
+        },
+
+        mergeXGMML: function (xgmml) {
+            this._loadXGMML(xgmml, true);
+        },
+
+        loadXGMML: function (xgmml) {
+            this._loadXGMML(xgmml, false);
+        },
+
+        _loadXGMML: function (xgmml, merge) {
+            if (merge) {
+                this.graphData.merge(xgmml, {});
+            } else {
+                this.graphData.load(xgmml, {});
+            }
+            if (!this._skipRender) {
+                this.rebuild(merge);
+            }
+        },
+
+        format: function (labelTpl, obj) {
+            var retVal = "";
+            var lpos = labelTpl.indexOf("%");
+            var rpos = -1;
+            while (lpos >= 0) {
+                retVal += labelTpl.substring(rpos + 1, lpos);
+                rpos = labelTpl.indexOf("%", lpos + 1);
+                if (rpos < 0) {
+                    console.log("Invalid Label Template");
+                    break;
+                }
+                var key = labelTpl.substring(lpos + 1, rpos);
+                retVal += !key ? "%" : (obj[labelTpl.substring(lpos + 1, rpos)] || "");
+                lpos = labelTpl.indexOf("%", rpos + 1);
+            }
+            retVal += labelTpl.substring(rpos + 1, labelTpl.length);
+            return retVal.split("\\n").join("\n");
+        },
+
+        rebuild: function (merge) {
+            merge = merge || false;
+            var vertices = [];
+            var edges = [];
+            var hierarchy = [];
+
+            if (this.option("subgraph")) {
+                arrayUtil.forEach(this.graphData.subgraphs, function (subgraph, idx) {
+                    if (!merge || !subgraph.__widget) {
+                        subgraph.__widget = new hpccCommon.Surface()
+                            .classed({ subgraph: true })
+                            .showIcon(false)
+                            .width(0)
+                            .height(0)
+                            .title(subgraph.__hpcc_id)
+                        ;
+                        subgraph.__widget.__hpcc_globalID = subgraph.__hpcc_id;
+                    }
+                    vertices.push(subgraph.__widget);
+                }, this);
+            }
+            var labelTpl = this.option("vlabel");
+            var tooltipTpl = this.option("vtooltip");
+            arrayUtil.forEach(this.graphData.vertices, function (item, idx) {
+                if (!this.option("vhidespills") || !item.isSpill()) {
+                    if (!merge || !item.__widget) {
+                        switch (item._kind) {
+                            case "point":
+                                item.__widget = new hpccCommon.Shape()
+                                    .radius(7)
+                                ;
+                                break;
+                            default:
+                                if (this.option("vicon") && this.option("vlabel")) {
+                                    item.__widget = new hpccGraph.Vertex()
+                                        .faChar(faCharFactory(item._kind))
+                                    ;
+                                } else if (this.option("vicon")) {
+                                    item.__widget = new hpccCommon.Icon()
+                                        .faChar(faCharFactory(item._kind))
+                                    ;
+                                } else if (this.option("vlabel")) {
+                                    item.__widget = new hpccCommon.TextBox()
+                                    ;
+                                } else {
+                                    item.__widget = new hpccCommon.Shape()
+                                        .radius(7)
+                                    ;
+                                }
+                                break;
+                        }
+                        item.__widget.__hpcc_globalID = item.__hpcc_id;
+                    }
+                    if (item.__widget.text) {
+                        var label = this.format(labelTpl, item);
+                        item.__widget.text(label);
+                    }
+                    if (item.__widget.tooltip) {
+                        var tooltip = this.format(tooltipTpl, item);
+                        item.__widget.tooltip(tooltip);
+                    }
+                    vertices.push(item.__widget);
+                }
+            }, this);
+            labelTpl = this.option("elabel");
+            tooltipTpl = this.option("etooltip");
+            arrayUtil.forEach(this.graphData.edges, function (item, idx) {
+                var source = item.getSource();
+                var target = item.getTarget();
+                if (!this.option("vhidespills") || !target.isSpill()) {
+                    var label = this.format(labelTpl, item);
+                    var tooltip = this.format(tooltipTpl, item);
+                    var numSlaves = parseInt(item.NumSlaves);
+                    var numStarts = parseInt(item.NumStarts);
+                    var numStops = parseInt(item.NumStops);
+                    var started = numStarts > 0;
+                    var finished = numStops === numSlaves;
+                    var active = started && !finished;
+
+                    var strokeDasharray = null;
+                    var weight = 100;
+                    if (item._dependsOn) {
+                        weight = 10;
+                        strokeDasharray = "1,5";
+                    } else if (item._childGraph) {
+                        strokeDasharray = "5,5";
+                    } else if (item._isSpill) {
+                        weight = 25;
+                        strokeDasharray = "5,5,10,5";
+                    }
+                    if (this.option("vhidespills") && source.isSpill()) {
+                        label += "\n(" + nlsHPCC.Spill + ")";
+                        weight = 25;
+                        strokeDasharray = "5,5,10,5";
+                        while (source.isSpill()) {
+                            var inputs = source.getInVertices();
+                            source = inputs[0];
+                        }
+                    }
+                    if (!merge || !item.__widget) {
+                        item.__widget = new hpccGraph.Edge()
+                            .sourceVertex(source.__widget)
+                            .targetVertex(target.__widget)
+                            .targetMarker("arrow")
+                            .weight(weight)
+                            .strokeDasharray(strokeDasharray)
+                        ;
+                        item.__widget.__hpcc_globalID = item.__hpcc_id;
+                    }
+                    item.__widget.text(label);
+                    item.__widget.tooltip(tooltip);
+                    item.__widget.classed({
+                        started: started && !finished && !active,
+                        finished: finished && !active,
+                        active: active
                     });
-                });
-            });
+                    edges.push(item.__widget);
+                }
+            }, this);
+            if (this.option("subgraph")) {
+                arrayUtil.forEach(this.graphData.subgraphs, function (subgraph, idx) {
+                    arrayUtil.forEach(subgraph.__hpcc_subgraphs, function (item, idx) {
+                        if (subgraph.__widget && item.__widget) {
+                            hierarchy.push({ parent: subgraph.__widget, child: item.__widget });
+                        }
+                    }, this);
+                    arrayUtil.forEach(subgraph.__hpcc_vertices, function (item, idx) {
+                        if (subgraph.__widget && item.__widget) {
+                            hierarchy.push({ parent: subgraph.__widget, child: item.__widget });
+                        }
+                    }, this);
+                }, this);
+            }
+            this.graphWidget.data({ vertices: vertices, edges: edges, hierarchy: hierarchy, merge: merge });
         }
-    };
+    });
 
     return declare("JSGraphWidget", [GraphWidget], {
         baseClass: "JSGraphWidget",
@@ -567,33 +565,31 @@ define([
             if (!this.hasPlugin()) {
                 this.persist = new Persist(this._persistID || "");
                 var context = this;
-                loadJSPlugin(function (JSPlugin) {
-                    context._plugin = new JSPlugin(context.graphContentPane.domNode);
-                    context._plugin._optionsDefault = context.optionsForm.getValues();
-                    switch (context._persistID) {
-                        case "overview":
-                            context._plugin._optionsDefault.subgraph = ["on"];
-                            context._plugin._optionsDefault.vlabel = "";
-                            break;
-                        case "local":
-                            context._plugin._optionsDefault.subgraph = ["on"];
-                            context._plugin._optionsDefault.vhidespills = ["off"];
-                            break;
-                        default:
-                            context._plugin._optionsDefault.vhidespills = ["on"];
-                            break;
-                    }
-                    var optionsValues = lang.mixin({}, context._plugin._optionsDefault, context.persist.getObj("options"));
-                    context._plugin.optionsReset(optionsValues);
-                    context.optionsForm.setValues(optionsValues);
-                    context.version = {
-                        major: 6,
-                        minor: 0
-                    };
-                    context.registerEvents();
-                    context.refreshRootState();
-                    context.emit("ready");
-                });
+                context._plugin = new JSPlugin(context.graphContentPane.domNode);
+                context._plugin._optionsDefault = context.optionsForm.getValues();
+                switch (context._persistID) {
+                    case "overview":
+                        context._plugin._optionsDefault.subgraph = ["on"];
+                        context._plugin._optionsDefault.vlabel = "";
+                        break;
+                    case "local":
+                        context._plugin._optionsDefault.subgraph = ["on"];
+                        context._plugin._optionsDefault.vhidespills = ["off"];
+                        break;
+                    default:
+                        context._plugin._optionsDefault.vhidespills = ["on"];
+                        break;
+                }
+                var optionsValues = lang.mixin({}, context._plugin._optionsDefault, context.persist.getObj("options"));
+                context._plugin.optionsReset(optionsValues);
+                context.optionsForm.setValues(optionsValues);
+                context.version = {
+                    major: 6,
+                    minor: 0
+                };
+                context.registerEvents();
+                context.refreshRootState();
+                context.emit("ready");
             }
         },
 

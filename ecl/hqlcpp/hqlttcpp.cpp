@@ -153,7 +153,7 @@ public:
     }
 
     void extractGlobal(IHqlExpression * global, ClusterType platform);
-    void extractStoredInfo(IHqlExpression * expr, IHqlExpression * codehash, bool isRoxie, int multiplePersistInstances);
+    void extractStoredInfo(IHqlExpression * expr, const char * id, IHqlExpression * codehash, bool isRoxie, int multiplePersistInstances);
     void checkFew(HqlCppTranslator & translator);
     void splitGlobalDefinition(ITypeInfo * type, IHqlExpression * value, IConstWorkUnit * wu, SharedHqlExpr & setOutput, OwnedHqlExpr * getOutput, bool isRoxie);
     IHqlExpression * getStoredKey();
@@ -161,6 +161,7 @@ public:
     IHqlExpression * queryCluster() const { return cluster; }
     int queryMaxPersistCopies() const { return numPersistInstances; }
     bool queryPersistRefresh() const { return persistRefresh; }
+    const char * queryLabel() const { return label ? label.str() : nullptr; }
 
 protected:
     void doSplitGlobalDefinition(ITypeInfo * type, IHqlExpression * value, IConstWorkUnit * wu, SharedHqlExpr & setOutput, OwnedHqlExpr * getOutput, bool isRoxie);
@@ -186,6 +187,7 @@ protected:
     OwnedHqlExpr extraSetAttr;
     OwnedHqlExpr extraOutputAttr;
     OwnedHqlExpr codehash;
+    StringBuffer label;
     const char * filePrefix;
     const char * storedPrefix;
     int numPersistInstances;
@@ -1154,9 +1156,10 @@ IHqlExpression * ThorScalarTransformer::createTransformed(IHqlExpression * expr)
 {
     if (expr->isConstant())
     {
-        //THOR(NULL) is marked as constant (probably incorrectly), but still needs hoisting.
-//      if ((expr->getOperator() != no_thor) || (expr->numChildren() == 0))
-            return LINK(expr);
+        //THOR(NULL) is marked as constant (probably incorrectly), but if it is constant can be evaluated inline
+        if ((expr->getOperator() == no_thor) && (expr->numChildren() != 0))
+            return LINK(expr->queryChild(0));
+        return LINK(expr);
     }
 
     IHqlExpression * ret = queryTransformAnnotation(expr);
@@ -5294,10 +5297,12 @@ void GlobalAttributeInfo::extractGlobal(IHqlExpression * global, ClusterType pla
     persistOp = no_global;
 }
 
-void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpression * _codehash, bool isRoxie, int multiplePersistInstances)
+void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, const char * id, IHqlExpression * _codehash, bool isRoxie, int multiplePersistInstances)
 {
     node_operator op = expr->getOperator();
     few = expr->hasAttribute(fewAtom) || (isRoxie) || (value->isDictionary() && !expr->hasAttribute(manyAtom));
+
+    getUTF8Value(label, queryAttributeChild(expr, labelAtom, 0), nullptr);
     switch (op)
     {
     case no_stored:
@@ -5340,7 +5345,7 @@ void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpressio
             getStringValue(s, codehash);
             storedName.setown(createConstant(s.str()));
         }
-	persistRefresh = getBoolValue(queryAttributeChild(expr, refreshAtom, 0), true);
+        persistRefresh = getBoolValue(queryAttributeChild(expr, refreshAtom, 0), true);
         break;
     case no_critical:
         setOp = no_setresult;
@@ -5377,6 +5382,26 @@ void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpressio
         break;
     default:
         return;
+    }
+
+    if (!label)
+    {
+        switch (op)
+        {
+        case no_stored:
+        case no_persist:
+            label.append("Create ");
+            getStoredDescription(label, sequence, storedName, true);
+            break;
+        case no_critical:
+            label.append("CRITICAL(");
+            getStringValue(label, storedName);
+            label.append(")");
+            break;
+        default:
+            label.append(id);
+            break;
+        }
     }
     persistOp = op;
 }
@@ -5779,7 +5804,7 @@ WorkflowTransformer::WorkflowTransformer(IWorkUnit * _wu, HqlCppTranslator & _tr
 
 //-- Helper routines --
 
-IWorkflowItem * WorkflowTransformer::addWorkflowToWorkunit(unsigned wfid, WFType type, WFMode mode, UnsignedArray const & dependencies, ContingencyData const & conts, IHqlExpression * cluster)
+IWorkflowItem * WorkflowTransformer::addWorkflowToWorkunit(unsigned wfid, WFType type, WFMode mode, UnsignedArray const & dependencies, ContingencyData const & conts, IHqlExpression * cluster, const char * label)
 {
     Owned<IWorkflowItem> wf(wu->addWorkflowItem(wfid, type, mode, conts.success, conts.failure, conts.recovery, conts.retries, conts.contingencyFor));
     if (cluster)
@@ -5788,6 +5813,8 @@ IWorkflowItem * WorkflowTransformer::addWorkflowToWorkunit(unsigned wfid, WFType
         getStringValue(clusterText, cluster);
         wf->setCluster(clusterText);
     }
+    if (label && *label)
+        wf->setLabel(label);
     ForEachItemIn(idx, dependencies)
         wf->addDependency(dependencies.item(idx));
     return wf.getClear();
@@ -5826,9 +5853,9 @@ void WorkflowTransformer::setWorkflowCritical(IWorkflowItem * wf, char const * c
     wf->setCriticalInfo(criticalName);
 }
 
-WorkflowItem * WorkflowTransformer::createWorkflowItem(IHqlExpression * expr, unsigned wfid, node_operator workflowOp)
+WorkflowItem * WorkflowTransformer::createWorkflowItem(IHqlExpression * expr, unsigned wfid, node_operator workflowOp, const char * label)
 {
-    WorkflowItem * item = new WorkflowItem(wfid, workflowOp);
+    WorkflowItem * item = new WorkflowItem(wfid, workflowOp, label);
     expr->unwindList(item->queryExprs(), no_comma);
     gatherIndirectDependencies(item->dependencies, expr);
     return item;
@@ -5884,8 +5911,9 @@ unsigned WorkflowTransformer::ensureWorkflowAction(IHqlExpression * expr)
     if (isWorkflowAction(expr))
         return (unsigned)getIntValue(expr->queryChild(0));
     unsigned wfid = ++wfidCount;
-    Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(expr), rootCluster);
-    addWorkflowItem(*createWorkflowItem(expr, wfid, no_actionlist));
+    const char * label = str(expr->queryId());
+    Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(expr), rootCluster, label);
+    addWorkflowItem(*createWorkflowItem(expr, wfid, no_actionlist, label));
     return wfid;
 }
 
@@ -5903,7 +5931,7 @@ unsigned WorkflowTransformer::splitValue(IHqlExpression * value)
     info.splitGlobalDefinition(value->queryType(), value, wu, setValue, 0, (translator.getTargetClusterType() == RoxieCluster));
     inheritDependencies(setValue);
     unsigned wfid = ++wfidCount;
-    addWorkflowItem(*createWorkflowItem(setValue, wfid, no_global));
+    addWorkflowItem(*createWorkflowItem(setValue, wfid, no_global, nullptr));
     return wfid;
 }
 
@@ -5952,6 +5980,19 @@ void WorkflowTransformer::extractDependentInputs(UnsignedArray & visited, Depend
 
 IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransformed, IHqlExpression * expr)
 {
+    const char * id = nullptr;
+    ForEachItemInRev(i, activeLocations)
+    {
+        IHqlExpression & next = activeLocations.item(i);
+        if (next.queryBody() != untransformed)
+            break;
+        if (next.queryId())
+        {
+            id = str(next.queryId());
+            break;
+        }
+    }
+
     IHqlExpression * value = expr->queryChild(0);
     GlobalAttributeInfo info("jobtemp::wf", "wf", value);
     info.sequence.setown(getLocalSequenceNumber());
@@ -5979,7 +6020,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
         case no_persist:
         case no_checkpoint:
         case no_stored:
-            info.extractStoredInfo(&cur, codehash, isRoxie, multiplePersistInstances);
+            info.extractStoredInfo(&cur, id, codehash, isRoxie, multiplePersistInstances);
 
             OwnedHqlExpr id = info.getStoredKey();
             unsigned match = alreadyProcessed.find(*id);
@@ -6042,7 +6083,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
         case no_checkpoint:
         case no_stored:
             {
-                info.extractStoredInfo(&cur, codehash, isRoxie, multiplePersistInstances);
+                info.extractStoredInfo(&cur, id, codehash, isRoxie, multiplePersistInstances);
 
                 OwnedHqlExpr id = info.getStoredKey();
                 alreadyProcessed.append(*id.getClear());
@@ -6052,31 +6093,31 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
             break;
         case no_independent:
         case no_once:
-            info.extractStoredInfo(&cur, codehash, isRoxie, multiplePersistInstances);
+            info.extractStoredInfo(&cur, id, codehash, isRoxie, multiplePersistInstances);
             break;
         case no_success:
             {
                 OwnedHqlExpr successExpr = transformSequentialEtc(cur.queryChild(0));
                 conts.success = splitValue(successExpr);
-                Owned<IWorkflowItem> wf = addWorkflowContingencyToWorkunit(conts.success, WFTypeSuccess, WFModeNormal, queryDirectDependencies(successExpr), NULL, wfid);
-                info.extractStoredInfo(&cur, codehash, isRoxie, multiplePersistInstances);
+                Owned<IWorkflowItem> wf = addWorkflowContingencyToWorkunit(conts.success, WFTypeSuccess, WFModeNormal, queryDirectDependencies(successExpr), NULL, wfid, info.queryLabel());
+                info.extractStoredInfo(&cur, id, codehash, isRoxie, multiplePersistInstances);
                 break;
             }
         case no_failure:
             {
                 OwnedHqlExpr failureExpr = transformSequentialEtc(cur.queryChild(0));
                 conts.failure = splitValue(failureExpr);
-                Owned<IWorkflowItem> wf = addWorkflowContingencyToWorkunit(conts.failure, WFTypeFailure, WFModeNormal, queryDirectDependencies(failureExpr), NULL, wfid);
-                info.extractStoredInfo(&cur, codehash, isRoxie, multiplePersistInstances);
+                Owned<IWorkflowItem> wf = addWorkflowContingencyToWorkunit(conts.failure, WFTypeFailure, WFModeNormal, queryDirectDependencies(failureExpr), NULL, wfid, info.queryLabel());
+                info.extractStoredInfo(&cur, id, codehash, isRoxie, multiplePersistInstances);
                 break;
             }
         case no_recovery:
             {
-            conts.recovery = splitValue(cur.queryChild(0));
-            conts.retries = (unsigned)getIntValue(cur.queryChild(1), 0);
-                Owned<IWorkflowItem> wf = addWorkflowContingencyToWorkunit(conts.recovery, WFTypeRecovery, WFModeNormal, queryDirectDependencies(cur.queryChild(0)), NULL, wfid);
-            info.extractStoredInfo(&cur, codehash, isRoxie, multiplePersistInstances);
-            break;
+                conts.recovery = splitValue(cur.queryChild(0));
+                conts.retries = (unsigned)getIntValue(cur.queryChild(1), 0);
+                Owned<IWorkflowItem> wf = addWorkflowContingencyToWorkunit(conts.recovery, WFTypeRecovery, WFModeNormal, queryDirectDependencies(cur.queryChild(0)), NULL, wfid, info.queryLabel());
+                info.extractStoredInfo(&cur, id, codehash, isRoxie, multiplePersistInstances);
+                break;
             }
         case no_attr:
             assertex(cur.queryName() == _original_Atom);
@@ -6211,10 +6252,10 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
          {
             StringBuffer criticalName;
             info.storedName->queryValue()->getStringValue(criticalName);
-            Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeCritical, queryDirectDependencies(setValue), conts, info.queryCluster());
+            Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeCritical, queryDirectDependencies(setValue), conts, info.queryCluster(), info.queryLabel());
             setWorkflowCritical(wf, criticalName.str());
 
-            addWorkflowItem(*createWorkflowItem(getValue, wfid, no_none));
+            addWorkflowItem(*createWorkflowItem(getValue, wfid, no_none, info.queryLabel()));
             getValue.setown(createNullExpr(expr->queryType()));
         }
         else if(info.persistOp == no_persist)
@@ -6222,7 +6263,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
             StringBuffer persistName;
             info.storedName->queryValue()->getStringValue(persistName);
             unsigned persistWfid = ++wfidCount;
-            Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModePersist, queryDirectDependencies(setValue), conts, info.queryCluster());
+            Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModePersist, queryDirectDependencies(setValue), conts, info.queryCluster(), info.queryLabel());
             setWorkflowPersist(wf, persistName.str(), persistWfid, info.queryMaxPersistCopies(), info.queryPersistRefresh());
 
             DependenciesUsed dependencies(false);
@@ -6246,10 +6287,10 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
             OwnedHqlExpr check = createValue(no_persist_check, makeVoidType(), checkArgs);
             inheritDependencies(check);
 
-            addWorkflowItem(*createWorkflowItem(check, persistWfid, no_actionlist));
-            addWorkflowItem(*createWorkflowItem(setValue, wfid, no_persist));
+            addWorkflowItem(*createWorkflowItem(check, persistWfid, no_actionlist, nullptr));
+            addWorkflowItem(*createWorkflowItem(setValue, wfid, no_persist, info.queryLabel()));
 
-            Owned<IWorkflowItem> wfPersist = addWorkflowToWorkunit(persistWfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(check), NULL);
+            Owned<IWorkflowItem> wfPersist = addWorkflowToWorkunit(persistWfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(check), nullptr, nullptr);
         }
         else
         {
@@ -6259,8 +6300,8 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
                 inheritDependencies(cluster);
                 setValue.set(cluster);
             }
-            Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(setValue), conts, info.queryCluster());
-            addWorkflowItem(*createWorkflowItem(setValue, wfid, info.persistOp));
+            Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(setValue), conts, info.queryCluster(), info.queryLabel());
+            addWorkflowItem(*createWorkflowItem(setValue, wfid, info.persistOp, info.queryLabel()));
         }
     }
 
@@ -6268,9 +6309,9 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
     {
         if (schedWfid == 0)
             schedWfid = ++wfidCount;
-        Owned<IWorkflowItem> wf = addWorkflowToWorkunit(schedWfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(getValue), info.queryCluster());
+        Owned<IWorkflowItem> wf = addWorkflowToWorkunit(schedWfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(getValue), info.queryCluster(), info.queryLabel());
         setWorkflowSchedule(wf, sched);
-        addWorkflowItem(*createWorkflowItem(getValue, schedWfid, no_none));
+        addWorkflowItem(*createWorkflowItem(getValue, schedWfid, no_none, info.queryLabel()));
         getValue.setown(createNullExpr(expr->queryType()));
     }
     else
@@ -6311,8 +6352,8 @@ IHqlExpression * WorkflowTransformer::extractCommonWorkflow(IHqlExpression * exp
     unsigned wfid = ++wfidCount;
 
     s.appendf("AutoWorkflow: Spotted %s ", getOpString(expr->getOperator()));
-    if (expr->queryName())
-        s.append("[").append(expr->queryName()).append("] ");
+    if (expr->queryId())
+        s.append("[").append(expr->queryId()).append("] ");
     s.append(" to common up between workflow items [").append(wfid).append("]");
     DBGLOG("%s", s.str());
     translator.addWorkunitException(SeverityInformation, 0, s.str(), location);
@@ -6327,8 +6368,8 @@ IHqlExpression * WorkflowTransformer::extractCommonWorkflow(IHqlExpression * exp
     info.splitGlobalDefinition(transformed->queryType(), transformed, wu, setValue, &getValue, isRoxie);
     copySetValueDependencies(transformedExtra, setValue);
 
-    Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(setValue), conts, NULL);
-    addWorkflowItem(*createWorkflowItem(setValue, wfid, no_actionlist));
+    Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(setValue), conts, NULL, info.queryLabel());
+    addWorkflowItem(*createWorkflowItem(setValue, wfid, no_actionlist, str(expr->queryId())));
 
     queryBodyExtra(getValue.get())->addDependency(wfid);
     return getValue.getClear();
@@ -6628,7 +6669,7 @@ UnsignedArray const & WorkflowTransformer::queryDirectDependencies(IHqlExpressio
 
 void WorkflowTransformer::cacheWorkflowDependencies(unsigned wfid, UnsignedArray & extra)
 {
-    WorkflowItem * item = new WorkflowItem(wfid, no_actionlist);
+    WorkflowItem * item = new WorkflowItem(wfid, no_actionlist, nullptr);
     ForEachItemIn(i, extra)
     {
         unsigned wfid = extra.item(i);
@@ -6694,7 +6735,7 @@ IHqlExpression * WorkflowTransformer::createCompoundWorkflow(IHqlExpression * ex
         }
 
         unsigned wfid = ++wfidCount;
-        Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeSequential, childWfid, rootCluster);
+        Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeSequential, childWfid, rootCluster, str(expr->queryId()));
         cacheWorkflowDependencies(wfid, childWfid);
         return createWorkflowAction(wfid);
     }
@@ -6746,7 +6787,7 @@ IHqlExpression * WorkflowTransformer::createSequentialWorkflow(IHqlExpression * 
             ensureWorkflowAction(childWfid, nextBranch);
 
         unsigned wfid = ++wfidCount;
-        Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeSequential, childWfid, rootCluster);
+        Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeSequential, childWfid, rootCluster, str(expr->queryId()));
         cacheWorkflowDependencies(wfid, childWfid);
         return createWorkflowAction(wfid);
     }
@@ -6783,7 +6824,7 @@ IHqlExpression * WorkflowTransformer::createParallelWorkflow(IHqlExpression * ex
         }
 
         unsigned wfid = ++wfidCount;
-        Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeParallel, childWfid, rootCluster);
+        Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeParallel, childWfid, rootCluster, str(expr->queryId()));
         cacheWorkflowDependencies(wfid, childWfid);
         return createWorkflowAction(wfid);
     }
@@ -6850,9 +6891,9 @@ IHqlExpression * WorkflowTransformer::createIfWorkflow(IHqlExpression * expr)
                 ensureWorkflowAction(dependencies, newFalseExpr);
 
             unsigned wfid = ++wfidCount;
-            Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeCondition, dependencies, rootCluster);
+            Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeCondition, dependencies, rootCluster, str(expr->queryId()));
 
-            WorkflowItem * item = new WorkflowItem(wfid, no_if);
+            WorkflowItem * item = new WorkflowItem(wfid, no_if, "IF");
             cloneDependencies(item->dependencies, dependencies);
 
             if (falseExpr)
@@ -6893,17 +6934,17 @@ IHqlExpression * WorkflowTransformer::createWaitWorkflow(IHqlExpression * expr)
 
     unsigned endWaitWfid = ++wfidCount;
     UnsignedArray noDependencies;
-    Owned<IWorkflowItem> wf = addWorkflowToWorkunit(endWaitWfid, WFTypeNormal, WFModeWait, noDependencies, rootCluster);
+    Owned<IWorkflowItem> wf = addWorkflowToWorkunit(endWaitWfid, WFTypeNormal, WFModeWait, noDependencies, rootCluster, str(expr->queryId()));
     setWorkflowSchedule(wf, sched);
     OwnedHqlExpr doNothing = createValue(no_null, makeVoidType());
-    addWorkflowItem(*createWorkflowItem(doNothing, endWaitWfid, no_wait));
+    addWorkflowItem(*createWorkflowItem(doNothing, endWaitWfid, no_wait, "WAIT"));
 
     //Now create a wait entry, with the EndWait as the dependency
     UnsignedArray dependencies;
     dependencies.append(endWaitWfid);
 
     unsigned beginWaitWfid = ++wfidCount;
-    Owned<IWorkflowItem> wfWait = addWorkflowToWorkunit(beginWaitWfid, WFTypeNormal, WFModeBeginWait, dependencies, rootCluster);
+    Owned<IWorkflowItem> wfWait = addWorkflowToWorkunit(beginWaitWfid, WFTypeNormal, WFModeBeginWait, dependencies, rootCluster, str(expr->queryId()));
     cacheWorkflowDependencies(beginWaitWfid, dependencies);
     return createWorkflowAction(beginWaitWfid);
 }
@@ -7080,17 +7121,17 @@ void WorkflowTransformer::transformRoot(const HqlExprArray & in, WorkflowArray &
     {
         //By definition they don't have any dependencies, so no need to call inheritDependencies.
         OwnedHqlExpr onceExpr = createActionList(onceExprs);
-        Owned<IWorkflowItem> wf = addWorkflowToWorkunit(onceWfid, WFTypeNormal, WFModeOnce, queryDirectDependencies(onceExpr), NULL);
+        Owned<IWorkflowItem> wf = addWorkflowToWorkunit(onceWfid, WFTypeNormal, WFModeOnce, queryDirectDependencies(onceExpr), NULL, "ONCE");
         wf->setScheduledNow();
-        addWorkflowItem(*createWorkflowItem(onceExpr, onceWfid, no_once));
+        addWorkflowItem(*createWorkflowItem(onceExpr, onceWfid, no_once, "ONCE"));
     }
 
     if (trivialStoredExprs.length())
     {
         //By definition they don't have any dependencies, so no need to call inheritDependencies.
         OwnedHqlExpr trivialStoredExpr = createActionList(trivialStoredExprs);
-        Owned<IWorkflowItem> wf = addWorkflowToWorkunit(trivialStoredWfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(trivialStoredExpr), NULL);
-        addWorkflowItem(*createWorkflowItem(trivialStoredExpr, trivialStoredWfid, no_stored));
+        Owned<IWorkflowItem> wf = addWorkflowToWorkunit(trivialStoredWfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(trivialStoredExpr), NULL, nullptr);
+        addWorkflowItem(*createWorkflowItem(trivialStoredExpr, trivialStoredWfid, no_stored, "Trivial STORED"));
     }
 
     if (transformed.ordinality())
@@ -7121,9 +7162,9 @@ void WorkflowTransformer::transformRoot(const HqlExprArray & in, WorkflowArray &
             {
                 wfid = ++wfidCount;
                 ScheduleData sched;
-                Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeNormal, dependencies, NULL);
+                Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeNormal, dependencies, NULL, nullptr);
                 setWorkflowSchedule(wf, sched);
-                addWorkflowItem(*createWorkflowItem(combinedItems, wfid, no_actionlist));
+                addWorkflowItem(*createWorkflowItem(combinedItems, wfid, no_actionlist, nullptr));
             }
             else
                 wfid = ensureWorkflowAction(combinedItems);
@@ -8953,7 +8994,7 @@ IHqlExpression * DFSLayoutTransformer::createTransformed(IHqlExpression * expr)
                 unsigned dfsPayload = 0;
                 if (payload)
                 {
-                    dfsPayload = getIntValue(payload->queryChild(0));
+                    dfsPayload = (unsigned)getIntValue(payload->queryChild(0));
                     dfsLayout.setown(removeAttribute(dfsLayout, _payload_Atom));
                 }
 

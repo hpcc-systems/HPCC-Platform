@@ -675,7 +675,10 @@ const char * getTypeIRText(type_t type)
     EXPAND_CASE(type,decimal);
     EXPAND_CASE(type,string);
     EXPAND_CASE(type,date);
+    EXPAND_CASE(type,biasedswapint);
+    EXPAND_CASE(type,swapfilepos);
     EXPAND_CASE(type,bitfield);
+    EXPAND_CASE(type,keyedint);
     EXPAND_CASE(type,char);
     EXPAND_CASE(type,enumerated);
     EXPAND_CASE(type,record);
@@ -692,6 +695,7 @@ const char * getTypeIRText(type_t type)
     EXPAND_CASE(type,void);
     EXPAND_CASE(type,alien);
     case type_swapint: return "swap";
+    EXPAND_CASE(type,filepos);
     EXPAND_CASE(type,none);
     EXPAND_CASE(type,packedint);
     EXPAND_CASE(type,qstring);
@@ -712,12 +716,6 @@ const char * getTypeIRText(type_t type)
     EXPAND_CASE(type,sortlist);
     EXPAND_CASE(type,dictionary);
     EXPAND_CASE(type,alias);
-
-    case type_unused2:
-    case type_unused3:
-    case type_unused4:
-    case type_unused5:
-        return "unused";
     }
     return "<unknown>";
 }
@@ -1427,6 +1425,7 @@ protected:
                 line.append("u");
             line.append(irText);
             return;
+        case type_filepos:
         case type_int:
         case type_swapint:
             {
@@ -1865,9 +1864,11 @@ id_t ExpressionIRPlayer::doProcessType(ITypeInfo * type)
         case type_event:
         case type_null:
         case type_void:
+        case type_filepos:
         case type_sortlist:
         case type_any:
             break;
+        case type_keyedint:
         case type_int:
         case type_swapint:
         case type_real:

@@ -7224,7 +7224,7 @@ IHqlExpression * HqlGram::checkIndexRecord(IHqlExpression * record, const attrib
         {
             IHqlExpression * lastField = record->queryChild(numFields-1);
             ITypeInfo * fileposType = lastField->queryType();
-            if (!isIntegralType(fileposType))
+            if (!isSimpleIntegralType(fileposType))
                 indexAttrs.setown(createComma(indexAttrs.getClear(), createExprAttribute(filepositionAtom, createConstant(false))));
         }
     }

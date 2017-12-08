@@ -329,10 +329,11 @@ ICompare * CThorSubSortArg::queryCompareSerializedRow() { return NULL; }
 bool CThorKeyedJoinArg::diskAccessRequired() { return false; }
 const char * CThorKeyedJoinArg::getFileName() { return NULL; }
 IOutputMetaData * CThorKeyedJoinArg::queryDiskRecordSize() { return NULL; }
+IOutputMetaData * CThorKeyedJoinArg::queryProjectedDiskRecordSize() { return NULL; }
 unsigned __int64 CThorKeyedJoinArg::extractPosition(const void * _right) { return 0; }
 
 bool CThorKeyedJoinArg::leftCanMatch(const void * inputRow) { return true; }
-bool CThorKeyedJoinArg::indexReadMatch(const void * indexRow, const void * inputRow, unsigned __int64 keyedFpos, IBlobProvider * blobs) { return true; }
+bool CThorKeyedJoinArg::indexReadMatch(const void * indexRow, const void * inputRow, IBlobProvider * blobs) { return true; }
 
 unsigned __int64 CThorKeyedJoinArg::getRowLimit() { return (unsigned __int64) -1; }
 void CThorKeyedJoinArg::onLimitExceeded() { }
@@ -638,7 +639,7 @@ unsigned CThorIndexGroupAggregateArg::getFlags() { return 0; }
 bool CThorIndexGroupAggregateArg::getIndexLayout(size32_t & _retLen, void * & _retData) { return false; }
 void CThorIndexGroupAggregateArg::setCallback(IThorIndexCallback * _tc) { fpp = _tc; }
 bool CThorIndexGroupAggregateArg::createGroupSegmentMonitors(IIndexReadContext *ctx) { return false; }
-unsigned CThorIndexGroupAggregateArg::getGroupSegmentMonitorsSize() { return 0; }
+unsigned CThorIndexGroupAggregateArg::getGroupingMaxField() { return 0; }
 size32_t CThorIndexGroupAggregateArg::initialiseCountGrouping(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }
 size32_t CThorIndexGroupAggregateArg::processCountGrouping(ARowBuilder & rowBuilder, unsigned __int64 count) { rtlFailUnexpected(); return 0; }
 size32_t CThorIndexGroupAggregateArg::mergeAggregate(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }
@@ -687,7 +688,7 @@ void CThorDiskCountArg::onKeyedLimitExceeded() { }
 unsigned CThorDiskGroupAggregateArg::getFlags() { return 0; }
 void CThorDiskGroupAggregateArg::setCallback(IThorDiskCallback * _tc) { fpp = _tc; }
 bool CThorDiskGroupAggregateArg::createGroupSegmentMonitors(IIndexReadContext *ctx) { return false; }
-unsigned CThorDiskGroupAggregateArg::getGroupSegmentMonitorsSize() { return 0; }
+unsigned CThorDiskGroupAggregateArg::getGroupingMaxField() { return 0; }
 size32_t CThorDiskGroupAggregateArg::initialiseCountGrouping(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }
 size32_t CThorDiskGroupAggregateArg::processCountGrouping(ARowBuilder & rowBuilder, unsigned __int64 count) { rtlFailUnexpected(); return 0; }
 size32_t CThorDiskGroupAggregateArg::mergeAggregate(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }

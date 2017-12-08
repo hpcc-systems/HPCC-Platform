@@ -41,6 +41,7 @@ interface IHpccProtocolMsgContext : extends IInterface
     virtual bool getIntercept() = 0;
     virtual void outputLogXML(IXmlStreamFlusher &out) = 0;
     virtual void setTransactionId(const char *id) = 0;
+    virtual void writeLogXML(IXmlWriter &writer) = 0;
 };
 
 interface IHpccProtocolResultsWriter : extends IInterface

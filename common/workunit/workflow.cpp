@@ -175,6 +175,7 @@ public:
     virtual void         setState(WFState state) { setEnum(tree, "@state", state, wfstates); }
     virtual unsigned     queryScheduledWfid() const { return tree->getPropInt("@swfid", 0); }
     virtual void         setScheduledWfid(unsigned wfid) { tree->setPropInt("@swfid", wfid); }
+    virtual void         setLabel(const char * label) { tree->setProp("@label", label); }
     virtual bool         testAndDecRetries()
     {
         assertex(tree->hasProp("@retriesAllowed"));

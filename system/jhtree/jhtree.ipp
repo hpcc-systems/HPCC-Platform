@@ -123,6 +123,7 @@ public:
     virtual offset_t queryMetadataHead();
     virtual IPropertyTree * getMetadata();
     virtual unsigned getNodeSize() { return keyHdr->getNodeSize(); }
+    virtual bool hasSpecialFileposition() const;
  
  // INodeLoader impl.
     virtual CJHTreeNode *loadNode(offset_t offset) = 0;

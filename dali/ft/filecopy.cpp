@@ -924,21 +924,17 @@ void FileSprayer::beforeTransfer()
     throttleNicSpeed = options->getPropInt(ANthrottle, 0);
     if (throttleNicSpeed == 0 && !usePullOperation() && targets.ordinality() == 1 && sources.ordinality() > 1)
     {
-        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-        if (factory) {
-            Owned<IConstEnvironment> env = factory->openEnvironment();
-            if (env) {
-                StringBuffer ipText;
-                targets.item(0).filename.queryIP().getIpText(ipText);
-                Owned<IConstMachineInfo> machine = env->getMachineByAddress(ipText.str());
-                if (machine)
-                {
-                    if (machine->getOS() == MachineOsW2K)
-                    {
-                        throttleNicSpeed = machine->getNicSpeedMbitSec();
-                        LOG(MCdebugInfo, job, "Throttle target speed to %dMbit/sec", throttleNicSpeed);
-                    }
-                }
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
+        Owned<IConstEnvironment> env = factory->openEnvironment();
+        StringBuffer ipText;
+        targets.item(0).filename.queryIP().getIpText(ipText);
+        Owned<IConstMachineInfo> machine = env->getMachineByAddress(ipText.str());
+        if (machine)
+        {
+            if (machine->getOS() == MachineOsW2K)
+            {
+                throttleNicSpeed = machine->getNicSpeedMbitSec();
+                LOG(MCdebugInfo, job, "Throttle target speed to %dMbit/sec", throttleNicSpeed);
             }
         }
     }
@@ -3037,6 +3033,9 @@ void FileSprayer::updateTargetProperties()
         offset_t totalCompressedSize = 0;
         unsigned whichHeaderInput = 0;
         bool sameSizeHeaderFooter = isSameSizeHeaderFooter();
+        bool sameSizeSourceTarget = (sources.ordinality() == distributedTarget->numParts());
+        offset_t partCompressedLength = 0;
+
         ForEachItemIn(idx, partition)
         {
             PartitionPoint & cur = partition.item(idx);
@@ -3045,7 +3044,7 @@ void FileSprayer::updateTargetProperties()
             partCRC.addChildCRC(curProgress.outputLength, curProgress.outputCRC, false);
             totalCRC.addChildCRC(curProgress.outputLength, curProgress.outputCRC, false);
 
-            if (copyCompressed) {
+            if (copyCompressed && sameSizeSourceTarget) {
                 FilePartInfo & curSource = sources.item(cur.whichInput);
                 partLength = curSource.size;
                 totalLength += partLength;
@@ -3054,6 +3053,9 @@ void FileSprayer::updateTargetProperties()
                 partLength += curProgress.outputLength;  // AFAICS this might as well be =
                 totalLength += curProgress.outputLength;
             }
+
+            if (compressOutput)
+                partCompressedLength += curProgress.compressedPartSize;
 
             if (idx+1 == partition.ordinality() || partition.item(idx+1).whichOutput != cur.whichOutput)
             {
@@ -3103,8 +3105,8 @@ void FileSprayer::updateTargetProperties()
 
                 if (compressOutput)
                 {
-                    curProps.setPropInt64(FAcompressedSize, curProgress.compressedPartSize);
-                    totalCompressedSize += curProgress.compressedPartSize;
+                    curProps.setPropInt64(FAcompressedSize, partCompressedLength);
+                    totalCompressedSize += partCompressedLength;
                 } else if (copyCompressed)
                 {
                     curProps.setPropInt64(FAcompressedSize, curProgress.outputLength);
@@ -3145,6 +3147,7 @@ void FileSprayer::updateTargetProperties()
                 curPart->unlockProperties();
                 partCRC.clear();
                 partLength = 0;
+                partCompressedLength = 0;
             }
         }
 

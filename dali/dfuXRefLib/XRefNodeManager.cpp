@@ -107,6 +107,7 @@ CXRefNode::CXRefNode(const char* NodeName, IRemoteConnection *_conn)
     IPropertyTree* cluster_ptree = m_conn->queryRoot()->queryPropTree(xpath.str());
     m_XRefTree.set(cluster_ptree);
     m_XRefTree->getProp("@name",m_origName);
+    rootDir.set(m_XRefTree->queryProp("@rootdir"));
     //DBGLOG("returning from CXRefNode::CXRefNode(const char* NodeName)");
 
 }
@@ -117,6 +118,7 @@ CXRefNode::CXRefNode(IPropertyTree* pTreeRoot)
     try
     {
         m_XRefTree.set(pTreeRoot);
+        rootDir.set(m_XRefTree->queryProp("@rootdir"));
         pTreeRoot->getProp("@name",m_origName);
         //load up our tree with the data.....if there is data
         MemoryBuffer buff;
@@ -191,9 +193,8 @@ IXRefFilesNode* CXRefNode::getLostFiles()
             lostBranch = m_XRefTree->addPropTree("Lost",createPTree());
             commit();
         }
-        const char *rootdir = m_XRefTree.get()?m_XRefTree->queryProp("@rootdir"):NULL;
         StringBuffer tmpbuf;
-        m_lost.setown(new CXRefFilesNode(*lostBranch,getName(tmpbuf).str(),rootdir));
+        m_lost.setown(new CXRefFilesNode(*lostBranch,getName(tmpbuf).str(),rootDir));
     }
     return m_lost.getLink();
 }
@@ -208,9 +209,8 @@ IXRefFilesNode* CXRefNode::getFoundFiles()
             foundBranch = m_XRefTree->addPropTree("Found",createPTree());
             commit();
         }
-        const char *rootdir = m_XRefTree.get()?m_XRefTree->queryProp("@rootdir"):NULL;
         StringBuffer tmpbuf;
-        m_found.setown(new CXRefFilesNode(*foundBranch,getName(tmpbuf).str(),rootdir));
+        m_found.setown(new CXRefFilesNode(*foundBranch,getName(tmpbuf).str(),rootDir));
     }
     return m_found.getLink();
 }
@@ -225,9 +225,8 @@ IXRefFilesNode* CXRefNode::getOrphanFiles()
             orphanBranch = m_XRefTree->addPropTree("Orphans",createPTree());
             commit();
         }
-        const char *rootdir = m_XRefTree.get()?m_XRefTree->queryProp("@rootdir"):NULL;
         StringBuffer tmpbuf;
-        m_orphans.setown(new CXRefOrphanFilesNode(*orphanBranch,getName(tmpbuf).str(),rootdir));
+        m_orphans.setown(new CXRefOrphanFilesNode(*orphanBranch,getName(tmpbuf).str(),rootDir));
     }
     return m_orphans.getLink();
 }

@@ -24,6 +24,7 @@
 #include "dalienv.hpp"
 #include "dadfs.hpp"
 #include "daaudit.hpp"
+#include "dautils.hpp"
 #include "exception_util.hpp"
 #include "wujobq.hpp"
 #include "eventqueue.hpp"
@@ -44,6 +45,7 @@
 #include "thorxmlwrite.hpp"
 #include "fvdatasource.hpp"
 #include "fvresultset.ipp"
+#include "ws_wudetails.hpp"
 
 #include "rtlformat.hpp"
 
@@ -290,6 +292,22 @@ bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IP
     return bAllSuccess;
 }
 
+
+bool doProtectWorkunits(IEspContext& context, StringArray& wuids, IArrayOf<IConstWUActionResult>* results)
+{
+    Owned<IProperties> params(createProperties(true));
+    params->setProp("BlockTillFinishTimer", 0);
+
+    return doAction(context, wuids, CECLWUActions_Protect, params, results);
+}
+bool doUnProtectWorkunits(IEspContext& context, StringArray& wuids, IArrayOf<IConstWUActionResult>* results)
+{
+    Owned<IProperties> params(createProperties(true));
+    params->setProp("BlockTillFinishTimer", 0);
+
+    return doAction(context, wuids, CECLWUActions_Unprotect, params, results);
+}
+
 static void checkUpdateQuerysetLibraries()
 {
     Owned<IRemoteConnection> globalLock = querySDS().connect("/QuerySets/", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
@@ -355,6 +373,13 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
     awusCacheMinutes = AWUS_CACHE_MIN_DEFAULT;
     VStringBuffer xpath("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/AWUsCacheMinutes", process, service);
     cfg->getPropInt(xpath.str(), awusCacheMinutes);
+
+    xpath.setf("Software/EspProcess[@name=\"%s\"]/@PageCacheTimeoutSeconds", process);
+    if (cfg->hasProp(xpath.str()))
+        setPageCacheTimeoutMilliSeconds(cfg->getPropInt(xpath.str()));
+    xpath.setf("Software/EspProcess[@name=\"%s\"]/@MaxPageCacheItems", process);
+    if (cfg->hasProp(xpath.str()))
+        setMaxPageCacheItems(cfg->getPropInt(xpath.str()));
 
     xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/serverForArchivedECLWU/@netAddress", process, service);
     if (cfg->hasProp(xpath.str()))
@@ -560,10 +585,15 @@ bool CWsWorkunitsEx::onWUUpdate(IEspContext &context, IEspWUUpdateRequest &req, 
 
         ForEachItemIn(di, req.getDebugValues())
         {
-            IConstDebugValue& item = req.getDebugValues().item(di);
+            IConstDebugValue& item=req.getDebugValues().item(di);
             const char *debugName = item.getName();
-            if (notEmpty(debugName) && *debugName!='-')
-                wu->setDebugValue(item.getName(), item.getValue(), true);
+            if (notEmpty(debugName))
+            {
+                StringBuffer expanded;
+                if (*debugName=='-')
+                    debugName=expanded.append("eclcc").append(debugName).str();
+                wu->setDebugValue(debugName, item.getValue(), true);
+            }
         }
 
         ForEachItemIn(ai, req.getApplicationValues())
@@ -1181,8 +1211,13 @@ bool CWsWorkunitsEx::onWUSyntaxCheckECL(IEspContext &context, IEspWUSyntaxCheckR
         {
             IConstDebugValue& item=req.getDebugValues().item(di);
             const char *debugName = item.getName();
-            if (notEmpty(debugName) && *debugName!='-')
-                wu->setDebugValue(item.getName(), item.getValue(), true);
+            if (notEmpty(debugName))
+            {
+                StringBuffer expanded;
+                if (*debugName=='-')
+                    debugName=expanded.append("eclcc").append(debugName).str();
+                wu->setDebugValue(debugName, item.getValue(), true);
+            }
         }
 
         wu.setQueryText(req.getECL());
@@ -1611,7 +1646,7 @@ bool CWsWorkunitsEx::onWUResultView(IEspContext &context, IEspWUResultViewReques
     ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Read);
     PROGLOG("WUResultView: %s", wuid.str());
 
-    Owned<IWuWebView> wv = createWuWebView(wuid.str(), NULL, NULL, getCFD(), true);
+    Owned<IWuWebView> wv = createWuWebView(wuid.str(), NULL, NULL, getCFD(), true, nullptr);
     StringBuffer html;
     wv->renderSingleResult(req.getViewName(), req.getResultName(), html);
     resp.setResult(html.str());
@@ -3615,7 +3650,7 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
    return true;
 }
 
-void getScheduledWUs(IEspContext &context, const char *stateReq, const char *serverName, const char *eventName, IArrayOf<IEspScheduledWU> & results)
+void getScheduledWUs(IEspContext &context, const char *stateReq, const char *jobNameReq, const char *serverName, const char *eventName, IArrayOf<IEspScheduledWU> & results)
 {
     double version = context.getClientVersion();
     if (notEmpty(serverName))
@@ -3637,33 +3672,39 @@ void getScheduledWUs(IEspContext &context, const char *stateReq, const char *ser
                     it->getWuid(wuid);
                     if (wuid.length())
                     {
-                        bool match = false;
+                        bool match = true;
                         unsigned stateID = WUStateUnknown;
                         StringBuffer jobName, owner;
                         SCMStringBuffer state;
                         try
                         {
                             Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
-                            if (!cw && (!stateReq || !*stateReq))
-                            	match = true;
-                            else if (cw)
+                            if (cw)
                             {
-                                if ((cw->getState() == WUStateScheduled) && cw->aborting())
-                                {
-                                    stateID = WUStateAborting;
-                                    state.set("aborting");
-                                }
+                                jobName.set(cw->queryJobName());
+                                owner.set(cw->queryUser());
+                            }
+
+                            if (!isEmptyString(jobNameReq) && (jobName.isEmpty() || !WildMatch(jobName.str(), jobNameReq, true)))
+                                match =  false;
+                            else if (!isEmptyString(stateReq))
+                            {
+                                if (!cw)
+                                    match =  false;
                                 else
                                 {
-                                    stateID = cw->getState();
-                                    state.set(cw->queryStateDesc());
-                                }
-
-                                if (!stateReq || !*stateReq || strieq(stateReq, state.str()))
-                                {
-                                    match = true;
-                                    jobName.set(cw->queryJobName());
-                                    owner.set(cw->queryUser());
+                                    if ((cw->getState() == WUStateScheduled) && cw->aborting())
+                                    {
+                                        stateID = WUStateAborting;
+                                        state.set("aborting");
+                                    }
+                                    else
+                                    {
+                                        stateID = cw->getState();
+                                        state.set(cw->queryStateDesc());
+                                    }
+                                    if (!strieq(stateReq, state.str()))
+                                        match =  false;
                                 }
                             }
                         }
@@ -3671,6 +3712,7 @@ void getScheduledWUs(IEspContext &context, const char *stateReq, const char *ser
                         {
                             EXCLOG(e, "Get scheduled WUs");
                             e->Release();
+                            match =  false;
                         }
                         if (!match)
                         {
@@ -3725,11 +3767,9 @@ bool CWsWorkunitsEx::onWUShowScheduled(IEspContext &context, IEspWUShowScheduled
         if(notEmpty(req.getPushEventText()))
             resp.setPushEventText(req.getPushEventText());
 
-        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> environment = factory->openEnvironment();
         Owned<IPropertyTree> root = &environment->getPTree();
-        if (!root)
-            throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
 
         unsigned i = 0;
         Owned<IPropertyTreeIterator> ic = root->getElements("Software/Topology/Cluster");
@@ -3742,10 +3782,10 @@ bool CWsWorkunitsEx::onWUShowScheduled(IEspContext &context, IEspWUShowScheduled
                 continue;
 
             if(isEmpty(clusterName))
-                getScheduledWUs(context, state, iclusterName, eventName, results);
+                getScheduledWUs(context, state, req.getJobName(), iclusterName, eventName, results);
             else if (strieq(clusterName, iclusterName))
             {
-                getScheduledWUs(context, state, clusterName, eventName, results);
+                getScheduledWUs(context, state, req.getJobName(), clusterName, eventName, results);
                 resp.setClusterSelected(i+1);
             }
 
@@ -3995,37 +4035,6 @@ bool CWsWorkunitsEx::onWUAddLocalFileToWorkunit(IEspContext& context, IEspWUAddL
    return true;
 }
 
-void getClusterConfig(char const * clusterType, char const * clusterName, char const * processName, StringBuffer& netAddress)
-{
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-    Owned<IConstEnvironment> environment = factory->openEnvironment();
-    Owned<IPropertyTree> pRoot = &environment->getPTree();
-
-    VStringBuffer xpath("Software/%s[@name='%s']", clusterType, clusterName);
-    IPropertyTree* pCluster = pRoot->queryPropTree(xpath.str());
-    if (!pCluster)
-        throw MakeStringException(ECLWATCH_CLUSTER_NOT_IN_ENV_INFO, "'%s %s' is not defined.", clusterType, clusterName);
-
-    const char* port = pCluster->queryProp(xpath.set(processName).append("@port").str());
-    const char* computer = pCluster->queryProp(xpath.set(processName).append("@computer").str());
-    if (isEmpty(computer))
-        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_INFO, "'%s %s: %s' is not defined.", clusterType, clusterName, processName);
-
-    Owned<IConstMachineInfo> pMachine = environment->getMachine(computer);
-    if (pMachine)
-    {
-        StringBufferAdaptor s(netAddress);
-        pMachine->getNetAddress(s);
-#ifdef MACHINE_IP
-        if (streq(netAddress.str(), "."))
-            netAddress = MACHINE_IP;
-#endif
-        netAddress.append(':').append(port);
-    }
-
-    return;
-}
-
 bool CWsWorkunitsEx::onWUGetGraphNameAndTypes(IEspContext &context,IEspWUGetGraphNameAndTypesRequest &req, IEspWUGetGraphNameAndTypesResponse &resp)
 {
     try
@@ -4211,6 +4220,78 @@ bool CWsWorkunitsEx::onGVCAjaxGraph(IEspContext &context, IEspGVCAjaxGraphReques
     return true;
 }
 
+bool CWsWorkunitsEx::onWUDetails(IEspContext &context, IEspWUDetailsRequest &req, IEspWUDetailsResponse &resp)
+{
+    try
+    {
+        StringBuffer wuid = req.getWUID();
+        WsWuHelpers::checkAndTrimWorkunit("WUDetails", wuid);
+
+        PROGLOG("WUDetails: %s", wuid.str());
+
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
+        if(!cw)
+            throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid.str());
+        ensureWsWorkunitAccess(context, *cw, SecAccess_Read);
+
+        WUDetails wuDetails(cw, wuid);
+        wuDetails.processRequest(req, resp);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWsWorkunitsEx::onWUDetailsMeta(IEspContext &context, IEspWUDetailsMetaRequest &req, IEspWUDetailsMetaResponse &resp)
+{
+    try
+    {
+        StringArray statistics;
+        for (unsigned i=StatisticKind::StKindAll+1; i<StatisticKind::StMax;++i)
+        {
+            const char * s = queryStatisticName((StatisticKind)i);
+            if (s && *s)
+                statistics.append(s);
+        }
+        resp.setStatistics(statistics);
+
+        StringArray attributes;
+        for (unsigned i=WuAttr::WAAll+1; i<WuAttr::WAMax; ++i)
+        {
+            const char * s = queryWuAttributeName((WuAttr)i);
+            if (s && *s)
+                attributes.append(s);
+        }
+        resp.setAttributes(attributes);
+
+        StringArray scopeTypes;
+        for (unsigned i=StatisticScopeType::SSTall+1; i<StatisticScopeType::SSTmax; ++i)
+        {
+            const char * s = queryScopeTypeName((StatisticScopeType)i);
+            if (s && *s)
+                scopeTypes.append(s);
+        }
+        resp.setScopeTypes(scopeTypes);
+
+        StringArray measures;
+        for (unsigned i=StatisticMeasure::SMeasureAll+1; i<StatisticMeasure::SMeasureMax; ++i)
+        {
+            const char *s = queryMeasureName((StatisticMeasure)i);
+            if (s && *s)
+                measures.append(s);
+        }
+        resp.setMeasures(measures);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
 bool CWsWorkunitsEx::onWUGraphInfo(IEspContext &context,IEspWUGraphInfoRequest &req, IEspWUGraphInfoResponse &resp)
 {
     try
@@ -4316,11 +4397,9 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
         StringBuffer xslt;
         if(strieq(method,"WUQuery") || strieq(method,"WUJobList"))
         {
-            Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+            Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
             Owned<IConstEnvironment> environment = factory->openEnvironment();
             Owned<IPropertyTree> root = &environment->getPTree();
-            if (!root)
-                throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
             if(strieq(method,"WUQuery"))
             {
                 SecAccessFlags accessOwn;

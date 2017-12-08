@@ -16,22 +16,26 @@
 
 #include <initializer_list>
 #include "jlib.hpp"
+#include "jdebug.hpp"
 #include "jsort.hpp"
 #include "jexcept.hpp"
 #include "rtlnewkey.hpp"
 #include "eclrtl_imp.hpp"
 #include "rtlrecord.hpp"
 #include "rtlkey.hpp"
+#include "rtlnewkey.hpp"
 
-//move to jstring as part of HPCC-18547
 /*
  * Read a single quoted string from in until the terminating quote is found
  *
- * @param out       The resulting string with special quote characters resolved.
+ * @param out       The resulting string with embedded escaped quote characters resolved.
  * @param in        A reference to the start of the string.  Updated to point to the end of the string.
+ *
  */
 static void readString(StringBuffer &out, const char * &in)
 {
+    const char *start = in;
+    // Find terminating quote, skipping any escaped ones
     for (;;)
     {
         char c = *in++;
@@ -40,19 +44,17 @@ static void readString(StringBuffer &out, const char * &in)
         if (c=='\'')
             break;
         if (c=='\\')
-        {
             c = *in++;
-            switch (c)
-            {
-            case '\'':
-            case '\\':
-                break;
-            default:
-                UNIMPLEMENTED; // HPCC-18547
-            }
-        }
-        out.append(c);
     }
+    StringBuffer errmsg;
+    unsigned errpos;
+    if (!checkUnicodeLiteral(start, in-start-1, errpos, errmsg))
+        throw makeStringExceptionV(0, "Invalid filter - %s", errmsg.str());
+    rtlDataAttr temp;
+    size32_t newlen = 0;  // NOTE - this will be in codepoints, not bytes
+    rtlCodepageToUtf8XUnescape(newlen, temp.refstr(), in-start-1, start, "UTF-8");
+    size32_t newsize = rtlUtf8Size(newlen, temp.getstr());
+    out.append(newsize, temp.getstr());
 }
 
 /*
@@ -722,16 +724,34 @@ public:
 
     }
 
+    virtual ValueTransition * createRawTransition(TransitionMask mask, const void * value) const override
+    {
+        return new ValueTransition(mask, type, value);
+    }
+
+    virtual void addRawRange(const void * lower, const void * upper) override
+    {
+        Owned<ValueTransition> lowerBound = lower ? createRawTransition(CMPge, lower) : nullptr;
+        Owned<ValueTransition> upperBound = upper ? createRawTransition(CMPle, upper) : nullptr;
+        addRange(lowerBound, upperBound);
+    }
+
+    virtual void killRawRange(const void * lower, const void * upper) override
+    {
+        Owned<ValueTransition> lowerBound = lower ? createRawTransition(CMPge, lower) : nullptr;
+        Owned<ValueTransition> upperBound = upper ? createRawTransition(CMPle, upper) : nullptr;
+        killRange(lowerBound, upperBound);
+    }
+
 // Methods for using a value set
+    virtual bool isWild() const override;
     virtual unsigned numRanges() const override;
 
-    //find the last range where the lower bound <= the field, returns 0 if the field matches the lower bound, > 0 otherwise.
-    //matchRange is set to the range number, set to numRanges if there is no possible match.  Uses a binary chop
-    virtual int findCandidateRange(const byte * field, unsigned & matchRange) const override;
+    virtual int compareLowest(const byte * field, unsigned range) const override;
 
-    //find the last range where the lower bound <= the field, returns 0 if the field matches the lower bound, > 0 otherwise.
-    //starts searching from curRange (which is likely to match).  Uses a sequential search.
-    virtual int checkCandidateRange(const byte * field, unsigned & curRange) const override;
+    virtual int compareHighest(const byte * field, unsigned range) const override;
+
+    virtual int findForwardMatchRange(const byte * field, unsigned & matchRange) const override;
 
     // Does this field match any range?
     virtual bool matches(const byte * field) const override;
@@ -788,14 +808,14 @@ protected:
     {
         if (transitions.empty())
             return false;
-        return transitions.item(0).isMinimum();
+        return !transitions.item(0).isMinimum();
     }
 
     bool hasUpperBound() const
     {
         if (transitions.empty())
             return false;
-        return transitions.tos().isMaximum();
+        return !transitions.tos().isMaximum();
     }
 protected:
     const RtlTypeInfo & type;
@@ -806,6 +826,15 @@ unsigned ValueSet::numRanges() const
 {
     return transitions.ordinality() / 2;
 }
+
+bool ValueSet::isWild() const
+{
+    if (transitions.ordinality() != 2)
+        return false;
+
+    return queryTransition(0)->isMinimum() && queryTransition(1)->isMaximum();
+}
+
 
 bool ValueSet::matches(const byte * field) const
 {
@@ -865,6 +894,18 @@ bool ValueSet::matches(const byte * field, unsigned range) const
 }
 
 
+int ValueSet::compareLowest(const byte * field, unsigned range) const
+{
+    return compare(field, queryTransition(range*2));
+}
+
+int ValueSet::compareHighest(const byte * field, unsigned range) const
+{
+    return compare(field, queryTransition(range*2+1));
+}
+
+
+/*
 //find the last range where the lower bound <= the field, returns 0 if the field matches the lower bound, > 0 otherwise.
 //matchRange is set to the range number, set to numRanges if there is no possible match.  Uses a binary chop
 int ValueSet::findCandidateRange(const byte * field, unsigned & matchRange) const
@@ -889,7 +930,7 @@ int ValueSet::findCandidateRange(const byte * field, unsigned & matchRange) cons
 
 //find the last range where the lower bound <= the field, returns 0 if the field matches the lower bound, > 0 otherwise.
 //starts searching from curRange (which is likely to match).  Uses a sequential search.
-int ValueSet::checkCandidateRange(const byte * field, unsigned & curRange) const
+int ValueSet::checkNextCandidateRange(const byte * field, unsigned & curRange) const
 {
     unsigned cur = curRange;
     while (cur < numRanges())
@@ -905,6 +946,57 @@ int ValueSet::checkCandidateRange(const byte * field, unsigned & curRange) const
     }
     curRange = numRanges();
     return 0;
+}
+*/
+
+//If field lies within a range return true and set matchRange to the index of the range.
+//If field is outside a range return false and set matchRange to the index of the next range, i.e. min(range.lower) where range.lower > field
+//Find the largest transition value that is <= field, and then check if within upper limit
+//Could have a version that starts from the previous match to shorten the binary chop, or use a linear search instead
+int ValueSet::findForwardMatchRange(const byte * field, unsigned & matchRange) const
+{
+    unsigned ranges = numRanges();
+    unsigned high = ranges;
+    unsigned low = 0;
+    //Find the largest transition that is <= the search value
+    while (high - low > 1)
+    {
+        unsigned mid = low + (high - low) / 2;
+        unsigned lower = mid * 2;
+        int rc = compare(field, queryTransition(lower));
+        if (rc < 0)
+        {
+            // field is less than transition, so transition with value < search must be before.
+            high = mid; // exclude mid and all transitions after it
+        }
+        else if (rc > 0)
+        {
+            // field is greater than transition, so transition with value > search must be this or after.
+            low = mid; // exclude mid-1 and all transitions before it
+        }
+        else
+        {
+            matchRange = mid;
+            return true;
+        }
+    }
+    //rc is comparison from element mid.
+    if (low != ranges)
+    {
+        if (compare(field, queryTransition(low*2)) >= 0)
+        {
+            int rc = compare(field, queryTransition(low*2+1));
+            if (rc <= 0)
+            {
+                matchRange = low;
+                return true;
+            }
+            low++;
+        }
+    }
+
+    matchRange = low;
+    return false;
 }
 
 IValueSet * createValueSet(const RtlTypeInfo & _type) { return new ValueSet(_type); }
@@ -925,6 +1017,11 @@ public:
         return type.compare(left.queryField(field), right.queryField(field));
     }
 
+    virtual unsigned queryFieldIndex() const override
+    {
+        return field;
+    }
+
 protected:
     unsigned field;
     const RtlTypeInfo & type;
@@ -940,13 +1037,14 @@ public:
 
 //Simple row matching
     virtual bool matches(const RtlRow & row) const override;
+    virtual bool isEmpty() const override;
+    virtual bool isWild() const override;
 
 //More complex index matching
     virtual unsigned numRanges() const override;
-    virtual int findCandidateRange(const RtlRow & row, unsigned & matchRange) const override;
-    virtual int checkCandidateRange(const RtlRow & row, unsigned & curRange) const override;
-    virtual bool withinUpperRange(const RtlRow & row, unsigned range) const override; // is the row within the current upper limit?
-    virtual bool matches(const RtlRow & row, unsigned range) const override;
+    virtual int compareLowest(const RtlRow & left, unsigned range) const override;
+    virtual int compareHighest(const RtlRow & left, unsigned range) const override;
+    virtual int findForwardMatchRange(const RtlRow & row, unsigned & matchRange) const override;
 
 protected:
     Linked<IValueSet> values;
@@ -958,37 +1056,51 @@ bool SetFieldFilter::matches(const RtlRow & row) const
     return values->matches(row.queryField(field));
 }
 
+bool SetFieldFilter::isEmpty() const
+{
+    return values->numRanges() == 0;
+}
+
+bool SetFieldFilter::isWild() const
+{
+    return values->isWild();
+}
+
 unsigned SetFieldFilter::numRanges() const
 {
     return values->numRanges();
 }
 
-int SetFieldFilter::findCandidateRange(const RtlRow & row, unsigned & matchRange) const
+int SetFieldFilter::compareLowest(const RtlRow & left, unsigned range) const
 {
-    UNIMPLEMENTED;
-    return 0;
+    return values->compareLowest(left.queryField(field), range);
 }
 
-int SetFieldFilter::checkCandidateRange(const RtlRow & row, unsigned & curRange) const
+int SetFieldFilter::compareHighest(const RtlRow & left, unsigned range) const
 {
-    UNIMPLEMENTED;
-    return 0;
+    return values->compareHighest(left.queryField(field), range);
 }
 
-bool SetFieldFilter::withinUpperRange(const RtlRow & row, unsigned range) const
+int SetFieldFilter::findForwardMatchRange(const RtlRow & row, unsigned & matchRange) const
 {
-    UNIMPLEMENTED;
-    return false;
-}
-
-bool SetFieldFilter::matches(const RtlRow & row, unsigned range) const
-{
-    UNIMPLEMENTED;
-    return 0;
+    return values->findForwardMatchRange(row.queryField(field), matchRange);
 }
 
 IFieldFilter * createFieldFilter(unsigned fieldId, IValueSet * values)
 {
+    return new SetFieldFilter(fieldId, values);
+}
+
+IFieldFilter * createEmptyFieldFilter(unsigned fieldId, const RtlTypeInfo & type)
+{
+    Owned<IValueSet> values = createValueSet(type);
+    return new SetFieldFilter(fieldId, values);
+}
+
+IFieldFilter * createFieldFilter(unsigned fieldId, const RtlTypeInfo & type, const void * value)
+{
+    Owned<IValueSet> values = createValueSet(type);
+    values->addRawRange(value, value);
     return new SetFieldFilter(fieldId, values);
 }
 
@@ -1007,37 +1119,58 @@ public:
     {
         return true;
     }
+    virtual bool isEmpty() const override
+    {
+        return false;
+    }
+    virtual bool isWild() const override
+    {
+        return true;
+    }
 
 //More complex index matching
     virtual unsigned numRanges() const override
     {
-        return 0;
+        return 1;
     }
 
-    virtual int findCandidateRange(const RtlRow & row, unsigned & matchRange) const override
+    virtual int compareLowest(const RtlRow & left, unsigned range) const override
+    {
+        //Should pass through to compare using the type.
+        //return type.compareLowest(left.queryField(fieldId));
+        //MORE
+        return +1;
+    }
+
+    virtual int compareHighest(const RtlRow & left, unsigned range) const override
+    {
+        //Should pass through to compare using the type.
+        //return type.compareLowest(left.queryField(fieldId));
+        //MORE
+        return -1;
+    }
+
+    virtual int findForwardMatchRange(const RtlRow & row, unsigned & matchRange) const override
     {
         matchRange = 0;
-        return 0;
-    }
-    virtual int checkCandidateRange(const RtlRow & row, unsigned & curRange) const override
-    {
-        curRange = 0;
-        return 0;
-    }
-    virtual bool withinUpperRange(const RtlRow & row, unsigned range) const override
-    {
-        return true;
-    }
-    virtual bool matches(const RtlRow & row, unsigned range) const override
-    {
         return true;
     }
 };
 
-extern ECLRTL_API IFieldFilter * createWildFieldFilter(unsigned fieldId);
+IFieldFilter * createWildFieldFilter(unsigned fieldId, const RtlTypeInfo & type)
+{
+    //MORE: Is it worth special casing, or would a SetFieldFilter of null..null be just as good?
+    return new WildFieldFilter(fieldId, type);
+}
 
 //---------------------------------------------------------------------------------------------------------------------
 
+static int compareFieldFilters(IInterface * const * left, IInterface * const * right)
+{
+    IFieldFilter * leftFilter = static_cast<IFieldFilter *>(*left);
+    IFieldFilter * rightFilter = static_cast<IFieldFilter *>(*right);
+    return leftFilter->queryFieldIndex() - rightFilter->queryFieldIndex();
+}
 
 void RowFilter::addFilter(IFieldFilter & filter)
 {
@@ -1066,335 +1199,262 @@ int RowFilter::compareRows(const RtlRow & left, const RtlRow & right) const
     return 0;
 }
 
+void RowFilter::extractKeyFilter(const RtlRecord & record, IArrayOf<IFieldFilter> & keyFilters) const
+{
+    if (!filters)
+        return;
+
+    // for an index must be in field order, and all values present
+    IArrayOf<IFieldFilter> temp;
+    ForEachItemIn(i, filters)
+        temp.append(OLINK(filters.item(i)));
+    temp.sort(compareFieldFilters);
+
+    unsigned maxField = temp.tos().queryFieldIndex();
+    unsigned curIdx=0;
+    for (unsigned field = 0; field <= maxField; field++)
+    {
+        IFieldFilter & cur = temp.item(curIdx);
+        if (field == cur.queryFieldIndex())
+        {
+            keyFilters.append(OLINK(cur));
+            curIdx++;
+        }
+        else
+            keyFilters.append(*createWildFieldFilter(field, *record.queryType(field)));
+    }
+}
+
 //---------------------------------------------------------------------------------------------------------------------
 
 
-class RowCursor;
-class IRowCursor
+
+
+
+bool RowCursor::setRowForward(const byte * row)
 {
-public:
-    //Find the first row that is >= the search cursor
-    virtual const byte * findFirst(RowCursor & search) = 0;
-    //Find the first row that is larger than search within the first numSeekFields
-    virtual const byte * findGT(const RtlRow & search, unsigned numSeekFields) = 0;
-    //select the next row
-    virtual const byte * next() = 0;
-};
+    currentRow.setRow(row, numFilterFields());
 
-//This class represents the current set of values which have been matched in the filter sets.
-class RowCursor
+    unsigned field = 0;
+    //Now check which of the fields matches, and update matchedRanges to indicate
+    //MORE: Add an optimization:
+    //First of all check all of the fields that were previously matched.  If the previous matches are in the same range,
+    //then the next field must either be in the same range, or a following range.
+    /*
+    for (; field < numMatched; field++)
+    {
+        const IFieldFilter & filter = queryFilter(field);
+        if (!filter.withinUpperRange(currentRow, matchPos(field)))
+        {
+            //This field now either matches a later range, or doesn't match at all.
+            //Find the new range for the current field that could include the row
+            cur.checkNextCandidateRange(currentRow, matchPos(i));
+            if (isValid(i))
+                return 0;
+            //Finished processing
+            if (i == 0)
+                return UINT_MAX;
+            //caller needs to find a new row that is larger that the current values for fields 0..i
+            //Now need to search for a value if
+            //Search for a new candidate value from this filter
+            return i+1;
+        }
+        //if (!filter.withinUpperRange(currentRow,
+    }
+    */
+
+    for (; field < filters.ordinality(); field++)
+    {
+        const IFieldFilter & filter = queryFilter(field);
+        //If the field is within a range return true and the range.  If outside the range return the next range.
+        unsigned matchRange;
+        bool matched = filter.findForwardMatchRange(currentRow, matchRange);
+        if (!matched)
+        {
+            if (matchRange >= filter.numRanges())
+                return findNextRange(field);
+
+            nextUnmatchedRange = matchRange;
+            break;
+        }
+        matchedRanges.replace(matchRange, field);
+    }
+
+    numMatched = field;
+    return numMatched == filters.ordinality();
+}
+
+
+//The filter for field "field" has been exhausted, work out which value should be compared next
+bool RowCursor::findNextRange(unsigned field)
 {
-public:
-    RowCursor(RowFilter & _filter) : filter(_filter) {}
-
-    void selectFirst()
+    unsigned matchRange;
+    for (;;)
     {
-        numMatched = 0;
-    }
-
-    //Compare the incoming row against the search
-    int compareGE(const RtlRow & row)
-    {
-        unsigned i;
-        for (i = 0; i < numMatched; i++)
+        if (field == 0)
         {
-            //Use sequential searches for the values that have previously been matched
-            int c = queryFilter(i).checkCandidateRange(row, matchPos(i));
-            if (c != 0)
-            {
-                numMatched = i + 1;
-                return c;
-            }
-        }
-        for (; i < numFilterFields(); i++)
-        {
-            int c = queryFilter(i).findCandidateRange(row, matchPos(i));
-            if (c != 0)
-            {
-                numMatched = i + 1;
-                return c;
-            }
-        }
-        numMatched = i;
-        return 0;
-    }
-
-    int compareRows(const RtlRow & left, const RtlRow & right) const
-    {
-        return filter.compareRows(left, right);
-    }
-
-    bool matchesCurrent(const RtlRow & row)
-    {
-        unsigned i;
-        for (i = 0; i < numMatched; i++)
-        {
-            if (!queryFilter(i).withinUpperRange(row, matchPos(i)))
-            {
-                //save away failure info
-                return false;
-            }
+            eos = true;
+            return false;
         }
 
-        //Not sure which
-        for (; i < numFilterFields(); i++)
+        field = field-1;
+        matchRange = matchedRanges.item(field);
+        const IFieldFilter & filter = queryFilter(field);
+        //If the field value is less than the upper bound of the current range, search for the next value above
+        //the current value
+        if (filter.compareHighest(currentRow, matchRange) < 0)
         {
-            int c = queryFilter(i).findCandidateRange(row, matchPos(i));
-            if (!isValid(i))
-            {
-                numMatched = i + 1;
-                //Restart searching element i-1.
-                return false;
-            }
-            if (!queryFilter(i).matches(row, matchPos(i)))
-            {
-                numMatched = i + 1;
-                return false;
-            }
+            numMatched = field;
+
+            //MORE: Optimize the case where the field can be incremented - if so other fields can compare against lowest
+            //if (filter.incrementValue(currentRow))
+            //    nextUnmatchedRange = 0;
+            //else
+            nextUnmatchedRange = -1U;
+            return false;
         }
-        return true;
+
+        matchRange++;
+        if (matchRange < filter.numRanges())
+            break;
+
+        field--;
     }
 
-    //One of the filters in the range 0..numMatches failed.
-    //Walk the fields in turn checking if they still match.  The first that doesn't needs to be advanced if possible.
-    //If that field cannot be advanced then we need to search for the next row that is > the current leading fields.
-    //If there is Need to advance the filter to the next possibility
-    //The filter doesn't match => find the next set of potential matches.
-    unsigned nextCandidate(const RtlRow & row)
-    {
-        for (unsigned i = 0; i < numMatched; i++)
-        {
-            const IFieldFilter & cur = queryFilter(i);
-            if (!cur.withinUpperRange(row, matchPos(i)))
-            {
-                //Find the range that could include the row
-                cur.checkCandidateRange(row, matchPos(i));
-                if (isValid(i))
-                    return 0;
-                if (i == 0)
-                    return UINT_MAX;
-                //caller needs to find a new row that is larger that the current values for fields 0..i
-                //Now need to search for a value if
-                //Search for a new candidate value from this filter
-                return i+1;
-            }
-        }
-        throwUnexpected();
-        return false;
-    }
+    nextUnmatchedRange = matchRange;
+    numMatched = field-1;
+    return false;
+}
 
-    unsigned numFilterFields() const { return filter.numFilterFields(); }
-
-protected:
-    unsigned & matchPos(unsigned i) { return matchPositions.element(i); }
-    unsigned matchPos(unsigned i) const { return matchPositions.item(i); }
-    bool isValid(unsigned i) const { return matchPos(i) < queryFilter(i).numRanges(); }
-    const IFieldFilter & queryFilter(unsigned i) const { return filter.queryFilter(i); }
-
-protected:
-    UnsignedArray matchPositions;
-    unsigned numMatched = 0;
-    RowFilter & filter;
-};
 
 //---------------------------------------------------------------------------------------------
 
 class KeySearcher
 {
 public:
-    KeySearcher(const RtlRecord & _info, RowFilter & _filter) : curRow(_info, nullptr), cursor(_filter)
+    KeySearcher(const RtlRecord & _info, RowFilter & _filter, ISourceRowCursor * _rows) : cursor(_info, _filter), rows(_rows)
     {
     }
 
     bool first()
     {
+        rows->reset();
         cursor.selectFirst();
-        return resolveValidRow(0);
+        return resolveValidRow();
     }
 
     bool next()
     {
-        setCurrent(rows->next());
-        if (!curRow)
+        const byte * next = rows->next(); // MORE: Return a RtlRow?
+        if (!next)
             return false;
-        if (cursor.matchesCurrent(curRow))
+        if (cursor.setRowForward(next))
             return true;
-        //MORE: Check if the row is valid for the next transition
-        unsigned numSeekFields = cursor.nextCandidate(curRow);
-        return resolveValidRow(numSeekFields);
+        return resolveValidRow();
     }
 
-    bool resolveValidRow(unsigned numSeekFields)
+    bool resolveValidRow()
     {
         for (;;)
         {
-            //No more possible candidates
-            if (numSeekFields == UINT_MAX)
+            if (cursor.noMoreMatches())
                 return false;
-
-            if (numSeekFields != 0)
-            {
-                //Find the first row where the first numSeekFields are larger than the current values.
-                setCurrent(rows->findGT(curRow, numSeekFields)); // more - return the row pointer to avoid recalculation
-            }
-            else
-                setCurrent(rows->findFirst(cursor));
-            if (!curRow)
+            const byte * match;
+            match = rows->findNext(cursor); // more - return the row pointer to avoid recalculation
+            if (!match)
                 return false;
-            if (cursor.matchesCurrent(curRow))
+            if (cursor.setRowForward(match))
                 return true;
-            numSeekFields = cursor.nextCandidate(curRow);
         }
     }
 
-protected:
-    void setCurrent(const byte * row) { curRow.setRow(row, cursor.numFilterFields()); }
+    const RtlRow & queryRow() const { return cursor.queryRow(); }
 
 protected:
-    IRowCursor * rows = nullptr;
-    RtlDynRow curRow;
+    ISourceRowCursor * rows = nullptr;
     RowCursor cursor;
+};
+
+
+class InMemoryRows
+{
+public:
+    InMemoryRows(size_t _countRows, const byte * * _rows, const RtlRecord & _record)
+     : countRows(_countRows), rows(_rows), record(_record)
+    {
+    }
+
+    const byte * queryRow(unsigned i) const { return rows[i]; }
+    size_t numRows() const { return countRows; }
+    const RtlRecord & queryRecord() const { return record; }
+
+protected:
+    size_t countRows;
+    const byte * * rows;
+    const RtlRecord & record;
 };
 
 //Always has an even number of transitions
 //Null transitions can be used at the start and end of the ranges to map anything
 //equality conditions repeat the transition
-class InMemoryRowCursor : public IRowCursor
+class InMemoryRowCursor : public ISourceRowCursor
 {
-    virtual const byte * findFirst(RowCursor & search)
+public:
+    InMemoryRowCursor(InMemoryRows & _source) : source(_source), seekRow(_source.queryRecord())
     {
+    }
+
+    virtual const byte * findNext(const RowCursor & search) override
+    {
+        size_t numRows = source.numRows();
+        if (numRows == 0)
+            return nullptr;
+
         size_t high = numRows;
-        size_t low = 0;
+        size_t low = 0; // Could be cur
+
+        bool scanOnNext = false;
+        if (cur != 0 && scanOnNext)
+        {
+            //MORE: The next match is likely to be close, so first of all look for a match in the next few rows
+            //An always searching forwards, so can guarantee that it follows cur > low
+        }
+        //Find the value of low,high where all rows 0..low-1 are < search and rows low..max are >= search
         while (low<high)
         {
             size_t mid = low + (high - low) / 2;
-            seekRow.setRow(rows[mid], search.numFilterFields());
-            int rc = search.compareGE(seekRow);
-            if (rc>0)
-                low = mid + 1;
+            seekRow.setRow(source.queryRow(mid), search.numFilterFields());
+            int rc = search.compareNext(seekRow);  // compare seekRow with the row we are hoping to find
+            if (rc < 0)
+                low = mid + 1;  // if this row is lower than the seek row, exclude mid from the potential positions
             else
-                high = mid;
+                high = mid; // otherwise exclude all above mid from the potential positions.
         }
         cur = low;
         if (low == numRows)
             return nullptr;
-        return rows[cur];
-    }
-    //Find the first row that is larger than search within the first numSeekFields
-    //RowCursor is not the correct type
-    virtual const byte * findGT(const RowCursor & order, const RtlRow & search, unsigned numSeekFields)
-    {
-        size_t high = numRows;
-        size_t low = 0;
-        while (low<high)
-        {
-            size_t mid = low + (high - low) / 2;
-            seekRow.setRow(rows[mid], order.numFilterFields());
-            int rc = order.compareRows(seekRow, search);
-            if (rc >= 0)
-                low = mid + 1;
-            else
-                high = mid;
-        }
-        cur = low;
-        if (cur == numRows)
-            return nullptr;
-        return rows[cur];
+        return source.queryRow(cur);
     }
 
     virtual const byte * next() override
     {
         cur++;
-        if (cur == numRows)
+        if (cur == source.numRows())
             return nullptr;
-        return rows[cur];
+        return source.queryRow(cur);
+    }
+
+    virtual void reset() override
+    {
+        cur = 0;
+        seekRow.setRow(nullptr);
     }
 
 protected:
-    size_t numRows;
     size_t cur;
-    const byte * * rows;
+    InMemoryRows & source;
     RtlDynRow seekRow;
 };
-
-/*
-class KeyLocator
-{
-public:
-    KeyLocator(IValueSet & _filter) : filter(_filter)
-    {
-    }
-
-    bool first()
-    {
-
-        transitionIdx = 0;
-        startTransition = filter.queryTransition(transitionIdx);
-        if (!startTransition)
-            return false;
-        endTransition = filter.queryTransition(transitionIdx+1);
-        return nextValidRow();
-    }
-
-    bool next()
-    {
-        curRow = rows->next();
-        if (matches(*endTransition, curRow))
-            return true;
-        if (!nextTransition())
-            return false;
-        //MORE: Check if the row is valid for the next transition
-        return nextValidRow();
-    }
-    bool nextValidRow()
-    {
-        for (;;)
-        {
-            if (findFirst(startTransition))
-            {
-                if (matches(*endTransition, curRow))
-                    return true;
-            }
-            if (!nextTransition())
-                return false;
-        }
-    }
-
- protected:
-    bool nextTransition()
-    {
-        transitionIdx += 2;
-        return setTransition();
-    }
-
-    bool setTransition()
-    {
-        startTransition = filter.queryTransition(transitionIdx);
-        if (!startTransition)
-            return false;
-        endTransition = filter.queryTransition(transitionIdx+1);
-        return true;
-    }
-
-    bool findFirst(const ValueTransition * transition)
-    {
-        assertex(transition->queryMask() & CMPgt);
-        if (transition->queryMask() & CMPeq)
-            curRow = rows->findGE(transition);
-        else
-            curRow = rows->findGT(transition);
-        return curRow != nullptr;
-    }
-
-protected:
-    unsigned transitionIdx = 0;
-    const ValueTransition * startTransition = nullptr;
-    const ValueTransition * endTransition = nullptr;
-    IRowCursor * rows = nullptr;
-    const byte * curRow = nullptr;
-    IValueSet & filter;
-};
-*/
 
 /*
 Conclusions:
@@ -1422,6 +1482,51 @@ IStdException(IException *E) : jException(E) {};
 };
 */
 
+//Scan a set of rows to find the matches - used to check that the keyed operations are correct
+class RowScanner
+{
+public:
+    RowScanner(const RtlRecord & _info, RowFilter & _filter, const PointerArray & _rows) : rows(_rows), curRow(_info, nullptr), filter(_filter)
+    {
+    }
+
+    bool first()
+    {
+        return resolveNext(0);
+    }
+
+    bool next()
+    {
+        return resolveNext(curIndex+1);
+    }
+
+    bool resolveNext(unsigned next)
+    {
+        while (next < rows.ordinality())
+        {
+            curRow.setRow(rows.item(next));
+            if (filter.matches(curRow))
+            {
+                curIndex = next;
+                return true;
+            }
+            next++;
+        }
+        curIndex = next;
+        return false;
+    }
+
+    const RtlRow & queryRow() const { return curRow; }
+
+protected:
+    const PointerArray & rows;
+    RtlDynRow curRow;
+    RowFilter & filter;
+    unsigned curIndex = 0;
+};
+
+
+
 static void addRange(IValueSet * set, const char * lower, const char * upper)
 {
     Owned<ValueTransition> lowerBound = lower ? set->createUtf8Transition(CMPge, rtlUtf8Length(strlen(lower), lower), lower) : nullptr;
@@ -1429,10 +1534,24 @@ static void addRange(IValueSet * set, const char * lower, const char * upper)
     set->addRange(lowerBound, upperBound);
 };
 
+class RawRowCompare : public ICompare
+{
+public:
+    RawRowCompare(const RtlRecord & _record) : record(_record) {}
+
+    virtual int docompare(const void * left,const void * right) const
+    {
+        return record.compare((const byte *)left, (const byte *)right);
+    }
+
+    const RtlRecord & record;
+};
+
+
 class ValueSetTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(ValueSetTest);
-        CPPUNIT_TEST(testFilter);
+        CPPUNIT_TEST(testKeyed2);
         CPPUNIT_TEST(testRange);
         CPPUNIT_TEST(testSerialize);
         CPPUNIT_TEST(testUnion);
@@ -1440,6 +1559,8 @@ class ValueSetTest : public CppUnit::TestFixture
         CPPUNIT_TEST(testInverse);
         CPPUNIT_TEST(testIntersect);
         CPPUNIT_TEST(testStr2);
+        CPPUNIT_TEST(testFilter);
+        CPPUNIT_TEST(testKeyed1);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -1543,6 +1664,7 @@ protected:
         RtlStringTypeInfo str1(type_string, 1);
         RtlIntTypeInfo int2(type_int, 2);
         RtlStringTypeInfo strx(type_string|RFTMunknownsize, 0);
+        RtlUtf8TypeInfo utf8(type_utf8|RFTMunknownsize, 0, nullptr);
         testSerialize(int2, "[123]");
         testSerialize(int2, "(123,234]");
         testSerialize(int2, "[123,234)");
@@ -1556,6 +1678,9 @@ protected:
         testSerialize(str1, "['A']");
         testSerialize(str1, "[',']");
         testSerialize(str1, "['\\'']");
+        testSerialize(str1, "['\\u0041']", "['A']");
+        testSerialize(str1, "['\\n']");
+        testSerialize(utf8, "['\\u611b']", "['愛']");
         testSerialize(strx, "['\\'\\'','}']");
 
         testSerialize(str1, "[A]", "['A']");
@@ -2089,30 +2214,29 @@ protected:
     // id:int2 extra:string padding:! name:string2
     // Keep in sorted order so they can be reused for index testing
     const char *testRows[6] = {
-            "\002\000\000\000\000\000!AB",
             "\001\000\004\000\000\000MARK!GH",
+            "\002\000\000\000\000\000!AB",
             "\000\001\003\000\000\000FRY!JH",
             "\001\001\003\000\000\000MAR!AC",
             "\002\001\003\000\000\000MAS!JH",
-            "\003\001\004\000\000\000MASK!JH",
+            "\003\002\004\000\000\000MASK!JH",
     };
-    //testFilter("id=[1,3];name=(,GH)", { false, true, false, false, false });
-    void testFilter(const char * originalFilter, const std::initializer_list<bool> & expected)
-    {
-        const byte * * rows = reinterpret_cast<const byte * *>(testRows);
-        RtlIntTypeInfo int2(type_int, 2);
-        RtlStringTypeInfo str1(type_string, 2);
-        RtlStringTypeInfo str2(type_string, 2);
-        RtlStringTypeInfo strx(type_string|RFTMunknownsize, 0);
-        RtlFieldInfo id("id", nullptr, &int2);
-        RtlFieldInfo extra("extra", nullptr, &strx);
-        RtlFieldInfo padding("padding", nullptr, &str1);
-        RtlFieldInfo name("name", nullptr, &str2);
-        const RtlFieldInfo * fields[] = { &id, &extra, &padding, &name, nullptr };
-        RtlRecordTypeInfo recordType(type_record, 4, fields);
-        RtlRecord record(recordType, true);
 
-        RowFilter cursor;
+    const RtlIntTypeInfo int2 = RtlIntTypeInfo(type_int, 2);
+    const RtlIntTypeInfo int4 = RtlIntTypeInfo(type_int, 4);
+    const RtlStringTypeInfo str1 = RtlStringTypeInfo(type_string, 1);
+    const RtlStringTypeInfo str2 = RtlStringTypeInfo(type_string, 2);
+    const RtlStringTypeInfo strx = RtlStringTypeInfo(type_string|RFTMunknownsize, 0);
+    const RtlFieldInfo id = RtlFieldInfo("id", nullptr, &int2);
+    const RtlFieldInfo extra = RtlFieldInfo("extra", nullptr, &strx);
+    const RtlFieldInfo padding = RtlFieldInfo("padding", nullptr, &str1);
+    const RtlFieldInfo name = RtlFieldInfo("name", nullptr, &str2);
+    const RtlFieldInfo * const fields[5] = { &id, &extra, &padding, &name, nullptr };
+    const RtlRecordTypeInfo recordType = RtlRecordTypeInfo(type_record, 4, fields);
+    const RtlRecord record = RtlRecord(recordType, true);
+
+    void processFilter(RowFilter & cursor, const char * originalFilter, const RtlRecord & searchRecord)
+    {
         const char * filter = originalFilter;
         while (filter && *filter)
         {
@@ -2132,13 +2256,21 @@ protected:
             const char * equal = strchr(next, '=');
             assertex(equal);
             StringBuffer fieldName(equal-next, next);
-            unsigned fieldNum = record.getFieldNum(fieldName);
+            unsigned fieldNum = searchRecord.getFieldNum(fieldName);
             assertex(fieldNum != (unsigned) -1);
-            const RtlTypeInfo *fieldType = record.queryType(fieldNum);
+            const RtlTypeInfo *fieldType = searchRecord.queryType(fieldNum);
             Owned<IValueSet> set = createValueSet(*fieldType);
             deserializeSet(*set, equal+1);
             cursor.addFilter(*new SetFieldFilter(fieldNum, set));
         }
+    }
+
+    //testFilter("id=[1,3];name=(,GH)", { false, true, false, false, false });
+    void testFilter(const char * originalFilter, const std::initializer_list<bool> & expected)
+    {
+        const byte * * rows = reinterpret_cast<const byte * *>(testRows);
+        RowFilter cursor;
+        processFilter(cursor, originalFilter, record);
 
         RtlDynRow row(record, nullptr);
         assertex((expected.end() - expected.begin()) == (unsigned)_elements_in(testRows));
@@ -2157,14 +2289,246 @@ protected:
     void testFilter()
     {
         testFilter("", { true, true, true, true, true, true });
-        testFilter("id=[1]", { false, true, false, false, false, false });
+        testFilter("id=[1]", { true, false, false, false, false, false });
+        testFilter("id=[1],[2],[4],[6],[12],[23],[255],[256],[300],[301],[320]", { true, true, true, false, false, false });
         testFilter("id=[1,2]", { true, true, false, false, false, false });
-        testFilter("id=(1,2]", { true, false, false, false, false, false });
-        testFilter("id=[1,3];name=(,GH)", { true, false, false, false, false, false });
-        testFilter("id=[1,3];name=(,GH)", { true, false, false, false, false, false });
-        testFilter("extra=['MAR','MAS']", { false, true, false, true, true, false });
-        testFilter("extra=('MAR','MAS')", { false, true, false, false, false, false });
+        testFilter("id=(1,2]", { false, true, false, false, false, false });
+        testFilter("id=[1,3];name=(,GH)", { false, true, false, false, false, false });
+        testFilter("id=[1,3];name=(,GH]", { true, true, false, false, false, false });
+        testFilter("extra=['MAR','MAS']", { true, false, false, true, true, false });
+        testFilter("extra=('MAR','MAS')", { true, false, false, false, false, false });
         testFilter("id=(,257]", { true, true, true, true, false, false });
+    }
+
+
+    void testKeyed(const char * originalFilter, const char * expected)
+    {
+        const byte * * rows = reinterpret_cast<const byte * *>(testRows);
+        RowFilter filter;
+        processFilter(filter, originalFilter, record);
+
+        InMemoryRows source(_elements_in(testRows), rows, record);
+        InMemoryRowCursor sourceCursor(source); // could be created by source.createCursor()
+        KeySearcher searcher(source.queryRecord(), filter, &sourceCursor);
+
+        StringBuffer matches;
+        if (searcher.first())
+        {
+            do
+            {
+                matches.append(searcher.queryRow().getInt(0)).append("|");
+            } while (searcher.next());
+        }
+
+        if (!streq(matches, expected))
+        {
+            printf("Failure to match expected keyed filter '%s' (%s, %s)\n", originalFilter, expected, matches.str());
+            CPPUNIT_ASSERT(streq(matches, expected));
+        }
+    }
+
+    void testKeyed1()
+    {
+        testKeyed("extra=['MAR','MAS']", "1|257|258|");
+        testKeyed("","1|2|256|257|258|515|");
+        testKeyed("id=[1,2]","1|2|");
+        testKeyed("id=[1],[256]","1|256|");
+        testKeyed("id=[1],[256,280]","1|256|257|258|");
+        testKeyed("id=[1],[256,280],[1000],[1023]","1|256|257|258|");
+        testKeyed("id=[1],[2],[4],[6],[12],[23],[255],[256],[300],[301],[320]","1|2|256|");
+        testKeyed("extra=['MAR','MAS']", "1|257|258|");
+        testKeyed("extra=('MAR','MAS')", "1|");
+        testKeyed("name=['AB','AC']", "2|257|");
+    }
+
+    void generateOrderedRows(PointerArray & rows, const RtlRecord & rowRecord)
+    {
+        //Generate rows with 3 fields.   Try and ensure:
+        //  each trailing field starts with 0, non zero.
+        //  the third field has significant distribution in the number of elements for each value of field2
+        //  duplicates occur in the full keyed values.
+        //  sometimes the next value in sequence happens to match a trailing filter condition e.g. field3=1
+        //Last field First field x ranges from 0 to n1
+        //Second field
+        //Second field y ranges from 0 .. n2, and is included if (x + y) % 3 != 0 and (x + y) % 5 != 0
+        //Third field is sparse from 0..n3.  m = ((x + y) % 11 ^2 + 1;  if (n3 + x *2 + y) % m = 0 then it is included
+        unsigned n = 100000;
+        unsigned f1 = 0;
+        unsigned f2 = 0;
+        unsigned f3 = 0;
+        unsigned numf2 = 1;
+        unsigned countf2 = 0;
+        unsigned numf3 = 1;
+        unsigned countf3 = 0;
+        MemoryBuffer buff;
+        for (unsigned i = 0; i < n; i++)
+        {
+            buff.setLength(0);
+            MemoryBufferBuilder builder(buff, 0);
+            size32_t offset = 0;
+            offset = rowRecord.queryType(0)->buildInt(builder, offset, nullptr, f1);
+            offset = rowRecord.queryType(1)->buildInt(builder, offset, nullptr, f2);
+            offset = rowRecord.queryType(2)->buildInt(builder, offset, nullptr, f3);
+
+            byte * row = new byte[offset];
+            memcpy(row, buff.bufferBase(), offset);
+            rows.append(row);
+
+            unsigned pf2 = f2;
+            unsigned pf3 = f3;
+            if (++countf3 == numf3)
+            {
+                f2++;
+                if (++countf2 == numf2)
+                {
+                    f1++;
+                    f2 = i % 2;
+                    numf2 = i % 23;
+                    if (numf2 == 0)
+                    {
+                        f1++;
+                        numf2 = (i % 21) + 1;
+                    }
+                    countf2 = 0;
+                }
+
+                f3 = i % 7;
+                countf3 = 0;
+                numf3 = i % 9;
+                if (numf3 == 0)
+                {
+                    f3++;
+                    numf3 = (i % 11) + 1;
+                }
+            }
+
+            if (i % 5)
+                f3++;
+        }
+
+        //Sort the rows - to allow different field types to be used.
+        RawRowCompare compareRow(rowRecord);
+        qsortvec(rows.getArray(), rows.ordinality(), compareRow);
+    }
+
+    void traceRow(const RtlRow & row)
+    {
+        printf("%u %u %u", (unsigned)row.getInt(0), (unsigned)row.getInt(1), (unsigned)row.getInt(2));
+    }
+
+    const RtlFieldInfo f1 = RtlFieldInfo("f1", nullptr, &int2);
+    const RtlFieldInfo f2 = RtlFieldInfo("f2", nullptr, &int2);
+    const RtlFieldInfo f3 = RtlFieldInfo("f3", nullptr, &int2);
+    const RtlFieldInfo * const testFields[4] = { &f1, &f2, &f3, nullptr };
+    const RtlRecordTypeInfo testRecordType = RtlRecordTypeInfo(type_record, 6, testFields);
+    const RtlRecord testRecord = RtlRecord(testRecordType, true);
+
+    void timeKeyedScan(const PointerArray & rows, const RtlRecord & searchRecord, const char * filterText)
+    {
+        RowFilter filter;
+        processFilter(filter, filterText, searchRecord);
+
+        CCycleTimer timeKeyed;
+        unsigned countKeyed = 0;
+        {
+            InMemoryRows source(rows.ordinality(), (const byte * *)rows.getArray(), searchRecord);
+            InMemoryRowCursor sourceCursor(source); // could be created by source.createCursor()
+            KeySearcher searcher(source.queryRecord(), filter, &sourceCursor);
+
+            bool hasSearch = searcher.first();
+            while (hasSearch)
+            {
+                countKeyed++;
+                hasSearch = searcher.next();
+            }
+        }
+        unsigned __int64 keyedMs = timeKeyed.elapsedNs();
+
+        CCycleTimer timeScan;
+        unsigned countScan = 0;
+        {
+            RowScanner scanner(searchRecord, filter, rows);
+
+            bool hasSearch = scanner.first();
+            while (hasSearch)
+            {
+                countScan++;
+                hasSearch = scanner.next();
+            }
+        }
+        unsigned __int64 scanMs = timeScan.elapsedNs();
+        CPPUNIT_ASSERT_EQUAL(countScan, countKeyed);
+
+        printf("[%s] %u matches keyed(%" I64F "u) scan(%" I64F "u) (%.3f)\n", filterText, countScan, keyedMs, scanMs, (double)keyedMs/scanMs);
+    }
+
+
+    void testKeyed(const PointerArray & rows, const RtlRecord & searchRecord, const char * filterText)
+    {
+        RowFilter filter;
+        processFilter(filter, filterText, searchRecord);
+
+        InMemoryRows source(rows.ordinality(), (const byte * *)rows.getArray(), searchRecord);
+        InMemoryRowCursor sourceCursor(source); // could be created by source.createCursor()
+        KeySearcher searcher(source.queryRecord(), filter, &sourceCursor);
+        RowScanner scanner(source.queryRecord(), filter, rows);
+
+        unsigned count = 0;
+        bool hasSearch = searcher.first();
+        bool hasScan = scanner.first();
+        while (hasSearch && hasScan)
+        {
+            count++;
+            if (searchRecord.compare(searcher.queryRow().queryRow(), scanner.queryRow().queryRow()) != 0)
+                break;
+
+            hasSearch = searcher.next();
+            hasScan = scanner.next();
+        }
+        if (hasSearch || hasScan)
+        {
+            printf("[%s] Keyed: ", filterText);
+            if (hasSearch)
+                traceRow(searcher.queryRow());
+            else
+                printf("<missing>");
+            printf(" Scan: ");
+            if (hasScan)
+                traceRow(scanner.queryRow());
+            else
+                printf("<missing>");
+            printf("\n");
+        }
+        else
+        {
+            const bool compareTiming = true;
+            if (compareTiming)
+                timeKeyedScan(rows, searchRecord, filterText);
+            else
+                printf("[%s] %u matches\n", filterText, count);
+        }
+    }
+
+
+    void testKeyed2()
+    {
+        PointerArray rows;
+        generateOrderedRows(rows, testRecord);
+
+        testKeyed(rows, testRecord, "");
+        testKeyed(rows, testRecord, "f1=[5]");
+        testKeyed(rows, testRecord, "f1=[0]");
+        testKeyed(rows, testRecord, "f2=[1]");
+        testKeyed(rows, testRecord, "f3=[1]");
+        testKeyed(rows, testRecord, "f3=[4]");
+        testKeyed(rows, testRecord, "f3=[1,3]");
+        testKeyed(rows, testRecord, "f3=[1],[2],[3]");
+        testKeyed(rows, testRecord, "f1=[21];f2=[20];f3=[4]");
+        testKeyed(rows, testRecord, "f1=[7];f3=[5]");
+        testKeyed(rows, testRecord, "f1=[7,];f3=[,5]");
+
+        ForEachItemIn(i, rows)
+            delete [] (byte *)rows.item(i);
     }
 };
 

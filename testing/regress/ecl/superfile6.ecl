@@ -18,12 +18,16 @@
 //fail
 
 import Std.File AS FileServices;
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
+
 // Super File added to itself test
 
 #option('slaveDaliClient', true);
 
-string fsuper := '~t6::superfile';
-string fsub := '~t6::subfile';
+string fsuper := prefix+'t6_superfile';
+string fsub := prefix + 't6_subfile';
+
 ds := DATASET ([{'aaa'}, {'bbb'}, {'ccc'}, {'ddd'}], {string name});
 
 conditionalDelete(string lfn) := FUNCTION

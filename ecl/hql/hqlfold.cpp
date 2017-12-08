@@ -598,7 +598,7 @@ bool checkExternFoldable(IHqlExpression* expr, unsigned foldOptions, StringBuffe
     {
         switch (expr->queryChild(iparam)->getOperator())
         {
-        case no_constant: case no_null: case no_all:  // NOTE: no_all still needs work elsewhere before it will be supported fully
+        case no_record: case no_constant: case no_null: case no_all:  // NOTE: no_all still needs work elsewhere before it will be supported fully
             break;
         default:
             return false;

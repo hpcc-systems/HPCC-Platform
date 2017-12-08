@@ -175,7 +175,7 @@ interface IEnvironmentFactory : extends IInterface
 
 
 class StringBuffer;
-extern "C" ENVIRONMENT_API IEnvironmentFactory * getEnvironmentFactory();
+extern "C" ENVIRONMENT_API IEnvironmentFactory * getEnvironmentFactory(bool update);
 extern "C" ENVIRONMENT_API void closeEnvironment();
 
 

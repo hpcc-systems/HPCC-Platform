@@ -36,6 +36,8 @@ define([
     "dgrid/extensions/ColumnResizer",
     "dgrid/extensions/DijitRegistry",
 
+    "src/Clippy",
+
     "hpcc/_TabContainerWidget",
     "hpcc/ESPWorkunit",
     "hpcc/ESPRequest",
@@ -69,6 +71,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, dom, domForm, domAttr, iframe, domClass, query, Memory, Observable,
                 registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
+                Clippy,
                 _TabContainerWidget, ESPWorkunit, ESPRequest, TargetSelectWidget, DelayLoadWidget, InfoGridWidget, WsWorkunits,
                 template) {
     return declare("WUDetailsWidget", [_TabContainerWidget], {
@@ -132,6 +135,8 @@ define([
 
             this.infoGridWidget = registry.byId(this.id + "InfoContainer");
             this.zapDialog = registry.byId(this.id + "ZapDialog");
+
+            Clippy.attach(this.id + "ClippyButton");
         },
 
         startup: function (args) {
@@ -267,6 +272,7 @@ define([
                 });
                 this.wu.refresh();
             }
+            
             this.infoGridWidget.init(params);
             this.checkIfClustersAllowed();
             this.checkThorLogStatus();

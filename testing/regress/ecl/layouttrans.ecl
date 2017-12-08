@@ -15,9 +15,12 @@
     limitations under the License.
 ############################################################################## */
 
-//version multiPart=true,version=1
-//version multiPart=true,version=2
-//version multiPart=true,version=3
+#if (True)
+OUTPUT('Temporarily disabled');
+#else
+//noversion multiPart=true,version=1
+//noversion multiPart=true,version=2
+//noversion multiPart=true,version=3
 
 import ^ as root;
 multiPart := #IFDEFINED(root.multiPart, true);
@@ -38,14 +41,14 @@ Files := setup.Files(multiPart, useLocal, false);
 //nothorlcr
 
 #IF (version=1)
-DG_FetchIndex1Alt1 := INDEX(Files.DG_FetchFile,{Fname,Lname,__filepos},Files.DG_FetchIndex1Name);
-DG_FetchIndex1Alt2 := INDEX(Files.DG_FetchFile,{Fname,Lname,__filepos},Files.DG_FetchIndex1Name);
+DG_FetchIndex1Alt1 := INDEX(Files.DG_FetchFile,{Lname,Fname,__filepos},Files.DG_FetchIndex1Name);
+DG_FetchIndex1Alt2 := INDEX(Files.DG_FetchFile,{Lname,Fname,__filepos},Files.DG_FetchIndex1Name);
 #ELIF (version=2)
-DG_FetchIndex1Alt1 := INDEX(Files.DG_FetchFile,{Fname,Lname},{state, STRING100 blobfield {blob}:= fname, STRING tfn := TRIM(Fname), __filepos},Files.DG_FetchIndex1Name);
-DG_FetchIndex1Alt2 := INDEX(Files.DG_FetchFile,{Fname,Lname},{ STRING100 blobfield {blob}:= fname, __filepos},Files.DG_FetchIndex1Name);
+DG_FetchIndex1Alt1 := INDEX(Files.DG_FetchFile,{Lname,Fname},{state, STRING100 blobfield {blob}:= fname, STRING tfn := TRIM(Fname), __filepos},Files.DG_FetchIndex1Name);
+DG_FetchIndex1Alt2 := INDEX(Files.DG_FetchFile,{Lname,Fname},{ STRING100 blobfield {blob}:= fname, __filepos},Files.DG_FetchIndex1Name);
 #ELSE
-DG_FetchIndex1Alt1 := INDEX(Files.DG_FetchFile,{Fname,Lname},{state ,__filepos},Files.DG_FetchIndex1Name);
-DG_FetchIndex1Alt2 := INDEX(Files.DG_FetchFile,{Fname,Lname},{__filepos},Files.DG_FetchIndex1Name);
+DG_FetchIndex1Alt1 := INDEX(Files.DG_FetchFile,{Lname,Fname},{state ,__filepos},Files.DG_FetchIndex1Name);
+DG_FetchIndex1Alt2 := INDEX(Files.DG_FetchFile,{Lname,Fname},{__filepos},Files.DG_FetchIndex1Name);
 #END
 
 ds := DATASET([{'Anderson'}, {'Doe'}], {STRING25 Lname});
@@ -61,3 +64,4 @@ SEQUENTIAL(
     OUTPUT(SORT(JOIN(ds, DG_FetchIndex1Alt1, LEFT.Lname = RIGHT.Lname), record), {Fname, Lname}),
     OUTPUT(SORT(JOIN(ds, DG_FetchIndex1Alt2, LEFT.Lname = RIGHT.Lname), record), {Fname, Lname})
 );
+#end

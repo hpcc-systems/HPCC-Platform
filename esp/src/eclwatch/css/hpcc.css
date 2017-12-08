@@ -1182,6 +1182,15 @@ margin-left:-20px;
     fill: none;
 }
 
+.flat .graph_Graph .graphVertex .common_Icon .common_Shape {
+    fill: #1f77b4;
+    stroke: #1f77b4;
+}
+
+.flat .graph_Graph .graphVertex .common_Icon .common_FAChar .common_Text {
+    fill: white;
+}
+
 .flat .graph_Graph .graphVertex > .subgraph.selected rect {
     stroke:red !important;
 }
@@ -1232,4 +1241,319 @@ margin-left:-20px;
     background-color:#eee;
     padding:3px;
     text-align: left;
+}
+
+.dojoxColorPicker {
+    padding:8px;
+    -moz-border-radius:4pt;
+    -webkit-border-radius:5pt;
+    -webkit-drop-shadow:3pt;
+}
+
+.dojoxColorPickerRightPad {
+    padding-right: 8px;
+}
+
+.tundra .dojoxColorPicker {
+    background:#ededed;
+    border:1px solid #ccc;
+}
+
+.dojoxColorPickerBox {
+    position:relative;
+    width:150px;    
+    height:150px;    
+    margin:0; 
+    padding:0;
+}
+
+.dojoxColorPickerUnderlay {
+    position:relative; 
+    top:0; left:0;
+    width:150px; 
+    height:150px;
+    z-index:1;
+}
+
+.tundra .dojoxColorPickerUnderlay {
+    border:1px solid #a0a0a0;
+}
+
+.claro .dojoxColorPicker {
+    background:#ededed;
+    border:1px solid #cdcdcd;
+}
+
+.claro .dojoxColorPickerUnderlay {
+    border:1px solid #cccccc;
+}
+
+.dojoxHuePickerUnderlay {
+    position:relative;
+    top:0; left:0;
+    height:150px;
+    width:20px;
+    z-index:1;
+    text-align: center;
+}
+
+.dojoxHuePicker { position:relative; top: 0px; left: 0px; padding: 0px;}
+
+.dojoxHuePickerPoint {
+    position:absolute;
+    top:0; left:0;
+    width:20px;
+    height:8px;
+    z-index:3; 
+    cursor:move;
+}
+
+.dojoxColorPickerPoint {
+    position:absolute;
+    width:10px; 
+    height:10px;
+    border:0;
+    z-index:3; 
+    cursor:move; 
+}
+
+.dojoxColorPickerPreview {
+    display:block;    
+    width:45px;    
+    height:45px;
+    border:1px solid #333;
+    background-color:#fff; 
+    position:relative;
+    top: 0px;
+    left: 0px; 
+}
+.dojoxColorPickerWebSafePreview {
+    display:block;
+    width:25px; 
+    height:25px; 
+    position:relative;
+    top: 0px;
+    left: 0px; 
+    border:1px solid #333; 
+}
+
+.dojoxColorPickerOptional {
+    position:relative;
+    top: 0px;
+    left: 0px;
+    height: 100%;
+}
+
+.dojoxColorPickerOptional table {
+    border-spacing: 4px;
+}
+
+.dojoxColorPickerPreviewContainer table {
+    border-spacing: 6px 0px;
+}
+
+.dojoxColorPickerOptional input {
+    border:1px solid #a7a7a7;
+    width:25px;
+    padding:1px 3px 1px 3px;
+    line-height:1.1em;
+}
+
+.dojoxColorPickerHex input {
+    width:55px;    
+}
+
+.dojoxUpgradeBar {
+    position:absolute;
+    left:0;
+    top:0;
+    width:100%;
+    height:32px;
+    overflow:hidden;
+    z-index:100;
+    background:#f3f2af;
+    box-shadow:0 2px 6px #444;
+    -webkit-box-shadow:0 1px 6px #444;
+    -moz-box-shadow:0 1px 6px #444;
+    font-size:.8em;
+}
+
+.dj_ie .dojoxUpgradeBar {
+    border-bottom:#665F48 2px solid;
+}
+.dojoxUpgradeBarMessage {
+    position:absolute;
+    padding-left:10px;
+    top:50%;
+    margin-top:-.75em;
+    left:5px;
+    width:100%;
+}
+.dojoxUpgradeBarMessage a{
+    margin-left:10px;
+}
+.dojoxUpgradeBarReminderButton {
+    position:absolute;
+    top:25%;
+    margin-right:50px;
+    font-size:11px;
+    text-decoration:underline;
+    text-align:right;
+    cursor:pointer;
+    right:-20px;
+}
+.dj_ie6 .dojoxUpgradeBarReminderButton {
+    margin-top:2px;
+}
+
+.dojoxUpgradeBarCloseIcon {
+    background: url("../../node_modules/dijit/themes/tundra/images/tabClose.png") no-repeat right top;
+    position: absolute;
+    vertical-align: middle;
+    right: 5px;
+    top: 30%;
+    height: 15px;
+    width: 15px;
+    cursor: pointer;
+}
+.dj_ie6 .dojoxUpgradeBarCloseIcon {
+    background : url("../../node_modules/dijit/themes/tundra/images/tabClose.gif") no-repeat right top;
+}
+.dojoxUpgradeBarCloseIcon-hover {
+    background: url("../../node_modules/dijit/themes/tundra/images/tabCloseHover.png") no-repeat right top;
+}
+.dj_ie6 .dojoxUpgradeBarCloseIcon-hover {
+    background : url("../../node_modules/dijit/themes/tundra/images/tabCloseHover.gif") no-repeat right top;
+}
+
+.dojoxTreeMap {
+    background-color: #EBEADB;
+    font-family: Geneva, Arial, Helvetica, sans-serif;
+}
+
+.dojoxTreeMapLeaf {
+    border: 1px solid black;
+    padding: 3px;
+}
+
+.dojoxTreeMapGroup {
+}
+
+.dojoxTreeMapGroupContent {
+}
+
+.dojoxTreeMapHeader {
+    background-color: white;
+    border: 1px solid black;
+}
+
+/* on desktop recent browsers you may prefer to use :hover pseudo-class instead
+   of dojoxTreeMapHovered */
+
+.dojoxTreeMapLeaf.dojoxTreeMapHovered {
+    border-color: white;
+}
+
+.dojoxTreeMapGroup.dojoxTreeMapHovered {
+}
+
+.dojoxTreeMapSelected {
+    border-color: red;
+}
+
+.dojoxTreeMapSelected:before {
+    content: '';
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    right: 0px;
+    bottom: 0px;
+    border: 3px dashed red;
+    pointer-events: none;
+    z-index: 20;
+}
+
+.dojoxTreeMapGroup.dojoxTreeMapSelected:before {
+    content: '';
+    position: absolute;
+    left: 1px;
+    top: 1px;
+    right: 1px;
+    bottom: 1px;
+    border: 1px solid red;
+    pointer-events: none;
+    z-index: 20;
+}
+
+.dojoxTreeMapSelected:before {
+    content: '';
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    right: 0px;
+    bottom: 0px;
+    border: 2px dashed white;
+    pointer-events: none;
+    z-index: 20;
+}
+
+.dojoxTreeMapGroup.dojoxTreeMapSelected{
+    border:2px dashed red;
+}
+
+.dj_iequircks .dojoxTreeMapIEHack.dojoxTreeMapSelected,
+.dj_ie7 .dojoxTreeMapIEHack.dojoxTreeMapSelected + div,
+.dj_ie8 .dojoxTreeMapIEHack.dojoxTreeMapSelected + div {
+    border:  1px solid red;
+    z-index: 20;
+}
+
+/* main classes for dojox.widget.Toaster */
+
+.dijitToasterContent {
+	padding:1em;
+	padding-top:0.25em;
+	background:#73c74a;
+}
+
+.dijitToasterMessage{ 
+	color:#fff;
+}
+
+.dijitToasterWarning,
+.dijitToasterError,
+.dijitToasterFatal{
+	font-weight:bold;
+	color:#fff;
+}
+
+.dijitToasterWarning .dijitToasterContent{
+	background:#d4d943;
+} 
+
+.dijitToasterError .dijitToasterContent{
+	background:#c46600;
+}
+
+/* imported from dijit.css */
+ 
+.dijitToasterClip {
+	position: absolute;
+	z-index: 5000;
+	overflow: hidden;
+}
+
+.dijitToasterContainer {
+	display: block;
+	position: absolute;
+	width: 17.5em;
+	margin: 0px;
+	font:0.75em;
+}
+
+button.clippy img {
+    margin:2px 0 0;
+    padding:0px;
+    width:13px;
+    height:16px;
 }

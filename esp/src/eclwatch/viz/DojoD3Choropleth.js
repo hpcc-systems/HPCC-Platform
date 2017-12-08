@@ -4,9 +4,13 @@ define([
   "dojo/_base/array",
   "dojo/_base/Deferred",
 
+  "@hpcc-js/map",
+
   "./DojoD3",
   "./Mapping"
+
 ], function (declare, lang, arrayUtil, Deferred,
+    hpccMap,
     DojoD3, Mapping) {
     return declare([Mapping, DojoD3], {
         mapping: {
@@ -32,33 +36,30 @@ define([
             var context = this;
             switch (this._chartType) {
                 case "COUNTRY":
-                    require(["src/map/ChoroplethCountries"], function (ChoroplethCountries) {
-                        context.chart = new ChoroplethCountries()
-                            .target(_target.domNodeID)
-                        ;
-                        deferred.resolve(context.chart);
-                    });
+                    this.chart = new hpccMap.ChoroplethCountries()
+                        .target(_target.domNodeID)
+                    ;
+                    deferred.resolve(this.chart);
                     break;
                 case "STATE":
-                    require(["src/map/ChoroplethStates"], function (ChoroplethStates) {
-                        context.chart = new ChoroplethStates()
-                            .target(_target.domNodeID)
-                        ;
-                        deferred.resolve(context.chart);
-                    });
+                    this.chart = new hpccMap.ChoroplethStates()
+                        .target(_target.domNodeID)
+                    ;
+                    deferred.resolve(this.chart);
                     break;
                 case "COUNTY":
-                    require(["src/map/ChoroplethCounties"], function (ChoroplethCounties) {
-                        context.chart = new ChoroplethCounties()
+                        this.chart = new hpccMap.ChoroplethCounties()
                             .target(_target.domNodeID)
                         ;
-                        deferred.resolve(context.chart);
-                    });
+                        deferred.resolve(this.chart);
                     break;
                 default:
                     console.log("Invalid visualization:  " + this._chartType)
                     deferred.resolve(null);
             }
+            if (this.chart) {
+                this.chart._topoJsonFolder = require.toUrl("@hpcc-js/TopoJSON");
+            }    
             return deferred.promise;
         },
 

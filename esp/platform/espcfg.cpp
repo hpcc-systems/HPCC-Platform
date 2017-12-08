@@ -111,11 +111,62 @@ StringBuffer &CVSBuildToEspVersion(char const * tag, StringBuffer & out)
     return out;
 }
 
+int CSessionCleaner::run()
+{
+    try
+    {
+        PROGLOG("CSessionCleaner Thread started.");
+
+        VStringBuffer xpath("%s*", PathSessionSession);
+        int checkSessionTimeoutMillSeconds = checkSessionTimeoutSeconds * 60;
+        while(!stopping)
+        {
+            Owned<IRemoteConnection> conn = querySDS().connect(espSessionSDSPath.get(), myProcessSession(), RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT);
+            if (!conn)
+                throw MakeStringException(-1, "Failed to connect to %s.", PathSessionRoot);
+
+            CDateTime now;
+            now.setNow();
+            time_t timeNow = now.getSimple();
+
+            Owned<IPropertyTreeIterator> iter1 = conn->queryRoot()->getElements(PathSessionApplication);
+            ForEach(*iter1)
+            {
+                ICopyArrayOf<IPropertyTree> toRemove;
+                Owned<IPropertyTreeIterator> iter2 = iter1->query().getElements(xpath.str());
+                ForEach(*iter2)
+                {
+                    IPropertyTree& item = iter2->query();
+                    if (timeNow >= item.getPropInt64(PropSessionTimeoutAt, 0))
+                        toRemove.append(item);
+                }
+                ForEachItemIn(i, toRemove)
+                {
+                    iter1->query().removeTree(&toRemove.item(i));
+                }
+            }
+            sem.wait(checkSessionTimeoutMillSeconds);
+        }
+    }
+    catch(IException *e)
+    {
+        StringBuffer msg;
+        ERRLOG("CSessionCleaner::run() Exception %d:%s", e->errorCode(), e->errorMessage(msg).str());
+        e->Release();
+    }
+    catch(...)
+    {
+        ERRLOG("Unknown CSessionCleaner::run() Exception");
+    }
+    return 0;
+}
+
 void CEspConfig::ensureSDSSessionDomains()
 {
     bool hasAuthDomainSettings = false;
     bool hasSessionAuth = false;
     bool hasDefaultSessionDomain = false;
+    int  serverSessionTimeoutSeconds = 120 * ESP_SESSION_TIMEOUT;
     Owned<IPropertyTree> proc_cfg = getProcessConfig(m_envpt, m_process.str());
     Owned<IPropertyTreeIterator> it = proc_cfg->getElements("AuthDomains/AuthDomain");
     ForEach(*it)
@@ -127,6 +178,24 @@ void CEspConfig::ensureSDSSessionDomains()
             continue;
 
         hasSessionAuth = true;
+
+        int clientSessionTimeoutSeconds;
+        int clientSessionTimeoutMinutes = authDomain.getPropInt("@clientSessionTimeoutMinutes", ESP_SESSION_TIMEOUT);
+        if (clientSessionTimeoutMinutes < 0)
+            clientSessionTimeoutSeconds = ESP_SESSION_NEVER_TIMEOUT;
+        else
+            clientSessionTimeoutSeconds = clientSessionTimeoutMinutes * 60;
+
+        //The serverSessionTimeoutMinutes is used to clean the sessions by ESP server after the sessions have been timed out on ESP clients.
+        //Considering possible network delay, serverSessionTimeoutMinutes should be greater than clientSessionTimeoutMinutes.
+        int serverSessionTimeoutMinutes = authDomain.getPropInt("@serverSessionTimeoutMinutes", 0);
+        if ((serverSessionTimeoutMinutes < 0) || (clientSessionTimeoutMinutes < 0))
+            serverSessionTimeoutSeconds = ESP_SESSION_NEVER_TIMEOUT;
+        else
+            serverSessionTimeoutSeconds = serverSessionTimeoutMinutes * 60;
+        if (serverSessionTimeoutSeconds < clientSessionTimeoutSeconds)
+            serverSessionTimeoutSeconds = 2 * clientSessionTimeoutSeconds;
+
         const char* authDomainName = authDomain.queryProp("@domainName");
         if (isEmptyString(authDomainName) || strieq(authDomainName, "default"))
         {
@@ -144,6 +213,14 @@ void CEspConfig::ensureSDSSessionDomains()
             throw MakeStringException(-1, "Failed to connect to %s.", PathSessionRoot);
 
         ensureESPSessionInTree(conn->queryRoot(), m_process.str());
+
+        if (serverSessionTimeoutSeconds != ESP_SESSION_NEVER_TIMEOUT)
+        {
+            VStringBuffer espSessionSDSPath("%s/%s[@name=\"%s\"]", PathSessionRoot, PathSessionProcess, m_process.str());
+            m_sessionCleaner.setown(new CSessionCleaner(espSessionSDSPath.str(), proc_cfg->getPropInt("@checkSessionTimeoutSeconds",
+                ESP_CHECK_SESSION_TIMEOUT)));
+            m_sessionCleaner->start();
+        }
     }
 }
 

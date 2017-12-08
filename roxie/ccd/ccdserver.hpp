@@ -111,7 +111,7 @@ interface IFinalRoxieInput : extends IInputBase
 
     inline void stopall()
     {
-        for (int i = 0; i < numConcreteOutputs(); i++)
+        for (unsigned i = 0; i < numConcreteOutputs(); i++)
             queryConcreteOutputStream(i)->stop();
     }
 };
@@ -280,24 +280,18 @@ extern void setStartRuid(unsigned restarts);
 class CIndexTransformCallback : implements IThorIndexCallback, public CInterface
 {
 public:
-    CIndexTransformCallback() { keyManager = NULL; cleanupRequired = false; filepos = 0; };
-    IMPLEMENT_IINTERFACE
+    CIndexTransformCallback() { keyManager = NULL; cleanupRequired = false; };
+    IMPLEMENT_IINTERFACE_O
 
 //IThorIndexCallback
-    virtual unsigned __int64 getFilePosition(const void * row)
-    {
-        return filepos;
-    }
-    virtual byte * lookupBlob(unsigned __int64 id) 
+    virtual byte * lookupBlob(unsigned __int64 id) override
     { 
         size32_t dummy; 
         cleanupRequired = true;
         return (byte *) keyManager->loadBlob(id, dummy); 
     }
 
-
 public:
-    inline offset_t & getFPosRef()                              { return filepos; }
     inline void setManager(IKeyManager * _manager)
     {
         finishedRow();
@@ -314,7 +308,6 @@ public:
 
 protected:
     IKeyManager * keyManager;
-    offset_t filepos;
     bool cleanupRequired;
 };
 

@@ -175,11 +175,9 @@ void Cws_machineEx::init(IPropertyTree *cfg, const char *process, const char *se
         m_machineInfoFile.append("preflight");
 
     //Read settings from environment.xml
-    m_envFactory.setown( getEnvironmentFactory() );
-    Owned<IConstEnvironment> constEnv = getConstEnvironment();
+    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
+    Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
     Owned<IPropertyTree> pEnvironmentRoot = &constEnv->getPTree();
-    if (!pEnvironmentRoot)
-        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
 
     Owned<IPropertyTree> pEnvSettings = pEnvironmentRoot->getPropTree("EnvSettings");
     if (pEnvSettings)
@@ -2199,8 +2197,10 @@ const char* Cws_machineEx::getProcessTypeFromMachineType(const char* machineType
 
 IConstEnvironment* Cws_machineEx::getConstEnvironment()
 {
-    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
+    if (!constEnv)
+        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
     return constEnv.getLink();
 }
 
@@ -2210,8 +2210,6 @@ IPropertyTree* Cws_machineEx::getComponent(const char* compType, const char* com
     StringBuffer xpath;
     xpath.append("Software/").append(compType).append("[@name='").append(compName).append("']");
 
-    m_envFactory->validateCache();
-
     Owned<IConstEnvironment> constEnv = getConstEnvironment();
     Owned<IPropertyTree> pEnvRoot = &constEnv->getPTree();
     return pEnvRoot->getPropTree( xpath.str() );
@@ -2219,8 +2217,6 @@ IPropertyTree* Cws_machineEx::getComponent(const char* compType, const char* com
 
 void Cws_machineEx::getAccountAndPlatformInfo(const char* address, StringBuffer& userId, StringBuffer& password, bool& bLinux)
 {
-    m_envFactory->validateCache();
-
     Owned<IConstEnvironment> constEnv = getConstEnvironment();
     Owned<IConstMachineInfo> machine = constEnv->getMachineByAddress(address);
     if (!machine && strieq(address, "."))

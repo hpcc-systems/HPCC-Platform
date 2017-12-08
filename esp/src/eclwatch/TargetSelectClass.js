@@ -33,10 +33,12 @@ define([
     "hpcc/FileSpray",
     "hpcc/ws_access",
     "hpcc/WsESDLConfig",
-    "hpcc/WsPackageMaps"
+    "hpcc/WsPackageMaps",
+    "hpcc/Utility"
+
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, xhr, Deferred, ItemFileReadStore, all, Memory, on,
     registry,
-    WsTopology, WsWorkunits, FileSpray, WsAccess, WsESDLConfig, WsPackageMaps) {
+    WsTopology, WsWorkunits, FileSpray, WsAccess, WsESDLConfig, WsPackageMaps, Utility) {
 
     return {
         i18n: nlsHPCC,
@@ -303,10 +305,6 @@ define([
                 }).then(function (response) {
                     if (lang.exists("TpDropZoneQueryResponse.TpDropZones.TpDropZone", response)) {
                         context.set("options", []);
-                        context.options.push({
-                            label: "&nbsp;",
-                            value: ""
-                        });
                         arrayUtil.forEach(response.TpDropZoneQueryResponse.TpDropZones.TpDropZone, function(item, idx) {
                             var targetData = item.TpMachines.TpMachine;
                             for (var i = 0; i < targetData.length; ++i) {
@@ -509,14 +507,14 @@ define([
 
         loadECLSamples: function () {
             var sampleStore = new ItemFileReadStore({
-                url: dojoConfig.getURL("ecl/ECLPlaygroundSamples.json")
+                url: Utility.getURL("ecl/ECLPlaygroundSamples.json")
             });
             this.setStore(sampleStore);
             var context = this;
             this.on("change", function (evt) {
                 var filename = this.get("value");
                 xhr.get({
-                    url: dojoConfig.getURL("ecl/" + filename),
+                    url: Utility.getURL("ecl/" + filename),
                     handleAs: "text",
                     load: function (eclText) {
                         context.onNewSelection(eclText);
