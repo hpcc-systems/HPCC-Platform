@@ -405,7 +405,8 @@ enum MSessionRequestKind {
     MSR_CLEAR_PERMISSIONS_CACHE,
     MSR_EXIT, // TBD
     MSR_QUERY_SCOPE_SCANS_ENABLED,
-    MSR_ENABLE_SCOPE_SCANS
+    MSR_ENABLE_SCOPE_SCANS,
+    MSR_LOOKUP_LDAP_PERMISSIONS_EX,
 };
 
 class CQueryScopeScansEnabledReq : implements IMessageWrapper
@@ -584,7 +585,8 @@ public:
                 coven.reply(mb);
             }
             break;
-        case MSR_LOOKUP_LDAP_PERMISSIONS: {
+        case MSR_LOOKUP_LDAP_PERMISSIONS:
+        case MSR_LOOKUP_LDAP_PERMISSIONS_EX: {
                 StringAttr key;
                 StringAttr obj;
                 Owned<IUserDescriptor> udesc=createUserDescriptor();
@@ -602,7 +604,8 @@ public:
                 unsigned auditflags = 0;
                 if (mb.length()-mb.getPos()>=sizeof(auditflags))
                     mb.read(auditflags);
-                udesc->deserializeExtra(mb);//deserialize sessionToken and user signature if present (hpcc ver 7.0.0 and newer)
+                if (fn == MSR_LOOKUP_LDAP_PERMISSIONS_EX)
+                    udesc->deserializeExtra(mb);//deserialize session token and digital signature
                 int err = 0;
                 SecAccessFlags perms = manager.getPermissionsLDAP(key,obj,udesc,auditflags,&err);
                 mb.clear().append((int)perms);
@@ -654,6 +657,7 @@ public:
                 coven.reply(mb);
             }
             break;
+
         }
     }
 
@@ -895,8 +899,12 @@ public:
         }
         if (!udesc)
             return SecAccess_Unknown;
+
+        //If Dali is signature aware, and the user's signature is present, we will send it instead of password
+        bool sendSignature = queryDaliServerVersion().compare("3.14") >= 0 && udesc->querySignature() && udesc->querySignature()[0];
+
         CMessageBuffer mb;
-        mb.append((int)MSR_LOOKUP_LDAP_PERMISSIONS);
+        mb.append((int)(sendSignature ? MSR_LOOKUP_LDAP_PERMISSIONS_EX : MSR_LOOKUP_LDAP_PERMISSIONS));
         mb.append(key).append(obj);
 #ifdef NULL_DALIUSER_STACKTRACE
         //following debug code to be removed
@@ -911,7 +919,8 @@ public:
 #endif
         udesc->serialize(mb);
         mb.append(auditflags);
-        udesc->serializeExtra(mb);//serialize sessionToken and user signature if Dali version
+        if (sendSignature)
+            udesc->serializeExtra(mb);//serialize sessionToken and user signature
         if (!queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
             return SecAccess_None;
         SecAccessFlags perms = SecAccess_Unavailable;
