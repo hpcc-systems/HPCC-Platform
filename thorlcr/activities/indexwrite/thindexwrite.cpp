@@ -181,8 +181,8 @@ public:
         if (helper->queryDiskRecordSize()->queryTypeInfo())
         {
             MemoryBuffer out;
-            dumpTypeInfo(out, helper->queryDiskRecordSize()->queryTypeInfo());
-            props.setPropBin("_rtlType", out.length(), out.toByteArray());
+            if (dumpTypeInfo(out, helper->queryDiskRecordSize()->queryTypeInfo()))
+                props.setPropBin("_rtlType", out.length(), out.toByteArray());
         }
         mpTag = container.queryJob().allocateMPTag();
         mpTag2 = container.queryJob().allocateMPTag();

@@ -748,6 +748,12 @@ void CHThorDiskWriteActivity::setFormat(IFileDescriptor * desc)
     const char *recordECL = helper.queryRecordECL();
     if (recordECL && *recordECL)
         desc->queryProperties().setProp("ECL", recordECL);
+    if (helper.queryDiskRecordSize()->queryTypeInfo())
+    {
+        MemoryBuffer out;
+        dumpTypeInfo(out, helper.queryDiskRecordSize()->queryTypeInfo());
+        desc->queryProperties().setPropBin("_rtlType", out.length(), out.toByteArray());
+    }
     desc->queryProperties().setProp("@kind", "flat");
 }
 
@@ -885,6 +891,12 @@ void CHThorCsvWriteActivity::setFormat(IFileDescriptor * desc)
     const char *recordECL = helper.queryRecordECL();
     if (recordECL && *recordECL)
         desc->queryProperties().setProp("ECL", recordECL);
+    if (helper.queryDiskRecordSize()->queryTypeInfo())
+    {
+        MemoryBuffer out;
+        dumpTypeInfo(out, helper.queryDiskRecordSize()->queryTypeInfo());
+        desc->queryProperties().setPropBin("_rtlType", out.length(), out.toByteArray());
+    }
 }
 
 //=====================================================================================================
@@ -973,6 +985,12 @@ void CHThorXmlWriteActivity::setFormat(IFileDescriptor * desc)
     const char *recordECL = helper.queryRecordECL();
     if (recordECL && *recordECL)
         desc->queryProperties().setProp("ECL", recordECL);
+    if (helper.queryDiskRecordSize()->queryTypeInfo())
+    {
+        MemoryBuffer out;
+        dumpTypeInfo(out, helper.queryDiskRecordSize()->queryTypeInfo());
+        desc->queryProperties().setPropBin("_rtlType", out.length(), out.toByteArray());
+    }
 }
 
 //=====================================================================================================

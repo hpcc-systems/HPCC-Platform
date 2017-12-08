@@ -1834,7 +1834,7 @@ interface IRtlFieldTypeDeserializer;
 
 extern HQL_API void exportData(IPropertyTree *data, IHqlExpression *table, bool flatten=false);
 extern HQL_API void exportJsonType(StringBuffer &ret, IHqlExpression *table);
-extern HQL_API void exportBinaryType(MemoryBuffer &ret, IHqlExpression *table);
+extern HQL_API bool exportBinaryType(MemoryBuffer &ret, IHqlExpression *table);
 extern HQL_API const RtlTypeInfo *queryRtlType(IRtlFieldTypeDeserializer &deserializer, IHqlExpression *table);
 
 extern HQL_API void clearCacheCounts();

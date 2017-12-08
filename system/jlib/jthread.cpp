@@ -2379,7 +2379,9 @@ IWorkQueueThread *createWorkQueueThread(unsigned persisttime)
 
 unsigned threadLogID()  // for use in logging
 {
-#ifndef _WIN32
+#if defined(__APPLE__)
+     return pthread_mach_thread_np(pthread_self());
+#elif !defined(_WIN32)
 #ifdef SYS_gettid
     return (unsigned) (memsize_t) syscall(SYS_gettid);
 #endif

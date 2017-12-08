@@ -435,6 +435,7 @@ extern unsigned defaultForceNumStrands;
 extern unsigned defaultHeapFlags;
 
 extern bool defaultCheckingHeap;
+extern bool defaultDisableLocalOptimizations;
 
 extern unsigned slaveQueryReleaseDelaySeconds;
 extern unsigned coresPerQuery;

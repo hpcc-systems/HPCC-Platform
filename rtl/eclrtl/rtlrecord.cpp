@@ -112,9 +112,10 @@ static unsigned countFields(const RtlFieldInfo * const * fields, bool & contains
 class IfBlockInfo
 {
 public:
-    IfBlockInfo(const RtlFieldInfo &_field, const IfBlockInfo *_parent, unsigned _idx)
-    : field(_field), parent(_parent), idx(_idx)
-    {}
+    IfBlockInfo(const RtlFieldInfo &_field, const IfBlockInfo *_parent, unsigned _idx, unsigned _startIdx)
+    : field(_field), parent(_parent), idx(_idx), startIdx(_startIdx)
+    {
+    }
 
     bool excluded(const byte *row, byte *conditions) const
     {
@@ -130,10 +131,12 @@ public:
         }
         return conditions[idx]==0;
     }
+    inline unsigned queryStartField() const { return startIdx; }
 private:
     const RtlFieldInfo &field;
     const IfBlockInfo *parent = nullptr;  // for nested ifblocks
     unsigned idx;
+    unsigned startIdx; // For ifblocks inside child records
 };
 
 class RtlCondFieldStrInfo : public RtlFieldStrInfo
@@ -149,7 +152,7 @@ public:
     const IfBlockInfo &ifblock;
 };
 
-static unsigned expandNestedRows(unsigned idx, const char *prefix, const RtlFieldInfo * const * fields, const RtlFieldInfo * * target, const char * *names, const IfBlockInfo *inIfBlock, ConstPointerArrayOf<IfBlockInfo> &ifblocks)
+static unsigned expandNestedRows(unsigned idx, unsigned startIdx, const char *prefix, const RtlFieldInfo * const * fields, const RtlFieldInfo * * target, const char * *names, const IfBlockInfo *inIfBlock, ConstPointerArrayOf<IfBlockInfo> &ifblocks)
 {
     for (;*fields;fields++)
     {
@@ -161,7 +164,7 @@ static unsigned expandNestedRows(unsigned idx, const char *prefix, const RtlFiel
             const IfBlockInfo *nestIfBlock = inIfBlock;
             if (isIfBlock)
             {
-                nestIfBlock = new IfBlockInfo(*cur, inIfBlock, ifblocks.ordinality());
+                nestIfBlock = new IfBlockInfo(*cur, inIfBlock, ifblocks.ordinality(), startIdx);
                 ifblocks.append(nestIfBlock);
             }
             const RtlFieldInfo * const * nested = type->queryFields();
@@ -170,7 +173,7 @@ static unsigned expandNestedRows(unsigned idx, const char *prefix, const RtlFiel
                 StringBuffer newPrefix(prefix);
                 if (cur->name && *cur->name)
                     newPrefix.append(cur->name).append('.');
-                idx = expandNestedRows(idx, newPrefix.str(), nested, target, names, nestIfBlock, ifblocks);
+                idx = expandNestedRows(idx, isIfBlock ? startIdx : idx, newPrefix.str(), nested, target, names, nestIfBlock, ifblocks);
             }
         }
         else
@@ -237,7 +240,7 @@ RtlRecord::RtlRecord(const RtlFieldInfo * const *_fields, bool expandFields) : f
             const RtlFieldInfo * * allocated  = new const RtlFieldInfo * [numFields+1];
             names = new const char *[numFields];
             fields = allocated;
-            unsigned idx = expandNestedRows(0, nullptr, originalFields, allocated, names, nullptr, _ifblocks);
+            unsigned idx = expandNestedRows(0, 0, nullptr, originalFields, allocated, names, nullptr, _ifblocks);
             ifblocks = _ifblocks.detach();
             assertex(idx == numFields);
             allocated[idx] = nullptr;
@@ -376,7 +379,11 @@ void RtlRecord::calcRowOffsets(size_t * variableOffsets, const void * _row, unsi
             if (field->flags & RFTMinifblock)
             {
                 const RtlCondFieldStrInfo *condfield = static_cast<const RtlCondFieldStrInfo *>(field);
-                if (condfield->ifblock.excluded(row, conditions))
+                unsigned startField = condfield->ifblock.queryStartField();
+                const byte *childRow = row;
+                if (startField)
+                    childRow += getOffset(variableOffsets, startField);
+                if (condfield->ifblock.excluded(childRow, conditions))
                 {
                     variableOffsets[i+1] = offset; // (meaning size ends up as zero);
                     continue;
@@ -433,7 +440,7 @@ size32_t RtlRecord::deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource
         size32_t fixedSize = fixedOffsets[fieldIndex];
         byte * self = rowBuilder.ensureCapacity(offset + fixedSize, ""); // Why not field->name?
         in.read(fixedSize, self + offset);
-        if (field->omitable() && static_cast<const RtlCondFieldStrInfo *>(field)->ifblock.excluded(self, conditionValues))
+        if (excluded(field, self, conditionValues))
             continue;
         offset = queryType(fieldIndex)->deserialize(rowBuilder, in, offset);
     }
@@ -514,9 +521,16 @@ const RtlFieldInfo *RtlRecord::queryOriginalField(unsigned idx) const
 }
 
 
-bool RtlRecord::excluded(const RtlFieldInfo *field, const byte *row, byte *conditionValues)
+bool RtlRecord::excluded(const RtlFieldInfo *field, const byte *row, byte *conditionValues) const
 {
-    return (field->omitable() && static_cast<const RtlCondFieldStrInfo *>(field)->ifblock.excluded(row, conditionValues));
+    if (!field->omitable())
+        return false;
+    const RtlCondFieldStrInfo *condfield = static_cast<const RtlCondFieldStrInfo *>(field);
+    unsigned startField = condfield->ifblock.queryStartField();
+    const byte *childRow = row;
+    if (startField)
+        childRow += calculateOffset(row, startField);
+    return condfield->ifblock.excluded(childRow, conditionValues);
 }
 
 size_t RtlRecord::getFixedOffset(unsigned field) const
@@ -527,36 +541,57 @@ size_t RtlRecord::getFixedOffset(unsigned field) const
 
 size32_t RtlRecord::getRecordSize(const void *_row) const
 {
-    size32_t size = getFixedSize();
-    if (!size)
+    if (numIfBlocks)
+    {
+        unsigned numOffsets = getNumVarFields() + 1;
+        size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
+        RtlRow sourceRow(*this, _row, numOffsets, variableOffsets);
+        return sourceRow.getOffset(numFields+1);
+    }
+    else
+    {
+        size32_t size = getFixedSize();
+        if (!size)
+        {
+            const byte * row = static_cast<const byte *>(_row);
+            size32_t varoffset = 0;
+            for (unsigned i = 0; i < numVarFields; i++)
+            {
+                unsigned fieldIndex = variableFieldIds[i];
+                size32_t offset = fixedOffsets[fieldIndex] + varoffset;
+                size32_t fieldSize = queryType(fieldIndex)->size(row + offset, row);
+                varoffset = offset + fieldSize;
+            }
+            size = fixedOffsets[numFields] + varoffset;
+        }
+        return size;
+    }
+}
+
+size32_t RtlRecord::calculateOffset(const void *_row, unsigned field) const
+{
+    if (numIfBlocks)
+    {
+        unsigned numOffsets = getNumVarFields() + 1;
+        size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
+        RtlRow sourceRow(*this, nullptr, numOffsets, variableOffsets);
+        sourceRow.setRow(_row, field);
+        return sourceRow.getOffset(field);
+    }
+    else
     {
         const byte * row = static_cast<const byte *>(_row);
         size32_t varoffset = 0;
-        for (unsigned i = 0; i < numVarFields; i++)
+        unsigned varFields = whichVariableOffset[field];
+        for (unsigned i = 0; i < varFields; i++)
         {
             unsigned fieldIndex = variableFieldIds[i];
             size32_t offset = fixedOffsets[fieldIndex] + varoffset;
             size32_t fieldSize = queryType(fieldIndex)->size(row + offset, row);
             varoffset = offset + fieldSize;
         }
-        size = fixedOffsets[numFields] + varoffset;
+        return fixedOffsets[field] + varoffset;
     }
-    return size;
-}
-
-size32_t RtlRecord::calculateOffset(const void *_row, unsigned field) const
-{
-    const byte * row = static_cast<const byte *>(_row);
-    size32_t varoffset = 0;
-    unsigned varFields = whichVariableOffset[field];
-    for (unsigned i = 0; i < varFields; i++)
-    {
-        unsigned fieldIndex = variableFieldIds[i];
-        size32_t offset = fixedOffsets[fieldIndex] + varoffset;
-        size32_t fieldSize = queryType(fieldIndex)->size(row + offset, row);
-        varoffset = offset + fieldSize;
-    }
-    return fixedOffsets[field] + varoffset;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -631,7 +666,23 @@ void RtlRow::setRow(const void * _row)
 {
     row = (const byte *)_row;
     if (_row)
+    {
         info.calcRowOffsets(variableOffsets, _row);
+#if defined(_DEBUG) && defined(TRACE_ROWOFFSETS)
+        for (unsigned i = 0; i < info.getNumFields(); i++)
+        {
+            printf("Field %d (%s) offset %d", i, info.queryName(i), (int) getOffset(i));
+            if (getSize(i))
+            {
+                unsigned bufflen;
+                rtlDataAttr buff;
+                getString(bufflen, buff.refstr(), i);
+                printf(" value %.*s", bufflen, buff.getstr());
+            }
+            printf("\n");
+        }
+#endif
+    }
 }
 
 void RtlRow::setRow(const void * _row, unsigned _numFields)

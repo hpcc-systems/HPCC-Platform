@@ -568,11 +568,6 @@ public:
         return NULL; // Activities that wish to support server-side caching will need to do better....
     }
 
-    virtual bool getEnableFieldTranslation() const
-    {
-        throwUnexpected(); // only implemented by index-related subclasses
-    }
-
     virtual IDefRecordMeta *queryActivityMeta() const
     {
         throwUnexpected(); // only implemented by index-related subclasses
@@ -1532,6 +1527,19 @@ public:
     inline bool isSink() const
     {
         return (factory != NULL) && factory->isSink();
+    }
+
+protected:
+    unsigned getFormatCrc(unsigned helperCrc) const
+    {
+        if (factory->queryQueryFactory().queryOptions().skipFileFormatCrcCheck)
+            return 0;
+        else
+            return helperCrc;
+    }
+    IRecordLayoutTranslator::Mode getEnableFieldTranslation() const
+    {
+        return factory->queryQueryFactory().queryOptions().enableFieldTranslation;
     }
 };
 
@@ -11681,6 +11689,13 @@ public:
         const char *recordECL = helper.queryRecordECL();
         if (recordECL && *recordECL)
             fileProps.setProp("ECL", recordECL);
+        if (helper.queryDiskRecordSize()->queryTypeInfo())
+        {
+            MemoryBuffer out;
+            if (dumpTypeInfo(out, helper.queryDiskRecordSize()->queryTypeInfo()))
+                fileProps.setPropBin("_rtlType", out.length(), out.toByteArray());
+        }
+
         fileProps.setProp("@kind", "flat"); // default, derivitives may override
     }
 
@@ -12022,8 +12037,8 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
         if (helper.queryDiskRecordSize()->queryTypeInfo())
         {
             MemoryBuffer out;
-            dumpTypeInfo(out, helper.queryDiskRecordSize()->queryTypeInfo());
-            metadata->setPropBin("_rtlType", out.length(), out.toByteArray());
+            if (dumpTypeInfo(out, helper.queryDiskRecordSize()->queryTypeInfo()))
+                metadata->setPropBin("_rtlType", out.length(), out.toByteArray());
         }
     }
 
@@ -12232,8 +12247,8 @@ public:
         if (helper.queryDiskRecordSize()->queryTypeInfo())
         {
             MemoryBuffer out;
-            dumpTypeInfo(out, helper.queryDiskRecordSize()->queryTypeInfo());
-            properties.setPropBin("_rtlType", out.length(), out.toByteArray());
+            if (dumpTypeInfo(out, helper.queryDiskRecordSize()->queryTypeInfo()))
+                properties.setPropBin("_rtlType", out.length(), out.toByteArray());
         }
     }
 
@@ -21421,10 +21436,9 @@ protected:
     unsigned __int64 rowLimit;
     unsigned __int64 stopAfter;
     Linked<IInMemoryIndexManager> manager;
+    Linked<ITranslatorSet> translators;
     Owned<IInMemoryIndexCursor> cursor;
     Owned<IDirectReader> reader;
-    CThorContiguousRowBuffer deserializeSource;
-    Owned<ISourceRowPrefetcher> prefetcher;
     bool eof;
     bool isKeyed;
     bool variableFileName;
@@ -21436,7 +21450,6 @@ protected:
     bool isGrouped = false;
     CachedOutputMetaData diskSize;
     Owned<const IResolvedFile> varFileInfo;
-    Owned<IFileIOArray> varFiles;
 
     inline bool useRemote()
     {
@@ -21446,16 +21459,17 @@ protected:
 public:
     IMPLEMENT_IINTERFACE_USING(CRoxieServerActivity)
 
-    CRoxieServerDiskReadBaseActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager)
+    CRoxieServerDiskReadBaseActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
+                                     unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager, ITranslatorSet *_translators)
         : CRoxieServerActivity(_ctx, _factory, _probeManager),
           helper((IHThorDiskReadBaseArg &)basehelper),
           numParts(_numParts),
           remoteId(_remoteId),
           manager(_manager),
+          translators(_translators),
           isLocal(_isLocal),
           sorted(_sorted),
-          maySkip(_maySkip),
-          deserializeSource(NULL)
+          maySkip(_maySkip)
     {
         forceRemote = factory->queryQueryFactory().queryOptions().disableLocalOptimizations;
         if ((forceRemote || numParts != 1) && !isLocal)  // NOTE : when numParts == 0 (variable case) we create, even though we may not use
@@ -21465,13 +21479,8 @@ public:
         rowLimit = (unsigned __int64) -1;
         isKeyed = false;
         stopAfter = I64C(0x7FFFFFFFFFFFFFFF);
-        Linked<IOutputMetaData> diskMeta(helper.queryDiskRecordSize()->querySerializedDiskMeta());
-        if (diskMeta->isGrouped())
-        {
-            diskMeta.setown(new CSuffixedOutputMeta(+1, diskMeta.getClear()));
-            isGrouped = true;
-        }
-        diskSize.set(diskMeta);
+        diskSize.set(helper.queryDiskRecordSize()->querySerializedDiskMeta());
+        isGrouped = diskSize.isGrouped();
         variableFileName = allFilesDynamic || factory->queryQueryFactory().isDynamic() || ((helper.getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0);
         isOpt = (helper.getFlags() & TDRoptional) != 0;
     }
@@ -21508,26 +21517,7 @@ public:
                 varFileInfo.setown(resolveLFN(fileName, isOpt));
                 numParts = 0;
                 if (varFileInfo)
-                {
                     numParts = varFileInfo->getNumParts();
-                    const IPropertyTree *options =  varFileInfo->queryProperties();
-                    if (options)
-                    {
-                        isGrouped = options->getPropBool("@grouped");
-                        if (isGrouped && !diskSize.isGrouped())
-                        {
-                            // We are prepared to read contents of a grouped persist ungrouped... But not vice versa
-                            VStringBuffer msg("Published group information for file %s does not match coded information - assuming grouped", fileName.get());
-                            WARNLOG("%s", msg.str());
-                            ctx->queryCodeContext()->addWuException(msg.str(), ROXIE_LAYOUT_MISMATCH, SeverityError, "roxie");
-                            Owned<IOutputMetaData> diskMeta(new CSuffixedOutputMeta(+1, LINK(diskSize.queryOriginal())));
-                            diskSize.set(diskMeta);
-                        }
-                        size32_t dfsSize = options->getPropInt("@recordSize");
-                        if (dfsSize && diskSize.isFixedSize() && dfsSize != diskSize.getFixedSize())
-                            throw MakeStringException(ROXIE_LAYOUT_MISMATCH, "Published record size %d for file %s (%s) does not match coded record size %d", dfsSize, fileName.get(), isGrouped ? "grouped" : "ungrouped", diskSize.getFixedSize());
-                    }
-                }
             }
             if (!numParts)
             {
@@ -21548,8 +21538,9 @@ public:
                 if (variableFileName)
                 {
                     unsigned channel = isLocal ? factory->queryQueryFactory().queryChannel() : 0;
-                    varFiles.setown(varFileInfo->getIFileIOArray(isOpt, channel));
-                    manager.setown(varFileInfo->getIndexManager(isOpt, channel, varFiles, diskSize, false, 0));
+                    unsigned formatCrc = getFormatCrc(helper.getFormatCrc());
+                    translators.setown(varFileInfo->getTranslators(formatCrc, helper.queryProjectedDiskRecordSize(), helper.queryDiskRecordSize(), getEnableFieldTranslation()));
+                    manager.setown(varFileInfo->getIndexManager(isOpt, channel, nullptr, false, 0));
                 }
                 assertex(manager != NULL);
                 helper.createSegmentMonitors(this);
@@ -21560,9 +21551,7 @@ public:
                 }
                 if (!isKeyed)
                 {
-                    reader.setown(manager->createReader(0, 0, 1));
-                    deserializeSource.setStream(reader);
-                    prefetcher.setown(diskSize.queryOriginal()->createDiskPrefetcher(ctx->queryCodeContext(), activityId));
+                    reader.setown(manager->createReader(0, 0, 1, translators, ctx->queryCodeContext(), activityId));
                 }
                 helper.setCallback(reader ? reader->queryThorDiskCallback() : cursor);
             }
@@ -21618,7 +21607,7 @@ public:
         eof = false;
         if (cursor)
             cursor->reset();
-        deserializeSource.clearStream();
+        reader.clear();
         CRoxieServerActivity::reset();
     }
 
@@ -21687,8 +21676,8 @@ class CRoxieServerDiskReadActivity : public CRoxieServerDiskReadBaseActivity
     unsigned lastGroupProcessed;
 
 public:
-    CRoxieServerDiskReadActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager)
-        : CRoxieServerDiskReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, _sorted, _maySkip, _manager)
+    CRoxieServerDiskReadActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager, ITranslatorSet *_translators)
+        : CRoxieServerDiskReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, _sorted, _maySkip, _manager, _translators)
     {
         compoundHelper = (IHThorDiskReadArg *)&helper;
         readHelper = (IHThorDiskReadArg *)&helper;
@@ -21832,26 +21821,18 @@ public:
             assertex(reader != NULL);
             for (;;)
             {
-                if (deserializeSource.eos())
+                if (reader->eos())
                 {
                     eof = true;
                     return NULL;
                 }
-                prefetcher->readAhead(deserializeSource);
-                const byte *nextRec = deserializeSource.queryRow();
+                const byte *nextRec = reader->nextRow();
                 if (cursor && cursor->isFiltered(nextRec))
                     transformedSize = 0;
                 else
                     transformedSize = readHelper->transform(rowBuilder, nextRec);
-                bool eog;
-                if (isGrouped)
-                {
-                    size32_t sizeRead = diskSize.getRecordSize(nextRec);
-                    eog = nextRec[sizeRead-1];
-                }
-                else
-                    eog = false;
-                deserializeSource.finishedRow();
+                bool eog = isGrouped && reader->eog();
+                reader->finishedRow();
                 if (transformedSize)
                 {
                     if (isGrouped)
@@ -21881,8 +21862,9 @@ class CRoxieServerXmlReadActivity : public CRoxieServerDiskReadBaseActivity, imp
     unsigned __int64 fileoffset;
 public:
     IMPLEMENT_IINTERFACE_USING(CRoxieServerDiskReadBaseActivity)
-    CRoxieServerXmlReadActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager)
-        : CRoxieServerDiskReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, _sorted, _maySkip, _manager)
+    CRoxieServerXmlReadActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
+                                unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager, ITranslatorSet *_translators)
+        : CRoxieServerDiskReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, _sorted, _maySkip, _manager, _translators)
     {
         compoundHelper = NULL;
         readHelper = (IHThorXmlReadArg *)&helper;
@@ -22001,9 +21983,9 @@ class CRoxieServerCsvReadActivity : public CRoxieServerDiskReadBaseActivity
     size32_t maxRowSize;
 public:
     CRoxieServerCsvReadActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
-                                unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager,
+                                unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager, ITranslatorSet *_translators,
                                 const char *_quotes, const char *_separators, const char *_terminators, const char *_escapes, size32_t _maxRowSize)
-        : CRoxieServerDiskReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, _sorted, _maySkip, _manager),
+        : CRoxieServerDiskReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, _sorted, _maySkip, _manager, _translators),
           quotes(_quotes), separators(_separators), terminators(_terminators), escapes(_escapes), maxRowSize(_maxRowSize)
     {
         compoundHelper = NULL;
@@ -22138,8 +22120,8 @@ class CRoxieServerDiskNormalizeActivity : public CRoxieServerDiskReadBaseActivit
     bool firstPending;
 
 public:
-    CRoxieServerDiskNormalizeActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, bool _sorted, IInMemoryIndexManager *_manager)
-        : CRoxieServerDiskReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, _sorted, false, _manager)
+    CRoxieServerDiskNormalizeActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, bool _sorted, IInMemoryIndexManager *_manager, ITranslatorSet *_translators)
+        : CRoxieServerDiskReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, _sorted, false, _manager, _translators)
     {
         compoundHelper = (IHThorDiskNormalizeArg *)&helper;
         normalizeHelper = (IHThorDiskNormalizeArg *)&helper;
@@ -22193,19 +22175,18 @@ public:
             {
                 while (firstPending)
                 {
-                    if (deserializeSource.eos())
+                    if (reader->eos())
                     {
                         eof = true;
                         return NULL;
                     }
-                    prefetcher->readAhead(deserializeSource);
-                    const byte *nextRec = deserializeSource.queryRow();
+                    const byte *nextRec = reader->nextRow();
                     if (!cursor || !cursor->isFiltered(nextRec))
                     {
                         if (normalizeHelper->first(nextRec))
                             firstPending = false;
                     }
-                    deserializeSource.finishedRow();
+                    reader->finishedRow();
                 }
                 transformedSize = normalizeHelper->transform(rowBuilder);
                 firstPending = !normalizeHelper->next();
@@ -22236,8 +22217,8 @@ protected:
     bool done;
 
 public:
-    CRoxieServerDiskAggregateBaseActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, IInMemoryIndexManager *_manager)
-        : CRoxieServerDiskReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, false, false, _manager),
+    CRoxieServerDiskAggregateBaseActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, IInMemoryIndexManager *_manager, ITranslatorSet *_translators)
+        : CRoxieServerDiskReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, false, false, _manager, _translators),
           done(false)
     {
     }
@@ -22278,8 +22259,8 @@ class CRoxieServerDiskCountActivity : public CRoxieServerDiskAggregateBaseActivi
     }
 
 public:
-    CRoxieServerDiskCountActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, IInMemoryIndexManager *_manager)
-        : CRoxieServerDiskAggregateBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, _manager),
+    CRoxieServerDiskCountActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, IInMemoryIndexManager *_manager, ITranslatorSet *_translators)
+        : CRoxieServerDiskAggregateBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, _manager, _translators),
           countHelper((IHThorDiskCountArg &)basehelper)
     {
         choosenLimit = 0;
@@ -22351,15 +22332,14 @@ public:
                 else
                 {
                     assertex(reader != NULL);
-                    while (!deserializeSource.eos())
+                    while (!reader->eos())
                     {
-                        prefetcher->readAhead(deserializeSource);
-                        const byte *nextRec = deserializeSource.queryRow();
+                        const byte *nextRec = reader->nextRow();
                         if (!cursor || !cursor->isFiltered(nextRec))
                         {
                             totalCount += countHelper.numValid(nextRec);
                         }
-                        deserializeSource.finishedRow();
+                        reader->finishedRow();
                         if (totalCount > rowLimit)
                         {
                             totalCount = getSkippedCount();
@@ -22393,8 +22373,8 @@ class CRoxieServerDiskAggregateActivity : public CRoxieServerDiskAggregateBaseAc
 
 public:
     CRoxieServerDiskAggregateActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
-        unsigned _numParts, bool _isLocal, IInMemoryIndexManager *_manager)
-        : CRoxieServerDiskAggregateBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, _manager),
+        unsigned _numParts, bool _isLocal, IInMemoryIndexManager *_manager, ITranslatorSet *_translators)
+        : CRoxieServerDiskAggregateBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, _manager, _translators),
           aggregateHelper((IHThorDiskAggregateArg &)basehelper)
     {
     }
@@ -22444,15 +22424,14 @@ public:
                 else
                 {
                     assertex(reader != NULL);
-                    while (!deserializeSource.eos())
+                    while (!reader->eos())
                     {
-                        prefetcher->readAhead(deserializeSource);
-                        const byte *nextRec = deserializeSource.queryRow();
+                        const byte *nextRec = reader->nextRow();
                         if (!cursor || !cursor->isFiltered(nextRec))
                         {
                             aggregateHelper.processRow(rowBuilder, nextRec);
                         }
-                        deserializeSource.finishedRow();
+                        reader->finishedRow();
                     }
                 }
             }
@@ -22479,8 +22458,8 @@ class CRoxieServerDiskGroupAggregateActivity : public CRoxieServerDiskAggregateB
     bool gathered;
 
 public:
-    CRoxieServerDiskGroupAggregateActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, IInMemoryIndexManager *_manager)
-        : CRoxieServerDiskAggregateBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, _manager),
+    CRoxieServerDiskGroupAggregateActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, IInMemoryIndexManager *_manager, ITranslatorSet *_translators)
+        : CRoxieServerDiskAggregateBaseActivity(_ctx, _factory, _probeManager, _remoteId, _numParts, _isLocal, _manager, _translators),
           aggregateHelper((IHThorDiskGroupAggregateArg &)basehelper),
           resultAggregator(aggregateHelper, aggregateHelper),
           gathered(false)
@@ -22519,7 +22498,7 @@ public:
             {
                 Owned<IInMemoryFileProcessor> processor = isKeyed ?
                     createKeyedGroupAggregateRecordProcessor(cursor, resultAggregator, aggregateHelper) :
-                    createUnkeyedGroupAggregateRecordProcessor(cursor, resultAggregator, aggregateHelper, manager->createReader(0, 0, 1),
+                    createUnkeyedGroupAggregateRecordProcessor(cursor, resultAggregator, aggregateHelper, manager->createReader(0, 0, 1, translators, ctx->queryCodeContext(), activityId),
                                                                ctx->queryCodeContext(), activityId);
                 processor->doQuery(NULL, 0, 0, 0);
             }
@@ -22556,7 +22535,7 @@ public:
     bool sorted;
     bool maySkip;
     bool variableFileName;
-    Owned<IFileIOArray> files;
+    Owned<ITranslatorSet> translators;
     Owned<IInMemoryIndexManager> manager;
     Owned<const IResolvedFile> datafile;
     const char *quotes;
@@ -22579,34 +22558,15 @@ public:
             bool isOpt = (helper->getFlags() & TDRoptional) != 0;
             OwnedRoxieString fileName(helper->getFileName());
             datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
-            Linked<IOutputMetaData> diskMeta(helper->queryDiskRecordSize()->querySerializedDiskMeta());
-            if (diskMeta->isGrouped())
-                diskMeta.setown(new CSuffixedOutputMeta(+1, diskMeta.getClear()));
-            if (datafile)
-            {
-                const IPropertyTree *options =  datafile->queryProperties();
-                if (options)
-                {
-                    bool isGrouped = options->getPropBool("@grouped");
-                    if (isGrouped && !diskMeta->isGrouped())
-                    {
-                        // We are prepared to read contents of a grouped persist ungrouped... But not vice versa
-                        WARNLOG("Published group information for file %s does not match coded information - assuming grouped", fileName.get());
-                        diskMeta.setown(new CSuffixedOutputMeta(+1, diskMeta.getClear()));
-                    }
-                    size32_t dfsSize = options->getPropInt("@recordSize");
-                    if (dfsSize && diskMeta->isFixedSize() && dfsSize != diskMeta->getFixedSize())
-                        throw MakeStringException(ROXIE_LAYOUT_MISMATCH, "Published record size %d for file %s (%s) does not match coded record size %d", dfsSize, fileName.get(), isGrouped ? "grouped" : "ungrouped", diskMeta->getFixedSize());
-                }
-            }
             bool isSimple = (datafile && datafile->getNumParts()==1 && !_queryFactory.queryOptions().disableLocalOptimizations);
             if (isLocal || isSimple)
             {
                 if (datafile)
                 {
                     unsigned channel = isLocal ? queryFactory.queryChannel() : 0;
-                    files.setown(datafile->getIFileIOArray(isOpt, channel));
-                    manager.setown(datafile->getIndexManager(isOpt, channel, files, diskMeta, _graphNode.getPropBool("att[@name=\"preload\"]/@value", false), _graphNode.getPropInt("att[@name=\"_preloadSize\"]/@value", 0)));
+                    unsigned formatCrc = getFormatCrc(helper->getFormatCrc());
+                    translators.setown(datafile->getTranslators(formatCrc, helper->queryProjectedDiskRecordSize(), helper->queryDiskRecordSize(), getEnableFieldTranslation()));
+                    manager.setown(datafile->getIndexManager(isOpt, channel, translators->queryActualLayout(0), _graphNode.getPropBool("att[@name=\"preload\"]/@value", false), _graphNode.getPropInt("att[@name=\"_preloadSize\"]/@value", 0)));
                     const IPropertyTree *options = datafile->queryProperties();
                     if (options)
                     {
@@ -22641,21 +22601,21 @@ public:
         switch (kind)
         {
         case TAKcsvread:
-            return new CRoxieServerCsvReadActivity(_ctx, this, _probeManager, remoteId, numParts, isLocal, sorted, maySkip, manager,
+            return new CRoxieServerCsvReadActivity(_ctx, this, _probeManager, remoteId, numParts, isLocal, sorted, maySkip, manager, translators,
                                                    quotes, separators, terminators, escapes, maxCsvRowSize);
         case TAKxmlread:
         case TAKjsonread:
-            return new CRoxieServerXmlReadActivity(_ctx, this, _probeManager, remoteId, numParts, isLocal, sorted, maySkip, manager);
+            return new CRoxieServerXmlReadActivity(_ctx, this, _probeManager, remoteId, numParts, isLocal, sorted, maySkip, manager, translators);
         case TAKdiskread:
-            return new CRoxieServerDiskReadActivity(_ctx, this, _probeManager, remoteId, numParts, isLocal, sorted, maySkip, manager);
+            return new CRoxieServerDiskReadActivity(_ctx, this, _probeManager, remoteId, numParts, isLocal, sorted, maySkip, manager, translators);
         case TAKdisknormalize:
-            return new CRoxieServerDiskNormalizeActivity(_ctx, this, _probeManager, remoteId, numParts, isLocal, sorted, manager);
+            return new CRoxieServerDiskNormalizeActivity(_ctx, this, _probeManager, remoteId, numParts, isLocal, sorted, manager, translators);
         case TAKdiskcount:
-            return new CRoxieServerDiskCountActivity(_ctx, this, _probeManager, remoteId, numParts, isLocal, manager);
+            return new CRoxieServerDiskCountActivity(_ctx, this, _probeManager, remoteId, numParts, isLocal, manager, translators);
         case TAKdiskaggregate:
-            return new CRoxieServerDiskAggregateActivity(_ctx, this, _probeManager, remoteId, numParts, isLocal, manager);
+            return new CRoxieServerDiskAggregateActivity(_ctx, this, _probeManager, remoteId, numParts, isLocal, manager, translators);
         case TAKdiskgroupaggregate:
-            return new CRoxieServerDiskGroupAggregateActivity(_ctx, this, _probeManager, remoteId, numParts, isLocal, manager);
+            return new CRoxieServerDiskGroupAggregateActivity(_ctx, this, _probeManager, remoteId, numParts, isLocal, manager, translators);
         }
         throwUnexpected();
     }
@@ -22726,7 +22686,7 @@ protected:
         if (varFileInfo)
         {
             translators.setown(new TranslatorArray) ;
-            keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, isOpt, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().queryOptions().enableFieldTranslation));
+            keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, isOpt, isLocal ? factory->queryQueryFactory().queryChannel() : 0, getEnableFieldTranslation()));
         }
         variableInfoPending = false;
     }
@@ -23374,7 +23334,7 @@ class CRoxieServerSimpleIndexReadActivity : public CRoxieServerActivity, impleme
         OwnedRoxieString indexName(indexHelper.getFileName());
         varFileInfo.setown(resolveLFN(indexName, isOpt));
         translators.setown(new TranslatorArray) ;
-        keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, isOpt, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().queryOptions().enableFieldTranslation));
+        keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, isOpt, isLocal ? factory->queryQueryFactory().queryChannel() : 0, getEnableFieldTranslation()));
         initKeySet();
         variableInfoPending = false;
     }
@@ -23738,7 +23698,6 @@ public:
     bool maySkip;
     bool sorted;
     bool variableFileName;
-    IRecordLayoutTranslator::Mode enableFieldTranslation;
     unsigned maxSeekLookahead;
     Owned<const IResolvedFile> indexfile;
 
@@ -23761,7 +23720,6 @@ public:
         }
         else
             assertex(indexLayoutSize==0);
-        enableFieldTranslation = queryFactory.queryOptions().enableFieldTranslation;
         translatorArray.setown(new TranslatorArray);
         variableFileName = allFilesDynamic || _queryFactory.isDynamic() || ((flags & (TIRvarfilename|TIRdynamicfilename)) != 0);
         if (!variableFileName)
@@ -23770,7 +23728,7 @@ public:
             OwnedRoxieString indexName(indexHelper->getFileName());
             indexfile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit(), true));
             if (indexfile)
-                keySet.setown(indexfile->getKeyArray(activityMeta, translatorArray, isOpt, isLocal ? queryFactory.queryChannel() : 0, enableFieldTranslation));
+                keySet.setown(indexfile->getKeyArray(activityMeta, translatorArray, isOpt, isLocal ? queryFactory.queryChannel() : 0, getEnableFieldTranslation()));
         }
         isSimple = isLocal;
         maySkip = (flags & (TIRkeyedlimitskips|TIRlimitskips|TIRlimitcreates|TIRkeyedlimitcreates)) != 0;
@@ -23816,11 +23774,6 @@ public:
     virtual IRoxieServerSideCache *queryServerSideCache() const
     {
         return cache;
-    }
-
-    virtual bool getEnableFieldTranslation() const
-    {
-        return enableFieldTranslation; 
     }
 
     virtual IDefRecordMeta *queryActivityMeta() const
@@ -25394,7 +25347,7 @@ public:
             if (varFileInfo)
             {
                 translators.setown(new TranslatorArray);
-                keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, false, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().queryOptions().enableFieldTranslation)); // MORE - isLocal?
+                keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, false, isLocal ? factory->queryQueryFactory().queryChannel() : 0, getEnableFieldTranslation()));
             }
         }
         puller.start(parentExtractSize, parentExtract, paused, ctx->queryOptions().fullKeyedJoinPreload, false, ctx);
@@ -26245,7 +26198,7 @@ public:
             if (varFileInfo)
             {
                 translators.setown(new TranslatorArray);
-                keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, false, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().queryOptions().enableFieldTranslation));
+                keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, false, isLocal ? factory->queryQueryFactory().queryChannel() : 0, getEnableFieldTranslation()));
             }
         }
         puller.start(parentExtractSize, parentExtract, paused, ctx->queryOptions().keyedJoinPreload, isSimple, ctx);
@@ -26450,11 +26403,11 @@ class CRoxieServerKeyedJoinActivityFactory : public CRoxieServerMultiInputFactor
     RemoteActivityId tailId;
     IOutputMetaData *indexReadMeta;
     Owned<IFilePartMap> map;
+    Owned<ITranslatorSet> translators;
     Owned<IFileIOArray> files;
     unsigned joinFlags;
     bool isHalfKeyed;
     bool isLocal;
-    IRecordLayoutTranslator::Mode enableFieldTranslation;
     bool variableFetchFileName;
     bool variableIndexFileName;
     bool isSimple;
@@ -26473,7 +26426,6 @@ public:
         MemoryBuffer m;
         m.setBuffer(indexLayoutSize, indexLayoutMeta.getdata());
         activityMeta.setown(deserializeRecordMeta(m, true));
-        enableFieldTranslation = queryFactory.queryOptions().enableFieldTranslation;
         translatorArray.setown(new TranslatorArray);
         joinFlags = helper->getJoinFlags();
         variableIndexFileName = allFilesDynamic || _queryFactory.isDynamic() || ((joinFlags & (JFvarindexfilename|JFdynamicindexfilename|JFindexfromactivity)) != 0);
@@ -26484,7 +26436,7 @@ public:
             OwnedRoxieString indexFileName(helper->getIndexFileName());
             indexfile.setown(queryFactory.queryPackage().lookupFileName(indexFileName, isOpt, true, true, queryFactory.queryWorkUnit(), true));
             if (indexfile)
-                keySet.setown(indexfile->getKeyArray(activityMeta, translatorArray, isOpt, isLocal ? queryFactory.queryChannel() : 0, enableFieldTranslation));
+                keySet.setown(indexfile->getKeyArray(activityMeta, translatorArray, isOpt, isLocal ? queryFactory.queryChannel() : 0, getEnableFieldTranslation()));
         }
         if (keySet && keySet->length()==1 && !isSimple)
         {
@@ -26505,16 +26457,15 @@ public:
             if (datafile)
             {
                 if (isLocal)
+                {
+                    unsigned formatCrc = getFormatCrc(helper->getDiskFormatCrc());
+                    translators.setown(datafile->getTranslators(formatCrc, helper->queryProjectedDiskRecordSize(), helper->queryDiskRecordSize(), getEnableFieldTranslation()));
                     files.setown(datafile->getIFileIOArray(isFetchOpt, queryFactory.queryChannel()));
+                }
                 else
                     map.setown(datafile->getFileMap());
             }
         }
-    }
-
-    virtual bool getEnableFieldTranslation() const
-    {
-        return enableFieldTranslation;
     }
 
     virtual IDefRecordMeta *queryActivityMeta() const

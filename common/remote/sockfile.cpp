@@ -3477,13 +3477,14 @@ static IOutputMetaData *getTypeInfoOutputMetaData(IPropertyTree &actNode, const 
 {
     IPropertyTree *inputJson = actNode.queryPropTree(typePropName);
     if (inputJson)
-        return createTypeInfoOutputMetaData(*inputJson);
+        return createTypeInfoOutputMetaData(*inputJson, nullptr);
     else
     {
         StringBuffer binTypePropName(typePropName);
         MemoryBuffer mb;
         actNode.getPropBin(binTypePropName.append("Bin").str(), mb);
-        return createTypeInfoOutputMetaData(mb);
+        bool grouped = actNode.getPropBool(binTypePropName.append("_grouped").str(), false);
+        return createTypeInfoOutputMetaData(mb, grouped, nullptr);
     }
 }
 

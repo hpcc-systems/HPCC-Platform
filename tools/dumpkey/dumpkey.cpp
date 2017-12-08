@@ -188,7 +188,7 @@ int main(int argc, const char **argv)
                 {
                     MemoryBuffer layoutBin;
                     metadata->getPropBin("_rtlType", layoutBin);
-                    diskmeta.setown(createTypeInfoOutputMetaData(layoutBin, &callback));
+                    diskmeta.setown(createTypeInfoOutputMetaData(layoutBin, false, &callback));
                 }
                 if (diskmeta)
                 {

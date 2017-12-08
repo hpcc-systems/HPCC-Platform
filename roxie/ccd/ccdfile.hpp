@@ -84,18 +84,20 @@ interface IKeyArray;
 interface IDefRecordMeta;
 interface IFilePartMap;
 class TranslatorArray;
-interface IInMemoryIndexManager ;
+interface ITranslatorSet;
+interface IInMemoryIndexManager;
 interface IResolvedFileCache;
 
 interface IResolvedFile : extends ISimpleSuperFileEnquiry
 {
     virtual void serializePartial(MemoryBuffer &mb, unsigned channel, bool localInfoOnly) const = 0;
 
+    virtual ITranslatorSet *getTranslators(int formatCrc, IOutputMetaData *projected, IOutputMetaData *expected, IRecordLayoutTranslator::Mode mode) const = 0;
     virtual IFileIOArray *getIFileIOArray(bool isOpt, unsigned channel) const = 0;
     virtual IKeyArray *getKeyArray(IDefRecordMeta *activityMeta, TranslatorArray *translators, bool isOpt, unsigned channel, IRecordLayoutTranslator::Mode allowFieldTranslation) const = 0;
     virtual IFilePartMap *getFileMap() const = 0;
     virtual unsigned getNumParts() const = 0;
-    virtual IInMemoryIndexManager *getIndexManager(bool isOpt, unsigned channel, IFileIOArray *files, IRecordSize *recs, bool preload, int numKeys) const = 0;
+    virtual IInMemoryIndexManager *getIndexManager(bool isOpt, unsigned channel, IOutputMetaData *disklayout, bool preload, int numKeys) const = 0;
     virtual offset_t getFileSize() const = 0;
 
     virtual const CDateTime &queryTimeStamp() const = 0;

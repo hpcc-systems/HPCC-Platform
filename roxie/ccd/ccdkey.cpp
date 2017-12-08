@@ -29,6 +29,7 @@
 #include "ccdstate.hpp"
 #include "rtlrecord.hpp"
 #include "rtlkey.hpp"
+#include "rtldynfield.hpp"
 
 #ifdef _DEBUG
 //#define _LIMIT_FILECOUNT 5    // Useful for debugging queries when not enough memory to load data...
@@ -38,7 +39,7 @@
 #define BASED_POINTERS
 #endif
 
-class PtrToOffsetMapper 
+class PtrToOffsetMapper
 {
     struct FragmentInfo
     {
@@ -151,13 +152,13 @@ public:
         return makeLocalFposOffset(frag.partNo, ptr - frag.base);
     }
 
-    offset_t makeFilePositionLocal(offset_t pos)
+    offset_t makeFilePositionLocal(offset_t pos) const
     {
         FragmentInfo &frag = findBase(pos);
         return makeLocalFposOffset(frag.partNo, pos - frag.baseOffset);
     }
 
-    void splitPos(offset_t &offset, offset_t &size, unsigned partNo, unsigned numParts)
+    void splitPos(offset_t &offset, offset_t &size, unsigned partNo, unsigned numParts) const
     {
         assert(numParts > 0);
         assert(partNo < numParts);
@@ -549,7 +550,50 @@ typedef IArrayOf<InMemoryIndex> InMemoryIndexSet;
  *   giving entire file, and uses getRecordSize(). Will avoid a one or more virtual peek() calls per row.
  *====================================================================================================*/
 
-class InMemoryDirectReader : implements IDirectReader, implements IThorDiskCallback, implements ISimpleReadStream, public CInterface
+class CDirectReaderBase : public CInterface, implements IDirectReader, implements IThorDiskCallback, implements ISimpleReadStream
+{
+protected:
+    MemoryBuffer buf;  // Used if translating to hold on to current row;
+    CThorContiguousRowBuffer deserializeSource;
+    Owned<ISourceRowPrefetcher> prefetcher;
+    Linked<const ITranslatorSet> translators;
+    const IDynamicTransform *translator = nullptr;
+
+public:
+    CDirectReaderBase(const ITranslatorSet *_translators) : translators(_translators) {}
+    virtual const byte *nextRow() override
+    {
+        if (prefetcher)
+            prefetcher->readAhead(deserializeSource);
+        if (translator)
+        {
+            MemoryBufferBuilder aBuilder(buf, 0);
+            translator->translate(aBuilder, deserializeSource.queryRow());
+            return reinterpret_cast<const byte *>(buf.toByteArray());
+        }
+        else
+            return deserializeSource.queryRow();
+    }
+    virtual bool eog() const override
+    {
+        size32_t sizeRead = deserializeSource.queryRowSize();
+        return (bool) deserializeSource.queryRow()[sizeRead-1];
+    }
+
+    virtual void finishedRow() override
+    {
+        buf.setLength(0);
+        deserializeSource.finishedRow();
+    }
+
+    virtual bool isTranslating() const override
+    {
+        // Note that this returns true if I will translate for ANY file part, not just whether I am translating for current file part
+        return translators && translators->isTranslating();
+    }
+};
+
+class InMemoryDirectReader : public CDirectReaderBase
 {
     // MORE - might be able to use some of the jlib IStream implementations. But I don't want any indirections...
 public:
@@ -557,11 +601,17 @@ public:
     memsize_t pos;
     const char *start;
     offset_t memsize;
-    PtrToOffsetMapper &baseMap;
+    const PtrToOffsetMapper &baseMap;
 
-    InMemoryDirectReader(offset_t _readPos, const char *_start, memsize_t _memsize, PtrToOffsetMapper &_baseMap, unsigned _partNo, unsigned _numParts)
-        : baseMap(_baseMap)
+    InMemoryDirectReader(offset_t _readPos, const char *_start, memsize_t _memsize,
+                         const PtrToOffsetMapper &_baseMap, unsigned _partNo, unsigned _numParts,
+                         const ITranslatorSet *_translators,
+                         ICodeContext *ctx, unsigned id)
+        : CDirectReaderBase(_translators), baseMap(_baseMap)
     {
+        translator = translators->queryTranslator(0);  // Any one would do
+        prefetcher.setown(translators->getPrefetcher(0, false, ctx, id));
+        deserializeSource.setStream(this);
         if (_numParts == 1)
         {
             memsize = _memsize;
@@ -579,7 +629,7 @@ public:
 
     // Interface ISerialStream
 
-    virtual const void * peek(size32_t wanted,size32_t &got)
+    virtual const void * peek(size32_t wanted,size32_t &got) override
     {
         offset_t remaining = memsize - pos;
         if (remaining)
@@ -596,7 +646,7 @@ public:
             return NULL;
         }
     }
-    virtual void get(size32_t len, void * ptr)
+    virtual void get(size32_t len, void * ptr) override
     {
         offset_t remaining = memsize - pos;
         if (len > remaining)
@@ -604,20 +654,20 @@ public:
         memcpy(ptr, start+pos, len);
         pos += len;
     }
-    virtual bool eos()
+    virtual bool eos() override
     {
         return pos == memsize;
     }
-    virtual void skip(size32_t sz)
+    virtual void skip(size32_t sz) override
     {
         assertex(pos + sz <= memsize);
         pos += sz;
     }
-    virtual offset_t tell()
+    virtual offset_t tell() override
     {
         return pos;
     }
-    virtual void reset(offset_t _offset, offset_t _flen)
+    virtual void reset(offset_t _offset, offset_t _flen) override
     {
         assertex(_offset <= memsize);
         pos = (memsize_t) _offset;
@@ -625,7 +675,7 @@ public:
 
     // Interface ISimpleReadStream
 
-    virtual size32_t read(size32_t max_len, void * data)
+    virtual size32_t read(size32_t max_len, void * data) override
     {
         size32_t got;
         const void *ptr = peek(max_len, got);
@@ -638,47 +688,56 @@ public:
 
     // Interface IDirectReader
 
-    virtual ISimpleReadStream *querySimpleStream()
+    virtual ISimpleReadStream *querySimpleStream() override
     {
         return this;
     }
 
-    virtual IThorDiskCallback *queryThorDiskCallback()
+    virtual IThorDiskCallback *queryThorDiskCallback() override
     {
         return this;
     }
 
-    virtual unsigned queryFilePart() const
+    virtual unsigned queryFilePart() const override
     {
         throwUnexpected(); // only supported for disk files
     }
 
     // Interface IThorDiskCallback 
 
-    virtual unsigned __int64 getFilePosition(const void *_ptr)
+    virtual unsigned __int64 getFilePosition(const void *_ptr) override
     {
+        if (translator)
+        {
+            assertex(_ptr==buf.toByteArray());
+            _ptr = deserializeSource.queryRow();
+        }
         return baseMap.ptrToFilePosition(_ptr);
     }
 
-    virtual unsigned __int64 getLocalFilePosition(const void *_ptr)
+    virtual unsigned __int64 getLocalFilePosition(const void *_ptr) override
     {
+        if (translator)
+        {
+            assertex(_ptr==buf.toByteArray());
+            _ptr = deserializeSource.queryRow();
+        }
         return baseMap.ptrToLocalFilePosition(_ptr);
     }
 
-    virtual unsigned __int64 makeFilePositionLocal(offset_t pos)
+    virtual unsigned __int64 makeFilePositionLocal(offset_t pos) override
     {
         return baseMap.makeFilePositionLocal(pos);
     }
 
-    virtual const char * queryLogicalFilename(const void * row) 
+    virtual const char * queryLogicalFilename(const void * row) override
     { 
         UNIMPLEMENTED;
     }
 };
 
-class BufferedDirectReader : implements IDirectReader, implements IThorDiskCallback, implements ISimpleReadStream, public CInterface
+class BufferedDirectReader : public CDirectReaderBase
 {
-    // MORE - could combine some code with in memory version.
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -687,10 +746,14 @@ public:
     offset_t completedStreamsSize;
     Owned<IFileIO> thisPart;
     Owned<ISerialStream> curStream;
+    ICodeContext *ctx;
+    unsigned activityId;
     unsigned thisPartIdx;
 
-    BufferedDirectReader(offset_t _startPos, IFileIOArray *_f, unsigned _partNo, unsigned _numParts) : f(_f)
+    BufferedDirectReader(offset_t _startPos, IFileIOArray *_f, unsigned _partNo, unsigned _numParts, const ITranslatorSet *_translators, ICodeContext *_ctx, unsigned _id)
+    : CDirectReaderBase(_translators), f(_f), ctx(_ctx), activityId(_id)
     {
+        deserializeSource.setStream(this);
         thisFileStartPos = 0;
         completedStreamsSize = 0;
 
@@ -714,6 +777,9 @@ public:
         if (thisPart)
         {       
             curStream.setown(createFileSerialStream(thisPart, _startPos));
+            unsigned subFileIdx = f->getSubFile(thisPartIdx);
+            prefetcher.setown(translators->getPrefetcher(subFileIdx, true, ctx, activityId));
+            translator = translators->queryTranslator(subFileIdx);
         }
         else
         {
@@ -728,6 +794,7 @@ public:
         unsigned maxParts = f->length();
         thisPart.clear();
         curStream.clear();
+        prefetcher.clear();
         while (!thisPart && ++thisPartIdx < maxParts)
         {
             thisPart.setown(f->getFilePart(thisPartIdx, thisFileStartPos ));
@@ -735,10 +802,13 @@ public:
         if (thisPart)
         {
             curStream.setown(createFileSerialStream(thisPart));
+            unsigned subFileIdx = f->getSubFile(thisPartIdx);
+            prefetcher.setown(translators->getPrefetcher(subFileIdx, true, ctx, activityId));
+            translator = translators->queryTranslator(subFileIdx);
         }
     }
 
-    virtual const void * peek(size32_t wanted,size32_t &got)
+    virtual const void * peek(size32_t wanted,size32_t &got) override
     {
         if (curStream)
         {
@@ -760,14 +830,14 @@ public:
         }
     }
 
-    virtual void get(size32_t len, void * ptr)
+    virtual void get(size32_t len, void * ptr) override
     {
         if (curStream)
             curStream->get(len, ptr);
         else
             throw MakeStringException(-1, "BufferedDirectReader::get: requested %u bytes at eof", len);
     }
-    virtual bool eos() 
+    virtual bool eos() override
     {
         for (;;)
         {
@@ -779,14 +849,14 @@ public:
                 return false;
         }
     }
-    virtual void skip(size32_t len)
+    virtual void skip(size32_t len) override
     {
         if (curStream)
             curStream->skip(len);
         else
             throw MakeStringException(-1, "BufferedDirectReader::skip: tried to skip %u bytes at eof", len);
     }
-    virtual offset_t tell()
+    virtual offset_t tell() override
     {
         // Note that tell() means the position with this stream, not the file position within the overall logical file.
         if (curStream)
@@ -794,14 +864,14 @@ public:
         else
             return completedStreamsSize;
     }
-    virtual void reset(offset_t _offset,offset_t _flen)
+    virtual void reset(offset_t _offset,offset_t _flen) override
     {
         throwUnexpected(); // Not designed to be reset
     }
 
     // Interface ISimpleReadStream
 
-    virtual size32_t read(size32_t max_len, void * data)
+    virtual size32_t read(size32_t max_len, void * data) override
     {
         size32_t got;
         const void *ptr = peek(max_len, got);
@@ -816,50 +886,59 @@ public:
 
     // Interface IDirectReader
 
-    virtual ISimpleReadStream *querySimpleStream()
+    virtual ISimpleReadStream *querySimpleStream() override
     {
         return this;
     }
 
-    virtual IThorDiskCallback *queryThorDiskCallback()
+    virtual IThorDiskCallback *queryThorDiskCallback() override
     {
         return this;
     }
 
-    virtual unsigned queryFilePart() const
+    virtual unsigned queryFilePart() const override
     {
         return thisPartIdx;
     }
 
     // Interface IThorDiskCallback
 
-    virtual unsigned __int64 getFilePosition(const void *_ptr)
+    virtual unsigned __int64 getFilePosition(const void *_ptr) override
     {
         // MORE - could do with being faster than this!
         assertex(curStream != NULL);
-        size32_t dummy;
-        return thisFileStartPos + curStream->tell() + ((const char *)_ptr - (const char *)curStream->peek(1, dummy));
+        unsigned __int64 pos = curStream->tell();
+        if (_ptr != buf.toByteArray())
+        {
+            size32_t dummy;
+            pos +=  (const char *)_ptr - (const char *)curStream->peek(1, dummy);
+        }
+        return pos + thisFileStartPos;
     }
 
-    virtual unsigned __int64 getLocalFilePosition(const void *_ptr)
+    virtual unsigned __int64 getLocalFilePosition(const void *_ptr) override
     {
         // MORE - could do with being faster than this!
         assertex(curStream != NULL);
-        size32_t dummy;
-        return makeLocalFposOffset(thisPartIdx-1, curStream->tell() + (const char *)_ptr - (const char *)curStream->peek(1, dummy));
+        unsigned __int64 pos = curStream->tell();
+        if (_ptr != buf.toByteArray())
+        {
+            size32_t dummy;
+            pos +=  (const char *)_ptr - (const char *)curStream->peek(1, dummy);
+        }
+        return makeLocalFposOffset(thisPartIdx-1, pos);
     }
 
-    virtual unsigned __int64 makeFilePositionLocal(offset_t pos)
+    virtual unsigned __int64 makeFilePositionLocal(offset_t pos) override
     {
         assertex(pos >= thisFileStartPos);
         return makeLocalFposOffset(thisPartIdx-1, pos - thisFileStartPos);
     }
 
-    virtual const char * queryLogicalFilename(const void * row) 
+    virtual const char * queryLogicalFilename(const void * row) override
     { 
         return f->queryLogicalFilename(thisPartIdx);
     }
-
 };
 
 class InMemoryIndexManager : implements IInMemoryIndexManager, public CInterface
@@ -872,7 +951,7 @@ class InMemoryIndexManager : implements IInMemoryIndexManager, public CInterface
     unsigned *hits;
     unsigned trackLimit;
     unsigned numTracked;
-    CriticalSection trackedCrit;
+    mutable CriticalSection trackedCrit;
     CriticalSection activeCrit;
     CriticalSection pendingCrit;
     CriticalSection loadCrit;
@@ -970,7 +1049,7 @@ class InMemoryIndexManager : implements IInMemoryIndexManager, public CInterface
         }
     }
 
-    void getTrackedInfo(const char *id, StringBuffer &xml)
+    virtual void getTrackedInfo(const char *id, StringBuffer &xml) const override
     {
         CriticalBlock cb(trackedCrit);
         xml.appendf("<File id='%s' numKeys='%d' fileName='%s'>", id, numKeys, fileName.get());
@@ -1105,7 +1184,7 @@ class InMemoryIndexManager : implements IInMemoryIndexManager, public CInterface
 
 public:
     IMPLEMENT_IINTERFACE;
-    virtual bool IsShared() const { return CInterface::IsShared(); }
+    virtual bool IsShared() const override { return CInterface::IsShared(); }
 
     InMemoryIndexManager(bool _isOpt, const char *_fileName) : fileName(_fileName)
     {
@@ -1143,7 +1222,7 @@ public:
     }
 
     void deserializeCursorPos(MemoryBuffer &mb, InMemoryIndexCursor *cursor);
-    virtual IInMemoryIndexCursor *createCursor(const RtlRecord &recInfo);
+    virtual IInMemoryIndexCursor *createCursor(const RtlRecord &recInfo) override;
     bool selectKey(InMemoryIndexCursor *cursor);
 
     inline const char *queryFileName() const
@@ -1174,12 +1253,12 @@ public:
         return false;
     }
 
-    virtual IDirectReader *createReader(offset_t readPos, unsigned partNo, unsigned numParts)
+    virtual IDirectReader *createReader(offset_t readPos, unsigned partNo, unsigned numParts, const ITranslatorSet *translators, ICodeContext *ctx, unsigned id) const override
     {
         if (loadedIntoMemory)
-            return new InMemoryDirectReader(readPos, fileStart, fileEnd-fileStart, baseMap, partNo, numParts);
+            return new InMemoryDirectReader(readPos, fileStart, fileEnd-fileStart, baseMap, partNo, numParts, translators, ctx, id);
         else
-            return new BufferedDirectReader(readPos, files, partNo, numParts);
+            return new BufferedDirectReader(readPos, files, partNo, numParts, translators, ctx, id);
     }
 
     StringBuffer &queryId(StringBuffer &ret)
@@ -1189,7 +1268,7 @@ public:
         return ret;
     }
 
-    virtual void load(IFileIOArray *_files, IRecordSize *recordSize, bool preload, int _numKeys)
+    virtual void load(IFileIOArray *_files, IOutputMetaData *preloadLayout, bool preload, int _numKeys) override
     {
         // MORE - if numKeys is greater than previously then we may need to take action here....
         CriticalBlock b(loadCrit);
@@ -1222,6 +1301,12 @@ public:
         }
         if (preload && !loadedIntoMemory) // loaded but NOT originally seen as preload, lets try to generate keys...
         {
+            if (!files->allFormatsMatch())
+            {
+                IException *E = makeStringException(ROXIE_MEMORY_ERROR, "Cannot load superfile with mismatching formats into memory");
+                EXCLOG(MCoperatorError, E);
+                throw E;
+            }
             if ((size_t)totalSize != totalSize)
             {
                 IException *E = makeStringException(ROXIE_MEMORY_ERROR, "Preload file is larger than maximum object size");
@@ -1258,7 +1343,7 @@ public:
                 }
             }
             if (_numKeys > 0)
-                processInMemoryKeys(recordSize, _numKeys);
+                processInMemoryKeys(preloadLayout, _numKeys);
             loadedIntoMemory = true;
         }
         else if (_numKeys > numKeys)  // already in memory, but more in memory keys are requested, so let's try to create them
@@ -1381,7 +1466,7 @@ public:
             numKeys = n;
     }
 
-    virtual void setKeyInfo(IPropertyTree &indexInfo)
+    virtual void setKeyInfo(IPropertyTree &indexInfo) override
     {
         StringBuffer x;
         toXML(&indexInfo, x);
@@ -1518,7 +1603,7 @@ class InMemoryIndexCursor : implements IInMemoryIndexCursor, public CInterface
     unsigned keySize;
     bool canMatch;
     bool postFiltering;
-    PtrToOffsetMapper &baseMap;
+    const PtrToOffsetMapper &baseMap;
     const RtlRecord &recInfo;
     RtlDynRow rowinfo;
     unsigned numSegFieldsRequired = 0;
