@@ -308,7 +308,7 @@ interface ISerialStream: extends IInterface
     virtual void get(size32_t len, void * ptr) = 0;                 // exception if no data available
     virtual bool eos() = 0;                                         // no more data
     virtual void skip(size32_t sz) = 0;
-    virtual offset_t tell() = 0;
+    virtual offset_t tell() const = 0;
     virtual void reset(offset_t _offset,offset_t _flen=(offset_t)-1) = 0;       // input stream has changed - restart reading
 };
 

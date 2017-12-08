@@ -177,6 +177,62 @@ double RtlTypeInfoBase::getReal(const void * ptr) const
     return rtlStrToReal(len, value.getstr());
 }
 
+bool RtlTypeInfoBase::equivalent(const RtlTypeInfo *to) const
+{
+    if (to==this)
+        return true;
+    if (!to)
+        return false;
+    if (to->length != length || to->fieldType != fieldType)
+        return false;
+    if (queryLocale())
+    {
+        // do we permit a locale difference?
+    }
+    auto child = queryChildType();
+    if (child && !child->equivalent(to->queryChildType()))
+        return false;
+    auto fields = queryFields();
+    if (fields)
+    {
+        auto tofields = to->queryFields();
+        if (!tofields)
+            return false; // Should never happen
+        for (unsigned idx = 0; fields[idx]; idx++)
+        {
+            if (!fields[idx]->equivalent(tofields[idx]))
+                return false;
+        }
+    }
+    return true;
+}
+
+static bool strequivalent(const char *name1, const char *name2)
+{
+    if (name1)
+        return name2 && streq(name1, name2);
+    else
+        return name2==nullptr;
+}
+
+bool RtlFieldInfo::equivalent(const RtlFieldInfo *to) const
+{
+    if (to==this)
+        return true;
+    if (!to)
+        return false;
+    if (!strequivalent(name, to->name))
+        return false;
+    if (!strequivalent(xpath, to->xpath))
+        return false;
+    if (!type->equivalent(to->type))
+        return false;
+    // Initializer differences can be ignored
+    if (flags != to->flags)
+        return false;
+    return true;
+}
+
 const char * RtlTypeInfoBase::queryLocale() const 
 {
     return NULL; 

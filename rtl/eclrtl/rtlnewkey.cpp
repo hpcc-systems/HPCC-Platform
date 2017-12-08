@@ -1046,6 +1046,8 @@ public:
     virtual int compareHighest(const RtlRow & left, unsigned range) const override;
     virtual int findForwardMatchRange(const RtlRow & row, unsigned & matchRange) const override;
 
+    virtual unsigned queryScore() const override;
+    virtual IFieldFilter *remap(unsigned newField) const override { return new SetFieldFilter(newField, values); }
 protected:
     Linked<IValueSet> values;
 };
@@ -1084,6 +1086,15 @@ int SetFieldFilter::compareHighest(const RtlRow & left, unsigned range) const
 int SetFieldFilter::findForwardMatchRange(const RtlRow & row, unsigned & matchRange) const
 {
     return values->findForwardMatchRange(row.queryField(field), matchRange);
+}
+
+unsigned SetFieldFilter::queryScore() const
+{
+    // MORE - the score should probably depend on the number and nature of ranges too.
+    unsigned score = type.getMinSize();
+    if (!score)
+        score = 5;   // Arbitrary guess for average field length in a variable size field
+    return score;
 }
 
 IFieldFilter * createFieldFilter(unsigned fieldId, IValueSet * values)
@@ -1155,6 +1166,11 @@ public:
         matchRange = 0;
         return true;
     }
+    virtual unsigned queryScore() const override
+    {
+        return 0;
+    }
+    virtual IFieldFilter *remap(unsigned newField) const override { return new WildFieldFilter(newField, type); }
 };
 
 IFieldFilter * createWildFieldFilter(unsigned fieldId, const RtlTypeInfo & type)
@@ -1172,14 +1188,18 @@ static int compareFieldFilters(IInterface * const * left, IInterface * const * r
     return leftFilter->queryFieldIndex() - rightFilter->queryFieldIndex();
 }
 
-void RowFilter::addFilter(IFieldFilter & filter)
+void RowFilter::addFilter(const IFieldFilter & filter)
 {
     //assertex(filter.queryField() == filters.ordinality()); //MORE - fill with wild filters and replace existing wild
     filters.append(filter);
+    unsigned fieldNum = filter.queryFieldIndex();
+    if (fieldNum >= numFieldsRequired)
+        numFieldsRequired = fieldNum+1;
 }
 
 bool RowFilter::matches(const RtlRow & row) const
 {
+    row.lazyCalcOffsets(numFieldsRequired);
     ForEachItemIn(i, filters)
     {
         if (!filters.item(i).matches(row))
@@ -1188,24 +1208,13 @@ bool RowFilter::matches(const RtlRow & row) const
     return true;
 }
 
-int RowFilter::compareRows(const RtlRow & left, const RtlRow & right) const
-{
-    ForEachItemIn(i, filters)
-    {
-        int rc = filters.item(i).compareRow(left, right);
-        if (rc != 0)
-            return rc;
-    }
-    return 0;
-}
-
-void RowFilter::extractKeyFilter(const RtlRecord & record, IArrayOf<IFieldFilter> & keyFilters) const
+void RowFilter::extractKeyFilter(const RtlRecord & record, IConstArrayOf<IFieldFilter> & keyFilters) const
 {
     if (!filters)
         return;
 
     // for an index must be in field order, and all values present
-    IArrayOf<IFieldFilter> temp;
+    IConstArrayOf<IFieldFilter> temp;
     ForEachItemIn(i, filters)
         temp.append(OLINK(filters.item(i)));
     temp.sort(compareFieldFilters);
@@ -1214,7 +1223,7 @@ void RowFilter::extractKeyFilter(const RtlRecord & record, IArrayOf<IFieldFilter
     unsigned curIdx=0;
     for (unsigned field = 0; field <= maxField; field++)
     {
-        IFieldFilter & cur = temp.item(curIdx);
+        const IFieldFilter & cur = temp.item(curIdx);
         if (field == cur.queryFieldIndex())
         {
             keyFilters.append(OLINK(cur));
@@ -1225,11 +1234,54 @@ void RowFilter::extractKeyFilter(const RtlRecord & record, IArrayOf<IFieldFilter
     }
 }
 
+const IFieldFilter *RowFilter::findFilter(unsigned fieldNum) const
+{
+    ForEachItemIn(i, filters)
+    {
+        const IFieldFilter &field = filters.item(i);
+        if (field.queryFieldIndex() == fieldNum)
+            return &field;
+    }
+    return nullptr;
+}
+
+const IFieldFilter *RowFilter::extractFilter(unsigned fieldNum)
+{
+    ForEachItemIn(i, filters)
+    {
+        const IFieldFilter &field = filters.item(i);
+        if (field.queryFieldIndex() == fieldNum)
+        {
+            filters.remove(i, true);
+            return &field;
+        }
+    }
+    return nullptr;
+}
+
+void RowFilter::remove(unsigned idx)
+{
+    filters.remove(idx);
+}
+
+void RowFilter::recalcFieldsRequired()
+{
+    numFieldsRequired = 0;
+    ForEachItemIn(i, filters)
+    {
+        const IFieldFilter &field = filters.item(i);
+        if (field.queryFieldIndex() >= numFieldsRequired)
+            numFieldsRequired = field.queryFieldIndex()+1;
+    }
+}
+
+void RowFilter::remapField(unsigned filterIdx, unsigned newFieldNum)
+{
+    filters.replace(*filters.item(filterIdx).remap(newFieldNum), filterIdx);
+}
+
+
 //---------------------------------------------------------------------------------------------------------------------
-
-
-
-
 
 bool RowCursor::setRowForward(const byte * row)
 {
@@ -1328,53 +1380,6 @@ bool RowCursor::findNextRange(unsigned field)
 
 
 //---------------------------------------------------------------------------------------------
-
-class KeySearcher
-{
-public:
-    KeySearcher(const RtlRecord & _info, RowFilter & _filter, ISourceRowCursor * _rows) : cursor(_info, _filter), rows(_rows)
-    {
-    }
-
-    bool first()
-    {
-        rows->reset();
-        cursor.selectFirst();
-        return resolveValidRow();
-    }
-
-    bool next()
-    {
-        const byte * next = rows->next(); // MORE: Return a RtlRow?
-        if (!next)
-            return false;
-        if (cursor.setRowForward(next))
-            return true;
-        return resolveValidRow();
-    }
-
-    bool resolveValidRow()
-    {
-        for (;;)
-        {
-            if (cursor.noMoreMatches())
-                return false;
-            const byte * match;
-            match = rows->findNext(cursor); // more - return the row pointer to avoid recalculation
-            if (!match)
-                return false;
-            if (cursor.setRowForward(match))
-                return true;
-        }
-    }
-
-    const RtlRow & queryRow() const { return cursor.queryRow(); }
-
-protected:
-    ISourceRowCursor * rows = nullptr;
-    RowCursor cursor;
-};
-
 
 class InMemoryRows
 {
@@ -2312,12 +2317,10 @@ protected:
         KeySearcher searcher(source.queryRecord(), filter, &sourceCursor);
 
         StringBuffer matches;
-        if (searcher.first())
+        while (searcher.next())
         {
-            do
-            {
-                matches.append(searcher.queryRow().getInt(0)).append("|");
-            } while (searcher.next());
+            searcher.queryRow().lazyCalcOffsets(1);  // In unkeyed case we may not have calculated field 0 offset (though it is always going to be 0).
+            matches.append(searcher.queryRow().getInt(0)).append("|");
         }
 
         if (!streq(matches, expected))
@@ -2435,11 +2438,9 @@ protected:
             InMemoryRowCursor sourceCursor(source); // could be created by source.createCursor()
             KeySearcher searcher(source.queryRecord(), filter, &sourceCursor);
 
-            bool hasSearch = searcher.first();
-            while (hasSearch)
+            while (searcher.next())
             {
                 countKeyed++;
-                hasSearch = searcher.next();
             }
         }
         unsigned __int64 keyedMs = timeKeyed.elapsedNs();
@@ -2474,7 +2475,7 @@ protected:
         RowScanner scanner(source.queryRecord(), filter, rows);
 
         unsigned count = 0;
-        bool hasSearch = searcher.first();
+        bool hasSearch = searcher.next();
         bool hasScan = scanner.first();
         while (hasSearch && hasScan)
         {

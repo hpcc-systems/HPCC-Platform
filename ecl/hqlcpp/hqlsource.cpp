@@ -3744,7 +3744,7 @@ const char * KeySelectorInfo::getFFOptions()
 //---------------------------------------------------------------------------------------------------------------------
 
 MonitorExtractor::MonitorExtractor(IHqlExpression * _tableExpr, HqlCppTranslator & _translator, int _numKeyableFields, bool _isDiskRead)
-    : translator(_translator), createValueSets(translator.queryOptions().createValueSets)
+    : translator(_translator), createValueSets(_isDiskRead || translator.queryOptions().createValueSets )
 { 
     tableExpr = _tableExpr;
 

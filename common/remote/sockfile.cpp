@@ -6303,9 +6303,9 @@ static StringBuffer basePath;
 static Owned<CSimpleInterface> serverThread;
 
 
-class RemoteFileTest : public CppUnit::TestFixture
+class RemoteFileSlowTest : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE(RemoteFileTest);
+    CPPUNIT_TEST_SUITE(RemoteFileSlowTest);
         CPPUNIT_TEST(testRemoteFilename);
         CPPUNIT_TEST(testStartServer);
         CPPUNIT_TEST(testBasicFunctionality);
@@ -6632,8 +6632,8 @@ protected:
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION( RemoteFileTest );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RemoteFileTest, "RemoteFileTests" );
+CPPUNIT_TEST_SUITE_REGISTRATION( RemoteFileSlowTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RemoteFileSlowTest, "RemoteFileSlowTests" );
 
 
 #endif // _USE_CPPUNIT

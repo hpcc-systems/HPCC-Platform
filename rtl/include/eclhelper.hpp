@@ -428,6 +428,7 @@ struct RtlTypeInfo : public RtlITypeInfo
     virtual bool canMemCmp() const = 0;
 
     virtual void doDelete() const = 0;  // Used in place of virtual destructor to allow constexpr constructors.
+    virtual bool equivalent(const RtlTypeInfo *other) const = 0;
 public:
     unsigned fieldType;
     unsigned length;                // for bitfield (int-size, # bits, bitoffset) << 16
@@ -475,6 +476,7 @@ struct RtlFieldInfo
     {
         return type->toXML(self, selfrow, this, target);
     }
+    bool equivalent(const RtlFieldInfo *to) const;
 };
 
 enum
@@ -2247,8 +2249,6 @@ interface ISteppingMeta
 //These were commoned up, but really they are completely different - so keep them separate
 interface IThorDiskCallback : extends IFilePositionProvider
 {
-    virtual unsigned __int64 getFilePosition(const void * row) = 0;
-    virtual unsigned __int64 getLocalFilePosition(const void * row) = 0;
     virtual const char * queryLogicalFilename(const void * row) = 0;
 };
 

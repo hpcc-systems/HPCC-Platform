@@ -575,7 +575,7 @@ size32_t RtlRecord::calculateOffset(const void *_row, unsigned field) const
         unsigned numOffsets = getNumVarFields() + 1;
         size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
         RtlRow sourceRow(*this, nullptr, numOffsets, variableOffsets);
-        sourceRow.setRow(_row, field);
+        sourceRow.setRow(_row, field+1);
         return sourceRow.getOffset(field);
     }
     else
@@ -662,14 +662,16 @@ void RtlRow::getUtf8(size32_t & resultLen, char * & result, unsigned field) cons
     }
 }
 
-void RtlRow::setRow(const void * _row)
+void RtlRow::setRow(const void * _row, unsigned _numFieldsUsed)
 {
     row = (const byte *)_row;
     if (_row)
     {
-        info.calcRowOffsets(variableOffsets, _row);
+        numFieldsUsed = _numFieldsUsed;
+        if (numFieldsUsed)
+            info.calcRowOffsets(variableOffsets, _row, _numFieldsUsed);
 #if defined(_DEBUG) && defined(TRACE_ROWOFFSETS)
-        for (unsigned i = 0; i < info.getNumFields(); i++)
+        for (unsigned i = 0; i < info.getNumFields() && i < numFieldsUsed; i++)
         {
             printf("Field %d (%s) offset %d", i, info.queryName(i), (int) getOffset(i));
             if (getSize(i))
@@ -683,13 +685,22 @@ void RtlRow::setRow(const void * _row)
         }
 #endif
     }
+    else
+        numFieldsUsed = 0;
 }
 
-void RtlRow::setRow(const void * _row, unsigned _numFields)
+void RtlRow::lazyCalcOffsets(unsigned _numFieldsUsed) const
 {
-    row = (const byte *)_row;
-    if (_row)
-        info.calcRowOffsets(variableOffsets, _row, _numFields);
+    // This is a little iffy as it's not really const - but it clears up a lot of other code if you
+    // treat it as if it is. Logically it kind-of is, in that we are doing lazy-evaluation of the
+    // offsets but logically we are not creating information here.
+    // Another alternative would be to do the lazy eval in getOffset/getRecordSize ?
+    assert(row);
+    if (_numFieldsUsed > numFieldsUsed)
+    {
+        info.calcRowOffsets(variableOffsets, row, _numFieldsUsed); // MORE - could be optimized t oonly calc ones not previously calculated
+        numFieldsUsed = _numFieldsUsed;
+    }
 }
 
 RtlDynRow::RtlDynRow(const RtlRecord & _info, const void * optRow) : RtlRow(_info, optRow, _info.getNumVarFields()+1, new size_t[_info.getNumVarFields()+1])

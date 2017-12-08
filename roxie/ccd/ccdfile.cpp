@@ -1689,19 +1689,29 @@ public:
 class CTranslatorSet : implements CInterfaceOf<ITranslatorSet>
 {
     IConstPointerArrayOf<IDynamicTransform> transformers;
+    IConstPointerArrayOf<IKeyTranslator> keyTranslators;
     IPointerArrayOf<IOutputMetaData> actualLayouts;
+    const RtlRecord &targetLayout;
     int targetFormatCrc = 0;
     bool anyTranslators = false;
 public:
-    CTranslatorSet(int _targetFormatCrc) : targetFormatCrc(_targetFormatCrc) {}
+    CTranslatorSet(const RtlRecord &_targetLayout, int _targetFormatCrc)
+    : targetLayout(_targetLayout), targetFormatCrc(_targetFormatCrc)
+    {}
 
-    void addTranslator(const IDynamicTransform *translator, IOutputMetaData *actualLayout)
+    void addTranslator(const IDynamicTransform *translator, const IKeyTranslator *keyTranslator, IOutputMetaData *actualLayout)
     {
         assertex(actualLayout);
         if (translator)
             anyTranslators = true;
         transformers.append(translator);
+        keyTranslators.append(keyTranslator);
         actualLayouts.append(actualLayout);
+    }
+
+    virtual const RtlRecord &queryTargetFormat() const override
+    {
+        return targetLayout;
     }
 
     virtual int queryTargetFormatCrc() const override
@@ -1720,7 +1730,7 @@ public:
         return nullptr;
     }
 
-    virtual ISourceRowPrefetcher *getPrefetcher(unsigned subFile, bool addGroupFlag, ICodeContext *ctx, unsigned actId) const override
+    virtual ISourceRowPrefetcher *getPrefetcher(unsigned subFile, bool addGroupFlag) const override
     {
         IOutputMetaData *actualLayout = actualLayouts.item(subFile);
         assertex(actualLayout);
@@ -2093,8 +2103,9 @@ public:
     {
         // NOTE - projected and expected and anything fetched from them such as type info may reside in dynamically loaded (and unloaded)
         // query DLLs - this means it is not safe to include them in any sort of cache that might outlive the current query.
-        Owned<CTranslatorSet> result = new CTranslatorSet(formatCrc);
-        Owned<const IDynamicTransform> translator;
+        Owned<CTranslatorSet> result = new CTranslatorSet(expected->queryRecordAccessor(true), formatCrc);
+        Owned<const IDynamicTransform> translator;    // Translates rows from actual to projected
+        Owned<const IKeyTranslator> keyedTranslator;  // translate filter conditions from expected to actual
         int prevFormatCrc = 0;
         assertex(projected != nullptr);
         ForEachItemIn(idx, subFiles)
@@ -2108,12 +2119,14 @@ public:
                 {
                     actual = diskTypeInfo.item(idx);
                     translator.setown(createRecordTranslator(projected->queryRecordAccessor(true), actual->queryRecordAccessor(true)));
+                    keyedTranslator.setown(createKeyTranslator(actual->queryRecordAccessor(true), expected->queryRecordAccessor(true)));
                     if (!translator->canTranslate())
                         throw MakeStringException(ROXIE_MISMATCH, "Untranslatable record layout mismatch detected for file %s", subname);
                 }
                 else if (mode == IRecordLayoutTranslator::TranslateAlwaysECL)
                 {
                     translator.setown(createRecordTranslator(projected->queryRecordAccessor(true), expected->queryRecordAccessor(true)));
+                    keyedTranslator.setown(createKeyTranslator(actual->queryRecordAccessor(true), expected->queryRecordAccessor(true)));
                     if (!translator->canTranslate())
                         throw MakeStringException(ROXIE_MISMATCH, "Untranslatable record layout mismatch detected for file %s", subname);
                 }
@@ -2125,6 +2138,7 @@ public:
                     if (thisFormatCrc != prevFormatCrc)  // Check if same translation as last subfile
                     {
                         translator.clear();
+                        keyedTranslator.clear();
                         if (actual)
                         {
                             translator.setown(createRecordTranslator(projected->queryRecordAccessor(true), actual->queryRecordAccessor(true)));
@@ -2132,11 +2146,13 @@ public:
                         }
                         if (!translator || !translator->canTranslate())
                             throw MakeStringException(ROXIE_MISMATCH, "Untranslatable record layout mismatch detected for file %s", subname);
+                        if (translator->needsTranslate())
+                            keyedTranslator.setown(createKeyTranslator(actual->queryRecordAccessor(true), expected->queryRecordAccessor(true)));
                     }
                 }
                 prevFormatCrc = thisFormatCrc;
             }
-            result->addTranslator(LINK(translator), LINK(actual));
+            result->addTranslator(LINK(translator), LINK(keyedTranslator), LINK(actual));
         }
         return result.getClear();
     }
@@ -2330,7 +2346,7 @@ public:
         return ret.getClear();
     }
 
-    virtual IInMemoryIndexManager *getIndexManager(bool isOpt, unsigned channel, IOutputMetaData *preloadLayout, bool preload, int numKeys) const
+    virtual IInMemoryIndexManager *getIndexManager(bool isOpt, unsigned channel, IOutputMetaData *preloadLayout, bool preload) const
     {
         // MORE - I don't know that it makes sense to pass isOpt in to these calls
         // Failures to resolve will not be cached, only successes.
@@ -2340,9 +2356,9 @@ public:
         IInMemoryIndexManager *ret = indexMap.get(channel);
         if (!ret)
         {
-            ret = createInMemoryIndexManager(isOpt, lfn);
+            ret = createInMemoryIndexManager(preloadLayout->queryRecordAccessor(true), isOpt, lfn);
             Owned<IFileIOArray> files = getIFileIOArray(isOpt, channel);
-            ret->load(files, preloadLayout, preload, numKeys);   // note - files (passed in) are also channel specific
+            ret->load(files, preloadLayout, preload);   // note - files (passed in) are also channel specific
             indexMap.set(ret, channel);
         }
         return LINK(ret);

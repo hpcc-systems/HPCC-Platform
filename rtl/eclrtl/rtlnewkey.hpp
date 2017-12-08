@@ -28,19 +28,24 @@ BITMASK_ENUM(TransitionMask);
  * The RowFilter class represents a multiple-field filter of a row.
  */
 
-class RowFilter
+class ECLRTL_API RowFilter
 {
 public:
-    void addFilter(IFieldFilter & filter);
+    void addFilter(const IFieldFilter & filter);
     bool matches(const RtlRow & row) const;
 
-    void extractKeyFilter(const RtlRecord & record, IArrayOf<IFieldFilter> & keyFilters) const;
-    int compareRows(const RtlRow & left, const RtlRow & right) const;
+    void extractKeyFilter(const RtlRecord & record, IConstArrayOf<IFieldFilter> & keyFilters) const;
     unsigned numFilterFields() const { return filters.ordinality(); }
     const IFieldFilter & queryFilter(unsigned i) const { return filters.item(i); }
-
+    const IFieldFilter *findFilter(unsigned fieldIdx) const;
+    const IFieldFilter *extractFilter(unsigned fieldIdx);
+    unsigned getNumFieldsRequired() const { return numFieldsRequired; }
+    void remapField(unsigned filterIdx, unsigned newFieldNum);
+    void recalcFieldsRequired();
+    void remove(unsigned idx);
 protected:
-    IArrayOf<IFieldFilter> filters;
+    IConstArrayOf<IFieldFilter> filters;
+    unsigned numFieldsRequired = 0;
 };
 
 //This class represents the current set of values which have been matched in the filter sets.
@@ -49,7 +54,7 @@ protected:
 //Note: If any field is matching a range, then all subsequent fields must be matching the lowest possible filter range
 //      Therefore it is only necessary to keep track of the number of exactly matched fields, and which range the next
 //      field (if any) is matched against.
-class RowCursor
+class ECLRTL_API RowCursor
 {
 public:
     RowCursor(const RtlRecord & record, RowFilter & filter) : currentRow(record, nullptr)
@@ -142,7 +147,7 @@ protected:
     unsigned nextUnmatchedRange = 0;
     UnsignedArray matchedRanges;
     bool eos = false;
-    IArrayOf<IFieldFilter> filters; // for an index must be in field order, and all values present - more thought required
+    IConstArrayOf<IFieldFilter> filters; // for an index must be in field order, and all values present - more thought required
 };
 
 interface ISourceRowCursor
@@ -155,6 +160,61 @@ public:
     //prepare ready for a new set of seeks
     virtual void reset() = 0;
 };
+
+class ECLRTL_API KeySearcher : public CInterface
+{
+public:
+    KeySearcher(const RtlRecord & _info, RowFilter & _filter, ISourceRowCursor * _rows) : cursor(_info, _filter), rows(_rows)
+    {
+    }
+
+    void reset()
+    {
+        rows->reset();
+        firstPending = true;
+    }
+
+    bool next()
+    {
+        if (firstPending)
+        {
+            cursor.selectFirst();
+            firstPending = false;
+        }
+        else
+        {
+            const byte * next = rows->next(); // MORE: Return a RtlRow?
+            if (!next)
+                return false;
+            if (cursor.setRowForward(next))
+                return true;
+        }
+        return resolveValidRow();
+    }
+
+    bool resolveValidRow()
+    {
+        for (;;)
+        {
+            if (cursor.noMoreMatches())
+                return false;
+            const byte * match;
+            match = rows->findNext(cursor); // more - return the row pointer to avoid recalculation
+            if (!match)
+                return false;
+            if (cursor.setRowForward(match))
+                return true;
+        }
+    }
+
+    const RtlRow & queryRow() const { return cursor.queryRow(); }
+
+protected:
+    ISourceRowCursor * rows = nullptr;
+    RowCursor cursor;
+    bool firstPending = true;
+};
+
 
 
 #endif

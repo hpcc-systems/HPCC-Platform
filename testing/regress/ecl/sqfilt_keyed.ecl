@@ -18,9 +18,6 @@
 //Variable size comparisons only supported using the new field filters
 #option ('createValueSets', true);
 
-//more: need to implement field filters in roxie
-//noroxie
-
 //version multiPart=false
 
 import ^ as root;

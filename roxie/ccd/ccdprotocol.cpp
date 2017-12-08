@@ -1350,7 +1350,7 @@ IHpccProtocolResponse *createProtocolResponse(const char *queryname, SafeSocket 
 {
     StringAttr filter, tag;
     httpHelper.getResultFilterAndTag(filter, tag);
-    if (protocolFlags & HPCC_PROTOCOL_NATIVE_RAW || protocolFlags & HPCC_PROTOCOL_NATIVE_ASCII)
+    if ((protocolFlags & HPCC_PROTOCOL_NATIVE_RAW) || (protocolFlags & HPCC_PROTOCOL_NATIVE_ASCII))
         return new CHpccNativeProtocolResponse(queryname, client, MarkupFmt_Unknown, protocolFlags, false, logctx, xmlReadFlags, filter, tag);
     else if (httpHelper.queryResponseMlFormat()==MarkupFmt_JSON)
         return new CHpccJsonResponse(queryname, client, protocolFlags, httpHelper.isHttp(), logctx, xmlReadFlags, filter, tag);

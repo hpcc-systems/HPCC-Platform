@@ -818,21 +818,6 @@ private:
 
 class CRoxieDiskReadBaseActivity : public CRoxieSlaveActivity, implements IIndexReadContext//, implements IDiskReadActivity
 {
-    friend class RecordProcessor;
-    friend class KeyedRecordProcessor;
-    friend class UnkeyedRecordProcessor;
-    friend class UnkeyedVariableRecordProcessor;
-    friend class KeyedNormalizeRecordProcessor;
-    friend class UnkeyedNormalizeRecordProcessor;
-    friend class KeyedCountRecordProcessor;
-    friend class UnkeyedCountRecordProcessor;
-    friend class UnkeyedVariableCountRecordProcessor;
-    friend class KeyedAggregateRecordProcessor;
-    friend class UnkeyedAggregateRecordProcessor;
-    friend class UnkeyedVariableAggregateRecordProcessor;
-    friend class KeyedGroupAggregateRecordProcessor;
-    friend class UnkeyedGroupAggregateRecordProcessor;
-    friend class UnkeyedVariableGroupAggregateRecordProcessor;
 protected:
     IHThorDiskReadBaseArg *helper;
 
@@ -840,16 +825,17 @@ protected:
     unsigned parallelPartNo;
     unsigned numParallel;
 
-    bool isKeyed;
     bool isGrouped = false;
     bool forceUnkeyed;
 
     offset_t readPos;
     CachedOutputMetaData diskSize;
-    Owned<IInMemoryIndexCursor> cursor;
+    ScoredRowFilter postFilter;
+    Owned<IDirectReader> reader;
     Linked<IInMemoryIndexManager> manager;
     Linked<ITranslatorSet> translators;
     Owned<IInMemoryFileProcessor> processor;
+    StringBuffer indexSig;
     CriticalSection pcrit;
 
 public:
@@ -871,18 +857,13 @@ public:
         isGrouped = diskSize.isGrouped();
         processed = 0;
         readPos = 0;
-        isKeyed = false;
         if (resent)
         {
             bool usedKey;
             resentInfo.read(processed);
             resentInfo.read(usedKey);
             if (usedKey)
-            {
-                cursor.setown(manager->createCursor(diskSize.queryRecordAccessor(true)));
-                cursor->deserializeCursorPos(resentInfo);
-                isKeyed = true;
-            }
+                resentInfo.read(indexSig);
             else
                 resentInfo.read(readPos);
             assertex(resentInfo.remaining() == 0);
@@ -893,8 +874,15 @@ public:
     {
         CRoxieSlaveActivity::onCreate();
         helper->createSegmentMonitors(this);
-        if (!resent)
-            isKeyed = (cursor && !forceUnkeyed && !isGrouped) ? cursor->selectKey() : false;
+        if (resent)
+        {
+            if (indexSig.length())
+                reader.setown(manager->selectKey(indexSig, postFilter, translators));
+        }
+        else if (!forceUnkeyed && !isGrouped)
+            reader.setown(manager->selectKey(postFilter, translators));
+        if (!reader)
+            reader.setown(manager->createReader(postFilter, isGrouped, readPos, parallelPartNo, numParallel, translators));
     }
 
     virtual const char *queryDynamicFileName() const
@@ -907,12 +895,12 @@ public:
         unsigned channel = packet->queryHeader().channel;
         unsigned formatCrc = basefactory->getFormatCrc(helper->getFormatCrc());
         translators.setown(varFileInfo->getTranslators(formatCrc, helper->queryProjectedDiskRecordSize(), helper->queryDiskRecordSize(), basefactory->getEnableFieldTranslation())); // MORE - FormatCRC may be wrong here. Needs to be crc of projected not expected
-        manager.setown(varFileInfo->getIndexManager(isOpt, channel, nullptr, false, 0));
+        manager.setown(varFileInfo->getIndexManager(isOpt, channel, translators->queryActualLayout(0), false));
     }
 
     inline bool queryKeyed() const
     {
-        return isKeyed;
+        return reader->isKeyed();
     }
 
     void setParallel(unsigned _partno, unsigned _numParallel)
@@ -930,36 +918,26 @@ public:
 
     virtual void append(IKeySegmentMonitor *segment)
     {
-        if (!segment->isWild())
-        {
-            if (!cursor)
-                cursor.setown(manager->createCursor(diskSize.queryRecordAccessor(true)));
-            cursor->append(segment);
-        }
-        else
-            segment->Release();
+        segment->Release();
+        throwUnexpected();
     }
 
     virtual void append(FFoption option, IFieldFilter * filter)
     {
-        if (!filter->isWild())
-        {
-            if (!cursor)
-                cursor.setown(manager->createCursor(diskSize.queryRecordAccessor(true)));
-            cursor->append(option, filter);
-        }
-        else
+        if (filter->isWild())
             filter->Release();
+        else
+            postFilter.addFilter(*filter);
     }
 
     virtual unsigned ordinality() const
     {
-        return cursor ? cursor->ordinality() : 0;
+        throwUnexpected();
     }
 
     virtual IKeySegmentMonitor *item(unsigned idx) const
     {
-        return cursor ? cursor->item(idx) : 0;
+        throwUnexpected();
     }
 
     virtual void abort() 
@@ -1024,10 +1002,12 @@ public:
                 unsigned channel = queryFactory.queryChannel();
                 unsigned formatCrc = getFormatCrc(helper->getFormatCrc());
                 translators.setown(datafile->getTranslators(formatCrc, helper->queryProjectedDiskRecordSize(), helper->queryDiskRecordSize(), getEnableFieldTranslation()));
-                manager.setown(datafile->getIndexManager(isOpt, channel, translators->queryActualLayout(0), _graphNode.getPropBool("att[@name=\"preload\"]/@value", false), _graphNode.getPropInt("att[@name=\"_preloadSize\"]/@value", 0)));
+                manager.setown(datafile->getIndexManager(isOpt, channel, translators->queryActualLayout(0), _graphNode.getPropBool("att[@name=\"preload\"]/@value", false)));
                 Owned<IPropertyTreeIterator> memKeyInfo = queryFactory.queryPackage().getInMemoryIndexInfo(_graphNode);
                 if (memKeyInfo)
                 {
+                    // There's a small potential flaw that I can end up with indexes from a query that was unloaded active on some nodes but not others
+                    // which could mess up continuation. I think I don't care.
                     ForEach(*memKeyInfo)
                     {
                         IPropertyTree &info = memKeyInfo->query();
@@ -1036,7 +1016,7 @@ public:
                 }
             }
             else
-                manager.setown(getEmptyIndexManager());
+                manager.setown(createInMemoryIndexManager(helper->queryProjectedDiskRecordSize()->queryRecordAccessor(true), true, nullptr));
         }
     }
 
@@ -1051,8 +1031,7 @@ public:
 class CRoxieDiskReadActivity;
 class CRoxieCsvReadActivity;
 class CRoxieXmlReadActivity;
-IInMemoryFileProcessor *createKeyedRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskReadActivity &owner, bool resent);
-IInMemoryFileProcessor *createUnkeyedRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskReadActivity &owner, bool variableDisk, bool isGrouped, IDirectReader *reader);
+IInMemoryFileProcessor *createReadRecordProcessor(CRoxieDiskReadActivity &owner, bool isGrouped, IDirectReader *reader);
 IInMemoryFileProcessor *createCsvRecordProcessor(CRoxieCsvReadActivity &owner, IDirectReader *reader, bool _skipHeader, const IResolvedFile *datafile, size32_t maxRowSize);
 IInMemoryFileProcessor *createXmlRecordProcessor(CRoxieXmlReadActivity &owner, IDirectReader *reader);
 
@@ -1080,11 +1059,8 @@ public:
     virtual void doProcess(IMessagePacker * output)
     {
         {
-            CriticalBlock p(pcrit);
-            processor.setown(isKeyed ? createKeyedRecordProcessor(cursor, *this, resent) : 
-                                       createUnkeyedRecordProcessor(cursor, *this, diskSize.isVariableSize(), isGrouped,
-                                               manager->createReader(readPos, parallelPartNo, numParallel, translators,
-                                                                     queryContext->queryCodeContext(), basefactory->queryId())));
+            CriticalBlock p(pcrit); // because of race with abort.
+            processor.setown(createReadRecordProcessor(*this, isGrouped, reader));
         }
         unsigned __int64 rowLimit = helper->getRowLimit();
         unsigned __int64 stopAfter = helper->getChooseNLimit();
@@ -1130,7 +1106,7 @@ public:
             CriticalBlock p(pcrit);
             processor.setown(
                     createCsvRecordProcessor(*this,
-                                             manager->createReader(readPos, parallelPartNo, numParallel, translators, queryContext->queryCodeContext(), basefactory->queryId()),
+                                             manager->createReader(postFilter, false, readPos, parallelPartNo, numParallel, translators),
                                              packet->queryHeader().channel==1 && !resent,
                                              varFileInfo ? varFileInfo.get() : datafile, maxRowSize));
         }
@@ -1173,7 +1149,7 @@ public:
     {
         {
             CriticalBlock p(pcrit);
-            processor.setown(createXmlRecordProcessor(*this, manager->createReader(readPos, parallelPartNo, numParallel, translators, queryContext->queryCodeContext(), basefactory->queryId())));
+            processor.setown(createXmlRecordProcessor(*this, manager->createReader(postFilter, false, readPos, parallelPartNo, numParallel, translators)));
         }
         unsigned __int64 rowLimit = helper->getRowLimit();
         unsigned __int64 stopAfter = helper->getChooseNLimit();
@@ -1257,281 +1233,95 @@ public:
 
 //================================================================================================
 
-// Note - the classes below could be commoned up to make the code smaller, but they have been deliberately unrolled to 
-// keep to a bare minimum the number of virtual calls/variable tests per record scanned. This is very speed critical.
-
 class RecordProcessor : implements IInMemoryFileProcessor, public CInterface
 {
 protected:
-    IInMemoryIndexCursor *cursor;  // Unkeyed variants still may need to check segmonitors in here
-    bool aborted;
-    const char *endRec;
-
-    static inline size32_t roundDown(size32_t got, size32_t fixedSize)
-    {
-        // Make sure that the buffer size we process is a multiple of the fixed record size
-        return (got / fixedSize) * fixedSize;
-    }
-
-    static size32_t getBufferSize(size32_t fixedSize)
-    {
-        // Calculate appropriate buffer size for fixed size record processors
-        assert(fixedSize);
-        unsigned recordsPerBuffer = diskReadBufferSize / fixedSize;
-        if (!recordsPerBuffer)
-            recordsPerBuffer = 1;
-        return fixedSize * recordsPerBuffer;
-    }
+    bool aborted = false;
+    IDirectReader *reader;
 
 public:
     IMPLEMENT_IINTERFACE
-    RecordProcessor(IInMemoryIndexCursor *_cursor) : cursor(_cursor)
-    {
-        aborted = false;
-        endRec = NULL;
-    }
+    RecordProcessor(IDirectReader *_reader) : reader(_reader) {}
     virtual void abort() 
     {
         aborted = true; 
-        endRec = NULL; // speeds up the abort in some of the derived classes
     }
 };
 
 //================================================================================================
 
-// Base class for all varieties of RecordProcessor used by disk read activity
+// Disk read activity
 
 class ReadRecordProcessor : public RecordProcessor
 {
-protected:
-    CRoxieDiskReadActivity &owner;
-    IHThorDiskReadArg *helper;
 public:
-    ReadRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskReadActivity &_owner)
-        : RecordProcessor(_cursor), owner(_owner)
+    ReadRecordProcessor(CRoxieDiskReadActivity &_owner, bool _isGrouped, IDirectReader *_reader)
+        : RecordProcessor(_reader), owner(_owner), isGrouped(_isGrouped)
     {
         helper = _owner.helper;
     }
-};
-
-// Used by disk read when an in-memory index is available
-
-class KeyedRecordProcessor : public ReadRecordProcessor
-{
-    bool resent;
-
-public:
-    KeyedRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskReadActivity &_owner, bool _resent) : ReadRecordProcessor(_cursor, _owner)
-    {
-        resent = _resent;
-        helper->setCallback(cursor);
-    }
 
     virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
     {
-        // doQuery needs to be as fast as possible - we are making a virtual call to it per query in order to avoid tests of loop-invariants within it
         unsigned totalSizeSent = 0;
-        IInMemoryIndexCursor *lc = cursor;
-        if (!resent)
-            lc->reset();
-        bool continuationFailed = false;
+        helper->setCallback(reader);
+        unsigned lastGroupProcessed = processed;
         while (!aborted)
         {
-            const void *nextCandidate = lc->nextMatch();
-            if (!nextCandidate)
-                break;
-            unsigned transformedSize = owner.doTransform(output, nextCandidate);
-            if (transformedSize)
+            // This loop is the inner loop for memory diskreads - so keep it efficient!
+            const byte *nextRec = reader->nextRow();
+            if (nextRec)
             {
-                processed++;
-                if (processed > rowLimit)
-                {
-                    owner.limitExceeded(); 
-                    break;
-                }
-                if (processed == stopAfter)
-                    break;
-                totalSizeSent += transformedSize;
-                if (totalSizeSent > indexReadChunkSize && !continuationFailed)
-                {
-                    MemoryBuffer si;
-                    unsigned short siLen = 0;
-                    si.append(siLen);
-                    si.append(processed);
-                    si.append(true);  // using a key
-                    lc->serializeCursorPos(si);
-                    if (si.length() <= maxContinuationSize)
-                    {
-                        siLen = si.length() - sizeof(siLen);
-                        si.writeDirect(0, sizeof(siLen), &siLen);
-                        output->sendMetaInfo(si.toByteArray(), si.length());
-                        return;
-                    }
-                    else
-                        continuationFailed = true;
-                }
-            }
-        }
-    }
-};
-
-IInMemoryFileProcessor *createKeyedRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskReadActivity &owner, bool resent)
-{
-    return new KeyedRecordProcessor(cursor, owner, resent);
-}
-
-// Used by disk read when an in-memory index is NOT available
-// We use different variants for fixed versus variable sized records, in order to make the fixed version as fast as possible
-
-class UnkeyedRecordProcessor : public ReadRecordProcessor
-{
-protected:
-    Owned<IDirectReader> reader;
-
-public:
-    UnkeyedRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskReadActivity &_owner, IDirectReader *_reader)
-        : ReadRecordProcessor(_cursor, _owner), reader(_reader)
-    {
-    }
-
-    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
-    {
-        unsigned totalSizeSent = 0;
-        helper->setCallback(reader->queryThorDiskCallback());
-        size32_t recordSize = owner.diskSize.getFixedSize();
-        size32_t bufferSize = getBufferSize(recordSize);
-        while (!aborted && !reader->eos())
-        {
-            size32_t gotSize;
-            const char *firstRec = (const char *) reader->peek(bufferSize, gotSize);
-            if (!gotSize)
-                break;
-            gotSize = roundDown(gotSize, recordSize);
-            const char *nextRec = firstRec;
-            endRec = firstRec + gotSize;
-            while (nextRec < endRec)
-            {
-                size32_t transformedSize;
-                if (cursor && cursor->isFiltered(nextRec))
-                    transformedSize = 0;
-                else
-                    transformedSize = owner.doTransform(output, nextRec);
-                nextRec += recordSize;
+                size32_t transformedSize = owner.doTransform(output, nextRec);
+                reader->finishedRow();
                 if (transformedSize)
                 {
                     processed++;
                     if (processed > rowLimit)
                     {
-                        owner.limitExceeded(); 
+                        owner.limitExceeded();
                         return;
                     }
                     if (processed == stopAfter)
                         return;
                     totalSizeSent += transformedSize;
-                    if (totalSizeSent > indexReadChunkSize)
-                    {
-                        MemoryBuffer si;
-                        unsigned short siLen = 0;
-                        si.append(siLen);
-                        si.append(processed);
-                        si.append(false);  // not using a key
-                        offset_t readPos = reader->tell() + (nextRec - firstRec);
-                        si.append(readPos);
-                        siLen = si.length() - sizeof(siLen);
-                        si.writeDirect(0, sizeof(siLen), &siLen);
-                        output->sendMetaInfo(si.toByteArray(), si.length());
-                        return;
-                    }
+                    if (totalSizeSent > indexReadChunkSize && !isGrouped)
+                        break;
                 }
             }
-            reader->skip(gotSize);
-        }
-    }
-};
-
-class UnkeyedVariableRecordProcessor : public UnkeyedRecordProcessor
-{
-public:
-    UnkeyedVariableRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskReadActivity &_owner, bool _isGrouped, IDirectReader *_reader)
-      : UnkeyedRecordProcessor(_cursor, _owner, _reader), isGrouped(_isGrouped)
-    {
-    }
-
-    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
-    {
-        unsigned totalSizeSent = 0;
-        helper->setCallback(reader->queryThorDiskCallback());
-        unsigned lastGroupProcessed = processed;
-        while (!aborted && !reader->eos())
-        {
-            // This loop is the inner loop for memory diskreads - so keep it efficient!
-            const byte *nextRec = reader->nextRow();
-            size32_t transformedSize;
-            if (cursor && cursor->isFiltered(nextRec))
-                transformedSize = 0;
+            else if (isGrouped && processed>lastGroupProcessed)
+                break; // We return grouped data one whole group at a time
             else
-                transformedSize = owner.doTransform(output, nextRec);
-            bool eog = isGrouped && reader->eog();
-            reader->finishedRow();
-            if (transformedSize)
-            {
-                processed++;
-                if (processed > rowLimit)
-                {
-                    owner.limitExceeded(); 
-                    return;
-                }
-                if (processed == stopAfter)
-                    return;
-                totalSizeSent += transformedSize;
-                if (totalSizeSent > indexReadChunkSize && !isGrouped)
-                {
-                    MemoryBuffer si;
-                    unsigned short siLen = 0;
-                    si.append(siLen);
-                    si.append(processed);
-                    si.append(false);  // not using a key
-                    offset_t readPos = reader->tell();
-                    si.append(readPos);
-                    siLen = si.length() - sizeof(siLen);
-                    si.writeDirect(0, sizeof(siLen), &siLen);
-                    output->sendMetaInfo(si.toByteArray(), si.length());
-                    return;
-                }
-            }
-            if (eog && (lastGroupProcessed != processed))
-            {
-                // We return grouped data one whole group at a time
-                MemoryBuffer si;
-                unsigned short siLen = 0;
-                si.append(siLen);
-                si.append(processed);
-                si.append(false);  // not using a key
-                offset_t readPos = reader->tell();
-                si.append(readPos);
-                siLen = si.length() - sizeof(siLen);
-                si.writeDirect(0, sizeof(siLen), &siLen);
-                output->sendMetaInfo(si.toByteArray(), si.length());
                 return;
-            }
+        }
+        if (!aborted)
+        {
+            MemoryBuffer si;
+            unsigned short siLen = 0;
+            si.append(siLen);
+            si.append(processed);
+            si.append(reader->isKeyed());
+            reader->serializeCursorPos(si);
+            siLen = si.length() - sizeof(siLen);
+            si.writeDirect(0, sizeof(siLen), &siLen);
+            output->sendMetaInfo(si.toByteArray(), si.length());
         }
     }
 
 protected:
+    CRoxieDiskReadActivity &owner;
+    IHThorDiskReadArg *helper;
     bool isGrouped;
 };
 
-IInMemoryFileProcessor *createUnkeyedRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskReadActivity &owner, bool variableDisk, bool isGrouped, IDirectReader *_reader)
+IInMemoryFileProcessor *createReadRecordProcessor(CRoxieDiskReadActivity &owner, bool isGrouped, IDirectReader *_reader)
 {
-    if (variableDisk || isGrouped || _reader->isTranslating())
-        return new UnkeyedVariableRecordProcessor(cursor, owner, isGrouped, _reader);
-    else
-        return new UnkeyedRecordProcessor(cursor, owner, _reader);
+    return new ReadRecordProcessor(owner, isGrouped, _reader);
 }
 
 //================================================================================================
 
-// RecordProcessor used by CSV read activity. We don't try to index these or optimize fixed size cases...
+// RecordProcessor used by CSV read activity. We don't try to index these ...
 
 class CsvRecordProcessor : public RecordProcessor
 {
@@ -1539,18 +1329,18 @@ protected:
     CRoxieCsvReadActivity &owner;
     IHThorCsvReadArg *helper;
 
-    Owned<IDirectReader> reader;
     bool skipHeader;
     const IResolvedFile *datafile;
     size32_t maxRowSize;
 
 public:
     CsvRecordProcessor(CRoxieCsvReadActivity &_owner, IDirectReader *_reader, bool _skipHeader, const IResolvedFile *_datafile, size32_t _maxRowSize)
-      : RecordProcessor(NULL), owner(_owner), reader(_reader), datafile(_datafile), maxRowSize(_maxRowSize)
+      : RecordProcessor(_reader), owner(_owner), datafile(_datafile), maxRowSize(_maxRowSize)
     {
+        // NOTE - postfilter not used at present - but may be in future
         helper = _owner.helper;
         skipHeader = _skipHeader;
-        helper->setCallback(reader->queryThorDiskCallback());
+        helper->setCallback(reader);
     }
 
     virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
@@ -1575,20 +1365,21 @@ public:
             }
         }
         csvSplitter.init(helper->getMaxColumns(), csvInfo, quotes, separators, terminators, escapes);
+        ISerialStream *stream = reader->queryDirectStreamReader();
         while (!aborted)
         {
-            size32_t thisLineLength = csvSplitter.splitLine(reader, maxRowSize);
+            size32_t thisLineLength = csvSplitter.splitLine(stream, maxRowSize);
             if (0 == thisLineLength)
                 break;
             if (headerLines)
             {
                 headerLines--;
-                reader->skip(thisLineLength);
+                stream->skip(thisLineLength);
             }
             else
             {
                 unsigned transformedSize = owner.doTransform(output, csvSplitter.queryLengths(), (const char * *)csvSplitter.queryData());
-                reader->skip(thisLineLength);
+                stream->skip(thisLineLength);
                 if (transformedSize)
                 {
                     processed++;
@@ -1606,9 +1397,8 @@ public:
                         unsigned short siLen = 0;
                         si.append(siLen);
                         si.append(processed);
-                        si.append(false);  // not using a key
-                        offset_t readPos = reader->tell();
-                        si.append(readPos);
+                        si.append(reader->isKeyed());
+                        reader->serializeCursorPos(si);
                         siLen = si.length() - sizeof(siLen);
                         si.writeDirect(0, sizeof(siLen), &siLen);
                         output->sendMetaInfo(si.toByteArray(), si.length());
@@ -1622,14 +1412,14 @@ public:
 
 //================================================================================================
 
-// RecordProcessor used by XML read activity. We don't try to index these or optimize fixed size cases...
+// RecordProcessor used by XML read activity. We don't try to index these...
 
 class XmlRecordProcessor : public RecordProcessor, implements IXMLSelect, implements IThorDiskCallback
 {
 public:
     IMPLEMENT_IINTERFACE;
     XmlRecordProcessor(CRoxieXmlReadActivity &_owner, IDirectReader *_reader)
-        : RecordProcessor(NULL), owner(_owner), reader(_reader), fileposition(0)
+        : RecordProcessor(_reader), owner(_owner), streamReader(_reader->queryDirectStreamReader()), fileposition(0)
     {
         helper = _owner.helper;
         helper->setCallback(this);
@@ -1642,11 +1432,11 @@ public:
     }
     virtual unsigned __int64 getLocalFilePosition(const void * row)
     {
-        return reader->makeFilePositionLocal(fileposition);
+        return streamReader->makeFilePositionLocal(fileposition);
     }
     virtual const char * queryLogicalFilename(const void * row)
     {
-        return reader->queryThorDiskCallback()->queryLogicalFilename(row);
+        return reader->queryLogicalFilename(row);
     }
 
     virtual void match(IColumnProvider &entry, offset_t startOffset, offset_t endOffset)
@@ -1657,17 +1447,14 @@ public:
 
     virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
     {
-#if 0
-        // xml read does not support continuation record stuff as too hard to serialize state of xml parser
-        unsigned totalSizeSent = 0;
-#endif
+        // Note: xml read does not support continuation record stuff as too hard to serialize state of xml parser
         Linked<IXmlToRowTransformer> rowTransformer = helper->queryTransformer();
         OwnedRoxieString xmlIterator(helper->getXmlIteratorPath());
         Owned<IXMLParse> xmlParser;
         if (owner.basefactory->getKind() == TAKjsonread)
-            xmlParser.setown(createJSONParse(*reader->querySimpleStream(), xmlIterator, *this, (0 != (TDRxmlnoroot & helper->getFlags()))?ptr_noRoot:ptr_none, (helper->getFlags() & TDRusexmlcontents) != 0));
+            xmlParser.setown(createJSONParse(*streamReader, xmlIterator, *this, (0 != (TDRxmlnoroot & helper->getFlags()))?ptr_noRoot:ptr_none, (helper->getFlags() & TDRusexmlcontents) != 0));
         else
-            xmlParser.setown(createXMLParse(*reader->querySimpleStream(), xmlIterator, *this, (0 != (TDRxmlnoroot & helper->getFlags()))?ptr_noRoot:ptr_none, (helper->getFlags() & TDRusexmlcontents) != 0));
+            xmlParser.setown(createXMLParse(*streamReader, xmlIterator, *this, (0 != (TDRxmlnoroot & helper->getFlags()))?ptr_noRoot:ptr_none, (helper->getFlags() & TDRusexmlcontents) != 0));
         while (!aborted)
         {
             //call to next() will callback on the IXmlSelect interface
@@ -1689,24 +1476,6 @@ public:
                     }
                     if (processed == stopAfter)
                         return;
-#if 0
-                    // xml read does not support continuation record stuff as too hard to serialize state of xml parser
-                    totalSizeSent += transformedSize;
-                    if (totalSizeSent > indexReadChunkSize)
-                    {
-                        MemoryBuffer si;
-                        unsigned short siLen = 0;
-                        si.append(siLen);
-                        si.append(processed);
-                        si.append(false);  // not using a key
-                        readPos = inputFileIOStream->tell();
-                        si.append(readPos);
-                        siLen = si.length() - sizeof(siLen);
-                        si.writeDirect(0, sizeof(siLen), &siLen);
-                        output->sendMetaInfo(si.toByteArray(), si.length());
-                        return;
-                    }
-#endif
                 }
             }
         }
@@ -1717,7 +1486,7 @@ protected:
     IHThorXmlReadArg *helper;
 
     Owned<IColumnProvider> lastMatch;
-    Owned<IDirectReader> reader;
+    IDirectStreamReader *streamReader;
     unsigned __int64 fileposition;
 };
 
@@ -1750,8 +1519,7 @@ ISlaveActivityFactory *createRoxieDiskReadActivityFactory(IPropertyTree &_graphN
 //================================================================================================
 
 class CRoxieDiskNormalizeActivity;
-IInMemoryFileProcessor *createKeyedNormalizeRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskNormalizeActivity &owner, bool resent);
-IInMemoryFileProcessor *createUnkeyedNormalizeRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskNormalizeActivity &owner, IDirectReader *reader);
+IInMemoryFileProcessor *createNormalizeRecordProcessor(CRoxieDiskNormalizeActivity &owner, IDirectReader *_reader);
 
 class CRoxieDiskNormalizeActivity : public CRoxieDiskReadBaseActivity
 {
@@ -1778,9 +1546,7 @@ public:
     {
         {
             CriticalBlock p(pcrit);
-            processor.setown(isKeyed ? 
-                createKeyedNormalizeRecordProcessor(cursor, *this, resent) : 
-                createUnkeyedNormalizeRecordProcessor(cursor, *this, manager->createReader(readPos, parallelPartNo, numParallel, translators, queryContext->queryCodeContext(), basefactory->queryId())));
+            processor.setown(createNormalizeRecordProcessor(*this, reader));
         }
         unsigned __int64 rowLimit = helper->getRowLimit();
         unsigned __int64 stopAfter = helper->getChooseNLimit();
@@ -1829,43 +1595,22 @@ ISlaveActivityFactory *createRoxieDiskNormalizeActivityFactory(IPropertyTree &_g
 class NormalizeRecordProcessor : public RecordProcessor
 {
 public:
-    NormalizeRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskNormalizeActivity &_owner)
-        : RecordProcessor(_cursor), owner(_owner)
+    NormalizeRecordProcessor(CRoxieDiskNormalizeActivity &_owner, IDirectReader *_reader)
+    : RecordProcessor(_reader), owner(_owner)
     {
         helper = _owner.helper;
-    }
-protected:
-    CRoxieDiskNormalizeActivity &owner;
-    IHThorDiskNormalizeArg *helper;
-};
-
-// Used when we have an in-memory key that matches at least some of the filter conditions
-
-class KeyedNormalizeRecordProcessor : public NormalizeRecordProcessor
-{
-public:
-    KeyedNormalizeRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskNormalizeActivity &_owner, bool _resent)
-        : NormalizeRecordProcessor(_cursor, _owner)
-    {
-        resent = _resent;
-        helper->setCallback(cursor);
     }
 
     virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
     {
-        // doQuery needs to be as fast as possible - we are making a virtual call to it per query in order to avoid tests of loop-invariants within it
         unsigned totalSizeSent = 0;
-        IInMemoryIndexCursor *lc = cursor;
-        if (!resent)
-            lc->reset();
-        bool continuationFailed = false;
+        helper->setCallback(reader);
         while (!aborted)
         {
-            const void *nextCandidate = lc->nextMatch();
-            if (!nextCandidate)
+            const byte *nextRec = reader->nextRow();
+            if (!nextRec)
                 break;
-
-            if (helper->first(nextCandidate))
+            if (helper->first(nextRec))
             {
                 do
                 {
@@ -1875,93 +1620,23 @@ public:
                         processed++;
                         if (processed > rowLimit)
                         {
-                            owner.limitExceeded(); 
+                            owner.limitExceeded();
                             return;
                         }
-
                         totalSizeSent += transformedSize;
                         if (processed == stopAfter)
                             return;
                     }
                 } while (helper->next());
-                if (totalSizeSent > indexReadChunkSize && !continuationFailed)
-                {
-                    MemoryBuffer si;
-                    unsigned short siLen = 0;
-                    si.append(siLen);
-                    si.append(processed);
-                    si.append(true);  // using a key
-                    lc->serializeCursorPos(si);
-                    if (si.length() <= maxContinuationSize)
-                    {
-                        siLen = si.length() - sizeof(siLen);
-                        si.writeDirect(0, sizeof(siLen), &siLen);
-                        output->sendMetaInfo(si.toByteArray(), si.length());
-                        return;
-                    }
-                    else
-                        continuationFailed = true;
-                }
             }
-        }
-    }
-
-private:
-    bool resent;
-};
-
-// Used when we have no key 
-// Not split into variable vs fixed varieties (unlike others). We could if there was a demand
-
-class UnkeyedNormalizeRecordProcessor : public NormalizeRecordProcessor
-{
-public:
-    UnkeyedNormalizeRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskNormalizeActivity &_owner, IDirectReader *_reader) 
-        : NormalizeRecordProcessor(_cursor, _owner), reader(_reader), deserializeSource(_reader)
-    {
-        prefetcher.setown(owner.diskSize.queryOriginal()->createDiskPrefetcher());
-    }
-
-    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
-    {
-        unsigned totalSizeSent = 0;
-        helper->setCallback(reader->queryThorDiskCallback());
-        while (!aborted && !deserializeSource.eos())
-        {
-            prefetcher->readAhead(deserializeSource);
-            const byte *nextRec = deserializeSource.queryRow();
-            if (!cursor || !cursor->isFiltered(nextRec))
-            {
-                if (helper->first(nextRec))
-                {
-                    do
-                    {
-                        size32_t transformedSize = owner.doNormalizeTransform(output);
-                        if (transformedSize)
-                        {
-                            processed++;
-                            if (processed > rowLimit)
-                            {
-                                owner.limitExceeded(); 
-                                return;
-                            }
-                            totalSizeSent += transformedSize;
-                            if (processed == stopAfter)
-                                return;
-                        }
-                    } while (helper->next());
-                }
-            }
-            deserializeSource.finishedRow();
-            if (totalSizeSent > indexReadChunkSize)
+             if (totalSizeSent > indexReadChunkSize)
             {
                 MemoryBuffer si;
                 unsigned short siLen = 0;
                 si.append(siLen);
                 si.append(processed);
-                si.append(false);  // not using a key
-                offset_t readPos = deserializeSource.tell();
-                si.append(readPos);
+                si.append(reader->isKeyed());
+                reader->serializeCursorPos(si);
                 siLen = si.length() - sizeof(siLen);
                 si.writeDirect(0, sizeof(siLen), &siLen);
                 output->sendMetaInfo(si.toByteArray(), si.length());
@@ -1971,27 +1646,20 @@ public:
     }
 
 protected:
-    Owned<IDirectReader> reader;
-    CThorContiguousRowBuffer deserializeSource;
-    Owned<ISourceRowPrefetcher> prefetcher;
+    CRoxieDiskNormalizeActivity &owner;
+    IHThorDiskNormalizeArg *helper;
 };
 
-IInMemoryFileProcessor *createKeyedNormalizeRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskNormalizeActivity &owner, bool resent)
+IInMemoryFileProcessor *createNormalizeRecordProcessor(CRoxieDiskNormalizeActivity &owner, IDirectReader *_reader)
 {
-    return new KeyedNormalizeRecordProcessor(cursor, owner, resent);
-}
-
-IInMemoryFileProcessor *createUnkeyedNormalizeRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskNormalizeActivity &owner, IDirectReader *_reader)
-{
-    return new UnkeyedNormalizeRecordProcessor(cursor, owner, _reader);
+    return new NormalizeRecordProcessor(owner, _reader);
 }
 
 
 //================================================================================================
 
 class CRoxieDiskCountActivity;
-IInMemoryFileProcessor *createKeyedCountRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskCountActivity &owner);
-IInMemoryFileProcessor *createUnkeyedCountRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskCountActivity &owner, bool variableDisk, IDirectReader *reader);
+IInMemoryFileProcessor *createCountRecordProcessor(CRoxieDiskCountActivity &owner, IDirectReader *reader);
 
 class CRoxieDiskCountActivity : public CRoxieDiskReadBaseActivity
 {
@@ -2018,9 +1686,7 @@ public:
     {
         {
             CriticalBlock p(pcrit);
-            processor.setown(isKeyed ? 
-                createKeyedCountRecordProcessor(cursor, *this) : 
-                createUnkeyedCountRecordProcessor(cursor, *this, diskSize.isVariableSize(), manager->createReader(readPos, parallelPartNo, numParallel, translators, queryContext->queryCodeContext(), basefactory->queryId())));
+            processor.setown(createCountRecordProcessor(*this, reader));
         }
         unsigned __int64 stopAfter = helper->getChooseNLimit();
         processor->doQuery(output, processed, (unsigned __int64) -1, stopAfter);
@@ -2050,201 +1716,57 @@ public:
 
 //================================================================================================
 
-// RecordProcessors used by Disk Normalize activity.
-
-// Note - the classes below could be commoned up to make the code smaller, but they have been deliberately unrolled to 
-// keep to a bare minimum the number of virtual calls/variable tests per record scanned. This is very speed critical.
+// RecordProcessors used by Disk Count activity.
 
 class CountRecordProcessor : public RecordProcessor
 {
 public:
-    CountRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskCountActivity &_owner) 
-        : RecordProcessor(_cursor), owner(_owner)
+    CountRecordProcessor(CRoxieDiskCountActivity &_owner, IDirectReader *_reader)
+    : RecordProcessor(_reader), owner(_owner)
     {
         helper = _owner.helper;
+    }
+
+    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
+    {
+        unsigned outputRecordSize = owner.meta.getFixedSize();
+        void *recBuffer = output->getBuffer(outputRecordSize, false);
+        helper->setCallback(reader);
+        unsigned __int64 totalCount  = 0;
+        while (!aborted)
+        {
+            const byte *nextRec = reader->nextRow();
+            if (!nextRec)
+                break;
+            totalCount += helper->numValid(nextRec);
+            if (totalCount >= stopAfter)
+            {
+                totalCount = stopAfter;
+                break;
+            }
+            reader->finishedRow();
+        }
+        if (!aborted)
+        {
+            assert(!owner.serializer); // A count can never need serializing, surely!
+            if (outputRecordSize == 1)
+                *(byte *)recBuffer = (byte)totalCount;
+            else
+            {
+                assertex(outputRecordSize == sizeof(unsigned __int64));
+                *(unsigned __int64 *)recBuffer = totalCount;
+            }
+            output->putBuffer(recBuffer, outputRecordSize, false);
+        }
     }
 protected:
     CRoxieDiskCountActivity &owner;
     IHThorDiskCountArg *helper;
 };
 
-// Used when we have an in-memory key that matches at least some of the filter conditions
-class KeyedCountRecordProcessor : public CountRecordProcessor
+IInMemoryFileProcessor *createCountRecordProcessor(CRoxieDiskCountActivity &owner, IDirectReader *reader)
 {
-public:
-    KeyedCountRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskCountActivity &_owner) : CountRecordProcessor(_cursor, _owner)
-    {
-        helper->setCallback(cursor);
-    }
-
-    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
-    {
-        // doQuery needs to be as fast as possible - we are making a virtual call to it per query in order to avoid tests of loop-invariants within it
-        unsigned recordSize = owner.meta.getFixedSize();
-        void *recBuffer = output->getBuffer(recordSize, false);
-        IInMemoryIndexCursor *lc = cursor;
-        lc->reset();
-        unsigned __int64 totalCount = 0;
-        while (!aborted)
-        {
-            const void *nextCandidate = lc->nextMatch();
-            if (!nextCandidate)
-                break;
-            totalCount += helper->numValid(nextCandidate);
-            if (totalCount >= stopAfter)
-            {
-                totalCount = stopAfter;
-                break;
-            }
-        }
-
-        if (!aborted)
-        {
-            assert(!owner.serializer); // A count can never need serializing, surely!
-            if (recordSize == 1)
-                *(byte *)recBuffer = (byte)totalCount;
-            else
-            {
-                assertex(recordSize == sizeof(unsigned __int64));
-                *(unsigned __int64 *)recBuffer = totalCount;
-            }
-            output->putBuffer(recBuffer, recordSize, false);
-        }
-    }
-};
-
-IInMemoryFileProcessor *createKeyedCountRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskCountActivity &owner)
-{
-    return new KeyedCountRecordProcessor(cursor, owner);
-}
-
-// Used when there is no key, fixed records
-class UnkeyedCountRecordProcessor : public CountRecordProcessor
-{
-protected:
-    Owned<IDirectReader> reader;
-
-public:
-    UnkeyedCountRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskCountActivity &_owner, IDirectReader *_reader) 
-        : CountRecordProcessor(_cursor, _owner), reader(_reader)
-    {
-    }
-
-    // This version is used for fixed size rows only - variable size rows use more derived class which overrides
-    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
-    {
-        unsigned outputRecordSize = owner.meta.getFixedSize();
-        void *recBuffer = output->getBuffer(outputRecordSize, false);
-        helper->setCallback(reader->queryThorDiskCallback());
-        unsigned __int64 totalCount  = 0;
-
-        size32_t recordSize = owner.diskSize.getFixedSize();
-        size32_t bufferSize = getBufferSize(recordSize);
-        while (!aborted && !reader->eos())
-        {
-            size32_t gotSize;
-            const char *nextRec = (const char *) reader->peek(bufferSize, gotSize);
-            if (!gotSize)
-                break;
-            gotSize = roundDown(gotSize, recordSize);
-            if (cursor)
-            {
-                const char *endRec = nextRec + gotSize;
-                for (;;)
-                {
-                    // This loop is the inner loop for memory disk counts - so keep it efficient!
-                    if (nextRec >= endRec)
-                        break;
-                    if (!cursor->isFiltered(nextRec))
-                    {
-                        totalCount += helper->numValid(nextRec);
-                        if (totalCount >= stopAfter)
-                            break;
-                    }
-                    nextRec += recordSize;
-                }
-            }
-            else
-                totalCount += helper->numValid(gotSize, nextRec);
-            if (totalCount >= stopAfter)
-            {
-                totalCount = stopAfter;
-                break;
-            }
-            reader->skip(gotSize);
-        }
-        if (!aborted)
-        {
-            assert(!owner.serializer); // A count can never need serializing, surely!
-            if (outputRecordSize == 1)
-                *(byte *)recBuffer = (byte)totalCount;
-            else
-            {
-                assertex(outputRecordSize == sizeof(unsigned __int64));
-                *(unsigned __int64 *)recBuffer = totalCount;
-            }
-            output->putBuffer(recBuffer, outputRecordSize, false);
-        }
-    }
-};
-
-// Used when there is no key, variable records
-class UnkeyedVariableCountRecordProcessor : public UnkeyedCountRecordProcessor
-{
-public:
-    UnkeyedVariableCountRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskCountActivity &_owner, IDirectReader *_reader)
-        : UnkeyedCountRecordProcessor(_cursor, _owner, _reader), deserializeSource(reader)
-    {
-        prefetcher.setown(owner.diskSize.queryOriginal()->createDiskPrefetcher());
-    }
-
-    // This version is used for variable size rows 
-    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
-    {
-        unsigned outputRecordSize = owner.meta.getFixedSize();
-        void *recBuffer = output->getBuffer(outputRecordSize, false);
-        helper->setCallback(reader->queryThorDiskCallback());
-        unsigned __int64 totalCount  = 0;
-
-        while (!aborted && !deserializeSource.eos())
-        {
-            prefetcher->readAhead(deserializeSource);
-            const byte *nextRec = deserializeSource.queryRow();
-            if (!cursor || !cursor->isFiltered(nextRec))
-            {
-                totalCount += helper->numValid(nextRec);
-                if (totalCount >= stopAfter)
-                {
-                    totalCount = stopAfter;
-                    break;
-                }
-            }
-            deserializeSource.finishedRow();
-        }
-        if (!aborted)
-        {
-            assert(!owner.serializer); // A count can never need serializing, surely!
-            if (outputRecordSize == 1)
-                *(byte *)recBuffer = (byte)totalCount;
-            else
-            {
-                assertex(outputRecordSize == sizeof(unsigned __int64));
-                *(unsigned __int64 *)recBuffer = totalCount;
-            }
-            output->putBuffer(recBuffer, outputRecordSize, false);
-        }
-    }
-protected:
-    CThorContiguousRowBuffer deserializeSource;
-    Owned<ISourceRowPrefetcher> prefetcher;
-};
-
-IInMemoryFileProcessor *createUnkeyedCountRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskCountActivity &owner, bool variableDisk, IDirectReader *reader)
-{
-    if (variableDisk)
-        return new UnkeyedVariableCountRecordProcessor(cursor, owner, reader);
-    else
-        return new UnkeyedCountRecordProcessor(cursor, owner, reader);
+    return new CountRecordProcessor(owner, reader);
 }
 
 ISlaveActivityFactory *createRoxieDiskCountActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
@@ -2256,8 +1778,7 @@ ISlaveActivityFactory *createRoxieDiskCountActivityFactory(IPropertyTree &_graph
 //================================================================================================
 
 class CRoxieDiskAggregateActivity;
-IInMemoryFileProcessor *createKeyedAggregateRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskAggregateActivity &owner);
-IInMemoryFileProcessor *createUnkeyedAggregateRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskAggregateActivity &owner, bool variableDisk, IDirectReader *reader);
+IInMemoryFileProcessor *createAggregateRecordProcessor(CRoxieDiskAggregateActivity &owner, IDirectReader *_reader);
 
 class CRoxieDiskAggregateActivity : public CRoxieDiskReadBaseActivity
 {
@@ -2291,8 +1812,7 @@ public:
     {
         {
             CriticalBlock p(pcrit);
-            processor.setown(isKeyed ? createKeyedAggregateRecordProcessor(cursor, *this) : 
-                                       createUnkeyedAggregateRecordProcessor(cursor, *this, diskSize.isVariableSize(), manager->createReader(readPos, parallelPartNo, numParallel, translators, queryContext->queryCodeContext(), basefactory->queryId())));
+            processor.setown(createAggregateRecordProcessor(*this, reader));
         }
         processor->doQuery(output, 0, 0, 0);
     }
@@ -2543,166 +2063,47 @@ public:
 
 //================================================================================================
 
-// RecordProcessors used by Disk Aggregate activity.
-
-// Note - the classes below could be commoned up to make the code smaller, but they have been deliberately unrolled to 
-// keep to a bare minimum the number of virtual calls/variable tests per record scanned. This is very speed critical.
+// RecordProcessor used by Disk Aggregate activity.
 
 class AggregateRecordProcessor : public RecordProcessor
 {
 public:
-    AggregateRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskAggregateActivity &_owner) : RecordProcessor(_cursor), owner(_owner)
+    AggregateRecordProcessor(CRoxieDiskAggregateActivity &_owner, IDirectReader *_reader)
+    : RecordProcessor(_reader), owner(_owner)
     {
         helper = _owner.helper;
+        helper->setCallback(reader);
+    }
+
+    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
+    {
+        OptimizedRowBuilder rowBuilder(owner.rowAllocator, owner.meta, output, owner.serializer);
+        helper->clearAggregate(rowBuilder);
+        while (!aborted)
+        {
+            const byte *nextRec = reader->nextRow();
+            if (!nextRec)
+                break;
+            helper->processRow(rowBuilder, nextRec);
+            reader->finishedRow();
+        }
+        if (!aborted)
+        {
+            if (helper->processedAnyRows())
+            {
+                size32_t finalSize = owner.meta.getRecordSize(rowBuilder.getSelf());
+                rowBuilder.writeToOutput(finalSize, true);
+            }
+        }
     }
 protected:
     CRoxieDiskAggregateActivity &owner;
     IHThorDiskAggregateArg *helper;
 };
 
-// Used when we have an in-memory key that matches at least some of the filter conditions
-class KeyedAggregateRecordProcessor : public AggregateRecordProcessor
+IInMemoryFileProcessor *createAggregateRecordProcessor(CRoxieDiskAggregateActivity &_owner, IDirectReader *_reader)
 {
-public:
-    KeyedAggregateRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskAggregateActivity &_owner) : AggregateRecordProcessor(_cursor, _owner)
-    {
-        helper->setCallback(cursor);
-    }
-
-    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
-    {
-        // doQuery needs to be as fast as possible - we are making a virtual call to it per query in order to avoid tests of loop-invariants within it
-        OptimizedRowBuilder rowBuilder(owner.rowAllocator, owner.meta, output, owner.serializer);
-        helper->clearAggregate(rowBuilder);
-        IInMemoryIndexCursor *lc = cursor;
-        lc->reset();
-        while (!aborted)
-        {
-            const void *nextCandidate = lc->nextMatch();
-            if (!nextCandidate)
-                break;
-            helper->processRow(rowBuilder, nextCandidate);
-        }
-        if (!aborted)
-        {
-            if (helper->processedAnyRows())
-            {
-                size32_t finalSize = owner.meta.getRecordSize(rowBuilder.getSelf());
-                rowBuilder.writeToOutput(finalSize, true);
-            }
-        }
-    }
-};
-
-IInMemoryFileProcessor *createKeyedAggregateRecordProcessor(IInMemoryIndexCursor *cursor, CRoxieDiskAggregateActivity &owner)
-{
-    return new KeyedAggregateRecordProcessor(cursor, owner);
-}
-
-// Used when we have no key - fixed size records
-class UnkeyedAggregateRecordProcessor : public AggregateRecordProcessor
-{
-public:
-    UnkeyedAggregateRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskAggregateActivity &_owner, IDirectReader *_reader) 
-        : AggregateRecordProcessor(_cursor, _owner), reader(_reader)
-    {
-        helper->setCallback(reader->queryThorDiskCallback());
-    }
-
-    // Note that variable size record handler overrides this class
-    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
-    {
-        OptimizedRowBuilder rowBuilder(owner.rowAllocator, owner.meta, output, owner.serializer);
-        helper->clearAggregate(rowBuilder);
-        size32_t recordSize = owner.diskSize.getFixedSize();
-        size32_t bufferSize = getBufferSize(recordSize);
-        while (!aborted)
-        {
-            size32_t gotSize;
-            const char *firstRec = (const char *) reader->peek(bufferSize, gotSize);
-            if (!gotSize)
-                break;
-            gotSize = roundDown(gotSize, recordSize);
-            const char *nextRec = firstRec;
-            endRec = firstRec + gotSize;
-            // This loop is the inner loop for memory diskreads - so keep it efficient!
-            if (cursor) // Moved this test out of the loop below for speed!
-            {
-                while (nextRec <= endRec)
-                {
-                    if (!cursor->isFiltered(nextRec))
-                        helper->processRow(rowBuilder, nextRec);
-                    nextRec += recordSize;
-                }
-            }
-            else
-            {
-                while (nextRec <= endRec)
-                {
-                    helper->processRow(rowBuilder, nextRec);
-                    nextRec += recordSize;
-                }
-            }
-            reader->skip(gotSize);
-        }
-        if (!aborted)
-        {
-            if (helper->processedAnyRows())
-            {
-                size32_t finalSize = owner.meta.getRecordSize(rowBuilder.getSelf());
-                rowBuilder.writeToOutput(finalSize, true);
-            }
-        }
-    }
-protected:
-    Owned<IDirectReader> reader;
-
-};
-
-// Used when we have no key - variablesize records
-class UnkeyedVariableAggregateRecordProcessor : public UnkeyedAggregateRecordProcessor
-{
-public:
-    UnkeyedVariableAggregateRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskAggregateActivity &_owner, IDirectReader *_reader) 
-        : UnkeyedAggregateRecordProcessor(_cursor, _owner, _reader), deserializeSource(_reader)
-    {
-        prefetcher.setown(owner.diskSize.queryOriginal()->createDiskPrefetcher());
-    }
-
-    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
-    {
-        OptimizedRowBuilder rowBuilder(owner.rowAllocator, owner.meta, output, owner.serializer);
-        helper->clearAggregate(rowBuilder);
-        while (!aborted && !deserializeSource.eos())
-        {
-            prefetcher->readAhead(deserializeSource);
-            const byte *nextRec = deserializeSource.queryRow();
-            if (!cursor || !cursor->isFiltered(nextRec))
-            {
-                helper->processRow(rowBuilder, nextRec);
-            }
-            deserializeSource.finishedRow();
-        }
-        if (!aborted)
-        {
-            if (helper->processedAnyRows())
-            {
-                size32_t finalSize = owner.meta.getRecordSize(rowBuilder.getSelf());
-                rowBuilder.writeToOutput(finalSize, true);
-            }
-        }
-    }
-protected:
-    CThorContiguousRowBuffer deserializeSource;
-    Owned<ISourceRowPrefetcher> prefetcher;
-};
-
-IInMemoryFileProcessor *createUnkeyedAggregateRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskAggregateActivity &_owner, bool variableDisk, IDirectReader *_reader)
-{
-    if (variableDisk)
-        return new UnkeyedVariableAggregateRecordProcessor(_cursor, _owner, _reader);
-    else
-        return new UnkeyedAggregateRecordProcessor(_cursor, _owner, _reader);
+    return new AggregateRecordProcessor(_owner, _reader);
 }
 
 ISlaveActivityFactory *createRoxieDiskAggregateActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
@@ -2771,10 +2172,7 @@ public:
     {
         {
             CriticalBlock p(pcrit);
-            processor.setown(isKeyed ? 
-                createKeyedGroupAggregateRecordProcessor(cursor, results, *helper) : 
-                createUnkeyedGroupAggregateRecordProcessor(cursor, results, *helper, manager->createReader(readPos, parallelPartNo, numParallel, translators, queryContext->queryCodeContext(), basefactory->queryId()),
-                                                           queryContext->queryCodeContext(), basefactory->queryId()));
+            processor.setown(createGroupAggregateRecordProcessor(results, *helper, reader));
         }
         processor->doQuery(output, 0, 0, 0);
         if (!aborted)
@@ -2915,139 +2313,41 @@ public:
 
 // RecordProcessors used by Disk Group Aggregate activity.
 
-// Note - the classes below could be commoned up to make the code smaller, but they have been deliberately unrolled to 
-// keep to a bare minimum the number of virtual calls/variable tests per record scanned. This is very speed critical.
-
 class GroupAggregateRecordProcessor : public RecordProcessor, implements IHThorGroupAggregateCallback
 {
 public:
     IMPLEMENT_IINTERFACE;
-    GroupAggregateRecordProcessor(IInMemoryIndexCursor *_cursor, RowAggregator &_results, IHThorDiskGroupAggregateArg &_helper)
-        : RecordProcessor(_cursor),
-          results(_results),
-          helper(_helper)
+    GroupAggregateRecordProcessor(RowAggregator &_results, IHThorDiskGroupAggregateArg &_helper, IDirectReader *_reader)
+    : RecordProcessor(_reader), results(_results), helper(_helper)
     {
     }
+
     virtual void processRow(const void * next)
     {
         results.addRow(next);
     }
+
+    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
+    {
+        helper.setCallback(reader);
+        while (!aborted)
+        {
+            const byte *nextRec = reader->nextRow();
+            if (!nextRec)
+                break;
+            helper.processRow(nextRec, this);
+            reader->finishedRow();
+        }
+    }
+
 protected:
     RowAggregator &results;
     IHThorDiskGroupAggregateArg &helper;
 };
 
-
-// Used when we have an in-memory key that matches at least some of the filter conditions
-class KeyedGroupAggregateRecordProcessor : public GroupAggregateRecordProcessor
+IInMemoryFileProcessor *createGroupAggregateRecordProcessor(RowAggregator &results, IHThorDiskGroupAggregateArg &helper, IDirectReader *reader)
 {
-public:
-    KeyedGroupAggregateRecordProcessor(IInMemoryIndexCursor *_cursor, RowAggregator &_results, IHThorDiskGroupAggregateArg &_helper)
-    : GroupAggregateRecordProcessor(_cursor, _results, _helper)
-    {
-        helper.setCallback(cursor);
-    }
-
-    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
-    {
-        // doQuery needs to be as fast as possible - we are making a virtual call to it per query in order to avoid tests of loop-invariants within it
-        IInMemoryIndexCursor *lc = cursor;
-        lc->reset();
-        while (!aborted)
-        {
-            const void *nextCandidate = lc->nextMatch();
-            if (!nextCandidate)
-                break;
-            helper.processRow(nextCandidate, this);
-        }
-    }
-};
-
-IInMemoryFileProcessor *createKeyedGroupAggregateRecordProcessor(IInMemoryIndexCursor *cursor, RowAggregator &results, IHThorDiskGroupAggregateArg &helper)
-{
-    return new KeyedGroupAggregateRecordProcessor(cursor, results, helper);
-}
-
-// Used when we have no key, fixed size records. Variable size records use more derived class
-class UnkeyedGroupAggregateRecordProcessor : public GroupAggregateRecordProcessor
-{
-public:
-    UnkeyedGroupAggregateRecordProcessor(IInMemoryIndexCursor *_cursor, RowAggregator &_results, IHThorDiskGroupAggregateArg &_helper, IDirectReader *_reader)
-    : GroupAggregateRecordProcessor(_cursor, _results, _helper), reader(_reader)
-    {
-        helper.setCallback(reader->queryThorDiskCallback());
-    }
-
-    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
-    {
-        size32_t recordSize = helper.queryDiskRecordSize()->getFixedSize();
-        size32_t bufferSize = getBufferSize(recordSize);
-        while (!aborted && !reader->eos())
-        {
-            size32_t gotSize;
-            const char *firstRec = (const char *) reader->peek(bufferSize, gotSize);
-            if (!gotSize)
-                break;
-            gotSize = roundDown(gotSize, recordSize);
-            const char *nextRec = firstRec;
-            endRec = firstRec + gotSize;
-            // This loop is the inner loop for memory diskreads - so keep it efficient!
-            if (cursor)
-            {
-                while (nextRec <= endRec)
-                {
-                    if (!cursor->isFiltered(nextRec))
-                        helper.processRow(nextRec, this);
-                    nextRec += recordSize;
-                }
-            }
-            else
-            {
-                helper.processRows(gotSize, firstRec, this);
-            }
-            reader->skip(gotSize);
-        }
-    }
-
-protected:
-    Owned<IDirectReader> reader;
-};
-
-// Used when we have no key, variable size records.
-class UnkeyedVariableGroupAggregateRecordProcessor : public UnkeyedGroupAggregateRecordProcessor
-{
-public:
-    UnkeyedVariableGroupAggregateRecordProcessor(IInMemoryIndexCursor *_cursor, RowAggregator &_results, IHThorDiskGroupAggregateArg &_helper, IDirectReader *_reader, 
-                                                 ICodeContext *ctx, unsigned activityId)
-    : UnkeyedGroupAggregateRecordProcessor(_cursor, _results, _helper, _reader), deserializeSource(_reader)
-    {
-        prefetcher.setown(helper.queryDiskRecordSize()->createDiskPrefetcher());
-    }
-
-    virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
-    {
-        helper.setCallback(reader->queryThorDiskCallback());
-        while (!aborted && !deserializeSource.eos())
-        {
-            // This loop is the inner loop for memory diskreads - so keep it efficient!
-            prefetcher->readAhead(deserializeSource);
-            const byte *nextRec = deserializeSource.queryRow();
-            if (!cursor || !cursor->isFiltered(nextRec))
-                helper.processRow(nextRec, this);
-            deserializeSource.finishedRow();
-        }
-    }
-protected:
-    CThorContiguousRowBuffer deserializeSource;
-    Owned<ISourceRowPrefetcher> prefetcher;
-};
-
-IInMemoryFileProcessor *createUnkeyedGroupAggregateRecordProcessor(IInMemoryIndexCursor *cursor, RowAggregator &results, IHThorDiskGroupAggregateArg &helper, IDirectReader *reader, ICodeContext *ctx, unsigned activityId)
-{
-    if (helper.queryDiskRecordSize()->isVariableSize())
-        return new UnkeyedVariableGroupAggregateRecordProcessor(cursor, results, helper, reader, ctx, activityId);
-    else
-        return new UnkeyedGroupAggregateRecordProcessor(cursor, results, helper, reader);
+    return new GroupAggregateRecordProcessor(results, helper, reader);
 }
 
 ISlaveActivityFactory *createRoxieDiskGroupAggregateActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
@@ -4248,7 +3548,7 @@ ISlaveActivityFactory *createRoxieIndexGroupAggregateActivityFactory(IPropertyTr
 class CRoxieFetchActivityFactory : public CSlaveActivityFactory
 {
 public:
-    Owned<ITranslatorSet> translators; // MORE - use them!
+    Owned<ITranslatorSet> translators;
     Owned<IFileIOArray> fileArray;
 
     CRoxieFetchActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
@@ -4404,7 +3704,7 @@ public:
         : CRoxieFetchActivityBase(_logctx, _packet, _hFactory, _aFactory, _translators, _files)
     {
         // If we ever supported superfiles this would need to move to setPartNo, and pass proper subfile idx in
-        rowPrefetcher.setown(translators->getPrefetcher(0, false, queryContext->queryCodeContext(), basefactory->queryId()));
+        rowPrefetcher.setown(translators->getPrefetcher(0, false));
 
         IOutputMetaData *diskMeta = helper->queryProjectedDiskRecordSize();
         diskAllocator.setown(getRowAllocator(diskMeta, basefactory->queryId()));
@@ -5033,7 +4333,7 @@ class CRoxieKeyedJoinFetchActivity : public CRoxieSlaveActivity
         rawFile.setown(files->getFilePart(lastPartNo.partNo, base)); // MORE - superfiles
         translator = translators->queryTranslator(0);                // MORE - superfiles
         rawStream.setown(createFileSerialStream(rawFile, 0, -1, 0));
-        prefetcher.setown(translators->getPrefetcher(0, false, queryContext->queryCodeContext(), basefactory->queryId()));
+        prefetcher.setown(translators->getPrefetcher(0, false));
         prefetchSource.setStream(rawStream);
     }
 
