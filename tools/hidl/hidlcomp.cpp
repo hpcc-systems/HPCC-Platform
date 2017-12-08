@@ -3272,7 +3272,6 @@ void EspMessageInfo::write_esp_ipp()
     
     outs("\n");
     write_esp_methods(espaxm_both, true, false);
-    
     outs("};\n\n");
 }
 
@@ -6384,13 +6383,22 @@ void EspServInfo::write_esp_service_ipp()
     for (mthi=methods;mthi!=NULL;mthi=mthi->next)
     {
         bool stubbed = (findMetaTag(mthi->tags,"stubbed")!=NULL);
-
-        outf(1, "%sbool on%s(IEspContext &context, IEsp%s &req, IEsp%s &resp)\n", (stubbed) ? "" : "//", mthi->getName(), mthi->getReq(), mthi->getResp());
-        outf(1, "%s{\n", (stubbed) ? "" : "//");
-        outf(2, "%sreturn false;\n", (stubbed) ? "" : "//");
-        outf(1, "%s}\n", (stubbed) ? "" : "//");
+        if (streq(mthi->getName(), "HeartBeat"))
+	{
+	  outf(1, "bool on%s(IEspContext &context, IEsp%s &req, IEsp%s &resp)\n",  mthi->getName(), mthi->getReq(), mthi->getResp());
+	    outs(1, "{\n");
+	    outs(2, "return true;\n");
+	    outs(1, "}\n");
+	}
+	else
+	  {
+	    outf(1, "%sbool on%s(IEspContext &context, IEsp%s &req, IEsp%s &resp)\n", (stubbed) ? "" : "//", mthi->getName(), mthi->getReq(), mthi->getResp());
+	    outf(1, "%s{\n", (stubbed) ? "" : "//");
+	    outf(2, "%sreturn false;\n", (stubbed) ? "" : "//");
+	    outf(1, "%s}\n", (stubbed) ? "" : "//");
+	  }
     }
-    
+
     outs("};\n\n");
 }
 
