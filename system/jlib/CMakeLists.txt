@@ -180,6 +180,7 @@ include_directories (
          ../../system/include 
          ../../system/lzma
          ../../system/lz4_sm/lz4/lib
+         ../../system/libbase58
          ${CMAKE_CURRENT_BINARY_DIR}  # for generated jelog.h file 
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
@@ -191,6 +192,7 @@ HPCC_ADD_LIBRARY( jlib SHARED ${SRCS} ${INCLUDES} )
 target_link_libraries ( jlib
         lzma
         lz4
+        libbase58
        )
 
 if ( ${HAVE_LIBDL} )

@@ -906,6 +906,12 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
                 <xsl:if test="string(@workunitTimout)!=''">
                     <WorkunitTimeout><xsl:value-of select="@workunitTimeout"/></WorkunitTimeout>
                 </xsl:if>
+                <xsl:if test="string(@httpCallerIdHeader)!=''">
+                    <HttpCallerIdHeader><xsl:value-of select="@httpCallerIdHeader"/></HttpCallerIdHeader>
+                </xsl:if>
+                <xsl:if test="string(@httpGlobalIdHeader)!=''">
+                    <HttpGlobalIdHeader><xsl:value-of select="@httpGlobalIdHeader"/></HttpGlobalIdHeader>
+                </xsl:if>
                 <WorkunitTimeout><xsl:value-of select="@workunitTimeout"/></WorkunitTimeout>
                 <xsl:if test="string(@xsltMaxDepth)!=''">
                     <xsltMaxDepth><xsl:value-of select="@xsltMaxDepth"/></xsltMaxDepth>

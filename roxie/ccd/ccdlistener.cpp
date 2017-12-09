@@ -1165,6 +1165,13 @@ public:
             wu.setown(daliHelper->attachWorkunit(wuid.get(), NULL));
         }
         Owned<StringContextLogger> logctx = new StringContextLogger(wuid.get());
+        if (wu->hasDebugValue("GlobalId"))
+        {
+            SCMStringBuffer globalId;
+            SocketEndpoint ep;
+            ep.setLocalHost(0);
+            logctx->setGlobalId(wu->getDebugValue("GlobalId", globalId).str(), ep, GetCurrentProcessId());
+        }
         Owned<IQueryFactory> queryFactory;
         try
         {
@@ -1280,7 +1287,23 @@ public:
         {
             StringBuffer s;
             logctx.getStats(s);
-            logctx.CTXLOG("COMPLETE: %s complete in %d msecs memory=%d Mb priority=%d slavesreply=%d%s", wuid.get(), elapsed, memused, priority, slavesReplyLen, s.str());
+
+            StringBuffer txidInfo;
+            const char *globalId = logctx.queryGlobalId();
+            if (globalId && *globalId)
+            {
+                txidInfo.append(" [GlobalId: ").append(globalId);
+                SCMStringBuffer s;
+                wu->getDebugValue("CallerId", s);
+                if (s.length())
+                    txidInfo.append(", CallerId: ").append(s.str());
+                s.set(logctx.queryLocalId());
+                if (s.length())
+                    txidInfo.append(", LocalId: ").append(s.str());
+                txidInfo.append(']');
+            }
+
+            logctx.CTXLOG("COMPLETE: %s%s complete in %d msecs memory=%d Mb priority=%d slavesreply=%d%s", wuid.get(), txidInfo.str(), elapsed, memused, priority, slavesReplyLen, s.str());
         }
     }
 
@@ -1311,6 +1334,7 @@ class RoxieProtocolMsgContext : implements IHpccProtocolMsgContext, public CInte
 public:
     StringAttr queryName;
     StringAttr uid = "-";
+    StringAttr callerId;
     Owned<CascadeManager> cascade;
     Owned<IDebuggerContext> debuggerContext;
     Owned<CDebugCommandHandler> debugCmdHandler;
@@ -1388,14 +1412,24 @@ public:
         return *cascade;
     }
 
-    virtual void setTransactionId(const char *id)
+    virtual void setTransactionId(const char *id, bool global)
     {
         if (!id || !*id)
             return;
         uid.set(id);
         ensureContextLogger();
+        if (!isEmptyString(logctx->queryGlobalId())) //globalId wins
+            return;
+        if (global)
+            logctx->setGlobalId(id, ep, 0);
         StringBuffer s;
         logctx->set(ep.getIpText(s).appendf(":%u{%s}", ep.port, uid.str()).str());
+    }
+    virtual void setCallerId(const char *id)
+    {
+        if (!id || !*id)
+            return;
+        callerId.set(id);
     }
     inline IDebuggerContext &ensureDebuggerContext(const char *id)
     {
@@ -1513,7 +1547,20 @@ public:
             {
                 StringBuffer s;
                 logctx->getStats(s);
-                logctx->CTXLOG("COMPLETE: %s %s from %s complete in %d msecs memory=%d Mb priority=%d slavesreply=%d resultsize=%d continue=%d%s", queryName.get(), uid.get(), peer, elapsed, memused, getQueryPriority(), slavesReplyLen, bytesOut, continuationNeeded, s.str());
+
+                StringBuffer txIds;
+                if (callerId.length())
+                    txIds.appendf("caller: %s", callerId.str());
+                const char *localId = logctx->queryLocalId();
+                if (localId && *localId)
+                {
+                    if (txIds.length())
+                        txIds.append(", ");
+                    txIds.append("local: ").append(localId);
+                }
+                if (txIds.length());
+                    txIds.insert(0, '[').append(']');
+                logctx->CTXLOG("COMPLETE: %s %s%s from %s complete in %d msecs memory=%d Mb priority=%d slavesreply=%d resultsize=%d continue=%d%s", queryName.get(), uid.get(), txIds.str(), peer, elapsed, memused, getQueryPriority(), slavesReplyLen, bytesOut, continuationNeeded, s.str());
             }
         }
     }

@@ -2529,12 +2529,18 @@ class CThorContextLogger : implements IContextLogger, public CSimpleInterface
 {
     CJobBase &job;
     unsigned traceLevel;
+    StringAttr globalIdHeader;
+    StringAttr callerIdHeader;
+    StringAttr globalId;
+    StringBuffer localId;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     CThorContextLogger(CJobBase &_job) : job(_job)
     {
         traceLevel = 1;
+        if (globals->hasProp("@httpGlobalIdHeader"))
+            setHttpIdHeaders(globals->queryProp("@httpGlobalIdHeader"), globals->queryProp("@httpCallerIdHeader"));
     }
     virtual void CTXLOGva(const char *format, va_list args) const __attribute__((format(printf,2,0)))
     {
@@ -2566,6 +2572,35 @@ public:
     {
         return traceLevel;
     }
+    virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid)
+    {
+        globalId.set(id);
+        appendLocalId(localId.clear(), ep, pid);
+    }
+    virtual const char *queryGlobalId() const
+    {
+        return globalId.get();
+    }
+    virtual const char *queryLocalId() const
+    {
+        return localId.str();
+    }
+    virtual void setHttpIdHeaders(const char *global, const char *caller)
+    {
+        if (global && *global)
+            globalIdHeader.set(global);
+        if (caller && *caller)
+            callerIdHeader.set(caller);
+    }
+    virtual const char *queryGlobalIdHttpHeader() const
+    {
+        return globalIdHeader.str();
+    }
+    virtual const char *queryCallerIdHttpHeader() const
+    {
+        return callerIdHeader.str();
+    }
+
 };
 
 ////

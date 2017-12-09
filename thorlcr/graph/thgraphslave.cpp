@@ -1491,6 +1491,26 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
 
     init();
 
+    if (workUnitInfo->hasProp("Debug/globalid"))
+    {
+        const char *globalId = workUnitInfo->queryProp("Debug/globalid");
+        if (globalId && *globalId)
+        {
+            SocketEndpoint thorEp;
+            thorEp.setLocalHost(getMachinePortBase());
+            logctx->setGlobalId(globalId, thorEp, 0);
+
+            VStringBuffer msg("GlobalId: %s", globalId);
+            const char *callerId = workUnitInfo->queryProp("debug/callerid");
+            if (callerId && *callerId)
+                msg.append(", CallerId: ").append(callerId);
+            const char *localId = logctx->queryLocalId();
+            if (localId && *localId)
+                msg.append(", LocalId: ").append(localId);
+            logctx->CTXLOG("%s", msg.str());
+        }
+    }
+
     oldNodeCacheMem = 0;
     mpJobTag = _mpJobTag;
     slavemptag = _slavemptag;

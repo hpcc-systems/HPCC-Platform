@@ -1524,6 +1524,12 @@ private:
         if (!httpHeaderBlockContainsHeader(httpheaders, ACCEPT_ENCODING))
             request.appendf("%s: gzip, deflate\r\n", ACCEPT_ENCODING);
 #endif
+        if (!isEmptyString(master->logctx.queryGlobalId()))
+        {
+            request.append(master->logctx.queryGlobalIdHttpHeader()).append(": ").append(master->logctx.queryGlobalId()).append("\r\n");
+            if (!isEmptyString(master->logctx.queryLocalId()))
+                request.append(master->logctx.queryCallerIdHttpHeader()).append(": ").append(master->logctx.queryLocalId()).append("\r\n");  //our localId is reciever's callerId
+        }
 
         if (master->wscType == STsoap)
         {

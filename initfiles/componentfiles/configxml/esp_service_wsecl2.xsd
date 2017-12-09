@@ -31,11 +31,11 @@
                 </xs:annotation>
                 <xs:complexType>
                 <!--DocAutoBuildCode-->
-                    <xs:annotation>
-		       <xs:appinfo>
-		          <docid>MyWS2-T01</docid>
-		       </xs:appinfo>
-		    </xs:annotation>
+                  <xs:annotation>
+                    <xs:appinfo>
+                      <docid>MyWS2-T01</docid>
+                   </xs:appinfo>
+                  </xs:annotation>
            <xs:attribute name="name" type="xs:string" use="required" default="">
                     <xs:annotation>
                       <xs:appinfo>
@@ -93,26 +93,26 @@
                 <xs:complexType>
                 <!--DocAutoBuildCode-->
                  <xs:annotation>
-	           <xs:appinfo>
-                    <docid>MyWS2-T02</docid>
-	           </xs:appinfo>
+                   <xs:appinfo>
+                     <docid>MyWS2-T02</docid>
+                   </xs:appinfo>
                  </xs:annotation>
                   <xs:attribute name="name" type="topologyClusterType" use="required">
-	                <xs:annotation>
-	                  <xs:appinfo>
-	                    <tooltip>WsEcl will only display specified targets, if none specified WsEcl will display all targets.</tooltip>
-	                  </xs:appinfo>
-	                </xs:annotation>
+                    <xs:annotation>
+                      <xs:appinfo>
+                        <tooltip>WsEcl will only display specified targets, if none specified WsEcl will display all targets.</tooltip>
+                      </xs:appinfo>
+                    </xs:annotation>
                   </xs:attribute>
                 </xs:complexType>
               </xs:element>
             </xs:sequence>
             <!--DocAutoBuildCode-->
-                <xs:annotation>
-	          <xs:appinfo>
-                    <docid>MyWS2-T03</docid>
-	          </xs:appinfo>
-	        </xs:annotation>
+            <xs:annotation>
+              <xs:appinfo>
+                <docid>MyWS2-T03</docid>
+              </xs:appinfo>
+            </xs:annotation>
             <xs:attribute name="build" type="buildType" use="required">
                 <xs:annotation>
                     <xs:appinfo>
@@ -170,6 +170,20 @@
                         <tooltip>Maximum libxslt stylesheet template variables (affects size and complexity of dataset that can be rendered)</tooltip>
                     </xs:appinfo>
                 </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="httpCallerIdHeader" type="xs:string" use="optional" default="HPCC-Caller-Id">
+              <xs:annotation>
+                <xs:appinfo>
+                  <tooltip>HTTP Header field to use for sending and receiving CallerId</tooltip>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="httpGlobalIdHeader" type="xs:string" use="optional" default="HPCC-Global-Id">
+              <xs:annotation>
+                <xs:appinfo>
+                  <tooltip>HTTP Header field to use for sending and receiving GlobalId</tooltip>
+                </xs:appinfo>
+              </xs:annotation>
             </xs:attribute>
         </xs:complexType>
     </xs:element>

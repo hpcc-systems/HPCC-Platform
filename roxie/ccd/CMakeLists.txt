@@ -90,6 +90,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/dali/ft
          ${HPCC_SOURCE_DIR}/system/security/shared
          ${HPCC_SOURCE_DIR}/system/security/securesocket
+         ${HPCC_SOURCE_DIR}/system/libbase58
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DCCD_EXPORTS -DSTARTQUERY_EXPORTS )
@@ -117,6 +118,7 @@ target_link_libraries ( ccd
          schedulectrl
          dllserver 
          workunit 
+         libbase58
     )
 
 IF (USE_OPENSSL)

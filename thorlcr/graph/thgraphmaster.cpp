@@ -1297,6 +1297,26 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, ILoaded
     numChannels = 1;
     init();
 
+    if (workunit->hasDebugValue("GlobalId"))
+    {
+        SCMStringBuffer txId;
+        workunit->getDebugValue("GlobalId", txId);
+        if (txId.length())
+        {
+            SocketEndpoint thorEp;
+            thorEp.setLocalHost(getMachinePortBase());
+            logctx->setGlobalId(txId.str(), thorEp, 0);
+
+            VStringBuffer msg("GlobalId: %s", txId.str());
+            workunit->getDebugValue("CallerId", txId);
+            if (txId.length())
+                msg.append(", CallerId: ").append(txId.str());
+            txId.set(logctx->queryLocalId());
+            if (txId.length())
+                msg.append(", LocalId: ").append(txId.str());
+            logctx->CTXLOG("%s", msg.str());
+        }
+    }
     resumed = WUActionResume == workunit->getAction();
     fatalHandler.setown(new CFatalHandler(globals->getPropInt("@fatal_timeout", FATAL_TIMEOUT)));
     querySent = spillsSaved = false;

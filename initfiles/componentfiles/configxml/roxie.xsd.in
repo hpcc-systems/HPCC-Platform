@@ -652,6 +652,20 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="httpCallerIdHeader" type="xs:string" use="optional" default="HPCC-Caller-Id">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>HTTP Header field to use for sending and receiving CallerId</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="httpGlobalIdHeader" type="xs:string" use="optional" default="HPCC-Global-Id">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>HTTP Header field to use for sending and receiving GlobalId</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="ignoreOrphans" type="xs:boolean" use="optional" default="true">
       <xs:annotation>
         <xs:appinfo>

@@ -23,11 +23,11 @@
     <xs:element name="EclAgentProcess">
         <xs:complexType>
          <!--DOC-Autobuild-code-->
-	<xs:annotation>
-	   <xs:appinfo>
-	      <docid>EA.t1</docid>
-	   </xs:appinfo>
-	</xs:annotation>  
+       <xs:annotation>
+         <xs:appinfo>
+           <docid>EA.t1</docid>
+         </xs:appinfo>
+       </xs:annotation>
             <xs:sequence>
                 <xs:element name="Instance" maxOccurs="unbounded">
                     <xs:annotation>
@@ -245,6 +245,20 @@
           <tooltip>eclAgent Workunit Execution Queue Name</tooltip>
           <autogenforwizard>1</autogenforwizard>
           <autogensuffix>_queue</autogensuffix>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="httpCallerIdHeader" type="xs:string" use="optional" default="HPCC-Caller-Id">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>HTTP Header field to use for sending and receiving CallerId</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="httpGlobalIdHeader" type="xs:string" use="optional" default="HPCC-Global-Id">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>HTTP Header field to use for sending and receiving GlobalId</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>

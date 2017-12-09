@@ -568,6 +568,10 @@ public: // Not very clean but I don't care
     mutable bool aborted;
     mutable CIArrayOf<LogItem> log;
 private:
+    StringAttr globalIdHeader = "HPCC-Global-Id";
+    StringAttr callerIdHeader = "HPCC-Caller-Id";
+    StringAttr globalId;
+    StringBuffer localId;
     ContextLogger(const ContextLogger &);  // Disable copy constructor
 public:
     IMPLEMENT_IINTERFACE;
@@ -580,6 +584,8 @@ public:
         start = msTick();
         channel = 0;
         aborted = false;
+        if (topology->hasProp("@httpGlobalIdHeader"))
+            setHttpIdHeaders(topology->queryProp("@httpGlobalIdHeader"), topology->queryProp("@httpCallerIdHeader"));
     }
 
     void outputXML(IXmlStreamFlusher &out)
@@ -697,6 +703,34 @@ public:
     void reset()
     {
         stats.reset();
+    }
+    virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid)
+    {
+        globalId.set(id);
+        appendLocalId(localId.clear(), ep, pid);
+    }
+    virtual const char *queryGlobalId() const
+    {
+        return globalId.get();
+    }
+    virtual const char *queryLocalId() const
+    {
+        return localId.str();
+    }
+    virtual void setHttpIdHeaders(const char *global, const char *caller)
+    {
+        if (global && *global)
+            globalIdHeader.set(global);
+        if (caller && *caller)
+            callerIdHeader.set(caller);
+    }
+    virtual const char *queryGlobalIdHttpHeader() const
+    {
+        return globalIdHeader.str();
+    }
+    virtual const char *queryCallerIdHttpHeader() const
+    {
+        return callerIdHeader.str();
     }
 };
 
