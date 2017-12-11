@@ -53,6 +53,20 @@ define([
 
         MyAccount: function (params) {
             return ESPRequest.send("ws_account", "MyAccount", params);
+        },
+
+        Unlock: function (params) {
+            lang.mixin(params, {
+                handleAs: "json"
+            });
+            return ESPRequest.send("esp", "unlock", params);
+        },
+
+        Lock: function (params) {
+            lang.mixin(params, {
+                handleAs: "json"
+            });
+            return ESPRequest.send("esp", "lock", params);
         }
     };
 });
