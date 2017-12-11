@@ -317,9 +317,10 @@ protected:
     unsigned keySize;       // size of key record including payload
     unsigned keyedSize;     // size of non-payload part of key
     unsigned numsegs;
-    bool matched;
-    bool eof;
-    bool started;
+    bool matched = false;
+    bool eof = false;
+    bool started = false;
+    bool transformSegs = false;
     StringAttr keyName;
     unsigned seeks;
     unsigned scans;
@@ -328,7 +329,6 @@ protected:
     unsigned wildseeks;
 
     Owned<IRecordLayoutTranslator> layoutTrans;
-    bool transformSegs;
     IIndexReadContext * activitySegs;
     CMemoryBlock layoutTransBuff;
     size32_t layoutSize = 0;
@@ -483,12 +483,10 @@ public:
         keyCursor = NULL;
         keySize = 0;
         keyedSize = 0;
-        started = false;
         setKey(_key);
         seeks = 0;
         scans = 0;
         skips = 0;
-        eof = false;
         nullSkips = 0;
         wildseeks = 0;
         transformSegs = false;
@@ -742,31 +740,29 @@ public:
 
     unsigned __int64 getCount()
     {
+        assertex(keyCursor);
         matched = false;
         eof = false;
         setLow(0);
         keyCursor->reset();
         unsigned __int64 result = 0;
         unsigned lseeks = 0;
-        if (keyCursor)
+        unsigned lastRealSeg = segs.lastRealSeg();
+        for (;;)
         {
-            unsigned lastRealSeg = segs.lastRealSeg();
-            for (;;)
+            if (_lookup(true, lastRealSeg))
             {
-                if (_lookup(true, lastRealSeg))
-                {
-                    unsigned __int64 locount = keyCursor->getSequence();
-                    endRange(lastRealSeg);
-                    keyCursor->ltEqual(keyBuffer, NULL, true);
-                    lseeks++;
-                    result += keyCursor->getSequence()-locount+1;
-                    if (!incrementKey(lastRealSeg))
-                        break;
-                    matched = false;
-                }
-                else
+                unsigned __int64 locount = keyCursor->getSequence();
+                endRange(lastRealSeg);
+                keyCursor->ltEqual(keyBuffer, NULL, true);
+                lseeks++;
+                result += keyCursor->getSequence()-locount+1;
+                if (!incrementKey(lastRealSeg))
                     break;
+                matched = false;
             }
+            else
+                break;
         }
         noteSeeks(lseeks, 0, 0);
         return result;
@@ -796,41 +792,39 @@ public:
 
     unsigned __int64 checkCount(unsigned __int64 max)
     {
+        assertex(keyCursor);
         matched = false;
         eof = false;
         setLow(0);
         keyCursor->reset();
         unsigned __int64 result = 0;
         unsigned lseeks = 0;
-        if (keyCursor)
+        unsigned lastFullSeg = segs.lastFullSeg();
+        if (lastFullSeg == (unsigned) -1)
         {
-            unsigned lastFullSeg = segs.lastFullSeg();
-            if (lastFullSeg == (unsigned) -1)
+            noteSeeks(1, 0, 0);
+            if (keyCursor->last(NULL))
+                return keyCursor->getSequence()+1;
+            else
+                return 0;
+        }
+        for (;;)
+        {
+            if (_lookup(true, lastFullSeg))
             {
-                noteSeeks(1, 0, 0);
-                if (keyCursor->last(NULL))
-                    return keyCursor->getSequence()+1;
-                else
-                    return 0;
-            }
-            for (;;)
-            {
-                if (_lookup(true, lastFullSeg))
-                {
-                    unsigned __int64 locount = keyCursor->getSequence();
-                    endRange(lastFullSeg);
-                    keyCursor->ltEqual(keyBuffer, NULL, true);
-                    lseeks++;
-                    result += keyCursor->getSequence()-locount+1;
-                    if (max && (result > max))
-                        break;
-                    if (!incrementKey(lastFullSeg))
-                        break;
-                    matched = false;
-                }
-                else
+                unsigned __int64 locount = keyCursor->getSequence();
+                endRange(lastFullSeg);
+                keyCursor->ltEqual(keyBuffer, NULL, true);
+                lseeks++;
+                result += keyCursor->getSequence()-locount+1;
+                if (max && (result > max))
                     break;
+                if (!incrementKey(lastFullSeg))
+                    break;
+                matched = false;
             }
+            else
+                break;
         }
         noteSeeks(lseeks, 0, 0);
         return result;
@@ -2367,6 +2361,7 @@ class CKeyMerger : public CKeyLevelManager
         for (unsigned segno = 0; segno < sortFromSeg; segno++)
         {
             IOverrideableKeySegmentMonitor *sm = QUERYINTERFACE(&segs.segMonitors.item(segno), IOverrideableKeySegmentMonitor);
+            assertex(sm);
             sm->setOverrideBuffer(fixeds[key]);
         }
         segs.recalculateCache();
@@ -2569,6 +2564,7 @@ public:
         for (segno = 0; segno < sortFromSeg; segno++)
         {
             IOverrideableKeySegmentMonitor *sm = QUERYINTERFACE(&segs.segMonitors.item(segno), IOverrideableKeySegmentMonitor);
+            assertex(sm);
             sm->setOverrideBuffer(NULL);
         }
         segs.recalculateCache();
@@ -2875,8 +2871,8 @@ extern jhtree_decl IKeyManager *createSingleKeyMerger(const RtlRecord &_recInfo,
 class CKeyIndexSet : implements IKeyIndexSet, public CInterface
 {
     IPointerArrayOf<IKeyIndex> indexes;
-    offset_t recordCount;
-    offset_t totalSize;
+    offset_t recordCount = 0;
+    offset_t totalSize = 0;
     StringAttr origFileName;
 
 public:
@@ -2913,8 +2909,6 @@ public:
         if (!keys.isItem(partNo))
         {
             return NULL;
-            DBGLOG("getKeyPart requested invalid part %d", partNo);
-            throw MakeStringException(0, "queryKeyPart requested invalid part %d", partNo);
         }
         IKeyIndexBase *key = keys.item(partNo);
         return key;

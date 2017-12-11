@@ -158,8 +158,8 @@ class RtlRecord;
 class jhtree_decl SegMonitorList : implements IInterface, implements IIndexReadContext, public CInterface
 {
     unsigned _lastRealSeg() const;
-    unsigned cachedLRS;
-    bool modified;
+    unsigned cachedLRS = 0;
+    bool modified = true;
     bool needWild;
     const RtlRecord &recInfo;
     unsigned keySegCount;
