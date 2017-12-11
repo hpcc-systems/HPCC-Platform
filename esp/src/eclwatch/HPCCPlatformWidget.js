@@ -25,6 +25,8 @@ define([
     "dojo/dom-style",
     "dojo/dom-geometry",
     "dojo/cookie",
+    "dojo/on",
+    "dojo/query",
     "dojo/topic",
     "dojo/request/xhr",
 
@@ -39,6 +41,7 @@ define([
     "hpcc/_TabContainerWidget",
     "hpcc/ESPRequest",
     "hpcc/ESPActivity",
+    "hpcc/ESPUtil",
     "hpcc/ws_account",
     "hpcc/ws_access",
     "hpcc/WsSMC",
@@ -60,6 +63,7 @@ define([
     "dijit/form/Textarea",
     "dijit/form/CheckBox",
     "dijit/Dialog",
+    "dijit/ConfirmDialog",
     "dijit/MenuSeparator",
     "dijit/PopupMenuItem",
 
@@ -67,11 +71,11 @@ define([
     "hpcc/TableContainer",
     "hpcc/InfoGridWidget"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domClass, domForm, domStyle, domGeo, cookie, topic, xhr,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domClass, domForm, domStyle, domGeo, cookie, on, query, topic, xhr,
                 registry, Tooltip,
                 UpgradeBar, ColorPicker,
                 CodeMirror,
-                _TabContainerWidget, ESPRequest, ESPActivity, WsAccount, WsAccess, WsSMC, WsTopology, GraphWidget, DelayLoadWidget, WsMachine,
+                _TabContainerWidget, ESPRequest, ESPActivity, ESPUtil, WsAccount, WsAccess, WsSMC, WsTopology, GraphWidget, DelayLoadWidget, WsMachine,
                 template) {
 
     declare("HPCCColorPicker", [ColorPicker], {
@@ -102,6 +106,12 @@ define([
             this.pluginsPage = registry.byId(this.id + "_Plugins");
             this.operationsPage = registry.byId(this.id + "_OPS");
             registry.byId(this.id + "SetBanner").set("disabled", true);
+            this.sessionBackground = registry.byId(this.id + "SessionBackground");
+            this.unlockDialog = registry.byId(this.id + "UnlockDialog");
+            this.unlockUserName = registry.byId(this.id + "UnlockUserName");
+            this.unlockPassword = registry.byId(this.id + "UnlockPassword");
+            this.logoutConfirm = registry.byId(this.id + "LogoutConfirm");
+            this.unlockForm = registry.byId(this.id + "UnlockForm");
 
             this.upgradeBar = new UpgradeBar({
                 notifications: [],
@@ -283,6 +293,7 @@ define([
         checkIfSessionsAreActive: function () {
             if (cookie("ESPSessionTimeoutSeconds")) {
                 this.logoutBtn.set("disabled", false);
+                dom.byId("Lock").textContent = this.i18n.Lock;
             }
         },
 
@@ -364,7 +375,7 @@ define([
                     });
                     context.configSourceCM.setSize("100%", "100%");
                     context.configSourceCM.setValue(context.configText);
-                }); 
+                });
             }
             this.stackContainer.selectChild(this.widget._Config);
         },
@@ -440,15 +451,57 @@ define([
         _onAboutClose: function (evt) {
             this.aboutDialog.hide();
         },
+
+        _onLock: function (evt) {
+            var context = this;
+            
+            xhr("esp/lock", {
+                method: "post",
+            }).then(function(data){
+                context.unlockDialog.show();
+                context.unlockUserName.set("value", context.userName);
+                domClass.add("SessionLock", "overlay");
+            });
+        },
+
+        _onUnlock: function (evt) {
+            var context = this;
+
+            if (this.unlockForm.validate()) {
+                WsAccount.Unlock({
+                    request: {
+                        username: this.unlockUserName.get("value"),
+                        password: this.unlockPassword.get("value")
+                    }
+                }).then(function (response) {
+                    var status = dom.byId("UnlockStatus");
+
+                    if (response.UnlockResponse.Error === 0) {
+                        if (status.innerHTML !== "") {
+                            status.innerHTML = "";
+                        }
+                        context.unlockDialog.hide();
+                        domClass.remove("SessionLock", "overlay");
+                    } else {
+                        status.innerHTML = response.UnlockResponse.Message
+                    }
+                });
+            }
+        },
 		
         _onLogout: function (evt) {
-            xhr("esp/logout", {
-                method: "post"
-            }).then(function(data){
-                if (data){
-                    document.cookie = "ESPSessionID" + location.port + " = '' "; "expires=Thu, 01 Jan 1970 00:00:00 GMT"; // or -1
-                    window.location.reload();
-                }
+            this.logoutConfirm.show();
+            query(".dijitDialogUnderlay").style("opacity", "0.5");
+            this.logoutConfirm.on("execute", function(){
+                xhr("esp/logout",{
+                    method: "post"
+                }).then(function(data){
+                    if (data){
+                        cookie("ESPSessionID" + location.port + " = '' ", "", { expires: -1 });
+                        //document.cookie = "ESPSessionID" + location.port + " = '' "; "expires=Thu, 01 Jan 1970 00:00:00 GMT"; // or -1
+                        window.location.reload();
+                    }
+                });
             });
         },
         
