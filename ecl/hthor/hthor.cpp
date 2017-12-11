@@ -1147,6 +1147,8 @@ void CHThorIndexWriteActivity::execute()
             reccount++;
         }
         builder->finish(metadata, &fileCrc);
+        duplicateKeyCount = builder->getDuplicateCount();
+        cummulativeDuplicateKeyCount += duplicateKeyCount;
         out->flush();
         out.clear();
     }
@@ -1206,6 +1208,7 @@ void CHThorIndexWriteActivity::execute()
     properties.setProp("@owner", agent.queryWorkUnit()->queryUser());
     properties.setProp("@workunit", agent.queryWorkUnit()->queryWuid());
     properties.setProp("@job", agent.queryWorkUnit()->queryJobName());
+    properties.setPropInt64("@duplicateKeyCount",duplicateKeyCount);
     char const * rececl = helper.queryRecordECL();
     if(rececl && *rececl)
         properties.setProp("ECL", rececl);

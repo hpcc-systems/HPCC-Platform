@@ -335,6 +335,7 @@ class CKeyBuilder : public CKeyBuilderBase, implements IKeyBuilder
 private:
     CWriteNode *activeNode;
     CBlobWriteNode *activeBlobNode;
+    unsigned __int64 duplicateCount;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -345,6 +346,7 @@ public:
         doCrc = true;
         activeNode = NULL;
         activeBlobNode = NULL;
+        duplicateCount = 0;
     }
 
 public:
@@ -402,6 +404,11 @@ public:
             activeNode = new CWriteNode(nextPos, keyHdr, true);
             nextPos += keyHdr->getNodeSize();
         }
+        else
+        {
+            if (memcmp(keyData,activeNode->getLastKeyValue(),keyedSize)==0)
+                ++duplicateCount;
+        }
         if (!activeNode->add(pos, keyData, recsize, sequence))
         {
             assertex(NULL != activeNode->getLastKeyValue()); // empty and doesn't fit!
@@ -453,6 +460,8 @@ public:
         }
         return head;
     }
+
+    unsigned __int64 getDuplicateCount() { return duplicateCount; };
 
 protected:
     void writeMetadata(char const * data, size32_t size)

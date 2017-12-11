@@ -30,6 +30,8 @@
 class IndexWriteActivityMaster : public CMasterActivity
 {
     rowcount_t recordsProcessed;
+    unsigned __int64 duplicateKeyCount = 0;
+    unsigned __int64 cummulativeDuplicateKeyCount = 0;
     Owned<IFileDescriptor> fileDesc;
     bool buildTlk, isLocal, singlePartKey;
     StringArray clusters;
@@ -242,11 +244,13 @@ public:
         IHThorIndexWriteArg *helper = (IHThorIndexWriteArg *)queryHelper();
         updateActivityResult(container.queryJob().queryWorkUnit(), helper->getFlags(), helper->getSequence(), fileName, recordsProcessed);
 
+        cummulativeDuplicateKeyCount += duplicateKeyCount;
         // MORE - add in the extra entry somehow
         if (fileName.get())
         {
             IPropertyTree &props = fileDesc->queryProperties();
             props.setPropInt64("@recordCount", recordsProcessed);
+            props.setPropInt64("@duplicateKeyCount", duplicateKeyCount);
             props.setProp("@kind", "key");
             if (0 != (helper->getFlags() & TIWexpires))
                 setExpiryTime(props, helper->getExpiryDays());
@@ -272,8 +276,11 @@ public:
         if (mb.length()) // if 0 implies aborted out from this slave.
         {
             rowcount_t r;
+            unsigned __int64 slaveDuplicateKeyCount;
             mb.read(r);
+            mb.read(slaveDuplicateKeyCount);
             recordsProcessed += r;
+            duplicateKeyCount += slaveDuplicateKeyCount;
             if (!singlePartKey || 0 == slaveIdx)
             {
                 IPartDescriptor *partDesc = fileDesc->queryPart(slaveIdx);
@@ -324,6 +331,7 @@ public:
                 checkSuperFileOwnership(*file);
             }
         }
+        duplicateKeyCount = 0;
     }
     virtual void deserializeStats(unsigned node, MemoryBuffer &mb)
     {
@@ -335,6 +343,7 @@ public:
     virtual void getActivityStats(IStatisticGatherer & stats)
     {
         CMasterActivity::getActivityStats(stats);
+        stats.addStatistic(StNumDuplicateKeys, cummulativeDuplicateKeyCount);
         if (publishReplicatedDone)
         {
             replicateProgress->processInfo();

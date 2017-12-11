@@ -206,6 +206,7 @@ enum StatisticKind
     StNumTransformExprs,
     StNumUniqueAnalyseExprs,
     StNumUniqueTransformExprs,
+    StNumDuplicateKeys,                 // When generating index, number of duplicate keys found
     StMax,
 
     //For any quantity there is potentially the following variants.
