@@ -1572,6 +1572,16 @@ IError *createError(IPropertyTree * tree)
 
 //---------------------------------------------------------------------------------------------------------------------
 
+void IErrorReceiver::ThrowStringException(int code,const char *format, ...) const
+{
+    va_list args;
+    va_start(args, format);
+    IException *ret = MakeStringExceptionVA(code, format, args);
+    va_end(args);
+    throw ret;
+}
+
+
 void IErrorReceiver::reportError(int errNo, const char *msg, const char *filename, int lineno, int column, int position)
 {
     Owned<IError> err = createError(errNo,msg,filename,lineno,column,position);

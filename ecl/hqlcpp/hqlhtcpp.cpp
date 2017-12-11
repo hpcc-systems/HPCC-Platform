@@ -3643,7 +3643,7 @@ IHqlExpression * HqlCppTranslator::getRtlFieldKey(IHqlExpression * expr, IHqlExp
     return LINK(expr);
 }
 
-unsigned HqlCppTranslator::buildRtlField(StringBuffer & instanceName, IHqlExpression * field, IHqlExpression * rowRecord)
+unsigned HqlCppTranslator::buildRtlField(StringBuffer & instanceName, IHqlExpression * field, IHqlExpression * rowRecord, const char * rowTypeName)
 {
     bool isPayload = false;
     OwnedHqlExpr fieldKey = getRtlFieldKey(field, rowRecord, isPayload);
@@ -3664,7 +3664,7 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer & instanceName, IHqlExpres
     unsigned fieldFlags = 0;
     if (field->getOperator() == no_ifblock)
     {
-        typeFlags = buildRtlIfBlockField(name, field, rowRecord, isPayload);
+        typeFlags = buildRtlIfBlockField(name, field, rowRecord, rowTypeName, isPayload);
     }
     else
     {
@@ -3803,7 +3803,7 @@ unsigned HqlCppTranslator::buildRtlFieldType(StringBuffer & instanceName, IHqlEx
 }
 
 
-unsigned HqlCppTranslator::buildRtlIfBlockField(StringBuffer & instanceName, IHqlExpression * ifblock, IHqlExpression * rowRecord, bool isPayload)
+unsigned HqlCppTranslator::buildRtlIfBlockField(StringBuffer & instanceName, IHqlExpression * ifblock, IHqlExpression * rowRecord, const char * rowTypeName, bool isPayload)
 {
     StringBuffer typeName, s;
     BuildCtx declarectx(*code, declareAtom);
@@ -3813,29 +3813,54 @@ unsigned HqlCppTranslator::buildRtlIfBlockField(StringBuffer & instanceName, IHq
     {
         unsigned length = 0;
         StringBuffer childTypeName;
-        unsigned childType = buildRtlRecordFields(childTypeName, ifblock->queryChild(1), rowRecord);
+        unsigned childType = buildRtlRecordFields(childTypeName, ifblock->queryChild(1), rowRecord, rowTypeName);
         fieldType |= (childType & RFTMinherited);
 
         StringBuffer className;
         typeName.append("ty").append(++nextTypeId);
         className.append("tyc").append(nextFieldId);
 
+        //See if the condition can be matched to a simple field filter
+        OwnedHqlExpr dummyDataset = createDataset(no_anon, LINK(rowRecord));
+        OwnedHqlExpr mappedCondition = replaceSelector(ifblock->queryChild(0), querySelfReference(), dummyDataset);
+        CppFilterExtractor extractor(dummyDataset, *this, rowRecord->numChildren(), true, true);
+        OwnedHqlExpr extraFilter;
+        extractor.extractFilters(mappedCondition, extraFilter);
+
+        bool isComplex = extraFilter || !extractor.isSingleMatchCondition();
+        const char * baseClass = isComplex ? "RtlComplexIfBlockTypeInfo" : "RtlSimpleIfBlockTypeInfo";
+        if (isComplex)
+            fieldType |= RFTMnoserialize;
+
         //The ifblock needs a unique instance of the class to evaluate the test
         BuildCtx fieldclassctx(declarectx);
+        // Ensure parent row type is forward declared.  This may possibly occur multiple times, but is harmless, and not worth addressing.
         fieldclassctx.setNextPriority(TypeInfoPrio);
-        fieldclassctx.addQuotedCompound(s.clear().append("struct ").append(className).append(" final : public RtlIfBlockTypeInfo"), ";");
-        fieldclassctx.addQuoted(s.clear().append(className).append("() : RtlIfBlockTypeInfo(0x").appendf("%x", fieldType).append(",").append(0).append(",").append(childTypeName).append(") {}"));
+        fieldclassctx.addQuoted(s.clear().append("extern const RtlRecordTypeInfo ").append(rowTypeName).append(";"));
+
+        fieldclassctx.setNextPriority(TypeInfoPrio);
+        fieldclassctx.addQuotedCompound(s.clear().appendf("struct %s final : public %s", className.str(), baseClass), ";");
+        fieldclassctx.addQuoted(s.clear().appendf("%s() : %s(0x%x,0,%s,&%s) {}", className.str(), baseClass, fieldType, childTypeName.str(), rowTypeName));
 
         OwnedHqlExpr anon = createDataset(no_anon, LINK(rowRecord));
         {
             MemberFunction deletefunc(*this, fieldclassctx, "virtual void doDelete() const override final");
             deletefunc.ctx.addQuotedLiteral("delete this;");
         }
+
+        if (isComplex)
         {
             MemberFunction condfunc(*this, fieldclassctx, "virtual bool getCondition(const byte * self) const override");
             BoundRow * self = bindTableCursor(condfunc.ctx, anon, "self");
             OwnedHqlExpr cond = self->bindToRow(ifblock->queryChild(0), querySelfReference());
             buildReturn(condfunc.ctx, cond);
+        }
+        else
+        {
+            MemberFunction condfunc(*this, fieldclassctx, "virtual IFieldFilter * createCondition() const override");
+            BoundRow * self = bindTableCursor(condfunc.ctx, anon, "self");
+            OwnedHqlExpr cond = self->bindToRow(ifblock->queryChild(0), querySelfReference());
+            extractor.buildSegments(condfunc.ctx, nullptr, true);
         }
 
         s.clear().append("const ").append(className).append(" ").append(typeName).append(";");
@@ -3862,7 +3887,7 @@ unsigned HqlCppTranslator::buildRtlIfBlockField(StringBuffer & instanceName, IHq
 }
 
 
-unsigned HqlCppTranslator::expandRtlRecordFields(StringBuffer & fieldListText, IHqlExpression * record, IHqlExpression * rowRecord)
+unsigned HqlCppTranslator::expandRtlRecordFields(StringBuffer & fieldListText, IHqlExpression * record, IHqlExpression * rowRecord, const char * rowTypeName)
 {
     unsigned fieldType = 0;
     ForEachChild(i, record)
@@ -3873,11 +3898,11 @@ unsigned HqlCppTranslator::expandRtlRecordFields(StringBuffer & fieldListText, I
         {
         case no_field:
         case no_ifblock:
-            childType = buildRtlField(fieldListText, cur, rowRecord);
+            childType = buildRtlField(fieldListText, cur, rowRecord, rowTypeName);
             fieldListText.append(",");
             break;
         case no_record:
-            childType = expandRtlRecordFields(fieldListText, cur, rowRecord);
+            childType = expandRtlRecordFields(fieldListText, cur, rowRecord, rowTypeName);
             break;
         }
         fieldType |= (childType & RFTMinherited);
@@ -3886,10 +3911,10 @@ unsigned HqlCppTranslator::expandRtlRecordFields(StringBuffer & fieldListText, I
 }
 
 
-unsigned HqlCppTranslator::buildRtlRecordFields(StringBuffer & instanceName, IHqlExpression * record, IHqlExpression * rowRecord)
+unsigned HqlCppTranslator::buildRtlRecordFields(StringBuffer & instanceName, IHqlExpression * record, IHqlExpression * rowRecord, const char * rowTypeName)
 {
     StringBuffer fieldListText;
-    unsigned fieldFlags = expandRtlRecordFields(fieldListText, record, rowRecord);
+    unsigned fieldFlags = expandRtlRecordFields(fieldListText, record, rowRecord, rowTypeName);
 
     StringBuffer name;
     name.append("tl").append(++nextTypeId);
@@ -3943,7 +3968,7 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
             IHqlExpression * record = ::queryRecord(type);
             arguments.append(",");
             StringBuffer fieldsInstance;
-            childType = buildRtlRecordFields(fieldsInstance, record, record);
+            childType = buildRtlRecordFields(fieldsInstance, record, record, name);
             arguments.append(fieldsInstance);
 
             //The following code could be used to generate an extra list of fields with nested records expanded out,
@@ -10716,7 +10741,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
         bool grouped = isGrouped(dataset);
         bool ignoreGrouped = !expr->hasAttribute(groupedAtom);
         if ((kind != TAKspill) || (dataset->queryType() != expr->queryType()) || (grouped && ignoreGrouped))
-            buildMetaMember(instance->classctx, dataset, grouped && !ignoreGrouped, "queryDiskRecordSize");
+        {
+            OwnedHqlExpr serializedRecord = getSerializedForm(dataset->queryRecord(), diskAtom);
+            buildMetaMember(instance->classctx, serializedRecord, grouped && !ignoreGrouped, "queryDiskRecordSize");
+        }
         buildClusterHelper(instance->classctx, expr);
 
         //Both csv write and pipe with csv/xml format

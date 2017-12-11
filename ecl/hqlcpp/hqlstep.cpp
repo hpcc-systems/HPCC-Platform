@@ -749,6 +749,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityRowsetRange(BuildCtx & ctx, IH
         }
     default:
         throwError(HQLERR_UnsupportedRowsetRangeParam);
+        return nullptr; // Cannot reach here, but previous throw is virtual, so the compiler cannot be sure it does not return
     }
 
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, kind, expr, argName);

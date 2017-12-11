@@ -117,7 +117,7 @@ const RtlTypeInfo *FieldTypeInfoStruct::createRtlTypeInfo(IThorIndexCallback *_c
         ret = new RtlRecordTypeInfo(fieldType, length, fieldsArray);
         break;
     case type_ifblock:
-        ret = new RtlDynamicIfBlockTypeInfo(fieldType, length, fieldsArray);
+        ret = new RtlDynamicIfBlockTypeInfo(fieldType, length, fieldsArray, nullptr, filter);
         break;
     case type_alien:
         assert(childType);
@@ -171,9 +171,9 @@ private:
         if (!serialized(type))
         {
             // Make sure all child types are serialized first
-            const RtlTypeInfo *child = type->queryChildType();
-            if (child)
-                serializeType(child);
+            const RtlTypeInfo *childType = type->queryChildType();
+            if (childType)
+                serializeType(childType);
             const RtlFieldInfo * const * fields = type->queryFields();
             if (fields)
             {
@@ -207,9 +207,18 @@ private:
         addPropHex("fieldType", type->fieldType);
         addProp("length", type->length);
         addPropNonEmpty("locale", type->queryLocale());
-        const RtlTypeInfo *child = type->queryChildType();
-        if (child)
-            addPropType("child", child);
+        const RtlTypeInfo *childType = type->queryChildType();
+        if (childType)
+            addPropType("child", childType);
+        const IFieldFilter * filter = type->queryFilter();
+        if (filter)
+        {
+            StringBuffer filterText;
+            filter->serialize(filterText);
+            addProp("filterField", filter->queryFieldIndex());
+            addPropType("filterType", &filter->queryType());
+            addProp("filter", filterText);
+        }
         const RtlFieldInfo * const * fields = type->queryFields();
         if (fields)
         {
@@ -401,6 +410,13 @@ private:
             out.append(locale);
         if (child)
             out.appendPacked(queryTypeIdx(child));
+        const IFieldFilter * filter = type->queryFilter();
+        if (filter)
+        {
+            out.appendPacked(filter->queryFieldIndex());
+            out.appendPacked(queryTypeIdx(&filter->queryType()));
+            filter->serialize(out);
+        }
         if (fields)
         {
             unsigned count = countFields(fields);
@@ -477,6 +493,7 @@ public:
     {
         // Need some care - all the RtlTypeInfo objects I created need to be destroyed, together with anything else I had to create
         // Strings (other than the init strings) are preserved in the AtomTable
+        // First allow the types to clean up any critical cached information, then delete them in a second pass
         HashIterator allTypes(types);
         ForEach(allTypes)
         {
@@ -484,6 +501,13 @@ public:
             cleanupType(*type);
         }
         cleanupType(base);
+
+        ForEach(allTypes)
+        {
+            const RtlTypeInfo **type = types.mapToValue(&allTypes.query());
+            deleteType(*type);
+        }
+        deleteType(base);
     }
     /**
      * Obtain the deserialized type information
@@ -578,21 +602,24 @@ public:
         }
     }
 
-    virtual const RtlTypeInfo *addType(FieldTypeInfoStruct &info, const ITypeInfo *type) override
+    virtual const RtlTypeInfo *addType(FieldTypeInfoStruct &info, const IInterface *typeOrIfblock) override
     {
-        VStringBuffer name("%p", type);
+        VStringBuffer name("%p", typeOrIfblock);
         const RtlTypeInfo ** found = types.getValue(name);
         if (found)
             return *found;
         info.locale = keep(info.locale);
         const RtlTypeInfo * ret = info.createRtlTypeInfo(callback);
         types.setValue(name, ret);
+        unsigned baseType = (info.fieldType & RFTMkind);
+        if (baseType == type_record)
+            patchIfBlockParentRow(ret, static_cast<const RtlRecordTypeInfo *>(ret));
         return ret;
     }
 
-    virtual const RtlTypeInfo *lookupType(const ITypeInfo *type) const override
+    virtual const RtlTypeInfo *lookupType(const IInterface * typeOrIfBlock) const override
     {
-        VStringBuffer name("%p", type);
+        VStringBuffer name("%p", typeOrIfBlock);
         const RtlTypeInfo ** found = types.getValue(name);
         if (found)
             return *found;
@@ -610,7 +637,7 @@ private:
     MapStringTo<const RtlTypeInfo *> types;  // Ensures structures only generated once
     const RtlTypeInfo *base = nullptr;       // Holds the resulting type
     IThorIndexCallback *callback = nullptr;
-    void cleanupType(const RtlTypeInfo *type)
+    void deleteType(const RtlTypeInfo *type)
     {
         if (type)
         {
@@ -626,7 +653,7 @@ private:
                         break;
                     // We don't need to delete other strings - they are owned by atom table.
                     // But the initializer is decoded and thus owned by me
-                    delete child->initializer;
+                    free((void *)child->initializer);
                     delete child;
                     cur++;
                 }
@@ -634,6 +661,11 @@ private:
             }
             type->doDelete();
         }
+    }
+    void cleanupType(const RtlTypeInfo *type)
+    {
+        if (type)
+            type->doCleanup();
     }
     const RtlTypeInfo *lookupType(const char *name, IPropertyTree *all)
     {
@@ -675,7 +707,8 @@ private:
         const char *child = type->queryProp("child");
         if (child)
             info.childType = lookupType(child, all);
-        if ((info.fieldType & RFTMkind) == type_record)
+        unsigned baseType = (info.fieldType & RFTMkind);
+        if ((baseType == type_record) || (baseType == type_ifblock))
         {
             unsigned numFields = type->getCount("fields");
             info.fieldsArray = new const RtlFieldInfo * [numFields+1];
@@ -700,7 +733,17 @@ private:
                 n++;
             }
         }
-        return info.createRtlTypeInfo(callback);
+        if (baseType == type_ifblock)
+        {
+            unsigned fieldId = type->getPropInt("filterField");
+            const RtlTypeInfo * fieldType = lookupType(type->queryProp("filterType"), all);
+            info.filter = deserializeFieldFilter(fieldId, *fieldType, type->queryProp("filter"));
+        }
+
+        const RtlTypeInfo * result = info.createRtlTypeInfo(callback);
+        if (baseType == type_record)
+            patchIfBlockParentRow(result, static_cast<const RtlRecordTypeInfo *>(result));
+        return result;
     }
 
     const RtlTypeInfo *deserializeType(MemoryBuffer &type)
@@ -720,6 +763,18 @@ private:
             type.readPacked(childIdx);
             info.childType = lookupType(childIdx);
         }
+
+        unsigned baseType = (info.fieldType & RFTMkind);
+        if (baseType == type_ifblock)
+        {
+            unsigned fieldId;
+            type.readPacked(fieldId);
+            unsigned childIdx;
+            type.readPacked(childIdx);
+            const RtlTypeInfo * fieldType = lookupType(childIdx);
+            info.filter = deserializeFieldFilter(fieldId, *fieldType, type);
+        }
+
         if (info.fieldType & RFTMhasFields)
         {
             unsigned numFields;
@@ -730,6 +785,8 @@ private:
             {
                 const char *fieldName;
                 type.read(fieldName);
+                if (fieldName[0] == '\0')
+                    fieldName = nullptr;
                 unsigned fieldType;
                 type.readPacked(fieldType);
                 unsigned fieldFlags;
@@ -750,7 +807,10 @@ private:
             }
         }
         info.fieldType &= ~RFTMserializerFlags;
-        return info.createRtlTypeInfo(callback);
+        const RtlTypeInfo * result = info.createRtlTypeInfo(callback);
+        if (baseType == type_record)
+            patchIfBlockParentRow(result, static_cast<const RtlRecordTypeInfo *>(result));
+        return result;
     }
     void patchIndexFilePos()
     {
@@ -769,6 +829,25 @@ private:
                 {
                     static_cast<RtlBlobTypeInfo *>(const_cast<RtlTypeInfo *>(field->type))->setCallback(callback);
                 }
+            }
+        }
+    }
+    void patchIfBlockParentRow(const RtlTypeInfo * fieldType, const RtlRecordTypeInfo * parentRow)
+    {
+        const RtlFieldInfo * const * fields = fieldType->queryFields();
+        for (;*fields;fields++)
+        {
+            const RtlFieldInfo * cur = *fields;
+            if (!cur)
+                break;
+
+            const RtlTypeInfo * curType = cur->type;
+            if ((curType->fieldType & RFTMkind) == type_ifblock)
+            {
+                const RtlDynamicIfBlockTypeInfo * constifblock = static_cast<const RtlDynamicIfBlockTypeInfo *>(curType);
+                RtlDynamicIfBlockTypeInfo * ifblock = const_cast<RtlDynamicIfBlockTypeInfo *>(constifblock);
+                ifblock->setParent(parentRow);
+                patchIfBlockParentRow(curType, parentRow);
             }
         }
     }
@@ -801,7 +880,15 @@ extern ECLRTL_API bool dumpTypeInfo(MemoryBuffer &ret, const RtlTypeInfo *t)
 extern ECLRTL_API void serializeRecordType(size32_t & __lenResult, void * & __result, IOutputMetaData &  metaVal)
 {
     MemoryBuffer ret;
-    CRtlFieldTypeBinSerializer::serialize(ret, metaVal.queryTypeInfo());
+    try
+    {
+        CRtlFieldTypeBinSerializer::serialize(ret, metaVal.queryTypeInfo());
+    }
+    catch (IException * e)
+    {
+        ret.clear();
+        e->Release();
+    }
     __lenResult = ret.length();
     __result = ret.detach();
 }
@@ -809,19 +896,27 @@ extern ECLRTL_API void serializeRecordType(size32_t & __lenResult, void * & __re
 extern ECLRTL_API void dumpRecordType(size32_t & __lenResult,char * & __result,IOutputMetaData &metaVal)
 {
     StringBuffer ret;
-    CRtlFieldTypeSerializer::serialize(ret, metaVal.queryTypeInfo());
+    try
+    {
+        CRtlFieldTypeSerializer::serialize(ret, metaVal.queryTypeInfo());
 
 #ifdef _DEBUG
-    StringBuffer ret2;
-    CRtlFieldTypeDeserializer deserializer(nullptr);
-    CRtlFieldTypeSerializer::serialize(ret2, deserializer.deserialize(ret));
-    assert(streq(ret, ret2));
-    MemoryBuffer out;
-    CRtlFieldTypeBinSerializer::serialize(out, metaVal.queryTypeInfo());
-    CRtlFieldTypeDeserializer bindeserializer(nullptr);
-    CRtlFieldTypeSerializer::serialize(ret2.clear(), bindeserializer.deserialize(out));
-    assert(streq(ret, ret2));
+        StringBuffer ret2;
+        CRtlFieldTypeDeserializer deserializer(nullptr);
+        CRtlFieldTypeSerializer::serialize(ret2, deserializer.deserialize(ret));
+        assert(streq(ret, ret2));
+        MemoryBuffer out;
+        CRtlFieldTypeBinSerializer::serialize(out, metaVal.queryTypeInfo());
+        CRtlFieldTypeDeserializer bindeserializer(nullptr);
+        CRtlFieldTypeSerializer::serialize(ret2.clear(), bindeserializer.deserialize(out));
+        assert(streq(ret, ret2));
 #endif
+    }
+    catch (IException * e)
+    {
+        e->errorMessage(ret.clear());
+        e->Release();
+    }
 
     __lenResult = ret.length();
     __result = ret.detach();
@@ -1494,7 +1589,7 @@ public:
     {
         for (unsigned idx = 0; idx < srcRecInfo.getNumFields(); idx++)
         {
-            unsigned matchIdx = destRecInfo.getFieldNum(destRecInfo.queryName(idx));
+            unsigned matchIdx = destRecInfo.getFieldNum(srcRecInfo.queryName(idx));
             if (matchIdx != -1)
             {
                 const RtlTypeInfo *srcType = srcRecInfo.queryType(idx);

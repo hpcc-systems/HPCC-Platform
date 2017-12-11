@@ -36,6 +36,7 @@ public:
     const char *className = nullptr;
     const RtlTypeInfo *childType = nullptr;
     const RtlFieldInfo * * fieldsArray = nullptr;
+    const IFieldFilter * filter = nullptr;
 
     const RtlTypeInfo *createRtlTypeInfo(IThorIndexCallback *_callback) const;
 };
@@ -79,14 +80,14 @@ interface IRtlFieldTypeDeserializer : public IInterface
      * @param key  A unique pointer used to dedup typeinfo structures
      * @return     RtlTypeInfo structure
      */
-    virtual const RtlTypeInfo *addType(FieldTypeInfoStruct &info, const ITypeInfo *key) = 0;
+    virtual const RtlTypeInfo *addType(FieldTypeInfoStruct &info, const IInterface *typeOrIfblock) = 0;
     /*
      * Check if a type has already been created for a given key
      *
      * @param key  A unique pointer used to dedup typeinfo structures
      * @return     RtlTypeInfo structure, or nullptr if not yet created
      */
-    virtual const RtlTypeInfo *lookupType(const ITypeInfo *key) const = 0;
+    virtual const RtlTypeInfo *lookupType(const IInterface *key) const = 0;
     /*
      * Create RtlFieldInfo structure as part of a RtlTypeInfo tree
      *

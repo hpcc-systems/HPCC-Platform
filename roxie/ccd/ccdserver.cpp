@@ -11689,12 +11689,7 @@ public:
         const char *recordECL = helper.queryRecordECL();
         if (recordECL && *recordECL)
             fileProps.setProp("ECL", recordECL);
-        if (helper.queryDiskRecordSize()->queryTypeInfo())
-        {
-            MemoryBuffer out;
-            if (dumpTypeInfo(out, helper.queryDiskRecordSize()->queryTypeInfo()))
-                fileProps.setPropBin("_rtlType", out.length(), out.toByteArray());
-        }
+        setRtlFormat(fileProps, helper.queryDiskRecordSize());
 
         fileProps.setProp("@kind", "flat"); // default, derivitives may override
     }
@@ -12036,12 +12031,7 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
             metadata.setown(createPTree("metadata", ipt_fast));
         metadata->setProp("_record_ECL", helper.queryRecordECL());
 
-        if (helper.queryDiskRecordSize()->queryTypeInfo())
-        {
-            MemoryBuffer out;
-            if (dumpTypeInfo(out, helper.queryDiskRecordSize()->queryTypeInfo()))
-                metadata->setPropBin("_rtlType", out.length(), out.toByteArray());
-        }
+        setRtlFormat(*metadata, helper.queryDiskRecordSize());
     }
 
 public:
@@ -12250,12 +12240,7 @@ public:
             rtlFree(layoutMetaBuff);
         }
         // New record layout info
-        if (helper.queryDiskRecordSize()->queryTypeInfo())
-        {
-            MemoryBuffer out;
-            if (dumpTypeInfo(out, helper.queryDiskRecordSize()->queryTypeInfo()))
-                properties.setPropBin("_rtlType", out.length(), out.toByteArray());
-        }
+        setRtlFormat(properties, helper.queryDiskRecordSize());
     }
 
     IUserDescriptor *queryUserDescriptor() const

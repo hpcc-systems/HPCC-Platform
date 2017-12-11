@@ -64,6 +64,7 @@ interface IOutputMetaData;
 interface ICodeContext;
 interface IAtom;
 interface IException;
+interface IFieldFilter;
 class MemoryBuffer;
 class StringBuffer;
 class rtlRowBuilder;
@@ -381,6 +382,7 @@ interface RtlITypeInfo
     virtual const char * queryLocale() const = 0;
     virtual const RtlFieldInfo * const * queryFields() const = 0;               // null terminated list
     virtual const RtlTypeInfo * queryChildType() const = 0;
+    virtual const IFieldFilter * queryFilter() const = 0;
 
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const = 0;
     virtual size32_t buildNull(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field) const = 0;
@@ -427,6 +429,7 @@ struct RtlTypeInfo : public RtlITypeInfo
     virtual bool canExtend(char &) const = 0;
     virtual bool canMemCmp() const = 0;
 
+    virtual void doCleanup() const = 0; // delete any special cached variables.
     virtual void doDelete() const = 0;  // Used in place of virtual destructor to allow constexpr constructors.
     virtual bool equivalent(const RtlTypeInfo *other) const = 0;
 public:

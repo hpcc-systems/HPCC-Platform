@@ -719,9 +719,9 @@ const char * cppSystemText[]  = {
     "   utf8 getProductionUtf8(unsigned4 idx) : method,entrypoint='getUtf8';",
     "   row(dummyRecord) getProductionResult(unsigned4 idx) : method,entrypoint='queryResult';",
 
-    "   addAll() : method,include='rtlkey.hpp',entrypoint='addAll';",
-    "   addRange(const data1 lo, const data1 hi) : method,include='rtlkey.hpp',entrypoint='addRange';",
-    "   killRange(const data1 lo, const data1 hi) : method,include='rtlkey.hpp',entrypoint='killRange';",
+    "   addAll() : method,entrypoint='addAll';",
+    "   addRange(const data1 lo, const data1 hi) : method,entrypoint='addRange';",
+    "   killRange(const data1 lo, const data1 hi) : method,entrypoint='killRange';",
     "   addRawRange(const data1 lo, const data1 hi) : method,entrypoint='addRawRange';",
     "   killRawRange(const data1 lo, const data1 hi) : method,entrypoint='killRawRange';",
 

@@ -44,7 +44,6 @@
 #define HQLERR_UnknownVirtualAttr               4017
 #define HQLERR_IllegalPattern                   4018
 #define HQLERR_VarSizeSortUseThor               4020
-#define HQLERR_SubstringOutOfRange              4021
 #define HQLERR_RankOnNonList                    4022
 #define HQLERR_CastInfiniteString               4023
 #define HQLERR_TooFewParameters                 4024
@@ -108,16 +107,11 @@
 #define HQLERR_CannotDetermineSizeVar           4087
 #define HQLERR_DuplicateDefinition              4088
 #define HQLERR_DuplicateDefinitionDiffType      4089
-#define HQLERR_WildNotReferenceIndex            4090
 #define HQLERR_InconsistentKeyedOpt             4091
 #define HQLERR_OptKeyedFollowsWild              4092
 #define HQLERR_KeyedCountCantNormalize          4093
 #define HQLERR_KeyedCountNotKeyed               4094
 #define HQLERR_KeyedCountNonKeyable             4095
-#define HQLERR_LookupNotActiveDataset           4096
-#define HQLERR_KeyedJoinTooComplex              4097
-#define HQLERR_KeyAccessNeedCast                4098
-#define HQLERR_KeyAccessNoKeyField              4099
 #define HQLERR_NotSupportedInsideNoThor         4102
 #define HQLERR_RegexNoTransformSupport          4103
 #define HQLERR_AccessMatchAttrInChildQuery      4104
@@ -145,7 +139,6 @@
 #define HQLERR_StepFieldNotKeyed                4126
 #define HQLERR_StepFieldNotContiguous           4127
 #define HQLERR_SortOrderMustMatchJoinFields     4128
-#define HQLERR_OrMultipleKeyfields              4129
 #define HQLERR_RowCompressRequireFixedSize      4130
 #define HQLERR_InputsAreTooComplexToUpdate      4131
 #define HQLERR_ThorDenormOnlyLeftOuterJoin      4132
@@ -355,7 +348,6 @@
 #define HQLERR_UnknownVirtualAttr_Text          "INTERNAL: Unsupported virtual attribute '%s'"
 #define HQLERR_IllegalPattern_Text              "Illegal pattern '%s..%s'"
 #define HQLERR_VarSizeSortUseThor_Text          "THOR must be used for sorting or joining datasets with variable width rows"
-#define HQLERR_SubstringOutOfRange_Text         "Substring index %d is outside the field range"
 #define HQLERR_RankOnNonList_Text               "RANK/RANKED not supported on %s"
 #define HQLERR_CastInfiniteString_Text          "Cannot cast a string of unknown length to another character set"
 #define HQLERR_TooFewParameters_Text            "Not enough parameters passed to function '%s'"
@@ -420,16 +412,11 @@
 #define HQLERR_CannotDetermineSizeVar_Text      "Cannot determine size because variable size dataset is not in scope.  Try using sizeof(x,max)"
 #define HQLERR_DuplicateDefinition_Text         "Duplicate definition of %s"
 #define HQLERR_DuplicateDefinitionDiffType_Text "Duplicate definition of %s with different type"
-#define HQLERR_WildNotReferenceIndex_Text       "WILD() does not reference fields in key %s"
 #define HQLERR_InconsistentKeyedOpt_Text        "Field %s cannot have both KEYED and KEYED,OPT conditions"
 #define HQLERR_OptKeyedFollowsWild_Text         "KEYED(%s,OPT) follows a WILD() field in key %s"
 #define HQLERR_KeyedCountCantNormalize_Text     "COUNT(,KEYED) cannot be used on a child dataset"
 #define HQLERR_KeyedCountNotKeyed_Text          "Filter for COUNT(,KEYED) did not contained KEYED() expressions"
 #define HQLERR_KeyedCountNonKeyable_Text        "KEYED COUNT used on a non-keyable dataset"
-#define HQLERR_LookupNotActiveDataset_Text      "Attempting to lookup field %s in a dataset which has no active element"
-#define HQLERR_KeyedJoinTooComplex_Text         "Key condition (%s) is too complex, it cannot be done with the key."
-#define HQLERR_KeyAccessNeedCast_Text           "Key condition (%s) requires casts on comparison of field '%s'"
-#define HQLERR_KeyAccessNoKeyField_Text         "Key condition (%s) does not have any comparisons against key fields"
 #define HQLERR_MinusOnString_Text               "unary - cannot be performed on a string"
 #define HQLERR_NotSupportedInsideNoThor_Text    "%s is not supported inside NOTHOR()"
 #define HQLERR_RegexNoTransformSupport_Text     "Regular expression parsing does not support productions - need to use tomita"
@@ -458,7 +445,6 @@
 #define HQLERR_StepFieldNotKeyed_Text           "STEPPED field %s is not keyed"
 #define HQLERR_StepFieldNotContiguous_Text      "STEPPED field %s does not follow the previous stepped field"
 #define HQLERR_SortOrderMustMatchJoinFields_Text "Merge order must match all the stepped join fields"
-#define HQLERR_OrMultipleKeyfields_Text         "Cannot OR together conditions on multiple key fields (%s)"
 #define HQLERR_RowCompressRequireFixedSize_Text "ROW compression can only be used on fixed size indexes"
 #define HQLERR_InputsAreTooComplexToUpdate_Text "UPDATE cannot be used when the inputs names are not globally constant"
 #define HQLERR_ThorDenormOnlyLeftOuterJoin_Text "THOR currently only supports LEFT OUTER denormalize"
