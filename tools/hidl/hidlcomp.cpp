@@ -3272,7 +3272,6 @@ void EspMessageInfo::write_esp_ipp()
     
     outs("\n");
     write_esp_methods(espaxm_both, true, false);
-    
     outs("};\n\n");
 }
 
@@ -6379,18 +6378,27 @@ void EspServInfo::write_esp_service_ipp()
     outs("\tvirtual IEspContainer *queryContainer()\n\t{\n\t\treturn m_container;\n\t}\n");
     
     outf("\tvirtual const char* getServiceType(){return \"%s\";}\n\n", name_);
-    
+
     EspMethodInfo *mthi;
     for (mthi=methods;mthi!=NULL;mthi=mthi->next)
     {
         bool stubbed = (findMetaTag(mthi->tags,"stubbed")!=NULL);
-
-        outf(1, "%sbool on%s(IEspContext &context, IEsp%s &req, IEsp%s &resp)\n", (stubbed) ? "" : "//", mthi->getName(), mthi->getReq(), mthi->getResp());
-        outf(1, "%s{\n", (stubbed) ? "" : "//");
-        outf(2, "%sreturn false;\n", (stubbed) ? "" : "//");
-        outf(1, "%s}\n", (stubbed) ? "" : "//");
+        if (streq(mthi->getName(), "Ping")) //We'll implement the onPing automatically for all ESP Services.
+        {
+            outf(1, "bool on%s(IEspContext &context, IEsp%s &req, IEsp%s &resp)\n",  mthi->getName(), mthi->getReq(), mthi->getResp());
+            outs(1, "{\n");
+            outs(2, "return true;\n");
+            outs(1, "}\n");
+        }
+        else
+        {
+            outf(1, "%sbool on%s(IEspContext &context, IEsp%s &req, IEsp%s &resp)\n", (stubbed) ? "" : "//", mthi->getName(), mthi->getReq(), mthi->getResp());
+            outf(1, "%s{\n", (stubbed) ? "" : "//");
+            outf(2, "%sreturn false;\n", (stubbed) ? "" : "//");
+            outf(1, "%s}\n", (stubbed) ? "" : "//");
+        }
     }
-    
+
     outs("};\n\n");
 }
 
