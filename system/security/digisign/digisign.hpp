@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -35,8 +35,8 @@ interface IDigitalSignatureManager //Public/Private key message signer/verifyer
 public:
     virtual bool isDigiSignerConfigured() = 0;
     virtual bool isDigiVerifierConfigured() = 0;
-    virtual bool digiSign(const char * msg, StringBuffer & b64Signature) = 0;
-    virtual bool digiVerify(const char * msg, const char * b64Signature) = 0;
+    virtual bool digiSign(const char * text, StringBuffer & b64Signature) = 0;
+    virtual bool digiVerify(const char * text, StringBuffer & b64Signature) = 0;
 };
 
 extern "C"

@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -16,8 +16,10 @@
 ############################################################################## */
 #include "jliball.hpp"
 #include "build-config.h"
+#ifdef _USE_ZLIB
 #include <openssl/pem.h>
 #include <openssl/err.h>
+#endif
 #include "digisign.hpp"
 
 static CriticalSection digiSignCrit;
@@ -29,7 +31,9 @@ class _CDigitalSignatureManager : implements IDigitalSignatureManager
 {
 private:
     StringAttr   publicKeyFile;
+    StringBuffer publicKeyBuff;
     StringAttr   privateKeyFile;
+    StringBuffer privateKeyBuff;
     bool         signingConfigured;
     bool         verifyingConfigured;
 
@@ -77,8 +81,8 @@ public:
 
         CriticalBlock b(digiSignCrit);
 
-        StringBuffer privateKeyBuff;
-        privateKeyBuff.loadFile(privateKeyFile.str());
+        if (privateKeyBuff.isEmpty())
+            privateKeyBuff.loadFile(privateKeyFile.str());
         if (privateKeyBuff.isEmpty())
             throw MakeStringException(-1, "digiSign:Cannot load private key file");
 
@@ -95,21 +99,29 @@ public:
         RSA * rsa = PEM_read_bio_RSAPrivateKey(keybio, nullptr, nullptr, nullptr);
         if (rsa == nullptr)
         {
+            BIO_free_all(keybio);
             char buff[120];
             ERR_error_string(ERR_get_error(), buff);
-            throw MakeStringException(-1,
-                    "digiSign:PEM_read_bio_RSAPrivateKey: %s", buff);
+            throw MakeStringException(-1, "digiSign:PEM_read_bio_RSAPrivateKey: %s", buff);
         }
         BIO_free_all(keybio);
 
         //With the RSA object, create the digest and digital signature
         EVP_MD_CTX * RSASignCtx = EVP_MD_CTX_create(); //allocate, initializes and return a digest context
+        if (nullptr == RSASignCtx)
+        {
+            char buff[120];
+            ERR_error_string(ERR_get_error(), buff);
+            throw MakeStringException(-1, "digiSign:EVP_MD_CTX_create returned NULL: %s", buff);
+        }
         EVP_PKEY * priKey = EVP_PKEY_new();
         EVP_PKEY_assign_RSA(priKey, rsa);
 
         //initialize context for SHA-256 hashing function
         if (EVP_DigestSignInit(RSASignCtx, nullptr, EVP_sha256(), nullptr, priKey) <= 0)
         {
+            EVP_PKEY_free(priKey);
+            EVP_MD_CTX_destroy(RSASignCtx);
             char buff[120];
             ERR_error_string(ERR_get_error(), buff);
             throw MakeStringException(-1, "digiSign:EVP_DigestSignInit: %s", buff);
@@ -118,6 +130,8 @@ public:
         //add string to the context
         if (EVP_DigestSignUpdate(RSASignCtx, (size_t*)text, strlen(text)) <= 0)
         {
+            EVP_PKEY_free(priKey);
+            EVP_MD_CTX_destroy(RSASignCtx);
             char buff[120];
             ERR_error_string(ERR_get_error(), buff);
             throw MakeStringException(-1, "digiSign:EVP_DigestSignUpdate: %s", buff);
@@ -127,15 +141,34 @@ public:
         size_t encMsgLen;
         if (EVP_DigestSignFinal(RSASignCtx, nullptr, &encMsgLen) <= 0)
         {
+            EVP_PKEY_free(priKey);
+            EVP_MD_CTX_destroy(RSASignCtx);
             char buff[120];
             ERR_error_string(ERR_get_error(), buff);
             throw MakeStringException(-1, "digiSign:EVP_DigestSignFinal1: %s", buff);
         }
 
+        if (encMsgLen == 0)
+        {
+            EVP_PKEY_free(priKey);
+            EVP_MD_CTX_destroy(RSASignCtx);
+            char buff[120];
+            ERR_error_string(ERR_get_error(), buff);
+            throw MakeStringException(-1, "digiSign:EVP_DigestSignFinal length returned 0: %s", buff);
+        }
+
         //compute signature (signed digest)
         unsigned char * encMsg = (unsigned char*) malloc(encMsgLen);
+        if (encMsg == nullptr)
+        {
+            EVP_PKEY_free(priKey);
+            EVP_MD_CTX_destroy(RSASignCtx);
+            throw MakeStringException(-1, "digiSign:malloc(%ld) returned NULL",encMsgLen);
+        }
+
         if (EVP_DigestSignFinal(RSASignCtx, encMsg, &encMsgLen) <= 0)
         {
+            free(encMsg);
             char buff[120];
             ERR_error_string(ERR_get_error(), buff);
             throw MakeStringException(-1, "digiSign:EVP_DigestSignFinal2: %s", buff);
@@ -157,15 +190,15 @@ public:
 
 
     //Verify the given text was used to create the given digital signature
-    bool digiVerify(const char * text, const char * b64Signature)
+    bool digiVerify(const char * text, StringBuffer & b64Signature)
     {
         if (!verifyingConfigured)
             throw MakeStringException(-1, "digiVerify:Verifying Digital Signatures not configured");
 
         CriticalBlock b(digiVerifyCrit);
 
-        StringBuffer publicKeyBuff;
-        publicKeyBuff.loadFile(publicKeyFile.str());
+        if (publicKeyBuff.isEmpty())
+            publicKeyBuff.loadFile(publicKeyFile.str());
         if (publicKeyBuff.isEmpty())
             throw MakeStringException(-1, "digiSign:Cannot load public key file");
 
@@ -184,6 +217,9 @@ public:
         EVP_MD_CTX * RSAVerifyCtx = EVP_MD_CTX_create();//allocate, initializes and return a digest context
         if (EVP_DigestVerifyInit(RSAVerifyCtx, nullptr, EVP_sha256(), nullptr, pubKey) <= 0)
         {
+            EVP_PKEY_free(pubKey);
+            EVP_MD_CTX_destroy(RSAVerifyCtx);//cleans up digest context ctx
+            BIO_free_all(keybio);
             char buff[120];
             ERR_error_string(ERR_get_error(), buff);
             throw MakeStringException(-1, "digiVerify:EVP_DigestVerifyInit: %s", buff);
@@ -192,9 +228,11 @@ public:
 
         //decode base64 signature
         StringBuffer decodedSig;
-        JBASE64_Decode(b64Signature, decodedSig);
+        JBASE64_Decode(b64Signature.str(), decodedSig);
         if (EVP_DigestVerifyUpdate(RSAVerifyCtx, text, strlen(text)) <= 0)
         {
+            EVP_PKEY_free(pubKey);
+            EVP_MD_CTX_destroy(RSAVerifyCtx);//cleans up digest context ctx
             char buff[120];
             ERR_error_string(ERR_get_error(), buff);
             throw MakeStringException(-1, "digiVerify:EVP_DigestVerifyUpdate: %s", buff);
