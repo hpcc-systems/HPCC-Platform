@@ -1451,7 +1451,7 @@ public:
     }
 
 protected:
-    size_t cur;
+    size_t cur = 0;
     InMemoryRows & source;
     RtlDynRow seekRow;
 };
