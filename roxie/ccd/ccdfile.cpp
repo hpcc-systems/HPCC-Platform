@@ -2096,6 +2096,7 @@ public:
         Owned<CTranslatorSet> result = new CTranslatorSet(formatCrc);
         Owned<const IDynamicTransform> translator;
         int prevFormatCrc = 0;
+        assertex(projected != nullptr);
         ForEachItemIn(idx, subFiles)
         {
             IOutputMetaData *actual = expected;
@@ -2124,7 +2125,7 @@ public:
                     if (thisFormatCrc != prevFormatCrc)  // Check if same translation as last subfile
                     {
                         translator.clear();
-                        if (projected && actual)
+                        if (actual)
                         {
                             translator.setown(createRecordTranslator(projected->queryRecordAccessor(true), actual->queryRecordAccessor(true)));
                             // translator->describe();
