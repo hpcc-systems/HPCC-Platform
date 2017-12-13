@@ -4586,7 +4586,7 @@ IHqlExpression * MonitorExtractor::getMonitorValueAddress(BuildCtx & ctx, IHqlEx
     }
     else
     {
-        if (!createValueSet)
+        if (!createValueSets)
         {
             //Need to ensure old segmonitors for varstrings are filled with \0s
             switch (type->getTypeCode())
@@ -4887,7 +4887,7 @@ void MonitorExtractor::buildSegments(BuildCtx & ctx, const char * listName, bool
         IHqlExpression * expandedSelector = &expandedSelects.item(idx);
         IHqlExpression * field = selector->queryChild(1);
         unsigned curSize = expandedSelector->queryType()->getSize();
-        assertex(createValueSet || curSize != UNKNOWN_LENGTH);
+        assertex(createValueSets || curSize != UNKNOWN_LENGTH);
 
         //MORE: Should also allow nested record structures, and allow keying on first elements.
         //      and field->queryType()->getSize() doesn't work for alien datatypes etc.
