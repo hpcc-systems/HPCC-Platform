@@ -48,6 +48,7 @@
 #include "rtlfield_imp.hpp"
 #include "rtlds_imp.hpp"
 #include "rmtfile.hpp"
+#include "roxiestream.hpp"
 
 namespace thormisc {  // Make sure we can't clash with generated versions or version check mechanism fails.
  #include "eclhelper_base.hpp" 
@@ -1279,16 +1280,15 @@ IRowServer *createRowServer(CActivityBase *activity, IRowStream *seq, ICommunica
     return new CRowServer(activity, seq, comm, mpTag);
 }
 
-IRowStream *createUngroupStream(IRowStream *input)
+IEngineRowStream *createUngroupStream(IRowStream *input)
 {
-    class CUngroupStream : public CSimpleInterface, implements IRowStream
+    class CUngroupStream : public CSimpleInterfaceOf<IEngineRowStream>
     {
         IRowStream *input;
     public:
         CUngroupStream(IRowStream *_input) : input(_input) { input->Link(); }
         ~CUngroupStream() { input->Release(); }
-        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-        virtual const void *nextRow() 
+        virtual const void *nextRow() override
         {
             const void *ret = input->nextRow(); 
             if (ret) 
@@ -1296,10 +1296,11 @@ IRowStream *createUngroupStream(IRowStream *input)
             else
                 return input->nextRow();
         }
-        virtual void stop()
+        virtual void stop() override
         {
             input->stop();
         }
+        virtual void resetEOF() override { throwUnexpected(); }
     };
     return new CUngroupStream(input);
 }
