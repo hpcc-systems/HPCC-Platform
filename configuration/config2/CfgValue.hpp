@@ -69,7 +69,6 @@ class CfgValue
         std::vector<std::string> getAllEnvValues() const;
         void mirrorValue(const std::string &oldValue, const std::string &newValue);
         void setMirroredEnvValues(const std::string &oldValue, const std::string &newValue);
-        //void validate(Status &status, const std::string &id, const std::string &value, const EnvValue *pEnvValue = nullptr) const;
         void validate(Status &status, const std::string &id, const EnvValue *pEnvValue = nullptr) const;
         std::vector<AllowedValue> getAllowedValues(const EnvValue *pEnvValue = nullptr) const;
 
@@ -93,11 +92,11 @@ class CfgValue
         bool m_defaultSet;
         bool m_deprecated;
         bool m_isUnique;
-        bool m_isConfigured;  // false indicates a value for which there is no defined configuration
+        bool m_isConfigured;  
         std::string m_default;
         std::string m_tooltip;
         std::vector<std::string> m_modifiers;
-        std::vector<std::weak_ptr<CfgValue>> m_pUniqueValueSetRefs;    // this value serves as the key from which values are valid
+        std::vector<std::weak_ptr<CfgValue>> m_pUniqueValueSetRefs;    
 };
 
 #endif // _CONFIG2_VALUE_HPP_

@@ -1,6 +1,6 @@
 /*##############################################################################
 
-HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
+HPCC SYSTEMS software Copyright (C) 2017 HPCC Systemsï¿½.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,12 +17,21 @@ limitations under the License.
 
 #include "CfgIntegerLimits.hpp"
 
-bool CfgIntegerLimits::isValueValid(const std::string &value)
+bool CfgIntegerLimits::isValueValid(const std::string &value) const
 {
-    bool isValid = true;
-    int testValue = std::stoi(value);
+     bool isValid = true;
+    int testValue;
+    try
+    {
+        testValue = std::stoi(value);
+    }
+    catch (...)
+    {
+        isValid = false;
+    }
 
-    isValid = testValue >= getMin() && testValue <= getMax();
+    if (isValid)
+        isValid = testValue >= getMin() && testValue <= getMax();
 
     return isValid;
 }

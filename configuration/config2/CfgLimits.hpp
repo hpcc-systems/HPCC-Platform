@@ -55,7 +55,7 @@ class CfgLimits
         void addAllowedValue(const std::string &value, const std::string &desc="") { m_allowedValues.push_back(AllowedValue(value, desc)); }
         std::vector<AllowedValue> getAllowedValues() const;
         bool isEnumerated() const { return !m_allowedValues.empty();  }
-        virtual bool isValueValid(const std::string &testValue) { return true; }
+        virtual bool isValueValid(const std::string &testValue) const { return true; }
 		virtual int getMin() const { return m_minInclusive; }
         virtual int getMax() const { return m_maxInclusive; }
         virtual std::string getString() const { return ""; }

@@ -1,6 +1,6 @@
 /*##############################################################################
 
-HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems�.
+HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -41,16 +41,19 @@ EnvironmentMgr::EnvironmentMgr(const std::string &configPath) :
 }
 
 
-bool EnvironmentMgr::loadConfig(const std::vector<std::string> &cfgParms)  // todo: add a status object here for return
+bool EnvironmentMgr::loadConfig(const std::vector<std::string> &cfgParms) 
 {
     bool rc = false;
     Status status;
     createParser(cfgParms);
-    rc = m_pConfigParser->parseEnvironmentConfig(cfgParms, status);
-    if (rc)
-    {
-        m_pConfig->processUniqueAttributeValueSets();  // really a pre-post processing requirement
-        m_pConfig->postProcessConfig();
+	if (m_pConfigParser)
+	{
+        rc = m_pConfigParser->parseEnvironmentConfig(cfgParms, status);
+        if (rc)
+        {
+            m_pConfig->processUniqueAttributeValueSets();  
+            m_pConfig->postProcessConfig();
+        }
     }
     return rc;
 }
@@ -58,65 +61,47 @@ bool EnvironmentMgr::loadConfig(const std::vector<std::string> &cfgParms)  // to
 
 bool EnvironmentMgr::loadEnvironment(const std::string &filename)
 {
-	std::ifstream in;
+    std::ifstream in;
     std::string fpath = m_configPath + filename;
-	
-	in.open(fpath);
-	if (in.is_open())
-	{
-		load(in);
-	}
-	return true;
+
+    in.open(fpath);
+    if (in.is_open())
+    {
+        load(in);
+    }
+    return true;
 }
 
 
 void EnvironmentMgr::saveEnvironment(const std::string &filename, Status &status)
 {
-	std::ofstream out;
-
-	out.open(filename);
-	if (out.is_open())
-	{
-		save(out);
-	}
+    std::ofstream out;
+    out.open(filename);
+    if (out.is_open())
+    {
+        save(out);
+    }
 }
 
 
 void EnvironmentMgr::addPath(const std::shared_ptr<EnvironmentNode> pNode)
 {
-	auto retVal = m_nodeIds.insert({pNode->getId(), pNode });
-	if (!retVal.second)
-	{
-		throw (ParseException("Attempted to insert duplicate path name " + pNode->getId() + " for node "));
-	}
+    auto retVal = m_nodeIds.insert({pNode->getId(), pNode });
+    if (!retVal.second)
+    {
+        throw (ParseException("Attempted to insert duplicate path name " + pNode->getId() + " for node "));
+    }
 }
 
 
 std::shared_ptr<EnvironmentNode> EnvironmentMgr::getEnvironmentNode(const std::string &nodeId)
 {
-	std::shared_ptr<EnvironmentNode> pNode;
-	auto pathIt = m_nodeIds.find(nodeId);
-	if (pathIt != m_nodeIds.end())
+    std::shared_ptr<EnvironmentNode> pNode;
+    auto pathIt = m_nodeIds.find(nodeId);
+    if (pathIt != m_nodeIds.end())
         pNode = pathIt->second;
-	return pNode;
+    return pNode;
 }
-
-
-// todo: make a standard return that has a status string and array of messages
-/*void EnvironmentMgr::setAttributeValues(const std::string &nodeId, const std::vector<valueDef> &values, const std::string &nodeValue, bool force)
-{
-    Status status;
-	std::shared_ptr<EnvironmentNode> pEnvNode = getEnvironmentNode(nodeId);
-	if (pEnvNode)
-	{
-		for (auto it = values.begin(); it != values.end(); ++it)
-			pEnvNode->setAttributeValue((*it).name, (*it).value, force);
-	}
-    else
-    {
-        status.addStatusMsg(statusMsg::error, nodeId, "", "", "Indicated node ID does not exist");
-    }
-}*/
 
 
 std::string EnvironmentMgr::getUniqueKey()

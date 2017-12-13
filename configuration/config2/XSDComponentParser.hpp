@@ -36,16 +36,10 @@ class XSDComponentParser : public XSDConfigParser
         virtual ~XSDComponentParser() { }
         virtual void parseXSD(const pt::ptree &tree);
 
-    
 
     protected:
 
         XSDComponentParser() { };
-        //virtual void parseKey(const pt::ptree &keyTree);
-        //virtual void parseKeyRef(const pt::ptree &keyTree);
-        //void parseElement(const pt::ptree &elemTree);
-
 };
-
 
 #endif // _CONFIG2_XSDCOMPONENTPARSER_HPP_

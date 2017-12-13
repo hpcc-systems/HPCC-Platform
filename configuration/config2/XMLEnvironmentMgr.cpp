@@ -84,22 +84,16 @@ void XMLEnvironmentMgr::parse(const pt::ptree &envTree, const std::shared_ptr<Co
 	{
 		std::string elemName = it->first;
 
-        if (elemName == "EspService")
-            int i = 3;
-
 		//
 		// First see if there are attributes for this element (<xmlattr> === <element attr1="xx" attr2="yy" ...></element>  The attr1 and attr2 are in this)
 		if (elemName == "<xmlattr>")
 		{
 			for (auto attrIt = it->second.begin(); attrIt != it->second.end(); ++attrIt)
 			{
-				std::shared_ptr<CfgValue> pCfgValue = pConfigItem->getAttribute(attrIt->first);
-				std::string curValue = attrIt->second.get_value<std::string>();
-				std::shared_ptr<EnvValue> pEnvValue = std::make_shared<EnvValue>(pEnvNode, pCfgValue, attrIt->first, curValue);   // this is where we would use a variant
+              std::shared_ptr<CfgValue> pCfgValue = pConfigItem->getAttribute(attrIt->first);
+                std::string curValue = attrIt->second.get_value<std::string>();
+                std::shared_ptr<EnvValue> pEnvValue = std::make_shared<EnvValue>(pEnvNode, pCfgValue, attrIt->first, curValue);   // this is where we would use a variant
                 pCfgValue->addEnvValue(pEnvValue);
-                //auto x = pCfgValue.get();
-                //std::shared_ptr<CfgValue> pCopyCfg;
-                //pCopyCfg = pCfgValue;
 				pEnvNode->addAttribute(attrIt->first, pEnvValue);
 			}
 		}

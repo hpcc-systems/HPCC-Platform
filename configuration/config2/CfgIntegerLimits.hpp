@@ -29,7 +29,7 @@ class CfgIntegerLimits : public CfgLimits
         int getMin() const { return m_minInclusive; }
         int getMax() const { return m_maxInclusive; }
         std::string getString() const override { return "integer limit string"; }
-        virtual bool isValueValid(const std::string &testValue);
+        virtual bool isValueValid(const std::string &testValue) const;
 };
 
 #endif // _CONFIG2_CFGINTEGERLIMITS_HPP_

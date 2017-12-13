@@ -20,28 +20,7 @@
 
 std::string CfgStringLimits::getString() const
 {
-
-    std::string limitStr = "";
-
-    if (m_length != 0)
-    {
-        //limitStr += "string " + m_length + " charcters in length.";
-    }
-    else 
-    {
-        //limitStr += "string between " + getMin() + " and ";
-        if (getMax() == INT_MAX)
-        {
-            limitStr += " unlimited ";
-        }
-        else
-        {
-            limitStr += getMax();
-        }
-        limitStr += "characters in length.";
-
-    }
-
+    std::string limitStr = "";  // this will turn into an error string describing why a value is invalid
     return limitStr;
 }
 
@@ -64,12 +43,7 @@ bool CfgStringLimits::isValueValid(const std::string &testValue) const
                 found = (*valueIt).m_value == testValue;
             }
             isValid = found;
-            // lastErrorString - not in enumerated list?
         }
     }
-
-    // should do a pattern test here
-
     return isValid;
-
 }

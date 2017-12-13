@@ -41,50 +41,50 @@ EnvironmentMgr *getEnvironmentMgrInstance(const std::string &envType, const std:
 
 class EnvironmentMgr
 {
-	public:
+    public: 
 
-		struct valueDef {
-			std::string name;
-			std::string value;
-		};
+        struct valueDef {
+            std::string name;
+            std::string value;
+        };
 
         EnvironmentMgr(const std::string &configPath);
-		virtual ~EnvironmentMgr() { }
+        virtual ~EnvironmentMgr() { }
 
-		// add a load from stream?
+        // add a load from stream?
         bool loadConfig(const std::vector<std::string> &cfgParms);  // parms are dependent on the environment type
-		bool loadEnvironment(const std::string &file);  // return some error code,or a get last error type of call?
+        bool loadEnvironment(const std::string &file);  // return some error code,or a get last error type of call?
 
         std::shared_ptr<EnvironmentNode> getEnvironmentNode(const std::string &nodeId);
-		//void setAttributeValues(const std::string &path, const std::vector<valueDef> &values, const std::string &nodeValue, bool force=false);
-		
-		// save to stream ?
-		void saveEnvironment(const std::string &file, Status &status);
+        //void setAttributeValues(const std::string &path, const std::vector<valueDef> &values, const std::string &nodeValue, bool force=false);
+        
+        // save to stream ?
+        void saveEnvironment(const std::string &file, Status &status);
         void validate(Status &status) const;
 
 
-	protected:
+    protected:
 
-		std::string getUniqueKey();
-		
-		void addPath(const std::shared_ptr<EnvironmentNode> pNode);
+        std::string getUniqueKey();
+        
+        void addPath(const std::shared_ptr<EnvironmentNode> pNode);
         virtual bool createParser(const std::vector<std::string> &cfgParms) = 0;
-		virtual bool load(std::istream &in) = 0;
-		virtual void save(std::ostream &out) = 0;
+        virtual bool load(std::istream &in) = 0;
+        virtual void save(std::ostream &out) = 0;
 
 
-	protected:
+    protected:
 
         std::string m_configPath;
-		std::shared_ptr<ConfigItem> m_pConfig;
+        std::shared_ptr<ConfigItem> m_pConfig;
         std::shared_ptr<ConfigParser> m_pConfigParser;
-		std::shared_ptr<EnvironmentNode> m_pRootNode;
-		std::map<std::string, std::shared_ptr<EnvironmentNode>> m_nodeIds;
+        std::shared_ptr<EnvironmentNode> m_pRootNode;
+        std::map<std::string, std::shared_ptr<EnvironmentNode>> m_nodeIds;
 
 
-	private:
-		
-		int m_key;
+    private:
+        
+        int m_key;
 };
 
 #endif

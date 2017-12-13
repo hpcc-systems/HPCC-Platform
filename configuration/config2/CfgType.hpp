@@ -36,11 +36,11 @@ class CfgType
         std::shared_ptr<CfgLimits> &getLimits() { return m_pLimits; }
         void setLimits(const std::shared_ptr<CfgLimits> &pLimits) { m_pLimits = pLimits; }
         bool isComplete() const { return m_pLimits!=nullptr; }
-        const std::string &getName() { return m_name; }
-        bool isValueValid(const std::string &testValue) { return m_pLimits->isValueValid(testValue); }
-		bool isAutoValueType() const { return m_autoValueType != "" ;  }
-		const std::string &getAutoValue() const { return m_autoValueType;  }  // todo: this is to be expanded to the supported types
-		void setAutoValueType(const std::string &valueType) { m_autoValueType = valueType;  }
+        const std::string &getName() const { return m_name; }
+        bool isValueValid(const std::string &testValue) const { return m_pLimits->isValueValid(testValue); }
+        bool isAutoValueType() const { return m_autoValueType != "" ;  }
+        const std::string &getAutoValue() const { return m_autoValueType;  }  // todo: this is to be expanded to the supported types
+        void setAutoValueType(const std::string &valueType) { m_autoValueType = valueType;  }
         bool isEnumerated() const { return m_pLimits->isEnumerated(); }
         const std::vector<AllowedValue> getAllowedValues() const { return m_pLimits->getAllowedValues(); }
 		

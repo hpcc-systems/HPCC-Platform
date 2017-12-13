@@ -105,7 +105,6 @@ void EnvironmentNode::setAttributeValues(const std::vector<ValueDef> &values, St
 }
 
 
-// should probably return a status object, and put path/valueName in there
 void EnvironmentNode::setAttributeValue(const std::string &attrName, const std::string &value, Status &status, bool allowInvalid, bool forceCreate)
 {
     std::shared_ptr<EnvValue> pEnvValue;
@@ -142,7 +141,6 @@ void EnvironmentNode::setAttributeValue(const std::string &attrName, const std::
     {
         status.addStatusMsg(statusMsg::error, getId(), attrName, "", "The attribute does not exist and was not created");
     }
-    
 }
 
 
