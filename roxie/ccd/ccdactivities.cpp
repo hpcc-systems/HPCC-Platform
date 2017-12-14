@@ -1919,7 +1919,7 @@ public:
     UnkeyedNormalizeRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskNormalizeActivity &_owner, IDirectReader *_reader) 
         : NormalizeRecordProcessor(_cursor, _owner), reader(_reader), deserializeSource(_reader)
     {
-        prefetcher.setown(owner.diskSize.queryOriginal()->createDiskPrefetcher(owner.queryContext->queryCodeContext(), owner.basefactory->queryId()));
+        prefetcher.setown(owner.diskSize.queryOriginal()->createDiskPrefetcher());
     }
 
     virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
@@ -2195,7 +2195,7 @@ public:
     UnkeyedVariableCountRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskCountActivity &_owner, IDirectReader *_reader)
         : UnkeyedCountRecordProcessor(_cursor, _owner, _reader), deserializeSource(reader)
     {
-        prefetcher.setown(owner.diskSize.queryOriginal()->createDiskPrefetcher(owner.queryContext->queryCodeContext(), owner.basefactory->queryId()));
+        prefetcher.setown(owner.diskSize.queryOriginal()->createDiskPrefetcher());
     }
 
     // This version is used for variable size rows 
@@ -2666,7 +2666,7 @@ public:
     UnkeyedVariableAggregateRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskAggregateActivity &_owner, IDirectReader *_reader) 
         : UnkeyedAggregateRecordProcessor(_cursor, _owner, _reader), deserializeSource(_reader)
     {
-        prefetcher.setown(owner.diskSize.queryOriginal()->createDiskPrefetcher(owner.queryContext->queryCodeContext(), owner.basefactory->queryId()));
+        prefetcher.setown(owner.diskSize.queryOriginal()->createDiskPrefetcher());
     }
 
     virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
@@ -3021,7 +3021,7 @@ public:
                                                  ICodeContext *ctx, unsigned activityId)
     : UnkeyedGroupAggregateRecordProcessor(_cursor, _results, _helper, _reader), deserializeSource(_reader)
     {
-        prefetcher.setown(helper.queryDiskRecordSize()->createDiskPrefetcher(ctx, activityId));
+        prefetcher.setown(helper.queryDiskRecordSize()->createDiskPrefetcher());
     }
 
     virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)

@@ -90,7 +90,7 @@ class GlobalClassEvalContext;
 class GlobalClassBuilder
 {
 public:
-    GlobalClassBuilder(HqlCppTranslator & _translator, BuildCtx & ctx, const char * className, const char * baseName, const char * _accessorInterface);
+    GlobalClassBuilder(HqlCppTranslator & _translator, BuildCtx & ctx, const char * className, const char * baseName, const char * _accessorInterface, bool _hasCodeContext);
 
     void buildClass(unsigned priority=0);
     void completeClass(unsigned priority=0);
@@ -114,6 +114,7 @@ public:
     StringAttr baseName;
     StringAttr accessorInterface;
     StringAttr accessorName;
+    bool hasCodeContext;
 };
 
 

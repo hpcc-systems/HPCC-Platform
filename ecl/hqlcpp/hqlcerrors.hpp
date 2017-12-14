@@ -329,6 +329,8 @@
 #define HQLERR_AccessUnavailableGraph           4839
 #define HQLERR_NoMappingForField                4840
 #define HQLERR_InvalidMatchedPatternInJoin      4841
+#define HQLERR_CodeContextNotAvailable          4842
+
 //#define HQLERR_Max                            4999
 
 //---- Text for all errors (make it easy to internationalise) ---------------------------
@@ -626,6 +628,7 @@
 #define HQLERR_CouldNotGenerateDefault_Text     "INTERNAL: Could not generate default value for field %s"
 #define HQLERR_AccessUnavailableGraph_Text      "INTERNAL: Attempt to access result from unavailable graph (%s)"
 #define HQLERR_NoMappingForField_Text           "INTERNAL: Mapping for field %s is missing from transform"
+#define HQLERR_CodeContextNotAvailable_Text     "INTERNAL: ICodeContext is not available"
 
 #define WARNINGAT(cat, e, x)                 reportWarning(cat, SeverityUnknown, e, x, x##_Text)
 #define WARNINGAT1(cat, e, x, a)             reportWarning(cat, SeverityUnknown, e, x, x##_Text, a)

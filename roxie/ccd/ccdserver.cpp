@@ -15444,7 +15444,7 @@ public:
     virtual void destruct(byte * self)  {}
     virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
-    virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual ISourceRowPrefetcher * createDiskPrefetcher() { return NULL; }
     virtual IOutputMetaData * querySerializedDiskMeta() { return this; }
     virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
@@ -27760,7 +27760,7 @@ public:
     virtual void destruct(byte * self)  {}
     virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
-    virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual ISourceRowPrefetcher * createDiskPrefetcher() { return NULL; }
     virtual IOutputMetaData * querySerializedDiskMeta() { return NULL; }
     virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }

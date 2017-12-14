@@ -991,7 +991,7 @@ public:
             strm.setown(createFileSerialStream(fileio,_ofs,_len,(size32_t)-1, _tallycrc?&crccb:NULL));
         else
             strm.setown(createFileSerialStream(mmfile,_ofs,_len,_tallycrc?&crccb:NULL));
-        prefetcher.setown(rowif->queryRowMetaData()->createDiskPrefetcher(rowif->queryCodeContext(), rowif->queryActivityId()));
+        prefetcher.setown(rowif->queryRowMetaData()->createDiskPrefetcher());
         if (prefetcher)
             prefetchBuffer.setStream(strm);
         source.setStream(strm);

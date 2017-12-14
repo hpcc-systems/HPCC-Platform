@@ -41,6 +41,7 @@
 #include "hqlfold.hpp"
 #include "hqlcerrors.hpp"
 #include "hqlcatom.hpp"
+#include "hqlccommon.hpp"
 #include "hqltrans.ipp"
 #include "hqlpmap.hpp"
 #include "hqlttcpp.ipp"
@@ -2286,6 +2287,7 @@ void SourceBuilder::buildGroupAggregateProcessHelper(ParentExtract * extractBuil
         MemberEvalContext * evalContext = new MemberEvalContext(translator, extractBuilder, translator.queryEvalContext(validateFunc.ctx), validateFunc.ctx);
         validateFunc.ctx.associateOwn(*evalContext);
         evalContext->initContext();
+        validateFunc.ctx.associateExpr(codeContextMarkerExpr, codeContextMarkerExpr);
     }
 
     if (aggregate->getOperator() == no_aggregate)
@@ -6878,7 +6880,7 @@ void HqlCppTranslator::buildXmlReadTransform(IHqlExpression * dataset, StringBuf
     prolog.append("struct ").append(className).append(" : public RtlCInterface, implements ").append(interfaceName);
     epilog.append(";");
 
-    GlobalClassBuilder builder(*this, declarectx, className, "CXmlToRowTransformer", interfaceName);
+    GlobalClassBuilder builder(*this, declarectx, className, "CXmlToRowTransformer", interfaceName, true);
     builder.buildClass(XmlTransformerPrio);
     builder.setIncomplete(true);
 

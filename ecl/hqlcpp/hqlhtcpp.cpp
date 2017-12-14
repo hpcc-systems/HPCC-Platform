@@ -2872,8 +2872,8 @@ void initBoundStringTarget(CHqlBoundTarget & target, ITypeInfo * type, const cha
 
 //---------------------------------------------------------------------------
 
-GlobalClassBuilder::GlobalClassBuilder(HqlCppTranslator & _translator, BuildCtx & _ctx, const char * _className, const char * _baseName, const char * _accessorInterface)
-: translator(_translator), classctx(_ctx), nestedctx(_ctx), startctx(_ctx), createctx(_ctx)
+GlobalClassBuilder::GlobalClassBuilder(HqlCppTranslator & _translator, BuildCtx & _ctx, const char * _className, const char * _baseName, const char * _accessorInterface, bool _hasCodeContext)
+: translator(_translator), classctx(_ctx), nestedctx(_ctx), startctx(_ctx), createctx(_ctx), hasCodeContext(_hasCodeContext)
 {
     className.set(_className);
     baseName.set(_baseName);
@@ -2898,9 +2898,12 @@ void GlobalClassBuilder::buildClass(unsigned priority)
     if (priority)
         classctx.setNextPriority(priority);
     classStmt = classctx.addQuotedCompound(s, ";");
-    if (!baseName)
-        classctx.addQuotedLiteral("ICodeContext * ctx;");
-    classctx.associateExpr(codeContextMarkerExpr, codeContextMarkerExpr);
+    if (hasCodeContext)
+    {
+        if (!baseName)
+            classctx.addQuotedLiteral("ICodeContext * ctx;");
+        classctx.associateExpr(codeContextMarkerExpr, codeContextMarkerExpr);
+    }
 
     //Generate functions in the order i) always callable ii) after create iii) after start
     nestedctx.set(classctx);
@@ -2913,11 +2916,17 @@ void GlobalClassBuilder::buildClass(unsigned priority)
     evalContext.setown(new GlobalClassEvalContext(translator, parentExtract, parentEvalContext, createctx, startctx));
     classctx.associate(*evalContext);
 
-    //virtual void onCreate(ICodeContext * ctx, IHThorArg * colocalParent, MemoryBuffer * serializedCreate)
+    //virtual void onCreate(ICodeContext * ctx)
     BuildCtx oncreatectx(createctx);
-    onCreateStmt = oncreatectx.addQuotedCompoundLiteral("void onCreate(ICodeContext * _ctx)");
+    if (hasCodeContext)
+    {
+        onCreateStmt = oncreatectx.addQuotedCompoundLiteral("void onCreate(ICodeContext * _ctx)");
+        oncreatectx.addQuotedLiteral("ctx = _ctx;");
+    }
+    else
+        onCreateStmt = oncreatectx.addQuotedCompoundLiteral("void onCreate()");
+
     oncreatectx.associateExpr(insideOnCreateMarker, NULL);
-    oncreatectx.addQuotedLiteral("ctx = _ctx;");
 
     evalContext->onCreate.createFunctionStructure(translator, oncreatectx, true, NULL);
     onCreateStmt->finishedFramework();
@@ -3469,7 +3478,7 @@ IHqlExpression * HqlCppTranslator::createRowAllocator(BuildCtx & ctx, IHqlExpres
 void HqlCppTranslator::buildMetaSerializerClass(BuildCtx & ctx, IHqlExpression * record, const char * serializerName, IAtom * serializeForm)
 {
     StringBuffer s;
-    GlobalClassBuilder serializer(*this, ctx, serializerName, "COutputRowSerializer", "IOutputRowSerializer");
+    GlobalClassBuilder serializer(*this, ctx, serializerName, "COutputRowSerializer", "IOutputRowSerializer", true);    // not sure this needs ctx or an activity id
 
     serializer.buildClass(RowMetaPrio);
     serializer.setIncomplete(true);
@@ -3512,7 +3521,7 @@ void HqlCppTranslator::buildMetaSerializerClass(BuildCtx & ctx, IHqlExpression *
 void HqlCppTranslator::buildMetaDeserializerClass(BuildCtx & ctx, IHqlExpression * record, const char * deserializerName, IAtom * serializeForm)
 {
     StringBuffer s;
-    GlobalClassBuilder deserializer(*this, ctx, deserializerName, "COutputRowDeserializer", "IOutputRowDeserializer");
+    GlobalClassBuilder deserializer(*this, ctx, deserializerName, "COutputRowDeserializer", "IOutputRowDeserializer", true);
 
     deserializer.buildClass(RowMetaPrio);
     deserializer.setIncomplete(true);
@@ -3543,18 +3552,12 @@ void HqlCppTranslator::buildMetaDeserializerClass(BuildCtx & ctx, IHqlExpression
 bool HqlCppTranslator::buildMetaPrefetcherClass(BuildCtx & ctx, IHqlExpression * record, const char * prefetcherName)
 {
     StringBuffer s;
-    GlobalClassBuilder prefetcher(*this, ctx, prefetcherName, "CSourceRowPrefetcher", NULL);
+    GlobalClassBuilder prefetcher(*this, ctx, prefetcherName, "CSourceRowPrefetcher", NULL, false);
 
     prefetcher.buildClass(RowMetaPrio);
     prefetcher.setIncomplete(true);
 
     BuildCtx & classctx = prefetcher.classctx;
-    s.clear().append("inline ").append(prefetcherName).append("(unsigned _activityId) : CSourceRowPrefetcher(_activityId) {}");
-    classctx.addQuoted(s);
-
-    OwnedHqlExpr id = createVariable("activityId", LINK(sizetType));
-    prefetcher.classctx.associateExpr(queryActivityIdMarker(), id);
-
     OwnedHqlExpr dataset = createDataset(no_null, LINK(record));
     bool ok;
     {
@@ -4507,10 +4510,10 @@ void HqlCppTranslator::generateMetaRecordSerialize(BuildCtx & ctx, IHqlExpressio
     if (prefetcherName && *prefetcherName)
     {
         BuildCtx deserializectx(ctx);
-        deserializectx.addQuotedFunction("virtual CSourceRowPrefetcher * doCreateDiskPrefetcher(unsigned activityId) override");
+        deserializectx.addQuotedFunction("virtual CSourceRowPrefetcher * doCreateDiskPrefetcher() override");
 
         StringBuffer s;
-        s.append("return new ").append(prefetcherName).append("(activityId);");
+        s.append("return new ").append(prefetcherName).append("();");
         deserializectx.addQuoted(s);
     }
 }
@@ -4625,10 +4628,7 @@ void HqlCppTranslator::ensureRowPrefetcher(StringBuffer & prefetcherName, BuildC
     buildMetaInfo(meta);
 
     s.clear().append(uid).append(".setown(").append(meta.queryInstanceObject());
-    s.append(".createDiskPrefetcher(ctx, ");
-    OwnedHqlExpr activityId = getCurrentActivityId(ctx);
-    generateExprCpp(s, activityId);
-    s.append("));");
+    s.append(".createDiskPrefetcher());");
     callctx->addQuoted(s);
 
     OwnedHqlExpr value = createVariable(uid.str(), makeBoolType());
@@ -7345,6 +7345,7 @@ IHqlExpression * HqlCppTranslator::getClearRecordFunction(IHqlExpression * recor
     {
         MemberFunction clearFunc(*this, clearctx, s, MFdynamicproto);
         clearFunc.setIncomplete(true);
+        clearFunc.ctx.associateExpr(codeContextMarkerExpr, codeContextMarkerExpr);
 
         OwnedHqlExpr dataset = createDataset(no_anon, LINK(record));
         BoundRow * cursor = bindSelf(clearFunc.ctx, dataset, "crSelf");
@@ -10348,7 +10349,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
 
     buildExpiryHelper(instance->createctx, expr->queryAttribute(expireAtom));
     buildUpdateHelper(instance->createctx, *instance, dataset, updateAttr);
-    buildClusterHelper(instance->classctx, expr);
+    buildClusterHelper(instance->startctx, expr);
 
     // virtual unsigned getKeyedSize()
     HqlExprArray fields;
