@@ -584,7 +584,13 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
 
     if(stricmp(mthName, "echotest")==0 || mthdef.hasProp("EchoTest"))
     {
-        handleEchoTest(mthdef.queryName(),req,out,flags);
+        handleEchoTest(mthdef.queryName(),req,out,context.getResponseFormat());
+        return;
+    }
+    else if
+    (stricmp(mthName, "ping")==0 || mthdef.hasProp("Ping"))
+    {
+        handlePingRequest(mthdef.queryName(),out,context.getResponseFormat());
         return;
     }
     else
@@ -897,14 +903,22 @@ void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
 void EsdlServiceImpl::handleEchoTest(const char *mthName,
                                      IPropertyTree *req,
                                      StringBuffer &out,
-                                     unsigned flags)
+                                     ESPSerializationFormat format)
 {
     const char* valueIn = req->queryProp("ValueIn");
 
-    if (flags & ESDL_BINDING_RESPONSE_JSON)
-        out.appendf("\n\t\"%sResponse\":\n{\t\t\"ValueOut\": \"%s\"\n\t\t}\n\t", mthName, valueIn && *valueIn ? valueIn : "");
+    if (format == ESPSerializationJSON)
+        out.appendf("{\n\t\"%sResponse\":\n{\t\t\"ValueOut\": \"%s\"\n\t\t}\n}", mthName, valueIn && *valueIn ? valueIn : "");
     else
         out.appendf("<%sResponse><ValueOut>%s</ValueOut></%sResponse>", mthName, valueIn && *valueIn ? valueIn : "", mthName);
+}
+
+void EsdlServiceImpl::handlePingRequest(const char *mthName,StringBuffer &out,ESPSerializationFormat format)
+{
+    if (format == ESPSerializationJSON)
+        out.appendf("{\"%sPingResponse\": {}}", mthName);
+    else
+        out.appendf("<%sResponse></%sResponse>", mthName, mthName);
 }
 
 void EsdlServiceImpl::generateTargetURL(IEspContext & context,
@@ -1411,7 +1425,11 @@ int EsdlBindingImpl::onGetInstantQuery(IEspContext &context,
                     m_pESDLService->handleServiceRequest(context, *srvdef, *mthdef, tgtcfg, tgtctx, ns.str(), schemaLocation.str(), req_pt.get(), out, logdata, 0);
 
                     response->setContent(out.str());
-                    response->setContentType(HTTP_TYPE_TEXT_XML_UTF8);
+
+                    if (context.getResponseFormat() == ESPSerializationJSON)
+                        response->setContentType(HTTP_TYPE_APPLICATION_JSON_UTF8);
+                    else
+                      response->setContentType(HTTP_TYPE_TEXT_XML_UTF8);
                     response->setStatus(HTTP_STATUS_OK);
                     response->send();
 
