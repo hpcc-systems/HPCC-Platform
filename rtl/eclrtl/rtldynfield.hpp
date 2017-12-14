@@ -109,7 +109,15 @@ interface IDynamicTransform : public IInterface
     virtual bool needsTranslate() const = 0;
 };
 
+class RowFilter;
+interface IKeyTranslator : public IInterface
+{
+    virtual void describe() const = 0;
+    virtual bool translate(RowFilter &filters) const = 0;
+};
+
 extern ECLRTL_API const IDynamicTransform *createRecordTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo);
+extern ECLRTL_API const IKeyTranslator *createKeyTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo);
 
 extern ECLRTL_API IRtlFieldTypeDeserializer *createRtlFieldTypeDeserializer(IThorIndexCallback *callback);
 

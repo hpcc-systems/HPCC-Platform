@@ -788,9 +788,9 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CDaliTestsStress, "CDaliTestsStress" );
 
 // ================================================================================== UNIT TESTS
 
-class CDaliSDSTests : public CppUnit::TestFixture
+class CDaliSDSStressTests : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE(CDaliSDSTests);
+    CPPUNIT_TEST_SUITE(CDaliSDSStressTests);
         CPPUNIT_TEST(testInit);
         CPPUNIT_TEST(testSDSRW);
         CPPUNIT_TEST(testSDSSubs);
@@ -944,10 +944,10 @@ class CDaliSDSTests : public CppUnit::TestFixture
         return ret;
     }
 public:
-    CDaliSDSTests() : logctx(queryDummyContextLogger())
+    CDaliSDSStressTests() : logctx(queryDummyContextLogger())
     {
     }
-    ~CDaliSDSTests()
+    ~CDaliSDSStressTests()
     {
         daliClientEnd();
     }
@@ -1432,8 +1432,8 @@ public:
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION( CDaliSDSTests );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CDaliSDSTests, "CDaliSDSTests" );
+CPPUNIT_TEST_SUITE_REGISTRATION( CDaliSDSStressTests );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CDaliSDSStressTests, "CDaliSDSStressTests" );
 
 // ================================================================================== UNIT TESTS
 
@@ -1517,9 +1517,9 @@ static void setupDFS(const IContextLogger &logctx, const char *scope, unsigned s
     }
 }
 
-class CDaliDFSTests : public CppUnit::TestFixture
+class CDaliDFSStressTests : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE(CDaliDFSTests);
+    CPPUNIT_TEST_SUITE(CDaliDFSStressTests);
         CPPUNIT_TEST(testInit);
         CPPUNIT_TEST(testGroups);
         CPPUNIT_TEST(testMultiCluster);
@@ -1553,10 +1553,10 @@ class CDaliDFSTests : public CppUnit::TestFixture
     const IContextLogger &logctx;
 
 public:
-    CDaliDFSTests() : logctx(queryDummyContextLogger())
+    CDaliDFSStressTests() : logctx(queryDummyContextLogger())
     {
     }
-    ~CDaliDFSTests()
+    ~CDaliDFSStressTests()
     {
         daliClientEnd();
     }
@@ -2250,8 +2250,8 @@ public:
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION( CDaliDFSTests );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CDaliDFSTests, "CDaliDFSTests" );
+CPPUNIT_TEST_SUITE_REGISTRATION( CDaliDFSStressTests );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CDaliDFSStressTests, "CDaliDFSStressTests" );
 
 class CDaliDFSRetrySlowTests : public CppUnit::TestFixture
 {

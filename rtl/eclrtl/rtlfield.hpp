@@ -54,6 +54,7 @@ struct ECLRTL_API RtlTypeInfoBase : public RtlTypeInfo
     virtual bool canTruncate() const override { return false; }
     virtual bool canExtend(char &) const override { return false; }
     virtual bool canMemCmp() const override { return false; }
+    virtual bool equivalent(const RtlTypeInfo *) const override;
 
     virtual const char * queryLocale() const override;
     virtual const RtlFieldInfo * const * queryFields() const override;

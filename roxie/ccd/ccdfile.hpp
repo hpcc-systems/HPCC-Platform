@@ -97,7 +97,7 @@ interface IResolvedFile : extends ISimpleSuperFileEnquiry
     virtual IKeyArray *getKeyArray(IDefRecordMeta *activityMeta, TranslatorArray *translators, bool isOpt, unsigned channel, IRecordLayoutTranslator::Mode allowFieldTranslation) const = 0;
     virtual IFilePartMap *getFileMap() const = 0;
     virtual unsigned getNumParts() const = 0;
-    virtual IInMemoryIndexManager *getIndexManager(bool isOpt, unsigned channel, IOutputMetaData *disklayout, bool preload, int numKeys) const = 0;
+    virtual IInMemoryIndexManager *getIndexManager(bool isOpt, unsigned channel, IOutputMetaData *disklayout, bool preload) const = 0;
     virtual offset_t getFileSize() const = 0;
 
     virtual const CDateTime &queryTimeStamp() const = 0;

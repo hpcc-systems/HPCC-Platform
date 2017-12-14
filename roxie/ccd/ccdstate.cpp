@@ -2243,10 +2243,6 @@ private:
             {
                 reply.appendf("<clusterName id='%s'/>", roxieName.str());
             }
-            else if (stricmp(queryName, "control:getKeyInfo")==0)
-            {
-                reportInMemoryIndexStatistics(reply, control->queryProp("@id"), control->getPropInt("@count", 10));
-            }
             else if (stricmp(queryName, "control:getQueryXrefInfo")==0)
             {
                 getQueryInfo(control, reply, true, logctx);

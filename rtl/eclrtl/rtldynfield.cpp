@@ -25,6 +25,7 @@
 #include "rtldynfield.hpp"
 #include "rtlrecord.hpp"
 #include "rtlembed.hpp"
+#include "rtlnewkey.hpp"
 
 //#define TRACE_TRANSLATION
 #define VALIDATE_TYPEINFO_HASHES
@@ -1482,3 +1483,73 @@ extern ECLRTL_API IRowStream * transformRecord(IEngineRowAllocator * resultAlloc
     else
         return stream.getClear();
 }
+
+// A key translator allows us to transform a RowFilter that refers to src to one that refers to dest.
+// Basically just a map of those fields with matching types.
+
+class CKeyTranslator : public CInterfaceOf<IKeyTranslator>
+{
+public:
+    CKeyTranslator(const RtlRecord &destRecInfo, const RtlRecord &srcRecInfo)
+    {
+        for (unsigned idx = 0; idx < srcRecInfo.getNumFields(); idx++)
+        {
+            unsigned matchIdx = destRecInfo.getFieldNum(destRecInfo.queryName(idx));
+            if (matchIdx != -1)
+            {
+                const RtlTypeInfo *srcType = srcRecInfo.queryType(idx);
+                const RtlTypeInfo *destType = destRecInfo.queryType(idx);
+                if (!destType->equivalent(srcType))
+                    matchIdx = (unsigned) -2;
+            }
+            map.append(matchIdx);
+        }
+    }
+    virtual void describe() const override
+    {
+        ForEachItemIn(idx, map)
+        {
+            unsigned mapped = map.item(idx);
+            switch (mapped)
+            {
+            case (unsigned) -1: DBGLOG("No match for field %d", idx); break;
+            case (unsigned) -2: DBGLOG("Incompatible field match for field %d", idx); break;
+            default: DBGLOG("keyed field %d can map to field %d", idx, mapped); break;
+            }
+        }
+    }
+    virtual bool translate(RowFilter &filters) const override
+    {
+        bool mapNeeded = false;
+        unsigned numFields = filters.numFilterFields();
+        for (unsigned idx = 0; idx < numFields; idx++)
+        {
+            unsigned fieldNum = filters.queryFilter(idx).queryFieldIndex();
+            unsigned mappedFieldNum = map.isItem(fieldNum) ? map.item(fieldNum) : (unsigned) -1;
+            if (mappedFieldNum != fieldNum)
+            {
+                mapNeeded = true;
+                switch (mappedFieldNum)
+                {
+                case (unsigned) -1: throw makeStringExceptionV(0, "Cannot translate keyed filter on field %u - no matching field", idx);
+                case (unsigned) -2: throw makeStringExceptionV(0, "Cannot translate keyed filter on field %u - incompatible matching field type", idx);
+                default:
+                    filters.remapField(idx, mappedFieldNum);
+                    break;
+                }
+            }
+        }
+        if (mapNeeded)
+            filters.recalcFieldsRequired();
+        return mapNeeded;
+    }
+protected:
+    UnsignedArray map;
+};
+
+extern ECLRTL_API const IKeyTranslator *createKeyTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo)
+{
+    return new CKeyTranslator(_destRecInfo, _srcRecInfo);
+}
+
+

@@ -23,6 +23,7 @@
 #else
 #include <alloca.h>
 #endif
+#include <assert.h>
 
 #include "eclrtl_imp.hpp"
 #include "rtlds_imp.hpp"
@@ -262,21 +263,23 @@ public:
 
     size_t getOffset(unsigned field) const
     {
+        assert(field < numFieldsUsed);
         return info.getOffset(variableOffsets, field);
     }
 
     size_t getSize(unsigned field) const
     {
-        return info.getOffset(variableOffsets, field+1) - info.getOffset(variableOffsets, field);
+        return getOffset(field+1) - getOffset(field);
     }
 
     size_t getRecordSize() const
     {
+        assert(info.numFields <= numFieldsUsed);
         return info.getRecordSize(variableOffsets);
     }
 
-    void setRow(const void * _row);
-    void setRow(const void * _row, unsigned _numFields);
+    void setRow(const void * _row, unsigned _numFieldsUsed = (unsigned) -1);
+    void lazyCalcOffsets(unsigned _numFieldsUsed) const;
 
     const byte *queryRow() const
     {
@@ -290,6 +293,7 @@ public:
 protected:
     const RtlRecord & info;
     const byte * row;
+    mutable unsigned numFieldsUsed = 0;
     size_t * variableOffsets;       // [0 + 1 entry for each variable size field ]
 };
 

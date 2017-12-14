@@ -7471,7 +7471,6 @@ class CRoxieServerDedupActivityFactory : public CRoxieServerActivityFactory
     bool compareAll;
     bool keepLeft;
     bool keepBest;
-    unsigned flags;
 
 public:
     CRoxieServerDedupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
@@ -21063,7 +21062,7 @@ public:
             assertex(outputLimit<=0x1000); // 32bit limit because MemoryBuffer/CMessageBuffers involved etc.
             outputLimitBytes = outputLimit * 0x100000;
         }
-        if (workunit != NULL || (results && protocol->getFlags() & HPCC_PROTOCOL_NATIVE_RAW))
+        if (workunit != NULL || (results && (protocol->getFlags() & HPCC_PROTOCOL_NATIVE_RAW)))
         {
             ensureRowAllocator();
             rowSerializer.setown(rowAllocator->createDiskSerializer(ctx->queryCodeContext()));
@@ -21084,7 +21083,7 @@ public:
                     result.append(row == NULL);
                 if (results)
                 {
-                    if (protocolFlags & HPCC_PROTOCOL_NATIVE_RAW && nativeResults)
+                    if ((protocolFlags & HPCC_PROTOCOL_NATIVE_RAW) && nativeResults)
                     {
                         char val = (char)(row == NULL);
                         nativeResults->appendRaw(sequence, 1, &val);
@@ -21447,10 +21446,9 @@ protected:
     unsigned __int64 stopAfter;
     Linked<IInMemoryIndexManager> manager;
     Linked<ITranslatorSet> translators;
-    Owned<IInMemoryIndexCursor> cursor;
+    ScoredRowFilter postFilter;
     Owned<IDirectReader> reader;
     bool eof;
-    bool isKeyed;
     bool variableFileName;
     bool isOpt;
     bool sorted;
@@ -21487,7 +21485,6 @@ public:
         compoundHelper = NULL;
         eof = false;
         rowLimit = (unsigned __int64) -1;
-        isKeyed = false;
         stopAfter = I64C(0x7FFFFFFFFFFFFFFF);
         diskSize.set(helper.queryDiskRecordSize()->querySerializedDiskMeta());
         isGrouped = diskSize.isGrouped();
@@ -21550,52 +21547,41 @@ public:
                     unsigned channel = isLocal ? factory->queryQueryFactory().queryChannel() : 0;
                     unsigned formatCrc = getFormatCrc(helper.getFormatCrc());
                     translators.setown(varFileInfo->getTranslators(formatCrc, helper.queryProjectedDiskRecordSize(), helper.queryDiskRecordSize(), getEnableFieldTranslation()));
-                    manager.setown(varFileInfo->getIndexManager(isOpt, channel, nullptr, false, 0));
+                    manager.setown(varFileInfo->getIndexManager(isOpt, channel, translators->queryActualLayout(0), false));
                 }
                 assertex(manager != NULL);
                 helper.createSegmentMonitors(this);
-                if (cursor)
-                {
-                    isKeyed = cursor->selectKey();
-                    cursor->reset();
-                }
-                if (!isKeyed)
-                {
-                    reader.setown(manager->createReader(0, 0, 1, translators, ctx->queryCodeContext(), activityId));
-                }
-                helper.setCallback(reader ? reader->queryThorDiskCallback() : cursor);
+                reader.setown(manager->selectKey(postFilter, translators));
+                if (!reader)
+                    reader.setown(manager->createReader(postFilter, isGrouped, 0, 0, 1, translators));
+                assertex(reader);
+                helper.setCallback(reader);
             }
         }
     }
 
     virtual void append(IKeySegmentMonitor *segment)
     {
-        if (!segment->isWild())
-        {
-            if (!cursor)
-                cursor.setown(manager->createCursor(diskSize.queryRecordAccessor(true)));
-            cursor->append(segment);
-        }
+        segment->Release();
+        throwUnexpected();
     }
 
     virtual void append(FFoption option, IFieldFilter * filter)
     {
-        if (!filter->isWild())
-        {
-            if (!cursor)
-                cursor.setown(manager->createCursor(diskSize.queryRecordAccessor(true)));
-            cursor->append(option, filter);
-        }
+        if (filter->isWild())
+            filter->Release();
+        else
+            postFilter.addFilter(*filter);
     }
 
     virtual unsigned ordinality() const
     {
-        return cursor ? cursor->ordinality() : 0;
+        throwUnexpected();
     }
 
     virtual IKeySegmentMonitor *item(unsigned idx) const
     {
-        return cursor ? cursor->item(idx) : 0;
+        throwUnexpected();
     }
 
     virtual void stop()
@@ -21615,8 +21601,6 @@ public:
         }
         varFileInfo.clear();
         eof = false;
-        if (cursor)
-            cursor->reset();
         reader.clear();
         CRoxieServerActivity::reset();
     }
@@ -21785,7 +21769,7 @@ public:
                 if (processed > rowLimit)
                 {
                     if (traceLevel > 4)
-                        DBGLOG("activityid = %d  isKeyed = %d  line = %d", activityId, isKeyed, __LINE__);
+                        DBGLOG("activityid = %d line = %d", activityId, __LINE__);
                     ReleaseRoxieRow(ret);
                     compoundHelper->onLimitExceeded();
                     throwUnexpected(); // onLimitExceeded is not supposed to return
@@ -21811,52 +21795,25 @@ public:
         }
         RtlDynamicRowBuilder rowBuilder(rowAllocator);
         unsigned transformedSize = 0;
-        if (isKeyed)
+        for (;;)
         {
-            for (;;)
+            const byte *nextRec = reader->nextRow();
+            if (nextRec)
             {
-                const void *nextCandidate = cursor->nextMatch();
-                if (!nextCandidate)
-                {
-                    eof = true;
-                    return NULL;
-                }
-                transformedSize = readHelper->transform(rowBuilder, nextCandidate);
+                transformedSize = readHelper->transform(rowBuilder, nextRec);
+                reader->finishedRow();
                 if (transformedSize)
                     break;
             }
-        }
-        else // use reader...
-        {
-            assertex(reader != NULL);
-            for (;;)
+            else if (isGrouped && lastGroupProcessed != processed)
             {
-                if (reader->eos())
-                {
-                    eof = true;
-                    return NULL;
-                }
-                const byte *nextRec = reader->nextRow();
-                if (cursor && cursor->isFiltered(nextRec))
-                    transformedSize = 0;
-                else
-                    transformedSize = readHelper->transform(rowBuilder, nextRec);
-                bool eog = isGrouped && reader->eog();
-                reader->finishedRow();
-                if (transformedSize)
-                {
-                    if (isGrouped)
-                        eogPending = eog;
-                    break;
-                }
-                else
-                {
-                    if (eog && (lastGroupProcessed != processed))
-                    {
-                        lastGroupProcessed = processed;
-                        return NULL;
-                    }
-                }
+                lastGroupProcessed = processed;
+                return NULL;
+            }
+            else
+            {
+                eof = true;
+                return nullptr;
             }
         }
         return rowBuilder.finalizeRowClear(transformedSize);
@@ -21870,6 +21827,7 @@ class CRoxieServerXmlReadActivity : public CRoxieServerDiskReadBaseActivity, imp
     Owned<IXMLParse> xmlParser;
     Owned<IColumnProvider> lastMatch;
     unsigned __int64 fileoffset;
+    IDirectStreamReader *streamReader = nullptr;
 public:
     IMPLEMENT_IINTERFACE_USING(CRoxieServerDiskReadBaseActivity)
     CRoxieServerXmlReadActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
@@ -21890,11 +21848,13 @@ public:
         {
             rowTransformer.set(readHelper->queryTransformer());
             assertex(reader != NULL);
+            streamReader = reader->queryDirectStreamReader();
+            assertex(streamReader != NULL);
             OwnedRoxieString xmlIterator(readHelper->getXmlIteratorPath());
             if (factory->getKind()==TAKjsonread)
-                xmlParser.setown(createJSONParse(*reader->querySimpleStream(), xmlIterator, *this, (0 != (TDRxmlnoroot & readHelper->getFlags()))?ptr_noRoot:ptr_none, (readHelper->getFlags() & TDRusexmlcontents) != 0));
+                xmlParser.setown(createJSONParse(*streamReader, xmlIterator, *this, (0 != (TDRxmlnoroot & readHelper->getFlags()))?ptr_noRoot:ptr_none, (readHelper->getFlags() & TDRusexmlcontents) != 0));
             else
-                xmlParser.setown(createXMLParse(*reader->querySimpleStream(), xmlIterator, *this, (0 != (TDRxmlnoroot & readHelper->getFlags()))?ptr_noRoot:ptr_none, (readHelper->getFlags() & TDRusexmlcontents) != 0));
+                xmlParser.setown(createXMLParse(*streamReader, xmlIterator, *this, (0 != (TDRxmlnoroot & readHelper->getFlags()))?ptr_noRoot:ptr_none, (readHelper->getFlags() & TDRusexmlcontents) != 0));
         }
     }
 
@@ -21919,11 +21879,11 @@ public:
     }
     virtual unsigned __int64 getLocalFilePosition(const void * row)
     {
-        return reader->makeFilePositionLocal(fileoffset);
+        return streamReader->makeFilePositionLocal(fileoffset);
     }
     virtual const char * queryLogicalFilename(const void * row)
     {
-        return reader->queryThorDiskCallback()->queryLogicalFilename(row);
+        return reader->queryLogicalFilename(row);
     }
 
     virtual const void *nextRow()
@@ -21955,7 +21915,7 @@ public:
                         if (processed > rowLimit)
                         {
                             if (traceLevel > 4)
-                                DBGLOG("activityid = %d  isKeyed = %d  line = %d", activityId, isKeyed, __LINE__);
+                                DBGLOG("activityid = %d  line = %d", activityId, __LINE__);
                             readHelper->onLimitExceeded();
                             throwUnexpected(); // onLimitExceeded is not supposed to return
                         }
@@ -21986,6 +21946,7 @@ class CRoxieServerCsvReadActivity : public CRoxieServerDiskReadBaseActivity
     unsigned maxDiskSize;
     CSVSplitter csvSplitter;    
     unsigned __int64 localOffset;
+    IDirectStreamReader *streamReader = nullptr;
     const char *quotes;
     const char *separators;
     const char *terminators;
@@ -22015,11 +21976,14 @@ public:
         CRoxieServerDiskReadBaseActivity::start(parentExtractSize, parentExtract, paused);
         if (!useRemote())
         {
-            headerLines = csvInfo->queryHeaderLen(); 
-            if (headerLines && isLocal && reader->queryFilePart() != 1)
-                headerLines = 0;  // MORE - you could argue that if SINGLE not specified, should skip from all parts. But it would be painful since we have already concatenated and no-one else does...
             if (!eof)
             {
+                assertex(reader != nullptr);
+                streamReader = reader->queryDirectStreamReader();
+                assertex(streamReader != nullptr);
+                headerLines = csvInfo->queryHeaderLen();
+                if (headerLines && isLocal && streamReader->queryFilePart() != 1)
+                    headerLines = 0;  // MORE - you could argue that if SINGLE not specified, should skip from all parts. But it would be painful since we have already concatenated and no-one else does...
                 if (varFileInfo)
                 {
                     const IPropertyTree *options = varFileInfo->queryProperties();
@@ -22047,39 +22011,19 @@ public:
         {
             while (!eof)
             {
-                if (reader->eos())
-                {
-                    eof = true;
+                size32_t thisLineLength = csvSplitter.splitLine(streamReader, maxRowSize);
+                if (!thisLineLength)
                     break;
-                }
-                // MORE - there are rumours of a  csvSplitter that operates on a stream... if/when it exists, this should use it
-                size32_t rowSize = 4096; // MORE - make configurable
-                size32_t thisLineLength;
-                for (;;)
-                {
-                    size32_t avail;
-                    const void *peek = reader->peek(rowSize, avail);
-                    thisLineLength = csvSplitter.splitLine(avail, (const byte *)peek);
-                    if (thisLineLength < rowSize || avail < rowSize)
-                        break;
-                    if (rowSize == maxRowSize)
-                        throw MakeStringException(0, "File contained a line of length greater than %d bytes.", maxRowSize);
-                    if (rowSize >= maxRowSize/2)
-                        rowSize = maxRowSize;
-                    else
-                        rowSize += rowSize;
-                }
-
                 if (headerLines)
                 {
                     headerLines--;
-                    reader->skip(thisLineLength);
+                    streamReader->skip(thisLineLength);
                 }
                 else
                 {
                     RtlDynamicRowBuilder rowBuilder(rowAllocator);
                     unsigned transformedSize = readHelper->transform(rowBuilder, csvSplitter.queryLengths(), (const char * *)csvSplitter.queryData());
-                    reader->skip(thisLineLength);
+                    streamReader->skip(thisLineLength);
                     if (transformedSize)
                     {
                         OwnedConstRoxieRow ret = rowBuilder.finalizeRowClear(transformedSize);
@@ -22154,55 +22098,24 @@ public:
             return remote->nextRow();
         RtlDynamicRowBuilder rowBuilder(rowAllocator);
         unsigned transformedSize = 0;
-        if (isKeyed)
+        for (;;)
         {
-            for (;;)
+            while (firstPending)
             {
-                while (firstPending)
+                const byte *nextRec = reader->nextRow();
+                if (!nextRec)
                 {
-                    const void *nextCandidate = cursor->nextMatch();
-                    if (!nextCandidate)
-                    {
-                        eof = true;
-                        return NULL;
-                    }
-                    if (normalizeHelper->first(nextCandidate))
-                    {
-                        firstPending = false;
-                        break;
-                    }
+                    eof = true;
+                    return NULL;
                 }
-                transformedSize = normalizeHelper->transform(rowBuilder);
-                firstPending = !normalizeHelper->next();
-                if (transformedSize)
-                    break;
+                if (normalizeHelper->first(nextRec))
+                    firstPending = false;
+                reader->finishedRow();
             }
-        }
-        else
-        {
-            assertex(reader != NULL);
-            for (;;)
-            {
-                while (firstPending)
-                {
-                    if (reader->eos())
-                    {
-                        eof = true;
-                        return NULL;
-                    }
-                    const byte *nextRec = reader->nextRow();
-                    if (!cursor || !cursor->isFiltered(nextRec))
-                    {
-                        if (normalizeHelper->first(nextRec))
-                            firstPending = false;
-                    }
-                    reader->finishedRow();
-                }
-                transformedSize = normalizeHelper->transform(rowBuilder);
-                firstPending = !normalizeHelper->next();
-                if (transformedSize)
-                    break;
-            }
+            transformedSize = normalizeHelper->transform(rowBuilder);
+            firstPending = !normalizeHelper->next();
+            if (transformedSize)
+                break;
         }
         OwnedConstRoxieRow recBuffer = rowBuilder.finalizeRowClear(transformedSize);
         processed++;
@@ -22261,8 +22174,6 @@ class CRoxieServerDiskCountActivity : public CRoxieServerDiskAggregateBaseActivi
             return 1;
         else
         {
-            if (traceLevel > 4)
-                DBGLOG("activityid = %d  isKeyed = %d  line = %d", activityId, isKeyed, __LINE__);
             countHelper.onLimitExceeded();
             throwUnexpected(); // onLimitExceeded should always throw exception
         }
@@ -22319,47 +22230,22 @@ public:
             }
             else
             {
-                if (isKeyed)
+                for (;;)
                 {
-                    for (;;)
+                    const byte *nextRec = reader->nextRow();
+                    if (!nextRec)
+                        break;
+                    totalCount += countHelper.numValid(nextRec);
+                    reader->finishedRow();
+                    if (totalCount > rowLimit)
                     {
-                        const void *nextCandidate = cursor->nextMatch();
-                        if (!nextCandidate)
-                            break;
-                        totalCount += countHelper.numValid(nextCandidate);
-                        if (totalCount > rowLimit)
-                        {
-                            totalCount = getSkippedCount();
-                            break;
-                        }
-                        else if (totalCount >= choosenLimit)
-                        {
-                            totalCount = choosenLimit;
-                            break;
-                        }
+                        totalCount = getSkippedCount();
+                        break;
                     }
-                }
-                else
-                {
-                    assertex(reader != NULL);
-                    while (!reader->eos())
+                    else if (totalCount >= choosenLimit)
                     {
-                        const byte *nextRec = reader->nextRow();
-                        if (!cursor || !cursor->isFiltered(nextRec))
-                        {
-                            totalCount += countHelper.numValid(nextRec);
-                        }
-                        reader->finishedRow();
-                        if (totalCount > rowLimit)
-                        {
-                            totalCount = getSkippedCount();
-                            break;
-                        }
-                        else if (totalCount >= choosenLimit)
-                        {
-                            totalCount = choosenLimit;
-                            break;
-                        }
+                        totalCount = choosenLimit;
+                        break;
                     }
                 }
             }
@@ -22421,28 +22307,13 @@ public:
             aggregateHelper.clearAggregate(rowBuilder);
             if (helper.canMatchAny() && !eof)
             {
-                if (isKeyed)
+                for (;;)
                 {
-                    for (;;)
-                    {
-                        const void *next = cursor->nextMatch();
-                        if (!next)
-                            break;
-                        aggregateHelper.processRow(rowBuilder, next);
-                    }
-                }
-                else
-                {
-                    assertex(reader != NULL);
-                    while (!reader->eos())
-                    {
-                        const byte *nextRec = reader->nextRow();
-                        if (!cursor || !cursor->isFiltered(nextRec))
-                        {
-                            aggregateHelper.processRow(rowBuilder, nextRec);
-                        }
-                        reader->finishedRow();
-                    }
+                    const byte *nextRec = reader->nextRow();
+                    if (!nextRec)
+                        break;
+                    aggregateHelper.processRow(rowBuilder, nextRec);
+                    reader->finishedRow();
                 }
             }
             finalSize = meta.getRecordSize(rowBuilder.getSelf());
@@ -22506,10 +22377,7 @@ public:
         {
             if (helper.canMatchAny() && !eof)
             {
-                Owned<IInMemoryFileProcessor> processor = isKeyed ?
-                    createKeyedGroupAggregateRecordProcessor(cursor, resultAggregator, aggregateHelper) :
-                    createUnkeyedGroupAggregateRecordProcessor(cursor, resultAggregator, aggregateHelper, manager->createReader(0, 0, 1, translators, ctx->queryCodeContext(), activityId),
-                                                               ctx->queryCodeContext(), activityId);
+                Owned<IInMemoryFileProcessor> processor = createGroupAggregateRecordProcessor(resultAggregator, aggregateHelper, reader);
                 processor->doQuery(NULL, 0, 0, 0);
             }
         }
@@ -22576,7 +22444,7 @@ public:
                     unsigned channel = isLocal ? queryFactory.queryChannel() : 0;
                     unsigned formatCrc = getFormatCrc(helper->getFormatCrc());
                     translators.setown(datafile->getTranslators(formatCrc, helper->queryProjectedDiskRecordSize(), helper->queryDiskRecordSize(), getEnableFieldTranslation()));
-                    manager.setown(datafile->getIndexManager(isOpt, channel, translators->queryActualLayout(0), _graphNode.getPropBool("att[@name=\"preload\"]/@value", false), _graphNode.getPropInt("att[@name=\"_preloadSize\"]/@value", 0)));
+                    manager.setown(datafile->getIndexManager(isOpt, channel, translators->queryActualLayout(0), _graphNode.getPropBool("att[@name=\"preload\"]/@value", false)));
                     const IPropertyTree *options = datafile->queryProperties();
                     if (options)
                     {
@@ -22587,7 +22455,7 @@ public:
                     }
                 }
                 else
-                    manager.setown(getEmptyIndexManager());
+                    manager.setown(createInMemoryIndexManager(helper->queryProjectedDiskRecordSize()->queryRecordAccessor(true), true, nullptr));
             }
         }
         switch (kind)
@@ -25692,7 +25560,7 @@ public:
         if (keepLimit == 0) keepLimit = (unsigned)-1;
         getLimitType(joinFlags, limitFail, limitOnFail);
         cloneLeft = (joinFlags & JFtransformmatchesleft) != 0;
-        if (joinFlags & JFleftouter || limitOnFail)
+        if ((joinFlags & JFleftouter) || limitOnFail)
             createDefaultRight();
     }
 
