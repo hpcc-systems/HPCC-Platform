@@ -223,7 +223,7 @@ class CFirstNSlaveGlobal : public CFirstNSlaveBase, implements ILookAheadStopNot
         {
             if (RCUNBOUND == maxres)
             {
-                maxres = getDataLinkCount();
+                maxres = getDataLinkCount() + skipped;
                 sendCount();
             }
         }

@@ -204,7 +204,15 @@ public:
         {
             secondaryInputIndex = index;
             secondaryInputStream = queryInputStream(secondaryInputIndex);
-            if (!isFastThrough(_input.itdl))
+            if (isFastThrough(_input.itdl))
+            {
+                if (queryInput(index)->isGrouped())
+                {
+                    secondaryInputStream = createUngroupStream(secondaryInputStream);
+                    Owned<IEngineRowStream> old = replaceInputStream(secondaryInputIndex, secondaryInputStream);
+                }
+            }
+            else
             {
                 IStartableEngineRowStream *lookAhead = createRowStreamLookAhead(this, secondaryInputStream, queryRowInterfaces(_input.itdl), JOIN_SMART_BUFFER_SIZE, isSmartBufferSpillNeeded(_input.itdl->queryFromActivity()),
                                                             false, RCUNBOUND, this, &container.queryJob().queryIDiskUsage());

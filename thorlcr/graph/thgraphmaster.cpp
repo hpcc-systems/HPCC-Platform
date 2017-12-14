@@ -1647,12 +1647,14 @@ bool CJobMaster::go()
         ~CWorkunitPauseHandler() { stop(); }
         void stop()
         {
-            CriticalBlock b(crit);
-            if (watcher)
+            Owned<IWorkUnitWatcher> _watcher;
             {
-                watcher->unsubscribe();
-                watcher.clear();
+                CriticalBlock b(crit);
+                if (!watcher)
+                    return;
+                _watcher.setown(watcher.getClear());
             }
+            _watcher->unsubscribe();
         }
         void notify(WUSubscribeOptions flags)
         {

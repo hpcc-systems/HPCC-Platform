@@ -50,6 +50,7 @@
 #include "rtlds_imp.hpp"
 #include "rtlformat.hpp"
 #include "rmtfile.hpp"
+#include "roxiestream.hpp"
 
 
 #define SDS_LOCK_TIMEOUT 30000
@@ -1278,16 +1279,15 @@ IRowServer *createRowServer(CActivityBase *activity, IRowStream *seq, ICommunica
     return new CRowServer(activity, seq, comm, mpTag);
 }
 
-IRowStream *createUngroupStream(IRowStream *input)
+IEngineRowStream *createUngroupStream(IRowStream *input)
 {
-    class CUngroupStream : public CSimpleInterface, implements IRowStream
+    class CUngroupStream : public CSimpleInterfaceOf<IEngineRowStream>
     {
         IRowStream *input;
     public:
         CUngroupStream(IRowStream *_input) : input(_input) { input->Link(); }
         ~CUngroupStream() { input->Release(); }
-        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-        virtual const void *nextRow() 
+        virtual const void *nextRow() override
         {
             const void *ret = input->nextRow(); 
             if (ret) 
@@ -1295,10 +1295,11 @@ IRowStream *createUngroupStream(IRowStream *input)
             else
                 return input->nextRow();
         }
-        virtual void stop()
+        virtual void stop() override
         {
             input->stop();
         }
+        virtual void resetEOF() override { throwUnexpected(); }
     };
     return new CUngroupStream(input);
 }

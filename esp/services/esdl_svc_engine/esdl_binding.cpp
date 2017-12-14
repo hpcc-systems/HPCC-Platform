@@ -539,7 +539,8 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
                 const char * key = (const char *)cur.getKey();
                 features.appendf("%s%s:%s", (index++ == 0 ? "" : ", "), key, getSecAccessFlagName(*methaccessmap.getValue(key)));
             }
-            throw MakeStringException(-1, "%s::%s access denied - Required features: %s.", srvdef.queryName(), mthName, features.str());
+            const char * user = context.queryUserId();
+            throw MakeStringException(-1, "%s::%s access denied for user '%s' - Method requires: '%s'.", srvdef.queryName(), mthName, (user && *user) ? user : "Anonymous", features.str());
         }
     }
 
