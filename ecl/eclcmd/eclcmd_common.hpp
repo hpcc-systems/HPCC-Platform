@@ -59,6 +59,9 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_PORT_ENV "ECL_WATCH_PORT"
 #define ECLOPT_PORT_DEFAULT "8010"
 
+#define ECLOPT_WAIT_CONNECT "--wait-connect"
+#define ECLOPT_WAIT_READ "--wait-read"
+
 #define ECLOPT_USERNAME "--username"
 #define ECLOPT_USERNAME_S "-u"
 #define ECLOPT_USERNAME_INI "eclUserName"
@@ -260,6 +263,8 @@ public:
                 "   --port=<port>          ECL services port\n"
                 "   -u, --username=<name>  Username for accessing ecl services\n"
                 "   -pw, --password=<pw>   Password for accessing ecl services\n"
+                "   --wait-connect=<Ms>    Timeout while connecting to server (in milliseconds)\n"
+                "   --wait-read=<Sec>      Timeout while reading from socket (in seconds)\n"
               );
     }
 public:
@@ -267,6 +272,8 @@ public:
     StringAttr optPort;
     StringAttr optUsername;
     StringAttr optPassword;
+    unsigned optWaitConnectMs = 0;
+    unsigned optWaitReadSec = 0;
     bool optVerbose;
     bool optSSL;
     bool usesESP;
@@ -361,6 +368,7 @@ public:
     StringAttr optQuery;
 };
 
+void outputExceptionEx(IException &e);
 int outputMultiExceptionsEx(const IMultiException &me);
 bool checkMultiExceptionsQueryNotFound(const IMultiException &me);
 bool outputQueryFileCopyErrors(IArrayOf<IConstLogicalFileError> &errors);
@@ -395,5 +403,15 @@ template <class Iface> Iface *intClient(Iface *client, EclCmdCommon &cmd, const 
 
 #define createCmdClient(SN, cmd) intClient<IClient##SN>(create##SN##Client(), cmd, #SN, NULL);
 #define createCmdClientExt(SN, cmd, urlTail) intClient<IClient##SN>(create##SN##Client(), cmd, #SN, urlTail);
+
+inline void setCmdRequestTimeouts(IEspClientRpcSettings &rpc, unsigned waitMs, unsigned waitConnectMs, unsigned waitReadSec)
+{
+    if (waitMs==(unsigned)-1)
+        waitMs=0;
+    if (waitConnectMs || waitMs)
+        rpc.setConnectTimeOutMs(waitConnectMs ? waitConnectMs : waitMs);
+    if (waitReadSec || waitMs)
+        rpc.setReadTimeOutSecs(waitReadSec ? waitReadSec : (waitMs / 1000));
+}
 
 #endif

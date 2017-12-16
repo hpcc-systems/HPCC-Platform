@@ -259,6 +259,8 @@ public:
     {
         Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
         Owned<IClientWUMultiQuerySetDetailsRequest> req = client->createWUMultiQuerysetDetailsRequest();
+        setCmdRequestTimeouts(req->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+
         req->setQuerySetName(optTargetCluster.get());
         req->setClusterName(optTargetCluster.get());
         req->setFilterType("All");
@@ -359,6 +361,8 @@ public:
     {
         Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
         Owned<IClientWUQueryFilesRequest> req = client->createWUQueryFilesRequest();
+        setCmdRequestTimeouts(req->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+
         req->setTarget(optTarget.get());
         req->setQueryId(optQuery.get());
 
@@ -511,6 +515,8 @@ public:
     {
         Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
         Owned<IClientWUQuerySetCopyQueryRequest> req = client->createWUQuerysetCopyQueryRequest();
+        setCmdRequestTimeouts(req->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+
         req->setSource(optSourceQueryPath.get());
         req->setTarget(optTargetCluster.get());
         req->setCluster(optTargetCluster.get());
@@ -686,6 +692,8 @@ public:
     {
         Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
         Owned<IClientWUCopyQuerySetRequest> req = client->createWUCopyQuerySetRequest();
+        setCmdRequestTimeouts(req->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+
         req->setActiveOnly(!optAllQueries);
         req->setSource(optSourceQuerySet.get());
         req->setTarget(optDestQuerySet.get());
@@ -848,6 +856,8 @@ public:
     {
         Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
         Owned<IClientWUQueryConfigRequest> req = client->createWUQueryConfigRequest();
+        setCmdRequestTimeouts(req->rpc(), optMsToWait, optWaitConnectMs, optWaitReadSec);
+
         req->setTarget(optTargetCluster.get());
         req->setQueryId(optQueryId.get());
         req->setWait(optMsToWait);
@@ -1053,6 +1063,7 @@ public:
 
         Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this); //upload_ disables maxRequestEntityLength
         Owned<IClientWURecreateQueryRequest> req = client->createWURecreateQueryRequest();
+        setCmdRequestTimeouts(req->rpc(), optMsToWait, optWaitConnectMs, optWaitReadSec);
 
         if (optDeletePrevious)
             req->setActivate(CWUQueryActivationMode_ActivateDeletePrevious);
@@ -1259,6 +1270,8 @@ public:
     {
         Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
         Owned<IClientWUQuerysetExportRequest> req = client->createWUQuerysetExportRequest();
+        setCmdRequestTimeouts(req->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+
         req->setTarget(optTarget);
         req->setActiveOnly(optActiveOnly);
         req->setCompress(true);
@@ -1389,6 +1402,7 @@ public:
     {
         Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
         Owned<IClientWUQuerysetImportRequest> req = client->createWUQuerysetImportRequest();
+        setCmdRequestTimeouts(req->rpc(), 0, optWaitConnectMs, optWaitReadSec);
 
         MemoryBuffer compressed;
         fastLZCompressToBuffer(compressed, content.length()+1, content.str());
