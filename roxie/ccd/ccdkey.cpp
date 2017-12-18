@@ -452,6 +452,7 @@ protected:
         }
         if (translator)
         {
+            buf.setLength(0);
             MemoryBufferBuilder aBuilder(buf, 0);
             translator->translate(aBuilder, deserializeSource.queryRow());
             row.setRow(reinterpret_cast<const byte *>(buf.toByteArray()), 0);
@@ -504,7 +505,6 @@ public:
 
     virtual void finishedRow() override
     {
-        buf.setLength(0);
         deserializeSource.finishedRow();
     }
 
@@ -1137,6 +1137,7 @@ public:
             {
                 if (translator)
                 {
+                    buf.setLength(0);
                     MemoryBufferBuilder aBuilder(buf, 0);
                     translator->translate(aBuilder, keySearcher->queryRow().queryRow()); // MORE - could pass in partially-resolved RtlRow
                     return (const byte *) buf.toByteArray();
