@@ -61,10 +61,10 @@ public:
             switch (container.getKind())
             {
                 case TAKsoap_rowdataset:
-                    wscHelper.setown(createSoapCallHelper(this, queryRowAllocator(), authToken.str(), SCrow, NULL, queryDummyContextLogger(), NULL));
+                    wscHelper.setown(createSoapCallHelper(this, queryRowAllocator(), authToken.str(), SCrow, NULL, container.queryJob().queryContextLogger(), NULL));
                     break;
                 case TAKhttp_rowdataset:
-                    wscHelper.setown(createHttpCallHelper(this, queryRowAllocator(), authToken.str(), SCrow, NULL, queryDummyContextLogger(), NULL));
+                    wscHelper.setown(createHttpCallHelper(this, queryRowAllocator(), authToken.str(), SCrow, NULL, container.queryJob().queryContextLogger(), NULL));
                     break;
                 default:
                     throwUnexpected();
@@ -153,7 +153,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
         eof = false;
-        wscHelper.setown(createSoapCallHelper(this, queryRowAllocator(), authToken.str(), SCdataset, NULL, queryDummyContextLogger(),NULL));
+        wscHelper.setown(createSoapCallHelper(this, queryRowAllocator(), authToken.str(), SCdataset, NULL, container.queryJob().queryContextLogger(), NULL));
         wscHelper->start();
     }
     virtual void stop() override
@@ -242,7 +242,7 @@ public:
     {
         if (container.queryLocalOrGrouped() || firstNode())
         {
-            wscHelper.setown(createSoapCallHelper(this, NULL, authToken.str(), SCrow, NULL, queryDummyContextLogger(),NULL));
+            wscHelper.setown(createSoapCallHelper(this, NULL, authToken.str(), SCrow, NULL, container.queryJob().queryContextLogger(),NULL));
             wscHelper->start();
             wscHelper->waitUntilDone();
             IException *e = wscHelper->getError();
@@ -300,7 +300,7 @@ public:
 
         processed = THORDATALINK_STARTED;
 
-        wscHelper.setown(createSoapCallHelper(this, NULL, authToken.str(), SCdataset, NULL, queryDummyContextLogger(),NULL));
+        wscHelper.setown(createSoapCallHelper(this, NULL, authToken.str(), SCdataset, NULL, container.queryJob().queryContextLogger(),NULL));
         wscHelper->start();
         wscHelper->waitUntilDone();
         IException *e = wscHelper->getError();

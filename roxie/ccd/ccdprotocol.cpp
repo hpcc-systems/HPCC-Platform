@@ -1756,6 +1756,16 @@ readAnother:
             {
                 mlResponseFmt = httpHelper.queryResponseMlFormat();
                 mlRequestFmt = httpHelper.queryRequestMlFormat();
+                const char *value = httpHelper.queryRequestHeader(logctx.queryGlobalIdHttpHeader());
+                if (!value || !*value)
+                    value = httpHelper.queryRequestHeader("HPCC-Global-Id"); //always support receiving in the HPCC form
+                if (value && *value)
+                    msgctx->setTransactionId(value, true);  //logged and forwarded through SOAPCALL/HTTPCALL
+                value = httpHelper.queryRequestHeader(logctx.queryCallerIdHttpHeader());
+                if (!value || !*value)
+                    value = httpHelper.queryRequestHeader("HPCC-Caller-Id");
+                if (value && *value)
+                    msgctx->setCallerId(value);  //only logged
             }
         }
 
@@ -1858,7 +1868,7 @@ readAnother:
                 uid = NULL;
                 sanitizeQuery(queryPT, queryName, sanitizedText, httpHelper, uid, isBlind, isDebug);
                 if (uid)
-                    msgctx->setTransactionId(uid);
+                    msgctx->setTransactionId(uid, false);
                 else
                     uid = "-";
 

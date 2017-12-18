@@ -99,7 +99,14 @@
       <xsl:attribute name="thorConnectTimeout">
         <xsl:value-of select="@thorConnectTimeout"/>
       </xsl:attribute>
-
+      <xsl:if test="@httpGlobalIdHeader">
+        <xsl:attribute name="httpCallerIdHeader">
+          <xsl:value-of select="@httpCallerIdHeader"/>
+        </xsl:attribute>
+        <xsl:attribute name="httpGlobalIdHeader">
+          <xsl:value-of select="@httpGlobalIdHeader"/>
+        </xsl:attribute>
+      </xsl:if>
       <xsl:copy-of select="/Environment/Software/Directories"/>  
 
     </agentexec>

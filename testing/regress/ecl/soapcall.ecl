@@ -39,13 +39,13 @@ ServiceOutRecord :=
     END;
 
 // simple query->dataset form
-output(SORT(SOAPCALL(targetURL,'soapbase', { string unkname := 'FRED' }, dataset(ServiceOutRecord), LOG('simple')),record));
+output(SORT(SOAPCALL(targetURL,'soapbase', { string unkname := 'FRED' }, dataset(ServiceOutRecord), LOG('simple'), HTTPHEADER('HPCC-Global-Id','12345678900'), HTTPHEADER('HPCC-Caller-Id','1111')),record));
 
 // double query->dataset form
-output(SORT(SOAPCALL(doubleTargetURL,'soapbase', { string unkname := 'FRED' }, dataset(ServiceOutRecord)),record));
+output(SORT(SOAPCALL(doubleTargetURL,'soapbase', { string unkname := 'FRED' }, dataset(ServiceOutRecord), HTTPHEADER('HPCC-Global-Id','12345678900'), HTTPHEADER('HPCC-Caller-Id','2222')),record));
 
 // simple dataset->dataset form
-output(sort(SOAPCALL(d, targetURL,'soapbase', { unkname }, DATASET(ServiceOutRecord)),record));
+output(sort(SOAPCALL(d, targetURL,'soapbase', { unkname }, DATASET(ServiceOutRecord), HTTPHEADER('HPCC-Global-Id','12345678900'), HTTPHEADER('HPCC-Caller-Id','3333')),record));
 
 // double query->dataset form
 ServiceOutRecord doError(d l) := TRANSFORM
@@ -73,7 +73,7 @@ END;
 // Test some failure cases
 
 output(SORT(SOAPCALL(d, blacklistedTargetURL,'soapbase', { unkname }, DATASET(ServiceOutRecord), onFail(doError(LEFT)),RETRY(0), log('SOAP: ' + unkname),TIMEOUT(1)), record));
-output(SORT(SOAPCALL(targetURL,'soapbase', { string unkname := 'FAIL' }, dataset(ServiceOutRecord),onFail(doError2),RETRY(0), LOG(MIN)),record));
+output(SORT(SOAPCALL(targetURL,'soapbase', { string unkname := 'FAIL' }, dataset(ServiceOutRecord),onFail(doError2),RETRY(0), LOG(MIN), HTTPHEADER('HPCC-Global-Id','12345678900'), HTTPHEADER('HPCC-Caller-Id','4444')),record));
 output(SORT(SOAPCALL(d, targetURL,'soapbaseNOSUCHQUERY', { unkname }, DATASET(ServiceOutRecord), onFail(doError3(LEFT)),MERGE(25),PARALLEL(1),RETRY(0), LOG(MIN)), record));
 
 childRecord := record

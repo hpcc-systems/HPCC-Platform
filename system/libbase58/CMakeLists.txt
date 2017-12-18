@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -14,16 +14,23 @@
 #    limitations under the License.
 ################################################################################
 
-HPCC_ADD_SUBDIRECTORY (include)
-HPCC_ADD_SUBDIRECTORY (jhtree)
-HPCC_ADD_SUBDIRECTORY (jlib)
+# Component: libbase58 
 
-if (NOT JLIB_ONLY)
-   HPCC_ADD_SUBDIRECTORY (libbase58)
-   HPCC_ADD_SUBDIRECTORY (hrpc)
-   HPCC_ADD_SUBDIRECTORY (tbb_sm)
-   HPCC_ADD_SUBDIRECTORY (mp)
-   HPCC_ADD_SUBDIRECTORY (security)
-   HPCC_ADD_SUBDIRECTORY (xmllib)
-   HPCC_ADD_SUBDIRECTORY (xmllibtest "PLATFORM")
-endif( )
+#####################################################
+# Description:
+# ------------
+#    Cmake Input File for libbase58
+#####################################################
+
+
+project( libbase58 ) 
+
+set ( SRCS
+        base58.c
+)
+
+ADD_DEFINITIONS( -D_LIB )
+
+SET_SOURCE_FILES_PROPERTIES( ${SRCS} PROPERTIES LANGUAGE CXX )
+HPCC_ADD_LIBRARY( libbase58 STATIC ${SRCS} )
+

@@ -29,6 +29,8 @@
 #include "jmisc.hpp"
 #include "jprop.hpp"
 
+#include "libbase58.h"
+
 #define MSGCOMP_NUMBER 1000
 #define FILE_LOG_ENABLES_QUEUEUING
 
@@ -2550,6 +2552,12 @@ void IContextLogger::logOperatorException(IException *E, const char *file, unsig
 
 class DummyLogCtx : implements IContextLogger
 {
+private:
+    StringAttr globalId;
+    StringBuffer localId;
+    StringAttr globalIdHeader;
+    StringAttr callerIdHeader;
+
 public:
     // It's a static object - we don't want to actually link-count it...
     virtual void Link() const {}
@@ -2585,6 +2593,34 @@ public:
     {
         return 0;
     }
+    virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid)
+    {
+        globalId.set(id);
+        appendLocalId(localId.clear(), ep, pid);
+    }
+    virtual const char *queryGlobalId() const
+    {
+        return globalId.get();
+    }
+    virtual const char *queryLocalId() const
+    {
+        return localId.str();
+    }
+    virtual void setHttpIdHeaders(const char *global, const char *caller)
+    {
+        if (global && *global)
+            globalIdHeader.set(global);
+        if (caller && *caller)
+            callerIdHeader.set(caller);
+    }
+    virtual const char *queryGlobalIdHttpHeader() const
+    {
+        return globalIdHeader.str();
+    }
+    virtual const char *queryCallerIdHttpHeader() const
+    {
+        return callerIdHeader.str();
+    }
 } dummyContextLogger;
 
 extern jlib_decl const IContextLogger &queryDummyContextLogger()
@@ -2592,6 +2628,34 @@ extern jlib_decl const IContextLogger &queryDummyContextLogger()
     return dummyContextLogger;
 }
 
+extern jlib_decl IContextLogger &updateDummyContextLogger()
+{
+    return dummyContextLogger;
+}
+
+extern jlib_decl StringBuffer &appendLocalId(StringBuffer &s, const SocketEndpoint &ep, unsigned pid)
+{
+    static unsigned short cnt = msTick();
+
+    MemoryBuffer data;
+    data.append(ep.iphash());
+    if (pid>0)
+        data.append(pid);
+    else
+        data.append(ep.port);
+    data.append(++cnt);
+
+    size_t b58Length = data.length() * 2;
+    StringBuffer id;
+
+    //base58 works well as a human readable format, i.e. so customers can easily report the id that was recieved
+    if (b58enc(id.reserve(b58Length), &b58Length, data.toByteArray(), data.length()) && b58Length > 1)
+    {
+        id.setLength(b58Length);
+        s.append(id);
+    }
+    return s;
+}
 
 extern jlib_decl void UseSysLogForOperatorMessages(bool use)
 {

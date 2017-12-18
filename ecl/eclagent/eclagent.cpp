@@ -2071,6 +2071,31 @@ void EclAgent::runProcess(IEclProcess *process)
     bool retainMemory = agentTopology->getPropBool("@heapRetainMemory", false);
     retainMemory = globals->getPropBool("heapRetainMemory", retainMemory);
 
+    if (globals->hasProp("@httpGlobalIdHeader"))
+        updateDummyContextLogger().setHttpIdHeaders(globals->queryProp("@httpGlobalIdHeader"), globals->queryProp("@httpCallerIdHeader"));
+
+    if (queryWorkUnit()->hasDebugValue("GlobalId"))
+    {
+        SCMStringBuffer globalId;
+        queryWorkUnit()->getDebugValue("GlobalId", globalId);
+        if (globalId.length())
+        {
+            SocketEndpoint thorEp;
+            thorEp.setLocalHost(0);
+            updateDummyContextLogger().setGlobalId(globalId.str(), thorEp, GetCurrentProcessId());
+
+            VStringBuffer msg("GlobalId: %s", globalId.str());
+            SCMStringBuffer txId;
+            queryWorkUnit()->getDebugValue("CallerId", txId);
+            if (txId.length())
+                msg.append(", CallerId: ").append(txId.str());
+            txId.set(updateDummyContextLogger().queryLocalId());
+            if (txId.length())
+                msg.append(", LocalId: ").append(txId.str());
+            updateDummyContextLogger().CTXLOG("%s", msg.str());
+        }
+    }
+
 #ifndef __64BIT__
     if (memLimitMB > 4096)
     {

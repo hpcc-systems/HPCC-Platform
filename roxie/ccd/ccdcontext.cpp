@@ -1161,6 +1161,7 @@ protected:
     mutable CriticalSection statsCrit;
     const IRoxieContextLogger &logctx;
 
+
 protected:
     bool exceptionLogged;
     bool aborted;
@@ -1310,6 +1311,31 @@ public:
     {
         return logctx.queryTraceLevel();
     }
+    virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid)
+    {
+        const_cast<IRoxieContextLogger&>(logctx).setGlobalId(id, ep, pid);
+    }
+    virtual const char *queryGlobalId() const
+    {
+        return logctx.queryGlobalId();
+    }
+    virtual const char *queryLocalId() const
+    {
+        return logctx.queryLocalId();
+    }
+    virtual void setHttpIdHeaders(const char *global, const char *caller)
+    {
+        const_cast<IRoxieContextLogger&>(logctx).setHttpIdHeaders(global, caller);
+    }
+    virtual const char *queryGlobalIdHttpHeader() const
+    {
+        return logctx.queryGlobalIdHttpHeader();
+    }
+    virtual const char *queryCallerIdHttpHeader() const
+    {
+        return logctx.queryCallerIdHttpHeader();
+    }
+
 
     virtual void checkAbort()
     {
