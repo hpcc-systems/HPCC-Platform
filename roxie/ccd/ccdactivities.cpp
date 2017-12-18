@@ -3704,7 +3704,7 @@ public:
         : CRoxieFetchActivityBase(_logctx, _packet, _hFactory, _aFactory, _translators, _files)
     {
         // If we ever supported superfiles this would need to move to setPartNo, and pass proper subfile idx in
-        rowPrefetcher.setown(translators->getPrefetcher(0, false));
+        rowPrefetcher.setown(translators->getPrefetcher(0));
 
         IOutputMetaData *diskMeta = helper->queryProjectedDiskRecordSize();
         diskAllocator.setown(getRowAllocator(diskMeta, basefactory->queryId()));
@@ -4333,7 +4333,7 @@ class CRoxieKeyedJoinFetchActivity : public CRoxieSlaveActivity
         rawFile.setown(files->getFilePart(lastPartNo.partNo, base)); // MORE - superfiles
         translator = translators->queryTranslator(0);                // MORE - superfiles
         rawStream.setown(createFileSerialStream(rawFile, 0, -1, 0));
-        prefetcher.setown(translators->getPrefetcher(0, false));
+        prefetcher.setown(translators->getPrefetcher(0));
         prefetchSource.setStream(rawStream);
     }
 
