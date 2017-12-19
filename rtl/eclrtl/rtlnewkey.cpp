@@ -1,7 +1,6 @@
 /*##############################################################################
 
 
-    Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
     You may obtain a copy of the License at
 
@@ -168,17 +167,54 @@ public:
             memcpy(value, _value, size);
         }
     }
+    ValueTransition(const RtlTypeInfo & type, MemoryBuffer & in)
+    {
+        byte inmask;
+        in.read(inmask);
+        if (!(inmask & CMPnovalue))
+        {
+            mask = (TransitionMask)inmask;
+            size32_t size = type.size(in.readDirect(0), nullptr);
+            value.allocateN(size, false);
+            in.read(size, value);
+        }
+        else
+        {
+            mask = (TransitionMask)(inmask & ~CMPnovalue);
+        }
+    }
     ValueTransition(TransitionMask _mask) : mask(_mask)
     {
         dbgassertex(isMaximum() || isMinimum());
     }
 
-    MemoryBuffer &serialize(const RtlTypeInfo & type, MemoryBuffer &mb) const
+    bool equals(const RtlTypeInfo & type, const ValueTransition & other) const
     {
-        mb.append((byte)mask);
-        size32_t size = type.size(value, nullptr);
-        memcpy(mb.reserve(size), value, size);
-        return mb;
+        if (mask != other.mask)
+            return false;
+        if (value && other.value)
+        {
+            return type.compare(value, other.value) == 0;
+        }
+        else
+            return !value && !other.value;
+    }
+
+    MemoryBuffer & serialize(const RtlTypeInfo & type, MemoryBuffer & out) const
+    {
+        byte outmask = mask;
+        if (value)
+        {
+            size32_t size = type.size(value, nullptr);
+            out.append(outmask);
+            out.append(size, value);
+        }
+        else
+        {
+            outmask |= CMPnovalue;
+            out.append(outmask);
+        }
+        return out;
     }
 
     int compareRaw(const RtlTypeInfo & type, const byte * field) const
@@ -334,6 +370,14 @@ class ValueSet : public CInterfaceOf<IValueSet>
 public:
     ValueSet(const RtlTypeInfo & _type) : type(_type)
     {
+    }
+
+    ValueSet(const RtlTypeInfo & _type, MemoryBuffer & in) : type(_type)
+    {
+        unsigned cnt;
+        in.readPacked(cnt);
+        for (unsigned i = 0; i < cnt; i++)
+            transitions.append(*new ValueTransition(type, in));
     }
 
 // Methods for creating a value set
@@ -743,6 +787,21 @@ public:
         killRange(lowerBound, upperBound);
     }
 
+    virtual bool equals(const IValueSet & _other) const override
+    {
+        const ValueSet & other = static_cast<const ValueSet &>(_other);
+        if (!type.equivalent(&other.type))
+            return false;
+        if (transitions.ordinality() != other.transitions.ordinality())
+            return false;
+        ForEachItemIn(i, transitions)
+        {
+            if (!transitions.item(i).equals(type, other.transitions.item(i)))
+                return false;
+        }
+        return true;
+    }
+
 // Methods for using a value set
     virtual bool isWild() const override;
     virtual unsigned numRanges() const override;
@@ -763,6 +822,14 @@ public:
     {
         //Does this need to include the type information?
         return describe(out);
+    }
+
+    virtual MemoryBuffer & serialize(MemoryBuffer & out) const override
+    {
+        out.appendPacked((unsigned)transitions.ordinality());
+        ForEachItemIn(i, transitions)
+            transitions.item(i).serialize(type, out);
+        return out;
     }
 
     virtual const RtlTypeInfo & queryType() const override
@@ -1000,6 +1067,7 @@ int ValueSet::findForwardMatchRange(const byte * field, unsigned & matchRange) c
 }
 
 IValueSet * createValueSet(const RtlTypeInfo & _type) { return new ValueSet(_type); }
+IValueSet * createValueSet(const RtlTypeInfo & _type, MemoryBuffer & in) { return new ValueSet(_type, in); }
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -1020,6 +1088,11 @@ public:
     virtual unsigned queryFieldIndex() const override
     {
         return field;
+    }
+
+    virtual const RtlTypeInfo & queryType() const override
+    {
+        return type;
     }
 
 protected:
@@ -1048,6 +1121,8 @@ public:
 
     virtual unsigned queryScore() const override;
     virtual IFieldFilter *remap(unsigned newField) const override { return new SetFieldFilter(newField, values); }
+    virtual StringBuffer & serialize(StringBuffer & out) const override;
+    virtual MemoryBuffer & serialize(MemoryBuffer & out) const override;
 protected:
     Linked<IValueSet> values;
 };
@@ -1095,6 +1170,17 @@ unsigned SetFieldFilter::queryScore() const
     if (!score)
         score = 5;   // Arbitrary guess for average field length in a variable size field
     return score;
+}
+
+StringBuffer & SetFieldFilter::serialize(StringBuffer & out) const
+{
+    out.append('=');
+    return values->serialize(out);
+}
+MemoryBuffer & SetFieldFilter::serialize(MemoryBuffer & out) const
+{
+    out.append('=');
+    return values->serialize(out);
 }
 
 IFieldFilter * createFieldFilter(unsigned fieldId, IValueSet * values)
@@ -1171,12 +1257,61 @@ public:
         return 0;
     }
     virtual IFieldFilter *remap(unsigned newField) const override { return new WildFieldFilter(newField, type); }
+
+    virtual StringBuffer & serialize(StringBuffer & out) const override
+    {
+        return out.append('*');
+    }
+
+    virtual MemoryBuffer & serialize(MemoryBuffer & out) const override
+    {
+        return out.append('*');
+    }
 };
 
 IFieldFilter * createWildFieldFilter(unsigned fieldId, const RtlTypeInfo & type)
 {
     //MORE: Is it worth special casing, or would a SetFieldFilter of null..null be just as good?
     return new WildFieldFilter(fieldId, type);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+//Note, the fieldId could be serialized within the string, but it is needed to determine the type, and
+//passing it in allows this code to be decoupled from the type serialization code.
+IFieldFilter * deserializeFieldFilter(unsigned fieldId, const RtlTypeInfo & type, const char * src)
+{
+    switch (*src)
+    {
+    case '*':
+        return createWildFieldFilter(fieldId, type);
+    case '=':
+        {
+            Owned<IValueSet> values = createValueSet(type);
+            deserializeSet(*values, src+1);
+            return createFieldFilter(fieldId, values);
+        }
+    }
+
+    UNIMPLEMENTED_X("Unknown Field Filter");
+}
+
+IFieldFilter * deserializeFieldFilter(unsigned fieldId, const RtlTypeInfo & type, MemoryBuffer & in)
+{
+    char kind;
+    in.read(kind);
+    switch (kind)
+    {
+    case '*':
+        return createWildFieldFilter(fieldId, type);
+    case '=':
+        {
+            Owned<IValueSet> values = createValueSet(type, in);
+            return createFieldFilter(fieldId, values);
+        }
+    }
+
+    UNIMPLEMENTED_X("Unknown Field Filter");
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -1642,6 +1777,17 @@ protected:
         deserializeSet(*set, filter);
         checkSet(set, expected ? expected : filter);
 
+        MemoryBuffer mb;
+        set->serialize(mb);
+        Owned<IValueSet> newset = createValueSet(type, mb);
+        checkSet(newset, expected ? expected : filter);
+        CPPUNIT_ASSERT(set->equals(*newset));
+
+        StringBuffer s;
+        set->serialize(s);
+        Owned<IValueSet> newset2 = createValueSet(type);
+        deserializeSet(*newset2, s);
+        CPPUNIT_ASSERT(set->equals(*newset2));
     }
     void testUnion(RtlTypeInfo & type, const char * filter, const char * next, const char * expected)
     {

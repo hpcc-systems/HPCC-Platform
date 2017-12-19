@@ -18,7 +18,7 @@
 //UseStandardFiles
 //version forceLayoutTranslation=0
 //version forceLayoutTranslation=1
-// it would be nice to also add version forceLayoutTranslation=2, but can't until ifblock condition metadata serialization is done properly
+//version forceLayoutTranslation=2
 
 import $.setup;
 prefix := setup.Files(false, false).FilePrefix;

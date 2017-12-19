@@ -39,6 +39,7 @@
 #include "hqlerror.hpp"
 #include "hqlexpr.ipp"
 #include "hqlrepository.hpp"
+#include "hqlfilter.hpp"
 
 #define SIZET_CACHE_SIZE    5001
 #define FIXEDATTR_CACHE_SIZE 1001
@@ -9828,6 +9829,25 @@ bool checkXpathIsNonScalar(const char *xpath)
     return (strpbrk(xpath, "/?*[]<>")!=NULL); //anything other than a single tag/attr name cannot name a scalar field
 }
 
+static IFieldFilter * createIfBlockFilter(IRtlFieldTypeDeserializer &deserializer, IHqlExpression *rowRecord, IHqlExpression * ifblock)
+{
+    //See if the condition can be matched to a simple field filter
+    OwnedHqlExpr dummyDataset = createDataset(no_anon, LINK(rowRecord));
+    OwnedHqlExpr mappedCondition = replaceSelector(ifblock->queryChild(0), querySelfReference(), dummyDataset);
+    Owned <IErrorReceiver> errorReceiver = createThrowingErrorReceiver();
+
+    FilterExtractor extractor(*errorReceiver, dummyDataset, rowRecord->numChildren(), true, true);
+    OwnedHqlExpr extraFilter;
+    extractor.extractFilters(mappedCondition, extraFilter);
+
+    bool isComplex = extraFilter || !extractor.isSingleMatchCondition();
+    if (isComplex)
+        return nullptr;
+
+    return extractor.createSingleFieldFilter(deserializer);
+}
+
+
 unsigned buildRtlRecordFields(IRtlFieldTypeDeserializer &deserializer, unsigned &idx, const RtlFieldInfo * * fieldsArray, IHqlExpression *record, IHqlExpression *rowRecord)
 {
     unsigned typeFlags = 0;
@@ -9838,8 +9858,31 @@ unsigned buildRtlRecordFields(IRtlFieldTypeDeserializer &deserializer, unsigned 
         switch (field->getOperator())
         {
         case no_ifblock:
-            typeFlags |= (RFTMunknownsize);
+        {
+            OwnedHqlExpr key = createValue(no_comma, LINK(rowRecord), LINK(field));
+            const RtlTypeInfo * type = deserializer.lookupType(key);
+            if (!type)
+            {
+                FieldTypeInfoStruct info;
+                info.fieldType = type_ifblock|RFTMunknownsize;
+                info.className = "RtlDynamicIfBlockTypeInfo";
+
+                IHqlExpression * record = field->queryChild(1);
+                unsigned numFields = getFlatFieldCount(record);
+                info.fieldsArray = new const RtlFieldInfo * [numFields+1];
+                unsigned idx = 0;
+                info.fieldType |= buildRtlRecordFields(deserializer, idx, info.fieldsArray, record, record);
+                info.fieldsArray[idx] = nullptr;
+
+                info.filter = createIfBlockFilter(deserializer, rowRecord, field);
+
+                type = deserializer.addType(info, key);
+            }
+            fieldsArray[idx] = deserializer.addFieldInfo(nullptr, nullptr, type, fieldFlags, nullptr);
+            typeFlags |= fieldFlags & RFTMinherited;
+            idx++;
             break;
+        }
         case no_field:
         {
             ITypeInfo *fieldType = field->queryType();

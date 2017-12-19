@@ -25,7 +25,7 @@
 #include "ctfile.hpp"
 #include "eclrtl.hpp"
 #include "thorfile.hpp"
-#include "rtldynfield.hpp"
+#include "thorfile.hpp"
 
 class IndexWriteActivityMaster : public CMasterActivity
 {
@@ -180,12 +180,7 @@ public:
             rtlFree(layoutMetaBuff);
         }
         // New record layout info
-        if (helper->queryDiskRecordSize()->queryTypeInfo())
-        {
-            MemoryBuffer out;
-            if (dumpTypeInfo(out, helper->queryDiskRecordSize()->queryTypeInfo()))
-                props.setPropBin("_rtlType", out.length(), out.toByteArray());
-        }
+        setRtlFormat(props, helper->queryDiskRecordSize());
         mpTag = container.queryJob().allocateMPTag();
         mpTag2 = container.queryJob().allocateMPTag();
     }

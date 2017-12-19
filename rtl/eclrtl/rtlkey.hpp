@@ -182,6 +182,8 @@ enum TransitionMask : byte
     CMPge = CMPgt | CMPeq,
     CMPminmask = CMPgt|CMPmin,
     CMPmaxmask = CMPlt|CMPmax,
+
+    CMPnovalue = 0x80,  // Used when serializing.
 };
 
 class ValueTransition;
@@ -207,7 +209,9 @@ interface IValueSet : public IInterface
     virtual void unionSet(const IValueSet *) = 0;
     virtual void excludeSet(const IValueSet *) = 0;
     virtual void intersectSet(const IValueSet *) = 0;
-    virtual StringBuffer & serialize(StringBuffer & out) const= 0;
+    virtual StringBuffer & serialize(StringBuffer & out) const = 0;
+    virtual MemoryBuffer & serialize(MemoryBuffer & out) const = 0;
+    virtual bool equals(const IValueSet & _other) const = 0;
 
 //following are primarily for use from the code generator
     virtual ValueTransition * createRawTransition(TransitionMask mask, const void * value) const = 0;
@@ -287,11 +291,15 @@ public:
 //Simple row matching
     virtual bool matches(const RtlRow & row) const = 0;
     virtual unsigned queryFieldIndex() const = 0;
+    virtual const RtlTypeInfo & queryType() const = 0;
     virtual int compareRow(const RtlRow & left, const RtlRow & right) const = 0;
     virtual int compareLowest(const RtlRow & left, unsigned range) const = 0;
     virtual int compareHighest(const RtlRow & left, unsigned range) const = 0;
     virtual bool isEmpty() const = 0;
     virtual bool isWild() const = 0;
+
+    virtual StringBuffer & serialize(StringBuffer & out) const = 0;
+    virtual MemoryBuffer & serialize(MemoryBuffer & out) const = 0;
 
     virtual unsigned numRanges() const = 0;
     virtual int findForwardMatchRange(const RtlRow & row, unsigned & matchRange) const = 0;
@@ -304,6 +312,9 @@ extern ECLRTL_API IFieldFilter * createEmptyFieldFilter(unsigned _fieldId, const
 extern ECLRTL_API IFieldFilter * createFieldFilter(unsigned fieldId, const RtlTypeInfo & type, const void * value);
 extern ECLRTL_API IFieldFilter * createFieldFilter(unsigned fieldId, IValueSet * values);
 extern ECLRTL_API IFieldFilter * createWildFieldFilter(unsigned fieldId, const RtlTypeInfo & type);
+
+extern ECLRTL_API IFieldFilter * deserializeFieldFilter(unsigned fieldId, const RtlTypeInfo & type, const char * src);
+extern ECLRTL_API IFieldFilter * deserializeFieldFilter(unsigned fieldId, const RtlTypeInfo & type, MemoryBuffer & in);
 
 
 

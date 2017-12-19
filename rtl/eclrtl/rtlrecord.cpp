@@ -112,8 +112,8 @@ static unsigned countFields(const RtlFieldInfo * const * fields, bool & contains
 class IfBlockInfo
 {
 public:
-    IfBlockInfo(const RtlFieldInfo &_field, const IfBlockInfo *_parent, unsigned _idx, unsigned _startIdx)
-    : field(_field), parent(_parent), idx(_idx), startIdx(_startIdx)
+    IfBlockInfo(const RtlFieldInfo &_field, const IfBlockInfo *_parent, unsigned _idx, unsigned _startIdx, unsigned _prevFields)
+    : field(_field), parent(_parent), idx(_idx), startIdx(_startIdx), prevFields(_prevFields)
     {
     }
 
@@ -132,11 +132,14 @@ public:
         return conditions[idx]==0;
     }
     inline unsigned queryStartField() const { return startIdx; }
+    inline unsigned numPrevFields() const { return prevFields; }
+    inline bool matchIfBlock(const RtlIfBlockTypeInfo * ifblock) const { return ifblock == field.type; }
 private:
     const RtlFieldInfo &field;
     const IfBlockInfo *parent = nullptr;  // for nested ifblocks
     unsigned idx;
     unsigned startIdx; // For ifblocks inside child records
+    unsigned prevFields; // number of fields before the if block
 };
 
 class RtlCondFieldStrInfo : public RtlFieldStrInfo
@@ -164,7 +167,7 @@ static unsigned expandNestedRows(unsigned idx, unsigned startIdx, const char *pr
             const IfBlockInfo *nestIfBlock = inIfBlock;
             if (isIfBlock)
             {
-                nestIfBlock = new IfBlockInfo(*cur, inIfBlock, ifblocks.ordinality(), startIdx);
+                nestIfBlock = new IfBlockInfo(*cur, inIfBlock, ifblocks.ordinality(), startIdx, idx);
                 ifblocks.append(nestIfBlock);
             }
             const RtlFieldInfo * const * nested = type->queryFields();
@@ -335,7 +338,8 @@ RtlRecord::~RtlRecord()
         {
             delete(ifblocks[i]);
         }
-        delete [] ifblocks;
+        //following as allocated as a ConstPointerArrayOf<IfBlockInfo>, rather than new []
+        free(ifblocks);
     }
     delete [] fixedOffsets;
     delete [] whichVariableOffset;
@@ -453,20 +457,38 @@ size32_t RtlRecord::deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource
 void RtlRecord::readAhead(IRowPrefetcherSource & in) const
 {
     // Note - this should not and can not be used when ifblocks present - canprefetch flag should take care of that.
-    dbgassertex(numIfBlocks==0);
-    for (unsigned i=0; i < numVarFields; i++)
+    if (numIfBlocks==0)
     {
-        unsigned fieldIndex = variableFieldIds[i];
-        in.skip(fixedOffsets[fieldIndex]);
-        queryType(fieldIndex)->readAhead(in);
+        for (unsigned i=0; i < numVarFields; i++)
+        {
+            unsigned fieldIndex = variableFieldIds[i];
+            in.skip(fixedOffsets[fieldIndex]);
+            queryType(fieldIndex)->readAhead(in);
+        }
+        in.skip(fixedOffsets[numFields]);
     }
-    in.skip(fixedOffsets[numFields]);
+    else
+    {
+        const RtlFieldInfo * const * field;
+        for (field = originalFields; *field; field++)
+            (*field)->type->readAhead(in);
+    }
 }
 
 int RtlRecord::compare(const byte * left, const byte * right) const
 {
     //Use originalFields so that ifblocks are processed correctly
     return compareFields(originalFields, left, right, false);
+}
+
+unsigned RtlRecord::queryIfBlockLimit(const RtlIfBlockTypeInfo * ifblock) const
+{
+    for (unsigned i=0; i < numIfBlocks; i++)
+    {
+        if (ifblocks[i]->matchIfBlock(ifblock))
+            return ifblocks[i]->numPrevFields();
+    }
+    throwUnexpected();
 }
 
 static const FieldNameToFieldNumMap *setupNameMap(const RtlRecord &record, std::atomic<const FieldNameToFieldNumMap *> &aNameMap)

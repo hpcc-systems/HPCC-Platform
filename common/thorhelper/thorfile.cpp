@@ -24,6 +24,7 @@
 #include "eclrtl_imp.hpp"
 #include "rtlfield.hpp"
 #include "rtlds_imp.hpp"
+#include "rtldynfield.hpp"
 
 #include "eclhelper_base.hpp"
 #include "thorcommon.ipp"
@@ -31,6 +32,16 @@
 void setExpiryTime(IPropertyTree & properties, unsigned expireDays)
 {
     properties.setPropInt("@expireDays", expireDays);
+}
+
+void setRtlFormat(IPropertyTree & properties, IOutputMetaData * meta)
+{
+    if (meta && meta->queryTypeInfo())
+    {
+        MemoryBuffer out;
+        if (dumpTypeInfo(out, meta->querySerializedDiskMeta()->queryTypeInfo()))
+            properties.setPropBin("_rtlType", out.length(), out.toByteArray());
+    }
 }
 
 

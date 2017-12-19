@@ -748,12 +748,8 @@ void CHThorDiskWriteActivity::setFormat(IFileDescriptor * desc)
     const char *recordECL = helper.queryRecordECL();
     if (recordECL && *recordECL)
         desc->queryProperties().setProp("ECL", recordECL);
-    if (helper.queryDiskRecordSize()->queryTypeInfo())
-    {
-        MemoryBuffer out;
-        dumpTypeInfo(out, helper.queryDiskRecordSize()->queryTypeInfo());
-        desc->queryProperties().setPropBin("_rtlType", out.length(), out.toByteArray());
-    }
+
+    setRtlFormat(desc->queryProperties(), helper.queryDiskRecordSize());
     desc->queryProperties().setProp("@kind", "flat");
 }
 
@@ -891,12 +887,7 @@ void CHThorCsvWriteActivity::setFormat(IFileDescriptor * desc)
     const char *recordECL = helper.queryRecordECL();
     if (recordECL && *recordECL)
         desc->queryProperties().setProp("ECL", recordECL);
-    if (helper.queryDiskRecordSize()->queryTypeInfo())
-    {
-        MemoryBuffer out;
-        dumpTypeInfo(out, helper.queryDiskRecordSize()->queryTypeInfo());
-        desc->queryProperties().setPropBin("_rtlType", out.length(), out.toByteArray());
-    }
+    setRtlFormat(desc->queryProperties(), helper.queryDiskRecordSize());
 }
 
 //=====================================================================================================
@@ -985,12 +976,7 @@ void CHThorXmlWriteActivity::setFormat(IFileDescriptor * desc)
     const char *recordECL = helper.queryRecordECL();
     if (recordECL && *recordECL)
         desc->queryProperties().setProp("ECL", recordECL);
-    if (helper.queryDiskRecordSize()->queryTypeInfo())
-    {
-        MemoryBuffer out;
-        dumpTypeInfo(out, helper.queryDiskRecordSize()->queryTypeInfo());
-        desc->queryProperties().setPropBin("_rtlType", out.length(), out.toByteArray());
-    }
+    setRtlFormat(desc->queryProperties(), helper.queryDiskRecordSize());
 }
 
 //=====================================================================================================
@@ -1236,12 +1222,7 @@ void CHThorIndexWriteActivity::execute()
         rtlFree(layoutMetaBuff);
     }
     // New record layout info
-    if (helper.queryDiskRecordSize()->queryTypeInfo())
-    {
-        MemoryBuffer out;
-        dumpTypeInfo(out, helper.queryDiskRecordSize()->queryTypeInfo());
-        properties.setPropBin("_rtlType", out.length(), out.toByteArray());
-    }
+    setRtlFormat(properties, helper.queryDiskRecordSize());
 
     StringBuffer lfn;
     Owned<IDistributedFile> dfile = NULL;
@@ -1306,12 +1287,7 @@ void CHThorIndexWriteActivity::buildLayoutMetadata(Owned<IPropertyTree> & metada
     if(!metadata) metadata.setown(createPTree("metadata"));
     metadata->setProp("_record_ECL", helper.queryRecordECL());
 
-    if (helper.queryDiskRecordSize()->queryTypeInfo())
-    {
-        MemoryBuffer out;
-        dumpTypeInfo(out, helper.queryDiskRecordSize()->queryTypeInfo());
-        metadata->setPropBin("_rtlType", out.length(), out.toByteArray());
-    }
+    setRtlFormat(*metadata, helper.queryDiskRecordSize());
 }
 
 //=====================================================================================================

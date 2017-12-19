@@ -223,6 +223,8 @@ public:
     void readAhead(IRowPrefetcherSource & in) const;
     int compare(const byte * left, const byte * right) const;
 
+    unsigned queryIfBlockLimit(const RtlIfBlockTypeInfo * ifblock) const;
+
     inline unsigned getNumFields() const { return numFields; }
     unsigned getNumKeyedFields() const;
     inline unsigned getNumVarFields() const { return numVarFields; }

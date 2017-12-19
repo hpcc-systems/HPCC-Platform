@@ -29,6 +29,8 @@ in that context.  For that reason the classes have no destructors.
 The file rtldynfield contains classes which manage instances of these classes which are dynamically created.
 */
 
+interface IFieldFilter;
+class RtlRow;
 size32_t ECLRTL_API getMinSize(const RtlFieldInfo * const * fields);
 
 // A base implementation of RtlTypeInfo
@@ -59,9 +61,11 @@ struct ECLRTL_API RtlTypeInfoBase : public RtlTypeInfo
     virtual const char * queryLocale() const override;
     virtual const RtlFieldInfo * const * queryFields() const override;
     virtual const RtlTypeInfo * queryChildType() const override;
+    virtual const IFieldFilter * queryFilter() const override;
 
     virtual size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in, size32_t offset) const override;
     virtual void readAhead(IRowPrefetcherSource & in) const override;
+    virtual void doCleanup() const override {}
 protected:
     size32_t buildUtf8ViaString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const;
     void getUtf8ViaString(size32_t & resultLen, char * & result, const void * ptr) const;
@@ -577,10 +581,15 @@ struct ECLRTL_API RtlDictionaryTypeInfo : public RtlCompoundTypeInfo
 
 struct ECLRTL_API RtlIfBlockTypeInfo : public RtlTypeInfoBase
 {
-    constexpr inline RtlIfBlockTypeInfo(unsigned _fieldType, unsigned _length, const RtlFieldInfo * const * _fields) : RtlTypeInfoBase(_fieldType, _length), fields(_fields) {}
+    constexpr inline RtlIfBlockTypeInfo(unsigned _fieldType, unsigned _length, const RtlFieldInfo * const * _fields, const RtlRecordTypeInfo * _rowType)
+    : RtlTypeInfoBase(_fieldType, _length), fields(_fields), rowType(_rowType) {}
+
     const RtlFieldInfo * const * fields;                // null terminated
+    const RtlRecordTypeInfo * rowType;                  // may be updated when parent deserialized
 
     virtual bool getCondition(const byte * selfrow) const = 0;
+    virtual bool getCondition(const RtlRow & selfrow) const = 0;
+
     virtual size32_t getMinSize() const override;
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
     virtual size32_t buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const override;
@@ -599,11 +608,51 @@ struct ECLRTL_API RtlIfBlockTypeInfo : public RtlTypeInfoBase
     virtual const RtlFieldInfo * const * queryFields() const override { return fields; }
 };
 
-struct ECLRTL_API RtlDynamicIfBlockTypeInfo final : public RtlIfBlockTypeInfo
+//Ifblock for complex conditions that cannot be serialized
+struct ECLRTL_API RtlComplexIfBlockTypeInfo : public RtlIfBlockTypeInfo
 {
-    constexpr inline RtlDynamicIfBlockTypeInfo(unsigned _fieldType, unsigned _length, const RtlFieldInfo * const * _fields) : RtlIfBlockTypeInfo(_fieldType, _length, _fields) {}
+    constexpr inline RtlComplexIfBlockTypeInfo(unsigned _fieldType, unsigned _length, const RtlFieldInfo * const * _fields, const RtlRecordTypeInfo * _rowType)
+    : RtlIfBlockTypeInfo(_fieldType, _length, _fields, _rowType) {}
+
+    using RtlIfBlockTypeInfo::getCondition;
+    virtual bool getCondition(const RtlRow & selfrow) const override;
+};
+
+struct ECLRTL_API RtlSerialIfBlockTypeInfo : public RtlIfBlockTypeInfo
+{
+    constexpr inline RtlSerialIfBlockTypeInfo(unsigned _fieldType, unsigned _length, const RtlFieldInfo * const * _fields, const RtlRecordTypeInfo * _rowType)
+    : RtlIfBlockTypeInfo(_fieldType, _length, _fields, _rowType) {}
+    ~RtlSerialIfBlockTypeInfo();
+
     virtual bool getCondition(const byte * selfrow) const override;
+    virtual bool getCondition(const RtlRow & selfrow) const override;
+    virtual IFieldFilter * createCondition() const = 0;
+    virtual const IFieldFilter * queryFilter() const override;
+
+    virtual void doCleanup() const override;
+protected:
+    const IFieldFilter * resolveCondition() const;
+
+    //The following are initialised on demand in resolveCondition()
+    mutable const IFieldFilter * filter = nullptr;
+    mutable RtlRecord * parentRecord = nullptr;
+    mutable unsigned numPrevFields = 0;
+};
+
+struct ECLRTL_API RtlSimpleIfBlockTypeInfo : public RtlSerialIfBlockTypeInfo
+{
+    constexpr inline RtlSimpleIfBlockTypeInfo(unsigned _fieldType, unsigned _length, const RtlFieldInfo * const * _fields, const RtlRecordTypeInfo * _rowType)
+    : RtlSerialIfBlockTypeInfo(_fieldType, _length, _fields, _rowType) {}
+};
+
+struct ECLRTL_API RtlDynamicIfBlockTypeInfo final : public RtlSerialIfBlockTypeInfo
+{
+    inline RtlDynamicIfBlockTypeInfo(unsigned _fieldType, unsigned _length, const RtlFieldInfo * const * _fields, const RtlRecordTypeInfo * _rowType, const IFieldFilter * ownedFilter)
+    : RtlSerialIfBlockTypeInfo(_fieldType, _length, _fields, _rowType) { filter = ownedFilter; }
+    virtual IFieldFilter * createCondition() const override;
     virtual void doDelete() const final override { delete this; }
+
+    void setParent(const RtlRecordTypeInfo * _rowType) { rowType = _rowType; }
 };
 
 struct ECLRTL_API RtlBitfieldTypeInfo : public RtlTypeInfoBase

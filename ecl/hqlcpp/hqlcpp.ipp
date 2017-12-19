@@ -845,7 +845,7 @@ enum PEtype {
     PETlibrary,     // a library
     PETmax };
 
-class HQLCPP_API HqlCppTranslator : implements IHqlCppTranslator, public CInterface
+class HQLCPP_API HqlCppTranslator : implements IHqlCppTranslator, public CInterface, public IErrorReceiver
 {
 //MORE: This is in serious need of refactoring....
 
@@ -855,7 +855,6 @@ class HQLCPP_API HqlCppTranslator : implements IHqlCppTranslator, public CInterf
     friend class DiskReadBuilder;
     friend class IndexReadBuilder;
     friend class FetchBuilder;
-    friend class MonitorExtractor;
     friend class NlpParseContext;
     friend class KeyedJoinInfo;
     friend class ChildGraphBuilder;
@@ -869,6 +868,14 @@ public:
     virtual double getComplexity(IHqlCppInstance & _code, IHqlExpression * expr);
     virtual bool spanMultipleCppFiles()         { return options.spanMultipleCpp; }
     virtual unsigned getNumExtraCppFiles()      { return activitiesThisCpp ? curCppFile : 0; }
+
+  //interface IErrorReceiver
+    virtual void report(IError* error) override;
+    virtual IError * mapError(IError * error) override;
+    virtual size32_t errCount() override;
+    virtual size32_t warnCount() override;
+    virtual void exportMappings(IWorkUnit * wu) const override;
+    virtual __declspec(noreturn) void ThrowStringException(int code,const char *format, ...) const override __attribute__((format(printf, 3, 4), noreturn));            // override the global function to try and add more context information
 
 //Statements.
     void buildStmt(BuildCtx & ctx, IHqlExpression * expr);
@@ -927,8 +934,6 @@ public:
     IReferenceSelector * buildDatasetSelectMap(BuildCtx & ctx, IHqlExpression * expr);
 
 // Helper functions
-
-    __declspec(noreturn) void ThrowStringException(int code,const char *format, ...) __attribute__((format(printf, 3, 4), noreturn));            // override the global function to try and add more context information
 
     void buildAddress(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void buildBlockCopy(BuildCtx & ctx, IHqlExpression * tgt, CHqlBoundExpr & src);
@@ -1060,12 +1065,12 @@ public:
 
 
     IHqlExpression * getRtlFieldKey(IHqlExpression * expr, IHqlExpression * ownerRecord, bool &isPayload);
-    unsigned buildRtlField(StringBuffer & instanceName, IHqlExpression * field, IHqlExpression * rowRecord);
+    unsigned buildRtlField(StringBuffer & instanceName, IHqlExpression * field, IHqlExpression * rowRecord, const char * rowTypeName);
     unsigned buildRtlFieldType(StringBuffer & instanceName, IHqlExpression * field, IHqlExpression * rowRecord);
     unsigned buildRtlType(StringBuffer & instanceName, ITypeInfo * type);
-    unsigned buildRtlRecordFields(StringBuffer & instanceName, IHqlExpression * record, IHqlExpression * rowRecord);
-    unsigned expandRtlRecordFields(StringBuffer & fieldListText, IHqlExpression * record, IHqlExpression * rowRecord);
-    unsigned buildRtlIfBlockField(StringBuffer & instanceName, IHqlExpression * ifblock, IHqlExpression * rowRecord, bool isPayload);
+    unsigned buildRtlRecordFields(StringBuffer & instanceName, IHqlExpression * record, IHqlExpression * rowRecord, const char * rowTypeName);
+    unsigned expandRtlRecordFields(StringBuffer & fieldListText, IHqlExpression * record, IHqlExpression * rowRecord, const char * rowTypeName);
+    unsigned buildRtlIfBlockField(StringBuffer & instanceName, IHqlExpression * ifblock, IHqlExpression * rowRecord, const char * rowTypeName, bool isPayload);
 
     void buildMetaInfo(MetaInstance & instance);
     IHqlExpression * buildMetaParameter(IHqlExpression * arg);

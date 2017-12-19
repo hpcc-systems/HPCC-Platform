@@ -296,7 +296,7 @@ protected:
     HqlExprAttr     fileAccessDataset;
     HqlExprAttr     fileAccessTransform;
     HqlExprAttr     joinSeq;
-    MonitorExtractor * monitors;
+    CppFilterExtractor * monitors;
     HqlExprAttr     fileFilter;
     HqlExprAttr     leftOnlyMatch;
     HqlExprAttr     rawRhs;
@@ -1150,7 +1150,7 @@ bool KeyedJoinInfo::processFilter()
 
     //Now extract the filters from it.
     OwnedHqlExpr extra;
-    monitors = new MonitorExtractor(rawKey, translator, -(int)numPayloadFields(rawKey), false);
+    monitors = new CppFilterExtractor(rawKey, translator, -(int)numPayloadFields(rawKey), false, false);
     if (newFilter)
         monitors->extractFilters(newFilter, extra);
 

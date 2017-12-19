@@ -28,7 +28,7 @@
 #include "keybuild.hpp"
 #include "thbufdef.hpp"
 #include "backup.hpp"
-#include "rtldynfield.hpp"
+#include "thorfile.hpp"
 
 #define SINGLEPART_KEY_TRANSFER_SIZE 0x10000
 #define FEWWARNCAP 10
@@ -206,12 +206,7 @@ public:
         if(!metadata) metadata.setown(createPTree("metadata"));
         metadata->setProp("_record_ECL", helper->queryRecordECL());
 
-        if (helper->queryDiskRecordSize()->queryTypeInfo())
-        {
-            MemoryBuffer out;
-            if (dumpTypeInfo(out, helper->queryDiskRecordSize()->queryTypeInfo()))
-                metadata->setPropBin("_rtlType", out.length(), out.toByteArray());
-        }
+        setRtlFormat(*metadata, helper->queryDiskRecordSize());
     }
 
     void close(IPartDescriptor &partDesc, unsigned &crc)
