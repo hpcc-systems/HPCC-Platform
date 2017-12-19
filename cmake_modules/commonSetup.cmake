@@ -112,6 +112,9 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   endif()
   option(LOGGING_SERVICE "Configure use of logging service" ON)
   option(WSSQL_SERVICE "Configure use of ws_sql service" ON)
+  option(INCLUDE_PY2EMBED "Configure use of py2embed with standard platform package" ON)
+  option(INCLUDE_PY3EMBED "Configure use of py3embed with standard platform package" ON)
+
 
   option(MAKE_CONFIGURATOR "Build Configurator" ON)
   option(CONFIGURATOR_LIB "Build Configurator static library (.a)" OFF)
