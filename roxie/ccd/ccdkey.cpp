@@ -443,13 +443,9 @@ protected:
 
     void _nextRow()
     {
-        if (prefetcher)
-            prefetcher->readAhead(deserializeSource);  // MORE - is it ever NULL ?
+        prefetcher->readAhead(deserializeSource);
         if (grouped)
-        {
-            size32_t sizeRead = deserializeSource.queryRowSize();
-            eogPending = (bool) deserializeSource.queryRow()[sizeRead-1];
-        }
+            deserializeSource.read(1, &eogPending);
         if (translator)
         {
             MemoryBufferBuilder aBuilder(buf, 0);
@@ -527,7 +523,7 @@ public:
         : CDirectReaderBase(_translators, _postFilter, _grouped), baseMap(_baseMap)
     {
         translator = translators->queryTranslator(0);  // Any one would do
-        prefetcher.setown(translators->getPrefetcher(0, false));
+        prefetcher.setown(translators->getPrefetcher(0));
         deserializeSource.setStream(this);
         if (_numParts == 1)
         {
@@ -685,7 +681,7 @@ public:
         {       
             curStream.setown(createFileSerialStream(thisPart, _startPos));
             unsigned subFileIdx = f->getSubFile(thisPartIdx);
-            prefetcher.setown(translators->getPrefetcher(subFileIdx, true));
+            prefetcher.setown(translators->getPrefetcher(subFileIdx));
             translator = translators->queryTranslator(subFileIdx);
         }
         else
@@ -710,7 +706,7 @@ public:
         {
             curStream.setown(createFileSerialStream(thisPart));
             unsigned subFileIdx = f->getSubFile(thisPartIdx);
-            prefetcher.setown(translators->getPrefetcher(subFileIdx, true));
+            prefetcher.setown(translators->getPrefetcher(subFileIdx));
             translator = translators->queryTranslator(subFileIdx);
         }
     }
@@ -1273,7 +1269,7 @@ protected:
     class CDummyTranslatorSet : implements CInterfaceOf<ITranslatorSet>
     {
         virtual const IDynamicTransform *queryTranslator(unsigned subFile) const override { return nullptr; }
-        virtual ISourceRowPrefetcher *getPrefetcher(unsigned subFile, bool addGroupedFlag) const override { throwUnexpected(); }
+        virtual ISourceRowPrefetcher *getPrefetcher(unsigned subFile) const override { throwUnexpected(); }
         virtual IOutputMetaData *queryActualLayout(unsigned subFile) const override { throwUnexpected(); }
         virtual int queryTargetFormatCrc() const override { throwUnexpected(); }
         virtual const RtlRecord &queryTargetFormat() const override { throwUnexpected(); }

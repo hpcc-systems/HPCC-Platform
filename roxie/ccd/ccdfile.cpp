@@ -1730,14 +1730,11 @@ public:
         return nullptr;
     }
 
-    virtual ISourceRowPrefetcher *getPrefetcher(unsigned subFile, bool addGroupFlag) const override
+    virtual ISourceRowPrefetcher *getPrefetcher(unsigned subFile) const override
     {
         IOutputMetaData *actualLayout = actualLayouts.item(subFile);
         assertex(actualLayout);
-        if (addGroupFlag && actualLayout->isGrouped())
-            return new CSuffixedRowPrefetcher(1, actualLayout->createDiskPrefetcher());
-        else
-            return actualLayout->createDiskPrefetcher();
+        return actualLayout->createDiskPrefetcher();
     }
 
     virtual IOutputMetaData *queryActualLayout(unsigned subFile) const override
