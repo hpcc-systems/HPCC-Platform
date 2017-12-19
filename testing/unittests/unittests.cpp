@@ -299,7 +299,7 @@ class PtreeThreadingStressTest : public CppUnit::TestFixture
         enum ContentionMode { max_contention, some_contention, min_contention, some_control, min_control };
         class casyncfor: public CAsyncFor
         {
-            volatile int v;
+            volatile int v = 0;
             void donothing()
             {
                 v++;
