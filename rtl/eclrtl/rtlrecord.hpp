@@ -263,7 +263,7 @@ public:
 
     size_t getOffset(unsigned field) const
     {
-        assert(field < numFieldsUsed);
+        assert(field <= numFieldsUsed);
         return info.getOffset(variableOffsets, field);
     }
 
