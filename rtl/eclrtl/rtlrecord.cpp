@@ -575,7 +575,7 @@ size32_t RtlRecord::calculateOffset(const void *_row, unsigned field) const
         unsigned numOffsets = getNumVarFields() + 1;
         size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
         RtlRow sourceRow(*this, nullptr, numOffsets, variableOffsets);
-        sourceRow.setRow(_row, field+1);
+        sourceRow.setRow(_row, field);
         return sourceRow.getOffset(field);
     }
     else
