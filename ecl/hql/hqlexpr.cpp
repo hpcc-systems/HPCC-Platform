@@ -13712,7 +13712,7 @@ extern HQL_API IHqlExpression * createNullExpr(IHqlExpression * expr)
     if (expr->getOperator()==no_select)
         return createNullExpr(expr->queryChild(1));
     IHqlExpression * defaultValue = queryAttributeChild(expr, defaultAtom, 0);
-    if (defaultValue)
+    if (defaultValue && defaultValue->getOperator()!=no_null)
         return LINK(defaultValue);
     return createNullExpr(expr->queryType());
 }

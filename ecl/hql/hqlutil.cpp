@@ -6303,6 +6303,10 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
                                 castValue.set(src);
 
                         }
+                        else if (src->getOperator() == no_null)
+                        {
+                            castValue.setown(createDataset(no_null, LINK(record)));
+                        }
                         else
                         {
                             ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_IncompatibleTypesForField, str(expr->queryName()));
@@ -8855,7 +8859,7 @@ bool ConstantRowCreator::processFieldValue(IHqlExpression * optLhs, ITypeInfo * 
     case type_groupedtable:
         {
             assertex(optLhs);
-            IHqlExpression * field = optLhs->queryChild(1);
+            IHqlExpression * field = optLhs->getOperator() == no_select ? optLhs->queryChild(1) : optLhs;
             if (!field->hasAttribute(countAtom) && !field->hasAttribute(sizeofAtom))
             {
                 if (field->hasAttribute(_linkCounted_Atom))

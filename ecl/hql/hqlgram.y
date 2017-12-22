@@ -4778,8 +4778,9 @@ fieldAttr
                         {
                             $$.setExpr(createExprAttribute(xmlDefaultAtom, $3.getExpr()), $1);
                         }
-    | DEFAULT '(' constExpression ')'
+    | DEFAULT '(' goodObject ')'
                         {
+                            IHqlExpression * arg = $3.queryExpr();
                             $$.setExpr(createExprAttribute(defaultAtom, $3.getExpr()), $1);
                         }
     | STRING_CONST
