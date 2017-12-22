@@ -5531,9 +5531,6 @@ void CWsWorkunitsEx::checkEclDefinitionSyntax(IEspContext &context, const char *
     wu->setAction(WUActionCheck);
     wu.setQueryMain(eclDefinition);
 
-    if (msToWait == -1)
-        msToWait = 60000;
-
     StringAttr wuid(wu->queryWuid());  // NB queryWuid() not valid after workunit.clear()
     wu->commit();
     wu.clear();
@@ -5603,8 +5600,6 @@ void CWsWorkunitsEx::publishEclDefinition(IEspContext &context, const char *targ
         addEclDefinitionActionResult(eclDefinition, msg.str(), "Publish", true, results);
         return;
     }
-    if (msToWait == -1)
-        msToWait = 10000;
 
     time_t timenow;
     int startTime = time(&timenow);
@@ -5703,11 +5698,20 @@ bool CWsWorkunitsEx::onWUEclDefinitionAction(IEspContext &context, IEspWUEclDefi
         if (target.trim().isEmpty())
             throw MakeStringException(ECLWATCH_INVALID_INPUT,"Target not defined in onWUEclDefinitionAction.");
 
+        int msToWait = req.getMsToWait();
+        if (msToWait == -2) //default: consistent with WUPublishWorkunit/WUDeployWorkunit/WUSyntaxCheckECL
+        {
+            if (action == CEclDefinitionActions_SyntaxCheck)
+                msToWait = 60000;
+            else if (action == CEclDefinitionActions_Deploy)
+                msToWait = -1;
+            else
+                msToWait = 10000;
+        }
         IArrayOf<IConstWUEclDefinitionActionResult> results;
         StringArray &eclDefinitions = req.getEclDefinitions();
         for (aindex_t i = 0; i < eclDefinitions.length(); i++)
         {
-            int msToWait = req.getMsToWait();
             StringBuffer eclDefinitionName = eclDefinitions.item(i);
             if (eclDefinitionName.trim().isEmpty())
                 WARNLOG("Empty ECL Definition name in WUEclDefinitionAction request");
