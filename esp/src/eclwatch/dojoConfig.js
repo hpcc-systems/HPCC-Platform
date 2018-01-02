@@ -32,11 +32,12 @@ function getConfig(env) {
             "@hpcc-js/layout": baseUrl + "/node_modules/@hpcc-js/layout/dist/layout",
             "@hpcc-js/map": baseUrl + "/node_modules/@hpcc-js/map/dist/map",
             "@hpcc-js/other": baseUrl + "/node_modules/@hpcc-js/other/dist/other",
+            "@hpcc-js/tree": baseUrl + "/node_modules/@hpcc-js/tree/dist/tree",
             "@hpcc-js/util": baseUrl + "/node_modules/@hpcc-js/util/dist/util",
             "@hpcc-js/TopoJSON": dojoRoot ? "/esp/files/dist/TopoJSON" : baseUrl + "/node_modules/@hpcc-js/map/TopoJSON",
             "clipboard": baseUrl + "/node_modules/clipboard/dist/clipboard",
             "codemirror": baseUrl + "/node_modules/codemirror",
-            "crossfilter": baseUrl + "/crossfilter/crossfilter.min",
+            "crossfilter": baseUrl + "/node_modules/crossfilter2/crossfilter.min",
             "font-awesome": baseUrl + "/node_modules/@hpcc-js/common/font-awesome",
             "tslib": baseUrl + "/node_modules/tslib/tslib"
         },
