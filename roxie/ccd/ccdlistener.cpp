@@ -1558,7 +1558,7 @@ public:
                         txIds.append(", ");
                     txIds.append("local: ").append(localId);
                 }
-                if (txIds.length());
+                if (txIds.length())
                     txIds.insert(0, '[').append(']');
                 logctx->CTXLOG("COMPLETE: %s %s%s from %s complete in %d msecs memory=%d Mb priority=%d slavesreply=%d resultsize=%d continue=%d%s", queryName.get(), uid.get(), txIds.str(), peer, elapsed, memused, getQueryPriority(), slavesReplyLen, bytesOut, continuationNeeded, s.str());
             }
