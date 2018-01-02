@@ -136,6 +136,17 @@
   </fo:block>
 </xsl:template>
 
+<!--para-syntax-role-elim-hyph-17-->
+<xsl:template match="para[@role='syntax']">
+  <fo:block>
+   <xsl:attribute name="hyphenate">false</xsl:attribute>
+   <xsl:attribute name="text-align">left</xsl:attribute>
+    <xsl:apply-templates/>
+  </fo:block>
+</xsl:template>
+
+
+
 <xsl:attribute-set name="monospace.verbatim.properties">
  <xsl:attribute name="font-size">
    0.83em
