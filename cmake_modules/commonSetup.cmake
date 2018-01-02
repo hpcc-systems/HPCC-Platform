@@ -116,15 +116,8 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(INCLUDE_PY3EMBED "Configure use of py3embed with standard platform package" ON)
 
 
-  option(MAKE_CONFIGURATOR "Build Configurator" ON)
-  option(CONFIGURATOR_LIB "Build Configurator static library (.a)" OFF)
 
-  if ( CONFIGURATOR_LIB )
-        set( MAKE_CONFIGURATOR ON )
-  endif()
-
-
-    MACRO(SET_PLUGIN_PACKAGE plugin)
+     MACRO(SET_PLUGIN_PACKAGE plugin)
         string(TOLOWER "${plugin}" pname)
 	    if(DEFINED pluginname)
             message(FATAL_ERROR "Cannot enable ${pname}, already declared ${pluginname}")
@@ -703,13 +696,15 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       message(FATAL_ERROR "FOP requested but package not found")
     ENDIF()
 
-    if (DOCS_AUTO)
-       if ("${CONFIGURATOR_DIRECTORY}" STREQUAL "")
-         set(MAKE_CONFIGURATOR ON)
-         set(JLIB_ONLY ON)
-         set  (CONFIGURATOR_DIRECTORY ${EXECUTABLE_OUTPUT_PATH})
-       endif()
-    endif()
+    IF ( DOCS_AUTO )
+      find_package(SAXON)
+      IF (SAXON_FOUND)
+        add_definitions (-D_USE_SAXON)
+      ELSE()
+        message(FATAL_ERROR "SAXON, a XSLT and XQuery processor, is required for documentation build but not found.")
+      ENDIF()
+    ENDIF()
+
   ENDIF(MAKE_DOCS)
 
   IF ( NOT MAKE_DOCS_ONLY )

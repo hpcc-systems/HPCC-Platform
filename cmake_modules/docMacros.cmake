@@ -122,7 +122,7 @@ MACRO(DOCBOOK_TO_HTML _xsl_file _xml_file _out_dir _html_target _css_path _zip_t
            OUTPUT ${_out_dir}/${css_file_name}
            )
        ADD_CUSTOM_TARGET(${_html_target}
-           COMMAND xsltproc --nonet --xinclude --stringparam html.stylesheet ${css_file_name} --stringparam generate.toc "book toc"  --param use.id.as.filename 1 --param chapter.autolabel 0  ${_xsl_file} ${_xml_file}
+           COMMAND ${XSLTPROC_EXECUTABLE} --nonet --xinclude --stringparam html.stylesheet ${css_file_name} --stringparam generate.toc "book toc"  --param use.id.as.filename 1 --param chapter.autolabel 0  ${_xsl_file} ${_xml_file}
            WORKING_DIRECTORY ${_out_dir}
            DEPENDS docbook-expand ${_out_dir}/${css_file_name} ${HELP_DEPENDENCIES}
            #SOURCES ${_xsl_file}
@@ -162,11 +162,13 @@ MACRO(XSD_TO_XML _xsd_files _in_dir _out_dir)
                 OUTPUT ${_out_dir}
                 )
         foreach(_xsd_file ${_xsd_files})
-            STRING(REGEX REPLACE "(.*).xsd" "\\1.xml" _xml_file "${_xsd_file}")
+            #STRING(REGEX REPLACE "(.*).xsd" "\\1.mod.xml" _xml_file "${_xsd_file}")
+            set (_xml_file "${_xsd_file}.mod.xml")
             ADD_CUSTOM_COMMAND(
-                COMMAND ./configurator --doc --use ${_xsd_file} -b ${_in_dir} -t ${_out_dir}
+                #COMMAND ./configurator  -o ${_out_dir}/${_xml_file}  ${HPCC_SOURCE_DIR}/docs/BuildTools/xsd2xml.xsl ${_in_dir}/${_xsd_file}
+                COMMAND ${SAXON_EXECUTABLE}   -o:${_out_dir}/${_xml_file}  -xsl:${HPCC_SOURCE_DIR}/docs/BuildTools/xsdattr2htmltable.xsl2 -s:${_in_dir}/${_xsd_file}
                 OUTPUT ${_out_dir}/${_xml_file}
-                WORKING_DIRECTORY ${CONFIGURATOR_DIRECTORY}
+                WORKING_DIRECTORY ${_out_dir}
                 DEPENDS ${_out_dir} ${_in_dir}/${_xsd_file} ${_in_dir}/environment.xsd
                 )
             list(APPEND _xml_files ${_out_dir}/${_xml_file})
