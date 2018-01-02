@@ -4,8 +4,9 @@
 <sect1 id="APPLY">
   <title>APPLY</title>
 
-  <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
-  :=<emphasis role="bold"> ] APPLY<indexterm>
+  <para role="syntax"><emphasis
+  role="bold">[</emphasis><emphasis>attrname</emphasis> :=<emphasis
+  role="bold"> ] APPLY<indexterm>
       <primary>APPLY</primary>
     </indexterm><indexterm>
       <primary>APPLY function</primary>
@@ -15,8 +16,12 @@
     </indexterm>( </emphasis><emphasis>actionlist </emphasis><emphasis
   role="bold">) ]</emphasis><emphasis role="bold"> [ , AFTER<indexterm>
       <primary>AFTER</primary>
-    </indexterm>( </emphasis><emphasis>actionlist </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]</emphasis><emphasis
-  role="bold">) ] )</emphasis></para>
+    </indexterm>( </emphasis><emphasis>actionlist </emphasis><emphasis
+  role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool
+  </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [
+  (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [,
+  ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">)
+  ]</emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
