@@ -986,17 +986,18 @@ EspHttpBinding* CEspHttpServer::getEspHttpBinding(EspAuthRequest& authReq)
         //is set to nullptr only if !authReq.isSoapPost.
         if (!authReq.isSoapPost && espHttpBinding && !espHttpBinding->isValidServiceName(*authReq.ctx, authReq.serviceName.str()))
             espHttpBinding=nullptr;
-        return espHttpBinding;
     }
-
-    for (unsigned index=0; index<(unsigned)ordinality; index++)
+    else
     {
-        CEspBindingEntry *entry = m_apport->queryBindingItem(index);
-        EspHttpBinding* lbind = (entry) ? dynamic_cast<EspHttpBinding*>(entry->queryBinding()) : nullptr;
-        if (lbind && lbind->isValidServiceName(*authReq.ctx, authReq.serviceName.str()))
+        for (unsigned index=0; index<(unsigned)ordinality; index++)
         {
-            espHttpBinding=lbind;
-            break;
+            CEspBindingEntry *entry = m_apport->queryBindingItem(index);
+            EspHttpBinding* lbind = (entry) ? dynamic_cast<EspHttpBinding*>(entry->queryBinding()) : nullptr;
+            if (lbind && lbind->isValidServiceName(*authReq.ctx, authReq.serviceName.str()))
+            {
+                espHttpBinding=lbind;
+                break;
+            }
         }
     }
 
