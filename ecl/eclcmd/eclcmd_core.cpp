@@ -66,11 +66,12 @@ void expandDefintionsAsDebugValues(const IArrayOf<IEspNamedValue> & definitions,
 
 }
 
-void checkFeatures(IClientWsWorkunits *client, bool &useCompression, int &major, int &minor, int &point)
+void checkFeatures(IClientWsWorkunits *client, bool &useCompression, int &major, int &minor, int &point, unsigned waitMs, unsigned waitConnectMs, unsigned waitReadSec)
 {
     try
     {
         Owned<IClientWUCheckFeaturesRequest> req = client->createWUCheckFeaturesRequest();
+        setCmdRequestTimeouts(req->rpc(), waitMs, waitConnectMs, waitReadSec);
         Owned<IClientWUCheckFeaturesResponse> resp = client->WUCheckFeatures(req);
         useCompression = resp->getDeployment().getUseCompression();
         major = resp->getBuildVersionMajor();
@@ -86,13 +87,13 @@ void checkFeatures(IClientWsWorkunits *client, bool &useCompression, int &major,
     }
 }
 
-bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *cluster, const char *name, StringBuffer *wuid, StringBuffer *wucluster, bool noarchive, bool displayWuid=true, bool compress=true)
+bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, unsigned waitMs, const char *cluster, const char *name, StringBuffer *wuid, StringBuffer *wucluster, bool noarchive, bool displayWuid=true, bool compress=true)
 {
     int major = 0;
     int minor = 0;
     int point = 0;
     bool useCompression = false;
-    checkFeatures(client, useCompression, major, minor, point);
+    checkFeatures(client, useCompression, major, minor, point, 0, cmd.optWaitConnectMs, cmd.optWaitReadSec);
 
     bool compressed = false;
     if (useCompression)
@@ -109,6 +110,8 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
 
     StringBuffer objType(compressed ? "compressed_" : ""); //change compressed type string so old ESPs will fail gracefully
     Owned<IClientWUDeployWorkunitRequest> req = client->createWUDeployWorkunitRequest();
+    setCmdRequestTimeouts(req->rpc(), waitMs, cmd.optWaitConnectMs, cmd.optWaitReadSec);
+
     switch (cmd.optObj.type)
     {
         case eclObjArchive:
@@ -266,7 +269,7 @@ public:
     virtual int processCMD()
     {
         Owned<IClientWsWorkunits> client = createCmdClientExt(WsWorkunits, *this, "?upload_"); //upload_ disables maxRequestEntityLength
-        return doDeploy(*this, client, optTargetCluster.get(), optName.get(), NULL, NULL, optNoArchive) ? 0 : 1;
+        return doDeploy(*this, client, 0, optTargetCluster.get(), optName.get(), NULL, NULL, optNoArchive) ? 0 : 1;
     }
     virtual void usage()
     {
@@ -411,7 +414,7 @@ public:
         StringBuffer wuid;
         if (optObj.type==eclObjWuid)
             wuid.set(optObj.value.get());
-        else if (!doDeploy(*this, client, optTargetCluster.get(), optName.get(), &wuid, NULL, optNoArchive))
+        else if (!doDeploy(*this, client, optMsToWait, optTargetCluster.get(), optName.get(), &wuid, NULL, optNoArchive))
             return 1;
 
         StringBuffer descr;
@@ -419,6 +422,7 @@ public:
             fprintf(stdout, "\nPublishing %s\n", wuid.str());
 
         Owned<IClientWUPublishWorkunitRequest> req = client->createWUPublishWorkunitRequest();
+        setCmdRequestTimeouts(req->rpc(), optMsToWait, optWaitConnectMs, optWaitReadSec);
         req->setWuid(wuid.str());
         if (optDeletePrevious)
             req->setActivate(CWUQueryActivationMode_ActivateDeletePrevious);
@@ -608,26 +612,74 @@ public:
         return true;
     }
 
+    inline bool isSoapRpcException(IException *E)
+    {
+        StringBuffer msg;
+        const char *finger = E->errorMessage(msg).str();
+        if (strncmp(finger, "SOAP ", 5))
+            return false;
+        finger+=5;
+        if (!strncmp(finger, "rpc error", 9))
+            return true;
+        if (!strncmp(finger, "Connection error", 16))
+            return true;
+        return false;
+    }
     int checkComplete(IClientWsWorkunits* client, IClientWUWaitRequest* req)
     {
-        Owned<IClientWUWaitResponse> resp = client->WUWaitComplete(req);
-        if (resp->getExceptions().ordinality())
-            throw LINK(&resp->getExceptions());
-        return resp->getStateID();
+        try
+        {
+            Owned<IClientWUWaitResponse> resp = client->WUWaitComplete(req);
+            if (resp->getExceptions().ordinality())
+                throw LINK(&resp->getExceptions());
+            return resp->getStateID();
+        }
+        catch (IJSOCK_Exception *E)
+        {
+            outputExceptionEx(*E);
+            E->Release();
+        }
+        catch (IException *E)
+        {
+            if (!isSoapRpcException(E))
+                throw E;
+            outputExceptionEx(*E);
+            E->Release();
+        }
+
+        fputs("Still polling...\n", stderr);
+        return WUStateUnknown; //socket issue, keep polling
     }
 
     int checkComplete(IClientWsWorkunits* client, IClientWUInfoRequest* req)
     {
-        Owned<IClientWUInfoResponse> resp = client->WUInfo(req);
-        if (resp->getExceptions().ordinality())
-            throw LINK(&resp->getExceptions());
-        int state = resp->getWorkunit().getStateID();
-        switch (state)
+        try
         {
-        case WUStateCompleted:
-        case WUStateFailed:
-        case WUStateAborted:
-            return state;
+            Owned<IClientWUInfoResponse> resp = client->WUInfo(req);
+            if (resp->getExceptions().ordinality())
+                throw LINK(&resp->getExceptions());
+            int state = resp->getWorkunit().getStateID();
+            switch (state)
+            {
+            case WUStateCompleted:
+            case WUStateFailed:
+            case WUStateAborted:
+                return state;
+            }
+        }
+        catch (IJSOCK_Exception *E)
+        {
+            outputExceptionEx(*E);
+            E->Release();
+            fputs("Still polling...\n", stderr);
+        }
+        catch (IException *E)
+        {
+            if (!isSoapRpcException(E))
+                throw E;
+            outputExceptionEx(*E);
+            E->Release();
+            fputs("Still polling...\n", stderr);
         }
 
         return WUStateUnknown; //emulate result from waitForWorkUnit which will be called for non-legacy builds
@@ -670,6 +722,8 @@ public:
         else
             initPollRequest(reqInfo, client, wuid);
 
+        if (optVerbose)
+            fputs("Polling for completion...\n", stdout);
         int state = WUStateUnknown;
         for(;;)
         {
@@ -689,7 +743,12 @@ public:
 
     void gatherLegacyServerResults(IClientWsWorkunits* client, const char *wuid)
     {
+        if (optVerbose)
+            fputs("Getting Workunit Information\n", stdout);
+
         Owned<IClientWUInfoRequest> req = client->createWUInfoRequest();
+        setCmdRequestTimeouts(req->rpc(), optWaitTime, optWaitConnectMs, optWaitReadSec);
+
         req->setWuid(wuid);
         req->setIncludeExceptions(true);
         req->setIncludeGraphs(false);
@@ -711,6 +770,10 @@ public:
         unsigned count = wu.getResultCount();
         if (count<=0 && exceptions.ordinality()<=0)
             return;
+
+        if (optVerbose)
+            fputs("Getting Results\n", stdout);
+
         fputs("<Result>\n", stdout);
         ForEachItemIn(pos, exceptions)
         {
@@ -737,7 +800,11 @@ public:
 
     void getAndOutputResults(IClientWsWorkunits* client, const char *wuid)
     {
+        if (optVerbose)
+            fputs("Retrieving Results\n", stdout);
         Owned<IClientWUFullResultRequest> req = client->createWUFullResultRequest();
+        setCmdRequestTimeouts(req->rpc(), optWaitTime, optWaitConnectMs, optWaitReadSec);
+
         req->setWuid(wuid);
         req->setNoRootTag(optNoRoot);
         req->setExceptionSeverity(optExceptionSeverity);
@@ -761,7 +828,7 @@ public:
         int minor = 0;
         int point = 0;
         bool useCompression = false;
-        checkFeatures(client, useCompression, major, minor, point);
+        checkFeatures(client, useCompression, major, minor, point, optWaitTime, optWaitConnectMs, optWaitReadSec);
         bool optimized = !optPre64 && (major>=6 && minor>=3);
 
         try
@@ -822,6 +889,7 @@ public:
     {
         Owned<IClientWsWorkunits> client = createCmdClientExt(WsWorkunits, *this, "?upload_"); //upload_ disables maxRequestEntityLength
         Owned<IClientWURunRequest> req = client->createWURunRequest();
+        setCmdRequestTimeouts(req->rpc(), optWaitTime, optWaitConnectMs, optWaitReadSec);
         req->setCloneWorkunit(true);
         req->setNoRootTag(optNoRoot);
 
@@ -845,7 +913,7 @@ public:
         else
         {
             req->setCloneWorkunit(false);
-            if (!doDeploy(*this, client, optTargetCluster.get(), optName.get(), &wuid, &wuCluster, optNoArchive, optVerbose))
+            if (!doDeploy(*this, client, optWaitTime, optTargetCluster.get(), optName.get(), &wuid, &wuCluster, optNoArchive, optVerbose))
                 return 1;
             req->setWuid(wuid.str());
             if (optVerbose)
@@ -869,7 +937,23 @@ public:
             req->setVariables(variables);
 
         startTimeMs = msTick();
-        Owned<IClientWURunResponse> resp = client->WURun(req);
+        Owned<IClientWURunResponse> resp;
+        try
+        {
+            resp.setown(client->WURun(req));
+        }
+        catch (IJSOCK_Exception *E)
+        {
+            if (optPoll)
+                fputs("Socket error, no WUID, can't continue but workunit may still be running...\n", stderr);
+            throw E;
+        }
+        catch (IException *E)
+        {
+            if (optPoll && isSoapRpcException(E))
+                fputs("SOAP error, no WUID, can't continue but workunit may still be running...\n", stderr);
+            throw E;
+        }
 
         if (checkMultiExceptionsQueryNotFound(resp->getExceptions()))
         {
@@ -1025,6 +1109,8 @@ public:
     int gatherLegacyServerResults(IClientWsWorkunits* client, const char *wuid)
     {
         Owned<IClientWUInfoRequest> req = client->createWUInfoRequest();
+        setCmdRequestTimeouts(req->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+
         req->setWuid(wuid);
         req->setIncludeExceptions(true);
         req->setIncludeGraphs(false);
@@ -1073,6 +1159,8 @@ public:
     int getAndOutputResults(IClientWsWorkunits* client, const char *wuid)
     {
         Owned<IClientWUFullResultRequest> req = client->createWUFullResultRequest();
+        setCmdRequestTimeouts(req->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+
         req->setWuid(wuid);
         req->setNoRootTag(optNoRoot);
         req->setExceptionSeverity(optExceptionSeverity);
@@ -1092,7 +1180,7 @@ public:
         int minor = 0;
         int point = 0;
         bool useCompression = false;
-        checkFeatures(client, useCompression, major, minor, point);
+        checkFeatures(client, useCompression, major, minor, point, 0, optWaitConnectMs, optWaitReadSec);
 
         if (!optPre64 && (major>=6 && minor>=3))
             return getAndOutputResults(client, optWuid);
@@ -1150,6 +1238,8 @@ public:
     {
         Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
         Owned<IClientWUQuerySetQueryActionRequest> req = client->createWUQuerysetQueryActionRequest();
+        setCmdRequestTimeouts(req->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+
         IArrayOf<IEspQuerySetQueryActionItem> queries;
         Owned<IEspQuerySetQueryActionItem> item = createQuerySetQueryActionItem();
         item->setQueryId(optQuery.get());
@@ -1198,6 +1288,7 @@ public:
     {
         Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
         Owned<IClientWUQuerySetQueryActionRequest> req = client->createWUQuerysetQueryActionRequest();
+        setCmdRequestTimeouts(req->rpc(), 0, optWaitConnectMs, optWaitReadSec);
 
         req->setQuerySetName(optQuerySet.get());
         req->setAction("Delete");
@@ -1247,6 +1338,8 @@ public:
         StringBuffer s;
         Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
         Owned<IClientWUQuerySetAliasActionRequest> req = client->createWUQuerysetAliasActionRequest();
+        setCmdRequestTimeouts(req->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+
         IArrayOf<IEspQuerySetAliasActionItem> aliases;
         Owned<IEspQuerySetAliasActionItem> item = createQuerySetAliasActionItem();
         item->setName(optQuery.get());
@@ -1363,6 +1456,8 @@ public:
 
         // Abort
         Owned<IClientWUAbortRequest> req = client->createWUAbortRequest();
+        setCmdRequestTimeouts(req->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+
 
         req->setWuids(wuids);
         Owned<IClientWUAbortResponse> resp = client->WUAbort(req);
@@ -1462,6 +1557,8 @@ public:
     {
         Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
         Owned<IClientWUQueryRequest> req = client->createWUQueryRequest();
+        setCmdRequestTimeouts(req->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+
 
         if (optName.isEmpty())
             return 0;
@@ -1545,6 +1642,7 @@ public:
     {
         Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
         Owned<IClientWUQueryRequest> req = client->createWUQueryRequest();
+        setCmdRequestTimeouts(req->rpc(), 0, optWaitConnectMs, optWaitReadSec);
 
         if (optName.isEmpty())
             return 0;
@@ -1636,6 +1734,7 @@ public:
     {
         Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
         Owned<IClientWUQueryRequest> req = client->createWUQueryRequest();
+        setCmdRequestTimeouts(req->rpc(), 0, optWaitConnectMs, optWaitReadSec);
 
         if (optName.isEmpty())
         {
