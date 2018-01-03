@@ -2128,6 +2128,8 @@ ESPStruct [nil_remove] WUEclDefinitionActionResult
 {
     string EclDefinition;
     string Action;
+    string WUID;
+    string QueryID;
     string Result;
 };
 
@@ -2152,7 +2154,7 @@ ESPrequest [nil_remove] WUEclDefinitionActionRequest
     bool UpdateSuperfiles(false); //Publish
     bool UpdateCloneFrom(false); //Publish
     bool DontAppendCluster(false); //Publish
-    int MsToWait(-2);//default -2 : deploy(-1), publish(10000), and syntaxCheck(60000))
+    int MsToWait(-1);
     int TimeLimit(-1); //Publish
     int WarnTimeLimit(-1); //Publish
 };

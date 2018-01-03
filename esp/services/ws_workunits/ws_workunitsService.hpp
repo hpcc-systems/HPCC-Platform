@@ -304,8 +304,8 @@ private:
     const char* gatherExceptionMessage(const IMultiException &me, StringBuffer &exceptionMsg);
     const char* gatherWUException(IConstWUExceptionIterator &it, StringBuffer &exceptionMsg);
     const char* gatherECLException(IArrayOf<IConstECLException> &exceptions, StringBuffer &exceptionMsg);
-    void addEclDefinitionActionResult(const char *eclDefinition, const char *result, const char* strAction, bool logResult,
-        IArrayOf<IConstWUEclDefinitionActionResult> &results);
+    void addEclDefinitionActionResult(const char *eclDefinition, const char *result, const char *wuid,
+        const char *queryID, const char* strAction, bool logResult, IArrayOf<IConstWUEclDefinitionActionResult> &results);
 
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;
