@@ -24457,12 +24457,16 @@ class CRoxieServerFetchActivity : public CRoxieServerActivity, implements IRecor
     bool variableFileName;
     bool isOpt;
     Owned<const IResolvedFile> varFileInfo;
+    Owned<IEngineRowAllocator> extractAllocator;
 
 public:
     CRoxieServerFetchActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, IFilePartMap *_map)
         : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorFetchBaseArg &)basehelper), map(_map), remote(_ctx, this, _remoteId, meta.queryOriginal(), helper, *this, true, true), puller(false)
     {
         needsRHS = helper.transformNeedsRhs();
+        if (needsRHS)
+            extractAllocator.setown(createRowAllocator(helper.queryExtractedSize()));
+
         variableFileName = allFilesDynamic || factory->queryQueryFactory().isDynamic() || ((helper.getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0);
         isOpt = (helper.getFetchFlags() & FFdatafileoptional) != 0;
     }
@@ -24558,7 +24562,6 @@ public:
             partNo = map->mapOffset(rp);
         if (needsRHS)
         {
-            Owned<IEngineRowAllocator> extractAllocator = createRowAllocator(helper.queryExtractedSize());
             RtlDynamicRowBuilder rb(extractAllocator, true);
             unsigned rhsSize = helper.extractJoinFields(rb, row);
             char * block = (char *) remote.getMem(partNo, 0, sizeof(rp) + sizeof(rhsSize) + rhsSize); // MORE - superfiles
