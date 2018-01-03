@@ -1203,9 +1203,6 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             else
             {
                 Owned<IHqlScope> scope = createPrivateScope();
-                if (instance.legacyImport)
-                    importRootModulesToScope(scope, ctx);
-
                 instance.query.setown(parseQuery(scope, queryContents, ctx, NULL, NULL, true, true));
 
                 if (instance.archive)

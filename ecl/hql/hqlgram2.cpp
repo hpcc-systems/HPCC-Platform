@@ -3525,6 +3525,13 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
     if (expectedUnknownId)
         return NULL;
 
+    if (globalImportPending)
+    {
+        if (lexObject->hasLegacyImportSemantics())
+            importRootModulesToScope(globalScope, lookupCtx);
+        globalImportPending = false;
+    }
+
     //Check periodically if parsing a referenced identifier has caused the compile to abort.
     checkAborting();//NOTE: checkAborting() checks whether the parseContext is aborting and implicitly propagates this state, thus consistently triggering the parser to abort.
 
@@ -12083,6 +12090,9 @@ extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * con
             ctx.noteBeginQuery(scope, contents);
 
         HqlGram parser(scope, scope, contents, ctx, xmlScope, false, loadImplicit);
+        if (isRoot)
+            parser.setPendingGlobalImport(true);
+
         parser.setQuery(true);
         parser.getLexer()->set_yyLineNo(1);
         parser.getLexer()->set_yyColumn(1);
