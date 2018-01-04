@@ -149,6 +149,9 @@ if (WIN32)
     set_source_files_properties (hqlgram.cpp PROPERTIES COMPILE_FLAGS "/Od")
 endif()
 
+set_source_files_properties (hqldsparam.cpp PROPERTIES COMPILE_FLAGS -Wa,-ahl=hqldsparam.lst)
+set_source_files_properties (hqlscope.cpp PROPERTIES COMPILE_FLAGS -Wa,-ahl=hqlscope.lst)
+
 ADD_DEFINITIONS( -D_USRDLL -DHQL_EXPORTS -DHQLFOLD_EXPORTS -DHQLTRANS_EXPORTS )
 
 HPCC_ADD_LIBRARY( hql SHARED ${SRCS} ${CMAKE_CURRENT_BINARY_DIR}/hqlgram.cpp ${CMAKE_CURRENT_BINARY_DIR}/hqllex.cpp  )

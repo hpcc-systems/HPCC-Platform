@@ -124,6 +124,30 @@ class ArrayOf : public AllocatorOf<sizeof(MEMBER)>
     typedef AllocatorOf<sizeof(MEMBER)> PARENT;
     typedef ArrayOf<MEMBER,PARAM,MAPPER> SELF;
 
+    class ArrayIter
+    {
+    public:
+        ArrayIter(SELF & _self, aindex_t _idx) : self(_self), idx(_idx) {}
+
+        MEMBER & operator * () { return self.element(idx); }
+        bool operator != (const ArrayIter & other) const { return &self != &other.self || idx != other.idx; }
+        ArrayIter & operator ++ () { ++idx; return *this; }
+    private:
+        SELF & self;
+        aindex_t idx;
+    };
+    class ConstArrayIter
+    {
+    public:
+        ConstArrayIter(const SELF & _self, aindex_t _idx) : self(_self), idx(_idx) {}
+
+        const MEMBER & operator * () const { return self.element(idx); }
+        bool operator != (const ConstArrayIter & other) const { return &self != &other.self || idx != other.idx; }
+        ConstArrayIter & operator ++ () { ++idx; return *this; }
+    private:
+        const SELF & self;
+        aindex_t idx;
+    };
 protected:
     typedef int (*CompareFunc)(const MEMBER *, const MEMBER *);   // Should really be const, as should the original array functions
 
@@ -351,7 +375,29 @@ public:
         }
         return false;
     }
-
+#if 0
+    MEMBER * begin()
+    {
+        return &element(0);
+    }
+    MEMBER * end()
+    {
+        MEMBER * head = (MEMBER *)SELF::_head;
+        return head + SELF::used;
+    }
+    const MEMBER * begin() const
+    {
+        return &element(0);
+    }
+    const MEMBER * end() const
+    {
+        MEMBER * head = (MEMBER *)SELF::_head;
+        return head + SELF::used;
+    }
+#else
+    ConstArrayIter begin() const { return ConstArrayIter(*this, 0); }
+    ConstArrayIter end() const { return ConstArrayIter(*this, SELF::used); }
+#endif
 protected:
     inline void construct(PARAM newValue, unsigned pos)
     {

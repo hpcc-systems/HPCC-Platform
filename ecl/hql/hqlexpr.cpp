@@ -3868,10 +3868,10 @@ void displayHqlCacheStats()
     static HqlExprCopyArray prev;
     DBGLOG("CachedItems = %d", exprCache->count());
     exprCache->dumpStats();
-    JavaHashIteratorOf<IHqlExpression> iter(*exprCache, false);
-    ForEach(iter)
+    JavaHashIteratorOf<CHqlExpression> iter(*exprCache, false);
+    for (CHqlExpression & ret : *exprCache)
     {
-        IHqlExpression & ret = iter.query();
+//        IHqlExpression & ret = iter.query();
         if (!prev.contains(ret))
         {
             StringBuffer s;
@@ -5330,10 +5330,8 @@ void CUsedTablesBuilder::addActiveTable(IHqlExpression * expr)
 void CUsedTablesBuilder::cleanupProduction()
 {
     HqlExprCopyArray toRemove;
-    SuperHashIteratorOf<IHqlExpression> iter(inScopeTables);
-    ForEach(iter)
+    for (IHqlExpression& cur : inScopeTables)
     {
-        IHqlExpression & cur = iter.query();
         switch (cur.getOperator())
         {
         case no_matchattr:
@@ -5393,10 +5391,8 @@ void CUsedTablesBuilder::removeRows(IHqlExpression * expr, IHqlExpression * left
 void CUsedTablesBuilder::removeActiveRecords()
 {
     HqlExprCopyArray toRemove;
-    SuperHashIteratorOf<IHqlExpression> iter(inScopeTables);
-    ForEach(iter)
+    for (IHqlExpression&cur : inScopeTables)
     {
-        IHqlExpression & cur = iter.query();
         if (cur.isRecord())
             toRemove.append(cur);
     }
@@ -5407,12 +5403,8 @@ void CUsedTablesBuilder::removeActiveRecords()
 
 inline void expand(HqlExprCopyArray & target, const UsedExpressionHashTable & source)
 {
-    SuperHashIteratorOf<IHqlExpression> iter(source);
-    ForEach(iter)
-    {
-        IHqlExpression & cur = iter.query();
+    for (auto& cur : source)
         target.append(cur);
-    }
 }
 
 void CUsedTablesBuilder::set(CUsedTables & tables)
@@ -8387,6 +8379,22 @@ bool CHqlScope::getProp(IAtom * a, StringBuffer &ret) const
 
 void CHqlScope::getSymbols(HqlExprArray& exprs) const
 {
+#if 1
+    SymbolTable & localSymbols = const_cast<SymbolTable &>(symbols);
+    SymbolTableLock lock(localSymbols);
+    for (auto & iter : localSymbols)
+    {
+        IHqlExpression *cur = localSymbols.mapToValue(&iter);
+        if (!cur)
+        {
+            IAtom * name = * static_cast<IAtom * const *>(iter.getKey());
+            throw MakeStringException(ERR_INTERNAL_NOEXPR, "INTERNAL: getSymbol %s has no associated expression", name ? str(name) : "");
+        }
+
+        cur->Link();
+        exprs.append(*cur);
+    }
+#else
     SymbolTable & localSymbols = const_cast<SymbolTable &>(symbols);
     SymbolTableIterator iter(localSymbols);
     for (iter.first(); iter.isValid(); iter.next()) 
@@ -8401,6 +8409,7 @@ void CHqlScope::getSymbols(HqlExprArray& exprs) const
         cur->Link();
         exprs.append(*cur);
     }
+#endif
 }
 
 IHqlScope * CHqlScope::cloneAndClose(HqlExprArray & children, HqlExprArray & symbols)

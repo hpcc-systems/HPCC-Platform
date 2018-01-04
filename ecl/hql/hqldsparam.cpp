@@ -168,9 +168,10 @@ IIdAtom * HqlGram::fieldMapFrom(IHqlExpression* mapping, IIdAtom * id)
 // either a abstract dataset 
 bool HqlGram::requireLateBind(IHqlExpression* funcdef, const HqlExprArray& actuals)
 {
-    ForEachItemIn(idx, actuals)
+    //ForEachItemIn(idx, actuals)
+    for (auto iter : actuals)
     {
-        IHqlExpression *actual = &actuals.item(idx);
+        IHqlExpression *actual = static_cast<IHqlExpression *>(iter);
         if (isAbstractDataset(actual))
             return true;
     }

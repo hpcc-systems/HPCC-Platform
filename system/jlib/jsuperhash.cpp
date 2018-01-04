@@ -448,6 +448,13 @@ bool SuperHashTable::removeExact(void *et)
     return true;
 }
 
+unsigned SuperHashTable::validIdx(unsigned i) const
+{
+    while (i < tablesize && !table[i])
+        i++;
+    return i;
+}
+
 void *SuperHashTable::findElement(unsigned hash, const void * findEt) const
 {
     unsigned vm = doFindElement(hash, findEt);
