@@ -350,8 +350,13 @@ bool CWsDfuEx::onDFUInfo(IEspContext &context, IEspDFUInfoRequest &req, IEspDFUI
 
         if (req.getUpdateDescription())
         {
-            doGetFileDetails(context, userdesc.get(), req.getFileName(), req.getCluster(), req.getFileDesc(),
-                             req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), resp.updateFileDetail());
+            double version = context.getClientVersion();
+            if (version < 1.38)
+                doGetFileDetails(context, userdesc.get(), req.getFileName(), req.getCluster(), req.getFileDesc(),
+                    req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), resp.updateFileDetail());
+            else
+                doGetFileDetails(context, userdesc.get(), req.getName(), req.getCluster(), req.getFileDesc(),
+                    req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), resp.updateFileDetail());
         }
         else
         {
