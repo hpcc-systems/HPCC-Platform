@@ -584,7 +584,7 @@ void CppFilterExtractor::buildKeySegmentExpr(BuildFilterState & buildState, KeyS
     if (targetSet && !requiredSet)
     {
         if (createValueSets)
-            createMonitorText.appendf("createFieldFilter(%u, %s.getClear())", selectorInfo.fieldIdx, targetSet);
+            createMonitorText.appendf("createFieldFilter(%u, %s)", selectorInfo.fieldIdx, targetSet);
         else
             createMonitorText.appendf("createKeySegmentMonitor(%s, %s.getClear(), %u, %u, %u)",
                                       boolToText(selectorInfo.keyedKind != KeyedYes), targetSet, selectorInfo.fieldIdx, selectorInfo.offset, selectorInfo.size);

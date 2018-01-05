@@ -608,6 +608,7 @@ public:
         const RtlTypeInfo ** found = types.getValue(name);
         if (found)
             return *found;
+        savedTypes.append(LINK(typeOrIfblock));
         info.locale = keep(info.locale);
         const RtlTypeInfo * ret = info.createRtlTypeInfo(callback);
         types.setValue(name, ret);
@@ -637,6 +638,7 @@ private:
     MapStringTo<const RtlTypeInfo *> types;  // Ensures structures only generated once
     const RtlTypeInfo *base = nullptr;       // Holds the resulting type
     IThorIndexCallback *callback = nullptr;
+    IConstPointerArray savedTypes; // ensure types remain alive for subsequent lookups
     void deleteType(const RtlTypeInfo *type)
     {
         if (type)
