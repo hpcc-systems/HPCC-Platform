@@ -4371,7 +4371,6 @@ void CHqlRealExpression::updateFlagsAfterOperands()
             }
             break;
         }
-
     }
 
 #ifdef VERIFY_EXPR_INTEGRITY
