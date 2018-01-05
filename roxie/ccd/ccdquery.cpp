@@ -26,7 +26,6 @@
 #include "ccdcontext.hpp"
 
 #include "thorplugin.hpp"
-#include "layouttrans.hpp"
 
 void ActivityArray::append(IActivityFactory &cur)
 {
@@ -397,22 +396,20 @@ void QueryOptions::updateFromWorkUnit(bool &value, IConstWorkUnit &wu, const cha
     value = wu.getDebugValueBool(name, value);
 }
 
-void QueryOptions::updateFromWorkUnit(IRecordLayoutTranslator::Mode &value, IConstWorkUnit &wu, const char *name)
+void QueryOptions::updateFromWorkUnit(RecordTranslationMode &value, IConstWorkUnit &wu, const char *name)
 {
     SCMStringBuffer val;
     wu.getDebugValue(name, val);
     if (val.length())
     {
         if (strieq(val.str(), "alwaysDisk"))
-            value = IRecordLayoutTranslator::TranslateAlwaysDisk;
+            value = RecordTranslationMode::AlwaysDisk;
         else if (strieq(val.str(), "alwaysECL"))
-            value = IRecordLayoutTranslator::TranslateAlwaysECL;
-        else if (strieq(val.str(), "payload"))
-            value = IRecordLayoutTranslator::TranslatePayload;
-        else if (strToBool(val.str()))
-            value = IRecordLayoutTranslator::TranslateAll;
+            value = RecordTranslationMode::AlwaysECL;
+        else if (strieq(val.str(), "payload") || strToBool(val.str()))
+            value = RecordTranslationMode::Payload;
         else
-            value = IRecordLayoutTranslator::NoTranslation;
+            value = RecordTranslationMode::None;
     }
 }
 
@@ -1985,26 +1982,4 @@ extern IQueryFactory *createSlaveQueryFactoryFromWu(IConstWorkUnit *wu, unsigned
     if (!dll)
         return NULL;
     return createSlaveQueryFactory(wu->queryWuid(), dll.getClear(), queryRootRoxiePackage(), channelNo, NULL, true, false);  // MORE - if use a constant for id might cache better?
-}
-
-IRecordLayoutTranslator * createRecordLayoutTranslator(const char *logicalName, IDefRecordMeta const * diskMeta, IDefRecordMeta const * activityMeta, IRecordLayoutTranslator::Mode mode)
-{
-    try
-    {
-        return ::createRecordLayoutTranslator(diskMeta, activityMeta, mode);
-    }
-    catch (IException *E)
-    {
-        StringBuffer q, d;
-        getRecordMetaAsString(q, activityMeta);
-        getRecordMetaAsString(d, diskMeta);
-        DBGLOG("Activity: %s", q.str());
-        DBGLOG("Disk: %s", d.str());
-        StringBuffer m;
-        m.appendf("In index %s:", logicalName);
-        E->errorMessage(m);
-        E->Release();
-        DBGLOG("%s", m.str());
-        throw MakeStringException(ROXIE_RCD_LAYOUT_TRANSLATOR, "%s", m.str());
-    }
 }

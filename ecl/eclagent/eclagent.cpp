@@ -526,7 +526,6 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
 
     StringAttrAdaptor adaptor(clusterType);
     wuRead->getDebugValue("targetClusterType", adaptor);
-    rltCache.setown(createRecordLayoutTranslatorCache());
     pluginMap = NULL;
     stopAfter = globals->getPropInt("-limit",-1);
 

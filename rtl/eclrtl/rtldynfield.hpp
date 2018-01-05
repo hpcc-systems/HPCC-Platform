@@ -102,6 +102,8 @@ interface IRtlFieldTypeDeserializer : public IInterface
 
 };
 
+enum class RecordTranslationMode { None = 0, All = 1, Payload = 2, AlwaysDisk = 3, AlwaysECL = 4 };  // Latter 2 are for testing purposes only
+
 interface IDynamicTransform : public IInterface
 {
     virtual void describe() const = 0;

@@ -1797,7 +1797,6 @@ protected:
     StringArray subNames;
     IPointerArrayOf<IFileDescriptor> subFiles; // note - on slaves, the file descriptors may have incomplete info. On originating server is always complete
     IPointerArrayOf<IFileDescriptor> remoteSubFiles; // note - on slaves, the file descriptors may have incomplete info. On originating server is always complete
-    IPointerArrayOf<IDefRecordMeta> diskMeta;  // Old info used by Pete's format translator
     IntArray formatCrcs;
     IPointerArrayOf<IOutputMetaData> diskTypeInfo;  // New info using RtlTypeInfo structures
     IArrayOf<IDistributedFile> subDFiles;  // To make sure subfiles get locked too
@@ -1813,14 +1812,6 @@ protected:
         subFiles.append(fdesc);
         remoteSubFiles.append(remoteFDesc);
         IPropertyTree const & props = fdesc->queryProperties();
-        if(props.hasProp("_record_layout"))
-        {
-            MemoryBuffer mb;
-            props.getPropBin("_record_layout", mb);
-            diskMeta.append(deserializeRecordMeta(mb, true));
-        }
-        else
-            diskMeta.append(NULL);
 
         // NOTE - grouping is not included in the formatCRC, nor is the trailing byte that indicates grouping
         // included in the rtlTypeInfo.
@@ -2076,17 +2067,6 @@ public:
             else
                 mb.append((byte) 0);
 
-            if (fileType == ROXIE_KEY) // for now we only support translation on index files
-            {
-                IDefRecordMeta *meta = diskMeta.item(idx);
-                if (meta)
-                {
-                    mb.append(true);
-                    serializeRecordMeta(mb, meta, true);
-                }
-                else
-                    mb.append(false);
-            }
         }
         if (properties)
         {
@@ -2096,7 +2076,7 @@ public:
         else
             mb.append(false);
     }
-    virtual ITranslatorSet *getTranslators(int formatCrc, IOutputMetaData *projected, IOutputMetaData *expected, IRecordLayoutTranslator::Mode mode) const override
+    virtual ITranslatorSet *getTranslators(int formatCrc, IOutputMetaData *projected, IOutputMetaData *expected, RecordTranslationMode mode) const override
     {
         // NOTE - projected and expected and anything fetched from them such as type info may reside in dynamically loaded (and unloaded)
         // query DLLs - this means it is not safe to include them in any sort of cache that might outlive the current query.
@@ -2112,7 +2092,7 @@ public:
             {
                 const char *subname = subNames.item(idx);
                 int thisFormatCrc = formatCrcs.item(idx);
-                if (mode == IRecordLayoutTranslator::TranslateAlwaysDisk && diskTypeInfo.item(idx))
+                if (mode == RecordTranslationMode::AlwaysDisk && diskTypeInfo.item(idx))
                 {
                     actual = diskTypeInfo.item(idx);
                     translator.setown(createRecordTranslator(projected->queryRecordAccessor(true), actual->queryRecordAccessor(true)));
@@ -2120,7 +2100,7 @@ public:
                     if (!translator->canTranslate())
                         throw MakeStringException(ROXIE_MISMATCH, "Untranslatable record layout mismatch detected for file %s", subname);
                 }
-                else if (mode == IRecordLayoutTranslator::TranslateAlwaysECL)
+                else if (mode == RecordTranslationMode::AlwaysECL)
                 {
                     translator.setown(createRecordTranslator(projected->queryRecordAccessor(true), expected->queryRecordAccessor(true)));
                     keyedTranslator.setown(createKeyTranslator(actual->queryRecordAccessor(true), expected->queryRecordAccessor(true)));
@@ -2144,7 +2124,11 @@ public:
                         if (!translator || !translator->canTranslate())
                             throw MakeStringException(ROXIE_MISMATCH, "Untranslatable record layout mismatch detected for file %s", subname);
                         if (translator->needsTranslate())
+                        {
+                            if (mode == RecordTranslationMode::None)
+                                throw MakeStringException(ROXIE_MISMATCH, "Translatable record layout mismatch detected for file %s, but translation disabled", subname);
                             keyedTranslator.setown(createKeyTranslator(actual->queryRecordAccessor(true), expected->queryRecordAccessor(true)));
+                        }
                     }
                 }
                 prevFormatCrc = thisFormatCrc;
@@ -2209,7 +2193,8 @@ public:
         }
         return f.getClear();
     }
-    virtual IKeyArray *getKeyArray(IDefRecordMeta *activityMeta, TranslatorArray *translators, bool isOpt, unsigned channel, IRecordLayoutTranslator::Mode allowFieldTranslation) const override
+
+    virtual IKeyArray *getKeyArray(bool isOpt, unsigned channel) const override
     {
         unsigned maxParts = 0;
         ForEachItemIn(subFile, subFiles)
@@ -2222,26 +2207,6 @@ public:
                     numParts--; // Don't include TLK
                 if (numParts > maxParts)
                     maxParts = numParts;
-            }
-
-            if (translators)
-            {
-                IDefRecordMeta *thisDiskMeta = diskMeta.isItem(subFile) ? diskMeta.item(subFile) : nullptr;
-                if (fdesc && thisDiskMeta && activityMeta && !thisDiskMeta->equals(activityMeta))
-                    if (allowFieldTranslation != IRecordLayoutTranslator::NoTranslation)
-                        translators->append(createRecordLayoutTranslator(lfn, thisDiskMeta, activityMeta, allowFieldTranslation));
-                    else
-                    {
-                        DBGLOG("Key layout mismatch: %s", lfn.get());
-                        StringBuffer q, d;
-                        getRecordMetaAsString(q, activityMeta);
-                        getRecordMetaAsString(d, thisDiskMeta);
-                        DBGLOG("Activity: %s", q.str());
-                        DBGLOG("Disk: %s", d.str());
-                        throw MakeStringException(ROXIE_MISMATCH, "Key layout mismatch detected for index %s", lfn.get());
-                    }
-                else
-                    translators->append(NULL);
             }
         }
         CriticalBlock b(lock);
@@ -2452,7 +2417,6 @@ public:
         subRFiles.kill();
         subNames.kill();
         remoteSubFiles.kill();
-        diskMeta.kill();
         properties.clear();
         notifier.clear();
         if (isSuper)
@@ -2584,15 +2548,6 @@ public:
                         break;
                     default:
                         throwUnexpected();
-                    }
-                    if (fileType==ROXIE_KEY)
-                    {
-                        bool diskMetaPresent;
-                        serverData.read(diskMetaPresent);
-                        if (diskMetaPresent)
-                            diskMeta.append(deserializeRecordMeta(serverData, true));
-                        else
-                            diskMeta.append(NULL);
                     }
                 }
                 bool propertiesPresent;

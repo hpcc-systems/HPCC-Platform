@@ -303,7 +303,7 @@ protected:
     bool resent;
     bool isOpt;
     bool variableFileName;
-    IRecordLayoutTranslator::Mode allowFieldTranslation;
+    RecordTranslationMode allowFieldTranslation;
     Owned<const IResolvedFile> varFileInfo;
 
     virtual void setPartNo(bool filechanged) = 0;
@@ -2360,20 +2360,18 @@ ISlaveActivityFactory *createRoxieDiskGroupAggregateActivityFactory(IPropertyTre
 
 class CRoxieKeyedActivityFactory : public CSlaveActivityFactory
 {
+    friend class CRoxieKeyedActivity;
 protected:
     Owned<IKeyArray> keyArray;
-    Owned<TranslatorArray> layoutTranslators;
-    Owned<IDefRecordMeta> activityMeta;
+    Owned<ITranslatorSet> translators;
+    unsigned formatCrc = 0;
+    IOutputMetaData *projectedMeta = nullptr;
+    IOutputMetaData *expectedMeta = nullptr;
 
     CRoxieKeyedActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
         : CSlaveActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
     {
     }
-
-public:
-    inline IKeyArray *queryKeyArray() const { return keyArray; }
-    inline TranslatorArray *queryLayoutTranslators() const { return layoutTranslators; }
-    inline IDefRecordMeta *queryActivityMeta() const { return activityMeta; }
 };
 
 class CRoxieIndexActivityFactory : public CRoxieKeyedActivityFactory
@@ -2386,14 +2384,9 @@ public:
 
     void init(IHThorIndexReadBaseArg * helper, IPropertyTree &graphNode)
     {
-        rtlDataAttr indexLayoutMeta;
-        size32_t indexLayoutSize = 0;
-        if(!helper->getIndexLayout(indexLayoutSize, indexLayoutMeta.refdata()))
-            assertex(indexLayoutSize== 0);
-        MemoryBuffer m;
-        m.setBuffer(indexLayoutSize, indexLayoutMeta.getdata());
-        activityMeta.setown(deserializeRecordMeta(m, true));
-        layoutTranslators.setown(new TranslatorArray);
+        formatCrc = getFormatCrc(helper->getFormatCrc());
+        projectedMeta = helper->queryProjectedDiskRecordSize();
+        expectedMeta = helper->queryDiskRecordSize();
         bool variableFileName = allFilesDynamic || queryFactory.isDynamic() || ((helper->getFlags() & (TIRvarfilename|TIRdynamicfilename)) != 0);
         if (!variableFileName)
         {
@@ -2401,7 +2394,10 @@ public:
             OwnedRoxieString indexName(helper->getFileName());
             datafile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit(), true));
             if (datafile)
-                keyArray.setown(datafile->getKeyArray(activityMeta, layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.queryOptions().enableFieldTranslation));
+            {
+                translators.setown(datafile->getTranslators(formatCrc, projectedMeta, expectedMeta, queryFactory.queryOptions().enableFieldTranslation));
+                keyArray.setown(datafile->getKeyArray(isOpt, queryFactory.queryChannel()));
+            }
         }
     }
 };
@@ -2411,10 +2407,9 @@ class CRoxieKeyedActivity : public CRoxieSlaveActivity
     // Common base class for all activities that deal with keys - keyed join or indexread and its allies
 protected:
     Owned<IKeyManager> tlk;
-    Linked<TranslatorArray> layoutTranslators;
+    Linked<ITranslatorSet> translators;
     Linked<IKeyArray> keyArray;
     const RtlRecord *keyRecInfo = nullptr;
-    IDefRecordMeta *activityMeta;
     bool createSegmentMonitorsPending;
 
     virtual void createSegmentMonitors() = 0;
@@ -2462,8 +2457,9 @@ protected:
 
     virtual void setVariableFileInfo()
     {
-        layoutTranslators.setown(new TranslatorArray);
-        keyArray.setown(varFileInfo->getKeyArray(activityMeta, layoutTranslators, isOpt, packet->queryHeader().channel, allowFieldTranslation));
+        const CRoxieKeyedActivityFactory &aFactory = *static_cast<const CRoxieKeyedActivityFactory *>(basefactory);
+        translators.setown(varFileInfo->getTranslators(aFactory.formatCrc, aFactory.projectedMeta, aFactory.expectedMeta, allowFieldTranslation));
+        keyArray.setown(varFileInfo->getKeyArray(isOpt, packet->queryHeader().channel));
     }
 
     void noteStats(unsigned accepted, unsigned rejected)
@@ -2476,9 +2472,8 @@ protected:
 
     CRoxieKeyedActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieKeyedActivityFactory *_aFactory)
         : CRoxieSlaveActivity(_logctx, _packet, _hFactory, _aFactory), 
-        keyArray(_aFactory->queryKeyArray()),
-        layoutTranslators(_aFactory->queryLayoutTranslators()),
-        activityMeta(_aFactory->queryActivityMeta()),
+        keyArray(_aFactory->keyArray),
+        translators(_aFactory->translators),
         createSegmentMonitorsPending(true)
     {
     }
@@ -2490,7 +2485,6 @@ class CRoxieIndexActivity : public CRoxieKeyedActivity
     // Common base class for indexread, indexcount and related activities
 
 protected:
-    const CRoxieIndexActivityFactory *factory;
     PartNoType *inputData;  // list of channels
     IHThorIndexReadBaseArg * indexHelper;
     unsigned inputCount;
@@ -2544,7 +2538,6 @@ protected:
 public:
     CRoxieIndexActivity(SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieIndexActivityFactory *_aFactory, unsigned _steppingOffset)
         : CRoxieKeyedActivity(_logctx, _packet, _hFactory, _aFactory),
-        factory(_aFactory),
         steppingOffset(_steppingOffset),
         stepExtra(SSEFreadAhead, NULL)
     {
@@ -2621,7 +2614,7 @@ public:
         if (createSegmentMonitorsPending)
         {
             createSegmentMonitorsPending = false;
-            tlk->setLayoutTranslator(layoutTranslators->item(lastPartNo.fileNo));
+            tlk->setLayoutTranslator(translators->queryTranslator(lastPartNo.fileNo));
             indexHelper->createSegmentMonitors(tlk);
             tlk->finishSegmentMonitors();
         }
@@ -2960,9 +2953,9 @@ public:
     {
         return varFileInfo.getLink(); 
     }
-    virtual TranslatorArray *getTranslators() const 
-    { 
-        return layoutTranslators.getLink(); 
+    virtual ITranslatorSet *getTranslators() const override
+    {
+        return translators.getLink();
     }
     virtual void mergeSegmentMonitors(IIndexReadContext *irc) const 
     {
@@ -3452,7 +3445,7 @@ public:
                     callback.setManager(tlk);
                     while (!aborted && tlk->lookup(true))
                     {
-                        if (groupSegCount && !layoutTranslators->item(lastPartNo.fileNo))
+                        if (groupSegCount && !translators->queryTranslator(lastPartNo.fileNo))
                         {
                             AggregateRowBuilder &rowBuilder = results.addRow(tlk->queryKeyBuffer());
                             callback.finishedRow();
@@ -3945,22 +3938,20 @@ public:
         : CRoxieKeyedActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
     {
         Owned<IHThorKeyedJoinArg> helper = (IHThorKeyedJoinArg *) helperFactory();
-        rtlDataAttr indexLayoutMeta;
-        size32_t indexLayoutSize = 0;
-        if(!helper->getIndexLayout(indexLayoutSize, indexLayoutMeta.refdata()))
-            assertex(indexLayoutSize== 0);
-        MemoryBuffer m;
-        m.setBuffer(indexLayoutSize, indexLayoutMeta.getdata());
-        activityMeta.setown(deserializeRecordMeta(m, true));
-        layoutTranslators.setown(new TranslatorArray);
         bool variableFileName = allFilesDynamic || queryFactory.isDynamic() || ((helper->getJoinFlags() & (JFvarindexfilename|JFdynamicindexfilename|JFindexfromactivity)) != 0);
+        formatCrc = getFormatCrc(helper->getIndexFormatCrc());
+        projectedMeta = helper->queryProjectedIndexRecordSize();
+        expectedMeta = helper->queryIndexRecordSize();
         if (!variableFileName)
         {
             bool isOpt = (helper->getJoinFlags() & JFindexoptional) != 0;
             OwnedRoxieString indexFileName(helper->getIndexFileName());
             datafile.setown(_queryFactory.queryPackage().lookupFileName(indexFileName, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
             if (datafile)
-                keyArray.setown(datafile->getKeyArray(activityMeta, layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.queryOptions().enableFieldTranslation));
+            {
+                translators.setown(datafile->getTranslators(formatCrc, projectedMeta, expectedMeta, queryFactory.queryOptions().enableFieldTranslation));
+                keyArray.setown(datafile->getKeyArray(isOpt, queryFactory.queryChannel()));
+            }
         }
     }
 
@@ -4056,7 +4047,7 @@ public:
             rootIndex = rootIndexActivity->queryIndexReadActivity();
     
             varFileInfo.setown(rootIndex->getVarFileInfo());
-            layoutTranslators.setown(rootIndex->getTranslators());
+            translators.setown(rootIndex->getTranslators());
             keyArray.setown(rootIndex->getKeySet());
         }
     }
@@ -4079,7 +4070,7 @@ public:
         if (createSegmentMonitorsPending)
         {
             createSegmentMonitorsPending = false;
-            tlk->setLayoutTranslator(layoutTranslators->item(lastPartNo.fileNo));
+            tlk->setLayoutTranslator(translators->queryTranslator(lastPartNo.fileNo));
         }
     }
 };
@@ -4619,7 +4610,6 @@ protected:
     Owned<const IResolvedFile> indexfile;
     Owned<IKeyArray> keyArray;
     Owned<IFileIOArray> fileArray;
-    TranslatorArray layoutTranslators;
 
 public:
     CRoxieDummyActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, bool isLoadDataOnly)
@@ -4640,7 +4630,7 @@ public:
                     bool isOpt = pretendAllOpt || _graphNode.getPropBool("att[@name='_isIndexOpt']/@value");
                     indexfile.setown(_queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
                     if (indexfile)
-                        keyArray.setown(indexfile->getKeyArray(NULL, &layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.queryOptions().enableFieldTranslation));
+                        keyArray.setown(indexfile->getKeyArray(isOpt, queryFactory.queryChannel()));
                 }
                 if (fileName && !allFilesDynamic && !queryFactory.isDynamic())
                 {

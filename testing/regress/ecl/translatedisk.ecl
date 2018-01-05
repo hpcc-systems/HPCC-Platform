@@ -25,11 +25,11 @@ multiPart := #IFDEFINED(root.multiPart, false);
 
 //--- end of version configuration ---
 
+#option ('layoutTranslationEnabled', true);
 import $.Setup;
 
 boolean useLocal := false;
 Files := Setup.Files(multiPart, useLocal);
-
 
 DG_FlatFile := PRELOAD(DATASET(Files.DG_FileOut+'FLAT',{Files.DG_OutRec, UNSIGNED8 filepos{virtual(fileposition)}},FLAT));
 output(DG_FlatFile);

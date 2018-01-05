@@ -58,8 +58,8 @@
 #include "jhtree.ipp"
 #include "keybuild.hpp"
 #include "eclhelper_dyn.hpp"
-#include "layouttrans.hpp"
 #include "rtlrecord.hpp"
+#include "rtldynfield.hpp"
 
 static std::atomic<CKeyStore *> keyStore(nullptr);
 static unsigned defaultKeyIndexLimit = 200;
@@ -320,7 +320,6 @@ protected:
     bool matched = false;
     bool eof = false;
     bool started = false;
-    bool transformSegs = false;
     StringAttr keyName;
     unsigned seeks;
     unsigned scans;
@@ -328,12 +327,9 @@ protected:
     unsigned nullSkips;
     unsigned wildseeks;
 
-    Owned<IRecordLayoutTranslator> layoutTrans;
-    IIndexReadContext * activitySegs;
-    CMemoryBlock layoutTransBuff;
+    Owned<const IDynamicTransform> layoutTrans;
+    MemoryBuffer buf;  // used when translating
     size32_t layoutSize = 0;
-    Owned<IRecordLayoutTranslator::SegmentMonitorContext> layoutTransSegCtx;
-    Owned<IRecordLayoutTranslator::RowTransformContext> layoutTransRowCtx;
 
     inline void setLow(unsigned segNo) 
     {
@@ -353,12 +349,6 @@ protected:
     inline void endRange(unsigned segno)
     {
         segs.endRange(segno, keyBuffer);
-    }
-
-    byte const * doRowLayoutTransform()
-    {
-        layoutSize = layoutTrans->transformRow(layoutTransRowCtx, reinterpret_cast<byte const *>(keyBuffer), keySize, layoutTransBuff);
-        return layoutTransBuff.get();
     }
 
     bool skipTo(const void *_seek, size32_t seekOffset, size32_t seeklen)
@@ -489,8 +479,6 @@ public:
         skips = 0;
         nullSkips = 0;
         wildseeks = 0;
-        transformSegs = false;
-        activitySegs = &segs;
     }
 
     ~CKeyLevelManager()
@@ -590,14 +578,12 @@ public:
     {
         segs.reset();
         started = false;
-        if(layoutTransSegCtx)
-            layoutTransSegCtx->reset();
     }
 
     virtual void append(IKeySegmentMonitor *segment) 
     { 
         assertex(!started);
-        activitySegs->append(segment);
+        segs.append(segment);
     }
 
 
@@ -608,18 +594,23 @@ public:
 
     virtual unsigned ordinality() const 
     {
-        return activitySegs->ordinality();
+        return segs.ordinality();
     }
 
     virtual IKeySegmentMonitor *item(unsigned idx) const
     {
-        return activitySegs->item(idx);
+        return segs.item(idx);
     }
 
     inline const byte *queryKeyBuffer()
     {
         if(layoutTrans)
-            return doRowLayoutTransform();
+        {
+            buf.setLength(0);
+            MemoryBufferBuilder aBuilder(buf, 0);
+            layoutSize = layoutTrans->translate(aBuilder, reinterpret_cast<byte const *>(keyBuffer));
+            return reinterpret_cast<byte const *>(buf.toByteArray());
+        }
         else
             return reinterpret_cast<byte const *>(keyBuffer);
     }
@@ -862,29 +853,9 @@ public:
             keyCursor->releaseBlobs();
     }
 
-    virtual void setLayoutTranslator(IRecordLayoutTranslator * trans)
+    virtual void setLayoutTranslator(const IDynamicTransform * trans) override
     {
         layoutTrans.set(trans);
-        if(layoutTrans && layoutTrans->queryKeysTransformed())
-        {
-            transformSegs = true;
-            layoutTransSegCtx.setown(layoutTrans->getSegmentMonitorContext());
-            activitySegs = layoutTransSegCtx;
-        }
-        else
-        {
-            transformSegs = false;
-            layoutTransSegCtx.clear();
-            activitySegs = &segs;
-        }
-        if(layoutTrans)
-        {
-            layoutTransRowCtx.setown(layoutTrans->getRowTransformContext());
-        }
-        else
-        {
-            layoutTransRowCtx.clear();
-        }
     }
 
     virtual void setSegmentMonitors(SegMonitorList &segmentMonitors) override
@@ -900,17 +871,6 @@ public:
     virtual void finishSegmentMonitors()
     {
         segs.finish(keyedSize);
-        if(transformSegs)
-        {
-            layoutTrans->createDiskSegmentMonitors(*layoutTransSegCtx, segs);
-            if(!layoutTrans->querySuccess())
-            {
-                StringBuffer err;
-                err.append("Could not translate index read filters during layout translation of index ").append(keyName.get()).append(": ");
-                layoutTrans->queryFailure().getDetail(err);
-                throw MakeStringExceptionDirect(0, err.str());
-            }
-        }
     }
 };
 
@@ -2528,11 +2488,11 @@ public:
         }
     }
 
-    virtual void setLayoutTranslator(IRecordLayoutTranslator * trans) 
+    virtual void setLayoutTranslator(const IDynamicTransform * trans) override
     { 
         if (trans)
             throw MakeStringException(0, "Layout translation not supported when merging key parts, as it may change sort order"); 
-        // it MIGHT be possible to support translation still if all keyCursors have the same translation 
+        // It MIGHT be possible to support translation still if all keyCursors have the same translation
         // would have to translate AFTER the merge, but that's ok
         // HOWEVER the result won't be guaranteed to be in sorted order afterwards so is there any point?
     }
