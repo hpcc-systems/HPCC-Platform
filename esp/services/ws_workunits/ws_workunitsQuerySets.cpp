@@ -2426,7 +2426,7 @@ IPropertyTree *fetchRemoteQuerySetInfo(IEspContext *context, const char *srcAddr
     StringBuffer response;
     StringBuffer status;
     if (0 > httpclient->sendRequest("GET", NULL, request, response, status) || !response.length() || strncmp("200", status, 3))
-         throw MakeStringException(-1, "Error fetching remote queryset information: %s %s %s", srcAddress, srcTarget, status.str());
+         throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Error fetching remote queryset information: %s %s %s", srcAddress, srcTarget, status.str());
 
     return createPTreeFromXMLString(response);
 }
