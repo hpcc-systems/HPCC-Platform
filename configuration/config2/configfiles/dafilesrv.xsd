@@ -10,13 +10,13 @@
             <xs:attribute name="throttleCPULimit" type="xs:nonNegativeInteger" use="optional" default="75" hpcc:tooltip="if after the initial delay, the CPU % falls below this setting, the transaction will be allowed to continue, i.e. the limit can be exceeded this way. Overrides global settting."/>
         </xs:attributeGroup>
         <xs:sequence>
-            <xs:element name="DafilesrvProcess" hpcc:docid="daFs.t">
+            <xs:element name="DafilesrvProcess" hpcc:class="valueSet" hpcc:docid="daFs.t">
                 <xs:annotation>
                     <xs:documentation>Describes an DFUFileSrv installation</xs:documentation>
                 </xs:annotation>
                 <xs:complexType>
                     <xs:sequence>
-                        <xs:element name="Instance" maxOccurs="unbounded" hpcc:displayName="Bound Computers">
+                        <xs:element name="Instance" maxOccurs="unbounded" hpcc:class="valueSet" hpcc:displayName="Bound Computers">
                             <xs:complexType>
                                 <xs:attributeGroup ref="computerNodeReference"/>
                                 <xs:attribute name="directory" type="xs:string" use="optional" default="c$\dafilesrv" hpcc:hidden="true"/>

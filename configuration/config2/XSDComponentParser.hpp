@@ -24,15 +24,15 @@
 #include <map>
 #include <boost/property_tree/ptree.hpp>
 
-#include "XSDConfigParser.hpp"
+#include "XSDSchemaParser.hpp"
 
 namespace pt = boost::property_tree;
 
-class XSDComponentParser : public XSDConfigParser
+class XSDComponentParser : public XSDSchemaParser
 {
     public:
 
-        XSDComponentParser(const std::string &basePath, std::shared_ptr<ConfigItem> pConfig) : XSDConfigParser(basePath, pConfig) { }
+        XSDComponentParser(std::shared_ptr<SchemaItem> pConfig) : XSDSchemaParser(pConfig) { }
         virtual ~XSDComponentParser() { }
         virtual void parseXSD(const pt::ptree &tree);
 
@@ -41,5 +41,6 @@ class XSDComponentParser : public XSDConfigParser
 
         XSDComponentParser() { };
 };
+
 
 #endif // _CONFIG2_XSDCOMPONENTPARSER_HPP_

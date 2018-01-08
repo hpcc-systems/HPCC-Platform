@@ -35,7 +35,7 @@
         <xs:element name="Software" hpcc:class="category" hpcc:displayName="Software">
           <xs:complexType>
             <xs:sequence>
-              <xs:element type="dafilesrv"/>
+              <xs:element type="dafilesrv"/>  <!-- this is like an include right now -->
               <xs:element type="eclAgent"/>
               <xs:element type="ws_ecl"/> 
               <xs:element type="espsmc"/> 

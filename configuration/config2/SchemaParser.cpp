@@ -15,30 +15,27 @@
     limitations under the License.
 ############################################################################## */
 
-#include "ConfigParser.hpp"
-#include "ConfigExceptions.hpp"
+#include "SchemaParser.hpp"
+#include "Exceptions.hpp"
 
 
-bool ConfigParser::parseEnvironmentConfig(const std::vector<std::string> &cfgParms, Status &status)
+bool SchemaParser::parse(const std::string &configPath, const std::string &masterConfigFile,  const std::vector<std::string> &cfgParms)
 {
+    bool rc = true;
     try
     {
-        doParse(cfgParms);
+        doParse(configPath, masterConfigFile, cfgParms);
     }
     catch (const ParseException &pe)
     {
-        std::string msg = "The following error was detected while parsing the configuration: " + static_cast<std::string>(pe.what());
-        status.addStatusMsg(statusMsg::fatal, "", "", "", msg);
+        m_message = "The following error was detected while parsing the configuration: " + static_cast<std::string>(pe.what());
+        rc = false;
     }
-    catch (...)
-    {
-        int i = 8;
-    }
-    return status.isOk();
+    return rc;
 }
 
 
-std::vector<std::string> ConfigParser::split(const std::string  &input, const std::string  &delim)
+std::vector<std::string> SchemaParser::split(const std::string  &input, const std::string  &delim)
 {
     size_t  start = 0, end = 0, delimLen = delim.length();
     std::vector<std::string> list;

@@ -3,7 +3,7 @@
     xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified" 
     xmlns:hpcc="someuri">
     <xs:include schemaLocation="types.xsd"/>
-    <xs:complexType name="espsmc" hpcc:class="component" hpcc:category="espservice" hpcc:componentName="espsmc" hpcc:displayName="">
+    <xs:complexType name="espsmc" hpcc:class="component" hpcc:category="espservice" hpcc:componentName="espsmc" hpcc:displayName="ESP SMC" hpcc:namePrefix="myesmsmc">
     
         <xs:attributeGroup name="Monitoring" hpcc:docid="SMC-T02">
             <xs:attribute name="monitorDaliFileServer" type="xs:boolean" use="true" default="false" hpcc:displayName="Monior Dali File Server" hpcc:tooltip="Warn if dafilesrv process is not running on computers"/>
@@ -17,7 +17,7 @@
             <xs:element name="EspService" maxOccurs="unbounded" hpcc:docid="SMC-T01">
                 <xs:complexType>
                     <xs:attributeGroup ref="buildInfo"/>
-                    <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Name" hpcc:autogeneratename="EclWatch" hpcc:tooltip="Name for this ESP service" />
+                    <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Name" hpcc:autoGenerateType="prefix" hpcc:autoGenerateValue="EclWatch" hpcc:tooltip="Name for this ESP service" />
                     <xs:attribute name="description" type="xs:string" use="optional" hpcc:displayName="Description" hpcc:tooltip="Description for this process" />
                     <xs:attribute name="syntaxCheckQueue" type="xs:string" use="optional" hpcc:displayName="Syntax Check Queue" hpcc:tooltip="Queue Name of ECL server which is used for ECL Syntax Check" />
                     <xs:attribute name="pluginsPath" type="xs:string" use="optional" default="${PLUGINS_PATH}" hpcc:displayName="Plugins Path" hpcc:tooltip="Path where plugin files are deployed" />

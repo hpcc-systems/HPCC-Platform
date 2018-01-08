@@ -18,7 +18,7 @@
 
 #include "XSDComponentParser.hpp"
 #include "XSDValueSetParser.hpp"
-#include "ConfigExceptions.hpp"
+#include "Exceptions.hpp"
 
 namespace pt = boost::property_tree;
 
@@ -53,21 +53,21 @@ void XSDComponentParser::parseXSD(const pt::ptree &compTree)
         if (!elemTree.empty())
         {
             std::string elementName = getXSDAttributeValue(elemTree, "<xmlattr>.name");
-            m_pConfig->setName(elementName);
+            m_pSchemaItem->setProperty("name", elementName);
             int minOccurs = elemTree.get("<xmlattr>.minOccurs", 1);
             std::string maxOccursStr = elemTree.get("<xmlattr>.maxOccurs", "1");
             int maxOccurs = (maxOccursStr != "unbounded") ? stoi(maxOccursStr) : -1;
-            m_pConfig->setMinInstances(minOccurs);
-            m_pConfig->setMaxInstances(maxOccurs);
+            m_pSchemaItem->setMinInstances(minOccurs);
+            m_pSchemaItem->setMaxInstances(maxOccurs);
 
             //
             // See if the element has a type. If so, then the element can have a value (other than attributes). Note does happen, but is rare
             std::string elementDataType = elemTree.get("<xmlattr>.type", "");
             if (elementDataType != "")
             {
-                std::shared_ptr<CfgValue> pItemCfgValue = std::make_shared<CfgValue>("elementData");
-                pItemCfgValue->setType(m_pConfig->getType(elementDataType));
-                pItemCfgValue->setDefault(elemTree.get("<xmlattr>.default", ""));
+                std::shared_ptr<SchemaValue> pItemCfgValue = std::make_shared<SchemaValue>("elementData");
+                pItemCfgValue->setType(m_pSchemaItem->getSchemaValueType(elementDataType));
+                pItemCfgValue->setDefaultValue(elemTree.get("<xmlattr>.default", ""));
             }
 
             //
@@ -90,7 +90,7 @@ void XSDComponentParser::parseXSD(const pt::ptree &compTree)
 
             //
             // Now parse the sequence section (these are sub keys for the component)
-            XSDConfigParser::parseXSD(elemTree.get_child("xs:complexType.xs:sequence", pt::ptree()));
+            XSDSchemaParser::parseXSD(elemTree.get_child("xs:complexType.xs:sequence", pt::ptree()));
 
             //
             // See if any post config stuff like unique, key, or keyref

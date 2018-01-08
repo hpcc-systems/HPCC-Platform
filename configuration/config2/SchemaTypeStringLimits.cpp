@@ -15,32 +15,28 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef _CONFIG2_CFGSTRINGLIMITS_HPP_
-#define _CONFIG2_CFGSTRINGLIMITS_HPP_
+#include "SchemaTypeStringLimits.hpp"
+#include "EnvironmentValue.hpp"
+#include <regex>
 
-#include "CfgLimits.hpp"
-
-
-class CfgStringLimits : public CfgLimits
+std::string SchemaTypeStringLimits::getLimitString() const
 {
-    public:
 
-        CfgStringLimits() : m_removeWhiteSpace(true) { m_minInclusive = 0; }
-        virtual ~CfgStringLimits() { };
-        void setRemoveWhiteSpace(bool remove) { m_removeWhiteSpace = true; }
-        int getMin() const override { return m_minLength; }
-        int getMax() const override { return m_maxLength; }
-        std::string getString() const override;
-        virtual bool isValueValid(const std::string &testValue) const;
+    return "String limit info";
+}
 
 
-    protected:
+bool SchemaTypeStringLimits::doValueTest(const std::string &testValue) const
+{
+    bool isValid;
+    int len = testValue.length();
+    isValid = len >= m_minLength && len <= m_maxLength;
 
-        bool m_removeWhiteSpace;
-
-};
-
-
-
-
-#endif // _CONFIG2_CFGSTRINGLIMITS_HPP_
+    // test patterns
+    for (auto it = m_patterns.begin(); it != m_patterns.end() && isValid; ++it)
+    {
+        std::regex expr (*it);
+        isValid = std::regex_match(testValue, expr);
+    }
+    return isValid;
+}

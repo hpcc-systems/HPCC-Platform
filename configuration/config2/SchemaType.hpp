@@ -22,34 +22,33 @@
 #include <memory>
 #include <map>
 #include <vector>
-#include "CfgLimits.hpp"
+#include "SchemaTypeLimits.hpp"
 
 
 
-class CfgType 
+class SchemaType
 {
     public:
 
-        CfgType(const std::string &name) : m_name(name), m_autoValueType(""), m_pLimits(std::make_shared<CfgLimits>()) { }
-        virtual ~CfgType() { }
+        SchemaType(const std::string &name) : m_name(name), m_pLimits(std::make_shared<SchemaTypeLimits>()) { }
+        SchemaType() : SchemaType("") { }
+        virtual ~SchemaType() { }
 
-        std::shared_ptr<CfgLimits> &getLimits() { return m_pLimits; }
-        void setLimits(const std::shared_ptr<CfgLimits> &pLimits) { m_pLimits = pLimits; }
-        bool isComplete() const { return m_pLimits!=nullptr; }
+        std::shared_ptr<SchemaTypeLimits> &getLimits() { return m_pLimits; }
+        void setLimits(const std::shared_ptr<SchemaTypeLimits> &pLimits) { m_pLimits = pLimits; }
+        bool isValid() const { return m_pLimits!=nullptr; }
         const std::string &getName() const { return m_name; }
+        void setName(const std::string &name) { m_name = name;  }
         bool isValueValid(const std::string &testValue) const { return m_pLimits->isValueValid(testValue); }
-        bool isAutoValueType() const { return m_autoValueType != "" ;  }
-        const std::string &getAutoValue() const { return m_autoValueType;  }  // todo: this is to be expanded to the supported types
-        void setAutoValueType(const std::string &valueType) { m_autoValueType = valueType;  }
         bool isEnumerated() const { return m_pLimits->isEnumerated(); }
-        const std::vector<AllowedValue> getAllowedValues() const { return m_pLimits->getAllowedValues(); }
-		
+        const std::vector<AllowedValue> getEnumeratedValues() const { return m_pLimits->getEnumeratedValues(); }
+        const std::string getLimitString() const { return m_pLimits->getLimitString();  }
+
 
     private:
 
         std::string m_name;
-        std::shared_ptr<CfgLimits> m_pLimits;
-		std::string m_autoValueType;
+        std::shared_ptr<SchemaTypeLimits> m_pLimits;
 
 };
 

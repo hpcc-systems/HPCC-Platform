@@ -24,30 +24,31 @@
 #include <vector>
 
 
-#include "ConfigItem.hpp"
+#include "SchemaItem.hpp"
 #include "Status.hpp"
 
 
-class ConfigParser 
+class SchemaParser
 {
     public:
 
-        ConfigParser(const std::string &basePath, std::shared_ptr<ConfigItem> &pConfig) : m_basePath(basePath), m_pConfig(pConfig) { };
-        virtual ~ConfigParser() { };
-        virtual bool parseEnvironmentConfig(const std::vector<std::string> &cfgParms, Status &status);
-    
+        SchemaParser(std::shared_ptr<SchemaItem> &pSchema) : m_pSchemaItem(pSchema) { };
+        virtual ~SchemaParser() { };
+        virtual bool parse(const std::string &configPath, const std::string &masterConfigFile,  const std::vector<std::string> &cfgParms);
+        const std::string getLastMessage() const { return m_message;  }
+
 
     protected:
 
-        virtual bool doParse(const std::vector<std::string> &cfgParms) = 0;
-        ConfigParser() { };
+        virtual bool doParse(const std::string &configPath, const std::string &masterConfigFile,  const std::vector<std::string> &cfgParms) = 0;
+        SchemaParser() { };
         std::vector<std::string> split(const std::string  &input, const std::string  &delim);
-        
+
 
     protected:
 
-        std::string m_basePath;
-        std::shared_ptr<ConfigItem> m_pConfig;
+        std::shared_ptr<SchemaItem> m_pSchemaItem;
+        std::string m_message;                       // a place where a message can be stored and retrieved, such as for a parse error
 };
 
 

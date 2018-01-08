@@ -1,20 +1,19 @@
 /*##############################################################################
 
-HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems�.
+    HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-http://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
-
 
 #include "Status.hpp"
 
@@ -27,6 +26,19 @@ void Status::addStatusMsg(enum statusMsg::msgLevel level, const std::string &nod
         m_highestMsgLevel = level;
 }
 
+
+void Status::addUniqueStatusMsg(enum statusMsg::msgLevel level, const std::string &nodeId, const std::string &name, const std::string &referNodeId, const std::string &msg)
+{
+    bool duplicateFound = false;
+    auto msgRange = m_messages.equal_range(level);
+    for (auto msgIt = msgRange.first; msgIt != msgRange.second && !duplicateFound; ++msgIt)
+    {
+        duplicateFound = (msgIt->second.nodeId == nodeId) && (msgIt->second.attribute == name) && (msgIt->second.msg == msg);
+    }
+
+    if (!duplicateFound)
+        addStatusMsg(level, nodeId, name, referNodeId, msg);
+}
 
 std::vector<statusMsg> Status::getMessages() const
 {

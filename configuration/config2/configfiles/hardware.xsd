@@ -5,16 +5,11 @@
   <xs:include schemaLocation="types.xsd"/>
   <xs:complexType name="hardware" hpcc:class="component" hpcc:category="" hpcc:displayName="Hardware Configuration">
     <xs:sequence>
-      <xs:element name="Hardware" hpcc:docid="????">
-        <xs:annotation>
-          <xs:documentation>Section to describe the hardware that composes the environment.</xs:documentation>
-        </xs:annotation>
+      <xs:element name="Hardware" hpcc:docid="????" hpcc:doc="Section to describe the hardware that composes the environment">
         <xs:complexType>
           <xs:sequence>
-            <xs:element name="ComputerType" maxOccurs="unbounded" hpcc:displayName="Defined computer types"  hpcc:class="valueSet">
-              <xs:annotation>
-                <xs:documentation>Defines a generalized type of computer that is used in the environment.</xs:documentation>
-              </xs:annotation>
+            <xs:element name="ComputerType" maxOccurs="unbounded" hpcc:displayName="Defined computer types"  hpcc:class="valueSet"
+                        hpcc:doc="Defines a generalized type of computer that is used in the environment">
               <xs:complexType>
                 <xs:attribute name="name" type="xs:string" use="required"/>
                 <xs:attribute name="nicSpeed" type="xs:nonNegativeInteger"/>
@@ -33,10 +28,7 @@
               </xs:complexType>
             </xs:element>
 
-            <xs:element name="Domain" hpcc:class="valueSet">
-              <xs:annotation>
-                <xs:documentation>Describes a domain that is contained in the environment.</xs:documentation>
-              </xs:annotation>
+            <xs:element name="Domain" hpcc:class="valueSet" hpcc:doc="Describes a domain that is contained in the environment">
               <xs:complexType>
                 <xs:attribute name="name" type="xs:string" use="required"/>
                 <xs:attribute name="username" type="xs:string"/>
@@ -44,22 +36,15 @@
               </xs:complexType>
             </xs:element>
 
-            <xs:element name="Switch" maxOccurs="unbounded" hpcc:class="valueSet">
-              <xs:annotation>
-                <xs:documentation>Describes a switch that is contained in the environment.</xs:documentation>
-              </xs:annotation>
+            <xs:element name="Switch" maxOccurs="unbounded" hpcc:class="valueSet" hpcc:doc="Describes a switch that is contained in the environment">
               <xs:complexType>
                 <xs:attribute name="name" type="xs:string"/>
               </xs:complexType>
             </xs:element>
 
-            <xs:element name="Computer" maxOccurs="unbounded" hpcc:class="valueSet">
-              <xs:annotation>
-                <xs:documentation>Describes a computer that is contained in the environment.</xs:documentation>
-              </xs:annotation>
+            <xs:element name="Computer" maxOccurs="unbounded" hpcc:class="valueSet" hpcc:doc="Describes a computer that is contained in the environment">
               <xs:complexType>
-				        <xs:attribute name="name" type="nodeName" use="required"/>
-				        <xs:attribute name="netAddress" type="ipV4Address" use="required"/>
+                <xs:attributeGroup ref="computerNode"/>
                 <xs:attribute name="domain" type="xs:string"/>
                 <xs:attribute name="computerType" type="xs:string"/>
               </xs:complexType>

@@ -3,7 +3,7 @@
     xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified" 
     xmlns:hpcc="someuri">
     <xs:include schemaLocation="types.xsd"/>
-    <xs:complexType name="ws_ecl" hpcc:class="component" hpcc:category="espservice" hpcc:componentName="ws_ecl" hpcc:displayName="WS ECL??">
+    <xs:complexType name="ws_ecl" hpcc:class="component" hpcc:category="espservice" hpcc:componentName="ws_ecl" hpcc:displayName="WS ECL??" hpcc:namePrefix="myeclWatch">
 		<xs:sequence>
             <xs:element name="EspService" maxOccurs="unbounded" hpcc:docid="MyWS2-T03">
                 <xs:complexType>
@@ -11,7 +11,7 @@
                         
                         <xs:element name="ProcessCluster" minOccurs="0" maxOccurs="unbounded" hpcc:displayName="VIPS" hpcc:class="valueSet" hpcc:docid="MyWS2-T01">
                             <xs:complexType>
-                                <xs:attribute name="name" type="xs:string" use="required" hpcc:hidden="true" hpcc:autogeneratename=""/>
+                                <xs:attribute name="name" type="xs:string" use="required" hpcc:hidden="true" hpcc:autoGenerateType="prefix" hpcc:autoGenerateValue="proc"/>
                                 <xs:attribute name="roxie" type="xs:string" use="required" hpcc:displayName="Roxie" hpcc:tooltip="" 
                                               hpcc:category="select" hpcc:keyref="keyref to roxie names"/> <!-- type=xpathType /Environment/Software/RoxieCluster[@name!=$./*ProcessCluster/@roxie] -->
                                 <xs:attribute name="vip" type="xs:string" use="required" hpcc:displayName="VIP" hpcc:tooltip=""/>
@@ -31,7 +31,7 @@
                     </xs:sequence>
                     
                     <xs:attributeGroup ref="buildInfo"/>
-                    <xs:attribute name="name" type="xs:string" use="required" hpcc:autogeneratename="" hpcc:displayName="Service Name" hpcc:tooltip="Name for this ESP service" />
+                    <xs:attribute name="name" type="xs:string" use="required" hpcc:autogenerateType="Prefix" hpcc:autoGenerateValue="wsecl" hpcc:displayName="Service Name" hpcc:tooltip="Name for this ESP service" />
                     <xs:attribute name="description" type="xs:string" use="optional" default="WS ECL Service" hpcc:displayName="Description" hpcc:tooltip="Allows creation of web services using ECL language" />
                     <xs:attribute name="roxieTimeout" type="xs:unsignedInt" use="optional" default="300" hpcc:displayName="Roxie Timeout" 
                                   hpcc:tooltip="Timeout (in seconds) for WsEcl connections to roxie (0 == wait forever)" />

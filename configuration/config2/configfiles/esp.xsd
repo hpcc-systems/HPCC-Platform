@@ -12,7 +12,7 @@
                 <xs:complexType>
                     <xs:sequence>
                         
-                        <xs:element name="EspBinding" maxOccurs="unbounded" hpcc:displayName="ESP Service Bindings" hpcc:class="valueSet" hpcc:keyref="esp_servicename_keyref">
+                        <xs:element name="EspBinding" maxOccurs="unbounded" hpcc:itemType="espbinding" hpcc:displayName="ESP Service Bindings" hpcc:class="valueSet">
                             <xs:complexType>
                                 <xs:element name="Authenticate" minOccurs="0" maxOccurs="unbounded" hpcc:displayName="URL Authentication" hpcc:docid="ESP.t1">
                                     <xs:complexType>
@@ -83,7 +83,7 @@
                              
                         </xs:element>
                           
-                        <xs:element name="Authentication" hpcc:docid="ESP.t4" hpcc:displayName="Authentication">
+                        <xs:element name="Authentication" hpcc:docid="ESP.t4" hpcc:class="valueSet" hpcc:displayName="Authentication">
                             <xs:complexType>
                                 <xs:attribute name="method" use="required" default="none" hpcc:displayName="Method" hpcc:tooltip="The protocol to use for authenticating the service">
                                     <xs:simpleType>
@@ -134,7 +134,7 @@
                             </xs:complexType>
                         </xs:element>
                         
-                        <xs:element name="HTTPS" minOccurs="0" hpcc:requiredIf="">
+                        <xs:element name="HTTPS" minOccurs="0" hpcc:class="valueSet" hpcc:requiredIf="">
                             <xs:complexType>
                                 <xs:attribute name="acceptSelfSigned" type="xs:boolean" use="optional" default="true" hpcc:displayName="Accept Self Signed" hpcc:tooltip="whether to accept self-signed certificates"/>
                                 <xs:attribute name="CA_Certificates_Path" type="xs:string" use="optional" default="ca.pem" hpcc:displayName="Certificates Path" hpcc:tooltip="path to the file that contains CA certificates"/>
@@ -146,7 +146,7 @@
                             </xs:complexType>
                         </xs:element>
 
-                        <xs:element name="Instance" maxOccurs="unbounded" hpcc:class="valueSet" hpcc:category="">                            
+                        <xs:element name="Instance" maxOccurs="unbounded" hpcc:class="valueSet">
                             <xs:complexType>
                                 <xs:sequence>
                                     <xs:element name="Certificate" type="xs:string" minOccurs="0" hpcc:displayName="Certificate" hpcc:tooltip="A certificate can be pasted here from the clipboard.  Otherwise, the generated certificate is displayed here after deployment" />                                        
@@ -189,6 +189,11 @@
                     <xs:field xpath="@name" />
                 </xs:key>
                 
+                <xs:key name="espprocess_controlport_key">
+                    <xs:selector xpath="." />
+                    <xs:field xpath="@controlPort" />
+                </xs:key>
+
                 <xs:keyref name="esp_servicename_keyref" refer="espservice_name_key">
                     <xs:selector xpath="EspBinding" />
                     <xs:field xpath="@service" />

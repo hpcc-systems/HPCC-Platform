@@ -25,23 +25,25 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 
-#include "ConfigParser.hpp"
+#include "SchemaParser.hpp"
+#include "SchemaTypeIntegerLimits.hpp"
+#include "SchemaTypeStringLimits.hpp"
 
 namespace pt = boost::property_tree;
 
-class XSDConfigParser : public ConfigParser
+class XSDSchemaParser : public SchemaParser
 {
     public:
 
-        XSDConfigParser(const std::string &basePath, std::shared_ptr<ConfigItem> &pConfig) :
-            ConfigParser(basePath, pConfig) { }
-        virtual ~XSDConfigParser() { };
-    
+        XSDSchemaParser(std::shared_ptr<SchemaItem> &pConfig) :
+            SchemaParser(pConfig) { }
+        virtual ~XSDSchemaParser() { };
+
 
     protected:
 
-        XSDConfigParser() { };
-        virtual bool doParse(const std::vector<std::string> &cfgParms) override;
+        XSDSchemaParser() { };
+        virtual bool doParse(const std::string &configPath, const std::string &masterConfigFile,  const std::vector<std::string> &cfgParms) override;
         virtual void parseXSD(const pt::ptree &tree);
         virtual void parseXSD(const std::string &filename);
         virtual std::string getXSDAttributeValue(const pt::ptree &tree, const std::string &attriName, bool throwIfNotPresent=true, const std::string &defaultVal = "") const;
@@ -52,15 +54,19 @@ class XSDConfigParser : public ConfigParser
         virtual void parseComplexType(const pt::ptree &typeTree);
         virtual void parseElement(const pt::ptree &elemTree);
 
-        virtual std::shared_ptr<CfgType> getCfgType(const pt::ptree &typeTree, bool nameRequired=true);
-        virtual std::shared_ptr<CfgValue> getCfgValue(const pt::ptree &attr);
-        
+        virtual std::shared_ptr<SchemaType> getSchemaType(const pt::ptree &typeTree, bool nameRequired=true);
+        virtual std::shared_ptr<SchemaValue> getSchemaValue(const pt::ptree &attr);
+
         virtual void parseKey(const pt::ptree &keyTree);
         virtual void parseKeyRef(const pt::ptree &keyTree);
+        virtual void parseIntegerTypeLimits(const pt::ptree &restrictTree, std::shared_ptr<SchemaTypeIntegerLimits> &pIntegerLimits);
+        virtual void parseStringTypeLimits(const pt::ptree &restrictTree, std::shared_ptr<SchemaTypeStringLimits> &pStringLimits);
 
     protected:
-    
-        std::string m_buildsetFilename;   
+
+        std::string m_buildsetFilename;
+        std::string m_basePath;
+        std::string m_masterXSDFilename;
 
 };
 

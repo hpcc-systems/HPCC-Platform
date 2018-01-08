@@ -6,7 +6,7 @@
 #include <exception>
 #include <iostream>
 
-#include "ConfigExceptions.hpp"
+#include "Exceptions.hpp"
 
 //#include "libxml/parser.h"
 //#include "libxml/tree.h"
@@ -19,15 +19,15 @@ const std::string c_path = "configfiles/"; ///opt/HPCCSystems/componentfiles/con
 // void parseComponentXSD(pt::ptree &xsdTree);
 // void parseIncludes(pt::ptree &xsdTree);
 
-#include "ConfigItem.hpp"
-#include "XSDConfigParser.hpp"
+#include "SchemaItem.hpp"
+#include "XSDSchemaParser.hpp"
 #include "XMLEnvironmentMgr.hpp"
 
 
 int main()
 {
 
-    try 
+    try
     {
         //std::shared_ptr<ConfigItem> pConfig = std::make_shared<ConfigItem>("root");
 
@@ -39,53 +39,59 @@ int main()
 
         //pCfgParser->parseEnvironmentConfig("newenv.xsd", "");
 
-        EnvironmentMgr *pEnvMgr = getEnvironmentMgrInstance("XML", c_path);
+        EnvironmentMgr *pEnvMgr = getEnvironmentMgrInstance("XML");
         std::vector<std::string> cfgParms;
-        cfgParms.push_back("newenv.xsd");
-        cfgParms.push_back("buildset.xml");
-        pEnvMgr->loadConfig(cfgParms);
-
-		//envMgr.setConfig(pConfig);
-        pEnvMgr->loadEnvironment("environment.xml");
+        cfgParms.push_back("buildset.xml");  // not used right now
+        pEnvMgr->loadSchema(c_path, "newenv.xsd", cfgParms);
+        pEnvMgr->loadEnvironment(c_path + "/environment.xml");
 
         // 158
         //auto pNode = envMgr.getNodeFromPath("158");
-        auto pNode = pEnvMgr->getEnvironmentNode("74");     // 29 is Hardware/Computer
+        // auto pNode = pEnvMgr->getEnvironmentNode("74");     // 29 is Hardware/Computer
+        auto pNode = pEnvMgr->getEnvironmentNode("35");
 
-        auto x = pNode->getAllFieldValues("name");
+        //auto x = pNode->getAllFieldValues("name");
 
-        auto attributes = pNode->getAttributes();
+        auto list = pNode->getInsertableItems();
+
+        Status status;
+        auto pNewNode = pEnvMgr->addNewEnvironmentNode("35", "ws_ecl", status);
+        auto newList = pNewNode->getInsertableItems();
+        pEnvMgr->addNewEnvironmentNode("35", "ws_ecl", status);
+        pEnvMgr->addNewEnvironmentNode("35", "ws_ecl", status);
+
+
+        /*auto attributes = pNode->getAttributes();
         for (auto it = attributes.begin(); it != attributes.end(); ++it)
         {
             if ((*it)->getName() == "service")
             {
-                std::shared_ptr<EnvValue> pEnvValue = *it;
-                const std::shared_ptr<CfgValue> &pCfgValue = pEnvValue->getCfgValue();
+                std::shared_ptr<EnvironmentValue> pEnvValue = *it;
+                const std::shared_ptr<ConfigValue> &pCfgValue = pEnvValue->getCfgValue();
                 auto values = pCfgValue->getAllowedValues(pEnvValue.get());
                 int i = 3;
             }
-        }
+        }*/
 
 
         // keyref needs to look local first, then search the config tree, but field is ALWAYS local
-        // Used during validation. 
+        // Used during validation.
 
-		//
-		// Validate the environment
-
-        
+        //
+        // Validate the environment
 
 
-		//
-		// Value set test
+
+
+        //
+        // Value set test
         //std::vector<EnvironmentMgr::valueDef> newValues;
         //newValues.push_back({ "name", "namehasbeenchanged" });
         //pEnvMgr->setAttributeValues("158", newValues, "", false);
 
-        Status status;
-        pEnvMgr->saveEnvironment("testout.xml", status);
+        //pEnvMgr->saveEnvironment("testout.xml", status);
 
-		auto results = pEnvMgr->getEnvironmentNode(".");
+        auto results = pEnvMgr->getEnvironmentNode(".");
 
     }
     catch (ParseException &e)
@@ -147,7 +153,7 @@ int main()
 
         std::cout << "Success\n";
 
-        // std::cout << std::endl << "Using Boost "     
+        // std::cout << std::endl << "Using Boost "
         //   << BOOST_VERSION / 100000     << "."  // major version
         //   << BOOST_VERSION / 100 % 1000 << "."  // minor version
         //   << BOOST_VERSION % 100                // patch level
@@ -175,7 +181,7 @@ int main()
 //     //
 //     // Since we only support includes for a component schema at the top level, look for includes first and process them.
 //     // Note that these includes may NOT define elements or anything like that. Only types, attribute groups, keyrefs
-//     const pt::ptree &keys = schemaIt->second.get_child("", pt::ptree());  
+//     const pt::ptree &keys = schemaIt->second.get_child("", pt::ptree());
 //     for (auto it=keys.begin(); it!=keys.end(); ++it)
 //     {
 //         if (it->first == "xs:include")
