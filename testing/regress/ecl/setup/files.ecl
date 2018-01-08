@@ -41,16 +41,19 @@ SHARED STRING EmptyString := '' : STORED('dummy');
 SHARED STRING EmptyString := '';
 #end
 
-SHARED STRING _filePrefix := '~regress::'+ MAP(
-        multiPart => 'multi',
-        'single') + '::' + EmptyString;
+SHARED forceLayoutTranslation := #IFDEFINED(root.forceLayoutTranslation, 0);
+
+SHARED STRING _filePrefix := '~regress::' + 
+        MAP(multiPart => 'multi', 'single') + 
+        IF(forceLayoutTranslation > 0, '_' + (STRING) forceLayoutTranslation, '') + 
+        '::' + EmptyString;
 
 //Yuk cannot use MAP because that creates a string6        
-SHARED STRING _indexPrefix := '~regress::'+ IF(multiPart AND useLocal, 'local', 
-                             IF(multiPart, 'multi',
-                             'single')) + '::' + EmptyString;
+SHARED STRING _indexPrefix := '~regress::' + 
+        IF(multiPart AND useLocal, 'local', IF(multiPart, 'multi', 'single')) + 
+        IF(forceLayoutTranslation > 0, '_' + (STRING) forceLayoutTranslation, '') + 
+        '::' + EmptyString;
 
-SHARED forceLayoutTranslation := #IFDEFINED(root.forceLayoutTranslation, 0);
 #IF (forceLayoutTranslation != 0)
   SHARED setLayout := #option('layoutTranslationEnabled', CASE(forceLayoutTranslation,1=>v'alwaysECL',2=>v'alwaysDisk',v''));
   EXPORT filePrefix := WHEN(#IFDEFINED(root.filePrefix, _filePrefix), setLayout);
