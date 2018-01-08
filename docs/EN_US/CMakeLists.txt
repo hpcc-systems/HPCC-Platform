@@ -42,7 +42,7 @@ set (DOC_IMAGES ${CMAKE_CURRENT_SOURCE_DIR}/)
 set (ECL_REFERENCE_XML ${CMAKE_CURRENT_BINARY_DIR}/ECLReference/ECLReference.xml)
 #set (HTML_HELP_XSL ${CMAKE_CURRENT_BINARY_DIR}/../resources/docbook-xsl/htmlhelp/htmlhelp.xsl)
 
-set (PORTAL_HTML_DIR "${CMAKE_CURRENT_BINARY_DIR}/EN_US/PortalHTML")
+set (PORTAL_HTML_DIR "${CMAKE_CURRENT_BINARY_DIR}/PortalHTML")
 
 # Build image file list to add to source watch.
 file(GLOB_RECURSE DOC_IMAGES_LIST images/*)
