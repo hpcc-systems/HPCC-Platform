@@ -226,9 +226,9 @@ UTF32 readUtf8Char(const void * _data)
     unsigned short extraBytesToRead = getTrailingBytesForUTF8(*ptr);
     UTF32 ch = 0;
     switch (extraBytesToRead) {
-        case 3: ch += *ptr++; ch <<= 6;
-        case 2: ch += *ptr++; ch <<= 6;
-        case 1: ch += *ptr++; ch <<= 6;
+        case 3: ch += *ptr++; ch <<= 6; //fallthrough
+        case 2: ch += *ptr++; ch <<= 6; //fallthrough
+        case 1: ch += *ptr++; ch <<= 6; //fallthrough
         case 0: ch += *ptr++;
     }
     return ch - offsetsFromUTF8[extraBytesToRead];
@@ -243,7 +243,9 @@ inline bool isLegalUTF8(const UTF8 *source, unsigned length)
     default: return false;
         /* Everything else falls through when "true"... */
     case 4: if ((a = (*--srcptr)) < 0x80 || a > 0xBF) return false;
+            //fallthrough
     case 3: if ((a = (*--srcptr)) < 0x80 || a > 0xBF) return false;
+            //fallthrough
     case 2: if ((a = (*--srcptr)) > 0xBF) return false;
         switch (*source) 
         {
@@ -253,7 +255,8 @@ inline bool isLegalUTF8(const UTF8 *source, unsigned length)
             case 0xF4: if (a > 0x8F) return false; break;
             default:  if (a < 0x80) return false;
         }
-        case 1: if (*source >= 0x80 && *source < 0xC2) return false;
+        //fallthrough
+    case 1: if (*source >= 0x80 && *source < 0xC2) return false;
         if (*source > 0xF4) return false;
     }
     return true;
@@ -279,9 +282,9 @@ UTF32 UtfReader::next8()
      */
     UTF32 ch = 0;
     switch (extraBytesToRead) {
-        case 3: ch += *source++; ch <<= 6;
-        case 2: ch += *source++; ch <<= 6;
-        case 1: ch += *source++; ch <<= 6;
+        case 3: ch += *source++; ch <<= 6; //fallthrough
+        case 2: ch += *source++; ch <<= 6; //fallthrough
+        case 1: ch += *source++; ch <<= 6; //fallthrough
         case 0: ch += *source++;
     }
     cur = (const byte *)source;
@@ -308,9 +311,9 @@ UTF32 readUtf8Character(unsigned len, const byte * & cur)
      */
     UTF32 ch = 0;
     switch (extraBytesToRead) {
-        case 3: ch += *source++; ch <<= 6;
-        case 2: ch += *source++; ch <<= 6;
-        case 1: ch += *source++; ch <<= 6;
+        case 3: ch += *source++; ch <<= 6; //fallthrough
+        case 2: ch += *source++; ch <<= 6; //fallthrough
+        case 1: ch += *source++; ch <<= 6; //fallthrough
         case 0: ch += *source++;
     }
     cur = (const byte *)source;
@@ -349,9 +352,9 @@ unsigned writeUtf8(void * vtarget, unsigned maxLength, UTF32 ch)
 
     UTF8 * target = (UTF8 *)vtarget + bytesToWrite;
     switch (bytesToWrite) { /* note: everything falls through. */
-        case 4: *--target = (ch | byteMark) & byteMask; ch >>= 6;
-        case 3: *--target = (ch | byteMark) & byteMask; ch >>= 6;
-        case 2: *--target = (ch | byteMark) & byteMask; ch >>= 6;
+        case 4: *--target = (ch | byteMark) & byteMask; ch >>= 6; //fallthrough
+        case 3: *--target = (ch | byteMark) & byteMask; ch >>= 6; //fallthrough
+        case 2: *--target = (ch | byteMark) & byteMask; ch >>= 6; //fallthrough
         case 1: *--target =  ch | firstByteMark[bytesToWrite];
     }
     return bytesToWrite;

@@ -398,10 +398,13 @@ protected:
     std::atomic<int> activeReaders;
     std::atomic<int> activeWriters;
     std::atomic<bool> aborted;
-    Semaphore readers __attribute__((aligned(CACHE_LINE_SIZE)));
-    Semaphore writers __attribute__((aligned(CACHE_LINE_SIZE)));
+    char pad1[CACHE_LINE_SIZE - (sizeof(Semaphore) % CACHE_LINE_SIZE)];
+    Semaphore readers;
+    char pad2[CACHE_LINE_SIZE - (sizeof(Semaphore) % CACHE_LINE_SIZE)];
+    Semaphore writers;
     //Ensure the state is not on the same cache line as anything else, especially anything that is modified.
-    std::atomic<state_t> state __attribute__((aligned(CACHE_LINE_SIZE)));
+    char pad3[CACHE_LINE_SIZE - (sizeof(Semaphore) % CACHE_LINE_SIZE)];
+    std::atomic<state_t> state;
 };
 
 #endif

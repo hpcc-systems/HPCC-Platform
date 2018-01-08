@@ -222,7 +222,7 @@ namespace sxt {
    *
    */
    //int XmlTokenizer::next() throw(XmlTokenizerException) {
-   int next() throw(XmlTokenizerException) {
+   int next() {
      if(state == STATE_FINISHED)
           return END_DOCUMENT;
      parsedContent = false;
@@ -765,7 +765,7 @@ namespace sxt {
    * If it is last character set internal flag reachedEnd.
    * If there are no more characters throw XmlTokenizerException.
    */
-    SXT_CHAR more() throw ( XmlTokenizerException ) {
+    SXT_CHAR more() {
       if(backtracking) {
         backtracking = false;
         //++pos;
@@ -846,7 +846,7 @@ namespace sxt {
      * Read name from input or throw exception ([4] NameChar, [5] Name).
      */
     // TODO: make it fully complaint with XML spec
-    char readName(char ch) throw (XmlTokenizerException) {
+    char readName(char ch) {
       posNsColon = -1;
       nsColonCount = 0;
       if(!(ch >= 'A' && ch <= 'Z') && !(ch >= 'a' && ch <= 'z') 
@@ -874,13 +874,13 @@ namespace sxt {
     }
 
 
-    char skipS(char ch) throw (XmlTokenizerException) {
+    char skipS(char ch) {
       while(ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r')
         ch = more();
       return ch;
     }
 
-    char readS(char ch) throw (XmlTokenizerException) {
+    char readS(char ch) {
       if(!isS(ch))
           throw XmlTokenizerException("expected white space not ",
           ch, getPosDesc(), getLineNumber(), getColumnNumber());

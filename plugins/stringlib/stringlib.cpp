@@ -1580,6 +1580,11 @@ STRINGLIB_API unsigned STRINGLIB_CALL slMatchTimeOfDay(size32_t lenS, const char
     return 0;
 }
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+#endif
+
 STRINGLIB_API void STRINGLIB_CALL slFormatDate(size32_t & __lenResult, char * & __result, unsigned date, const char * format)
 {
     size32_t len = 0;
@@ -1600,6 +1605,9 @@ STRINGLIB_API void STRINGLIB_CALL slFormatDate(size32_t & __lenResult, char * & 
     __result = out;
 }
 
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 //--------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------
