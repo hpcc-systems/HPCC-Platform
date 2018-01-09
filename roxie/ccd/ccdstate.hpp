@@ -25,7 +25,6 @@
 #include "jhtree.hpp"
 #include "jisem.hpp"
 #include "dllserver.hpp"
-#include "layouttrans.hpp"
 #include "thorcommon.hpp"
 #include "ccddali.hpp"
 #include "thorcommon.ipp"

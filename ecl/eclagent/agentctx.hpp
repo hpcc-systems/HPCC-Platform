@@ -21,7 +21,6 @@
 #include "dautils.hpp"
 #include "eclhelper.hpp"
 #include "workunit.hpp"
-#include "layouttrans.hpp"
 
 #if (ECLAGENT_ERROR_START != 5400 || ECLAGENT_ERROR_END != 5499)
 #error "ECLAGENT_ERROR_START has changed"
@@ -100,7 +99,6 @@ struct IAgentContext : extends IGlobalCodeContext
 
     virtual char *resolveName(const char *in, char *out, unsigned outlen) = 0;
     virtual void logFileAccess(IDistributedFile * file, char const * component, char const * type) = 0;
-    virtual IRecordLayoutTranslatorCache * queryRecordLayoutTranslatorCache() const = 0;
     virtual void addWuException(const char * text, unsigned code, unsigned severity, char const * source) = 0;
 
     virtual IHThorGraphResults * executeLibraryGraph(const char * libraryName, unsigned expectedInterfaceHash, unsigned activityId, const char * embeddedGraphName, const byte * parentExtract) = 0;

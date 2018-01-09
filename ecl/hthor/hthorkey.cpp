@@ -22,9 +22,11 @@
 #include "jqueue.tpp"
 #include "dasess.hpp"
 #include "thorxmlwrite.hpp"
-#include "layouttrans.hpp"
+#include "eclhelper_dyn.hpp"
 #include "thorstep.ipp"
 #include "roxiedebug.hpp"
+#include "hqlexpr.hpp"
+#include "rtldynfield.hpp"
 
 #define MAX_FETCH_LOOKAHEAD 1000
 
@@ -87,39 +89,6 @@ bool rltEnabled(IConstWorkUnit const * wu)
         return wu->getDebugValueBool("layoutTranslationEnabled", false);
     else
         return wu->getDebugValueBool("hthorLayoutTranslationEnabled", false);
-}
-
-IRecordLayoutTranslator * getRecordLayoutTranslator(IDefRecordMeta const * activityMeta, size32_t activityMetaSize, void const * activityMetaBuff, IDistributedFile * df, IRecordLayoutTranslatorCache * cache, IRecordLayoutTranslator::Mode mode)
-{
-    //Disallow any keyed translation
-    if (mode == IRecordLayoutTranslator::TranslateAll)
-        mode = IRecordLayoutTranslator::TranslatePayload;
-
-    IPropertyTree const & props = df->queryAttributes();
-    MemoryBuffer diskMetaBuff;
-    if(!props.getPropBin("_record_layout", diskMetaBuff))
-        throw MakeStringException(0, "Unable to recover from record layout mismatch for index %s: no record layout metadata in file", df->queryLogicalName());
-    try
-    {
-        if(cache)
-            return cache->get(mode, diskMetaBuff.length(), diskMetaBuff.bufferBase(), activityMetaSize, activityMetaBuff, activityMeta);
-        else
-            return createRecordLayoutTranslator(diskMetaBuff.length(), diskMetaBuff.bufferBase(), activityMetaSize, activityMetaBuff, mode);
-    }
-    catch (IException *E)
-    {
-        StringBuffer m;
-        m.appendf("In index %s: ", df->queryLogicalName());
-        E->errorMessage(m);
-        E->Release();
-        Owned<IDefRecordMeta> diskMeta = deserializeRecordMeta(diskMetaBuff, true);
-        StringBuffer diskMetaDesc;
-        getRecordMetaAsString(diskMetaDesc, diskMeta);
-        StringBuffer activityMetaDesc;
-        getRecordMetaAsString(activityMetaDesc, activityMeta);
-        ERRLOG("RecordLayoutTranslator error: %s\nDisk meta: %s\nActivity meta: %s", m.str(), diskMetaDesc.str(), activityMetaDesc.str());
-        throw MakeStringExceptionDirect(0, m.str());
-    }
 }
 
 static void setProgress(IPropertyTree &node, const char *name, const char *value)
@@ -302,7 +271,7 @@ protected:
     IKeyIndex * doPreopenLimitPart(unsigned __int64 & count, unsigned __int64 limit, unsigned part);
     const void * createKeyedLimitOnFailRow();
     void getLayoutTranslators();
-    IRecordLayoutTranslator * getLayoutTranslator(IDistributedFile * f);
+    const IDynamicTransform * getLayoutTranslator(IDistributedFile * f);
     void verifyIndex(IKeyIndex * idx);
     void initManager(IKeyManager *manager, bool isTlk);
     bool firstPart();
@@ -325,7 +294,6 @@ protected:
     size32_t keySize;
     void * activityRecordMetaBuff;
     size32_t activityRecordMetaSize;
-    Owned<IDefRecordMeta> activityRecordMeta;
 
 // current part
     Owned<IDistributedFilePart> curPart;
@@ -358,8 +326,9 @@ protected:
     bool localSortKey;
 
 //for layout translation
-    Owned<IRecordLayoutTranslator> layoutTrans;
-    IPointerArrayOf<IRecordLayoutTranslator> layoutTransArray;
+    Owned<const IDynamicTransform> layoutTrans;
+    IConstPointerArrayOf<IDynamicTransform> layoutTransArray;
+    IPointerArrayOf<IOutputMetaData> actualLayouts;
     bool gotLayoutTrans;
 };
 
@@ -710,7 +679,7 @@ void CHThorIndexReadActivityBase::getLayoutTranslators()
     }
 }
 
-IRecordLayoutTranslator * CHThorIndexReadActivityBase::getLayoutTranslator(IDistributedFile * f)
+const IDynamicTransform * CHThorIndexReadActivityBase::getLayoutTranslator(IDistributedFile * f)
 {
     if(agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false))
         return NULL;
@@ -723,33 +692,56 @@ IRecordLayoutTranslator * CHThorIndexReadActivityBase::getLayoutTranslator(IDist
 
     if(verifyFormatCrc(helper.getFormatCrc(), f, (superIterator ? superName.str() : NULL) , true, false))
         return NULL;
-        
-    if(!activityRecordMeta)
-    {
-        if(!helper.getIndexLayout(activityRecordMetaSize, activityRecordMetaBuff))
-            throw MakeStringException(0, "Unable to recover from record layout mismatch for index %s: no record layout metadata in activity", f->queryLogicalName());
-        MemoryBuffer buff;
-        buff.setBuffer(activityRecordMetaSize, activityRecordMetaBuff, false);
-        activityRecordMeta.setown(deserializeRecordMeta(buff, true));
-    }
 
-    return getRecordLayoutTranslator(activityRecordMeta, activityRecordMetaSize, activityRecordMetaBuff, f, agent.queryRecordLayoutTranslatorCache(), IRecordLayoutTranslator::TranslateAll);
+    Owned<IOutputMetaData> actualFormat;
+    IPropertyTree &props = f->queryAttributes();
+    bool isGrouped = props.getPropBool("@grouped", false);
+    if (props.hasProp("_rtlType"))
+    {
+        MemoryBuffer layoutBin;
+        props.getPropBin("_rtlType", layoutBin);
+        actualFormat.setown(createTypeInfoOutputMetaData(layoutBin, isGrouped, nullptr));
+    }
+    else if (props.hasProp("ECL"))
+    {
+        StringBuffer layoutECL;
+        props.getProp("ECL", layoutECL);
+        MultiErrorReceiver errs;
+        Owned<IHqlExpression> expr = parseQuery(layoutECL.str(), &errs);
+        if (errs.errCount() == 0)
+        {
+            MemoryBuffer layoutBin;
+            if (exportBinaryType(layoutBin, expr))
+                actualFormat.setown(createTypeInfoOutputMetaData(layoutBin, isGrouped, nullptr));
+        }
+    }
+    if (actualFormat)
+    {
+        actualLayouts.append(actualFormat.getLink());  // ensure adequate lifespan
+        return createRecordTranslator(helper.queryProjectedDiskRecordSize()->queryRecordAccessor(true), actualFormat->queryRecordAccessor(true));
+    }
+    throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s - key layout information not found", f->queryLogicalName());
 }
 
 void CHThorIndexReadActivityBase::verifyIndex(IKeyIndex * idx)
 {
     if(superIterator)
         layoutTrans.set(layoutTransArray.item(superIndex));
-    keySize = idx->keySize();
-    //The index rows always have the filepositions appended, but the ecl may not include a field
-    unsigned fileposSize = idx->hasSpecialFileposition() && !hasTrailingFileposition(eclKeySize.queryTypeInfo()) ? sizeof(offset_t) : 0;
     if (eclKeySize.isFixedSize())
     {
         if(layoutTrans)
-            layoutTrans->checkSizes(df->queryLogicalName(), eclKeySize.getFixedSize(), keySize);
+        {
+            if (!layoutTrans->canTranslate())
+                throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s", df->queryLogicalName());
+        }
         else
+        {
+            keySize = idx->keySize();
+            //The index rows always have the filepositions appended, but the ecl may not include a field
+            unsigned fileposSize = idx->hasSpecialFileposition() && !hasTrailingFileposition(eclKeySize.queryTypeInfo()) ? sizeof(offset_t) : 0;
             if (keySize != eclKeySize.getFixedSize() + fileposSize)
                 throw MakeStringException(0, "Key size mismatch reading index %s: index indicates size %u, ECL indicates size %u", df->queryLogicalName(), keySize, eclKeySize.getFixedSize() + fileposSize);
+        }
     }
 }
 
@@ -2724,9 +2716,9 @@ interface IJoinProcessor
     virtual bool addMatch(MatchSet * ms, IKeyManager * manager) = 0;
     virtual void onComplete(CJoinGroup * jg) = 0;
     virtual bool leftCanMatch(const void *_left) = 0;
-    virtual IRecordLayoutTranslator * getLayoutTranslator(IDistributedFile * f) = 0;
+    virtual const IDynamicTransform * getLayoutTranslator(IDistributedFile * f) = 0;
     virtual const RtlRecord &queryIndexRecord() = 0;
-    virtual void verifyIndex(IDistributedFile * f, IKeyIndex * idx, IRecordLayoutTranslator * trans) = 0;
+    virtual void verifyIndex(IDistributedFile * f, IKeyIndex * idx, const IDynamicTransform * trans) = 0;
 };
 
 class CJoinGroup : implements IInterface, public CInterface
@@ -3013,7 +3005,7 @@ class DistributedKeyLookupHandler : public CInterface, implements IThreadedExcep
 {
     bool opened;
     IArrayOf<IKeyManager> managers;
-    Owned<IRecordLayoutTranslator> trans;
+    Owned<const IDynamicTransform> trans;
     UnsignedArray keyNumParts;
 
     IArrayOf<KeyedLookupPartHandler> parts;
@@ -3139,7 +3131,7 @@ public:
             exception = E;
     }
 
-    IRecordLayoutTranslator * queryRecordLayoutTranslator() const { return trans; }
+    const IDynamicTransform * queryRecordLayoutTranslator() const { return trans; }
 };
 
 KeyedLookupPartHandler::KeyedLookupPartHandler(IJoinProcessor &_owner, IDistributedFilePart *_part, DistributedKeyLookupHandler * _tlk, unsigned _subno, IThreadPool * _threadPool, IAgentContext &_agent)
@@ -3153,7 +3145,7 @@ void KeyedLookupPartHandler::openPart()
         return;
     Owned<IKeyIndex> index = openKeyFile(*part);
     manager.setown(createLocalKeyManager(owner.queryIndexRecord(), index, NULL));
-    IRecordLayoutTranslator * trans = tlk->queryRecordLayoutTranslator();
+    const IDynamicTransform * trans = tlk->queryRecordLayoutTranslator();
     if(trans && !index->isTopLevelKey())
         manager->setLayoutTranslator(trans);
 }
@@ -3226,7 +3218,7 @@ public:
         ForEachItemIn(idx, keyFiles)
         {
             IDistributedFile & f = keyFiles.item(idx);
-            Owned<IRecordLayoutTranslator> trans = owner.getLayoutTranslator(&f);
+            Owned<const IDynamicTransform> trans = owner.getLayoutTranslator(&f);
             Owned<IKeyManager> manager;
             if(f.numParts() == 1)
             {
@@ -3350,10 +3342,11 @@ class CHThorKeyedJoinActivity  : public CHThorThreadedActivityBase, implements I
     CachedOutputMetaData eclKeySize;
     Owned<IOutputRowDeserializer> rowDeserializer;
     Owned<IEngineRowAllocator> diskAllocator;
+    IPointerArrayOf<IOutputMetaData> actualLayouts;
 
 public:
     CHThorKeyedJoinActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorKeyedJoinArg &_arg, ThorActivityKind _kind)
-        : CHThorThreadedActivityBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _arg.queryDiskRecordSize()), helper(_arg), activityRecordMetaBuff(NULL)
+        : CHThorThreadedActivityBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _arg.queryDiskRecordSize()), helper(_arg)
     {
         atomic_set(&prefiltered, 0);
         atomic_set(&postfiltered, 0);
@@ -3367,7 +3360,6 @@ public:
     {
         clearQueue();
         waitForThreads();
-        rtlFree(activityRecordMetaBuff);
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -4007,11 +3999,7 @@ public:
     }
 
 protected:
-    void * activityRecordMetaBuff;
-    size32_t activityRecordMetaSize;
-    Owned<IDefRecordMeta> activityRecordMeta;
-
-    virtual IRecordLayoutTranslator * getLayoutTranslator(IDistributedFile * f)
+    virtual const IDynamicTransform * getLayoutTranslator(IDistributedFile * f) override
     {
         if(agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false))
         {
@@ -4029,28 +4017,51 @@ protected:
             return NULL;
         }
 
-        if(!activityRecordMeta)
+        Owned<IOutputMetaData> actualFormat;
+        IPropertyTree &props = f->queryAttributes();
+        bool isGrouped = props.getPropBool("@grouped", false);
+        if (props.hasProp("_rtlType"))
         {
-            if(!helper.getIndexLayout(activityRecordMetaSize, activityRecordMetaBuff))
-                throw MakeStringException(0, "Unable to recover from record layout mismatch for index %s: no record layout metadata in activity", f->queryLogicalName());
-            MemoryBuffer buff;
-            buff.setBuffer(activityRecordMetaSize, activityRecordMetaBuff, false);
-            activityRecordMeta.setown(deserializeRecordMeta(buff, true));
+            MemoryBuffer layoutBin;
+            props.getPropBin("_rtlType", layoutBin);
+            actualFormat.setown(createTypeInfoOutputMetaData(layoutBin, isGrouped, nullptr));
         }
-
-        return getRecordLayoutTranslator(activityRecordMeta, activityRecordMetaSize, activityRecordMetaBuff, f, agent.queryRecordLayoutTranslatorCache(), IRecordLayoutTranslator::TranslateAll);
+        else if (props.hasProp("ECL"))
+        {
+            StringBuffer layoutECL;
+            props.getProp("ECL", layoutECL);
+            MultiErrorReceiver errs;
+            Owned<IHqlExpression> expr = parseQuery(layoutECL.str(), &errs);
+            if (errs.errCount() == 0)
+            {
+                MemoryBuffer layoutBin;
+                if (exportBinaryType(layoutBin, expr))
+                    actualFormat.setown(createTypeInfoOutputMetaData(layoutBin, isGrouped, nullptr));
+            }
+        }
+        if (actualFormat)
+        {
+            actualLayouts.append(actualFormat.getLink());  // ensure adequate lifespan
+            return createRecordTranslator(helper.queryProjectedIndexRecordSize()->queryRecordAccessor(true), actualFormat->queryRecordAccessor(true));
+        }
+        throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s - key layout information not found", f->queryLogicalName());
     }
 
-    virtual void verifyIndex(IDistributedFile * f, IKeyIndex * idx, IRecordLayoutTranslator * trans)
+    virtual void verifyIndex(IDistributedFile * f, IKeyIndex * idx, const IDynamicTransform * trans)
     {
-        unsigned fileposSize = idx->hasSpecialFileposition() && !hasTrailingFileposition(eclKeySize.queryTypeInfo()) ? sizeof(offset_t) : 0;
         if (eclKeySize.isFixedSize())
         {
             if(trans)
-                trans->checkSizes(f->queryLogicalName(), eclKeySize.getFixedSize(), idx->keySize());
+            {
+                if (!trans->canTranslate())
+                    throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s", f->queryLogicalName());
+            }
             else
+            {
+                unsigned fileposSize = idx->hasSpecialFileposition() && !hasTrailingFileposition(eclKeySize.queryTypeInfo()) ? sizeof(offset_t) : 0;
                 if(idx->keySize() != eclKeySize.getFixedSize() + fileposSize)
                     throw MakeStringException(1002, "Key size mismatch on key %s: key file indicates record size should be %u, but ECL declaration was %u", f->queryLogicalName(), idx->keySize(), eclKeySize.getFixedSize() + fileposSize);
+            }
         }
     }
 

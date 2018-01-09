@@ -118,19 +118,17 @@ protected:
         return (node) ? node->getPropBool("@resolveLocally", false) : true;  // default is false for explicit package files, but true for the default empty package
     }
 
-    virtual IRecordLayoutTranslator::Mode getSysFieldTranslationEnabled() const { return IRecordLayoutTranslator::NoTranslation; }
-    virtual IRecordLayoutTranslator::Mode getEnableFieldTranslation() const
+    virtual RecordTranslationMode getSysFieldTranslationEnabled() const { return RecordTranslationMode::None; }
+    virtual RecordTranslationMode getEnableFieldTranslation() const
     {
         const char *val = queryEnv("control:enableFieldTranslation");
         if (!val) val = queryEnv("enableFieldTranslation"); // Backward compatibility
         if (val)
         {
-            if (strieq(val, "payload"))
-                return IRecordLayoutTranslator::TranslatePayload;
-            else if (strToBool(val))
-                return IRecordLayoutTranslator::TranslateAll;
+            if (strieq(val, "payload") || strToBool(val))
+                return RecordTranslationMode::Payload;
             else
-                return IRecordLayoutTranslator::NoTranslation;
+                return RecordTranslationMode::None;
         }
         else
             return getSysFieldTranslationEnabled();

@@ -21,7 +21,7 @@
 #include "errorlist.h"
 #include "dadfs.hpp"
 #include "workunit.hpp"
-#include "layouttrans.hpp"
+#include "rtldynfield.hpp"
 
 // error codes
 #define PACKAGE_TARGET_NOT_FOUND      PACKAGE_ERROR_START
@@ -38,7 +38,7 @@ interface IHpccPackage : extends IInterface
     virtual const char *locateSuperFile(const char *superFileName) const = 0;
 
     virtual const char *queryEnv(const char *varname) const = 0;
-    virtual IRecordLayoutTranslator::Mode getEnableFieldTranslation() const = 0;
+    virtual RecordTranslationMode getEnableFieldTranslation() const = 0;
     virtual bool isCompulsory() const = 0;
     virtual bool isPreload() const = 0;
     virtual const IPropertyTree *queryTree() const = 0;

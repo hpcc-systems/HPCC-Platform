@@ -199,10 +199,6 @@ public:
     {
         ctx->logFileAccess(file, component, type);
     }
-    virtual IRecordLayoutTranslatorCache * queryRecordLayoutTranslatorCache() const
-    {
-        return ctx->queryRecordLayoutTranslatorCache();
-    }
     virtual void addWuException(const char * text, unsigned code, unsigned severity, char const * source)
     {
         ctx->addWuException(text, code, severity, source);
@@ -368,7 +364,6 @@ private:
     Owned<IDistributedFileTransaction> superfiletransaction;
     mutable Owned<IRowAllocatorMetaActIdCache> allocatorMetaCache;
     Owned<EclGraph> activeGraph;
-    Owned<IRecordLayoutTranslatorCache> rltCache;
     Owned<CHThorDebugContext> debugContext;
     Owned<IProbeManager> probeManager;
     StringAttr allowedPipeProgs;
@@ -560,7 +555,6 @@ public:
     //virtual void logException(IEclException *e);  
     virtual char *resolveName(const char *in, char *out, unsigned outlen);
     virtual void logFileAccess(IDistributedFile * file, char const * component, char const * type);
-    virtual IRecordLayoutTranslatorCache * queryRecordLayoutTranslatorCache() const { return rltCache; }
     virtual ILocalOrDistributedFile  *resolveLFN(const char *logicalName, const char *errorTxt=NULL, bool optional=false, bool noteRead=true, bool write=false, StringBuffer * expandedlfn=NULL);
 
     virtual void executeThorGraph(const char * graphName);

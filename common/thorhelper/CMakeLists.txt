@@ -29,7 +29,6 @@ set (    SRCS
 
          commonext.cpp
          csvsplitter.cpp 
-         layouttrans.cpp 
          thorcommon.cpp 
          thorfile.cpp 
          thorparse.cpp 
@@ -51,7 +50,6 @@ set (    SRCS
          
          commonext.hpp
          csvsplitter.hpp 
-         layouttrans.hpp 
          thorcommon.hpp 
          thorfile.hpp 
          thorparse.hpp 
