@@ -28,8 +28,8 @@
 
   <para>The <emphasis role="bold">#GETDATATYPE </emphasis>function returns the
   value type of the <emphasis>field</emphasis>. The <emphasis>field</emphasis>
-  argument must be a field from a dataset rather than a field from a record
-  definition.</para>
+  argument must be a scalar value or a field from a dataset (rather than a
+  field from a record definition.)</para>
 
   <para>Example:</para>
 
