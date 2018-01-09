@@ -40,6 +40,7 @@ class JavaHashTableOf
     : public SuperHashTableOf<ELEMENT, ELEMENT>, implements IObserver
 {
     typedef JavaHashTableOf<ELEMENT> _SELF;
+
 private:
     virtual void onAdd(void *next) override;
     virtual void onRemove(void *) override;
