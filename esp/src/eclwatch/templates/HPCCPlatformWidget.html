@@ -1,4 +1,5 @@
 <div class="${baseClass}">
+    <div id="SessionLock"></div>
     <div id="${id}BorderContainer" class="hpccMainpage" data-dojo-props="gutters:false, liveSplitters:false" data-dojo-type="dijit.layout.BorderContainer">
         <div id="${id}Titlebar" class="hpccTitlebar" data-dojo-props="region: 'top'" data-dojo-type="dijit.layout.ContentPane">
             <div id="${id}StackController" class="left glow" data-dojo-props="containerId:'${id}TabContainer'" data-dojo-type="dijit.layout.StackController"></div>
@@ -14,6 +15,8 @@
                 <div id="userAccount">
                     <span class="navBarLoggedin">${i18n.LoggedInAs}:  </span>
                     <a id="${id}UserID" href="#" data-dojo-attach-event="onClick:_onUserID"></a>
+                    <span>/</span>
+                    <a id="Lock" href="#" data-dojo-attach-event="onClick:_onLock"/></a>
                 </div>
                 <div class="seperator grey"></div>
                 <div id="${id}More" class="left glow" data-dojo-props="iconClass:'iconAdvanced', showLabel:false" data-dojo-type="dijit.form.DropDownButton">
@@ -70,15 +73,35 @@
             </div>
         </div>
     </div>
-    <div id="${id}AboutDialog" title="About HPCC Platform" style="width: 480px;" data-dojo-type="dijit.Dialog">
+    <div id="${id}AboutDialog" title="${i18n.AboutHPCCSystems}" style="width: 480px;" data-dojo-type="dijit.Dialog">
         <div class="dijitDialogPaneContentArea">
             <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
-                <input id="${id}ServerVersion" title="Server:" name="ServerVersion" colspan="2" style="width:100%;" data-dojo-props="trim: true, readonly: true" data-dojo-type="dijit.form.Textarea" />
-                <input id="${id}GraphControlVersion" title="Graph&nbsp;Control:" name="GraphControlVersion" colspan="2" style="width:100%;" data-dojo-props="trim: true, readonly: true" data-dojo-type="dijit.form.Textarea" />
+                <input id="${id}ServerVersion" title="${i18n.Server}" name="ServerVersion" colspan="2" style="width:100%;" data-dojo-props="trim: true, readonly: true" data-dojo-type="dijit.form.Textarea" />
+                <input id="${id}GraphControlVersion" title="${i18n.GraphControl}" name="GraphControlVersion" colspan="2" style="width:100%;" data-dojo-props="trim: true, readonly: true" data-dojo-type="dijit.form.Textarea" />
             </div>
         </div>
         <div class="dijitDialogPaneActionBar">
             <button id="${id}Close" type="submit" data-dojo-attach-event="onClick:_onAboutClose" data-dojo-type="dijit.form.Button">${i18n.Close}</button>
+        </div>
+    </div>
+    <div id="${id}LogoutConfirm" title="${i18n.LoggingOut}" style="width: 480px;" data-dojo-type="dijit.ConfirmDialog">
+        <div class="dijitDialogPaneContentArea">
+            <p>${i18n.AboutToLoseSessionInformation}</p>
+        </div>
+    </div>
+    <div style="padding-bottom:10px;"></div>
+    <div id="${id}UnlockDialog" title="${i18n.ReAuthenticate}" style="width: 480px; z-index: 9999;" data-dojo-props="closable:false, draggable: false, " data-dojo-type="dijit.Dialog">
+        <img src="/esp/files/eclwatch/img/Loginlogo.png" class="lockLogo" alt="${i18n.HPCCSystems}"/>
+        <div id="${id}UnlockForm" style="width: 460px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+            <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+                <input id="${id}UnlockUserName" title="${i18n.Username}:" name="username" colspan="2" style="width:100%;" data-dojo-props="trim: true, readonly: true" data-dojo-type="dijit.form.TextBox" />
+                <input id="${id}UnlockPassword" type="password" title="${i18n.Password}:" name="password" colspan="2" style="width:100%;" data-dojo-props="trim: true, readonly: false" data-dojo-type="dijit.form.ValidationTextBox" /
+                >
+                <p id="UnlockStatus"></p>
+            </div>
+        </div>
+        <div class="dijitDialogPaneActionBar">
+            <button id="Unlock" data-dojo-attach-event="onClick:_onUnlock" data-dojo-type="dijit.form.Button">${i18n.Unlock}</button>
         </div>
     </div>
     <div id="${id}SetBannerDialog" title="Set Banner" style="width: 580px;" data-dojo-type="dijit.Dialog">
