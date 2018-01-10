@@ -35,6 +35,7 @@ public:
     bool matches(const RtlRow & row) const;
 
     void extractKeyFilter(const RtlRecord & record, IConstArrayOf<IFieldFilter> & keyFilters) const;
+    void extractMemKeyFilter(const RtlRecord & record, const UnsignedArray &sortOrder, IConstArrayOf<IFieldFilter> & keyFilters) const;
     unsigned numFilterFields() const { return filters.ordinality(); }
     const IFieldFilter & queryFilter(unsigned i) const { return filters.item(i); }
     const IFieldFilter *findFilter(unsigned fieldIdx) const;
@@ -62,6 +63,15 @@ public:
         filter.extractKeyFilter(record, filters);
         ForEachItemIn(i, filters)
             matchedRanges.append(0);
+        numFieldsRequired = filter.getNumFieldsRequired();
+    }
+
+    RowCursor(const RtlRecord & record, const UnsignedArray &sortOrder, RowFilter & filter) : currentRow(record, nullptr)
+    {
+        filter.extractMemKeyFilter(record, sortOrder, filters);
+        ForEachItemIn(i, filters)
+            matchedRanges.append(0);
+        numFieldsRequired = filter.getNumFieldsRequired();
     }
 
     void selectFirst()
@@ -146,8 +156,9 @@ protected:
     unsigned numMatched = 0;
     unsigned nextUnmatchedRange = 0;
     UnsignedArray matchedRanges;
+    unsigned numFieldsRequired = 0;
     bool eos = false;
-    IConstArrayOf<IFieldFilter> filters; // for an index must be in field order, and all values present - more thought required
+    IConstArrayOf<IFieldFilter> filters;
 };
 
 interface ISourceRowCursor
@@ -165,6 +176,10 @@ class ECLRTL_API KeySearcher : public CInterface
 {
 public:
     KeySearcher(const RtlRecord & _info, RowFilter & _filter, ISourceRowCursor * _rows) : cursor(_info, _filter), rows(_rows)
+    {
+    }
+
+    KeySearcher(const RtlRecord & _info, const UnsignedArray &_sortOrder, RowFilter & _filter, ISourceRowCursor * _rows) : cursor(_info, _sortOrder, _filter), rows(_rows)
     {
     }
 

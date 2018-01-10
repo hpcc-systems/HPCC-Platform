@@ -283,7 +283,7 @@ public:
     void setRow(const void * _row, unsigned _numFieldsUsed = (unsigned) -1);
     void lazyCalcOffsets(unsigned _numFieldsUsed) const;
 
-    const byte *queryRow() const
+    inline const byte *queryRow() const
     {
         return row;
     }

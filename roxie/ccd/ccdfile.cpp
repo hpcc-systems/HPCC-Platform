@@ -1702,7 +1702,7 @@ public:
     void addTranslator(const IDynamicTransform *translator, const IKeyTranslator *keyTranslator, IOutputMetaData *actualLayout)
     {
         assertex(actualLayout);
-        if (translator)
+        if (translator || keyTranslator)
             anyTranslators = true;
         transformers.append(translator);
         keyTranslators.append(keyTranslator);
@@ -1727,6 +1727,13 @@ public:
         // we have a superfile with mismatching formats.
         if (anyTranslators && transformers.isItem(subFile))
             return transformers.item(subFile);
+        return nullptr;
+    }
+
+    virtual const IKeyTranslator *queryKeyTranslator(unsigned subFile) const override
+    {
+        if (anyTranslators && keyTranslators.isItem(subFile))
+            return keyTranslators.item(subFile);
         return nullptr;
     }
 
@@ -2076,7 +2083,7 @@ public:
         else
             mb.append(false);
     }
-    virtual ITranslatorSet *getTranslators(int formatCrc, IOutputMetaData *projected, IOutputMetaData *expected, RecordTranslationMode mode) const override
+    virtual ITranslatorSet *getTranslators(int formatCrc, IOutputMetaData *projected, IOutputMetaData *expected, RecordTranslationMode mode, bool isIndex) const override
     {
         // NOTE - projected and expected and anything fetched from them such as type info may reside in dynamically loaded (and unloaded)
         // query DLLs - this means it is not safe to include them in any sort of cache that might outlive the current query.
@@ -2127,7 +2134,10 @@ public:
                         {
                             if (mode == RecordTranslationMode::None)
                                 throw MakeStringException(ROXIE_MISMATCH, "Translatable record layout mismatch detected for file %s, but translation disabled", subname);
-                            keyedTranslator.setown(createKeyTranslator(actual->queryRecordAccessor(true), expected->queryRecordAccessor(true)));
+                            keyedTranslator.setown(createKeyTranslator(actual->queryRecordAccessor(true), expected->queryRecordAccessor(true))); // NOTE - index cases should check (elsewhere) that this is empty.
+                            if (isIndex && keyedTranslator->needsTranslate())
+                                throw MakeStringException(ROXIE_MISMATCH, "Record layout mismatch detected in keyed fields for file %s", subname);
+
                         }
                     }
                 }

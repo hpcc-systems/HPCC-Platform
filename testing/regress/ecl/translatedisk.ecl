@@ -31,9 +31,19 @@ import $.Setup;
 boolean useLocal := false;
 Files := Setup.Files(multiPart, useLocal);
 
-DG_FlatFile := PRELOAD(DATASET(Files.DG_FileOut+'FLAT',{Files.DG_OutRec, UNSIGNED8 filepos{virtual(fileposition)}},FLAT));
-output(DG_FlatFile);
+DG_FlatFile := PRELOAD(DATASET(Files.DG_FileOut+'FLAT',{Files.DG_OutRec.DG_LastName, Files.DG_OutRec, UNSIGNED8 filepos{virtual(fileposition)}},FLAT, HINT(key('''
+<Keys>
+ <MemIndex>
+  <FieldSet>
+   <Field name='DG_LastName'/>
+  </FieldSet>
+ </MemIndex>
+</Keys>
+'''))));
+output(DG_FlatFile(KEYED(DG_lastname = 'DOLSON')));  // Should use in-memory key
+output(DG_FlatFile(KEYED(DG_firstname = 'DAVID')));  // Should use in-memory, but no key
 OUTPUT('----');
+
 DG_FlatFile_add1 := PRELOAD(DATASET(Files.DG_FileOut+'FLAT',{Files.DG_OutRec,STRING newfield { default('new')}, UNSIGNED8 filepos{virtual(fileposition)}},FLAT));
 output(DG_FlatFile_add1);
 OUTPUT('----');
@@ -47,3 +57,10 @@ output(DG_FlatFile_add2);
 
 d := table(DG_FlatFile, {unsigned8 fpos := DG_FlatFile.filepos} );
 output(FETCH(DG_FlatFile_add2, d, right.fpos, TRANSFORM (RECORDOF(DG_FlatFile_add2), SELF.filepos := right.fpos; SELF := LEFT)));
+
+DG_FlatFile_add3 := DATASET(Files.DG_FileOut+'FLAT',{Files.DG_OutRec,STRING newfield { default('Translated Full Keyed')}, UNSIGNED8 filepos{virtual(fileposition)}},FLAT);
+fkj :=JOIN(Files.DG_FlatFile, DG_FlatFile_add3, left.DG_firstname = right.DG_firstname 
+         AND left.DG_lastname=right.DG_lastname 
+         AND left.DG_Prange=right.DG_Prange     
+      , TRANSFORM(RECORDOF(DG_FlatFile_add3), SELF := RIGHT), KEYED(Files.DG_IndexFile));
+output(fkj);

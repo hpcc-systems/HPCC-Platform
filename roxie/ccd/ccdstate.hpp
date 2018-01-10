@@ -103,6 +103,7 @@ interface IFileIOArray : extends IInterface
 interface ITranslatorSet : extends IInterface
 {
     virtual const IDynamicTransform *queryTranslator(unsigned subFile) const = 0;
+    virtual const IKeyTranslator *queryKeyTranslator(unsigned subFile) const = 0;
     virtual ISourceRowPrefetcher *getPrefetcher(unsigned subFile) const = 0;
     virtual IOutputMetaData *queryActualLayout(unsigned subFile) const = 0;
     virtual int queryTargetFormatCrc() const = 0;

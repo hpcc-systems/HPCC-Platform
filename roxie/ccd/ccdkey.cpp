@@ -222,8 +222,19 @@ public:
         ForEach(*fields)
         {
             IPropertyTree &field = fields->query();
-            unsigned fieldNum = field.getPropInt("@fieldNum", -1);
-            assertex(fieldNum != (unsigned) -1);
+            const char *fieldname = field.queryProp("@name");
+            if (!fieldname || !*fieldname)
+                throw MakeStringException(0, "Invalid MemIndex specification - missing field name");
+            unsigned fieldNum = recInfo.getFieldNum(fieldname);
+            if (fieldNum == (unsigned) -1)
+            {
+                StringBuffer s;
+                for (unsigned idx = 0; idx <  recInfo.getNumFields(); idx++)
+                    s.append(',').append(recInfo.queryName(idx));
+                if (!s.length())
+                    s.append(",<no fields found>");
+                throw MakeStringException(0, "Invalid MemIndex specification - field name %s not found (fields are %s)", fieldname, s.str()+1);
+            }
             append(fieldNum);
         }
     }
@@ -282,7 +293,7 @@ public:
         {
             if (idx)
                 ret.append('.');
-            ret.appendf("%u", sortFields.item(idx));
+            ret.appendf("%s.%d", recInfo.queryName(sortFields.item(idx)),sortFields.item(idx));
         }
         return ret;
     }
@@ -435,30 +446,37 @@ protected:
     Owned<ISourceRowPrefetcher> prefetcher;
     Linked<const ITranslatorSet> translators;
     const IDynamicTransform *translator = nullptr;
+    const RtlRecord *actual= nullptr;
     const RowFilter &postFilter;
-    RtlDynRow row;
     bool grouped = false;
     bool eogPending = false;
     bool anyThisGroup = false;
 
-    void _nextRow()
+    const byte * _nextRow(bool &eogPending)
     {
         prefetcher->readAhead(deserializeSource);
         if (grouped)
             deserializeSource.read(1, &eogPending);
-        if (translator)
+
+        unsigned numOffsets = actual->getNumVarFields() + 1;
+        size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
+        RtlRow row(*actual, nullptr, numOffsets, variableOffsets);
+        row.setRow(deserializeSource.queryRow(), 0);
+        if (!postFilter.matches(row))
+            return nullptr;
+        else if (translator)
         {
             buf.setLength(0);
             MemoryBufferBuilder aBuilder(buf, 0);
-            translator->translate(aBuilder, deserializeSource.queryRow());
-            row.setRow(reinterpret_cast<const byte *>(buf.toByteArray()), 0);
+            translator->translate(aBuilder, row);
+            return reinterpret_cast<const byte *>(buf.toByteArray());
         }
         else
-            row.setRow(deserializeSource.queryRow(), 0);
+            return row.queryRow();
     }
 public:
     CDirectReaderBase(const ITranslatorSet *_translators, const RowFilter &_postFilter, bool _grouped)
-    : translators(_translators), postFilter(_postFilter), row(_translators->queryTargetFormat()), grouped(_grouped)
+    : translators(_translators), postFilter(_postFilter), grouped(_grouped)
     {}
     virtual bool isKeyed() const override { return false; }
 
@@ -487,11 +505,11 @@ public:
                     return nullptr;
                 }
             }
-            _nextRow();
-            if (postFilter.matches(row))  // MORE - could filter before translation.
+            const byte *row = _nextRow(eogPending);
+            if (row)
             {
                 anyThisGroup = true;
-                return row.queryRow();
+                return row;
             }
             else
                 finishedRow();
@@ -524,6 +542,7 @@ public:
     {
         translator = translators->queryTranslator(0);  // Any one would do
         prefetcher.setown(translators->getPrefetcher(0));
+        actual = &translators->queryActualLayout(0)->queryRecordAccessor(true);
         deserializeSource.setStream(this);
         if (_numParts == 1)
         {
@@ -683,6 +702,7 @@ public:
             unsigned subFileIdx = f->getSubFile(thisPartIdx);
             prefetcher.setown(translators->getPrefetcher(subFileIdx));
             translator = translators->queryTranslator(subFileIdx);
+            actual = &translators->queryActualLayout(subFileIdx)->queryRecordAccessor(true);
         }
         else
         {
@@ -708,6 +728,7 @@ public:
             unsigned subFileIdx = f->getSubFile(thisPartIdx);
             prefetcher.setown(translators->getPrefetcher(subFileIdx));
             translator = translators->queryTranslator(subFileIdx);
+            actual = &translators->queryActualLayout(subFileIdx)->queryRecordAccessor(true);
         }
     }
 
@@ -907,7 +928,7 @@ public:
     }
 
     virtual IDirectReader *selectKey(const char *sig, ScoredRowFilter &postFilters, const ITranslatorSet *translators) const override;
-    virtual IDirectReader *selectKey(ScoredRowFilter &filter, const ITranslatorSet *translators) const override;
+    virtual IDirectReader *selectKey(ScoredRowFilter &filter, const ITranslatorSet *translators, IRoxieContextLogger &logctx) const override;
 
     InMemoryIndex &findIndex(const char *indexSig) const
     {
@@ -1087,11 +1108,12 @@ public:
         {
             unsigned fieldIdx = index->sortFields.item(idx);
             const IFieldFilter *match = postFilter.extractFilter(fieldIdx);
-            if (!match)
-                break;
-            indexedFields.addFilter(*match);
+            if (match)
+                indexedFields.addFilter(*match);
+            else
+                break;  // MORE - this means we never use wilds in in-memory indexes - always leave to postfilter. Is that right?
         }
-        keySearcher.setown(new KeySearcher(_recInfo, indexedFields, this));
+        keySearcher.setown(new KeySearcher(_recInfo, index->sortFields, indexedFields, this));
         translator = translators->queryTranslator(0);  // Any one would do - we require all to match
 #ifdef BASED_POINTERS
         base = index->base;
@@ -1192,11 +1214,21 @@ public:
     }
     virtual unsigned __int64 getFilePosition(const void *_ptr)
     {
+        if (translator)
+        {
+            assertex(_ptr==buf.toByteArray());
+            _ptr = keySearcher->queryRow().queryRow();
+        }
         return baseMap.ptrToFilePosition(_ptr);
     }
 
     virtual unsigned __int64 getLocalFilePosition(const void *_ptr)
     {
+        if (translator)
+        {
+            assertex(_ptr==buf.toByteArray());
+            _ptr = keySearcher->queryRow().queryRow();
+        }
         return baseMap.ptrToLocalFilePosition(_ptr);
     }
 
@@ -1218,8 +1250,11 @@ IDirectReader *InMemoryIndexManager::selectKey(const char *indexSig, ScoredRowFi
     return new InMemoryIndexCursor(this, &thisIndex, baseMap, postFilters, recInfo, translators);
 }
 
-IDirectReader *InMemoryIndexManager::selectKey(ScoredRowFilter &filter, const ITranslatorSet *translators) const
+IDirectReader *InMemoryIndexManager::selectKey(ScoredRowFilter &filter, const ITranslatorSet *translators, IRoxieContextLogger &logctx) const
 {
+    const IKeyTranslator *keyTranslator = translators->queryKeyTranslator(0);  // any part would do - in-memory requires all actuals to have same layout
+    if (keyTranslator)
+        keyTranslator->translate(filter);
     if (!inMemoryKeysEnabled)
         return nullptr;
     unsigned best = 0;
@@ -1244,7 +1279,14 @@ IDirectReader *InMemoryIndexManager::selectKey(ScoredRowFilter &filter, const IT
         }
     }
     if (bestIndex)
+    {
+        if (logctx.queryTraceLevel() > 5)
+        {
+            StringBuffer ret;
+            logctx.CTXLOG("Using key %s", bestIndex->toString(ret).str());
+        }
         return new InMemoryIndexCursor(this, bestIndex, baseMap, filter, recInfo, translators);
+    }
     else
         return nullptr;
 }
@@ -1270,6 +1312,7 @@ protected:
     class CDummyTranslatorSet : implements CInterfaceOf<ITranslatorSet>
     {
         virtual const IDynamicTransform *queryTranslator(unsigned subFile) const override { return nullptr; }
+        virtual const IKeyTranslator *queryKeyTranslator(unsigned subFile) const override { return nullptr; }
         virtual ISourceRowPrefetcher *getPrefetcher(unsigned subFile) const override { throwUnexpected(); }
         virtual IOutputMetaData *queryActualLayout(unsigned subFile) const override { throwUnexpected(); }
         virtual int queryTargetFormatCrc() const override { throwUnexpected(); }
@@ -1279,6 +1322,7 @@ protected:
 
     void test1()
     {
+        StringContextLogger logctx("dummy");
         RtlIntTypeInfo ty1(type_int|type_unsigned, sizeof(unsigned));
         RtlFieldInfo f1("f1", nullptr, &ty1);
         const RtlFieldInfo * const fields [] = {&f1, nullptr};
@@ -1295,7 +1339,7 @@ protected:
         unsigned searchval = 1;
         ScoredRowFilter filter;
         filter.addFilter(*createFieldFilter(0, ty1, &searchval));
-        Owned<IDirectReader> d = indexes.selectKey(filter, &dummyTranslator);
+        Owned<IDirectReader> d = indexes.selectKey(filter, &dummyTranslator, logctx);
         ASSERT(d->nextRow()==(const byte *) &testarray[0]);
         ASSERT(d->nextRow()==nullptr);
         ASSERT(d->nextRow()==nullptr);
@@ -1303,7 +1347,7 @@ protected:
         searchval = 10;
         ScoredRowFilter filter1;
         filter1.addFilter(*createFieldFilter(0, ty1, &searchval));
-        d.setown(indexes.selectKey(filter1, &dummyTranslator));
+        d.setown(indexes.selectKey(filter1, &dummyTranslator, logctx));
         ASSERT(d->nextRow()==nullptr);
         ASSERT(d->nextRow()==nullptr);
         d.clear();
@@ -1318,7 +1362,7 @@ protected:
         unsigned searchval2 = 9;
         set->addRawRange(&searchval2, &searchval2);
         filter2.addFilter(*createFieldFilter(0, set));
-        d.setown(indexes.selectKey(filter2, &dummyTranslator));
+        d.setown(indexes.selectKey(filter2, &dummyTranslator, logctx));
         ASSERT(*(int *) d->nextRow()==2);
         ASSERT(*(int *) d->nextRow()==2);
         ASSERT(*(int *) d->nextRow()==2);
