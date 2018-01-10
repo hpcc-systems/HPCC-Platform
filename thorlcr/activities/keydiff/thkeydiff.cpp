@@ -57,7 +57,11 @@ public:
         outputName.set(expandedFileName);
 
         originalIndexFile.setown(queryThorFileManager().lookup(container.queryJob(), originalHelperName));
+        if (!isFileKey(originalIndexFile))
+            throw MakeActivityException(this, 0, "Attempting to read flat file as an index: %s", originalHelperName.get());
         newIndexFile.setown(queryThorFileManager().lookup(container.queryJob(), updatedHelperName));
+        if (!isFileKey(newIndexFile))
+            throw MakeActivityException(this, 0, "Attempting to read flat file as an index: %s", updatedHelperName.get());
         if (originalIndexFile->numParts() != newIndexFile->numParts())
             throw MakeActivityException(this, TE_KeyDiffIndexSizeMismatch, "Index %s and %s differ in width", originalName.get(), updatedName.get());
         if (originalIndexFile->querySuperFile() || newIndexFile->querySuperFile())

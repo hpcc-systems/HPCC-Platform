@@ -56,7 +56,11 @@ public:
         outputName.set(expandedFileName);
 
         originalIndexFile.setown(queryThorFileManager().lookup(container.queryJob(), originalHelperName));
+        if (!isFileKey(originalIndexFile))
+            throw MakeActivityException(this, 0, "Attempting to read flat file as an index: %s", originalHelperName.get());
         patchFile.setown(queryThorFileManager().lookup(container.queryJob(), patchHelperName));
+        if (isFileKey(patchFile))
+            throw MakeActivityException(this, 0, "Attempting to read index as a patch file: %s", patchHelperName.get());
         
         if (originalIndexFile->numParts() != patchFile->numParts())
             throw MakeActivityException(this, TE_KeyPatchIndexSizeMismatch, "Index %s and patch %s differ in width", originalName.get(), patchName.get());
