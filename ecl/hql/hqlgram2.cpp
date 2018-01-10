@@ -10600,7 +10600,7 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
     const char * parentName = str(parent->queryId());
     if (name == _container_Atom)
     {
-        const char * containerName = str(parent->queryFullContainerId());
+        const char * containerName = str(parent->queryBody()->queryFullContainerId());
         //This is a bit ugly - remove the last qualified module, and resolve the name again.  A more "correct" method
         //saving container pointers hit problems because remote scopes within CHqlMergedScope containers have a remote
         //scope as the parent, rather than the merged scope...
