@@ -24,7 +24,7 @@
 //---------------------------------------------------------------------------
 
 const unsigned PatEOF = (unsigned)-1;
-class RegexParser
+class HqlRegexParser
 {
 public:
     IHqlExpression * parsePattern(unsigned len, const char * text);
@@ -57,12 +57,12 @@ private:
     type_t type;
 };
 
-void RegexParser::illegal() 
+void HqlRegexParser::illegal()
 { 
     throwError(HQLERR_IllegalRegexPattern);
 }
 
-void RegexParser::advance()             
+void HqlRegexParser::advance()
 { 
     if (cur >= end) 
         illegal(); 
@@ -80,7 +80,7 @@ void RegexParser::advance()
     }
 }
 
-unsigned RegexParser::next() const
+unsigned HqlRegexParser::next() const
 { 
     if (cur != end) 
     {
@@ -97,7 +97,7 @@ unsigned RegexParser::next() const
     return PatEOF; 
 }
 
-unsigned RegexParser::readNumber()
+unsigned HqlRegexParser::readNumber()
 {
     unsigned first = nextAdvance();
     if ((first < '0') || (first > '9'))
@@ -113,7 +113,7 @@ unsigned RegexParser::readNumber()
     }
 }
 
-IHqlExpression * RegexParser::parse(bool isRoot)
+IHqlExpression * HqlRegexParser::parse(bool isRoot)
 {
     OwnedHqlExpr prev = parse0();
     while (next() == '|')
@@ -126,7 +126,7 @@ IHqlExpression * RegexParser::parse(bool isRoot)
     return prev.getClear();
 }
 
-IHqlExpression * RegexParser::parse0()
+IHqlExpression * HqlRegexParser::parse0()
 {
     if (next() == '|' || next() == PatEOF || next() == ')')
         return createValue(no_null, makePatternType());
@@ -147,7 +147,7 @@ IHqlExpression * RegexParser::parse0()
     return prev.getClear();
 }
 
-IHqlExpression * RegexParser::parse1()
+IHqlExpression * HqlRegexParser::parse1()
 {
     OwnedHqlExpr arg = parse2();
     for (;;)
@@ -196,7 +196,7 @@ IHqlExpression * RegexParser::parse1()
     }
 }
 
-IHqlExpression * RegexParser::parse2()
+IHqlExpression * HqlRegexParser::parse2()
 {
     switch (next())
     {
@@ -334,7 +334,7 @@ IHqlExpression * RegexParser::parse2()
     }
 }
 
-IHqlExpression * RegexParser::parseSet()
+IHqlExpression * HqlRegexParser::parseSet()
 {
     bool invert = false;
     advance();
@@ -363,7 +363,7 @@ IHqlExpression * RegexParser::parseSet()
     return createValue(no_pat_set, makePatternType(), args);
 }
 
-IHqlExpression * RegexParser::parseSetBound()
+IHqlExpression * HqlRegexParser::parseSetBound()
 {
     unsigned first = nextAdvance();
     if (first == '\\')
@@ -431,7 +431,7 @@ IHqlExpression * RegexParser::parseSetBound()
     return createConstant((int)first);
 }
 
-bool RegexParser::nextIsSpecial() const
+bool HqlRegexParser::nextIsSpecial() const
 {
     switch (next())
     {
@@ -454,7 +454,7 @@ bool RegexParser::nextIsSpecial() const
     }
 }
 
-bool RegexParser::nextIsRepeat() const
+bool HqlRegexParser::nextIsRepeat() const
 {
     switch (next())
     {
@@ -467,7 +467,7 @@ bool RegexParser::nextIsRepeat() const
     }
 }
 
-IHqlExpression * RegexParser::parsePattern(unsigned len, const char * text)
+IHqlExpression * HqlRegexParser::parsePattern(unsigned len, const char * text)
 {
     type = type_string;
     start = (const byte *)text;
@@ -476,7 +476,7 @@ IHqlExpression * RegexParser::parsePattern(unsigned len, const char * text)
     return parse(true);
 }
 
-IHqlExpression * RegexParser::parseUtf8Pattern(unsigned len, const char * text)
+IHqlExpression * HqlRegexParser::parseUtf8Pattern(unsigned len, const char * text)
 {
     type = type_utf8;
     start = (const byte *)text;
@@ -485,7 +485,7 @@ IHqlExpression * RegexParser::parseUtf8Pattern(unsigned len, const char * text)
     return parse(true);
 }
 
-IHqlExpression * RegexParser::parsePattern(unsigned len, const UChar * text)
+IHqlExpression * HqlRegexParser::parsePattern(unsigned len, const UChar * text)
 {
     type = type_unicode;
     start = (const byte *)text;
@@ -496,21 +496,21 @@ IHqlExpression * RegexParser::parsePattern(unsigned len, const UChar * text)
 
 IHqlExpression * convertPatternToExpression(unsigned len, const char * text)
 {
-    RegexParser parser;
+    HqlRegexParser parser;
     return parser.parsePattern(len, text);
 }
 
 
 IHqlExpression * convertUtf8PatternToExpression(unsigned len, const char * text)
 {
-    RegexParser parser;
+    HqlRegexParser parser;
     return parser.parseUtf8Pattern(len, text);
 }
 
 
 IHqlExpression * convertPatternToExpression(unsigned len, const UChar * text)
 {
-    RegexParser parser;
+    HqlRegexParser parser;
     return parser.parsePattern(len, text);
 }
 
