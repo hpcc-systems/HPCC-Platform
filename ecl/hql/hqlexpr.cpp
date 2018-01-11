@@ -8723,7 +8723,7 @@ IHqlExpression * CHqlRemoteScope::repositoryLoadSymbol(IIdAtom * attrName)
         return NULL;
 
     OwnedHqlExpr symbol = ownerRepository->loadSymbol(this, attrName);
-    if(!symbol || !symbol->hasText())
+    if(!symbol || ((symbol->getOperator() == no_nobody) && !symbol->hasText()))
         return NULL;
 
     return symbol.getClear();
