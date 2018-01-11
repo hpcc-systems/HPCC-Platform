@@ -5340,6 +5340,7 @@ public:
             _name.expand(user);//expand wildcards
         Owned<IPropertyTree> tree = _name.createSuperTree();
         init(_parent,tree,_name,user,transaction);
+        updateFileAttrs();
     }
 
     CDistributedSuperFile(CDistributedFileDirectory *_parent, IPropertyTree *_root, const char *optionalName)
@@ -5980,6 +5981,22 @@ public:
             root->setPropBin("Attr/_record_layout", mb.length(), mb.bufferBase());
         if (getRecordLayout(mb, "_rtlType"))
             root->setPropBin("Attr/_rtlType", mb.length(), mb.bufferBase());
+        const char *kind = nullptr;
+        Owned<IDistributedFileIterator> subIter = getSubFileIterator(true);
+        ForEach(*subIter)
+        {
+            IDistributedFile &file = subIter->query();
+            const char *curKind = file.queryAttributes().queryProp("@kind");
+            if (!kind)
+                kind = curKind;
+            else if (!streq(kind, curKind))
+            {
+                kind = nullptr;
+                break;
+            }
+        }
+        if (kind)
+            root->setProp("Attr/@kind", kind);
     }
 
     void updateParentFileAttrs(IDistributedFileTransaction *transaction)
