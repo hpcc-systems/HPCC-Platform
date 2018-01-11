@@ -620,7 +620,7 @@ struct ECLRTL_API RtlComplexIfBlockTypeInfo : public RtlIfBlockTypeInfo
 
 struct ECLRTL_API RtlSerialIfBlockTypeInfo : public RtlIfBlockTypeInfo
 {
-    constexpr inline RtlSerialIfBlockTypeInfo(unsigned _fieldType, unsigned _length, const RtlFieldInfo * const * _fields, const RtlRecordTypeInfo * _rowType)
+    inline RtlSerialIfBlockTypeInfo(unsigned _fieldType, unsigned _length, const RtlFieldInfo * const * _fields, const RtlRecordTypeInfo * _rowType)
     : RtlIfBlockTypeInfo(_fieldType, _length, _fields, _rowType) {}
     ~RtlSerialIfBlockTypeInfo();
 
@@ -641,7 +641,7 @@ protected:
 
 struct ECLRTL_API RtlSimpleIfBlockTypeInfo : public RtlSerialIfBlockTypeInfo
 {
-    constexpr inline RtlSimpleIfBlockTypeInfo(unsigned _fieldType, unsigned _length, const RtlFieldInfo * const * _fields, const RtlRecordTypeInfo * _rowType)
+    inline RtlSimpleIfBlockTypeInfo(unsigned _fieldType, unsigned _length, const RtlFieldInfo * const * _fields, const RtlRecordTypeInfo * _rowType)
     : RtlSerialIfBlockTypeInfo(_fieldType, _length, _fields, _rowType) {}
 };
 
