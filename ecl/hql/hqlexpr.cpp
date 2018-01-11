@@ -6542,11 +6542,6 @@ IHqlDataset *CHqlDataset::queryTable()
     throw MakeStringExceptionDirect(2, s.str());
 }
 
-void CHqlDataset::sethash() 
-{ 
-    CHqlExpression::sethash(); 
-}
-
 //==============================================================================================================
 
 CHqlDataset::CHqlDataset(node_operator _op, ITypeInfo *_type, HqlExprArray &_ownedOperands) 
@@ -8362,6 +8357,13 @@ IHqlExpression *CHqlScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFla
 }
 
 
+IFileContents * CHqlScope::lookupContents(IIdAtom * searchName, HqlLookupContext & ctx)
+{
+    return nullptr;
+}
+
+
+
 int CHqlScope::getPropInt(IAtom * a, int def) const
 {
     return def;
@@ -8659,6 +8661,11 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
 
     ctx.noteExternalLookup(this, newSymbol);
     return newSymbol.getClear();
+}
+
+IFileContents * CHqlRemoteScope::lookupContents(IIdAtom * searchName, HqlLookupContext & ctx)
+{
+    return nullptr;
 }
 
 void CHqlRemoteScope::getSymbols(HqlExprArray& exprs) const
@@ -9551,22 +9558,6 @@ void CHqlVirtualScope::defineSymbol(IHqlExpression * expr)
     CHqlScope::defineSymbol(expr);
 }
 
-bool CHqlVirtualScope::queryForceSymbolVirtual(IIdAtom * searchName, HqlLookupContext & ctx)
-{
-    if (allVirtual)
-        return true;
-
-    IHqlExpression * definitionModule = NULL;
-    OwnedHqlExpr match = lookupBaseSymbol(definitionModule, searchName, LSFsharedOK, ctx);
-    if (match)
-    {
-        IHqlNamedAnnotation * symbol = static_cast<IHqlNamedAnnotation *>(match->queryAnnotation());
-        assertex(symbol && symbol->getAnnotationKind() == annotate_symbol);
-        return symbol->isVirtual();
-    }
-    return false;
-}
-
 IHqlExpression * CHqlVirtualScope::lookupBaseSymbol(IHqlExpression * & definitionModule, IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     ForEachChild(i, this)
@@ -10152,11 +10143,6 @@ CHqlDelayedScope::CHqlDelayedScope(HqlExprArray &_ownedOperands)
         addOperand(createSequence(no_attr, makeNullType(), _virtualSeq_Atom, virtualSequence.next()));
 }
 
-bool CHqlDelayedScope::assignableFrom(ITypeInfo * source)
-{
-    return type->assignableFrom(source);
-}
-
 bool CHqlDelayedScope::equals(const IHqlExpression & _other) const
 {
     if (!CHqlExpressionWithTables::equals(_other))
@@ -10193,6 +10179,11 @@ IHqlExpression * CHqlDelayedScope::lookupSymbol(IIdAtom * searchName, unsigned l
     return createDelayedReference(no_delayedselect, this, match, lookupFlags, ctx);
 }
 
+
+IFileContents * CHqlDelayedScope::lookupContents(IIdAtom * searchName, HqlLookupContext & ctx)
+{
+    return nullptr;
+}
 
 void CHqlDelayedScope::ensureSymbolsDefined(HqlLookupContext & ctx)
 {
@@ -10698,6 +10689,11 @@ IHqlExpression * CHqlDelayedScopeCall::lookupSymbol(IIdAtom * searchName, unsign
         return match.getClear();
 
     return createDelayedReference(no_delayedselect, this, match, lookupFlags, ctx);
+}
+
+IFileContents * CHqlDelayedScopeCall::lookupContents(IIdAtom * searchName, HqlLookupContext & ctx)
+{
+    return nullptr;
 }
 
 void CHqlDelayedScopeCall::getSymbols(HqlExprArray& exprs) const
