@@ -8393,9 +8393,9 @@ public:
     unsigned locks;
 };
 
-class RoxieMemTimingTests : public RoxieMemTests
+class RoxieMemTimingTests1 : public RoxieMemTests
 {
-    CPPUNIT_TEST_SUITE( RoxieMemTimingTests );
+    CPPUNIT_TEST_SUITE( RoxieMemTimingTests1 );
         CPPUNIT_TEST(testSetup);
         CPPUNIT_TEST(testBitmapThreading);
         CPPUNIT_TEST(testCas);
@@ -8864,8 +8864,8 @@ protected:
 
 CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemTests );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieMemTests, "RoxieMemTests" );
-CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemTimingTests );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieMemTimingTests, "RoxieMemTimingTests" );
+CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemTimingTests1 );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieMemTimingTests1, "RoxieMemTimingTests1" );
 CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemStressTests );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieMemStressTests, "RoxieMemStressTests" );
 
