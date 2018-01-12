@@ -1504,7 +1504,7 @@ FUNCTIONMACRO|MACRO {
                         Owned<IFileContents> macroContents;
                         if (!isFunctionMacro)
                         {
-                            macroContents.setown(createFileContentsFromText(len, lexer->yyBuffer+startpos, lexer->sourcePath, lexer->yyParser->inSignedModule, lexer->yyParser->gpgSignature));
+                            macroContents.setown(createFileContentsFromText(len, lexer->yyBuffer+startpos, lexer->sourcePath, lexer->yyParser->inSignedModule, lexer->yyParser->gpgSignature, 0));
 #if defined(TRACE_TOKEN)
                             PrintLog("TOKEN>> macro body read: \"%.*s\"", len, lexer->yyBuffer+startpos);
 #endif
@@ -1521,7 +1521,7 @@ FUNCTIONMACRO|MACRO {
                             memcpy(macroBuf, prefix, lenPrefix);
                             memcpy(macroBuf + lenPrefix, lexer->yyBuffer+startpos, len);
                             memcpy(macroBuf + lenPrefix + len, suffix, lenSuffix);
-                            macroContents.setown(createFileContentsFromText(lenSuffix + len + lenPrefix, macroBuf, lexer->sourcePath,lexer->yyParser->inSignedModule, lexer->yyParser->gpgSignature));
+                            macroContents.setown(createFileContentsFromText(lenSuffix + len + lenPrefix, macroBuf, lexer->sourcePath,lexer->yyParser->inSignedModule, lexer->yyParser->gpgSignature, 0));
 #if defined(TRACE_TOKEN)
                             PrintLog("TOKEN>> macro body read: \"%.*s\"",len+lenPrefix+lenSuffix, macroBuf);
 #endif

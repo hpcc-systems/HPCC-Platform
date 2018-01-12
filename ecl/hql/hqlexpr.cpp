@@ -49,6 +49,7 @@
 #include "hqlrepository.hpp"
 #include "hqldesc.hpp"
 #include "hqlir.hpp"
+#include "hqlcache.hpp"
 
 #ifdef _USE_ZLIB
 #include "zcrypt.hpp"
@@ -883,18 +884,6 @@ static bool isSameText(IFileContents * text1, IFileContents * text2)
     return memcmp(text1->getText(), text2->getText(), len1) == 0;
 }
 
-void getFileContentText(StringBuffer & result, IFileContents * contents)
-{
-    unsigned len = contents->length();
-    const char * text = contents->getText();
-    if ((len >= 3) && (memcmp(text, UTF8_BOM, 3) == 0))
-    {
-        len -= 3;
-        text += 3;
-    }
-    result.append(len, text);
-}
-
 //---------------------------------------------------------------------------------------------------------------------
 
 void HqlParseContext::addForwardReference(IHqlScope * owner, IHasUnlinkedOwnerReference * child)
@@ -915,19 +904,11 @@ void HqlParseContext::setGatherMeta(const MetaOptions & options)
 }
 
 
-void HqlParseContext::setDefinitionText(IPropertyTree * target, const char * prop, IFileContents * contents)
+void HqlParseContext::setCacheLocation(const char * path)
 {
-    StringBuffer sillyTempBuffer;
-    getFileContentText(sillyTempBuffer, contents);  // We can't rely on IFileContents->getText() being null terminated..
-    target->setProp(prop, sillyTempBuffer);
-
-    ISourcePath * sourcePath = contents->querySourcePath();
-    target->setProp("@sourcePath", str(sourcePath));
-    if (checkDirty && contents->isDirty())
-    {
-        target->setPropBool("@dirty", true);
-    }
-
+    StringBuffer expandedPath;
+    makeAbsolutePath(path, expandedPath, false);
+    metaOptions.cacheLocation.set(expandedPath);
 }
 
 IPropertyTree * HqlParseContext::beginMetaSource(IFileContents * contents)
@@ -936,12 +917,16 @@ IPropertyTree * HqlParseContext::beginMetaSource(IFileContents * contents)
 
     IPropertyTree * attr = createPTree("Source", ipt_fast);
     attr->setProp("@sourcePath", str(sourcePath));
-    metaState.nesting.append(*attr);
+    curMeta().meta.setown(attr);
     return attr;
 }
 
 void HqlParseContext::noteBeginAttribute(IHqlScope * scope, IFileContents * contents, IIdAtom * name)
 {
+    beginMetaScope();
+    if (queryNestedDependTree())
+        createDependencyEntry(scope, name);
+
     if (queryArchive())
     {
         const char * moduleName = scope->queryFullName();
@@ -951,7 +936,7 @@ void HqlParseContext::noteBeginAttribute(IHqlScope * scope, IFileContents * cont
         if (!attr)
             attr = createArchiveAttribute(module, str(name));
 
-        setDefinitionText(attr, "", contents);
+        setDefinitionText(attr, "", contents, checkDirty);
     }
 
     ISourcePath * sourcePath = contents->querySourcePath();
@@ -968,19 +953,22 @@ void HqlParseContext::noteBeginAttribute(IHqlScope * scope, IFileContents * cont
         attr->setProp("@module", scope->queryFullName());
         attr->setProp("@name", str(name));
         attr->setProp("@sourcePath", str(sourcePath));
-        //attr->setPropInt("@flags", symbol->getObType());  MORE
     }
 }
 
 void HqlParseContext::noteBeginQuery(IHqlScope * scope, IFileContents * contents)
 {
+    beginMetaScope();
+    if (queryNestedDependTree())
+        createDependencyEntry(NULL, NULL);
+
     if (queryArchive())
     {
         const char * moduleName = scope->queryFullName();
         if (moduleName && *moduleName)
         {
             IPropertyTree * module = queryEnsureArchiveModule(moduleName, scope);
-            setDefinitionText(module, "Text", contents);
+            setDefinitionText(module, "Text", contents, checkDirty);
         }
     }
 
@@ -990,57 +978,78 @@ void HqlParseContext::noteBeginQuery(IHqlScope * scope, IFileContents * contents
 
         IPropertyTree * attr = createPTree("Query", ipt_fast);
         attr->setProp("@sourcePath", str(sourcePath));
-        metaState.nesting.append(*attr);
+        curMeta().meta.setown(attr);
     }
 }
 
 void HqlParseContext::noteBeginModule(IHqlScope * scope, IFileContents * contents)
 {
+    beginMetaScope();
+    if (queryNestedDependTree())
+        createDependencyEntry(scope, NULL);
+
     if (queryArchive())
     {
         const char * moduleName = scope->queryFullName();
         if (moduleName && *moduleName)
         {
             IPropertyTree * module = queryEnsureArchiveModule(moduleName, scope);
-            setDefinitionText(module, "Text", contents);
+            setDefinitionText(module, "Text", contents, checkDirty);
         }
     }
 
     if (checkBeginMeta())
     {
-        beginMetaSource(contents);
+        IPropertyTree * attr = beginMetaSource(contents);
+        attr->setProp("@name", scope->queryFullName());
     }
 }
 
-void HqlParseContext::noteEndAttribute(bool success)
+void HqlParseContext::noteBeginMacro(IHqlScope * scope, IIdAtom * name)
 {
-    if (checkEndMeta())
-        finishMeta(true, success);
+    beginMetaScope();
+    if (queryNestedDependTree())
+        createDependencyEntry(scope, name);
+}
+
+
+void HqlParseContext::noteEndAttribute(bool success, bool canCache, bool isMacro, IHqlExpression * simplifiedDefinition)
+{
+    finishMeta(true, success, checkEndMeta(), canCache, isMacro, simplifiedDefinition);
+
+    endMetaScope();
 }
 
 void HqlParseContext::noteEndQuery(bool success)
 {
-    if (checkEndMeta())
-        finishMeta(false, success);
+    finishMeta(false, success, checkEndMeta(), true, false, nullptr);
+
+    endMetaScope();
 }
 
 void HqlParseContext::noteEndModule(bool success)
 {
-    if (checkEndMeta())
-        finishMeta(true, success);
+    finishMeta(true, success, checkEndMeta(), true, false, nullptr);
+
+    endMetaScope();
+}
+
+void HqlParseContext::noteEndMacro()
+{
+    endMetaScope();
 }
 
 void HqlParseContext::noteFinishedParse(IHqlScope * scope)
 {
     if (metaState.gatherNow)
-        expandScopeSymbolsMeta(&metaState.nesting.tos(), scope);
+        expandScopeSymbolsMeta(curMeta().meta, scope);
 }
 
 
 void HqlParseContext::notePrivateSymbols(IHqlScope * scope)
 {
     if (metaState.gatherNow)
-        expandScopeSymbolsMeta(&metaState.nesting.tos(), scope);
+        expandScopeSymbolsMeta(curMeta().meta, scope);
 }
 
 
@@ -1050,7 +1059,7 @@ bool HqlParseContext::checkBeginMeta()
         return false;
     if (!metaOptions.onlyGatherRoot)
         return true;
-    metaState.gatherNow = (metaState.nesting.ordinality() == 0);
+    metaState.gatherNow = metaStack.ordinality() == 1;
     return metaState.gatherNow;
 }
 
@@ -1061,49 +1070,187 @@ bool HqlParseContext::checkEndMeta()
     if (!metaOptions.onlyGatherRoot)
         return true;
     bool wasGathering = metaState.gatherNow;
-    metaState.gatherNow = (metaState.nesting.ordinality() == 2);
+    //If after finishing this item we will be back to the global stack, then start gathering again
+    metaState.gatherNow = (metaStack.ordinality() == 2);
     return wasGathering;
 }
 
-void HqlParseContext::finishMeta(bool isSeparateFile, bool success)
+void HqlParseContext::finishMeta(bool isSeparateFile, bool success, bool generateMeta, bool canCache, bool isMacro, IHqlExpression * simplifiedDefinition)
 {
-    if (metaState.nesting.empty())  // paranoid - could only happen on an internal error
+    if (metaStack.empty())  // paranoid - could only happen on an internal error
         return;
 
-    Owned<IPropertyTree> tos = &metaState.nesting.popGet();
+    StringBuffer baseFilename;
+    bool createCacheEntry = canCache;
     if (isSeparateFile && !metaOptions.cacheLocation.isEmpty())
     {
-        const char * originalPath = tos->queryProp("@sourcePath");
-        StringBuffer filename;
-        filename.append(metaOptions.cacheLocation);
-        addPathSepChar(filename);
-        filename.append(originalPath);
-        if (success)
-            filename.append(".eclmeta");
-        else
-            filename.append(".errmeta");
-        recursiveCreateDirectoryForFile(filename);
+        assertex(curMeta().dependencies);
+        StringBuffer fullName;
+        const char * module = curMeta().dependencies->queryProp("@module");
+        const char * attr = curMeta().dependencies->queryProp("@name");
+        fullName.append(module);
+        if (!isEmptyString(module) && !isEmptyString(attr))
+            fullName.append(".");
+        fullName.append(attr);
 
-        Owned<IFile> original = createIFile(originalPath);
-        Owned<IFile> file = createIFile(filename);
-
-        CDateTime originalTime;
-        CDateTime currentTime;
-        bool hasOriginal = original->getTime(nullptr, &originalTime, nullptr);
-        bool hasCurrent = file->getTime(nullptr, &currentTime, NULL);
-
-        //Overwrite the file if the original file is newer than the meta file
-        //This test will need to be improved later on, to reflect dependencies.
-        if (!hasOriginal || !hasCurrent || originalTime.compare(currentTime) > 0)
+        if (fullName && !hasPrefix(fullName, INTERNAL_LOCAL_MODULE_NAME, true))
         {
-            saveXML(filename, tos, 0, XML_Embed|XML_LineBreak);
+            baseFilename.append(metaOptions.cacheLocation);
+            addPathSepChar(baseFilename);
+            convertSelectsToPath(baseFilename, fullName);
+            recursiveCreateDirectoryForFile(baseFilename);
+
+            Owned<IEclCachedDefinition> cached = cache->getDefinition(fullName);
+            if (cached->isUpToDate(optionHash))
+                createCacheEntry = false;
         }
     }
-    else
+
+    if (createCacheEntry && baseFilename)
     {
-        IPropertyTree * tree = tos.getClear();
-        metaTree->addPropTree(tree->queryName(), tree);
+        StringBuffer filename(baseFilename);
+        filename.append(".cache");
+
+        OwnedIFile cacheFile = createIFile(filename);
+        {
+            //Theoretically there is a potential for multiple processes to generate this file at the same time
+            //but since the create is unconditional, each process will create an independent file, and
+            //only one self consistent file will remain at the end.  Which survives does not matter.
+            OwnedIFileIO cacheIO = cacheFile->open(IFOcreate);
+            Owned<IIOStream> stream = createIOStream(cacheIO);
+            stream.setown(createBufferedIOStream(stream));
+            writeStringToStream(*stream, "<Cache");
+            VStringBuffer extraText(" hash=\"%" I64F "u\"", optionHash);
+            if (isMacro)
+                extraText.append(" isMacro=\"1\"");
+            writeStringToStream(*stream, extraText);
+            writeStringToStream(*stream, ">\n");
+            if (curMeta().dependencies)
+                saveXML(*stream, curMeta().dependencies, 0, XML_Embed|XML_LineBreak);
+            if (simplifiedDefinition)
+            {
+                writeStringToStream(*stream, "<Simplified>\n");
+                StringBuffer ecl;
+                regenerateECL(simplifiedDefinition, ecl);
+                encodeXML(ecl, *stream, 0, -1, false);
+                writeStringToStream(*stream, "</Simplified>\n");
+            }
+            writeStringToStream(*stream, "</Cache>\n");
+        }
     }
+
+    if (generateMeta)
+    {
+        IPropertyTree* tos = curMeta().meta;
+        if (isSeparateFile && !metaOptions.cacheLocation.isEmpty())
+        {
+            if (baseFilename)
+            {
+                StringBuffer filename(baseFilename);
+                if (success)
+                    filename.append(".eclmeta");
+                else
+                    filename.append(".errmeta");
+
+                //Could possibly avoid updating if the contents of the xml haven't changed, but filedate should still be touched
+                saveXML(filename, tos, 0, XML_Embed|XML_LineBreak);
+            }
+        }
+        else
+        {
+            //addPropTree will clone the node if there is another link to the tree node, so use getClear()
+            IPropertyTree * tree = curMeta().meta.getClear();
+            tree = metaTree->addPropTree(tree->queryName(), tree);
+            //Forward modules might cause this to be updated => save the added tree element back into curMeta()
+            curMeta().meta.set(tree);
+        }
+    }
+}
+
+void HqlParseContext::noteExternalLookup(IHqlScope * parentScope, IHqlExpression * expr)
+{
+    //metaStack can be empty if we are resolving the main attribute within the repository
+    if (!metaStack)
+        return;
+
+    if (queryArchive())
+    {
+        node_operator op = expr->getOperator();
+        if ((op == no_remotescope) || (op == no_mergedscope))
+        {
+            //Ensure the archive contains entries for each module - even if nothing is accessed from it
+            //It would be preferrable to only check once, but adds very little time anyway.
+            IHqlScope * resolvedScope = expr->queryScope();
+            queryEnsureArchiveModule(resolvedScope->queryFullName(), resolvedScope);
+        }
+    }
+
+    FileParseMeta & meta = metaStack.tos();
+    if (meta.dependencies && !meta.dependents.contains(*expr))
+    {
+        node_operator op = expr->getOperator();
+        if ((op != no_remotescope) && (op != no_mergedscope))
+        {
+            meta.dependents.append(*expr);
+
+            if (parentScope)
+            {
+                const char * moduleName = parentScope->queryFullName();
+                if (moduleName)
+                {
+                    VStringBuffer xpath("Depend[@module=\"%s\"][@name=\"%s\"]", moduleName, str(expr->queryName()));
+
+                    if (!meta.dependencies->queryPropTree(xpath.str()))
+                    {
+                        IPropertyTree * depend = meta.dependencies->addPropTree("Depend");
+                        depend->setProp("@module", moduleName);
+                        depend->setProp("@name", str(expr->queryName()));
+                    }
+                }
+            }
+        }
+        else if (!parentScope)
+        {
+            //Dependencies for items within modules defined by a single source file only record the module
+            IHqlScope * scope = expr->queryScope();
+            assertex(scope);
+            const char * fullName = scope->queryFullName();
+            if (fullName)
+            {
+                //References to definitions with this module should not result in adding self as a dependency:
+                bool recursive = strsame(fullName, meta.dependencies->queryProp("@module")) && isEmptyString(meta.dependencies->queryProp("@name"));
+                if (!recursive)
+                {
+                    VStringBuffer xpath("Depend[@name=\"%s\"]", fullName);
+
+                    if (!meta.dependencies->queryPropTree(xpath.str()))
+                    {
+                        IPropertyTree * depend = meta.dependencies->addPropTree("Depend");
+                        depend->setProp("@name", fullName);
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+void HqlParseContext::createDependencyEntry(IHqlScope * parentScope, IIdAtom * id)
+{
+    const char * moduleName = parentScope ? parentScope->queryFullName() : "";
+    const char * nameText = id ? str(lower(id)) : "";
+
+    StringBuffer xpath;
+    xpath.append("Attr[@module=\"").append(moduleName).append("\"][@name=\"").append(nameText).append("\"]");
+
+    IPropertyTree * attr = queryNestedDependTree()->queryPropTree(xpath.str());
+    if (!attr)
+    {
+        attr = queryNestedDependTree()->addPropTree("Attr");
+        attr->setProp("@module", moduleName);
+        attr->setProp("@name", nameText);
+    }
+    metaStack.tos().dependencies = attr;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -1171,88 +1318,50 @@ extern HQL_API IPropertyTree * createArchiveAttribute(IPropertyTree * module, co
     return attr;
 }
 
+extern HQL_API IPropertyTree * queryArchiveEntry(IPropertyTree * archive, const char * name)
+{
+    StringBuffer lowerName;
+    const char * dot = strrchr(name, '.');
+    const char * attrName = name;
+    if (dot)
+    {
+        lowerName.appendLower(dot-name, name);
+        attrName = dot+1;
+    }
+
+    StringBuffer xpath;
+    xpath.append("Module[@key=\"").append(lowerName).append("\"]/");
+    xpath.append("Attribute[@key=\"").appendLower(strlen(attrName), attrName).append("\"]");
+    IPropertyTree * match = archive->queryPropTree(xpath);
+    if (match)
+        return match;
+
+    //Check for a plugin module or similar
+    xpath.clear();
+    xpath.append("Module[@key=\"").appendLower(strlen(name), name).append("\"]");
+    return archive->queryPropTree(xpath);
+}
+
+
 //---------------------------------------------------------------------------------------------------------------------
 
 void HqlLookupContext::noteBeginAttribute(IHqlScope * scope, IFileContents * contents, IIdAtom * name)
 {
-    if (queryNestedDependTree())
-        createDependencyEntry(scope, name);
-
     parseCtx.noteBeginAttribute(scope, contents, name);
 }
 
 
 void HqlLookupContext::noteBeginQuery(IHqlScope * scope, IFileContents * contents)
 {
-    if (queryNestedDependTree())
-        createDependencyEntry(NULL, NULL);
     parseCtx.noteBeginQuery(scope, contents);
 }
 
 
 void HqlLookupContext::noteBeginModule(IHqlScope * scope, IFileContents * contents)
 {
-    if (queryNestedDependTree())
-        createDependencyEntry(scope, NULL);
     parseCtx.noteBeginModule(scope, contents);
 }
 
-
-void HqlLookupContext::noteExternalLookup(IHqlScope * parentScope, IHqlExpression * expr)
-{
-    if (queryArchive())
-    {
-        node_operator op = expr->getOperator();
-        if ((op == no_remotescope) || (op == no_mergedscope))
-        {
-            //Ensure the archive contains entries for each module - even if nothing is accessed from it
-            //It would be preferrable to only check once, but adds very little time anyway.
-            IHqlScope * resolvedScope = expr->queryScope();
-            parseCtx.queryEnsureArchiveModule(resolvedScope->queryFullName(), resolvedScope);
-        }
-    }
-
-    if (curAttrTree && !dependents.contains(*expr))
-    {
-        node_operator op = expr->getOperator();
-        if ((op != no_remotescope) && (op != no_mergedscope))
-        {
-            dependents.append(*expr);
-
-            const char * moduleName = parentScope->queryFullName();
-            if (moduleName)
-            {
-                VStringBuffer xpath("Depend[@module=\"%s\"][@name=\"%s\"]", moduleName, str(expr->queryName()));
-
-                if (!curAttrTree->queryPropTree(xpath.str()))
-                {
-                    IPropertyTree * depend = curAttrTree->addPropTree("Depend");
-                    depend->setProp("@module", moduleName);
-                    depend->setProp("@name", str(expr->queryName()));
-                }
-            }
-        }
-    }
-}
-
-
-void HqlLookupContext::createDependencyEntry(IHqlScope * parentScope, IIdAtom * id)
-{
-    const char * moduleName = parentScope ? parentScope->queryFullName() : "";
-    const char * nameText = id ? str(lower(id)) : "";
-
-    StringBuffer xpath;
-    xpath.append("Attr[@module=\"").append(moduleName).append("\"][@name=\"").append(nameText).append("\"]");
-
-    IPropertyTree * attr = queryNestedDependTree()->queryPropTree(xpath.str());
-    if (!attr)
-    {
-        attr = queryNestedDependTree()->addPropTree("Attr");
-        attr->setProp("@module", moduleName);
-        attr->setProp("@name", nameText);
-    }
-    curAttrTree.set(attr);
-}
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -7914,11 +8023,28 @@ CFileContents::CFileContents(IFile * _file, ISourcePath * _sourcePath, bool _isS
         file.clear();
 }
 
+CFileContents::CFileContents(const char *query, ISourcePath * _sourcePath, bool _isSigned, IHqlExpression * _gpgSignature, timestamp_type _ts)
+: sourcePath(_sourcePath), implicitlySigned(_isSigned), gpgSignature(_gpgSignature), ts(_ts)
+{
+    if (query)
+        setContents(strlen(query), query);
+
+    delayedRead = false;
+}
+
+CFileContents::CFileContents(unsigned len, const char *query, ISourcePath * _sourcePath, bool _isSigned, IHqlExpression * _gpgSignature, timestamp_type _ts)
+: sourcePath(_sourcePath), implicitlySigned(_isSigned), gpgSignature(_gpgSignature), ts(_ts)
+{
+    setContents(len, query);
+    delayedRead = false;
+}
+
+
 timestamp_type CFileContents::getTimeStamp()
 {
     //MORE: Could store a timestamp if the source was the legacy repository which has no corresponding file
     if (!file)
-        return 0;
+        return ts;
     return ::getTimeStamp(file);
 }
 
@@ -8013,23 +8139,6 @@ void CFileContents::ensureLoaded()
     setContentsOwn(buffer);
 }
 
-CFileContents::CFileContents(const char *query, ISourcePath * _sourcePath, bool _isSigned, IHqlExpression * _gpgSignature)
-: sourcePath(_sourcePath), implicitlySigned(_isSigned), gpgSignature(_gpgSignature)
-{
-    if (query)
-        setContents(strlen(query), query);
-
-    delayedRead = false;
-}
-
-CFileContents::CFileContents(unsigned len, const char *query, ISourcePath * _sourcePath, bool _isSigned, IHqlExpression * _gpgSignature)
-: sourcePath(_sourcePath), implicitlySigned(_isSigned), gpgSignature(_gpgSignature)
-{
-    setContents(len, query);
-    delayedRead = false;
-}
-
-
 void CFileContents::setContents(unsigned len, const char * query)
 {
     void * buffer = fileContents.allocate(len+1);
@@ -8045,15 +8154,15 @@ void CFileContents::setContentsOwn(MemoryBuffer & buffer)
     fileContents.setOwn(len, buffer.detach());
 }
 
-IFileContents * createFileContentsFromText(unsigned len, const char * text, ISourcePath * sourcePath, bool isSigned, IHqlExpression * gpgSignature)
+IFileContents * createFileContentsFromText(unsigned len, const char * text, ISourcePath * sourcePath, bool isSigned, IHqlExpression * gpgSignature, timestamp_type ts)
 {
-    return new CFileContents(len, text, sourcePath, isSigned, gpgSignature);
+    return new CFileContents(len, text, sourcePath, isSigned, gpgSignature, ts);
 }
 
-IFileContents * createFileContentsFromText(const char * text, ISourcePath * sourcePath, bool isSigned, IHqlExpression * gpgSignature)
+IFileContents * createFileContentsFromText(const char * text, ISourcePath * sourcePath, bool isSigned, IHqlExpression * gpgSignature, timestamp_type ts)
 {
     //MORE: Treatment of nulls?
-    return new CFileContents(text, sourcePath, isSigned, gpgSignature);
+    return new CFileContents(text, sourcePath, isSigned, gpgSignature, ts);
 }
 
 IFileContents * createFileContentsFromFile(const char * filename, ISourcePath * sourcePath, bool isSigned, IHqlExpression * gpgSignature)
@@ -8558,6 +8667,14 @@ IHqlExpression *CHqlRemoteScope::clone(HqlExprArray &newkids)
 }
 
 
+void CHqlRemoteScope::noteExternalLookup(HqlLookupContext & ctx, IHqlExpression * expr)
+{
+    if (!text)
+        ctx.noteExternalLookup(this, expr);
+    else
+        ctx.noteExternalLookup(nullptr, this);
+}
+
 IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
 //  PrintLog("lookupSymbol %s#%d", searchName->getAtomNamePtr(),version);
@@ -8574,7 +8691,8 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
     {
         if (resolvedSym)
         {
-            ctx.noteExternalLookup(this, resolvedSym);
+            if (!(lookupFlags & LSFnoreport))
+                noteExternalLookup(ctx, resolvedSym);
             return resolvedSym.getClear();
         }
     }
@@ -8599,7 +8717,8 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
 
     if ((lookupFlags & LSFignoreBase))
     {
-        ctx.noteExternalLookup(this, ret);
+        if (!(lookupFlags & LSFnoreport))
+            noteExternalLookup(ctx, ret);
         return ret.getClear();
     }
 
@@ -8660,7 +8779,8 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
     if (!(newSymbol->isExported() || (lookupFlags & LSFsharedOK)))
         return NULL;
 
-    ctx.noteExternalLookup(this, newSymbol);
+    if (!(lookupFlags & LSFnoreport))
+        noteExternalLookup(ctx, newSymbol);
     return newSymbol.getClear();
 }
 
@@ -9776,6 +9896,7 @@ protected:
     IHqlScope * parentScope;
     Owned<HqlGramCtx> parentCtx;
     Owned<IHqlScope> resolved;
+    Owned<FileParseMeta> activeMeta;
     bool resolvedAll;
 };
 
@@ -9796,6 +9917,7 @@ CHqlForwardScope::CHqlForwardScope(IHqlScope * _parentScope, HqlGramCtx * _paren
     ForEachChild(i, this)
         resolvedScopeExpr->addOperand(LINK(queryChild(i)));
     resolvedAll = false;
+    activeMeta.set(&parseCtx.curMeta());
 }
 
 
@@ -9830,7 +9952,9 @@ IHqlExpression *CHqlForwardScope::lookupSymbol(IIdAtom * searchName, unsigned lo
     IHqlExpression * processingSymbol = createSymbol(searchName, LINK(processingMarker), ob_exported);
     resolved->defineSymbol(processingSymbol);
 
+    ctx.queryParseContext().beginMetaScope(*activeMeta);
     bool ok = parseForwardModuleMember(*parentCtx, this, ret, ctx);
+    ctx.queryParseContext().endMetaScope();
     OwnedHqlExpr newSymbol = resolved->lookupSymbol(searchName, lookupFlags, ctx);
 
     if(!ok || !newSymbol || (newSymbol == processingSymbol))
@@ -16728,9 +16852,9 @@ static void safeLookupSymbol(HqlLookupContext & ctx, IHqlScope * modScope, IIdAt
 
         //Macros need special processing to expand their definitions.
         HqlLookupContext childContext(ctx);
-        childContext.createDependencyEntry(modScope, name);
-
+        childContext.noteBeginMacro(modScope, name);
         OwnedHqlExpr expanded = expandMacroDefinition(resolved, childContext, false);
+        childContext.noteEndMacro();
     }
     catch (IException * e)
     {

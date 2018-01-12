@@ -38,6 +38,7 @@ endif()
 set (   SRCS 
         hqlatoms.cpp
         hqlattr.cpp
+        hqlcache.cpp
         hqlcollect.cpp
         hqldesc.cpp
         hqldsparam.cpp
@@ -78,6 +79,7 @@ set (   SRCS
         hql.hpp
         hqlatoms.hpp
         hqlattr.hpp
+        hqlcache.hpp
         hqlcollect.hpp
         hqldesc.hpp
         hqlesp.hpp

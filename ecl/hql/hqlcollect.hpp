@@ -19,8 +19,7 @@
 #define _HQLCOLLECT_HPP_
 
 #include "hql.hpp"
-
-typedef unsigned __int64 timestamp_t;
+#include "jstatcodes.h"
 
 //An opaque type which can be linked.
 interface IEclUser : public IInterface
@@ -30,7 +29,7 @@ interface IEclUser : public IInterface
 interface IXmlEclRepository : public IInterface
 {
 public:
-    virtual int getModules(StringBuffer & xml, IEclUser * user, timestamp_t timestamp) = 0;
+    virtual int getModules(StringBuffer & xml, IEclUser * user, timestamp_type timestamp) = 0;
     virtual int getAttributes(StringBuffer & xml, IEclUser * user, const char * modname, const char * attribute, int version, unsigned char infoLevel, const char * snapshot, bool sandbox4snapshot) = 0;
 };
 

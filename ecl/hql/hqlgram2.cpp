@@ -49,6 +49,7 @@
 #include "hqlrepository.hpp"
 #include "hqlir.hpp"
 #include "reservedwords.hpp"
+#include "hqlcache.hpp"
 
 #define ADD_IMPLICIT_FILEPOS_FIELD_TO_INDEX         TRUE
 #define FAST_FIND_FIELD
@@ -6208,7 +6209,9 @@ void HqlGram::report(IError* error)
         if (!isFatalError)
         {
             if (associateWarnings)
+            {
                 pendingWarnings.append(*LINK(error));
+            }
             else
             {
                 Owned<IError> mappedError = mapError(error);
@@ -10598,8 +10601,8 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
             else
                 msg.appendf("Import item  \"%s\" is not a module", str(id));
             reportError(ERR_MODULE_UNKNOWN, msg.str(),
-                        lexObject->getActualLineNo(), 
-                        lexObject->getActualColumn(), 
+                        lexObject->getActualLineNo(),
+                        lexObject->getActualColumn(),
                         lexObject->get_yyPosition());
             return NULL;
         }
@@ -12052,7 +12055,7 @@ IHqlExpression * reparseTemplateFunction(IHqlExpression * funcdef, IHqlScope *sc
     text.append("=>").append(contents->length(), contents->getText());
 
     //Could use a merge string implementation of IFileContents instead of expanding...
-    Owned<IFileContents> parseContents = createFileContentsFromText(text.str(), contents->querySourcePath(), contents->isImplicitlySigned(), contents->queryGpgSignature());
+    Owned<IFileContents> parseContents = createFileContentsFromText(text.str(), contents->querySourcePath(), contents->isImplicitlySigned(), contents->queryGpgSignature(), 0);
     HqlGram parser(scope, scope, parseContents, ctx, NULL, hasFieldMap, true);
     unsigned startLine = funcdef->getStartLine();
 
@@ -12185,7 +12188,7 @@ extern HQL_API IHqlExpression * parseQuery(const char * text, IErrorReceiver * e
 {
     Owned<IHqlScope> scope = createScope();
     HqlDummyLookupContext ctx(errs);
-    Owned<IFileContents> contents = createFileContentsFromText(text, NULL, false, NULL);
+    Owned<IFileContents> contents = createFileContentsFromText(text, NULL, false, NULL, 0);
     return parseQuery(scope, contents, ctx, NULL, NULL, true, true);
 }
 
@@ -12226,10 +12229,15 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
     }
     catch (...)
     {
-        attrCtx.noteEndAttribute(false);
+        attrCtx.noteEndAttribute(false, false, false, nullptr);
         throw;
     }
-    attrCtx.noteEndAttribute(true);
+    OwnedHqlExpr parsed = scope->lookupSymbol(name, LSFsharedOK|LSFnoreport, ctx);
+    OwnedHqlExpr simplified = createSimplifiedDefinition(parsed);
+    bool canCache = parsed && (parsed->getOperator() != no_forwardscope);
+    bool isMacro = parsed && parsed->isMacro();
+
+    attrCtx.noteEndAttribute(true, canCache, isMacro, simplified);
 }
 
 int testHqlInternals()

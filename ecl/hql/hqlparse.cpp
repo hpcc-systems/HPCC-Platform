@@ -328,7 +328,7 @@ void HqlLex::pushText(IFileContents * text, int startLineNo, int startColumn)
 
 void HqlLex::pushText(const char *s, int startLineNo, int startColumn)
 {
-    Owned<IFileContents> macroContents = createFileContentsFromText(s, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature);
+    Owned<IFileContents> macroContents = createFileContentsFromText(s, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature, 0);
     pushText(macroContents, startLineNo, startColumn);
 }
 
@@ -338,7 +338,7 @@ void HqlLex::pushText(const char *s)
 #ifdef TIMING_DEBUG
     MTIME_SECTION(timer, "HqlLex::pushText");
 #endif
-    Owned<IFileContents> macroContents = createFileContentsFromText(s, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature);
+    Owned<IFileContents> macroContents = createFileContentsFromText(s, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature, 0);
     bool useLegacyImport = hasLegacyImportSemantics();
     bool useLegacyWhen = hasLegacyWhenSemantics();
     inmacro = new HqlLex(yyParser, macroContents, NULL, NULL);
@@ -705,7 +705,7 @@ void HqlLex::processEncrypted()
     decryptEclAttribute(decrypted, encoded64.str());
     decrypted.append(0);    // add a null terminator to the string...
     Owned<ISourcePath> sourcePath = createSourcePath("<encrypted>");
-    Owned<IFileContents> decryptedContents = createFileContentsFromText((const char *)decrypted.toByteArray(), sourcePath, yyParser->inSignedModule, yyParser->gpgSignature);
+    Owned<IFileContents> decryptedContents = createFileContentsFromText((const char *)decrypted.toByteArray(), sourcePath, yyParser->inSignedModule, yyParser->gpgSignature, text->getTimeStamp());
     bool useLegacyImport = hasLegacyImportSemantics();
     bool useLegacyWhen = hasLegacyWhenSemantics();
     inmacro = new HqlLex(yyParser, decryptedContents, NULL, NULL);
@@ -1200,7 +1200,7 @@ void HqlLex::doExport(YYSTYPE & returnToken, bool toXml)
         try
         {
             HqlLookupContext ctx(yyParser->lookupCtx);
-            Owned<IFileContents> exportContents = createFileContentsFromText(curParam.str(), sourcePath, yyParser->inSignedModule, yyParser->gpgSignature);
+            Owned<IFileContents> exportContents = createFileContentsFromText(curParam.str(), sourcePath, yyParser->inSignedModule, yyParser->gpgSignature, 0);
             expr.setown(parseQuery(scope, exportContents, ctx, xmlScope, NULL, true, false));
 
             if (expr && (expr->getOperator() == no_sizeof))
@@ -1342,8 +1342,8 @@ void HqlLex::doFor(YYSTYPE & returnToken, bool doAll)
 
     forLoop = getSubScopes(returnToken, str(name), doAll);
     if (forFilterText.length())
-        forFilter.setown(createFileContentsFromText(forFilterText, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature));
-    forBody.setown(createFileContentsFromText(forBodyText, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature));
+        forFilter.setown(createFileContentsFromText(forFilterText, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature, 0));
+    forBody.setown(createFileContentsFromText(forBodyText, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature, 0));
 
     loopTimes = 0;
     if (forLoop && forLoop->first()) // more - check filter
@@ -1392,7 +1392,7 @@ void HqlLex::doLoop(YYSTYPE & returnToken)
     ::Release(forLoop);
     forLoop = new CDummyScopeIterator(ensureTopXmlScope());
     forFilter.clear();
-    forBody.setown(createFileContentsFromText(forBodyText, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature));
+    forBody.setown(createFileContentsFromText(forBodyText, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature, 0));
     loopTimes = 0;
     if (forLoop->first()) // more - check filter
         checkNextLoop(returnToken, true,startLine,startCol);
@@ -1633,7 +1633,7 @@ void HqlLex::doIsValid(YYSTYPE & returnToken)
     {
         HqlLookupContext ctx(yyParser->lookupCtx);
         ctx.errs.clear();   //Deliberately ignore any errors
-        Owned<IFileContents> contents = createFileContentsFromText(curParam.str(), sourcePath, yyParser->inSignedModule, yyParser->gpgSignature);
+        Owned<IFileContents> contents = createFileContentsFromText(curParam.str(), sourcePath, yyParser->inSignedModule, yyParser->gpgSignature, 0);
         expr = parseQuery(scope, contents, ctx, xmlScope, NULL, true, false);
 
         if(expr)
@@ -1909,7 +1909,7 @@ IHqlExpression *HqlLex::parseECL(IFileContents * contents, IXmlScope *xmlScope, 
 
 IHqlExpression *HqlLex::parseECL(const char * text, IXmlScope *xmlScope, int startLine, int startCol)
 {
-    Owned<IFileContents> contents = createFileContentsFromText(text, querySourcePath(), yyParser->inSignedModule, yyParser->gpgSignature);
+    Owned<IFileContents> contents = createFileContentsFromText(text, querySourcePath(), yyParser->inSignedModule, yyParser->gpgSignature, 0);
     return parseECL(contents, xmlScope, startLine, startCol);
 }
 

@@ -352,6 +352,12 @@ void CDateTime::setNow()
     set(simple);
 }
 
+void CDateTime::setTimeStamp(timestamp_type ts)
+{
+    set((time_t)(ts / 1000000));
+    nanosec = (ts % 1000000) * 1000;
+}
+
 void CDateTime::adjustTime(int deltaMins)
 {
     time_t simple = getSimple();
