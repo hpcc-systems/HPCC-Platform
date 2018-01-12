@@ -21,9 +21,6 @@ rm -rf "$DISTDIR"
 echo "EclWatch:  Cleaning Done"
 
 mkdir -p "$DISTDIR"
-mkdir "$DISTDIR/crossfilter"
-cp "$SRCDIR/crossfilter/crossfilter.min.js" "$DISTDIR/crossfilter/crossfilter.min.js"
-cp "$SRCDIR/crossfilter/LICENSE" "$DISTDIR/LICENSE"
 
 # Copy & minify stub.htm to dist
 cat "$SRCDIR/stub.htm" | tr '\n' ' ' | \
