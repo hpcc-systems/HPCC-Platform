@@ -620,16 +620,7 @@ void HqlLex::checkSignature(const attribute & dummyToken)
 
         StringBuffer buf;
         Owned<ISimpleReadStream> pipeReader = pipe->getErrorStream();
-        const size32_t chunkSize = 8192;
-        for (;;)
-        {
-            size32_t sizeRead = pipeReader->read(chunkSize, buf.reserve(chunkSize));
-            if (sizeRead < chunkSize)
-            {
-                buf.setLength(buf.length() - (chunkSize - sizeRead));
-                break;
-            }
-        }
+        readSimpleStream(buf, *pipeReader);
         DBGLOG("GPG %d %s", retcode, buf.str());
         if (retcode)
         {

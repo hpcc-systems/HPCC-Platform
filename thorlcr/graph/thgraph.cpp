@@ -2736,6 +2736,14 @@ void CJobBase::startJob()
         keyFileCacheLimit = (querySlaves()+1)*2;
     setKeyIndexCacheSize(keyFileCacheLimit);
     PROGLOG("Key file cache size set to: %d", keyFileCacheLimit);
+    if (getOptBool("dumpStacks")) // mainly as an example of printAllStacks() usage
+    {
+        StringBuffer output;
+        if (getAllStacks(output))
+            PrintLogDirect(output);
+        else
+            WARNLOG("Failed to capture process stacks: %s", output.str());
+    }
 }
 
 void CJobBase::endJob()

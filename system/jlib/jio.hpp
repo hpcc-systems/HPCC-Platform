@@ -22,6 +22,7 @@
 
 #include "jiface.hpp"
 #include "jarray.hpp"
+#include "jbuff.hpp"
 #include <stdio.h>
 
 typedef count_t findex_t;       //row index in a file.
@@ -76,6 +77,10 @@ interface IIOStream : public ISimpleReadStream
     virtual void flush() = 0;
     virtual size32_t write(size32_t len, const void * data) = 0;
 };
+
+template<typename T> size32_t readSimpleStream(T &target, ISimpleReadStream &stream, size32_t readChunkSize = 8192);
+extern template jlib_decl size32_t readSimpleStream<StringBuffer>(StringBuffer &, ISimpleReadStream &, size32_t);
+extern template jlib_decl size32_t readSimpleStream<MemoryBuffer>(MemoryBuffer &, ISimpleReadStream &, size32_t);
 
 
 #ifdef  __x86_64__
