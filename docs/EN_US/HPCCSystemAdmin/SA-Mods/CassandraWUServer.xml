@@ -274,9 +274,14 @@
                 fileref="../../images/Cass3.jpg"
                 vendor="configmgrSS" /></para>
 
-                <xi:include href="../../UsingConfigManager/UsingConfigManager.xml"
+                <xi:include href="../../ConfiguringHPCC/ConfiguringHPCC.xml"
                             xpointer="xpointer(//*[@id='daliplugoptionstable'])"
-                            xmlns:xi="http://www.w3.org/2001/XInclude" />
+                            xmlns:xi="http://www.w3.org/2001/XInclude">
+                          <xi:fallback>
+                             <para><emphasis role="bold">Configuration Module Failed to load</emphasis></para>
+                          </xi:fallback>
+                </xi:include>
+
 
                 <para><variablelist>
                     <varlistentry>

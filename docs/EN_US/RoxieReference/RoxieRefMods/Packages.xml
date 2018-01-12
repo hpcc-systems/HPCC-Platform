@@ -460,46 +460,105 @@ ecl packagemap activate &lt;target&gt; multipart.pkg
     work with packages. The ECL command line tool is fully documented in the
     Client Tools Manual.</para>
 
-    <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
-                xpointer="eclpackageadd"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+		   
+		     <xi:include  href="../../common/Version.xml" xpointer="Copyright" 
+		                 xmlns:xi="http://www.w3.org/2001/XInclude">
+		                   <xi:fallback>
+		                       <para>Copyright 201x </para>
+		                 </xi:fallback>
+              
+		     </xi:include>
+		
+		
+
 
     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
-                xpointer="eclpackagedelete"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+               xpointer="xpointer(//*[@id='eclpackageadd'])" 
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+                <xi:fallback>
+		   <para><emphasis>eclpackageadd Failed to load</emphasis></para>
+		</xi:fallback>
+    </xi:include>
 
     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
+               xpointer="xpointer(//*[@id='eclpackagedelete'])" 
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+                <xi:fallback>
+		   <para><emphasis>eclpackageadd Failed to load</emphasis></para>
+		</xi:fallback>
+    </xi:include>
+    
+     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
                 xpointer="eclpackageactivate"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+                <xi:fallback>
+		   <para><emphasis>eclpackagectivate Failed to load</emphasis></para>
+		</xi:fallback>
+	  </xi:include>
+ 
 
     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
                 xpointer="eclpackagedeactivate"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
-
+                                xmlns:xi="http://www.w3.org/2001/XInclude">
+		                <xi:fallback>
+				   <para><emphasis>eclpackdeactivate Failed to load</emphasis></para>
+				</xi:fallback>
+			  </xi:include>
+ 
     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
                 xpointer="eclpackagelist"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                                xmlns:xi="http://www.w3.org/2001/XInclude">
+		                <xi:fallback>
+				   <para><emphasis>eclpackagelist Failed to load</emphasis></para>
+				</xi:fallback>
+			  </xi:include>
+ 
 
     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
                 xpointer="eclpackageinfo"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                                xmlns:xi="http://www.w3.org/2001/XInclude">
+		                <xi:fallback>
+				   <para><emphasis>eclpackageInfo Failed to load</emphasis></para>
+				</xi:fallback>
+			  </xi:include>
+ 
 
     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
                 xpointer="eclpackagemapaddpart"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                                xmlns:xi="http://www.w3.org/2001/XInclude">
+		                <xi:fallback>
+				   <para><emphasis>eclpackmapaddpart Failed to load</emphasis></para>
+				</xi:fallback>
+			  </xi:include>
+ 
 
     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
                 xpointer="eclpackagemapgetpart"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                                xmlns:xi="http://www.w3.org/2001/XInclude">
+		                <xi:fallback>
+				   <para><emphasis>eclpackagemapgetpart Failed to load</emphasis></para>
+				</xi:fallback>
+			  </xi:include>
+ 
 
     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
                 xpointer="eclpackagemapremovepart"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                                           xmlns:xi="http://www.w3.org/2001/XInclude">
+				                <xi:fallback>
+						   <para><emphasis>eclpackagemapremovepart Failed to load</emphasis></para>
+						</xi:fallback>
+					  </xi:include>
+ 
 
     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
                 xpointer="eclpackagevalidate"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
-
+                                           xmlns:xi="http://www.w3.org/2001/XInclude">
+				                <xi:fallback>
+						   <para><emphasis>eclpackagevalidate Failed to load</emphasis></para>
+						</xi:fallback>
+					  </xi:include>
+ 
     <sect2 role="brk">
       <title>Tips:</title>
 
