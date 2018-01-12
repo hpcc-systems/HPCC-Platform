@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
-1
+
 #include "jliball.hpp"
 
 #include "platform.h"
