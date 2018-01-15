@@ -69,7 +69,7 @@ if(USE_CASSANDRA)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-format-nonliteral") # Work around cassandra build error
     if (CMAKE_COMPILER_IS_GNUCXX)
         if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0.0)
-          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wimplicit-fallthrough=0") # Work around cassandra build error
+          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wimplicit-fallthrough=0 -Wno-maybe-uninitialized") # Work around cassandra build error
         endif ()
     endif ()
   endif()

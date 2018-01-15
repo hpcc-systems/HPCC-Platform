@@ -399,9 +399,9 @@ protected:
     std::atomic<int> activeWriters;
     std::atomic<bool> aborted;
     Semaphore readers;
-    char readerPadding[CACHE_LINE_SIZE - sizeof(Semaphore)];
+    char readerPadding[CACHE_LINE_SIZE - (sizeof(Semaphore) % CACHE_LINE_SIZE)];
     Semaphore writers;
-    char writerPadding[CACHE_LINE_SIZE - sizeof(Semaphore)];
+    char writerPadding[CACHE_LINE_SIZE - (sizeof(Semaphore) % CACHE_LINE_SIZE)];
     //Ensure the state is not on the same cache line as anything else, especially anything that is modified.
     std::atomic<state_t> state;
 };
