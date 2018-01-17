@@ -95,6 +95,8 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(USE_UNSIGNED_CHAR "Build system with default char type is unsigned" OFF)
   option(USE_MYSQL "Enable mysql support" ON)
   option(USE_LIBMEMCACHED "Enable libmemcached support" ON)
+  option(USE_PYTHON2 "Enable python2 language support for platform build" ON)
+  option(USE_PYTHON3 "Enable python3 language support for platform build" ON)
   option(USE_OPTIONAL "Automatically disable requested features with missing dependencies" ON)
   option(JLIB_ONLY  "Build JLIB for other projects such as Configurator, Ganglia Monitoring, etc" OFF)
   # Generates code that is more efficient, but will cause problems if target platforms do not support it.
@@ -112,8 +114,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   endif()
   option(LOGGING_SERVICE "Configure use of logging service" ON)
   option(WSSQL_SERVICE "Configure use of ws_sql service" ON)
-  option(INCLUDE_PY2EMBED "Configure use of py2embed with standard platform package" ON)
-  option(INCLUDE_PY3EMBED "Configure use of py3embed with standard platform package" ON)
 
 
 
@@ -142,8 +142,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     REMBED
     V8EMBED
     MEMCACHED
-    PY2EMBED
-    PY3EMBED
     REDIS
     SQS
     MYSQLEMBED
@@ -248,7 +246,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   endif()
 
   if ( CLIENTTOOLS_ONLY )
-      set(PY2EMBED ON)
       set(PLATFORM OFF)
       set(DEVEL OFF)
   endif()
