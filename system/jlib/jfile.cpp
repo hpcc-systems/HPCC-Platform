@@ -5677,10 +5677,8 @@ private:
         {
             size32_t left = bufmax-bufpos;
             got = left;
-            if (left>=sz) 
+            if (left>=sz || eoinput)
                 return buf+bufpos;
-            if (eoinput) 
-                return left?(buf+bufpos):NULL;
             size32_t reqsz = sz+bufsize;  // NB not sz-left as want some slack
             if (ma.length()<reqsz) {
                 MemoryAttr ma2;

@@ -551,13 +551,12 @@ public:
                 got = UINT_MAX-1;
             else
                 got = (size32_t) remaining;
-            return start + pos;
         }
         else
         {
             got = 0;
-            return NULL;
         }
+        return start + pos;
     }
     virtual void get(size32_t len, void * ptr) override
     {
