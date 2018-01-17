@@ -1013,6 +1013,22 @@ public:
         }
     }
 
+    const IResolvedFile *resolveLFNIndex(const char *filename, bool isOpt)
+    {
+        const IResolvedFile *ret = resolveLFN(filename, isOpt);
+        if (ret && !ret->isKey())
+            throw MakeStringException(0, "Attempting to read flat file as an index: %s", filename);
+        return ret;
+    }
+
+    const IResolvedFile *resolveLFNFlat(const char *filename, bool isOpt)
+    {
+        const IResolvedFile *ret = resolveLFN(filename, isOpt);
+        if (ret && ret->isKey())
+            throw MakeStringException(0, "Attempting to read index as a flat file: %s", filename);
+        return ret;
+    }
+
     virtual void updateFactoryStatistics() const override
     {
         CRuntimeStatisticCollection mergedStats(stats.queryMapping());
@@ -21554,7 +21570,7 @@ public:
             if (variableFileName)
             {
                 OwnedRoxieString fileName(helper.getFileName());
-                varFileInfo.setown(resolveLFN(fileName, isOpt));
+                varFileInfo.setown(resolveLFNFlat(fileName, isOpt));
                 numParts = 0;
                 if (varFileInfo)
                     numParts = varFileInfo->getNumParts();
@@ -22685,7 +22701,7 @@ protected:
     void setVariableFileInfo()
     {
         OwnedRoxieString indexName(indexHelper.getFileName());
-        varFileInfo.setown(resolveLFN(indexName, isOpt));
+        varFileInfo.setown(resolveLFNIndex(indexName, isOpt));
         if (varFileInfo)
         {
             unsigned formatCrc = getFormatCrc(indexHelper.getFormatCrc());
@@ -23338,7 +23354,7 @@ class CRoxieServerSimpleIndexReadActivity : public CRoxieServerActivity, impleme
     void setVariableFileInfo()
     {
         OwnedRoxieString indexName(indexHelper.getFileName());
-        varFileInfo.setown(resolveLFN(indexName, isOpt));
+        varFileInfo.setown(resolveLFNIndex(indexName, isOpt));
         unsigned formatCrc = getFormatCrc(indexHelper.getFormatCrc());
         IOutputMetaData *projectedMeta = indexHelper.queryProjectedDiskRecordSize();
         IOutputMetaData *expectedMeta = indexHelper.queryDiskRecordSize();
@@ -24507,7 +24523,7 @@ public:
         if (variableFileName)
         {
             OwnedRoxieString fname(helper.getFileName());
-            varFileInfo.setown(resolveLFN(fname, isOpt));
+            varFileInfo.setown(resolveLFNFlat(fname, isOpt));
             if (varFileInfo)
                 map.setown(varFileInfo->getFileMap());
         }
@@ -25251,7 +25267,7 @@ public:
         else if (variableIndexFileName)
         {
             OwnedRoxieString indexFileName(helper.getIndexFileName());
-            varFileInfo.setown(resolveLFN(indexFileName, (helper.getJoinFlags() & JFindexoptional) != 0));
+            varFileInfo.setown(resolveLFNIndex(indexFileName, (helper.getJoinFlags() & JFindexoptional) != 0));
             if (varFileInfo)
             {
                 unsigned formatCrc = getFormatCrc(helper.getIndexFormatCrc());
@@ -25951,7 +25967,7 @@ public:
         {
             bool isFetchOpt = (helper.getFetchFlags() & FFdatafileoptional) != 0;
             OwnedRoxieString fname(helper.getFileName());
-            varFetchFileInfo.setown(resolveLFN(fname, isFetchOpt));
+            varFetchFileInfo.setown(resolveLFNFlat(fname, isFetchOpt));
             if (varFetchFileInfo)
             {
                 // Note - we don't need to do any translation on the disk part of full-keyed joins
@@ -26106,7 +26122,7 @@ public:
         else if (variableIndexFileName)
         {
             OwnedRoxieString indexFileName(helper.getIndexFileName());
-            varFileInfo.setown(resolveLFN(indexFileName, (helper.getJoinFlags() & JFindexoptional) != 0));
+            varFileInfo.setown(resolveLFNIndex(indexFileName, (helper.getJoinFlags() & JFindexoptional) != 0));
             if (varFileInfo)
             {
                 unsigned formatCrc = getFormatCrc(helper.getIndexFormatCrc());
