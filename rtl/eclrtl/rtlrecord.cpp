@@ -204,7 +204,7 @@ static unsigned expandNestedRows(unsigned idx, unsigned startIdx, const char *pr
 class FieldNameToFieldNumMap
 {
 public:
-    FieldNameToFieldNumMap(const RtlRecord &record)
+    FieldNameToFieldNumMap(const RtlRecord &record) : map(true)
     {
         unsigned numFields = record.getNumFields();
         for (unsigned idx = 0; idx < numFields;idx++)

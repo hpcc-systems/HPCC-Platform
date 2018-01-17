@@ -1005,8 +1005,12 @@ public:
     }
     virtual size32_t translate(ARowBuilder &builder, const byte *sourceRec) const override
     {
-        dbgassertex(canTranslate());
         return doTranslate(builder, 0, sourceRec);
+    }
+    virtual size32_t translate(ARowBuilder &builder, const RtlRow &sourceRow) const override
+    {
+        sourceRow.lazyCalcOffsets(-1);  // MORE - could save the max one we actually need...
+        return doTranslate(builder, 0, sourceRow);
     }
     virtual bool canTranslate() const override
     {
@@ -1047,9 +1051,14 @@ private:
     {
         unsigned numOffsets = sourceRecInfo.getNumVarFields() + 1;
         size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
+        RtlRow sourceRow(sourceRecInfo, sourceRec, numOffsets, variableOffsets);  // MORE - could save the max source offset we actually need, and only set up that many...
+        return doTranslate(builder, 0, sourceRow);
+    }
+    size32_t doTranslate(ARowBuilder &builder, size32_t offset, const RtlRow &sourceRow) const
+    {
+        dbgassertex(canTranslate());
         byte * destConditions = (byte *)alloca(destRecInfo.getNumIfBlocks() * sizeof(byte));
         memset(destConditions, 2, destRecInfo.getNumIfBlocks() * sizeof(byte));
-        RtlRow sourceRow(sourceRecInfo, sourceRec, numOffsets, variableOffsets);
         size32_t estimate = destRecInfo.getFixedSize();
         if (!estimate)
         {
@@ -1071,7 +1080,7 @@ private:
                 unsigned matchField = match.matchIdx;
                 const RtlTypeInfo *sourceType = sourceRecInfo.queryType(matchField);
                 size_t sourceOffset = sourceRow.getOffset(matchField);
-                const byte *source = sourceRec + sourceOffset;
+                const byte *source = sourceRow.queryRow() + sourceOffset;
                 size_t copySize = sourceRow.getSize(matchField);
                 if (copySize == 0 && (match.matchType & match_inifblock))  // Field is missing because of an ifblock - use default value
                 {
@@ -1587,19 +1596,22 @@ extern ECLRTL_API IRowStream * transformRecord(IEngineRowAllocator * resultAlloc
 class CKeyTranslator : public CInterfaceOf<IKeyTranslator>
 {
 public:
-    CKeyTranslator(const RtlRecord &destRecInfo, const RtlRecord &srcRecInfo)
+    CKeyTranslator(const RtlRecord &actual, const RtlRecord &expected)
     {
-        for (unsigned idx = 0; idx < srcRecInfo.getNumFields(); idx++)
+        translateNeeded = false;
+        for (unsigned expectedIdx = 0; expectedIdx < expected.getNumFields(); expectedIdx++)
         {
-            unsigned matchIdx = destRecInfo.getFieldNum(srcRecInfo.queryName(idx));
-            if (matchIdx != -1)
+            unsigned actualIdx = actual.getFieldNum(expected.queryName(expectedIdx));
+            if (actualIdx != -1)
             {
-                const RtlTypeInfo *srcType = srcRecInfo.queryType(idx);
-                const RtlTypeInfo *destType = destRecInfo.queryType(idx);
-                if (!destType->equivalent(srcType))
-                    matchIdx = (unsigned) -2;
+                const RtlTypeInfo *expectedType = expected.queryType(expectedIdx);
+                const RtlTypeInfo *actualType = actual.queryType(actualIdx);
+                if (!actualType->equivalent(expectedType))
+                    actualIdx = (unsigned) -2;
             }
-            map.append(matchIdx);
+            map.append(actualIdx);
+            if (actualIdx != expectedIdx)
+                translateNeeded = true;
         }
     }
     virtual void describe() const override
@@ -1618,30 +1630,38 @@ public:
     virtual bool translate(RowFilter &filters) const override
     {
         bool mapNeeded = false;
-        unsigned numFields = filters.numFilterFields();
-        for (unsigned idx = 0; idx < numFields; idx++)
+        if (translateNeeded)
         {
-            unsigned fieldNum = filters.queryFilter(idx).queryFieldIndex();
-            unsigned mappedFieldNum = map.isItem(fieldNum) ? map.item(fieldNum) : (unsigned) -1;
-            if (mappedFieldNum != fieldNum)
+            unsigned numFields = filters.numFilterFields();
+            for (unsigned idx = 0; idx < numFields; idx++)
             {
-                mapNeeded = true;
-                switch (mappedFieldNum)
+                unsigned fieldNum = filters.queryFilter(idx).queryFieldIndex();
+                unsigned mappedFieldNum = map.isItem(fieldNum) ? map.item(fieldNum) : (unsigned) -1;
+                if (mappedFieldNum != fieldNum)
                 {
-                case (unsigned) -1: throw makeStringExceptionV(0, "Cannot translate keyed filter on field %u - no matching field", idx);
-                case (unsigned) -2: throw makeStringExceptionV(0, "Cannot translate keyed filter on field %u - incompatible matching field type", idx);
-                default:
-                    filters.remapField(idx, mappedFieldNum);
-                    break;
+                    mapNeeded = true;
+                    switch (mappedFieldNum)
+                    {
+                    case (unsigned) -1: throw makeStringExceptionV(0, "Cannot translate keyed filter on field %u - no matching field", idx);
+                    case (unsigned) -2: throw makeStringExceptionV(0, "Cannot translate keyed filter on field %u - incompatible matching field type", idx);
+                    default:
+                        filters.remapField(idx, mappedFieldNum);
+                        break;
+                    }
                 }
             }
+            if (mapNeeded)
+                filters.recalcFieldsRequired();
         }
-        if (mapNeeded)
-            filters.recalcFieldsRequired();
         return mapNeeded;
+    }
+    virtual bool needsTranslate() const
+    {
+        return translateNeeded;
     }
 protected:
     UnsignedArray map;
+    bool translateNeeded = false;
 };
 
 extern ECLRTL_API const IKeyTranslator *createKeyTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo)

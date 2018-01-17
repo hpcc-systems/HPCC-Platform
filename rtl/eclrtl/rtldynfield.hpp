@@ -108,6 +108,7 @@ interface IDynamicTransform : public IInterface
 {
     virtual void describe() const = 0;
     virtual size32_t translate(ARowBuilder &builder, const byte *sourceRec) const = 0;
+    virtual size32_t translate(ARowBuilder &builder, const RtlRow &sourceRow) const = 0;
     virtual bool canTranslate() const = 0;
     virtual bool needsTranslate() const = 0;
 };
@@ -117,6 +118,7 @@ interface IKeyTranslator : public IInterface
 {
     virtual void describe() const = 0;
     virtual bool translate(RowFilter &filters) const = 0;
+    virtual bool needsTranslate() const = 0;
 };
 
 extern ECLRTL_API const IDynamicTransform *createRecordTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo);

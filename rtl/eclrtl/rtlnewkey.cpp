@@ -1369,6 +1369,31 @@ void RowFilter::extractKeyFilter(const RtlRecord & record, IConstArrayOf<IFieldF
     }
 }
 
+void RowFilter::extractMemKeyFilter(const RtlRecord & record, const UnsignedArray &sortOrder, IConstArrayOf<IFieldFilter> & keyFilters) const
+{
+    if (!filters)
+        return;
+
+    // for in-memory index, we want filters in the same order as the sort fields, with wilds added
+    ForEachItemIn(idx, sortOrder)
+    {
+        unsigned sortField = sortOrder.item(idx);
+        bool needWild = true;
+        ForEachItemIn(fidx, filters)
+        {
+            const IFieldFilter &filter = filters.item(fidx);
+            if (filter.queryFieldIndex()==sortField)
+            {
+                keyFilters.append(OLINK(filter));
+                needWild = false;
+                break;
+            }
+        }
+        if (needWild)
+            keyFilters.append(*createWildFieldFilter(sortField, *record.queryType(sortField)));
+    }
+}
+
 const IFieldFilter *RowFilter::findFilter(unsigned fieldNum) const
 {
     ForEachItemIn(i, filters)
@@ -1420,7 +1445,7 @@ void RowFilter::remapField(unsigned filterIdx, unsigned newFieldNum)
 
 bool RowCursor::setRowForward(const byte * row)
 {
-    currentRow.setRow(row, numFilterFields());
+    currentRow.setRow(row, numFieldsRequired);
 
     unsigned field = 0;
     //Now check which of the fields matches, and update matchedRanges to indicate

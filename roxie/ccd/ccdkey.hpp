@@ -65,7 +65,7 @@ interface IInMemoryIndexManager : extends IInterface
 {
     virtual void load(IFileIOArray *, IOutputMetaData *preloadLayout, bool preload) = 0;
     virtual bool IsShared() const = 0;
-    virtual IDirectReader *selectKey(ScoredRowFilter &filter, const ITranslatorSet *translators) const = 0;
+    virtual IDirectReader *selectKey(ScoredRowFilter &filter, const ITranslatorSet *translators, IRoxieContextLogger &logctx) const = 0;
     virtual IDirectReader *selectKey(const char *sig, ScoredRowFilter &filter, const ITranslatorSet *translators) const = 0;
     virtual IDirectReader *createReader(const RowFilter &postFilter, bool _grouped, offset_t readPos, unsigned partNo, unsigned numParts, const ITranslatorSet *translators) const = 0;
     virtual void setKeyInfo(IPropertyTree &indexInfo) = 0;
