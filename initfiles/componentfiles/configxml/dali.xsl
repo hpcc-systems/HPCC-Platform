@@ -245,6 +245,21 @@
             <xsl:attribute name="filesBasedn">
                 <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@filesBasedn"/>
             </xsl:attribute>
+            <xsl:attribute name="groupsBasedn">
+                <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@groupsBasedn"/>
+            </xsl:attribute>
+            <xsl:attribute name="modulesBasedn">
+                <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@modulesBasedn"/>
+            </xsl:attribute>
+            <xsl:attribute name="sudoersBasedn">
+                <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@sudoersBasedn"/>
+            </xsl:attribute>
+            <xsl:attribute name="usersBasedn">
+                <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@usersBasedn"/>
+            </xsl:attribute>
+            <xsl:attribute name="workunitsBasedn">
+                <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@workunitsBasedn"/>
+            </xsl:attribute>
             <xsl:attribute name="serverType">
                 <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@serverType"/>
             </xsl:attribute>
