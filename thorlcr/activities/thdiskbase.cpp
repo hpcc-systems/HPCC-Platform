@@ -48,6 +48,8 @@ void CDiskReadMasterBase::init()
     Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), helperFileName, 0 != ((TDXtemporary|TDXjobtemp) & helper->getFlags()), 0 != (TDRoptional & helper->getFlags()), true);
     if (file)
     {
+        if (isFileKey(file))
+            throw MakeActivityException(this, 0, "Attempting to read index as a flat file: %s", helperFileName.get());
         if (file->isExternal() && (helper->getFlags() & TDXcompress))
             file->queryAttributes().setPropBool("@blockCompressed", true);
         if (file->numParts() > 1)

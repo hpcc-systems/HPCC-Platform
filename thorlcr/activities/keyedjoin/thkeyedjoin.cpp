@@ -94,6 +94,8 @@ public:
         bool keyHasTlk = false;
         if (indexFile)
         {
+            if (!isFileKey(indexFile))
+                throw MakeActivityException(this, 0, "Attempting to read flat file as an index: %s", indexFileName.get());
             unsigned numParts = 0;
             localKey = indexFile->queryAttributes().getPropBool("@local");
 
@@ -222,6 +224,8 @@ public:
                         dataFile.setown(queryThorFileManager().lookup(container.queryJob(), fetchFilename, false, 0 != (helper->getFetchFlags() & FFdatafileoptional), true));
                         if (dataFile)
                         {
+                            if (isFileKey(dataFile))
+                                throw MakeActivityException(this, 0, "Attempting to read index as a flat file: %s", fetchFilename.get());
                             if (superIndex)
                                 throw MakeActivityException(this, 0, "Superkeys and full keyed joins are not supported");
                             dataFileDesc.setown(getConfiguredFileDescriptor(*dataFile));
