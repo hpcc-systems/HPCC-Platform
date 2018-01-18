@@ -1052,7 +1052,7 @@ private:
         unsigned numOffsets = sourceRecInfo.getNumVarFields() + 1;
         size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
         RtlRow sourceRow(sourceRecInfo, sourceRec, numOffsets, variableOffsets);  // MORE - could save the max source offset we actually need, and only set up that many...
-        return doTranslate(builder, 0, sourceRow);
+        return doTranslate(builder, offset, sourceRow);
     }
     size32_t doTranslate(ARowBuilder &builder, size32_t offset, const RtlRow &sourceRow) const
     {
