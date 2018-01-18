@@ -104,7 +104,8 @@ protected:
 IEclSource * CEclCollection::getSource(IIdAtom * searchName)
 {
     ensureChildren();
-    return find(searchName);
+    IEclSource * match = find(searchName);
+    return LINK(match);
 }
 
 IEclSourceIterator * CEclCollection::getContained()
