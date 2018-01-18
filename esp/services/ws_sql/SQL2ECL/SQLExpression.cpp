@@ -552,7 +552,7 @@ void SQLBinaryExpression::toECLStringTranslateSource(
         }
 
     }
-    else if (translation1.length()<0 && translation2.length()<0)
+    else if (translation1.length() == 0 && translation2.length() == 0)
     {
         return;
     }
