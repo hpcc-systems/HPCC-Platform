@@ -79,7 +79,6 @@ target_link_libraries ( hthor
          jlib
          mp
          hrpc
-         hql
          remote
          dalibase
          environment

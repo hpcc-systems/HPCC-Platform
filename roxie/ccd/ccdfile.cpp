@@ -41,9 +41,9 @@
 #include <sys/syscall.h>
 #include "ioprio.h"
 #endif
+#include "thorcommon.hpp"
 #include "eclhelper_dyn.hpp"
 #include "rtldynfield.hpp"
-#include "hqlexpr.hpp"
 
 atomic_t numFilesOpen[2];
 
@@ -1831,25 +1831,8 @@ protected:
         if (formatCrcs.length() && formatCrc == formatCrcs.item(prevIdx) &&
             diskTypeInfo.item(prevIdx) && isGrouped==diskTypeInfo.item(prevIdx)->isGrouped())
             actualFormat.set(diskTypeInfo.item(prevIdx));
-        else if (props.hasProp("_rtlType"))
-        {
-            MemoryBuffer layoutBin;
-            props.getPropBin("_rtlType", layoutBin);
-            actualFormat.setown(createTypeInfoOutputMetaData(layoutBin, isGrouped, nullptr));
-        }
-        else if (props.hasProp("ECL"))
-        {
-            StringBuffer layoutECL;
-            props.getProp("ECL", layoutECL);
-            MultiErrorReceiver errs;
-            Owned<IHqlExpression> expr = parseQuery(layoutECL.str(), &errs);
-            if (errs.errCount() == 0)
-            {
-                MemoryBuffer layoutBin;
-                if (exportBinaryType(layoutBin, expr))
-                    actualFormat.setown(createTypeInfoOutputMetaData(layoutBin, isGrouped, nullptr));
-            }
-        }
+        else
+            actualFormat.setown(getDaliLayoutInfo(props));
         diskTypeInfo.append(actualFormat.getClear());
         formatCrcs.append(formatCrc);
 

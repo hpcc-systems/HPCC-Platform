@@ -34,6 +34,33 @@
 
 //---------------------------------------------------------------------------------------------------------------------
 
+extern ECLRTL_API RecordTranslationMode getTranslationMode(const char *val)
+{
+    if (strieq(val, "alwaysDisk"))
+        return RecordTranslationMode::AlwaysDisk;
+    else if (strieq(val, "alwaysECL"))
+        return RecordTranslationMode::AlwaysECL;
+    else if (!val || strToBool(val) || strieq(val, "payload"))
+        return RecordTranslationMode::Payload;
+    else
+        return RecordTranslationMode::None;
+}
+
+extern ECLRTL_API const char *getTranslationModeText(RecordTranslationMode val)
+{
+    switch (val)
+    {
+    case RecordTranslationMode::AlwaysDisk: return "alwaysDisk";
+    case RecordTranslationMode::AlwaysECL: return "alwaysECL";
+    case RecordTranslationMode::Payload: return "payload";
+    case RecordTranslationMode::None: return "off";
+    }
+    throwUnexpected();
+}
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
 const RtlTypeInfo *FieldTypeInfoStruct::createRtlTypeInfo(IThorIndexCallback *_callback) const
 {
     const RtlTypeInfo *ret = nullptr;
@@ -1643,7 +1670,7 @@ public:
             }
         }
     }
-    virtual bool translate(RowFilter &filters) const override
+    virtual bool translate(RowFilter &filters) const override // MORE - remove this version - it's not safe
     {
         bool mapNeeded = false;
         if (translateNeeded)
@@ -1668,6 +1695,34 @@ public:
             }
             if (mapNeeded)
                 filters.recalcFieldsRequired();
+        }
+        return mapNeeded;
+    }
+    virtual bool translate(RowFilter &filter, IConstArrayOf<IFieldFilter> &in) const override
+    {
+        bool mapNeeded = false;
+        if (translateNeeded)
+        {
+            unsigned numFields = in.length();
+            for (unsigned idx = 0; idx < numFields; idx++)
+            {
+                unsigned fieldNum = in.item(idx).queryFieldIndex();
+                unsigned mappedFieldNum = map.isItem(fieldNum) ? map.item(fieldNum) : (unsigned) -1;
+                if (mappedFieldNum != fieldNum)
+                {
+                    mapNeeded = true;
+                    switch (mappedFieldNum)
+                    {
+                    case (unsigned) -1: throw makeStringExceptionV(0, "Cannot translate keyed filter on field %u - no matching field", idx);
+                    case (unsigned) -2: throw makeStringExceptionV(0, "Cannot translate keyed filter on field %u - incompatible matching field type", idx);
+                    default:
+                        filter.addFilter(*in.item(idx).remap(mappedFieldNum));
+                        break;
+                    }
+                }
+                else
+                    filter.addFilter(OLINK(in.item(idx)));
+            }
         }
         return mapNeeded;
     }

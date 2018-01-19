@@ -837,14 +837,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         fieldTranslationEnabled = RecordTranslationMode::None;
         const char *val = topology->queryProp("@fieldTranslationEnabled");
         if (val)
-        {
-            if (strieq(val, "alwaysDisk"))
-                fieldTranslationEnabled = RecordTranslationMode::AlwaysDisk;
-            else if (strieq(val, "alwaysECL"))
-                fieldTranslationEnabled = RecordTranslationMode::AlwaysECL;
-            else if (strieq(val, "payload") || strToBool(val))
-                fieldTranslationEnabled = RecordTranslationMode::Payload;
-        }
+            fieldTranslationEnabled = getTranslationMode(val);
 
         pretendAllOpt = topology->getPropBool("@ignoreMissingFiles", false);
         memoryStatsInterval = topology->getPropInt("@memoryStatsInterval", 60);

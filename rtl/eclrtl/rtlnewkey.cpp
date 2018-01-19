@@ -1343,6 +1343,14 @@ bool RowFilter::matches(const RtlRow & row) const
     return true;
 }
 
+void RowFilter::appendFilters(IConstArrayOf<IFieldFilter> & _filters)
+{
+    ForEachItemIn(i, _filters)
+    {
+        addFilter(OLINK(_filters.item(i)));
+    }
+}
+
 void RowFilter::extractKeyFilter(const RtlRecord & record, IConstArrayOf<IFieldFilter> & keyFilters) const
 {
     if (!filters)
@@ -1422,6 +1430,12 @@ const IFieldFilter *RowFilter::extractFilter(unsigned fieldNum)
 void RowFilter::remove(unsigned idx)
 {
     filters.remove(idx);
+}
+
+void RowFilter::clear()
+{
+    filters.kill();
+    numFieldsRequired = 0;
 }
 
 void RowFilter::recalcFieldsRequired()

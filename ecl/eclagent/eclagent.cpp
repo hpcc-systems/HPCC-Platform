@@ -38,6 +38,7 @@
 #include "eclrtl_imp.hpp"
 #include "rtlds_imp.hpp"
 #include "rtlcommon.hpp"
+#include "rtldynfield.hpp"
 #include "workunit.hpp"
 #include "eventqueue.hpp"
 #include "schedulectrl.hpp"
@@ -698,6 +699,17 @@ void EclAgent::abort()
 {
     if (activeGraph)
         activeGraph->abort();
+}
+
+RecordTranslationMode EclAgent::rltEnabled() const
+{
+    IConstWorkUnit *wu = queryWorkUnit();
+    SCMStringBuffer val;
+    if(wu->hasDebugValue("layoutTranslationEnabled"))
+        wu->getDebugValue("layoutTranslationEnabled", val);
+    else
+        wu->getDebugValue("hthorLayoutTranslationEnabled", val);
+    return getTranslationMode(val.str());
 }
 
 IConstWUResult *EclAgent::getResult(const char *name, unsigned sequence)
@@ -3019,7 +3031,7 @@ char * EclAgent::queryIndexMetaData(char const * lfn, char const * xpath)
     return out.detach();
 }
 
-IConstWorkUnit *EclAgent::queryWorkUnit()
+IConstWorkUnit *EclAgent::queryWorkUnit() const
 {
     return wuRead;
 }

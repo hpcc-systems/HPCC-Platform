@@ -28,6 +28,8 @@
 #include "eclrtl.hpp"
 #include "rtlread_imp.hpp"
 #include "rtlcommon.hpp"
+#include "eclhelper_dyn.hpp"
+#include "hqlexpr.hpp"
 #include <algorithm>
 #ifdef _USE_NUMA
 #include <numa.h>
@@ -1815,3 +1817,29 @@ void bindMemoryToLocalNodes()
     numa_bitmask_free(nodes);
 #endif
 }
+
+extern THORHELPER_API IOutputMetaData *getDaliLayoutInfo(IPropertyTree const &props)
+{
+    bool isGrouped = props.getPropBool("@grouped", false);
+    if (props.hasProp("_rtlType"))
+    {
+        MemoryBuffer layoutBin;
+        props.getPropBin("_rtlType", layoutBin);
+        return createTypeInfoOutputMetaData(layoutBin, isGrouped, nullptr);
+    }
+    else if (props.hasProp("ECL"))
+    {
+        StringBuffer layoutECL;
+        props.getProp("ECL", layoutECL);
+        MultiErrorReceiver errs;
+        Owned<IHqlExpression> expr = parseQuery(layoutECL.str(), &errs);
+        if (errs.errCount() == 0)
+        {
+            MemoryBuffer layoutBin;
+            if (exportBinaryType(layoutBin, expr))
+                return createTypeInfoOutputMetaData(layoutBin, isGrouped, nullptr);
+        }
+    }
+    return nullptr;
+}
+

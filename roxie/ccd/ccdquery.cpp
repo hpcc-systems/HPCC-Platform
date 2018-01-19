@@ -401,16 +401,7 @@ void QueryOptions::updateFromWorkUnit(RecordTranslationMode &value, IConstWorkUn
     SCMStringBuffer val;
     wu.getDebugValue(name, val);
     if (val.length())
-    {
-        if (strieq(val.str(), "alwaysDisk"))
-            value = RecordTranslationMode::AlwaysDisk;
-        else if (strieq(val.str(), "alwaysECL"))
-            value = RecordTranslationMode::AlwaysECL;
-        else if (strieq(val.str(), "payload") || strToBool(val.str()))
-            value = RecordTranslationMode::Payload;
-        else
-            value = RecordTranslationMode::None;
-    }
+        value = getTranslationMode(val.str());
 }
 
 void QueryOptions::setFromContext(const IPropertyTree *ctx)
