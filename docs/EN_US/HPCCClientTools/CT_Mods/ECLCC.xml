@@ -177,15 +177,6 @@
               </row>
 
               <row>
-                <entry>-checkDirty</entry>
-
-                <entry>Causes eclcc to generate a warning for any attribute
-                that has been modified (according to the output of git
-                status). Use of this function requires that git be installed
-                and available on the path.</entry>
-              </row>
-
-              <row>
                 <entry>-foption[=value]</entry>
 
                 <entry>Set an ecl option. See #OPTION in the <emphasis>ECL
@@ -206,21 +197,15 @@
               </row>
 
               <row>
-                <entry>--nostdinc</entry>
-
-                <entry>Do not include the current directory in -I</entry>
-              </row>
-
-              <row>
                 <entry>-platform=hthor</entry>
 
-                <entry>Generate code for hthor executable (default)</entry>
+                <entry>Generate code for hthor cluster</entry>
               </row>
 
               <row>
                 <entry>-platform=roxie</entry>
 
-                <entry>Generate code for roxie cluster</entry>
+                <entry>Generate code for roxie cluster (default)</entry>
               </row>
 
               <row>
@@ -247,7 +232,7 @@
 
                 <entry><emphasis role="bold">NOTE: </emphasis>If there are
                 spaces in the path you specify, put it in quotes. For example:
-                –L"C:\Program Files"</entry>
+                -L"C:\Program Files"</entry>
               </row>
             </tbody>
           </tgroup>
@@ -296,6 +281,12 @@
               </row>
 
               <row>
+                <entry>-qa</entry>
+
+                <entry>Save ECL query archive as part of workunit</entry>
+              </row>
+
+              <row>
                 <entry>-wu</entry>
 
                 <entry>Only generate workunit information as xml file</entry>
@@ -332,7 +323,7 @@
               </row>
 
               <row>
-                <entry>-g</entry>
+                <entry>-g, --debug</entry>
 
                 <entry>Enable debug symbols in generated code</entry>
               </row>
@@ -341,13 +332,6 @@
                 <entry>-Wc,xx</entry>
 
                 <entry>Pass option xx to the c++ compiler</entry>
-              </row>
-
-              <row>
-                <entry>-D<emphasis>name</emphasis>=<emphasis>value</emphasis></entry>
-
-                <entry>Override the definition of a global attribute
-                'name'</entry>
               </row>
 
               <row>
@@ -376,6 +360,12 @@
               </row>
 
               <row>
+                <entry>-save-temps</entry>
+
+                <entry>Do not delete intermediate files</entry>
+              </row>
+
+              <row>
                 <entry>-shared</entry>
 
                 <entry>Generate workunit shared object instead of a
@@ -387,7 +377,7 @@
 
       <?dbfo-need height="3in"?>
 
-      <para>Other options:</para>
+      <para>File resolution options:</para>
 
       <para><informaltable colsep="1" frame="all" rowsep="1">
           <?dbfo keep-together="always"?>
@@ -399,15 +389,76 @@
 
             <tbody>
               <row>
+                <entry>-dfs=ip</entry>
+
+                <entry>Use specified ip for DFS filename resolution</entry>
+              </row>
+
+              <row>
+                <entry>-scope=prefix</entry>
+
+                <entry>Use specified scope prefix in DFS filename
+                resolution</entry>
+              </row>
+
+              <row>
+                <entry>-user=id</entry>
+
+                <entry>Use specified username in DFS filename
+                resolution</entry>
+              </row>
+
+              <row>
+                <entry>-password=xxx</entry>
+
+                <entry>Use specified password in DFS filename resolution
+                (blank to prompt)</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <?hard-pagebreak ?>
+
+      <para>Other options (list is available using eclcc -help -v):</para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec align="left" colwidth="125.55pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry>-aoption[=value]</entry>
+
+                <entry>Set an application option</entry>
+              </row>
+
+              <row>
                 <entry>--allow=str</entry>
 
                 <entry>Allow use of named feature. (e.g., cpp, pipe,
-                all)<para></para><para><emphasis role="bold">cpp</emphasis>:
-                Allow embedded code within ECL (e.g., c++, JAVA, Javascript,
-                Python, R, etc.)</para><para><emphasis
-                role="bold">pipe</emphasis>: Allow the PIPE command to send
-                data to an external program.</para><para><emphasis
+                all)<para><emphasis role="bold">cpp</emphasis>: Allow embedded
+                code within ECL (e.g., c++, JAVA, Javascript, Python, R,
+                etc.)</para><para><emphasis role="bold">pipe</emphasis>: Allow
+                the PIPE command to send data to an external
+                program.</para><para><emphasis role="bold">userECL</emphasis>:
+                Allow code that is not found via the ecl include
+                paths</para><para><emphasis role="bold">datafile</emphasis>:
+                Allow access to datafiles from ECL. </para><para><emphasis
+                role="bold">extern</emphasis>: Allow access to an external
+                service function</para><para><emphasis
                 role="bold">all</emphasis>: Allow all features</para></entry>
+              </row>
+
+              <row>
+                <entry>-allowsigned</entry>
+
+                <entry>Only allows access to a feature from signed
+                code</entry>
               </row>
 
               <row>
@@ -422,6 +473,29 @@
 
                 <entry>Enable/disable ecl version checking from
                 archives</entry>
+              </row>
+
+              <row>
+                <entry>-checkDirty</entry>
+
+                <entry>Causes eclcc to generate a warning for any attribute
+                that has been modified (according to the output of git
+                status). Use of this function requires that git be installed
+                and available on the path.</entry>
+              </row>
+
+              <row>
+                <entry>--component</entry>
+
+                <entry>Set the name of the component this is executing on
+                behalf of</entry>
+              </row>
+
+              <row>
+                <entry>-D<emphasis>name</emphasis>=<emphasis>value</emphasis></entry>
+
+                <entry>Override the definition of a global attribute
+                'name'</entry>
               </row>
 
               <row>
@@ -443,7 +517,7 @@
               </row>
 
               <row>
-                <entry>--fastsyntax </entry>
+                <entry>--fastsyntax</entry>
 
                 <entry>Delay expanding functions when parsing. May speed up
                 processing for some queries</entry>
@@ -472,12 +546,42 @@
 
                 <entry>Use legacy import semantics (deprecated)</entry>
               </row>
+            </tbody>
+          </tgroup>
+        </informaltable> <?hard-pagebreak ?> <para>Other options
+      (continued):</para> <informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec align="left" colwidth="125.55pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry>--leakcheck</entry>
+
+                <entry>Clean up memory since checking for memory leaks</entry>
+              </row>
 
               <row>
                 <entry>--keywords</entry>
 
                 <entry>Outputs the lists of ECL reserved words to stdout (XML
                 format)</entry>
+              </row>
+
+              <row>
+                <entry>-legacyimport</entry>
+
+                <entry>Use legacy import semantics (deprecated)</entry>
+              </row>
+
+              <row>
+                <entry>-legacywhen</entry>
+
+                <entry>Use legacy when/side-effects semantics
+                (deprecated)</entry>
               </row>
 
               <row>
@@ -490,6 +594,65 @@
                 <entry>--logdetail=<emphasis>n</emphasis></entry>
 
                 <entry>Set the level of detail in the log file</entry>
+              </row>
+
+              <row>
+                <entry>--maxErrors=&lt;n&gt;</entry>
+
+                <entry>Limit the number of errors, aborting on the nth
+                (default = 5)</entry>
+              </row>
+
+              <row>
+                <entry>--metacache=x</entry>
+
+                <entry>Specify directory to store distributed meta
+                information</entry>
+              </row>
+
+              <row>
+                <entry>--nologfile</entry>
+
+                <entry>Do not write any log file</entry>
+              </row>
+
+              <row>
+                <entry>--nogpg</entry>
+
+                <entry>Do not run gpg to check signatures on signed
+                code</entry>
+              </row>
+
+              <row>
+                <entry>--nosourcepath</entry>
+
+                <entry>Compile as if the source came from stdin</entry>
+              </row>
+
+              <row>
+                <entry>--nostdinc</entry>
+
+                <entry>Do not include the current directory in -I</entry>
+              </row>
+
+              <row>
+                <entry>-pch</entry>
+
+                <entry>Generate precompiled header for eclinclude4.hpp</entry>
+              </row>
+
+              <row>
+                <entry>-P &lt;path&gt;</entry>
+
+                <entry>Specify the path of the output files (only with -b
+                option)</entry>
+              </row>
+
+              <row>
+                <entry>-showpaths</entry>
+
+                <entry>Print information about the search paths eclcc is
+                using</entry>
               </row>
 
               <row>
@@ -510,6 +673,16 @@
 
                 <entry>Output additional tracing information while
                 compiling</entry>
+              </row>
+
+              <row>
+                <entry>-wxxxx=level</entry>
+
+                <entry>Set the severity for a particular warning code or
+                category. <para>Valid options for level are: all | ignore |
+                log | warning | error | fail</para> <emphasis
+                role="bold">-wall</emphasis> sets default severity for all
+                warnings</entry>
               </row>
 
               <row>
