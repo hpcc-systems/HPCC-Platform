@@ -248,7 +248,7 @@ IPropertyTree * CWsESDLConfigEx::getESDLDefinitionRegistry(const char * wsEclId,
     return (conn) ? conn->getRoot() : NULL;
 }
 
-void CWsESDLConfigEx::addESDLDefinition(IPropertyTree * queryRegistry, const char * name, IPropertyTree *definitionInfo, StringBuffer &newId, unsigned &newSeq, const char *userid, bool deleteprev)
+bool CWsESDLConfigEx::addESDLDefinition(IPropertyTree * queryRegistry, const char * name, IPropertyTree *definitionInfo, StringBuffer &newId, unsigned &newSeq, const char *userid, bool deleteprev, StringBuffer & message)
 {
     StringBuffer lcName(name);
     lcName.toLowerCase();
@@ -285,14 +285,16 @@ void CWsESDLConfigEx::addESDLDefinition(IPropertyTree * queryRegistry, const cha
             }
             else
             {
-                DBGLOG("Could not overwrite Definition: '%s.%d'", name, newSeq);
-                return;
+                message.setf("Could not overwrite Definition: '%s.%d'", name, newSeq);
+                ESPLOG(LogMin, "%s", message.str());
+                return false;
             }
         }
         else
         {
-            DBGLOG("Will not delete previous ESDL definition version because it is referenced in an ESDL binding.");
-            return;
+            message.setf("Will not delete previous ESDL definition version because it is referenced in an ESDL binding.");
+            ESPLOG(LogMin, "%s", message.str());
+            return false;
         }
     }
 
@@ -321,6 +323,7 @@ void CWsESDLConfigEx::addESDLDefinition(IPropertyTree * queryRegistry, const cha
         definitionInfo->setProp("@created",dt.getString(str).str());
 
     queryRegistry->addPropTree(ESDL_DEF_ENTRY, LINK(definitionInfo));
+    return true;
 }
 
 bool CWsESDLConfigEx::existsESDLDefinition(const char * servicename, unsigned ver)
@@ -500,9 +503,17 @@ bool CWsESDLConfigEx::onPublishESDLDefinition(IEspContext &context, IEspPublishE
 
             if (queryRegistry != NULL)
             {
-                addESDLDefinition(queryRegistry, service.get(), serviceXMLTree.get(), newqueryid, newseq, user, deletePrevious);
-                if (newseq)
-                    resp.setEsdlVersion(newseq);
+                if (addESDLDefinition(queryRegistry, service.get(), serviceXMLTree.get(), newqueryid, newseq, user, deletePrevious, msg))
+                {
+                    if (newseq)
+                        resp.setEsdlVersion(newseq);
+                }
+                else
+                {
+                    resp.updateStatus().setCode(-1);
+                    resp.updateStatus().setDescription(msg.str());
+                    return false;
+                }
             }
             else
             {
