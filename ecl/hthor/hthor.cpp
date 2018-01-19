@@ -152,6 +152,18 @@ const void * CRowBuffer::next()
         return NULL;
 }
 
+
+ILocalOrDistributedFile *resolveLFNFlat(IAgentContext &agent, const char *logicalName, const char *errorTxt, bool optional)
+{
+    Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(logicalName, errorTxt, optional);
+    if (!ldFile)
+        return nullptr;
+    IDistributedFile *dFile = ldFile->queryDistributedFile();
+    if (dFile && isFileKey(dFile))
+        throw MakeStringException(0, "Attempting to read index as a flat file: %s", logicalName);
+    return ldFile.getClear();
+}
+
 //=====================================================================================================
 
 CHThorActivityBase::CHThorActivityBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _help, ThorActivityKind _kind) : agent(_agent), help(_help),  outputMeta(help.queryOutputMeta()), kind(_kind), activityId(_activityId), subgraphId(_subgraphId)
@@ -8028,7 +8040,7 @@ void CHThorDiskReadBaseActivity::resolve()
     }
     else
     {
-        ldFile.setown(agent.resolveLFN(mangledHelperFileName.str(), "Read", 0 != (helper.getFlags() & TDRoptional)));
+        ldFile.setown(resolveLFNFlat(agent, mangledHelperFileName.str(), "Read", 0 != (helper.getFlags() & TDRoptional)));
         if ( mangledHelperFileName.charAt(0) == '~')
             logicalFileName.set(mangledHelperFileName.str()+1);
         else

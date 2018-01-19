@@ -2919,5 +2919,7 @@ extern HTHOR_API IHThorActivity * create ## NAME ## Activity(IAgentContext &_age
 extern HTHOR_API IHThorActivity * create ## NAME ## Activity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThor ## NAME ## Arg &arg, ThorActivityKind kind, EXTRATYPE extra) \
 {   return new CHThor ## NAME ##Activity(_agent, _activityId, _subgraphId, arg, kind, extra); }
 
+extern ILocalOrDistributedFile *resolveLFNFlat(IAgentContext &agent, const char *logicalName, const char *errorTxt, bool optional);
+
 #endif // HTHOR_IPP_INCL
 
