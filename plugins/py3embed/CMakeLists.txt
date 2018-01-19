@@ -24,7 +24,7 @@
 #####################################################
 
 project(py3embed)
-if(PY3EMBED)
+if(USE_PYTHON3)
     unset(PYTHONLIBS_FOUND CACHE)
     unset(PYTHON_LIBRARY CACHE)
     unset(PYTHON_LIBRARIES CACHE)

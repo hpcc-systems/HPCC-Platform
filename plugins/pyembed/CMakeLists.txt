@@ -28,7 +28,7 @@ set(DEBUG_PYTHON_LIBRARY "/usr/lib/libpython2.7_d.so")
 
 project(py2embed)
 
-if(PY2EMBED)
+if(USE_PYTHON2)
     unset(PYTHONLIBS_FOUND CACHE)
     unset(PYTHON_LIBRARY CACHE)
     unset(PYTHON_LIBRARIES CACHE)
