@@ -25,6 +25,8 @@ multiPart := #IFDEFINED(root.multiPart, false);
 
 //--- end of version configuration ---
 
+#onwarning(2036, ignore);
+#onwarning(4522, ignore);
 #option ('layoutTranslationEnabled', true);
 import $.Setup;
 

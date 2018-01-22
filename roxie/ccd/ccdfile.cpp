@@ -2134,10 +2134,9 @@ public:
                         {
                             if (mode == RecordTranslationMode::None)
                                 throw MakeStringException(ROXIE_MISMATCH, "Translatable record layout mismatch detected for file %s, but translation disabled", subname);
-                            keyedTranslator.setown(createKeyTranslator(actual->queryRecordAccessor(true), expected->queryRecordAccessor(true))); // NOTE - index cases should check (elsewhere) that this is empty.
-                            if (isIndex && keyedTranslator->needsTranslate())
+                            if (isIndex && translator->keyedTranslated())
                                 throw MakeStringException(ROXIE_MISMATCH, "Record layout mismatch detected in keyed fields for file %s", subname);
-
+                            keyedTranslator.setown(createKeyTranslator(actual->queryRecordAccessor(true), expected->queryRecordAccessor(true)));
                         }
                     }
                 }

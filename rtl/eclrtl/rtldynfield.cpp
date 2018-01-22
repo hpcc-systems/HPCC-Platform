@@ -959,9 +959,10 @@ enum FieldMatchType {
     match_none        = 0x40,    // No matching field in source - use null value
     match_recurse     = 0x80,    // Use recursive translator for child records/datasets
     match_fail        = 0x100,   // no translation possible
+    match_keychange   = 0x200,   // at least one affected field not marked as payload (set on translator)
 
     // This flag may be set in conjunction with the others
-    match_inifblock   = 0x200,   // matching to a field in an ifblock - may not be present
+    match_inifblock   = 0x400,   // matching to a field in an ifblock - may not be present
 };
 
 StringBuffer &describeFlags(StringBuffer &out, FieldMatchType flags)
@@ -978,6 +979,7 @@ StringBuffer &describeFlags(StringBuffer &out, FieldMatchType flags)
     if (flags & match_none) out.append("|none");
     if (flags & match_recurse) out.append("|recurse");
     if (flags & match_inifblock) out.append("|ifblock");
+    if (flags & match_keychange) out.append("|keychange");
     if (flags & match_fail) out.append("|fail");
     assertex(out.length() > origlen);
     return out.remove(origlen, 1);
@@ -1019,6 +1021,10 @@ public:
     virtual bool needsTranslate() const override
     {
         return (matchFlags & ~match_link) != 0;
+    }
+    virtual bool keyedTranslated() const override
+    {
+        return (matchFlags & match_keychange) != 0;
     }
 private:
     void doDescribe(unsigned indent) const
@@ -1390,6 +1396,8 @@ private:
                 info.matchType = match_none;
                 size32_t defaultSize = field->initializer ? type->size(field->initializer, nullptr) : type->getMinSize();
                 fixedDelta -= defaultSize;
+                if ((field->flags & RFTMispayloadfield) == 0)
+                    matchFlags |= match_keychange;
                 //DBGLOG("Decreasing fixedDelta size by %d to %d for defaulted field %d (%s)", defaultSize, fixedDelta, idx, destRecInfo.queryName(idx));
             }
             else
@@ -1485,12 +1493,15 @@ private:
                 }
                 else
                     info.matchType = match_typecast;
-                if (sourceRecInfo.queryField(info.matchIdx)->flags & RFTMinifblock)
+                unsigned sourceFlags = sourceRecInfo.queryField(info.matchIdx)->flags;
+                if (sourceFlags & RFTMinifblock)
                     info.matchType |= match_inifblock;  // Avoids incorrect commoning up of adjacent matches
                 // MORE - could note the highest interesting fieldnumber in the source and not bother filling in offsets after that
                 // Not sure it would help much though - usually need to know the total record size anyway in real life
                 if (idx != info.matchIdx)
                     matchFlags |= match_move;
+                if (info.matchType != match_perfect && ((field->flags & RFTMispayloadfield) == 0 || (sourceFlags & RFTMispayloadfield) == 0))
+                    matchFlags |= match_keychange;
             }
             matchFlags |= info.matchType;
         }
@@ -1502,17 +1513,22 @@ private:
             {
                 const RtlFieldInfo *field = sourceRecInfo.queryField(idx);
                 const char *name = sourceRecInfo.queryName(idx);
-                const RtlTypeInfo *type = field->type;
                 if (destRecInfo.getFieldNum(name) == (unsigned) -1)
                 {
                     // unmatched field
-                    if (type->isFixedSize())
+                    if ((field->flags & RFTMispayloadfield) == 0)
+                        matchFlags |= match_keychange;
+                    if (!destRecInfo.getFixedSize())
                     {
-                        //DBGLOG("Reducing estimated size by %d for (fixed size) omitted field %s", (int) type->getMinSize(), field->name);
-                        fixedDelta += type->getMinSize();
+                        const RtlTypeInfo *type = field->type;
+                        if (type->isFixedSize())
+                        {
+                            //DBGLOG("Reducing estimated size by %d for (fixed size) omitted field %s", (int) type->getMinSize(), field->name);
+                            fixedDelta += type->getMinSize();
+                        }
+                        else
+                            unmatched.append(idx);
                     }
-                    else
-                        unmatched.append(idx);
                 }
             }
             //DBGLOG("Source record contains %d bytes of omitted fixed size fields", fixedDelta);
