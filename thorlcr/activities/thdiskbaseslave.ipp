@@ -56,6 +56,7 @@ public:
     {
         merged.merge(fileStats);
     }
+    virtual unsigned __int64 queryProgress() { return 0; }
 
 // IThorDiskCallback
     virtual offset_t getFilePosition(const void * row);

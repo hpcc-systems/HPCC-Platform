@@ -28,13 +28,14 @@
 #include "eclrtl.hpp"
 #include "rtlread_imp.hpp"
 #include "rtlcommon.hpp"
+#include "rtldynfield.hpp"
 #include "eclhelper_dyn.hpp"
 #include "hqlexpr.hpp"
 #include <algorithm>
 #ifdef _USE_NUMA
 #include <numa.h>
 #endif
-
+#include "roxiemem.hpp"
 #include "thorstep.hpp"
 #include "roxiemem.hpp"
 
@@ -954,7 +955,7 @@ IRowInterfaces *createRowInterfaces(IOutputMetaData *meta, unsigned actid, unsig
     return new cRowInterfaces(meta,actid,heapFlags,context);
 };
 
-class CRowStreamReader : implements IExtRowStream, public CSimpleInterface
+class CRowStreamReader : public CSimpleInterfaceOf<IExtRowStream>
 {
 protected:
     Linked<IFileIO> fileio;
@@ -962,14 +963,23 @@ protected:
     Linked<IOutputRowDeserializer> deserializer;
     Linked<IEngineRowAllocator> allocator;
     Owned<ISerialStream> strm;
-    CThorStreamDeserializerSource source;
     Owned<ISourceRowPrefetcher> prefetcher;
-    CThorContiguousRowBuffer prefetchBuffer; // used if prefetcher set
+    CThorContiguousRowBuffer prefetchBuffer;
+    unsigned __int64 progress = 0;
+    Linked<ITranslator> translatorContainer;
+    MemoryBuffer translateBuf;
+    IOutputMetaData *actualFormat = nullptr;
+    const IDynamicTransform *translator = nullptr;
+    RowFilter actualFilter;
+    RtlDynRow *filterRow = nullptr;
+
     EmptyRowSemantics emptyRowSemantics;
-    bool eoi;
-    bool eos;
-    bool eog;
-    offset_t bufofs;
+    offset_t currentRowOffset = 0;
+    bool eoi = false;
+    bool eos = false;
+    bool eog = false;
+    bool hadMatchInGroup = false;
+    offset_t bufofs = 0;
 #ifdef TRACE_CREATE
     static unsigned rdnum;
 #endif
@@ -984,28 +994,135 @@ protected:
         }
     } crccb;
     
-public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    inline bool fieldFilterMatch(const void * buffer)
+    {
+        if (actualFilter.numFilterFields())
+        {
+            filterRow->setRow(buffer, 0);
+            return actualFilter.matches(*filterRow);
+        }
+        else
+            return true;
+    }
 
-    CRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, bool _tallycrc, EmptyRowSemantics _emptyRowSemantics)
-        : fileio(_fileio), mmfile(_mmfile), allocator(rowif->queryRowAllocator()), prefetchBuffer(NULL), emptyRowSemantics(_emptyRowSemantics)
+    inline bool checkEmptyRow()
+    {
+        if (ers_allow == emptyRowSemantics)
+        {
+            byte b;
+            prefetchBuffer.read(1, &b);
+            prefetchBuffer.finishedRow();
+            if (1 == b)
+                return true;
+        }
+        return false;
+    }
+    inline void checkEog()
+    {
+        if (ers_eogonly == emptyRowSemantics)
+        {
+            byte b;
+            prefetchBuffer.read(1, &b);
+            eog = 1 == b;
+        }
+    }
+    inline bool checkExitConditions()
+    {
+        if (prefetchBuffer.eos())
+        {
+            eos = true;
+            return true;
+        }
+        if (eog)
+        {
+            eog = false;
+            if (hadMatchInGroup)
+            {
+                hadMatchInGroup = false;
+                return true;
+            }
+        }
+        return false;
+    }
+    const byte *getNextPrefetchRow()
+    {
+        while (true)
+        {
+            ++progress;
+            if (checkEmptyRow())
+                return nullptr;
+            currentRowOffset = prefetchBuffer.tell();
+            prefetcher->readAhead(prefetchBuffer);
+            const byte * row = prefetchBuffer.queryRow();
+            bool matched = fieldFilterMatch(row);
+            checkEog();
+            if (matched) // NB: prefetchDone() call must be paired with a row returned from prefetchRow()
+            {
+                hadMatchInGroup = true;
+                return row;
+            }
+            else
+                prefetchBuffer.finishedRow();
+            if (checkExitConditions())
+                break;
+        }
+        return nullptr;
+    }
+    const void *getNextRow()
+    {
+        /* NB: this is very similar to getNextPrefetchRow() above
+         * with the primary difference being it is deserializing into
+         * a row builder and returning finalized rows.
+         */
+        while (true)
+        {
+            ++progress;
+            if (checkEmptyRow())
+                return nullptr;
+            currentRowOffset = prefetchBuffer.tell();
+            RtlDynamicRowBuilder rowBuilder(*allocator);
+            size32_t size = deserializer->deserialize(rowBuilder, prefetchBuffer);
+            bool matched = fieldFilterMatch(rowBuilder.getUnfinalized());
+            checkEog();
+            prefetchBuffer.finishedRow();
+            const void *row = rowBuilder.finalizeRowClear(size);
+            if (matched)
+            {
+                hadMatchInGroup = true;
+                return row;
+            }
+            ReleaseRoxieRow(row);
+            if (checkExitConditions())
+                break;
+
+        }
+        return nullptr;
+    }
+public:
+    CRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, bool _tallycrc, EmptyRowSemantics _emptyRowSemantics, ITranslator *_translatorContainer)
+        : fileio(_fileio), mmfile(_mmfile), allocator(rowif->queryRowAllocator()), prefetchBuffer(nullptr), emptyRowSemantics(_emptyRowSemantics), translatorContainer(_translatorContainer)
     {
 #ifdef TRACE_CREATE
         PROGLOG("CRowStreamReader %d = %p",++rdnum,this);
 #endif
-        eoi = false;
-        eos = false;
-        eog = false;
-        bufofs = 0;
         if (fileio)
             strm.setown(createFileSerialStream(fileio,_ofs,_len,(size32_t)-1, _tallycrc?&crccb:NULL));
         else
             strm.setown(createFileSerialStream(mmfile,_ofs,_len,_tallycrc?&crccb:NULL));
-        prefetcher.setown(rowif->queryRowMetaData()->createDiskPrefetcher());
+        currentRowOffset = _ofs;
+        if (translatorContainer)
+        {
+            actualFormat = &translatorContainer->queryActualFormat();
+            translator = &translatorContainer->queryTranslator();
+        }
+        else
+        {
+            actualFormat = rowif->queryRowMetaData();
+            deserializer.set(rowif->queryRowDeserializer());
+        }
+        prefetcher.setown(actualFormat->createDiskPrefetcher());
         if (prefetcher)
             prefetchBuffer.setStream(strm);
-        source.setStream(strm);
-        deserializer.set(rowif->queryRowDeserializer());
     }
 
     ~CRowStreamReader()
@@ -1013,99 +1130,90 @@ public:
 #ifdef TRACE_CREATE
         PROGLOG("~CRowStreamReader %d = %p",rdnum--,this);
 #endif
+        delete filterRow;
     }
 
-    void reinit(offset_t _ofs,offset_t _len,unsigned __int64 _maxrows)
+    virtual void reinit(offset_t _ofs,offset_t _len,unsigned __int64 _maxrows) override
     {
         assertex(_maxrows == 0);
         eoi = false;
         eos = (_len==0);
         eog = false;
+        hadMatchInGroup = false;
         bufofs = 0;
+        progress = 0;
         strm->reset(_ofs,_len);
+        currentRowOffset = _ofs;
     }
 
-
-    const void *nextRow()
+    virtual const void *nextRow() override
     {
         if (eog)
         {
             eog = false;
-            return nullptr;
+            hadMatchInGroup = false;
         }
-        if (eos)
-            return nullptr;
-        if (source.eos())
-        {
-            eos = true;
-            return nullptr;
-        }
-        if (ers_allow == emptyRowSemantics)
-        {
-            byte b;
-            source.read(sizeof(b), &b);
-            if (1==b)
-                return nullptr;
-            RtlDynamicRowBuilder rowBuilder(*allocator);
-            size_t size = deserializer->deserialize(rowBuilder, source);
-            return rowBuilder.finalizeRowClear(size);
-        }
-        else
-        {
-            RtlDynamicRowBuilder rowBuilder(*allocator);
-            size_t size = deserializer->deserialize(rowBuilder, source);
-            if (ers_eogonly == emptyRowSemantics)
-            {
-                byte b;
-                source.read(sizeof(b), &b);
-                eog = (b==1);
-            }
-            return rowBuilder.finalizeRowClear(size);
-        }
-    }
-
-    const void *prefetchRow(size32_t *sz)
-    {
-        if (eog) 
-            eog = false;
         else if (!eos)
         {
-            if (source.eos()) 
+            if (prefetchBuffer.eos())
                 eos = true;
             else
             {
-                assertex(prefetcher);
-                if (ers_allow == emptyRowSemantics)
+                if (translator)
                 {
-                    byte b;
-                    strm->get(sizeof(b),&b);
-                    if (1==b)
-                        return nullptr;
+                    const byte *row = getNextPrefetchRow();
+                    if (row)
+                    {
+                        RtlDynamicRowBuilder rowBuilder(*allocator);
+                        size32_t size = translator->translate(rowBuilder, row);
+                        prefetchBuffer.finishedRow();
+                        return rowBuilder.finalizeRowClear(size);
+                    }
                 }
-                prefetcher->readAhead(prefetchBuffer);
-                const byte * ret = prefetchBuffer.queryRow();
-                if (sz)
-                    *sz = prefetchBuffer.queryRowSize();
-                return ret;
+                else
+                    return getNextRow();
             }
         }
-        if (sz)
-            sz = 0;
-        return NULL;
+        return nullptr;
     }
 
-    void prefetchDone()
+    virtual const byte *prefetchRow() override
+    {
+        // NB: prefetchDone() call must be paired with a row returned from prefetchRow()
+        if (eog)
+        {
+            eog = false;
+            hadMatchInGroup = false;
+        }
+        else if (!eos)
+        {
+            if (prefetchBuffer.eos())
+                eos = true;
+            else
+            {
+                const byte *row = getNextPrefetchRow();
+                if (row)
+                {
+                    if (translator)
+                    {
+                        translateBuf.setLength(0);
+                        MemoryBufferBuilder rowBuilder(translateBuf, 0);
+                        translator->translate(rowBuilder, row);
+                        row = reinterpret_cast<const byte *>(translateBuf.toByteArray());
+                    }
+                    return row;
+                }
+            }
+        }
+        return nullptr;
+    }
+
+    virtual void prefetchDone() override
     {
         prefetchBuffer.finishedRow();
-        if (ers_eogonly == emptyRowSemantics)
-        {
-            byte b;
-            strm->get(sizeof(b),&b);
-            eog = (b==1);
-        }
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
         stop(NULL);
     }
@@ -1113,12 +1221,10 @@ public:
     void clear()
     {
         strm.clear();
-        source.clearStream();
         fileio.clear();
     }
 
-
-    void stop(CRC32 *crcout)
+    virtual void stop(CRC32 *crcout) override
     {
         if (!eos) {
             eos = true;
@@ -1129,18 +1235,47 @@ public:
             *crcout = crccb.crc;
     }
 
-    offset_t getOffset()
+    virtual offset_t getOffset() const override
     {
-        return source.tell();
+        return prefetchBuffer.tell();
     }
 
-    virtual unsigned __int64 getStatistic(StatisticKind kind)
+    virtual offset_t getLastRowOffset() const override
+    {
+        return currentRowOffset;
+    }
+
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override
     {
         if (fileio)
             return fileio->getStatistic(kind);
         return 0;
     }
-
+    virtual unsigned __int64 queryProgress() const override
+    {
+        return progress;
+    }
+    virtual void setFilters(IConstArrayOf<IFieldFilter> &filters)
+    {
+        if (filterRow)
+        {
+            delete filterRow;
+            filterRow = nullptr;
+            actualFilter.clear();
+        }
+        if (filters.ordinality())
+        {
+            actualFilter.appendFilters(filters);
+            if (translatorContainer)
+            {
+                const IKeyTranslator *keyedTranslator = translatorContainer->queryKeyedTranslator();
+                if (keyedTranslator)
+                    keyedTranslator->translate(actualFilter);
+            }
+            const RtlRecord *actual = &actualFormat->queryRecordAccessor(true);
+            filterRow = new RtlDynRow(*actual);
+        }
+    }
 };
 
 class CLimitedRowStreamReader : public CRowStreamReader
@@ -1149,15 +1284,15 @@ class CLimitedRowStreamReader : public CRowStreamReader
     unsigned __int64 rownum;
 
 public:
-    CLimitedRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, unsigned __int64 _maxrows, bool _tallycrc, EmptyRowSemantics _emptyRowSemantics)
-        : CRowStreamReader(_fileio, _mmfile, rowif, _ofs, _len, _tallycrc, _emptyRowSemantics)
+    CLimitedRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, unsigned __int64 _maxrows, bool _tallycrc, EmptyRowSemantics _emptyRowSemantics, ITranslator *translatorContainer)
+        : CRowStreamReader(_fileio, _mmfile, rowif, _ofs, _len, _tallycrc, _emptyRowSemantics, translatorContainer)
     {
         maxrows = _maxrows;
         rownum = 0;
         eos = maxrows==0;
     }
 
-    void reinit(offset_t _ofs,offset_t _len,unsigned __int64 _maxrows)
+    virtual void reinit(offset_t _ofs,offset_t _len,unsigned __int64 _maxrows) override
     {
         CRowStreamReader::reinit(_ofs, _len, 0);
         if (_maxrows==0)
@@ -1166,14 +1301,13 @@ public:
         rownum = 0;
     }
 
-    const void *nextRow()
+    virtual const void *nextRow() override
     {
         const void * ret = CRowStreamReader::nextRow();
         if (++rownum==maxrows)
             eos = true;
         return ret;
     }
-
 };
 
 #ifdef TRACE_CREATE
@@ -1182,7 +1316,7 @@ unsigned CRowStreamReader::rdnum;
 
 bool UseMemoryMappedRead = false;
 
-IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowIf, offset_t offset, offset_t len, unsigned __int64 maxrows, unsigned rwFlags, IExpander *eexp)
+IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowIf, offset_t offset, offset_t len, unsigned __int64 maxrows, unsigned rwFlags, IExpander *eexp, ITranslator *translatorContainer)
 {
     bool compressed = TestRwFlag(rwFlags, rw_compress);
     EmptyRowSemantics emptyRowSemantics = extractESRFromRWFlags(rwFlags);
@@ -1193,9 +1327,9 @@ IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowIf, offset_t of
         if (!mmfile)
             return NULL;
         if (maxrows == (unsigned __int64)-1)
-            return new CRowStreamReader(NULL, mmfile, rowIf, offset, len, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics);
+            return new CRowStreamReader(NULL, mmfile, rowIf, offset, len, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics, translatorContainer);
         else
-            return new CLimitedRowStreamReader(NULL, mmfile, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics);
+            return new CLimitedRowStreamReader(NULL, mmfile, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics, translatorContainer);
     }
     else
     {
@@ -1211,15 +1345,15 @@ IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowIf, offset_t of
         if (!fileio)
             return NULL;
         if (maxrows == (unsigned __int64)-1)
-            return new CRowStreamReader(fileio, NULL, rowIf, offset, len, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics);
+            return new CRowStreamReader(fileio, NULL, rowIf, offset, len, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics, translatorContainer);
         else
-            return new CLimitedRowStreamReader(fileio, NULL, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics);
+            return new CLimitedRowStreamReader(fileio, NULL, rowIf, offset, len, maxrows, TestRwFlag(rwFlags, rw_crc), emptyRowSemantics, translatorContainer);
     }
 }
 
-IExtRowStream *createRowStream(IFile *file, IRowInterfaces *rowIf, unsigned rwFlags, IExpander *eexp)
+IExtRowStream *createRowStream(IFile *file, IRowInterfaces *rowIf, unsigned rwFlags, IExpander *eexp, ITranslator *translatorContainer)
 {
-    return createRowStreamEx(file, rowIf, 0, (offset_t)-1, (unsigned __int64)-1, rwFlags, eexp);
+    return createRowStreamEx(file, rowIf, 0, (offset_t)-1, (unsigned __int64)-1, rwFlags, eexp, translatorContainer);
 }
 
 // Memory map sizes can be big, restrict to 64-bit platforms.
@@ -1851,3 +1985,89 @@ extern THORHELPER_API IOutputMetaData *getDaliLayoutInfo(IPropertyTree const &pr
     return nullptr;
 }
 
+bool getTranslators(Owned<const IDynamicTransform> &translator, Owned<const IKeyTranslator> *keyedTranslator, const char *tracing, IOutputMetaData *expectedFormat, IOutputMetaData *publishedFormat, IOutputMetaData *projectedFormat, RecordTranslationMode mode, unsigned expectedCrc, unsigned publishedCrc)
+{
+    if (expectedCrc && (RecordTranslationMode::None != mode))
+    {
+        if (RecordTranslationMode::AlwaysDisk == mode)
+        {
+            translator.setown(createRecordTranslator(projectedFormat->queryRecordAccessor(true), publishedFormat->queryRecordAccessor(true)));
+            if (keyedTranslator)
+                keyedTranslator->setown(createKeyTranslator(publishedFormat->queryRecordAccessor(true), expectedFormat->queryRecordAccessor(true)));
+            dbgassertex(translator->canTranslate()); // should have been previously checked at master
+        }
+        else if (RecordTranslationMode::AlwaysECL == mode)
+        {
+            translator.setown(createRecordTranslator(projectedFormat->queryRecordAccessor(true), expectedFormat->queryRecordAccessor(true)));
+            if (keyedTranslator)
+                keyedTranslator->setown(createKeyTranslator(publishedFormat->queryRecordAccessor(true), expectedFormat->queryRecordAccessor(true)));
+            dbgassertex(translator->canTranslate()); // should have been previously checked at master
+        }
+        else if (publishedCrc && publishedCrc != expectedCrc)
+        {
+            if (publishedFormat)
+            {
+                if (!projectedFormat)
+                    throw MakeStringException(0, "Record layout mismatch and  %s", tracing);
+                translator.setown(createRecordTranslator(projectedFormat->queryRecordAccessor(true), publishedFormat->queryRecordAccessor(true)));
+            }
+            if (!translator || !translator->canTranslate())
+                throw MakeStringException(0, "Untranslatable record layout mismatch detected for file %s", tracing);
+            if (translator->needsTranslate())
+            {
+                if (RecordTranslationMode::None == mode)
+                    throw MakeStringException(0, "Translatable record layout mismatch detected for file %s, but translation disabled", tracing);
+                if (keyedTranslator)
+                    keyedTranslator->setown(createKeyTranslator(publishedFormat->queryRecordAccessor(true), expectedFormat->queryRecordAccessor(true)));
+            }
+        }
+    }
+    return nullptr != translator.get();
+}
+
+bool getTranslators(Owned<const IDynamicTransform> &translator, const char *tracing, IOutputMetaData *expectedFormat, IOutputMetaData *publishedFormat, IOutputMetaData *projectedFormat, RecordTranslationMode mode, unsigned expectedCrc, unsigned publishedCrc)
+{
+    return getTranslators(translator, nullptr, tracing, expectedFormat, publishedFormat, projectedFormat, mode, expectedCrc, publishedCrc);
+}
+
+bool getTranslators(Owned<const IDynamicTransform> &translator, Owned<const IKeyTranslator> &keyedTranslator, const char *tracing, IOutputMetaData *expectedFormat, IOutputMetaData *publishedFormat, IOutputMetaData *projectedFormat, RecordTranslationMode mode, unsigned expectedCrc, unsigned publishedCrc)
+{
+    return getTranslators(translator, &keyedTranslator, tracing, expectedFormat, publishedFormat, projectedFormat, mode, expectedCrc, publishedCrc);
+}
+
+ITranslator *getTranslators(const char *tracing, IOutputMetaData *expectedFormat, IOutputMetaData *publishedFormat, IOutputMetaData *projectedFormat, RecordTranslationMode mode, unsigned expectedCrc, unsigned publishedCrc)
+{
+    Owned<const IDynamicTransform> translator;
+    Owned<const IKeyTranslator> keyedTranslator;
+    if (getTranslators(translator, &keyedTranslator, tracing, expectedFormat, publishedFormat, projectedFormat, mode, expectedCrc, publishedCrc))
+    {
+        if (!publishedFormat)
+            publishedFormat = expectedFormat;
+        class CTranslator : public CSimpleInterfaceOf<ITranslator>
+        {
+            Linked<IOutputMetaData> actualFormat;
+            Linked<const IDynamicTransform> translator;
+            Linked<const IKeyTranslator> keyedTranslator;
+        public:
+            CTranslator(IOutputMetaData *_actualFormat, const IDynamicTransform *_translator, const IKeyTranslator *_keyedTranslator)
+                : actualFormat(_actualFormat), translator(_translator), keyedTranslator(_keyedTranslator)
+            {
+            }
+            virtual IOutputMetaData &queryActualFormat() const override
+            {
+                return *actualFormat;
+            }
+            virtual const IDynamicTransform &queryTranslator() const override
+            {
+                return *translator;
+            }
+            virtual const IKeyTranslator *queryKeyedTranslator() const override
+            {
+                return keyedTranslator;
+            }
+        };
+        return new CTranslator(publishedFormat, translator, keyedTranslator);
+    }
+    else
+        return nullptr;
+}

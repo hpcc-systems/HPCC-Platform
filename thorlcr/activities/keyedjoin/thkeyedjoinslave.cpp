@@ -25,6 +25,8 @@
 #include "jset.hpp"
 #include "jsort.hpp"
 
+#include "rtlcommon.hpp"
+
 #include "dadfs.hpp"
 
 #include "jhtree.hpp"
@@ -565,6 +567,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     Owned<IEngineRowAllocator> fetchInputMetaAllocator;
     Owned<IThorRowInterfaces> fetchInputMetaRowIf, fetchOutputRowIf;
     MemoryBuffer rawFetchMb;
+    IConstPointerArrayOf<ITranslator> translators;
 
 #ifdef TRACE_USAGE
     atomic_t debugats[10];
@@ -700,6 +703,10 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             mptag_t requestMpTag, resultMpTag;
             bool aborted;
 
+            // for record translation
+            IPointerArrayOf<ISourceRowPrefetcher> prefetchers;
+            IConstPointerArrayOf<ITranslator> translators;
+
             static int partLookup(const void *_key, const void *e)
             {
                 FPosTableEntry &entry = *(FPosTableEntry *)e;
@@ -711,12 +718,24 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 else
                     return 0;
             }
-
         public:
             CKeyedFetchRequestProcessor(CKeyedJoinSlave &_owner, ICommunicator &_comm, mptag_t _requestMpTag, mptag_t _resultMpTag) : threaded("CKeyedFetchRequestProcessor", this), owner(_owner), comm(_comm), requestMpTag(_requestMpTag), resultMpTag(_resultMpTag)
             {
                 aborted = false;
                 threaded.start();
+                unsigned expectedFormatCrc = owner.helper->getDiskFormatCrc();
+                IOutputMetaData *projectedFormat = owner.helper->queryProjectedDiskRecordSize();
+                RecordTranslationMode translationMode = getTranslationMode(owner);
+                getLayoutTranslations(translators, owner.helper->getFileName(), owner.dataParts, translationMode, owner.helper->queryDiskRecordSize(), projectedFormat, expectedFormatCrc);
+                ForEachItemIn(p, owner.dataParts)
+                {
+                    const ITranslator *translator = translators.item(p);
+                    if (translator)
+                    {
+                        Owned<ISourceRowPrefetcher> prefetcher = translator->queryActualFormat().createDiskPrefetcher();
+                        prefetchers.append(prefetcher.getClear());
+                    }
+                }
             }
             ~CKeyedFetchRequestProcessor()
             {
@@ -825,10 +844,27 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 
                                 Owned<IFileIO> iFileIO = owner.getFilePartIO(filePartIndex);
                                 Owned<ISerialStream> stream = createFileSerialStream(iFileIO, localFpos);
-                                CThorStreamDeserializerSource ds(stream);
+                                const ITranslator *translator = translators.item(filePartIndex);
 
                                 RtlDynamicRowBuilder fetchedRowBuilder(fetchDiskRowIf->queryRowAllocator());
-                                size32_t fetchedLen = fetchDiskRowIf->queryRowDeserializer()->deserialize(fetchedRowBuilder, ds);
+                                size32_t fetchedLen;
+                                if (translator)
+                                {
+                                    CThorContiguousRowBuffer prefetchBuffer;
+                                    ISourceRowPrefetcher *prefetcher = prefetchers.item(filePartIndex);
+                                    dbgassertex(prefetcher);
+                                    prefetchBuffer.setStream(stream);
+                                    prefetcher->readAhead(prefetchBuffer);
+                                    const byte * row = prefetchBuffer.queryRow();
+                                    size32_t sz = prefetchBuffer.queryRowSize();
+                                    fetchedLen = translator->queryTranslator().translate(fetchedRowBuilder, row);
+                                    prefetchBuffer.finishedRow();
+                                }
+                                else
+                                {
+                                    CThorStreamDeserializerSource ds(stream);
+                                    fetchedLen = fetchDiskRowIf->queryRowDeserializer()->deserialize(fetchedRowBuilder, ds);
+                                }
                                 OwnedConstThorRow diskFetchRow = fetchedRowBuilder.finalizeRowClear(fetchedLen);
 
                                 RtlDynamicRowBuilder joinFieldsRow(owner.joinFieldsAllocator);
@@ -1565,8 +1601,13 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     bool getKeyManagers(IArrayOf<IKeyManager> &keyManagers)
     {
         unsigned numIndexParts = indexParts.ordinality();
+        if (0 == numIndexParts)
+            return false;
         bool localMergedKey = localKey && (numIndexParts > 1);
         Owned<IKeyIndexSet> partKeySet;
+        RecordTranslationMode translationMode = getTranslationMode(*this);
+        IOutputMetaData *projectedFormat = helper->queryProjectedIndexRecordSize();
+        unsigned expectedFormatCrc = helper->getIndexFormatCrc();
         for (unsigned ip=0; ip<numIndexParts; ip++)
         {
             IPartDescriptor &filePart = indexParts.item(ip);
@@ -1577,8 +1618,10 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             StringBuffer filename;
             rfn.getPath(filename);
 
+            IPropertyTree const &props = filePart.queryOwner().queryProperties();
+            unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
             Owned<IDelayedFile> lfile = queryThor().queryFileCache().lookup(*this, indexName, filePart);
-
+            Owned<const IDynamicTransform> translator;
             Owned<IKeyManager> klManager;
             if (localMergedKey)
             {
@@ -1597,12 +1640,27 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         if (localMergedKey)
         {
             dbgassertex(0 == keyManagers.ordinality());
-            keyManagers.append(*createKeyMerger(helper->queryIndexRecordSize()->queryRecordAccessor(true), partKeySet, 0, nullptr));
+            Owned<IKeyManager> keyManager = createKeyMerger(helper->queryIndexRecordSize()->queryRecordAccessor(true), partKeySet, 0, nullptr);
+            Owned<const ITranslator> translator = getLayoutTranslation(helper->getFileName(), indexParts.item(0), translationMode, helper->queryIndexRecordSize(), projectedFormat, expectedFormatCrc);
+            if (translator)
+                keyManager->setLayoutTranslator(&translator->queryTranslator());
+            translators.append(translator.getClear());
+            keyManagers.append(*keyManager.getClear());
             return true;
         }
         else
+        {
+            getLayoutTranslations(translators, helper->getFileName(), indexParts, translationMode, helper->queryIndexRecordSize(), projectedFormat, expectedFormatCrc);
+            ForEachItemIn(k, keyManagers)
+            {
+                const ITranslator *translator = translators.item(k);
+                if (translator)
+                    keyManagers.item(k).setLayoutTranslator(&translator->queryTranslator());
+            }
             return false;
+        }
     }
+
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 

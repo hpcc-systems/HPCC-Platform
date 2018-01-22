@@ -253,12 +253,11 @@ public:
 };
 
 // stream wrapper, that takes ownership of a CFileOwner
-class graph_decl CStreamFileOwner : public CSimpleInterface, implements IExtRowStream
+class graph_decl CStreamFileOwner : public CSimpleInterfaceOf<IExtRowStream>
 {
     Linked<CFileOwner> fileOwner;
     IExtRowStream *stream;
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
     CStreamFileOwner(CFileOwner *_fileOwner, IExtRowStream *_stream) : fileOwner(_fileOwner)
     {
         stream = LINK(_stream);
@@ -268,19 +267,25 @@ public:
         stream->Release();
     }
 // IExtRowStream
-    virtual const void *nextRow() { return stream->nextRow(); }
-    virtual void stop() { stream->stop(); }
-    virtual offset_t getOffset() { return stream->getOffset(); }
-    virtual void stop(CRC32 *crcout=NULL) { stream->stop(); }
-    virtual const void *prefetchRow(size32_t *sz=NULL) { return stream->prefetchRow(sz); }
-    virtual void prefetchDone() { stream->prefetchDone(); }
-    virtual void reinit(offset_t offset, offset_t len, unsigned __int64 maxRows)
+    virtual const void *nextRow() override { return stream->nextRow(); }
+    virtual void stop() override { stream->stop(); }
+    virtual offset_t getOffset() const override { return stream->getOffset(); }
+    virtual offset_t getLastRowOffset() const override { return stream->getLastRowOffset(); }
+    virtual unsigned __int64 queryProgress() const override { return stream->queryProgress(); }
+    virtual void stop(CRC32 *crcout=NULL) override { stream->stop(); }
+    virtual const byte *prefetchRow() override { return stream->prefetchRow(); }
+    virtual void prefetchDone() override { stream->prefetchDone(); }
+    virtual void reinit(offset_t offset, offset_t len, unsigned __int64 maxRows) override
     {
         stream->reinit(offset, len, maxRows);
     }
-    virtual unsigned __int64 getStatistic(StatisticKind kind)
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override
     {
         return stream->getStatistic(kind);
+    }
+    virtual void setFilters(IConstArrayOf<IFieldFilter> &filters) override
+    {
+        return stream->setFilters(filters);
     }
 };
 
@@ -493,6 +498,10 @@ extern const graph_decl StatisticsMapping spillStatistics;
 
 extern graph_decl bool isOOMException(IException *e);
 extern graph_decl IThorException *checkAndCreateOOMContextException(CActivityBase *activity, IException *e, const char *msg, rowcount_t numRows, IOutputMetaData *meta, const void *row);
+
+extern graph_decl RecordTranslationMode getTranslationMode(CActivityBase &activity);
+extern graph_decl void getLayoutTranslations(IConstPointerArrayOf<ITranslator> &translators, const char *fname, IArrayOf<IPartDescriptor> &partDescriptors, RecordTranslationMode translationMode, IOutputMetaData *expectedFormat, IOutputMetaData *projectedFormat, unsigned expectedFormatCrc);
+extern graph_decl const ITranslator *getLayoutTranslation(const char *fname, IPartDescriptor &partDesc, RecordTranslationMode translationMode, IOutputMetaData *expectedFormat, IOutputMetaData *projectedFormat, unsigned expectedFormatCrc);
 
 #endif
 

@@ -42,6 +42,7 @@ include_directories (
          ./../../common/deftype 
          ./../../system/include 
          ./../../dali/base 
+         ./../../ecl/hql
          ./../../rtl/include 
          ./../../common/dllserver 
          ./../../system/jlib 
@@ -75,6 +76,7 @@ target_link_libraries (  thormaster_lcr
          dllserver 
          nbcd 
          eclrtl 
+         hql
          deftype 
          workunit 
          graph_lcr 

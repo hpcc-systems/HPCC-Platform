@@ -1422,3 +1422,47 @@ IThorException *checkAndCreateOOMContextException(CActivityBase *activity, IExce
     e->Release();
     return te.getClear();
 }
+
+RecordTranslationMode getTranslationMode(CActivityBase &activity)
+{
+    StringBuffer val;
+    activity.getOpt("layoutTranslationEnabled", val);
+    return getTranslationMode(val);
+}
+
+void getLayoutTranslations(IConstPointerArrayOf<ITranslator> &translators, const char *fname, IArrayOf<IPartDescriptor> &partDescriptors, RecordTranslationMode translationMode, IOutputMetaData *expectedFormat, IOutputMetaData *projectedFormat, unsigned expectedFormatCrc)
+{
+    if (0 == partDescriptors.ordinality())
+        return;
+    IPropertyTree &props = partDescriptors.item(0).queryOwner().queryProperties();
+    typedef OwningHTMapping<const ITranslator, unsigned> CITranslatorMapping;
+    OwningSimpleHashTableOf<CITranslatorMapping, unsigned> translatorTable;
+    ForEachItemIn(p, partDescriptors)
+    {
+        IPartDescriptor &partDesc = partDescriptors.item(p);
+        unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
+        Owned<const ITranslator> translatorContainer;
+        if (translatorTable.ordinality())
+        {
+            CITranslatorMapping *entry = translatorTable.find(publishedFormatCrc);
+            if (entry)
+                translatorContainer.set(&entry->queryElement());
+        }
+        if (!translatorContainer)
+        {
+            Owned<IOutputMetaData> publishedFormat = getDaliLayoutInfo(props);
+            translatorContainer.setown(getTranslators(fname, expectedFormat, publishedFormat, projectedFormat, translationMode, expectedFormatCrc, publishedFormatCrc));
+            if (translatorContainer)
+                translatorTable.replace(*new CITranslatorMapping(*translatorContainer.getLink(), publishedFormatCrc));
+        }
+        translators.append(translatorContainer.getClear());
+    }
+}
+
+const ITranslator *getLayoutTranslation(const char *fname, IPartDescriptor &partDesc, RecordTranslationMode translationMode, IOutputMetaData *expectedFormat, IOutputMetaData *projectedFormat, unsigned expectedFormatCrc)
+{
+    IPropertyTree const &props = partDesc.queryOwner().queryProperties();
+    Owned<IOutputMetaData> actualFormat = getDaliLayoutInfo(props);
+    unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
+    return getTranslators(fname, expectedFormat, actualFormat, projectedFormat, translationMode, expectedFormatCrc, publishedFormatCrc);
+}
