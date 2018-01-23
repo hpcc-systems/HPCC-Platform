@@ -473,9 +473,9 @@ protected:
         out.appendf("__result__ = __user__(%s)\n", params);
         return out;
     }
-    PyThreadState *tstate;
-    bool initialized;
-    HINSTANCE pythonLibrary;
+    PyThreadState *tstate = nullptr;
+    bool initialized = false;
+    HINSTANCE pythonLibrary = 0;
     OwnedPyObject namedtuple;      // collections.namedtuple
     OwnedPyObject namedtupleTypes; // dictionary of return values from namedtuple()
     OwnedPyObject compiledScripts; // dictionary of previously compiled scripts
