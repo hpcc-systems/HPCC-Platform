@@ -1352,7 +1352,7 @@ protected:
         ASSERT(d->nextRow()==nullptr);
         d.clear();
 
-        Owned<IPropertyTree> keyInfo = createPTreeFromXMLString("<R><FieldSet><Field fieldNum='0'/></FieldSet></R>");
+        Owned<IPropertyTree> keyInfo = createPTreeFromXMLString("<R><FieldSet><Field name='f1'/></FieldSet></R>");
         indexes.setKeyInfo(*keyInfo.get());
 
         ScoredRowFilter filter2;
