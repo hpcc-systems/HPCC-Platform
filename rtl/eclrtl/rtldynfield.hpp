@@ -111,6 +111,7 @@ interface IDynamicTransform : public IInterface
     virtual size32_t translate(ARowBuilder &builder, const RtlRow &sourceRow) const = 0;
     virtual bool canTranslate() const = 0;
     virtual bool needsTranslate() const = 0;
+    virtual bool keyedTranslated() const = 0;
 };
 
 class RowFilter;
