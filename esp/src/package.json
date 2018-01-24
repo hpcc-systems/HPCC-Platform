@@ -13,7 +13,9 @@
     "copy-res-TopoJSON": "cpx \"./node_modules/@hpcc-js/map/TopoJSON/**/*\" ./build/dist/TopoJSON/",
     "copy-res": "npm run copy-res-es6-promise && npm run copy-res-eclwatch-img && npm run copy-res-eclwatch-ecl && npm run copy-res-dojo && npm run copy-res-dojox && npm run copy-res-TopoJSON",
     "compile": "tsc",
+    "compile-watch": "npm run compile -- -w",
     "bundle": "node node_modules/webpack/bin/webpack.js --config webpack.config.js",
+    "bundle-watch": "npm run bundle -- --watch",
     "build": "npm run copy-res && npm run compile && npm run bundle",
     "start:dev": "ws",
     "test": "npm run lint"
