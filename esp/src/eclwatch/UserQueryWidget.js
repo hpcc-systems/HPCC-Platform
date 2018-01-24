@@ -109,12 +109,14 @@ define([
         _onEnableScopeScans: function () {
             if (confirm(this.i18n.EnableScopeScansConfirm)) {
                 WsAccess.EnableScopeScans();
+                this.refreshPermissionsGrid();
             }
         },
 
         _onDisableScopeScans: function () {
             if (confirm(this.i18n.DisableScopeScanConfirm)) {
                 WsAccess.DisableScopeScans();
+                this.refreshPermissionsGrid();
             }
         },
 
@@ -732,7 +734,7 @@ define([
             this.permissionsStore = WsAccess.CreatePermissionsStore();
             this.permissionsGrid = declare([ESPUtil.Grid(false, true)])({
                 allowSelectAll: true,
-                deselectOnRefresh: false,
+                deselectOnRefresh: true,
                 sort: [{ attribute: "DisplayName" }],
                 store: this.permissionsStore,
                 columns: {
@@ -751,7 +753,7 @@ define([
                         label: this.i18n.Name,
                         formatter: function (_name, idx) {
                             if (idx.__hpcc_parent) {
-                                return "<a href='#' class='dgrid-row-url'>" + _name + "</a>" 
+                                return "<a href='#' class='dgrid-row-url'>" + _name + "</a>"
                             } else {
                               return _name;
                             }
@@ -869,8 +871,25 @@ define([
 
             var permissionSelection = this.permissionsGrid.getSelected();
             var hasPermissionSelection = permissionSelection.length;
-            registry.byId(this.id + "EnableScopeScans").set("disabled", true);
-            registry.byId(this.id + "DisableScopeScans").set("disabled", true);
+
+            if (hasPermissionSelection && permissionSelection[0].name === "File Scopes") {
+                var context = this;
+                WsAccess.Resources({
+                    request: {
+                        basedn: event.rows[0].id,
+                        rtype: "file",
+                        rtitle: "FileScope"
+                    }
+                }).then(function (response) {
+                    if (lang.exists("ResourcesResponse.scopeScansStatus", response)) {
+                        var scopeScansEnabled;
+                        scopeScansEnabled = response.ResourcesResponse.scopeScansStatus.isEnabled;
+                        registry.byId(context.id + "EnableScopeScans").set("disabled", scopeScansEnabled);
+                        registry.byId(context.id + "DisableScopeScans").set("disabled", !scopeScansEnabled);
+                    }
+                });
+            }
+
             registry.byId(this.id + "FileScopeDefaultPermissions").set("disabled", true);
             registry.byId(this.id + "WorkUnitScopeDefaultPermissions").set("disabled", true);
             registry.byId(this.id + "PhysicalFiles").set("disabled", true);
@@ -885,8 +904,6 @@ define([
                 }
                 switch (permissionSelection[i].name) {
                     case "File Scopes":
-                        registry.byId(this.id + "EnableScopeScans").set("disabled", !hasPermissionSelection);
-                        registry.byId(this.id + "DisableScopeScans").set("disabled", !hasPermissionSelection);
                         registry.byId(this.id + "PhysicalFiles").set("disabled", !hasPermissionSelection);
                         registry.byId(this.id + "FileScopeDefaultPermissions").set("disabled", !hasPermissionSelection);
                         registry.byId(this.id + "CheckFilePermissions").set("disabled", !hasPermissionSelection);
