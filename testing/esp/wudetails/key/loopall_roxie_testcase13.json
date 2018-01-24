@@ -1,0 +1,1605 @@
+testCase(ScopeFilter={
+    'MaxDepth': '2',
+    'Scopes': None,
+    'Ids': None,
+    'ScopeTypes': None,
+    'PropertyFilters': None
+}, NestedFilter={
+    'Depth': None,
+    'ScopeTypes': None
+}, PropertiesToReturn={
+    'AllStatistics': None,
+    'AllAttributes': None,
+    'AllHints': None,
+    'MinVersion': None,
+    'Measure': None,
+    'Properties': {
+        'Property': [
+            'WhenStarted',
+            'WhenCreated'
+        ]
+    },
+    'ExtraProperties': None
+}, ScopeOptions={
+    'IncludeMatchedScopesInResults': '1',
+    'IncludeScope': '1',
+    'IncludeId': '1',
+    'IncludeScopeType': '1'
+}, PropertyOptions={
+    'IncludeName': None,
+    'IncludeRawValue': None,
+    'IncludeFormatted': None,
+    'IncludeMeasure': None,
+    'IncludeCreator': None,
+    'IncludeCreatorType': None
+})
+{
+    'Exceptions': None,
+    'MaxVersion': '{masked number}',
+    'WUID': '{masked WUID - matches request}',
+    'Scopes': {
+        'Scope': [
+            {
+                'ScopeName': None,
+                'Id': None,
+                'ScopeType': 'global',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenCreated',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1',
+                'Id': 'graph1',
+                'ScopeType': 'graph',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1',
+                'Id': 'sg1',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e2_0',
+                'Id': 'e2_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e3_0',
+                'Id': 'e3_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e3_1',
+                'Id': 'e3_1',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e4_0',
+                'Id': 'e4_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e4_1',
+                'Id': 'e4_1',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e4_2',
+                'Id': 'e4_2',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e4_3',
+                'Id': 'e4_3',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e4_4',
+                'Id': 'e4_4',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e4_5',
+                'Id': 'e4_5',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e4_6',
+                'Id': 'e4_6',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e4_7',
+                'Id': 'e4_7',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e4_8',
+                'Id': 'e4_8',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e5_0',
+                'Id': 'e5_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e11_0',
+                'Id': 'e11_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e12_0',
+                'Id': 'e12_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e18_0',
+                'Id': 'e18_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e19_0',
+                'Id': 'e19_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e28_0',
+                'Id': 'e28_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e29_0',
+                'Id': 'e29_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e35_0',
+                'Id': 'e35_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e36_0',
+                'Id': 'e36_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e45_0',
+                'Id': 'e45_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e46_0',
+                'Id': 'e46_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e48_0',
+                'Id': 'e48_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e54_0',
+                'Id': 'e54_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e55_0',
+                'Id': 'e55_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e62_0',
+                'Id': 'e62_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e63_0',
+                'Id': 'e63_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e69_0',
+                'Id': 'e69_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e70_0',
+                'Id': 'e70_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e70_1',
+                'Id': 'e70_1',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e70_2',
+                'Id': 'e70_2',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e70_3',
+                'Id': 'e70_3',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:a2',
+                'Id': 'a2',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:a3',
+                'Id': 'a3',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:a4',
+                'Id': 'a4',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:a5',
+                'Id': 'a5',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:a11',
+                'Id': 'a11',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:a12',
+                'Id': 'a12',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:a18',
+                'Id': 'a18',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:a19',
+                'Id': 'a19',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:a28',
+                'Id': 'a28',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:a29',
+                'Id': 'a29',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:a35',
+                'Id': 'a35',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:a36',
+                'Id': 'a36',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:a45',
+                'Id': 'a45',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:a46',
+                'Id': 'a46',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:a47',
+                'Id': 'a47',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:a48',
+                'Id': 'a48',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:a54',
+                'Id': 'a54',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:a55',
+                'Id': 'a55',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:a62',
+                'Id': 'a62',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:a63',
+                'Id': 'a63',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:a69',
+                'Id': 'a69',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:a70',
+                'Id': 'a70',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg7',
+                'Id': 'sg7',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg7:e8_0',
+                'Id': 'e8_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg7:e9_0',
+                'Id': 'e9_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg7:a8',
+                'Id': 'a8',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg7:a9',
+                'Id': 'a9',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg7:a10',
+                'Id': 'a10',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg14',
+                'Id': 'sg14',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg14:e15_0',
+                'Id': 'e15_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg14:e16_0',
+                'Id': 'e16_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg14:a15',
+                'Id': 'a15',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg14:a16',
+                'Id': 'a16',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg14:a17',
+                'Id': 'a17',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg21',
+                'Id': 'sg21',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg21:e22_0',
+                'Id': 'e22_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg21:e23_0',
+                'Id': 'e23_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg21:a22',
+                'Id': 'a22',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg21:a23',
+                'Id': 'a23',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg21:a24',
+                'Id': 'a24',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg25',
+                'Id': 'sg25',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg25:e26_0',
+                'Id': 'e26_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg25:a26',
+                'Id': 'a26',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg25:a27',
+                'Id': 'a27',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg31',
+                'Id': 'sg31',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg31:e32_0',
+                'Id': 'e32_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg31:e33_0',
+                'Id': 'e33_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg31:a32',
+                'Id': 'a32',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg31:a33',
+                'Id': 'a33',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg31:a34',
+                'Id': 'a34',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg38',
+                'Id': 'sg38',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg38:a39',
+                'Id': 'a39',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg38:a40',
+                'Id': 'a40',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg38:a41',
+                'Id': 'a41',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg42',
+                'Id': 'sg42',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg42:a43',
+                'Id': 'a43',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg42:a44',
+                'Id': 'a44',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg50',
+                'Id': 'sg50',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg50:e51_0',
+                'Id': 'e51_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg50:e52_0',
+                'Id': 'e52_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg50:a51',
+                'Id': 'a51',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg50:a52',
+                'Id': 'a52',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg50:a53',
+                'Id': 'a53',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg57',
+                'Id': 'sg57',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg57:e58_0',
+                'Id': 'e58_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg57:e59_0',
+                'Id': 'e59_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg57:e59_1',
+                'Id': 'e59_1',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg57:e60_0',
+                'Id': 'e60_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg57:a58',
+                'Id': 'a58',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg57:a59',
+                'Id': 'a59',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg57:a60',
+                'Id': 'a60',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg57:a61',
+                'Id': 'a61',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg65',
+                'Id': 'sg65',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg65:e66_0',
+                'Id': 'e66_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg65:e67_0',
+                'Id': 'e67_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg65:a66',
+                'Id': 'a66',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg65:a67',
+                'Id': 'a67',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg65:a68',
+                'Id': 'a68',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg71',
+                'Id': 'sg71',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg71:e72_0',
+                'Id': 'e72_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg71:e73_0',
+                'Id': 'e73_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg71:e83_0',
+                'Id': 'e83_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg71:a72',
+                'Id': 'a72',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg71:a73',
+                'Id': 'a73',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg71:a83',
+                'Id': 'a83',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg75',
+                'Id': 'sg75',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg75:e76_0',
+                'Id': 'e76_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg75:e77_0',
+                'Id': 'e77_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg75:e77_1',
+                'Id': 'e77_1',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg75:e78_0',
+                'Id': 'e78_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg75:e79_0',
+                'Id': 'e79_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg75:e81_0',
+                'Id': 'e81_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg75:a76',
+                'Id': 'a76',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg75:a77',
+                'Id': 'a77',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg75:a78',
+                'Id': 'a78',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg75:a79',
+                'Id': 'a79',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg75:a80',
+                'Id': 'a80',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg75:a81',
+                'Id': 'a81',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg75:a82',
+                'Id': 'a82',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg84',
+                'Id': 'sg84',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg84:e85_0',
+                'Id': 'e85_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg84:e86_0',
+                'Id': 'e86_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg84:e95_0',
+                'Id': 'e95_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg84:a85',
+                'Id': 'a85',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg84:a86',
+                'Id': 'a86',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg84:a95',
+                'Id': 'a95',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg88',
+                'Id': 'sg88',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg88:e89_0',
+                'Id': 'e89_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg88:e90_0',
+                'Id': 'e90_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg88:a89',
+                'Id': 'a89',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg88:a90',
+                'Id': 'a90',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg88:a91',
+                'Id': 'a91',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg92',
+                'Id': 'sg92',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg92:e93_0',
+                'Id': 'e93_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg92:a93',
+                'Id': 'a93',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg92:a94',
+                'Id': 'a94',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg96',
+                'Id': 'sg96',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg96:e97_0',
+                'Id': 'e97_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg96:e98_0',
+                'Id': 'e98_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg96:e108_0',
+                'Id': 'e108_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg96:a97',
+                'Id': 'a97',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg96:a98',
+                'Id': 'a98',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg96:a108',
+                'Id': 'a108',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg100',
+                'Id': 'sg100',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg100:e101_0',
+                'Id': 'e101_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg100:e102_0',
+                'Id': 'e102_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg100:e102_1',
+                'Id': 'e102_1',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg100:e103_0',
+                'Id': 'e103_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg100:e104_0',
+                'Id': 'e104_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg100:e106_0',
+                'Id': 'e106_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg100:a101',
+                'Id': 'a101',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg100:a102',
+                'Id': 'a102',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg100:a103',
+                'Id': 'a103',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg100:a104',
+                'Id': 'a104',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg100:a105',
+                'Id': 'a105',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg100:a106',
+                'Id': 'a106',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg100:a107',
+                'Id': 'a107',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg109',
+                'Id': 'sg109',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg109:e110_0',
+                'Id': 'e110_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg109:e111_0',
+                'Id': 'e111_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg109:e120_0',
+                'Id': 'e120_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg109:a110',
+                'Id': 'a110',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg109:a111',
+                'Id': 'a111',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg109:a120',
+                'Id': 'a120',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg113',
+                'Id': 'sg113',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg113:e114_0',
+                'Id': 'e114_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg113:e115_0',
+                'Id': 'e115_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg113:a114',
+                'Id': 'a114',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg113:a115',
+                'Id': 'a115',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg113:a116',
+                'Id': 'a116',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg117',
+                'Id': 'sg117',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg117:e118_0',
+                'Id': 'e118_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg117:a118',
+                'Id': 'a118',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg117:a119',
+                'Id': 'a119',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg121',
+                'Id': 'sg121',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg121:e122_0',
+                'Id': 'e122_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg121:e123_0',
+                'Id': 'e123_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg121:e123_1',
+                'Id': 'e123_1',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg121:e124_0',
+                'Id': 'e124_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg121:e135_0',
+                'Id': 'e135_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg121:e136_0',
+                'Id': 'e136_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg121:e153_0',
+                'Id': 'e153_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg121:a122',
+                'Id': 'a122',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg121:a123',
+                'Id': 'a123',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg121:a124',
+                'Id': 'a124',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg121:a135',
+                'Id': 'a135',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg121:a136',
+                'Id': 'a136',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg121:a153',
+                'Id': 'a153',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg126',
+                'Id': 'sg126',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg126:e127_0',
+                'Id': 'e127_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg126:e128_0',
+                'Id': 'e128_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg126:a127',
+                'Id': 'a127',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg126:a128',
+                'Id': 'a128',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg126:a134',
+                'Id': 'a134',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg130',
+                'Id': 'sg130',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg130:e131_0',
+                'Id': 'e131_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg130:e132_0',
+                'Id': 'e132_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg130:a131',
+                'Id': 'a131',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg130:a132',
+                'Id': 'a132',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg130:a133',
+                'Id': 'a133',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg138',
+                'Id': 'sg138',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg138:e139_0',
+                'Id': 'e139_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg138:e140_0',
+                'Id': 'e140_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg138:a139',
+                'Id': 'a139',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg138:a140',
+                'Id': 'a140',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg138:a152',
+                'Id': 'a152',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg142',
+                'Id': 'sg142',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg142:e143_0',
+                'Id': 'e143_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg142:e144_0',
+                'Id': 'e144_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg142:e145_0',
+                'Id': 'e145_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg142:e145_1',
+                'Id': 'e145_1',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg142:e146_0',
+                'Id': 'e146_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg142:e147_0',
+                'Id': 'e147_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg142:e148_0',
+                'Id': 'e148_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg142:e149_0',
+                'Id': 'e149_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg142:a143',
+                'Id': 'a143',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg142:a144',
+                'Id': 'a144',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg142:a145',
+                'Id': 'a145',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg142:a146',
+                'Id': 'a146',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg142:a147',
+                'Id': 'a147',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg142:a148',
+                'Id': 'a148',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg142:a149',
+                'Id': 'a149',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg142:a150',
+                'Id': 'a150',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg142:a151',
+                'Id': 'a151',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'compile',
+                'Id': 'compile',
+                'ScopeType': 'compile',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'compile:write c++',
+                'Id': 'write c++',
+                'ScopeType': 'compile',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'compile:compile c++',
+                'Id': 'compile c++',
+                'ScopeType': 'compile',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'compile:generate',
+                'Id': 'generate',
+                'ScopeType': 'compile',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'compile:parse',
+                'Id': 'parse',
+                'ScopeType': 'compile',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'Process',
+                'Id': 'Process',
+                'ScopeType': 'section',
+                'Properties': None
+            }
+        ]
+    }
+}

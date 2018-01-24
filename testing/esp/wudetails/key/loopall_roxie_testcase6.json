@@ -1,0 +1,230 @@
+testCase(ScopeFilter={
+    'MaxDepth': '1',
+    'Scopes': None,
+    'Ids': None,
+    'ScopeTypes': {
+        'ScopeType': 'graph'
+    },
+    'PropertyFilters': None
+}, NestedFilter={
+    'Depth': '1',
+    'ScopeTypes': None
+}, PropertiesToReturn={
+    'AllStatistics': '1',
+    'AllAttributes': '1',
+    'AllHints': '1',
+    'MinVersion': None,
+    'Measure': None,
+    'Properties': None,
+    'ExtraProperties': None
+}, ScopeOptions={
+    'IncludeMatchedScopesInResults': '1',
+    'IncludeScope': '1',
+    'IncludeId': '1',
+    'IncludeScopeType': '1'
+}, PropertyOptions={
+    'IncludeName': '1',
+    'IncludeRawValue': '1',
+    'IncludeFormatted': None,
+    'IncludeMeasure': '1',
+    'IncludeCreator': '1',
+    'IncludeCreatorType': '1'
+})
+{
+    'Exceptions': None,
+    'MaxVersion': '{masked number}',
+    'WUID': '{masked WUID - matches request}',
+    'Scopes': {
+        'Scope': [
+            {
+                'ScopeName': 'graph1',
+                'Id': 'graph1',
+                'ScopeType': 'graph',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'WhenFinished',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1',
+                'Id': 'sg1',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg7',
+                'Id': 'sg7',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg14',
+                'Id': 'sg14',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg21',
+                'Id': 'sg21',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg25',
+                'Id': 'sg25',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg31',
+                'Id': 'sg31',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg38',
+                'Id': 'sg38',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg42',
+                'Id': 'sg42',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg50',
+                'Id': 'sg50',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg57',
+                'Id': 'sg57',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg65',
+                'Id': 'sg65',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg71',
+                'Id': 'sg71',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg75',
+                'Id': 'sg75',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg84',
+                'Id': 'sg84',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg88',
+                'Id': 'sg88',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg92',
+                'Id': 'sg92',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg96',
+                'Id': 'sg96',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg100',
+                'Id': 'sg100',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg109',
+                'Id': 'sg109',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg113',
+                'Id': 'sg113',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg117',
+                'Id': 'sg117',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg121',
+                'Id': 'sg121',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg126',
+                'Id': 'sg126',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg130',
+                'Id': 'sg130',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg138',
+                'Id': 'sg138',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg142',
+                'Id': 'sg142',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            }
+        ]
+    }
+}

@@ -1,0 +1,263 @@
+testCase(ScopeFilter={
+    'MaxDepth': '999',
+    'Scopes': None,
+    'Ids': None,
+    'ScopeTypes': None,
+    'PropertyFilters': {
+        'PropertyFilter': {
+            'Name': 'NumRowsProcessed',
+            'ExactValue': None,
+            'MinValue': '10000',
+            'MaxValue': '20000'
+        }
+    }
+}, NestedFilter={
+    'Depth': None,
+    'ScopeTypes': None
+}, PropertiesToReturn={
+    'AllStatistics': '1',
+    'AllAttributes': '1',
+    'AllHints': None,
+    'MinVersion': None,
+    'Measure': None,
+    'Properties': None,
+    'ExtraProperties': None
+}, ScopeOptions={
+    'IncludeMatchedScopesInResults': '1',
+    'IncludeScope': '1',
+    'IncludeId': '1',
+    'IncludeScopeType': '1'
+}, PropertyOptions={
+    'IncludeName': '1',
+    'IncludeRawValue': '1',
+    'IncludeFormatted': None,
+    'IncludeMeasure': '1',
+    'IncludeCreator': '1',
+    'IncludeCreatorType': '1'
+})
+{
+    'Exceptions': None,
+    'MaxVersion': '{masked number}',
+    'WUID': '{masked WUID - matches request}',
+    'Scopes': {
+        'Scope': [
+            {
+                'ScopeName': None,
+                'Id': None,
+                'ScopeType': 'global',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenCreated',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'esp'
+                        },
+                        {
+                            'Name': 'WhenCompiled',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        },
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'WhenFinished',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319032414207',
+                            'Formatted': '2018-01-30T13:30:32.414Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': '5505578101',
+                            'Formatted': '5.505s',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumRowsProcessed',
+                            'RawValue': '15676',
+                            'Formatted': '15676',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumIndexSeeks',
+                            'RawValue': '6665',
+                            'Formatted': '6665',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumIndexScans',
+                            'RawValue': '4325',
+                            'Formatted': '4325',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumIndexWildSeeks',
+                            'RawValue': '2484',
+                            'Formatted': '2484',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumLeafCacheHits',
+                            'RawValue': '4120',
+                            'Formatted': '4120',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumNodeCacheHits',
+                            'RawValue': '2304',
+                            'Formatted': '2304',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumNodeCacheAdds',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumIndexAccepted',
+                            'RawValue': '2980',
+                            'Formatted': '2980',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumIndexRejected',
+                            'RawValue': '1440',
+                            'Formatted': '1440',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumAtmostTriggered',
+                            'RawValue': '272',
+                            'Formatted': '272',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumIndexRowsRead',
+                            'RawValue': '4416',
+                            'Formatted': '4416',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeFirstExecute',
+                            'RawValue': '5035873590',
+                            'Formatted': '5.035s',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeSortElapsed',
+                            'RawValue': '324183',
+                            'Formatted': '324183ns',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumGroups',
+                            'RawValue': '4',
+                            'Formatted': '4',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumGroupMax',
+                            'RawValue': '16',
+                            'Formatted': '16',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeLocalExecute',
+                            'RawValue': '4106978430',
+                            'Formatted': '4.106s',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumAllocations',
+                            'RawValue': '371736',
+                            'Formatted': '371736',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumAllocationScans',
+                            'RawValue': '57792',
+                            'Formatted': '57792',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'SizePeakMemory',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'sz',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}
