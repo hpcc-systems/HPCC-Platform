@@ -2330,8 +2330,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <sect3 id="ThorClusterAttributesTab">
           <title>ThorCluster Attributes</title>
 
-          <para>This section describes the Thor Cluster Attributes tab.
-          </para>
+          <para>This section describes the Thor Cluster Attributes tab.</para>
 
           <para>
             <graphic fileref="images/CM-img18-1.jpg" vendor="configmgrSS" />
@@ -2534,6 +2533,16 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             command window where it is running.</para>
           </listitem>
         </orderedlist>
+
+        <sect3>
+          <title>Roxie Configuration Attributes</title>
+
+          <para>Roxie has many configurable attributes which can be used to
+          for customizing and tuning to your specific needs. The following
+          section expands on each of the Roxie tabs and the available
+          attributes. There is additional Roxie configuration information in
+          the section immediately following these tables.</para>
+        </sect3>
       </sect2>
 
       <!--configMgr-ROXIE-Include-SEC4-->
@@ -2543,6 +2552,66 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       <xi:include href="../XMLGeneration/xml/roxie.xsd.mod.xml"
                   xpointer="element(/1)"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <sect2>
+        <title />
+
+        <sect3>
+          <title>Additional Roxie Configuration items</title>
+
+          <para>
+            <emphasis role="bold">Add Servers to Roxie Farm</emphasis>
+          </para>
+
+          <para>To add servers to a Roxie farm</para>
+
+          <para><orderedlist>
+              <listitem>
+                <para>Select the <emphasis role="bold">Roxie Cluster -
+                myroxie</emphasis> (default) from the Navigator window on the
+                left side.</para>
+              </listitem>
+
+              <listitem>
+                <para>Select the <emphasis role="bold">Servers</emphasis>
+                tab.</para>
+              </listitem>
+
+              <listitem>
+                <para>Right-click on <emphasis role="bold">Roxie
+                Servers</emphasis>.</para>
+              </listitem>
+
+              <listitem>
+                <para>Select <emphasis role="bold">Reconfigure
+                Servers</emphasis>.</para>
+              </listitem>
+
+              <listitem>
+                <para>Press the <emphasis role="bold">Add Hardware</emphasis>
+                button.</para>
+              </listitem>
+
+              <listitem>
+                <para>Enter the values for the new server(s) in the dialog
+                then press OK.</para>
+              </listitem>
+            </orderedlist>All configured servers are then used when you create
+          a port to listen on. </para>
+
+          <variablelist>
+            <varlistentry>
+              <term>NOTE</term>
+
+              <listitem>
+                <para>If working with an older environment file this process
+                has changed. You no longer have to specify for a server to use
+                a specific port.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+        </sect3>
+      </sect2>
 
       <sect2 id="Topology" role="brk">
         <title>Topology</title>
@@ -2600,86 +2669,86 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             </tgroup>
           </informaltable>
         </para>
-      </sect2>
 
-      <sect2 id="Propogate-configuration-changes" role="brk">
-        <title>Distribute Configuration Changes to all Nodes</title>
+        <sect3 id="Propogate-configuration-changes" role="brk">
+          <title>Distribute Configuration Changes to all Nodes</title>
 
-        <para>Once your environment is set up as desired, you must copy the
-        configuration file to the other nodes.</para>
+          <para>Once your environment is set up as desired, you must copy the
+          configuration file to the other nodes.</para>
 
-        <para />
+          <para />
 
-        <orderedlist>
-          <listitem>
-            <para>If it is running, stop the system</para>
+          <orderedlist>
+            <listitem>
+              <para>If it is running, stop the system</para>
 
-            <para>
-              <informaltable colsep="1" frame="all" rowsep="1">
-                <?dbfo keep-together="always"?>
+              <para>
+                <informaltable colsep="1" frame="all" rowsep="1">
+                  <?dbfo keep-together="always"?>
 
-                <tgroup cols="2">
-                  <colspec colwidth="49.50pt" />
+                  <tgroup cols="2">
+                    <colspec colwidth="49.50pt" />
 
-                  <colspec />
+                    <colspec />
 
-                  <tbody>
-                    <row>
-                      <entry>
-                        <inlinegraphic fileref="images/caution.png" />
-                      </entry>
+                    <tbody>
+                      <row>
+                        <entry>
+                          <inlinegraphic fileref="images/caution.png" />
+                        </entry>
 
-                      <entry>Be sure system is stopped before attempting to
-                      copy the Environment.xml file.</entry>
-                    </row>
-                  </tbody>
-                </tgroup>
-              </informaltable>
-            </para>
-          </listitem>
+                        <entry>Be sure system is stopped before attempting to
+                        copy the Environment.xml file.</entry>
+                      </row>
+                    </tbody>
+                  </tgroup>
+                </informaltable>
+              </para>
+            </listitem>
 
-          <listitem>
-            <para>Back up the original environment.xml file</para>
+            <listitem>
+              <para>Back up the original environment.xml file</para>
 
-            <programlisting># for example
+              <programlisting># for example
 sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/environment.bak </programlisting>
 
-            <para>Note: the "live environment.xml file is located in your
-            <emphasis role="bold">/etc/HPCCSystems/</emphasis> directory.
-            ConfigManager works on files in <emphasis
-            role="bold">/etc/HPCCSystems/source</emphasis> directory. You must
-            copy from this location to make an environment.xml file
-            active.</para>
-          </listitem>
+              <para>Note: the "live environment.xml file is located in your
+              <emphasis role="bold">/etc/HPCCSystems/</emphasis> directory.
+              ConfigManager works on files in <emphasis
+              role="bold">/etc/HPCCSystems/source</emphasis> directory. You
+              must copy from this location to make an environment.xml file
+              active.</para>
+            </listitem>
 
-          <listitem>
-            <para>Copy the NewEnvironment.xml file from the source directory
-            to the /etc/HPCCSystems and rename the file to
-            environment.xml</para>
+            <listitem>
+              <para>Copy the NewEnvironment.xml file from the source directory
+              to the /etc/HPCCSystems and rename the file to
+              environment.xml</para>
 
-            <programlisting># for example
+              <programlisting># for example
 sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
 
-            <para />
-          </listitem>
+              <para />
+            </listitem>
 
-          <listitem>
-            <para>Copy the /etc/HPCCSystems/environment.xml to the
-            /etc/HPCCSystems/ on every node.</para>
+            <listitem>
+              <para>Copy the /etc/HPCCSystems/environment.xml to the
+              /etc/HPCCSystems/ on every node.</para>
 
-            <para />
-          </listitem>
+              <para />
+            </listitem>
 
-          <listitem>
-            <para>Restart the HPCC system</para>
+            <listitem>
+              <para>Restart the HPCC system</para>
 
-            <para>You might prefer to script this process, especially if you
-            have many nodes. See the Example Scripts section in the Appendix
-            of the Installing_and_RunningtheHPCCPlatform document. You can use
-            the scripts as a model to create your own script to copy the
-            environment.xml file out to all your nodes.</para>
-          </listitem>
-        </orderedlist>
+              <para>You might prefer to script this process, especially if you
+              have many nodes. See the Example Scripts section in the Appendix
+              of the Installing_and_RunningtheHPCCPlatform document. You can
+              use the scripts as a model to create your own script to copy the
+              environment.xml file out to all your nodes.</para>
+            </listitem>
+          </orderedlist>
+        </sect3>
       </sect2>
     </sect1>
   </chapter>

@@ -231,65 +231,6 @@
           <listitem>
             <para>Start the VM VirtualBox application.</para>
           </listitem>
-
-          <listitem>
-            <para>From the <emphasis role="bold">File</emphasis> menu, select
-            <emphasis role="bold">Preferences</emphasis>...</para>
-
-            <para>The <emphasis>VirtualBox - Settings</emphasis> dialog
-            displays.<figure id="VBoxSettings">
-                <title xreflabel="welc">VirtualBox - Settings</title>
-
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="images/vmimg14.jpg" />
-                  </imageobject>
-                </mediaobject>
-              </figure></para>
-          </listitem>
-
-          <listitem>
-            <para>Select<emphasis role="bold"> Network</emphasis> from the
-            list on the left side of the window.</para>
-          </listitem>
-
-          <listitem>
-            <para>Double-click on the <emphasis>VirtualBox Host-Only Ethernet
-            Adaptor</emphasis>.</para>
-          </listitem>
-
-          <listitem>
-            <para>From the<emphasis> Network Details</emphasis> window, select
-            the <emphasis role="bold">DHCP Server</emphasis> Tab and check the
-            <emphasis role="bold">Enable Server</emphasis> box. <figure
-                id="NetworkDetails">
-                <title xreflabel="welc">Network Details</title>
-
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="images/vmimg15.jpg" />
-                  </imageobject>
-                </mediaobject>
-              </figure><variablelist>
-                <varlistentry>
-                  <term>Note:</term>
-
-                  <listitem>
-                    <para>You may need to add IP Address values to the Lower
-                    Address Bound and Upper Address Bound fields. The address
-                    the VM uses is in the private IP address range of
-                    192.168.x.x</para>
-                  </listitem>
-                </varlistentry>
-              </variablelist></para>
-          </listitem>
-
-          <listitem>
-            <para>Press the <emphasis role="bold">OK</emphasis> button on the
-            <emphasis>Network Details</emphasis> dialog box, then press the
-            <emphasis role="bold">OK</emphasis> button on the
-            <emphasis>VirtualBox - Settings</emphasis> box.</para>
-          </listitem>
         </orderedlist>
       </sect2>
 

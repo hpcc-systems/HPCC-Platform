@@ -136,6 +136,7 @@
   </fo:block>
 </xsl:template>
 
+
 <!--para-syntax-role-elim-hyph-17-->
 <xsl:template match="para[@role='syntax']">
   <fo:block>

@@ -65,7 +65,11 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
-        rowIter->first();
+    }
+    virtual void stop() override
+    {
+        parser->reset();
+        PARENT::stop();
     }
     void processRecord(const void * in)
     {
