@@ -2336,8 +2336,7 @@
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Insert
-                  Attribute</emphasis></entry>
+                  <entry><emphasis role="bold">Insert File</emphasis></entry>
 
                   <entry>Adds a new ECL file inside the selected
                   folder.</entry>
@@ -2345,14 +2344,14 @@
 
                 <row>
                   <entry><emphasis role="bold"><emphasis role="bold">Rename
-                  Attribute</emphasis></emphasis></entry>
+                  File</emphasis></emphasis></entry>
 
                   <entry>Renames the selected ECL file</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold"><emphasis role="bold">Copy
-                  Attribute</emphasis></emphasis></entry>
+                  File</emphasis></emphasis></entry>
 
                   <entry>Enables you to copy the selected ECL file so it can
                   be pasted into a different folder.</entry>
@@ -2360,7 +2359,7 @@
 
                 <row>
                   <entry><emphasis role="bold"><emphasis role="bold">Move
-                  Attribute</emphasis></emphasis></entry>
+                  File</emphasis></emphasis></entry>
 
                   <entry>Moves the selected ECL file to specified
                   folder</entry>
@@ -2368,10 +2367,12 @@
 
                 <row>
                   <entry><emphasis role="bold"><emphasis role="bold">Delete
-                  Attribute</emphasis></emphasis></entry>
+                  File</emphasis></emphasis></entry>
 
                   <entry>Moves the selected ECL file to the Trash folder on
-                  your desktop</entry>
+                  your desktop. You can also press the <emphasis
+                  role="bold">Delete</emphasis> key to access this
+                  functionality. </entry>
                 </row>
 
                 <row>
@@ -3472,7 +3473,7 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="Graph_Viewer" role="brk">
-        <title>Graph Viewer </title>
+        <title>Graph Viewer</title>
 
         <para>A workunit’s execution graph is displayed in the Graph
         Tab.</para>
@@ -3506,7 +3507,7 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="ECLWatch_View" role="brk">
-        <title>ECL Watch View </title>
+        <title>ECL Watch View</title>
 
         <para>A workunit’s Workunit Details page view is displayed in the ECL
         Watch Tab.</para>

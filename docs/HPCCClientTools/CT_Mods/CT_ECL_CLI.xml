@@ -427,6 +427,19 @@ ecl deploy roxie - --name=FindPersonService
                   status). Use of this function requires that git be installed
                   and available on the path.</entry>
                 </row>
+
+                <row>
+                  <entry>--nostdinc</entry>
+
+                  <entry>Do not include the current directory in -I</entry>
+                </row>
+
+                <row>
+                  <entry>--fastsyntax</entry>
+
+                  <entry>Delay expanding functions when parsing. May speed up
+                  processing for some queries</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -744,6 +757,19 @@ ecl publish roxie ArchiveQuery.xml --name=FindPersonService --no-activate
                   that has been modified (according to the output of git
                   status). Use of this function requires that git be installed
                   and available on the path.</entry>
+                </row>
+
+                <row>
+                  <entry>--nostdinc</entry>
+
+                  <entry>Do not include the current directory in -I</entry>
+                </row>
+
+                <row>
+                  <entry>--fastsyntax</entry>
+
+                  <entry>Delay expanding functions when parsing. May speed up
+                  processing for some queries</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -1082,6 +1108,19 @@ ecl run thor findperson.ecl -I C:\MyECL\
                   that has been modified (according to the output of git
                   status). Use of this function requires that git be installed
                   and available on the path.</entry>
+                </row>
+
+                <row>
+                  <entry>--nostdinc</entry>
+
+                  <entry>Do not include the current directory in -I</entry>
+                </row>
+
+                <row>
+                  <entry>--fastsyntax</entry>
+
+                  <entry>Delay expanding functions when parsing. May speed up
+                  processing for some queries</entry>
                 </row>
 
                 <row>
