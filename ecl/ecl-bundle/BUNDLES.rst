@@ -46,8 +46,13 @@ Dependencies
 ============
 
 A bundle can specify dependencies on zero or more other modules, using the DependsOn string set.
-After the name of the bundle, a version or version range can be specified to indicate that a particular
-version of the bundle is required.
+The DependsOn string set is: <moduleName> OR <moduleName> <versionString>. The separator must be a space. 
+The versionString indicates that a particular version of the bundle is required. 
+
+**Example:**
+
+   ``EXPORT DependsOn := ['ML_Core 3.2.0'];``
+
 
 Enabling a Self-Test in a Bundle
 =================================
