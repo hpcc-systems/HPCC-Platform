@@ -1670,7 +1670,7 @@ public:
             }
         }
     }
-    virtual bool translate(RowFilter &filters) const override // MORE - remove this version - it's not safe
+    virtual bool translate(RowFilter &filters) const override
     {
         bool mapNeeded = false;
         if (translateNeeded)
