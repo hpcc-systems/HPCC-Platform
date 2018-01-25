@@ -43,12 +43,14 @@
 #include "thorsort.hpp"
 #include "thorparse.ipp"
 #include "thorxmlwrite.hpp"
+#include "thorcommon.hpp"
 #include "jsmartsock.hpp"
 #include "thorstep.hpp"
 #include "eclagent.ipp"
 #include "roxierowbuff.hpp"
 #include "ftbase.ipp"
 #include "rtldynfield.hpp"
+#include "rtlnewkey.hpp"
 
 #define EMPTY_LOOP_LIMIT 1000
 
@@ -7993,6 +7995,8 @@ const void *CHThorChildThroughNormalizeActivity::nextRow()
 CHThorDiskReadBaseActivity::CHThorDiskReadBaseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, ThorActivityKind _kind) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
 {
     helper.setCallback(this);
+    expectedDiskMeta = helper.queryDiskRecordSize();
+    projectedDiskMeta = helper.queryProjectedDiskRecordSize();
 }
 
 CHThorDiskReadBaseActivity::~CHThorDiskReadBaseActivity()
@@ -8077,7 +8081,7 @@ void CHThorDiskReadBaseActivity::resolve()
                 }
                 if((helper.getFlags() & (TDXtemporary | TDXjobtemp)) == 0)
                     agent.logFileAccess(dFile, "HThor", "READ");
-                if(!agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false) && !(helper.getFlags() & TDRnocrccheck))
+                if(agent.rltEnabled()==RecordTranslationMode::None && !agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false) && !(helper.getFlags() & TDRnocrccheck))
                     verifyRecordFormatCrc();
             }
         }
@@ -8114,9 +8118,9 @@ void CHThorDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
         grouped = ((helper.getFlags() & TDXgrouped) != 0);
     }
 
-    diskMeta.set(helper.queryDiskRecordSize()->querySerializedDiskMeta());
+    actualDiskMeta.set(helper.queryDiskRecordSize()->querySerializedDiskMeta());
     if (grouped)
-        diskMeta.setown(new CSuffixedOutputMeta(+1, diskMeta));
+        actualDiskMeta.setown(new CSuffixedOutputMeta(+1, actualDiskMeta));
     if (outputMeta.isFixedSize())
     {
         recordsize = outputMeta.getFixedSize();
@@ -8205,6 +8209,8 @@ bool CHThorDiskReadBaseActivity::openNext()
               (!dfsParts&&(partNum<ldFile->numParts())))
         {
             IDistributedFilePart * curPart = dfsParts?&dfsParts->query():NULL;
+            IDistributedFile *dFile = ldFile->queryDistributedFile();  // Null for local file usage
+
             unsigned numCopies = curPart?curPart->numCopies():ldFile->numPartCopies(partNum);
             //MORE: Order of copies should be optimized at this point....
             StringBuffer file, filelist;
@@ -8214,8 +8220,62 @@ bool CHThorDiskReadBaseActivity::openNext()
                 unsigned subfile;
                 unsigned lnum;
                 if (superfile->mapSubPart(partNum, subfile, lnum))
+                {
                     logicalFileName.set(subfileLogicalFilenames.item(subfile));
+                    // MORE - need to set dFile = superfile->getSubFilePart(subfile) to support different formats on different file parts
+                }
             }
+
+            if (dFile)
+            {
+                IPropertyTree &props = dFile->queryAttributes();
+                unsigned thisFormatCrc = props.getPropInt("@formatCrc");
+                if (thisFormatCrc != lastFormatCrc)
+                {
+                    translator.clear();
+                    lastFormatCrc = thisFormatCrc;
+                    if (thisFormatCrc != helper.getFormatCrc() && helper.getFormatCrc() && (helper.getFlags() & TDRnocrccheck) == 0)
+                    {
+                        actualDiskMeta.setown(getDaliLayoutInfo(props));
+                        if (actualDiskMeta)
+                        {
+                            translator.setown(createRecordTranslator(projectedDiskMeta->queryRecordAccessor(true), actualDiskMeta->queryRecordAccessor(true)));
+                            if (translator->needsTranslate())
+                            {
+                                keyedTranslator.setown(createKeyTranslator(actualDiskMeta->queryRecordAccessor(true), expectedDiskMeta->queryRecordAccessor(true)));
+                                if (translator->canTranslate())
+                                {
+                                    if (agent.rltEnabled()==RecordTranslationMode::None)
+                                    {
+    #ifdef _DEBUG
+                                        translator->describe();
+    #endif
+                                        throw MakeStringException(0, "Translatable key layout mismatch reading file %s but translation disabled", logicalFileName.str());
+                                    }
+                                }
+                                else
+                                    throw MakeStringException(0, "Untranslatable key layout mismatch reading file %s", logicalFileName.str());
+                            }
+                            else
+                                translator.clear();  // MORE - could question why the format appeared to mismatch
+                        }
+                        else
+                            throw MakeStringException(0, "Untranslatable key layout mismatch reading file %s - key layout information not found", logicalFileName.str());
+                    }
+                    else
+                    {
+                        actualDiskMeta.set(helper.queryDiskRecordSize()->querySerializedDiskMeta());
+                        if (grouped)
+                            actualDiskMeta.setown(new CSuffixedOutputMeta(+1, actualDiskMeta));
+                    }
+                }
+            }
+            else
+            {
+                translator.clear();
+                keyedTranslator.clear();
+            }
+            calcFixedDiskRecordSize();
             for (unsigned copy=0; copy < numCopies; copy++)
             {
                 RemoteFilename rfilename;
@@ -8378,27 +8438,13 @@ void CHThorDiskReadBaseActivity::open()
 
 CHThorBinaryDiskReadBase::CHThorBinaryDiskReadBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, IHThorCompoundBaseArg & _segHelper, ThorActivityKind _kind)
 : CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind),
-  segHelper(_segHelper), prefetchBuffer(NULL),
-  recInfo(outputMeta.queryRecordAccessor(true)),  // MORE - is this right - should it be diskMeta->queryRecordAccessor() ?
-  rowInfo(recInfo)
+  segHelper(_segHelper), prefetchBuffer(NULL)
 {
 }
 
 void CHThorBinaryDiskReadBase::calcFixedDiskRecordSize()
 {
-    fixedDiskRecordSize = diskMeta->getFixedSize();
-}
-
-void CHThorBinaryDiskReadBase::append(IKeySegmentMonitor *segment)
-{
-    if (segment->isWild())
-        segment->Release();
-    else
-    {
-        segMonitors.append(*segment);
-        if (segment->numFieldsRequired() > numFieldsRequired)
-            numFieldsRequired = segment->numFieldsRequired();
-    }
+    fixedDiskRecordSize = actualDiskMeta->getFixedSize();
 }
 
 void CHThorBinaryDiskReadBase::append(FFoption option, IFieldFilter * filter)
@@ -8406,37 +8452,14 @@ void CHThorBinaryDiskReadBase::append(FFoption option, IFieldFilter * filter)
     if (filter->isWild())
         filter->Release();
     else
-    {
         fieldFilters.append(*filter);
-        if (filter->queryFieldIndex() > numFieldsRequired)
-            numFieldsRequired = filter->queryFieldIndex();
-    }
-}
-
-unsigned CHThorBinaryDiskReadBase::ordinality() const
-{
-    return segMonitors.length();
-}
-
-IKeySegmentMonitor *CHThorBinaryDiskReadBase::item(unsigned idx) const
-{
-    if (segMonitors.isItem(idx))
-        return &segMonitors.item(idx);
-    else
-        return NULL;
 }
 
 void CHThorBinaryDiskReadBase::ready()      
 { 
     CHThorDiskReadBaseActivity::ready(); 
-    if (!diskMeta)
-        diskMeta.set(outputMeta);
-    segMonitors.kill();
     fieldFilters.kill();
-    numFieldsRequired = 0;
     segHelper.createSegmentMonitors(this);
-    prefetcher.setown(diskMeta->createDiskPrefetcher());
-    deserializer.setown(diskMeta->createDiskDeserializer(agent.queryCodeContext(), activityId));
 }
 
 bool CHThorBinaryDiskReadBase::openNext()
@@ -8450,8 +8473,15 @@ bool CHThorBinaryDiskReadBase::openNext()
             PROGLOG("Disk read falling back to legacy decompression routine");
             //in.setown(createRowCompReadSeq(*inputfileiostream, 0, fixedDiskRecordSize));
         }
+        actualFilter.clear();
+        if (keyedTranslator)
+            keyedTranslator->translate(actualFilter, fieldFilters);
+        else
+            actualFilter.appendFilters(fieldFilters);
 
         //Only one of these will actually be used.
+        prefetcher.setown(actualDiskMeta->createDiskPrefetcher());
+        deserializer.setown(actualDiskMeta->createDiskDeserializer(agent.queryCodeContext(), activityId));
         prefetchBuffer.setStream(inputstream);
         deserializeSource.setStream(inputstream);
         return true;
@@ -8498,7 +8528,7 @@ void CHThorDiskReadActivity::ready()
     outBuilder.setAllocator(rowAllocator);
     eogPending = false;
     lastGroupProcessed = processed;
-    needTransform = helper.needTransform() || segMonitors.length() || fieldFilters.length();
+    needTransform = helper.needTransform() || fieldFilters.length();
     limit = helper.getRowLimit();
     if (helper.getFlags() & TDRlimitskips)
         limit = (unsigned __int64) -1;
@@ -8525,7 +8555,7 @@ const void *CHThorDiskReadActivity::nextRow()
 
     try
     {
-        if (needTransform || grouped)
+        if (needTransform || grouped || translator || keyedTranslator)
         {
             while (!eofseen && ((stopAfter == 0) || ((processed - initialProcessed) < stopAfter)))
             {
@@ -8538,8 +8568,15 @@ const void *CHThorDiskReadActivity::nextRow()
                     const byte * next = prefetchBuffer.queryRow();
                     size32_t sizeRead = prefetchBuffer.queryRowSize();
                     size32_t thisSize;
-                    if (segMonitorsMatch(next))
+                    if (segMonitorsMatch(next)) // NOTE - keyed fields are checked pre-translation
                     {
+                        MemoryBuffer translated;
+                        if (translator)
+                        {
+                            MemoryBufferBuilder aBuilder(translated, 0);
+                            translator->translate(aBuilder, next);
+                            next = reinterpret_cast<const byte *>(translated.toByteArray());
+                        }
                         thisSize = helper.transform(outBuilder.ensureRow(), next);
                     }
                     else
@@ -8575,7 +8612,6 @@ const void *CHThorDiskReadActivity::nextRow()
         }
         else
         {
-            assertex(outputMeta == diskMeta);
             while(!eofseen && ((stopAfter == 0) || (processed - initialProcessed) < stopAfter)) 
             {
                 queryUpdateProgress();
@@ -8819,7 +8855,7 @@ const void *CHThorDiskCountActivity::nextRow()
     if (finished) return NULL;
 
     unsigned __int64 totalCount = 0;
-    if ((segMonitors.ordinality() == 0) && (fieldFilters.ordinality() == 0) && !helper.hasFilter() &&
+    if (fieldFilters.ordinality() == 0 && !helper.hasFilter() &&
         (fixedDiskRecordSize != 0) && !(helper.getFlags() & (TDXtemporary | TDXjobtemp)) &&
         !((helper.getFlags() & TDXcompress) && agent.queryResolveFilesLocally()) )
     {

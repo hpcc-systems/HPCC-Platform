@@ -23,8 +23,8 @@
 #include "deftype.hpp"
 #include "jthread.hpp"
 #include "dllserver.hpp"
+#include "rtldynfield.hpp"
 
-//#include "agentctx.hpp"
 #include "hthor.hpp"
 #include "thorxmlwrite.hpp"
 #include "workflow.hpp"
@@ -155,7 +155,7 @@ public:
     {
         ctx->reportProgress(msg, flags);
     }
-    virtual IConstWorkUnit *queryWorkUnit()
+    virtual IConstWorkUnit *queryWorkUnit() const override
     {
         return ctx->queryWorkUnit();
     }
@@ -232,6 +232,11 @@ public:
     }
 
     virtual void updateWULogfile()                  { return ctx->updateWULogfile(); }
+
+    virtual RecordTranslationMode rltEnabled() const override
+    {
+        return ctx->rltEnabled();
+    }
 
 protected:
     IAgentContext * ctx;
@@ -502,6 +507,7 @@ public:
     virtual IEngineContext *queryEngineContext() { return this; }
     virtual char *getDaliServers();
 
+    virtual RecordTranslationMode rltEnabled() const override;
     unsigned __int64 queryStopAfter() { return stopAfter; }
 
     virtual ISectionTimer * registerTimer(unsigned activityId, const char * name)
@@ -588,8 +594,8 @@ public:
     virtual const char *loadResource(unsigned id);
     virtual ICodeContext *queryCodeContext();
     virtual bool isResult(const char * name, unsigned sequence);
-    virtual unsigned getWorkflowId();// { return workflow->queryCurrentWfid(); }
-    virtual IConstWorkUnit *queryWorkUnit();  // no link
+    virtual unsigned getWorkflowId();
+    virtual IConstWorkUnit *queryWorkUnit() const override;  // no link
     virtual IWorkUnit *updateWorkUnit() const; // links
     virtual void unlockWorkUnit();      
     virtual void reloadWorkUnit();

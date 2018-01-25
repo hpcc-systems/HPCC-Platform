@@ -19,6 +19,7 @@
 #define rtldynfield_hpp
 
 #include "rtlfield.hpp"
+#include "rtlnewkey.hpp"
 
 //These classes support the dynamic creation of type and field information
 
@@ -104,6 +105,9 @@ interface IRtlFieldTypeDeserializer : public IInterface
 
 enum class RecordTranslationMode { None = 0, All = 1, Payload = 2, AlwaysDisk = 3, AlwaysECL = 4 };  // Latter 2 are for testing purposes only
 
+extern ECLRTL_API RecordTranslationMode getTranslationMode(const char *modeStr);
+extern ECLRTL_API const char *getTranslationModeText(RecordTranslationMode val);
+
 interface IDynamicTransform : public IInterface
 {
     virtual void describe() const = 0;
@@ -114,11 +118,11 @@ interface IDynamicTransform : public IInterface
     virtual bool keyedTranslated() const = 0;
 };
 
-class RowFilter;
 interface IKeyTranslator : public IInterface
 {
     virtual void describe() const = 0;
-    virtual bool translate(RowFilter &filters) const = 0;
+    virtual bool translate(RowFilter &filters) const = 0;  // MORE - this should be deprecated
+    virtual bool translate(RowFilter &result, IConstArrayOf<IFieldFilter> &_filters) const = 0;
     virtual bool needsTranslate() const = 0;
 };
 

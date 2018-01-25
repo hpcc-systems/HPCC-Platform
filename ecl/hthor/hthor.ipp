@@ -2241,7 +2241,9 @@ protected:
     Owned<IException> saveOpenExc;
     size32_t recordsize;
     size32_t fixedDiskRecordSize;
-    Owned<IOutputMetaData> diskMeta;
+    Owned<IOutputMetaData> actualDiskMeta;
+    IOutputMetaData *expectedDiskMeta;
+    IOutputMetaData *projectedDiskMeta;
     unsigned partNum;
     bool eofseen;
     bool opened;
@@ -2251,13 +2253,16 @@ protected:
     MemoryAttr encryptionkey;
     bool persistent;
     bool grouped;
+    unsigned lastFormatCrc = 0;
     unsigned __int64 localOffset;
     unsigned __int64 offsetOfPart;
     StringBuffer mangledHelperFileName;
     StringAttr logicalFileName;
     StringArray subfileLogicalFilenames;
     Owned<ISuperFileDescriptor> superfile;
-
+    Owned<const IDynamicTransform> translator;
+    Owned<const IKeyTranslator> keyedTranslator;
+    IPointerArrayOf<IOutputMetaData> actualLayouts;  // Do we need to keep more than one?
     void close();
     virtual void open();
     void resolve();
@@ -2298,26 +2303,23 @@ public:
 class CHThorBinaryDiskReadBase : public CHThorDiskReadBaseActivity, implements IIndexReadContext
 {
 protected:
-    IArrayOf<IKeySegmentMonitor> segMonitors;
-    IArrayOf<IFieldFilter> fieldFilters;
+    IConstArrayOf<IFieldFilter> fieldFilters;  // These refer to the expected layout
+    RowFilter actualFilter;               // This refers to the actual disk layout
     IHThorCompoundBaseArg & segHelper;
     Owned<ISourceRowPrefetcher> prefetcher;
     Owned<IOutputRowDeserializer> deserializer;
     CThorContiguousRowBuffer prefetchBuffer;
     CThorStreamDeserializerSource deserializeSource;
-    const RtlRecord &recInfo;
-    RtlDynRow rowInfo;
-    unsigned numFieldsRequired = 0;
 public:
     CHThorBinaryDiskReadBase(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, IHThorCompoundBaseArg & _segHelper, ThorActivityKind _kind);
 
     virtual void ready();
 
     //interface IIndexReadContext
-    virtual void append(IKeySegmentMonitor *segment);
-    virtual unsigned ordinality() const;
-    virtual IKeySegmentMonitor *item(unsigned idx) const;
-    virtual void append(FFoption option, IFieldFilter * filter);
+    virtual void append(IKeySegmentMonitor *segment) override { throwUnexpected(); }
+    virtual unsigned ordinality() const override { throwUnexpected(); }
+    virtual IKeySegmentMonitor *item(unsigned idx) const override { throwUnexpected();  }
+    virtual void append(FFoption option, IFieldFilter * filter) override;
 
 protected:
     virtual void verifyRecordFormatCrc() { ::verifyFormatCrcSuper(helper.getFormatCrc(), ldFile?ldFile->queryDistributedFile():NULL, false, true); }
@@ -2328,28 +2330,17 @@ protected:
 
     inline bool segMonitorsMatch(const void * buffer)
     {
-        bool match = true;
-        if (segMonitors || fieldFilters)
+        if (actualFilter.numFilterFields())
         {
-            rowInfo.setRow(buffer, numFieldsRequired);
-            ForEachItemIn(idx, segMonitors)
-            {
-                if (!segMonitors.item(idx).matches(&rowInfo))
-                {
-                    match = false;
-                    break;
-                }
-            }
-            ForEachItemIn(idx2, fieldFilters)
-            {
-                if (!fieldFilters.item(idx2).matches(rowInfo))
-                {
-                    match = false;
-                    break;
-                }
-            }
+            const RtlRecord &actual = actualDiskMeta->queryRecordAccessor(true);
+            unsigned numOffsets = actual.getNumVarFields() + 1;
+            size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
+            RtlRow row(actual, nullptr, numOffsets, variableOffsets);
+            row.setRow(buffer, 0);  // Use lazy offset calculation
+            return actualFilter.matches(row);
         }
-        return match;
+        else
+            return true;
     }
 
     virtual void calcFixedDiskRecordSize();

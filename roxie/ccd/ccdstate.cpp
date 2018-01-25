@@ -2211,24 +2211,10 @@ private:
             {
                 const char *val = control->queryProp("@val");
                 if (val)
-                {
-                    if (strieq(val, "alwaysDisk"))
-                        fieldTranslationEnabled = RecordTranslationMode::AlwaysDisk;
-                    else if (strieq(val, "alwaysECL"))
-                        fieldTranslationEnabled = RecordTranslationMode::AlwaysECL;
-                    else if (!val || strToBool(val) || strieq(val, "payload"))
-                    {
-                        fieldTranslationEnabled = RecordTranslationMode::Payload;
-                        val = "payload";
-                    }
-                    else
-                    {
-                        fieldTranslationEnabled = RecordTranslationMode::None;
-                        val = "false";
-                    }
-                }
+                    fieldTranslationEnabled = getTranslationMode(val);
                 else
-                    val = "false";
+                    fieldTranslationEnabled = RecordTranslationMode::Payload;
+                val = getTranslationModeText(fieldTranslationEnabled);
                 topology->setProp("@fieldTranslationEnabled", val);
             }
             else if (stricmp(queryName, "control:flushJHtreeCacheOnOOM")==0)

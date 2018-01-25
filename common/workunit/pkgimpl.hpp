@@ -124,12 +124,7 @@ protected:
         const char *val = queryEnv("control:enableFieldTranslation");
         if (!val) val = queryEnv("enableFieldTranslation"); // Backward compatibility
         if (val)
-        {
-            if (strieq(val, "payload") || strToBool(val))
-                return RecordTranslationMode::Payload;
-            else
-                return RecordTranslationMode::None;
-        }
+            return getTranslationMode(val);
         else
             return getSysFieldTranslationEnabled();
     }

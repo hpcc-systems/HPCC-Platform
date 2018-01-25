@@ -619,4 +619,6 @@ extern THORHELPER_API void setProcessAffinity(const char * cpus);
 extern THORHELPER_API void setAutoAffinity(unsigned curProcess, unsigned processPerNode, const char * optNodes);
 extern THORHELPER_API void bindMemoryToLocalNodes();
 
+extern THORHELPER_API IOutputMetaData *getDaliLayoutInfo(IPropertyTree const &props);
+
 #endif // THORHELPER_HPP

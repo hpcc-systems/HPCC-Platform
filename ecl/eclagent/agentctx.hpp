@@ -20,6 +20,7 @@
 #include "errorlist.h"
 #include "dautils.hpp"
 #include "eclhelper.hpp"
+#include "rtldynfield.hpp"
 #include "workunit.hpp"
 
 #if (ECLAGENT_ERROR_START != 5400 || ECLAGENT_ERROR_END != 5499)
@@ -86,7 +87,7 @@ struct IAgentContext : extends IGlobalCodeContext
 
     virtual ICodeContext *queryCodeContext() = 0;
 
-    virtual IConstWorkUnit *queryWorkUnit() = 0;
+    virtual IConstWorkUnit *queryWorkUnit() const = 0;
     virtual IWorkUnit *updateWorkUnit() const = 0;
     virtual void unlockWorkUnit() = 0;
     
@@ -112,6 +113,7 @@ struct IAgentContext : extends IGlobalCodeContext
 
     virtual IGroup *getHThorGroup(StringBuffer &grpnameout) = 0;
 
+    virtual RecordTranslationMode rltEnabled() const = 0;
     virtual unsigned __int64 queryStopAfter() = 0;
     
     virtual const char *queryWuid() = 0;

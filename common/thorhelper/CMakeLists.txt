@@ -76,6 +76,8 @@ set (    SRCS
     )
 
 include_directories ( 
+         ${CMAKE_BINARY_DIR}
+         ${CMAKE_BINARY_DIR}/oss
          ./../../system/security/securesocket 
          ./../../common/remote 
          ./../../system/jhtree 
@@ -89,6 +91,7 @@ include_directories (
          ./../deftype 
          ./../workunit
          ./../../rtl/include 
+         ./../../ecl/hql
          ./../../roxie/roxiemem
          ./../../testing/unittests
          ./../../system/tbb_sm/tbb/include
@@ -102,6 +105,7 @@ install ( TARGETS thorhelper RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION
 target_link_libraries ( thorhelper 
          jlib 
          nbcd 
+         hql
          eclrtl 
          roxiemem
          deftype 
