@@ -62,6 +62,7 @@ static const char * eclReserved2[] = { //HPCC and OS environment settings
     "__platform__",
     "__set_debug_option__",
     "__stand_alone__",
+    "__target_platform__",
 
     "clustersize",
     "getenv",
