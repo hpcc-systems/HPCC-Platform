@@ -120,9 +120,30 @@ interface IDynamicTransform : public IInterface
 
 interface IKeyTranslator : public IInterface
 {
+    /*
+     * Describe the operations of a translator to the log
+     */
     virtual void describe() const = 0;
-    virtual bool translate(RowFilter &filters) const = 0;  // MORE - this should be deprecated
-    virtual bool translate(RowFilter &result, IConstArrayOf<IFieldFilter> &_filters) const = 0;
+    /*
+     * Translate the field numbers of a RowFilter array in-situ. An exception will be thrown if an
+     * untranslatable field is encountered.
+     *
+     * @param filters  The RowFilter array to be updated
+     * @return         Indicates whether any field numbers changed
+     */
+    virtual bool translate(RowFilter &filters) const = 0;
+    /*
+     * Translate the field numbers of a RowFilter array, creating a new RowFilter array. An exception will be thrown if an
+     * untranslatable field is encountered.
+     *
+     * @param filters  The input RowFilter array to be translated
+     * @param result   Updated to add translated versions of all the FieldFilters in the input
+     * @return         Indicates whether any field numbers changed
+     */
+    virtual bool translate(RowFilter &result, IConstArrayOf<IFieldFilter> &filters) const = 0;
+    /*
+     * Return whether any fields are translated by this translator
+     */
     virtual bool needsTranslate() const = 0;
 };
 
