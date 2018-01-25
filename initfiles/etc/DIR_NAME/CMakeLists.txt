@@ -19,8 +19,8 @@ configure_file("version.in" "version")
 configure_file("environment.conf.in" "environment.conf" IMMEDIATE)
 configure_file("environment.xml.in" "environment.xml" IMMEDIATE)
 foreach(iFILES
-    ${CMAKE_CURRENT_BINARY_DIR}/environment.conf
-    ${CMAKE_CURRENT_BINARY_DIR}/version)
+        ${CMAKE_CURRENT_BINARY_DIR}/environment.conf
+        ${CMAKE_CURRENT_BINARY_DIR}/version)
     install(FILES ${iFILES}  DESTINATION etc/${DIR_NAME} COMPONENT Runtime)
 endforeach(iFILES)
 
@@ -44,43 +44,54 @@ if(NOT "${DESTDIR}" STREQUAL "")
     add_custom_target(configure_directories
         DEPENDS ${dirlist})
 
-    add_custom_command(OUTPUT ${CONFIG_DIR}/${ENV_XML_FILE}
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/${ENV_XML_FILE} ${CONFIG_DIR}
-        DEPENDS configure_directories ${CMAKE_CURRENT_BINARY_DIR}/environment.xml)
-    add_custom_target(configure_environment_xml
-        DEPENDS ${CONFIG_DIR}/${ENV_XML_FILE})
-
-    add_custom_command(OUTPUT ${CONFIG_DIR}/${ENV_CONF_FILE}
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/${ENV_CONF_FILE} ${CONFIG_DIR}
-        DEPENDS configure_directories ${CMAKE_CURRENT_BINARY_DIR}/environment.conf)
-    add_custom_target(configure_environment_conf
-        DEPENDS ${CONFIG_DIR}/${ENV_CONF_FILE})
-    
     add_custom_command(OUTPUT ${CONFIG_DIR}/genenvrules.conf
         COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/genenvrules.conf ${CONFIG_DIR}
         DEPENDS configure_directories ${CMAKE_CURRENT_SOURCE_DIR}/genenvrules.conf)
     add_custom_target(configure_genenvrules_conf
         DEPENDS ${CONFIG_DIR}/genenvrules.conf)
-   
+
     add_custom_command(OUTPUT ${INIT_PATH}/dafilesrv
         COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/initfiles/bash/etc/init.d/dafilesrv ${INIT_PATH}/dafilesrv
         DEPENDS configure_directories
-                ProcessFiles-initfiles-bash-etc-init.d
-                ${CMAKE_BINARY_DIR}/initfiles/bash/etc/init.d/dafilesrv)
+        ProcessFiles-initfiles-bash-etc-init.d
+        ${CMAKE_BINARY_DIR}/initfiles/bash/etc/init.d/dafilesrv)
     add_custom_command(OUTPUT ${INIT_PATH}/hpcc-init
         COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/initfiles/bash/etc/init.d/hpcc-init ${INIT_PATH}/hpcc-init
         DEPENDS configure_directories
-                ProcessFiles-initfiles-bash-etc-init.d
-                ${CMAKE_BINARY_DIR}/initfiles/bash/etc/init.d/hpcc-init)
+        ProcessFiles-initfiles-bash-etc-init.d
+        ${CMAKE_BINARY_DIR}/initfiles/bash/etc/init.d/hpcc-init)
     add_custom_target(configure_service_files
         DEPENDS ${INIT_PATH}/hpcc-init
-                ${INIT_PATH}/dafilesrv)
+        ${INIT_PATH}/dafilesrv)
 
     add_custom_target(configure ALL
         DEPENDS configure_directories
-                configure_environment_xml
-                configure_environment_conf
-                configure_genenvrules_conf
-                configure_service_files
+        configure_genenvrules_conf
+        configure_service_files
         COMMENT "Configuring ${DESTDIR} for deployment")
+
+    if(NOT EXISTS ${CONFIG_DIR}/${ENV_XML_FILE})
+        add_custom_command(OUTPUT ${CONFIG_DIR}/${ENV_XML_FILE}
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/${ENV_XML_FILE} ${CONFIG_DIR}
+            DEPENDS configure_directories ${CMAKE_CURRENT_BINARY_DIR}/environment.xml)
+        add_custom_target(configure_environment_xml
+            DEPENDS ${CONFIG_DIR}/${ENV_XML_FILE}
+            COMMENT "copying ${ENV_XML_FILE} to ${CONFIG_DIR}")
+        add_dependencies(configure configure_environment_xml)
+    else()
+        message(STATUS "A copy of ${ENV_XML_FILE} already exists and will not be updated")
+    endif()
+
+    if(NOT EXISTS ${CONFIG_DIR}/${NEW_CONF_FILE})
+        add_custom_command(OUTPUT ${CONFIG_DIR}/${ENV_CONF_FILE}
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/${ENV_CONF_FILE} ${CONFIG_DIR}
+            DEPENDS configure_directories ${CMAKE_CURRENT_BINARY_DIR}/environment.conf)
+        add_custom_target(configure_environment_conf
+            DEPENDS ${CONFIG_DIR}/${ENV_CONF_FILE}
+            COMMENT "Copying ${ENV_CONF_FILE} to ${CONFIG_DIR}")
+        add_dependencies(configure configure_environment_conf)
+    else()
+        message(STATUS "A copy of ${ENV_CONF_FILE} already exists and will not be updated")
+    endif()
+
 endif()
