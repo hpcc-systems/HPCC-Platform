@@ -243,9 +243,8 @@ ECLCC_PATH
                     <entry><graphic fileref="images/caution.png" scale="noin"
                     xml:base="../../" /></entry>
 
-                    <entry>We do not recommend storing your password in an
-                    Environment Variable unless your system is
-                    secured.</entry>
+                    <entry>We do not recommend storingword in an Environment
+                    Variable unless your system is secured.</entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -376,6 +375,20 @@ ecl deploy roxie - --name=FindPersonService
                   <entry>-pw, --password</entry>
 
                   <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in seconds)
+                  </entry>
                 </row>
 
                 <row>
@@ -690,6 +703,20 @@ ecl publish roxie ArchiveQuery.xml --name=FindPersonService --no-activate
                 </row>
 
                 <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
+                </row>
+
+                <row>
                   <entry>--main</entry>
 
                   <entry>The definition to use from legacy ECL
@@ -861,6 +888,20 @@ ecl unpublish roxie "FindpersonService*"
                   <entry>-pw, --password</entry>
 
                   <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -1044,6 +1085,20 @@ ecl run thor findperson.ecl -I C:\MyECL\
                   <entry>-pw, --password</entry>
 
                   <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
                 </row>
 
                 <row>
@@ -1231,6 +1286,20 @@ ecl results W20170519-142920 --noroot --exception-level=error
 
                   <entry>The password (if necessary)</entry>
                 </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -1319,6 +1388,20 @@ ecl results W20170519-142920 --noroot --exception-level=error
                   <entry>-pw, --password</entry>
 
                   <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -1409,6 +1492,20 @@ ecl results W20170519-142920 --noroot --exception-level=error
                   <entry>-pw, --password</entry>
 
                   <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -1548,6 +1645,20 @@ ecl queries list roxie --target=roxie --show=A </programlisting>
                   <entry>-pw, --password</entry>
 
                   <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -1721,6 +1832,20 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
 
                   <entry>The password (if necessary)</entry>
                 </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -1868,6 +1993,20 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
 
                   <entry>The password (if necessary)</entry>
                 </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -1997,6 +2136,20 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
                   <entry>-pw, --password</entry>
 
                   <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -2246,6 +2399,20 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
 
                   <entry>The password (if necessary)</entry>
                 </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -2422,6 +2589,20 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
 
                   <entry>The password (if necessary)</entry>
                 </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -2535,6 +2716,20 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
                   <entry>-pw, --password</entry>
 
                   <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -2672,6 +2867,20 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 
                   <entry>The password (if necessary)</entry>
                 </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -2753,6 +2962,20 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry>-pw, --password</entry>
 
                   <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -2844,6 +3067,20 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 
                   <entry>The password (if necessary)</entry>
                 </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -2932,6 +3169,20 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry>-pw, --password</entry>
 
                   <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -3025,6 +3276,20 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 
                   <entry>The password (if necessary)</entry>
                 </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -3117,6 +3382,20 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry>-pw, --password</entry>
 
                   <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -3292,6 +3571,20 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 
                   <entry>The password (if necessary)</entry>
                 </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -3403,6 +3696,20 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry>-pw, --password</entry>
 
                   <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -3517,6 +3824,19 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <entry>-pw, --password</entry>
 
                 <entry>The password (if necessary)</entry>
+              </row>
+
+              <row>
+                <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                <entry>Timeout while connecting to server (in
+                milliseconds)</entry>
+              </row>
+
+              <row>
+                <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                <entry>Timeout while reading from socket (in seconds)</entry>
               </row>
             </tbody>
           </tgroup>
@@ -3663,6 +3983,20 @@ ecl packagemap validate roxie --active</programlisting>
                   <entry>-pw, --password</entry>
 
                   <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -3823,6 +4157,20 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
 
                   <entry>The password (if necessary)</entry>
                 </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -3907,6 +4255,20 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
 
                   <entry>The password (if necessary)</entry>
                 </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -3979,6 +4341,20 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
 
                   <entry>The password (if necessary)</entry>
                 </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -4050,6 +4426,20 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                   <entry>-pw, --password</entry>
 
                   <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -4128,6 +4518,20 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                   <entry>-pw, --password</entry>
 
                   <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -4588,6 +4992,20 @@ ecl bundle list myb*
 
                   <entry>The password (if necessary)</entry>
                 </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -4672,6 +5090,20 @@ ecl abort -n MyJob</programlisting>
                   <entry>-pw, --password</entry>
 
                   <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -4758,6 +5190,20 @@ ecl status -n MyJob</programlisting>
 
                   <entry>The password (if necessary)</entry>
                 </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -4842,6 +5288,20 @@ ecl getwuid -n MyCommonJobName --limit=100</programlisting>
                   <entry>-pw, --password</entry>
 
                   <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -4928,6 +5388,20 @@ ecl getname -wu W201407*
                   <entry>-pw, --password</entry>
 
                   <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -5030,6 +5504,20 @@ ecl zapgen W20171018-091399 --path ~ --inc-thor-slave-logs --description "Unexpe
                   <entry>-pw, --password</entry>
 
                   <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
                 </row>
               </tbody>
             </tgroup>
