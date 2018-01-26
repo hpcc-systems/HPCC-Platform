@@ -3291,7 +3291,7 @@ void HqlCppTranslator::noteFilename(ActivityInstance & instance, const char * na
         {
             if (!folded->queryValue())
             {
-                if (!isDynamic && !options.allowVariableRoxieFilenames && targetRoxie())
+                if (!isDynamic && !options.allowVariableRoxieFilenames && !options.standAloneExe && targetRoxie())
                 {
                     StringBuffer x;
                     folded->toString(x);
