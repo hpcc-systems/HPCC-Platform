@@ -158,6 +158,27 @@ ESPStruct [nil_remove] ECLQuery
     string ThorLog;
     [min_ver("1.35")] string QueryMainDefinition;
 };
+
+//  ===========================================================================
+
+ESPStruct [nil_remove] QuerySummaryStats
+{
+    string Endpoint;
+    string Status;
+    string StartTime;
+    string EndTime;
+    int CountTotal;
+    int CountFailed;
+    int AverageSlavesReplyLen;
+    int64 AverageBytesOut;
+    int64 SizeAvgPeakMemory;
+    int64 TimeAvgTotalExecuteMinutes;
+    int64 TimeMinTotalExecuteMinutes;
+    int64 TimeMaxTotalExecuteMinutes;
+    int64 Percentile97;
+    bool Percentile97Estimate;
+};
+
 //  ===========================================================================
 
 ESPStruct [nil_remove] DebugValue
@@ -1128,6 +1149,19 @@ ESPrequest WUQueryGetGraphRequest
 ESPresponse [exceptions_inline] WUQueryGetGraphResponse
 {
     ESParray<ESPstruct ECLGraphEx> Graphs;
+};
+
+ESPrequest WUQueryGetSummaryStatsRequest
+{
+    string Target;
+    string QueryId;
+    string FromTime; //YYYY-MM-DDTHH:MM:SS
+    string ToTime;
+};
+
+ESPresponse [exceptions_inline] WUQueryGetSummaryStatsResponse
+{
+    ESParray<ESPstruct QuerySummaryStats> StatsList;
 };
 
 ESPrequest WUExportRequest
@@ -2224,6 +2258,7 @@ ESPservice [
     ESPmethod [cache_seconds(30), min_ver("1.57")] WUGetGraphNameAndTypes(WUGetGraphNameAndTypesRequest, WUGetGraphNameAndTypesResponse);
     ESPmethod [cache_seconds(30)] WUGetGraph(WUGetGraphRequest, WUGetGraphResponse);
     ESPmethod [cache_seconds(30)] WUQueryGetGraph(WUQueryGetGraphRequest, WUQueryGetGraphResponse);
+    ESPmethod [cache_seconds(30), min_ver("1.72")] WUQueryGetSummaryStats(WUQueryGetSummaryStatsRequest, WUQueryGetSummaryStatsResponse);
     ESPmethod [cache_seconds(30)] WUGetDependancyTrees(WUGetDependancyTreesRequest, WUGetDependancyTreesResponse);
 
     ESPmethod [cache_seconds(60)] WUListLocalFileRequired(WUListLocalFileRequiredRequest, WUListLocalFileRequiredResponse);
