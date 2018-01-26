@@ -5539,7 +5539,7 @@ void CWsWorkunitsEx::checkEclDefinitionSyntax(IEspContext &context, const char *
     wu->commit();
     wu.clear();
 
-    WsWuHelpers::submitWsWorkunit(context, wuid.str(), target, NULL, 0, true, false, false);
+    WsWuHelpers::submitWsWorkunit(context, wuid.str(), target, nullptr, 0, true, false, false);
     waitForWorkUnitToComplete(wuid.str(), msToWait);
 
     Owned<IConstWorkUnit> cw(factory->openWorkUnit(wuid.str()));
@@ -5550,7 +5550,7 @@ void CWsWorkunitsEx::checkEclDefinitionSyntax(IEspContext &context, const char *
         result.append(" timed out.");
 
     gatherWUException(cw->getExceptions(), result);
-    addEclDefinitionActionResult(eclDefinition, result.str(), wuid.str(), NULL, "SyntaxCheck", true, results);
+    addEclDefinitionActionResult(eclDefinition, result.str(), wuid.str(), nullptr, "SyntaxCheck", true, results);
     cw.clear();
 
     if (wuTimeout)
@@ -5558,7 +5558,7 @@ void CWsWorkunitsEx::checkEclDefinitionSyntax(IEspContext &context, const char *
     if (!factory->deleteWorkUnit(wuid.str()))
     {
         result.setf(" Workunit %s cannot be deleted now. You may delete it when its status changes.", wuid.str());
-        addEclDefinitionActionResult(eclDefinition, result.str(), wuid.str(), NULL, "SyntaxCheck", true, results);
+        addEclDefinitionActionResult(eclDefinition, result.str(), wuid.str(), nullptr, "SyntaxCheck", true, results);
     }
 }
 
@@ -5583,7 +5583,7 @@ void CWsWorkunitsEx::deployEclDefinition(IEspContext &context, const char *targe
 {
     StringBuffer wuid, finalResult;
     deployEclDefinition(context, target, eclDefinition, msToWait, wuid, finalResult);
-    addEclDefinitionActionResult(eclDefinition, finalResult.str(), wuid.str(), NULL, "Deploy", true, results);
+    addEclDefinitionActionResult(eclDefinition, finalResult.str(), wuid.str(), nullptr, "Deploy", true, results);
 }
 
 void CWsWorkunitsEx::publishEclDefinition(IEspContext &context, const char *target,  const char *eclDefinition,
@@ -5593,7 +5593,7 @@ void CWsWorkunitsEx::publishEclDefinition(IEspContext &context, const char *targ
     if (priorityReq.trim().length() && !isValidPriorityValue(priorityReq.str()))
     {
         VStringBuffer msg("Invalid Priority: %s", priorityReq.str());
-        addEclDefinitionActionResult(eclDefinition, msg.str(), NULL, NULL, "Publish", true, results);
+        addEclDefinitionActionResult(eclDefinition, msg.str(), nullptr, nullptr, "Publish", true, results);
         return;
     }
 
@@ -5601,7 +5601,7 @@ void CWsWorkunitsEx::publishEclDefinition(IEspContext &context, const char *targ
     if (memoryLimitReq.trim().length() && !isValidMemoryValue(memoryLimitReq.str()))
     {
         VStringBuffer msg("Invalid MemoryLimit: %s", memoryLimitReq.str());
-        addEclDefinitionActionResult(eclDefinition, msg.str(), NULL, NULL, "Publish", true, results);
+        addEclDefinitionActionResult(eclDefinition, msg.str(), nullptr, nullptr, "Publish", true, results);
         return;
     }
 
@@ -5612,13 +5612,13 @@ void CWsWorkunitsEx::publishEclDefinition(IEspContext &context, const char *targ
     StringBuffer wuid, finalResult;
     if (!deployEclDefinition(context, target, eclDefinition, msToWait, wuid, finalResult))
     {
-        addEclDefinitionActionResult(eclDefinition, finalResult.str(), wuid.str(), NULL, "Publish", true, results);
+        addEclDefinitionActionResult(eclDefinition, finalResult.str(), wuid.str(), nullptr, "Publish", true, results);
         return;
     }
     int timeLeft = msToWait - (time(&timenow) - startTime);
     if (timeLeft <= 0)
     {
-        addEclDefinitionActionResult(eclDefinition, "Timed out after deployment", wuid.str(), NULL, "Publish", true, results);
+        addEclDefinitionActionResult(eclDefinition, "Timed out after deployment", wuid.str(), nullptr, "Publish", true, results);
         return;
     }
 
