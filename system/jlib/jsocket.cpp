@@ -404,7 +404,7 @@ public:
 
     ISocket*    accept(bool allowcancel);
     int         wait_read(unsigned timeout);
-    void        logPollError(unsigned revents, const char *rwstr);
+    int         logPollError(unsigned revents, const char *rwstr);
     int         wait_write(unsigned timeout);
     int         name(char *name,size32_t namemax);
     int         peer_name(char *name,size32_t namemax);
@@ -1536,8 +1536,10 @@ void CSocket::udpconnect()
 
 
 
-void CSocket::logPollError(unsigned revents, const char *rwstr)
+int CSocket::logPollError(unsigned revents, const char *rwstr)
 {
+    // return appropriate errno as caller will probably throw/log it
+    int retcode = EINVAL;
     if (revents & POLLERR)
     {
         StringBuffer errStr;
@@ -1548,6 +1550,7 @@ void CSocket::logPollError(unsigned revents, const char *rwstr)
         if (srtn != 0)
             serror = ERRNO();
         LOGERR2(serror,2,errStr.str());
+        retcode = serror;
     }
     else if (revents & POLLNVAL)
     {
@@ -1561,6 +1564,7 @@ void CSocket::logPollError(unsigned revents, const char *rwstr)
         errStr.appendf("%s unknown poll() revents: 0x%x", rwstr, revents);
         LOGERR2(999,4,errStr.str());
     }
+    return retcode;
 }
 
 int CSocket::wait_read(unsigned timeout)
@@ -1606,16 +1610,18 @@ int CSocket::wait_read(unsigned timeout)
         }
         else
         {   // ret > 0 - ready or error
+            // if returning < 0 also set errno as caller will probably throw/log it
 #ifdef _USE_SELECT
             if (!FD_ISSET(sock, &fds))
             {
                 LOGERR2(998,7,"wait_read");
+                errno = EBADF;
                 ret = -1;
             }
 #else
             if ( (fds[0].revents & (POLLERR | POLLNVAL)) || (!(fds[0].revents & (POLLIN | POLLHUP))) )
             {
-                logPollError(fds[0].revents, "wait_read");
+                errno = logPollError(fds[0].revents, "wait_read");
                 ret = -1;
             }
             else
@@ -1670,21 +1676,24 @@ int CSocket::wait_write(unsigned timeout)
         }
         else
         {   // ret > 0 - ready or error
+            // if returning < 0 also set errno as caller will probably throw/log it
 #ifdef _USE_SELECT
             if (!FD_ISSET(sock, &fds))
             {
                 LOGERR2(998,7,"wait_write");
+                errno = EBADF;
                 ret = -1;
             }
 #else
             if ( (fds[0].revents & (POLLERR | POLLNVAL)) || (!(fds[0].revents & (POLLOUT | POLLHUP))) )
             {
-                logPollError(fds[0].revents, "wait_write");
+                errno = logPollError(fds[0].revents, "wait_write");
                 ret = -1;
             }
             else if (fds[0].revents & POLLHUP)
             {
                 LOGERR2(998,5,"wait_write POLLHUP");
+                errno = EPIPE;
                 ret = -1;
             }
             else
