@@ -9597,6 +9597,10 @@ void CLocalWUQuery::addAssociatedFile(WUFileType type, const char * name, const 
 {
     CriticalBlock block(crit);
     loadAssociated();
+    StringBuffer xpath;
+    xpath.append("Associated/File[@filename=\"").append(name).append("\"]");
+    if (p->hasProp(xpath))
+        return;
     if (!associated.length())
         p->addPropTree("Associated");
     IPropertyTree *pl = p->queryPropTree("Associated");
