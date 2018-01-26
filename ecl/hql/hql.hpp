@@ -195,6 +195,8 @@ interface IEclRepositoryCallback : public IEclRepository
 interface ICodegenContextCallback : public IInterface
 {
     virtual void noteCluster(const char *clusterName) = 0;
+    virtual void pushCluster(const char *clusterName) = 0;
+    virtual void popCluster() = 0;
     virtual bool allowAccess(const char * category, bool isSigned) = 0;
     /**
      * Lookup a file in DFS and return the record definition
@@ -204,6 +206,11 @@ interface ICodegenContextCallback : public IInterface
      * @param location      Location to use when reporting errors
      */
     virtual IHqlExpression *lookupDFSlayout(const char *filename, IErrorReceiver &errs, const ECLlocation &location, bool isOpt) const = 0;
+    /**
+     * Return number of nodes for the current cluster, via Dali lookup, or 0 if cannot be determined.
+     *
+     */
+    virtual unsigned lookupClusterSize() const = 0;
 };
 
 

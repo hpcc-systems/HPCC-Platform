@@ -68,6 +68,7 @@ const char * const helpText[] = {
     "File resolution options:",
     "    -dfs=ip       Use specified ip for DFS filename resolution",
     "    -scope=prefix Use specified scope prefix in DFS filename resolution",
+    "    -cluster=name Use specified cluster when calculating graph resource allocation",
     "    -user=id      Use specified username in DFS filename resolution",
     "    -password=xxx Use specified password in DFS filename resolution (blank to prompt)",
     "",

@@ -257,11 +257,15 @@ public:
 
     // interface ICodegenContextCallback
 
-    virtual void noteCluster(const char *clusterName);
-    virtual bool allowAccess(const char * category, bool isSigned);
+    virtual void noteCluster(const char *clusterName) override;
+    virtual void pushCluster(const char *clusterName) override;
+    virtual void popCluster() override;
+    virtual bool allowAccess(const char * category, bool isSigned) override;
     virtual IHqlExpression *lookupDFSlayout(const char *filename, IErrorReceiver &errs, const ECLlocation &location, bool isOpt) const override;
+    virtual unsigned lookupClusterSize() const override;
 
 protected:
+    bool checkDaliConnected() const;
     void addFilenameDependency(StringBuffer & target, EclCompileInstance & instance, const char * filename);
     void applyApplicationOptions(IWorkUnit * wu);
     void applyDebugOptions(IWorkUnit * wu);
@@ -320,10 +324,13 @@ protected:
     StringAttr optQueryRepositoryReference;
     StringAttr optComponentName;
     StringAttr optDFS;
+    StringAttr optCluster;
     StringAttr optScope;
     StringAttr optUser;
     StringAttr optPassword;
     StringAttr optWUID;
+    StringArray clusters;
+    mutable int prevClusterSize = -1;  // i.e. not cached
     FILE * batchLog = nullptr;
 
     StringAttr optManifestFilename;
@@ -2013,6 +2020,67 @@ void EclCC::noteCluster(const char *clusterName)
 {
 }
 
+void EclCC::pushCluster(const char *clusterName)
+{
+    clusters.append(clusterName);
+    prevClusterSize = -1;  // i.e. not cached
+}
+
+void EclCC::popCluster()
+{
+    clusters.pop();
+    prevClusterSize = -1;  // i.e. not cached
+}
+
+
+bool EclCC::checkDaliConnected() const
+{
+    if (!daliConnected)
+    {
+        try
+        {
+            Owned<IGroup> serverGroup = createIGroup(optDFS.str(), DALI_SERVER_PORT);
+            if (!initClientProcess(serverGroup, DCR_EclCC, 0, NULL, NULL, optDaliTimeout))
+            {
+                disconnectReported = true;
+                return false;
+            }
+            if (!optUser.isEmpty())
+            {
+                udesc.setown(createUserDescriptor());
+                udesc->set(optUser, optPassword);
+            }
+        }
+        catch (IException *E)
+        {
+            E->Release();
+            disconnectReported = true;
+            return false;
+        }
+        daliConnected = true;
+    }
+    return true;
+}
+
+unsigned EclCC::lookupClusterSize() const
+{
+    CriticalBlock b(dfsCrit);  // Overkill at present but maybe one day codegen will start threading? If it does the stack is also iffy!
+    if (!optDFS || disconnectReported || !checkDaliConnected())
+        return 0;
+    if (prevClusterSize != -1)
+        return (unsigned) prevClusterSize;
+    const char *cluster = clusters ? clusters.tos() : optCluster.str();
+    if (isEmptyString(cluster) || strieq(cluster, "<unknown>"))
+        prevClusterSize = 0;
+    else
+    {
+        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster);
+        prevClusterSize = clusterInfo ? clusterInfo->getSize() : 0;
+    }
+    DBGLOG("Cluster %s has size %d", cluster, prevClusterSize);
+    return prevClusterSize;
+}
+
 IHqlExpression *EclCC::lookupDFSlayout(const char *filename, IErrorReceiver &errs, const ECLlocation &location, bool isOpt) const
 {
     CriticalBlock b(dfsCrit);  // Overkill at present but maybe one day codegen will start threading?
@@ -2027,36 +2095,12 @@ IHqlExpression *EclCC::lookupDFSlayout(const char *filename, IErrorReceiver &err
         }
         return nullptr;
     }
-    if (!daliConnected)
+    if (!checkDaliConnected())
     {
-        try
-        {
-            Owned<IGroup> serverGroup = createIGroup(optDFS.str(), DALI_SERVER_PORT);
-            if (!initClientProcess(serverGroup, DCR_EclCC, 0, NULL, NULL, optDaliTimeout))
-            {
-                VStringBuffer msg("Error looking up file %s in DFS - failed to connect to %s", filename, optDFS.str());
-                errs.reportError(HQLWRN_DFSlookupFailure, msg.str(), str(location.sourcePath), location.lineno, location.column, location.position);
-                disconnectReported = true;
-                return nullptr;
-            }
-            if (!optUser.isEmpty())
-            {
-                udesc.setown(createUserDescriptor());
-                udesc->set(optUser, optPassword);
-            }
-        }
-        catch (IException *E)
-        {
-            StringBuffer emsg;
-            VStringBuffer msg("Error looking up file %s in DFS - failed to connect to %s (%s)", filename, optDFS.str(), E->errorMessage(emsg).str());
-            E->Release();
-            errs.reportError(HQLWRN_DFSlookupFailure, msg.str(), str(location.sourcePath), location.lineno, location.column, location.position);
-            disconnectReported = true;
-            return nullptr;
-        }
-        daliConnected = true;
+        VStringBuffer msg("Error looking up file %s in DFS - failed to connect to %s", filename, optDFS.str());
+        errs.reportError(HQLWRN_DFSlookupFailure, msg.str(), str(location.sourcePath), location.lineno, location.column, location.position);
+        return nullptr;
     }
-
     // Do any scope manipulation
     StringBuffer lookupName;  // do NOT move inside the curly braces below - this needs to stay in scope longer than that
     if (filename[0]=='~')
@@ -2236,6 +2280,9 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
         }
         else if (iter.matchFlag(optCheckDirty, "-checkDirty"))
+        {
+        }
+        else if (iter.matchOption(optCluster, "-cluster"))
         {
         }
         else if (iter.matchOption(optDFS, "-dfs") || /*deprecated*/ iter.matchOption(optDFS, "-dali"))

@@ -7723,7 +7723,12 @@ void HqlCppTranslator::pushCluster(BuildCtx & ctx, IHqlExpression * cluster)
     StringBuffer clusterText;
     getStringValue(clusterText, cluster);
     if (clusterText.length())
+    {
         ctxCallback->noteCluster(clusterText.str());
+        ctxCallback->pushCluster(clusterText.str());
+    }
+    else
+        ctxCallback->pushCluster("<unknown>");
 }
 
 
@@ -7731,6 +7736,7 @@ void HqlCppTranslator::popCluster(BuildCtx & ctx)
 {
     HqlExprArray args;
     callProcedure(ctx, restoreClusterId, args);
+    ctxCallback->popCluster();
 }
 
 
@@ -9445,6 +9451,8 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
     unsigned numNodes = 0;
     if (options.specifiedClusterSize != 0)
         numNodes = options.specifiedClusterSize;
+    else
+        numNodes = ctxCallback->lookupClusterSize();
 
     traceExpression("BeforeResourcing", resourced);
 
