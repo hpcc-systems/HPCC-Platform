@@ -382,6 +382,11 @@ extern jlib_decl bool queryDafsSecSettings(DAFSConnectCfg *_connectMethod,
                                            const char * *  _privateKey,
                                            const char * *  _passPhrase);
 
+//Queries environment.conf file
+extern jlib_decl bool queryHPCCPKIKeyFiles(const char * *  _certificate,//HPCCCertFile
+                                           const char * *  _privateKey, //HPCCPrivateKeyFile
+                                           const char * *  _passPhrase);//HPCCPassPhrase
+
 extern jlib_decl const char * matchConfigurationDirectoryEntry(const char *path,const char *mask,StringBuffer &name, StringBuffer &component, StringBuffer &instance);
 extern jlib_decl bool replaceConfigurationDirectoryEntry(const char *path,const char *frommask,const char *tomask,StringBuffer &out);
 

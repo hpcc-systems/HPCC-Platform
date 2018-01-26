@@ -29,11 +29,14 @@ mpEnd=7500
 mpSoMaxConn=128
 mpTraceLevel=0
 # enable SSL for dafilesrv remote file access (SSLNone/false | SSLOnly/true | SSLFirst | UnsecureFirst)
+# Enabling requires setting the HPCCPassPhrase, HPCCCertFile, and HPCCPrivateKeyFile values
 #dfsUseSSL=SSLNone
-# note: if passphrase specified it must be encrypted
-#dfsSSLPassPhrase=
-#dfsSSLCertFile=/certfilepath/certfile
-#dfsSSLPrivateKeyFile=/keyfilepath/keyfile
+
+#Specify location of HPCC PKI public/private key files
+# note: if HPCCPassPhrase specified it must be encrypted
+#HPCCPassPhrase=
+#HPCCCertFile=/home/hpcc/.ssh/id_rsa.pub
+#HPCCPrivateKeyFile=/home/hpcc/.ssh/id_rsa
 
 jvmoptions=-XX:-UsePerfData
 #Options to enable remote debugging of Java service or application

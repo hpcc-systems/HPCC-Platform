@@ -2403,9 +2403,12 @@ jlib_decl const IProperties &queryEnvironmentConf()
 
 static CriticalSection securitySettingsCrit;
 static DAFSConnectCfg connectMethod = SSLNone;
-static StringAttr certificate;
-static StringAttr privateKey;
-static StringAttr passPhrase;
+static StringAttr DAFScertificate;//deprecated
+static StringAttr DAFSprivateKey;//deprecated
+static StringAttr DAFSpassPhrase;//deprecated
+static StringAttr HPCCcertificate;
+static StringAttr HPCCprivateKey;
+static StringAttr HPCCpassPhrase;
 static bool retrieved = false;
 jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
                                      unsigned short *_port,
@@ -2422,7 +2425,7 @@ jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
             {
                 StringBuffer configFileSpec;
 #ifndef _WIN32
-                configFileSpec.set(CONFIG_DIR).append(PATHSEPSTR).append("environment.conf");
+                configFileSpec.set(CONFIG_DIR).append(PATHSEPSTR).append(ENV_CONF_FILE);
 #endif
                 Owned<IProperties> conf = createProperties(configFileSpec.str(), true);
                 StringAttr sslMethod;
@@ -2441,16 +2444,34 @@ jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
                 }
                 if (connectMethod == SSLOnly || connectMethod == SSLFirst || connectMethod == UnsecureFirst)
                 {
-                    certificate.set(conf->queryProp("dfsSSLCertFile"));
-                    privateKey.set(conf->queryProp("dfsSSLPrivateKeyFile"));
+                    DAFScertificate.set(conf->queryProp("dfsSSLCertFile"));
+                    DAFSprivateKey.set(conf->queryProp("dfsSSLPrivateKeyFile"));
                     const char *passPhrasePtr = conf->queryProp("dfsSSLPassPhrase");
                     if (!isEmptyString(passPhrasePtr))
                     {
                         StringBuffer passPhraseStr;
                         decrypt(passPhraseStr, passPhrasePtr);
-                        passPhrase.set(passPhraseStr.str());
+                        DAFSpassPhrase.set(passPhraseStr.str());
                     }
                 }
+                HPCCcertificate.set(conf->queryProp("HPCCCertFile"));
+                HPCCprivateKey.set(conf->queryProp("HPCCPrivateKeyFile"));
+                const char *passPhrasePtr = conf->queryProp("HPCCPassPhrase");
+                if (!isEmptyString(passPhrasePtr))
+                {
+                    StringBuffer passPhraseStr;
+                    decrypt(passPhraseStr, passPhrasePtr);
+                    HPCCpassPhrase.set(passPhraseStr.str());
+                }
+
+                if (DAFScertificate.isEmpty() && DAFSprivateKey.isEmpty() &&  DAFSpassPhrase.isEmpty())
+                {
+                    DAFScertificate.set(HPCCcertificate);
+                    DAFSprivateKey.set(HPCCprivateKey);
+                    DAFSpassPhrase.set(HPCCpassPhrase);
+                }
+                else
+                    WARNLOG("Deprecated dfsSSL* keywords found in %s, please specify HPCCCertFile/HPCCPrivateKeyFile/HPCCPassPhrase instead", ENV_CONF_FILE);
                 retrieved = true;
             }
             catch (IException *e)
@@ -2472,12 +2493,14 @@ jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
             else
                 *_port = SECURE_DAFILESRV_PORT;
         }
+
+        //Returns deprecated dfsSSL* settings if specified, otherwise HPCCCertFile/HPCCPrivateKeyFile/HPCCPassPhrase settings
         if (_certificate)
-            *_certificate = certificate.get();
+            *_certificate = DAFScertificate.get();
         if (_privateKey)
-            *_privateKey = privateKey.get();
+            *_privateKey = DAFSprivateKey.get();
         if (_passPhrase)
-            *_passPhrase = passPhrase.get();
+            *_passPhrase = DAFSpassPhrase.get();
     }
     else
     {
@@ -2503,6 +2526,23 @@ jlib_decl bool queryDafsSecSettings(DAFSConnectCfg *_connectMethod,
     if (_sslport)
         *_sslport = SECURE_DAFILESRV_PORT;
     return ret;
+}
+
+//query PKI values from environment.conf
+jlib_decl bool queryHPCCPKIKeyFiles(const char * *  _certificate,//HPCCCertFile
+                                    const char * *  _privateKey, //HPCCPrivateKeyFile
+                                    const char * *  _passPhrase) //HPCCPassPhrase
+{
+    bool rc = true;
+    if (HPCCcertificate.isEmpty() && HPCCprivateKey.isEmpty() && HPCCpassPhrase.isEmpty())
+        rc = querySecuritySettings(nullptr, nullptr, nullptr, nullptr, nullptr);
+    if (rc)
+    {
+        *_certificate = HPCCcertificate.get();
+        *_privateKey = HPCCprivateKey.get();
+        *_passPhrase = HPCCpassPhrase.get();
+    }
+    return rc;
 }
 
 static IPropertyTree *getOSSdirTree()
