@@ -295,9 +295,8 @@ DFUInfoRequest
 {
     string Name;
     string Cluster;
-    //string NewDescription;
     bool UpdateDescription(false);
-    string FileName;
+    [depr_ver("1.38")] string FileName;
     string FileDesc;
     [min_ver("1.37")] bool IncludeJsonTypeInfo(false);
     [min_ver("1.37")] bool IncludeBinTypeInfo(false);
@@ -780,7 +779,7 @@ ESPresponse [exceptions_inline, nil_remove] EraseHistoryResponse
 //  ===========================================================================
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.37"),
+    version("1.38"),
     noforms,
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {
