@@ -501,6 +501,7 @@
 #define HQLWRN_NoFieldsMatch                    3148
 #define HQLWRN_DFSdenied                        3149
 #define HQLERR_NonConstantRange                 3150
+#define HQLERR_ExprTooComplexForValueSet        3151
 
 #define HQLERR_DedupFieldNotFound_Text          "Field removed from dedup could not be found"
 #define HQLERR_CycleWithModuleDefinition_Text   "Module definition contains an illegal cycle/recursive definition %s"
@@ -545,6 +546,7 @@
 #define HQLERR_DFSlookupFailure_Text            "Failed to resolve record information in DFS for file %s"
 #define HQLERR_DFSlookupIncompatible_Text       "Resolved record information is not compatible file %s"
 #define HQLERR_NonConstantRange_Text            "Non constant substrings not supported"
+#define HQLERR_ExprTooComplexForValueSet_Text   "Cannot create a value set for expression %s"
 
 /* parser error */
 #define ERR_PARSER_CANNOTRECOVER    3005  /* The parser can not recover from previous error(s) */

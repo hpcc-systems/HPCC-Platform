@@ -186,9 +186,13 @@ enum TransitionMask : byte
     CMPnovalue = 0x80,  // Used when serializing.
 };
 
-class ValueTransition;
 interface RtlTypeInfo;
 class RtlRow;
+
+//Currently just an opaque link counted type
+interface IValueTransition : public IInterface
+{
+};
 
 /*
  * The IValueSet interface represents a set of ranges of values.
@@ -198,12 +202,12 @@ class RtlRow;
 interface IValueSet : public IInterface
 {
 //The following methods are used for creating a valueset
-    virtual ValueTransition * createTransition(TransitionMask mask, unsigned __int64 value) const = 0;
-    virtual ValueTransition * createStringTransition(TransitionMask mask, size32_t len, const char * value) const = 0;
-    virtual ValueTransition * createUtf8Transition(TransitionMask mask, size32_t len, const char * value) const = 0;
-    virtual void addRange(ValueTransition * loval, ValueTransition * hival) = 0;
+    virtual IValueTransition * createTransition(TransitionMask mask, unsigned __int64 value) const = 0;
+    virtual IValueTransition * createStringTransition(TransitionMask mask, size32_t len, const char * value) const = 0;
+    virtual IValueTransition * createUtf8Transition(TransitionMask mask, size32_t len, const char * value) const = 0;
+    virtual void addRange(IValueTransition * loval, IValueTransition * hival) = 0;
     virtual void addAll() = 0;
-    virtual void killRange(ValueTransition * loval, ValueTransition * hival) = 0;
+    virtual void killRange(IValueTransition * loval, IValueTransition * hival) = 0;
     virtual void reset() = 0;
     virtual void invertSet() = 0;
     virtual void unionSet(const IValueSet *) = 0;
@@ -214,7 +218,7 @@ interface IValueSet : public IInterface
     virtual bool equals(const IValueSet & _other) const = 0;
 
 //following are primarily for use from the code generator
-    virtual ValueTransition * createRawTransition(TransitionMask mask, const void * value) const = 0;
+    virtual IValueTransition * createRawTransition(TransitionMask mask, const void * value) const = 0;
     virtual void addRawRange(const void * lower, const void * upper) = 0;
     virtual void killRawRange(const void * lower, const void * upper) = 0;
 

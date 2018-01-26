@@ -14054,9 +14054,18 @@ void exportJsonType(StringBuffer &ret, IHqlExpression *table)
 
 bool exportBinaryType(MemoryBuffer &ret, IHqlExpression *table)
 {
-    Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer(nullptr));
-    const RtlTypeInfo *typeInfo = buildRtlType(*deserializer.get(), table->queryType());
-    return dumpTypeInfo(ret, typeInfo);
+    try
+    {
+        Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer(nullptr));
+        const RtlTypeInfo *typeInfo = buildRtlType(*deserializer.get(), table->queryType());
+        return dumpTypeInfo(ret, typeInfo);
+    }
+    catch (IException * e)
+    {
+        DBGLOG(e);
+        e->Release();
+    }
+    return false;
 }
 
 const RtlTypeInfo *queryRtlType(IRtlFieldTypeDeserializer &deserializer, IHqlExpression *table)

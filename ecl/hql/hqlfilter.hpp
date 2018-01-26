@@ -128,7 +128,6 @@ public:
     IFieldFilter * createFieldFilter(IRtlFieldTypeDeserializer &deserializer, IHqlExpression * selector) const;
 
 protected:
-    IHqlExpression * castToFieldAndBack(IHqlExpression * left, IHqlExpression * right);
     bool containsTableSelects(IHqlExpression * expr);
     IHqlExpression * createRangeCompare(IHqlExpression * selector, IHqlExpression * value, IHqlExpression * lengthExpr, bool compareEqual);
     KeyCondition * createTranslatedCondition(IHqlExpression * cond, KeyedKind keyedKind);
@@ -154,6 +153,10 @@ protected:
 
     virtual IHqlExpression * getRangeLimit(ITypeInfo * fieldType, IHqlExpression * lengthExpr, IHqlExpression * value, int whichBoundary);
 
+    IValueSet * createValueSetExpr(IHqlExpression * selector, const RtlTypeInfo & type, IHqlExpression * expr) const;
+    IValueSet * createValueSetInExpr(IHqlExpression * selector, const RtlTypeInfo & type, IHqlExpression * expr) const;
+    IValueSet * createValueSetCompareExpr(IHqlExpression * selector, const RtlTypeInfo & type, IHqlExpression * expr) const;
+
 protected:
     IErrorReceiver & errorReceiver;
     IHqlExpression * tableExpr;
@@ -178,5 +181,6 @@ protected:
 };
 
 extern HQL_API IHqlExpression * getExplicitlyPromotedCompare(IHqlExpression * filter);
+extern HQL_API IHqlExpression * castToFieldAndBack(IHqlExpression * left, IHqlExpression * right);
 
 #endif
