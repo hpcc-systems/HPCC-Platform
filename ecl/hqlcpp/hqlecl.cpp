@@ -53,8 +53,11 @@ class NullContextCallback : implements ICodegenContextCallback, public CInterfac
     IMPLEMENT_IINTERFACE
 
     virtual void noteCluster(const char *clusterName) override {}
+    virtual void pushCluster(const char *clusterName) override {}
+    virtual void popCluster() override {}
     virtual bool allowAccess(const char * category, bool isSigned) override { return true; }
     virtual IHqlExpression *lookupDFSlayout(const char *filename, IErrorReceiver &errs, const ECLlocation &location, bool isOpt) const override { return nullptr; }
+    virtual unsigned lookupClusterSize() const override { return 0; }
 };
 
 class HqlDllGenerator : implements IHqlExprDllGenerator, implements IAbortRequestCallback, public CInterface

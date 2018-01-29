@@ -323,6 +323,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
             const char *wuScope = workunit->queryWuScope();
             if (!isEmptyString(wuScope))
                 eclccCmd.appendf(" -scope=%s", wuScope);
+            eclccCmd.appendf(" -cluster=%s", targetCluster);
             SCMStringBuffer token;
             workunit->getSecurityToken(token);
             if (token.length())
