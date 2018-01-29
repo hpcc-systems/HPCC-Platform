@@ -10973,6 +10973,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case KEYED: msg.append("KEYED"); break;
     case KEYPATCH: msg.append("KEYPATCH"); break;
     case KEYUNICODE: msg.append("KEYUNICODE"); break;
+    case LABEL: msg.append("LABEL"); break;
     case LABELED: msg.append("LABELED"); break;
     case LAST: msg.append("LAST"); break;
     case LEFT: msg.append("LEFT"); break;
