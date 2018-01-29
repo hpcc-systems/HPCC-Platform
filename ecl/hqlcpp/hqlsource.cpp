@@ -1943,6 +1943,10 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
             graphLabel.append("\nSpill");
         else
         {
+            graphLabel.newline();
+            if (tableExpr->hasAttribute(_workflowPersist_Atom))
+                graphLabel.append("Persist ");
+
             StringBuffer filename;
             //Call getStringValue() rather than generateECL() to avoid 't quote \ etc. in the string
             getStringValue(filename.append("'"), nameExpr).append("'");
@@ -1957,10 +1961,10 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
                         break;
                     coloncolon = next;
                 }
-                graphLabel.newline().append("'...").append(coloncolon);
+                graphLabel.append("'...").append(coloncolon);
             }
             else
-                graphLabel.newline().append(filename);
+                graphLabel.append(filename);
         }
     }
     instance->graphLabel.set(graphLabel.str());

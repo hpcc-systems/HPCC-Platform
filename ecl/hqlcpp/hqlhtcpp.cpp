@@ -10576,10 +10576,16 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
     {
         StringBuffer s;
         s.append(getActivityText(kind));
+        s.append("\n");
         if (expr->hasAttribute(_spill_Atom))
-            s.append("\nSpill File");
+            s.append("Spill File");
         else
-            filename->toString(s.append("\n"));
+        {
+            if (expr->hasAttribute(_workflowPersist_Atom))
+                s.append("Persist ");
+
+            filename->toString(s);
+        }
         instance->graphLabel.set(s.str());
     }
 
