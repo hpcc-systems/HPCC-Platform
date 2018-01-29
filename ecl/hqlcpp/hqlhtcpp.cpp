@@ -3291,7 +3291,7 @@ void HqlCppTranslator::noteFilename(ActivityInstance & instance, const char * na
         {
             if (!folded->queryValue())
             {
-                if (!isDynamic && !options.allowVariableRoxieFilenames && targetRoxie())
+                if (!isDynamic && !options.allowVariableRoxieFilenames && !options.standAloneExe && targetRoxie())
                 {
                     StringBuffer x;
                     folded->toString(x);
@@ -7723,7 +7723,12 @@ void HqlCppTranslator::pushCluster(BuildCtx & ctx, IHqlExpression * cluster)
     StringBuffer clusterText;
     getStringValue(clusterText, cluster);
     if (clusterText.length())
+    {
         ctxCallback->noteCluster(clusterText.str());
+        ctxCallback->pushCluster(clusterText.str());
+    }
+    else
+        ctxCallback->pushCluster("<unknown>");
 }
 
 
@@ -7731,6 +7736,7 @@ void HqlCppTranslator::popCluster(BuildCtx & ctx)
 {
     HqlExprArray args;
     callProcedure(ctx, restoreClusterId, args);
+    ctxCallback->popCluster();
 }
 
 
@@ -9445,6 +9451,8 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
     unsigned numNodes = 0;
     if (options.specifiedClusterSize != 0)
         numNodes = options.specifiedClusterSize;
+    else
+        numNodes = ctxCallback->lookupClusterSize();
 
     traceExpression("BeforeResourcing", resourced);
 
@@ -10576,10 +10584,16 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
     {
         StringBuffer s;
         s.append(getActivityText(kind));
+        s.append("\n");
         if (expr->hasAttribute(_spill_Atom))
-            s.append("\nSpill File");
+            s.append("Spill File");
         else
-            filename->toString(s.append("\n"));
+        {
+            if (expr->hasAttribute(_workflowPersist_Atom))
+                s.append("Persist ");
+
+            filename->toString(s);
+        }
         instance->graphLabel.set(s.str());
     }
 

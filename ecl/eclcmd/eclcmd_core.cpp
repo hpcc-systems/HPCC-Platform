@@ -893,6 +893,14 @@ public:
         req->setCloneWorkunit(true);
         req->setNoRootTag(optNoRoot);
 
+        // Add a debug value to indicate that Roxie variable filenames are ok
+        // We put it at front of list so that it can be overridden explicitly by user.
+
+        Owned<IEspNamedValue> nv = createNamedValue();
+        nv->setName("allowVariableRoxieFileNames");
+        nv->setValue("1");
+        debugValues.add(*nv.getClear(), 0);
+
         StringBuffer wuid;
         StringBuffer wuCluster;
         StringBuffer query;

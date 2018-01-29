@@ -19,7 +19,7 @@
             .formContainer {
                 width: 500px;
                 padding: 20px 0 20px 0;
-                border-radius: 25px;
+                border-radius: 5px;
                 background-color: #fff;
                 margin: auto;
             }
@@ -77,54 +77,30 @@
                 display: none;
             }
         </style>
-        <script>
-            dojoConfig = {
-                packages: [
-                    { name: "eclwatch", location: "/esp/files/eclwatch" }
-                ]
-            };
-        </script>
-        <script src="../../dojo/dojo.js"></script>
-        <script type="text/javascript">
-            require(["dojo", "eclwatch/nls/hpcc", "dojo/i18n", "dojo/i18n!hpcc/nls/hpcc", "dojo/query", "dojo/cookie"], function (dojo, hpcc, i18n, nlsHPCC, query, cookie) {
-                if (dojo.cookie.isSupported()){
-                    dojo.replaceClass("container", "container", "container  visible");
-                    query(".loginStr").forEach(function (node, index, arr) {
-                        switch (index) {
-                            case 0:
-                            case 1:
-                                node.innerHTML = nlsHPCC.PleaseLogin
-                                break;
-                            case 2:
-                                node.placeholder = nlsHPCC.Username
-                                break;
-                            case 3:
-                                node.placeholder = nlsHPCC.Password
-                                break;
-                            case 4:
-                                node.innerHTML = nlsHPCC.Login
-                                break;
-                        }
-                    });
-                } else {
-                    alert(nlsHPCC.PleaseEnableCookies);
-                }
-            });
-        </script>
     </head>
     <body>
         <div id="container" class="container visible">
             <div class="formContainer">
-                <img src="../img/Loginlogo.png" alt="HPCC Systems">
-                <p class="loginStr"></p>
+                <img src="eclwatch/img/Loginlogo.png" alt="HPCC Systems">
+                <p class="loginStr">Please log into ECL Watch</p>
                 <div class="login">
                     <form method="POST" action="/esp/login">
-                        <input type="text" name="username" placeholder="" class="loginStr"></input>
-                        <input type="password" name="password" placeholder="" class="loginStr"></input>
-                        <button class="loginStr" id="button" type="submit"></button>
+                        <input type="text" name="username" placeholder="username" class="loginStr"></input>
+                        <input type="password" name="password" placeholder="password" class="loginStr"></input>
+                        <button class="loginStr" id="button" type="submit">Login</button>
                     </form>
                 </div>
             </div>
         </div>
+        <script>
+            var element = document.getElementById('container');
+
+            if (navigator.cookieEnabled) {
+                var element = document.getElementById("container");
+                element.classList.remove("visible");
+            } else {
+                alert("ECL Watch requires cookies enabled to continue.");
+            }
+        </script>
     </body>
 </html>

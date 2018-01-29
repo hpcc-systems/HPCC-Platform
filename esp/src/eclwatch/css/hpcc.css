@@ -311,6 +311,20 @@ hr.dashedLine {
     cursor: pointer;
 }
 
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 100;
+    background-color: #1A9BD7;
+}
+.lockLogo{
+    display:block;
+    margin:auto;
+    padding-bottom:10px;
+}
 
 @media (max-width: 959px){
     .flat .hpccTitlebar {
@@ -352,6 +366,7 @@ hr.dashedLine {
     text-align: right;
     padding:5px 5px 0 0;
     padding-top:10px;
+    color:rgb(164, 220, 245);
 }
 
 #userAccount a{
@@ -651,6 +666,12 @@ table.miniSelect span {
     padding-left:10px;
 }
 
+#UnlockStatus{
+    font-weight:bold;
+    font-size:1em;
+    color:rgb(218, 4, 0);
+    text-align: center;
+}
 /*CLASSES******************/
 .flat #userIcons .dijitArrowButtonInner{
     margin:5px auto 0 5px;
@@ -780,6 +801,10 @@ table.miniSelect span {
 
 .hpccApp {
     height: 100%;
+}
+
+.hpccAppSession {
+    background: #1A9BD7;
 }
 
 .searchUserMoreComponents{
