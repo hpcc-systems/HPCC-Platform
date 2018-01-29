@@ -534,7 +534,7 @@ public:
     offset_t memsize;
     const PtrToOffsetMapper &baseMap;
 
-    InMemoryDirectReader(const RowFilter &_postFilter, offset_t _readPos, bool _grouped,
+    InMemoryDirectReader(const RowFilter &_postFilter, bool _grouped, offset_t _readPos,
                          const char *_start, memsize_t _memsize,
                          const PtrToOffsetMapper &_baseMap, unsigned _partNo, unsigned _numParts,
                          const ITranslatorSet *_translators)
@@ -927,7 +927,7 @@ public:
         free (fileStart);
     }
 
-    virtual IDirectReader *selectKey(const char *sig, ScoredRowFilter &postFilters, const ITranslatorSet *translators) const override;
+    virtual IDirectReader *selectKey(MemoryBuffer &sig, ScoredRowFilter &postFilters, const ITranslatorSet *translators) const override;
     virtual IDirectReader *selectKey(ScoredRowFilter &filter, const ITranslatorSet *translators, IRoxieContextLogger &logctx) const override;
 
     InMemoryIndex &findIndex(const char *indexSig) const
@@ -1101,7 +1101,7 @@ public:
 
     InMemoryIndexCursor(const InMemoryIndexManager *_manager, const InMemoryIndex *_index,
                         const PtrToOffsetMapper &_baseMap, RowFilter &_postFilter, const RtlRecord &_recInfo,
-                        const ITranslatorSet *_translators)
+                        const ITranslatorSet *_translators, MemoryBuffer *serializedInfo = nullptr)
     : manager(_manager), index(_index), baseMap(_baseMap), rowInfo(_recInfo), postFilter(_postFilter), translators(_translators)
     {
         ForEachItemIn(idx, index->sortFields)
@@ -1122,6 +1122,8 @@ public:
         numPtrs = index->numPtrs;
         postFilter.recalcFieldsRequired();
         eof = false;
+        if (serializedInfo)
+            deserializeCursorPos(*serializedInfo);
     }
 
     ~InMemoryIndexCursor()
@@ -1173,14 +1175,14 @@ public:
 
     virtual void reset()
     {
-        cur = 0;
+        cur = (unsigned) -1;
         eof = false;
     }
 
     virtual const byte *findNext(const RowCursor & current)
     {
         size_t high = numPtrs;
-        size_t low = cur;
+        size_t low = cur+1;
 
         //Find the value of low,high where all rows 0..low-1 are < search and rows low..max are >= search
         while (low<high)
@@ -1240,21 +1242,27 @@ public:
     virtual void serializeCursorPos(MemoryBuffer &mb) const 
     {
         index->serializeCursorPos(mb);
+        mb.append(cur);
+        // MORE - we could save some of the state in keyCursor to avoid seeking the next row
     }
 
+    void deserializeCursorPos(MemoryBuffer &mb)
+    {
+        // Note - index signature already read
+        mb.read(cur);
+    }
 };
 
-IDirectReader *InMemoryIndexManager::selectKey(const char *indexSig, ScoredRowFilter &postFilters, const ITranslatorSet *translators) const
+IDirectReader *InMemoryIndexManager::selectKey(MemoryBuffer &serializedInfo, ScoredRowFilter &postFilters, const ITranslatorSet *translators) const
 {
+    StringBuffer indexSig;
+    serializedInfo.read(indexSig);
     InMemoryIndex &thisIndex = findIndex(indexSig);
-    return new InMemoryIndexCursor(this, &thisIndex, baseMap, postFilters, recInfo, translators);
+    return new InMemoryIndexCursor(this, &thisIndex, baseMap, postFilters, recInfo, translators, &serializedInfo);
 }
 
 IDirectReader *InMemoryIndexManager::selectKey(ScoredRowFilter &filter, const ITranslatorSet *translators, IRoxieContextLogger &logctx) const
 {
-    const IKeyTranslator *keyTranslator = translators->queryKeyTranslator(0);  // any part would do - in-memory requires all actuals to have same layout
-    if (keyTranslator)
-        keyTranslator->translate(filter);
     if (!inMemoryKeysEnabled)
         return nullptr;
     unsigned best = 0;

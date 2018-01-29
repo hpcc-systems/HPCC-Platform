@@ -21600,6 +21600,9 @@ public:
                 }
                 assertex(manager != NULL);
                 helper.createSegmentMonitors(this);
+                const IKeyTranslator *keyTranslator = translators->queryKeyTranslator(0);  // any part would do - in-memory requires all actuals to have same layout
+                if (keyTranslator)
+                    keyTranslator->translate(postFilter);
                 reader.setown(manager->selectKey(postFilter, translators, *this));
                 if (!reader)
                     reader.setown(manager->createReader(postFilter, isGrouped, 0, 0, 1, translators));

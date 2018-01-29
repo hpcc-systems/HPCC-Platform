@@ -835,7 +835,6 @@ protected:
     Linked<IInMemoryIndexManager> manager;
     Linked<ITranslatorSet> translators;
     Owned<IInMemoryFileProcessor> processor;
-    StringBuffer indexSig;
     CriticalSection pcrit;
 
 public:
@@ -859,14 +858,6 @@ public:
         readPos = 0;
         if (resent)
         {
-            bool usedKey;
-            resentInfo.read(processed);
-            resentInfo.read(usedKey);
-            if (usedKey)
-                resentInfo.read(indexSig);
-            else
-                resentInfo.read(readPos);
-            assertex(resentInfo.remaining() == 0);
         }
     }
 
@@ -874,15 +865,30 @@ public:
     {
         CRoxieSlaveActivity::onCreate();
         helper->createSegmentMonitors(this);
+        const IKeyTranslator *keyTranslator = translators->queryKeyTranslator(0);  // any part would do - in-memory requires all actuals to have same layout
+        if (keyTranslator)
+            keyTranslator->translate(postFilter);
         if (resent)
         {
-            if (indexSig.length())
-                reader.setown(manager->selectKey(indexSig, postFilter, translators));
+            bool usedKey;
+            resentInfo.read(processed);
+            resentInfo.read(usedKey);
+            if (usedKey)
+                reader.setown(manager->selectKey(resentInfo, postFilter, translators));
+            else
+            {
+                resentInfo.read(readPos);
+                reader.setown(manager->createReader(postFilter, isGrouped, readPos, parallelPartNo, numParallel, translators));
+            }
+            assertex(resentInfo.remaining() == 0);
         }
-        else if (!forceUnkeyed && !isGrouped)
-            reader.setown(manager->selectKey(postFilter, translators, logctx));
-        if (!reader)
-            reader.setown(manager->createReader(postFilter, isGrouped, readPos, parallelPartNo, numParallel, translators));
+        else
+        {
+            if (!forceUnkeyed && !isGrouped)
+                reader.setown(manager->selectKey(postFilter, translators, logctx));
+            if (!reader)
+                reader.setown(manager->createReader(postFilter, isGrouped, readPos, parallelPartNo, numParallel, translators));
+        }
     }
 
     virtual const char *queryDynamicFileName() const
