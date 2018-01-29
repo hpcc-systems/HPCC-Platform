@@ -549,7 +549,7 @@ void CHThorDiskWriteActivity::open()
     unsigned rwFlags = rw_autoflush;
     if(grouped)
         rwFlags |= rw_grouped;
-    if(!agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false) && !(helper.getFlags() & TDRnocrccheck))
+    if(!(helper.getFlags() & TDRnocrccheck))
         rwFlags |= rw_crc;
     IExtRowWriter * writer = createRowWriter(diskout, rowIf, rwFlags);
     outSeq.setown(writer);
