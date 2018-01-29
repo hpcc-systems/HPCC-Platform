@@ -30,6 +30,7 @@ define([
 
     "hpcc/ESPUtil",
     "hpcc/Utility",
+    "hpcc/LockDialogWidget",
 
     "dojox/html/entities",
     "dojox/widget/Toaster",
@@ -40,13 +41,14 @@ define([
 
 ], function (fx, dom, domStyle, ioQuery, ready, lang, arrayUtil, topic, xhr, cookie,
             Dialog, Button,
-            ESPUtil, Utility,
+            ESPUtil, Utility, LockDialogWidget,
             entities, Toaster) {
 
-    var IDLE_TIMEOUT = cookie("ESPSessionTimeoutSeconds") * 1000  || 7200 * 1000;
+    var IDLE_TIMEOUT = cookie("ESPSessionTimeoutSeconds") * 1000;
     var COUNTDOWN = 3 * 60;
     var SESSION_RESET_FREQ = 30 * 1000;
     var idleWatcher;
+    var monitorLockClick;
     var _prevReset = Date.now();
 
     function _resetESPTime(evt) {
@@ -70,47 +72,8 @@ define([
         });
     }
 
-    function showTimeoutDialog() {
-        var dialogTimeout;
-        var countdown = COUNTDOWN;
-        var confirmLogoutDialog = new Dialog({
-            title: "You are about to be logged out",
-            content: "You will be logged out of all ECL Watch sessions in 3 minutes due to inactivity.",
-            style: "width: 350px;padding:10px;",
-            closable: false,
-            draggable: false
-        });
-
-        var actionBar = dojo.create("div", {
-            class: "dijitDialogPaneActionBar",
-            style: "margin-top:10px;"
-        }, confirmLogoutDialog.containerNode);
-
-        var continueBtn = new Button({
-            label: "Continue Working",
-            style: "float:left;",
-            onClick: function () {
-                idleWatcher.start();
-                confirmLogoutDialog.hide();
-            }
-        }).placeAt(actionBar);
-
-        var logoutBtn = new Button({
-            label: "Log Out - " + countdown,
-            style: "font-weight:bold;",
-            onClick: function () {
-                _onLogout();
-            }
-        }).placeAt(actionBar);
-
-        confirmLogoutDialog.show();
-        dialogTimeout = setInterval(function () {
-            if (--countdown < 0) {
-                clearInterval(dialogTimeout);
-                _onLogout();
-            }
-            logoutBtn.set("label", "Log Out - " + countdown);
-        }, 1000);
+    function showLockDialog() {
+        dom.byId("Lock").click();
     }
 
     function startLoading(targetNode) {
@@ -191,15 +154,26 @@ define([
 
                 document.title = widget.getTitle ? widget.getTitle() : params.Widget;
 
-                idleWatcher = new ESPUtil.IdleWatcher(IDLE_TIMEOUT);
-                idleWatcher.on("active", function () {
-                    _resetESPTime();
-                });
-                idleWatcher.on("idle", function () {
-                    idleWatcher.stop();
-                    showTimeoutDialog();
-                });
-                idleWatcher.start();
+                if (cookie("ESPSessionTimeoutSeconds")) {
+                    var LockDialog = new LockDialogWidget({
+                        id: 'LockDialogWidget',
+                    });
+
+                    idleWatcher = new ESPUtil.IdleWatcher(IDLE_TIMEOUT);
+                    monitorLockClick = new ESPUtil.MonitorLockClick();
+                    monitorLockClick.on("unlocked", function (){
+                        idleWatcher.start();
+                    });
+                    idleWatcher.on("active", function () {
+                        _resetESPTime();
+                    });
+                    idleWatcher.on("idle", function () {
+                        idleWatcher.stop();
+                        LockDialog._onLock();
+                    });
+                    idleWatcher.start();
+                    monitorLockClick.unlocked();
+                }
                 stopLoading();
             }
         );
@@ -218,7 +192,7 @@ define([
             basePath: baseHost + "/esp/files"
         };
     }
-        
+
     ready(function () {
         parseUrl();
         initUI();

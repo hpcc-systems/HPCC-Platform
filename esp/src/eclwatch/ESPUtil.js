@@ -242,6 +242,13 @@ define([
         }
     });
 
+    var MonitorLockClick = dojo.declare([Evented], {
+        unlocked: function(){
+            var context = this;            
+            context.emit("unlocked", {});
+        }
+    });
+
     var IdleWatcher = dojo.declare([Evented], {
         constructor: function(idleDuration) {
             idleDuration = idleDuration || 30 * 1000;
@@ -286,6 +293,7 @@ define([
         Singleton: SingletonData,
         Monitor: Monitor,
         IdleWatcher: IdleWatcher,
+        MonitorLockClick: MonitorLockClick,
 
         FormHelper: declare(null, {
             getISOString: function (dateField, timeField) {
