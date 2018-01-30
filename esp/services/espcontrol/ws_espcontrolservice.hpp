@@ -19,6 +19,8 @@
 #define _ESPWIZ_ws_espcontrol_HPP__
 
 #include "ws_espcontrol_esp.ipp"
+#include "espp.hpp"
+#include "environment.hpp"
 
 class CWSESPControlEx : public CWSESPControl
 {
@@ -49,6 +51,8 @@ public:
     virtual bool onSessionInfo(IEspContext& context, IEspSessionInfoRequest& req, IEspSessionInfoResponse& resp);
     virtual bool onCleanSession(IEspContext& context, IEspCleanSessionRequest& req, IEspCleanSessionResponse& resp);
     virtual bool onSetSessionTimeout(IEspContext& context, IEspSetSessionTimeoutRequest& req, IEspSetSessionTimeoutResponse& resp);
+    virtual bool onDetachBindingsFromDali(IEspContext& context, IEspDetachBindingsFromDaliRequest& req, IEspDetachBindingsFromDaliResponse& resp);
+    virtual bool onAttachBindingsToDali(IEspContext& context, IEspAttachBindingsToDaliRequest& req, IEspAttachBindingsToDaliResponse& resp);
 };
 
 #endif //_ESPWIZ_ws_espcontrol_HPP__

@@ -75,6 +75,45 @@ void CWSESPControlEx::init(IPropertyTree *cfg, const char *process, const char *
     }
 }
 
+bool CWSESPControlEx::onDetachBindingsFromDali(IEspContext& context, IEspDetachBindingsFromDaliRequest& req, IEspDetachBindingsFromDaliResponse& resp)
+{
+    int status = 0;
+    VStringBuffer message("Request to detach all bindings on ESP Process '%s' ", this->espProcess.get());
+    CEspServer * thisESPServer = dynamic_cast<CEspServer *>(m_container);
+    if (thisESPServer)
+    {
+        thisESPServer->detachBindingsFromDali();
+        message.append("has been issued.");
+    }
+    else
+    {
+        message.append("COULD NOT BE ISSUED due to internal error");
+        status = -1;
+    }
+    resp.setMessage(message.str());
+    resp.setStatus(status);
+    return status;
+}
+
+bool CWSESPControlEx::onAttachBindingsToDali(IEspContext& context, IEspAttachBindingsToDaliRequest& req, IEspAttachBindingsToDaliResponse& resp)
+{
+    int status = 0;
+    VStringBuffer message("Request to attach all bindings on ESP Process '%s' ", this->espProcess.get());
+    CEspServer * thisESPServer = dynamic_cast<CEspServer *>(m_container);
+    if (thisESPServer)
+    {
+        thisESPServer->attachBindingsToDali();
+        message.append("has been issued.");
+    }
+    else
+    {
+        message.append("COULD NOT BE ISSUED due to internal error");
+        status = -1;
+    }
+    resp.setMessage(message.str());
+    resp.setStatus(status);
+    return status;
+}
 
 bool CWSESPControlEx::onSetLogging(IEspContext& context, IEspSetLoggingRequest& req, IEspSetLoggingResponse& resp)
 {

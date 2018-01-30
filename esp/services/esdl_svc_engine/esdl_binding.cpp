@@ -144,7 +144,7 @@ IPropertyTree * fetchESDLBindingFromStateFile(const char *process, const char *b
         if (esdlState)
         {
             const char * restoredBindingTS = esdlState->queryProp("@StateSaveTimems");
-            fprintf(stdout, "ESDL State restored from local state store: %s created epoch: %s", bindingName, restoredBindingTS);
+            ESPLOG(LogNormal, "ESDL State restored from local state store: %s created epoch: %s", bindingName, restoredBindingTS);
             return esdlState->getPropTree("EsdlBinding/Binding");
         }
         else
@@ -160,15 +160,17 @@ IPropertyTree * fetchESDLBindingFromStateFile(const char *process, const char *b
     return nullptr;
 }
 
-IPropertyTree * fetchESDLBinding(const char *process, const char *bindingName, const char * stateFileName)
+IPropertyTree * fetchESDLBinding(const char *process, const char *bindingName, bool fetchFromFile, const char * stateFileName)
 {
-    Owned<IPropertyTree> esdlBinding = fetchESDLBindingFromDali(process, bindingName);
-    if (!esdlBinding)
+    if (fetchFromFile)
     {
         return fetchESDLBindingFromStateFile(process, bindingName, stateFileName);
     }
-
-    return esdlBinding.getClear();
+    else
+    {
+        Owned<IPropertyTree> esdlBinding = fetchESDLBindingFromDali(process, bindingName);
+        return esdlBinding.getClear();
+    }
 }
 
 void saveState(const char * esdlDefinition, IPropertyTree * esdlBinding, const char * stateFileFullPath)
@@ -283,7 +285,6 @@ bool loadDefinitions(const char * espServiceName, IEsdlDefinition * esdl, IPrope
 
     return true;
 }
-
 
 bool EsdlServiceImpl::loadLogggingManager()
 {
@@ -1080,13 +1081,16 @@ EsdlServiceImpl::~EsdlServiceImpl()
 
 EsdlBindingImpl::EsdlBindingImpl()
 {
+	m_pESDLService = nullptr;
+	m_isAttached = false;
 }
 
 EsdlBindingImpl::EsdlBindingImpl(IPropertyTree* cfg, const char *binding,  const char *process) : CHttpSoapBinding(cfg, binding, process)
 {
     m_bindingName.set(binding);
     m_processName.set(process);
-
+    m_pESDLService = nullptr;
+    m_isAttached = false;
     try
     {
         char currentDirectory[_MAX_DIR];
@@ -1109,7 +1113,7 @@ EsdlBindingImpl::EsdlBindingImpl(IPropertyTree* cfg, const char *binding,  const
         ensureSDSPath(ESDL_DEFS_ROOT_PATH);
         ensureSDSPath(ESDL_BINDINGS_ROOT_PATH);
 
-        m_esdlBndCfg.set(fetchESDLBinding(process, binding, m_esdlStateFilesLocation));
+        m_esdlBndCfg.set(fetchESDLBinding(process, binding, m_isAttached, m_esdlStateFilesLocation));
 
         if (!m_esdlBndCfg.get())
             DBGLOG("ESDL Binding: Could not fetch ESDL binding %s for ESP Process %s", binding, process);

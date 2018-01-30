@@ -801,7 +801,7 @@ void CEspConfig::unloadBindings()
     while (iter!=m_bindings.end())
     {
         binding_cfg *bcfg = *iter;
-        
+
         if(bcfg!=NULL)
         {
             bcfg->protocol.clear();
@@ -894,3 +894,38 @@ bool CEspConfig::checkESPCache()
     return espCacheAvailable;
 }
 
+void CEspConfig::attachBindingsToDali()
+{
+    list<binding_cfg*>::iterator iter = m_bindings.begin();
+    while (iter!=m_bindings.end())
+    {
+        binding_cfg& xcfg = **iter;
+        xcfg.bind->attachBindingToDali();
+        iter++;
+    }
+}
+
+void CEspConfig::detachBindingsFromDali()
+{
+    list<binding_cfg*>::iterator iter = m_bindings.begin();
+    while (iter!=m_bindings.end())
+    {
+        binding_cfg& xcfg = **iter;
+        xcfg.bind->detachBindingFromDali();
+        iter++;
+    }
+}
+
+bool CEspConfig::canAllBindingsDetachFromDali()
+{
+    list<binding_cfg*>::iterator iter = m_bindings.begin();
+    while (iter!=m_bindings.end())
+    {
+        binding_cfg& xcfg = **iter;
+        //if (!xcfg.bind->canAllBindingsDetachFromDali())
+        //if (!xcfg.bind->)
+            return false;
+        iter++;
+    }
+    return true;
+}

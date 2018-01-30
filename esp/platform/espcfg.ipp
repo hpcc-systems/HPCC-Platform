@@ -210,6 +210,9 @@ public:
             throw MakeStringException(-1, "Failed in checking ESP cache service using %s", m_cfg->queryProp("@espCacheInitString"));
     }
 
+    void attachBindingsToDali();
+    void detachBindingsFromDali();
+    bool canAllBindingsDetachFromDali();
     bool checkESPCache();
     IEspPlugin* getPlugin(const char* name);
 
