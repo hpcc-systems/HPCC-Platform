@@ -94,8 +94,8 @@
             <entry>The RECORD structure of the <emphasis>indexfile</emphasis>
             that contains additional fields not used as keys . If the name of
             the <emphasis>baserecset</emphasis> is in the structure, it
-            specifies “all other fields not already named in the keys
-            parameter.” This may contain fields not present in the
+            specifies "all other fields not already named in the keys
+            parameter." This may contain fields not present in the
             <emphasis>baserecset</emphasis> (computed fields). These fields do
             not take up space in the non-leaf nodes of the index and cannot be
             referenced in a KEYED() filter clause</entry>
@@ -138,7 +138,7 @@
 
   <para>The fifth form creates an external query library<indexterm>
       <primary>query library</primary>
-    </indexterm>—a workunit that implements the specified
+    </indexterm>--a workunit that implements the specified
   <emphasis>library</emphasis>. This is similar to creating a .DLL in Windows
   programming, or a .SO in Linux.</para>
 
@@ -561,7 +561,7 @@
               <emphasis>_nodeSize</emphasis> is the only system-defined
               metadata, though other names starting with an underscore (_)
               should be considered reserved for system use. You may want to
-              use SET(‘_nodeSize’, ‘32768’) if your hardware and usage pattern
+              use SET('_nodeSize', '32768') if your hardware and usage pattern
               work better with larger page sizes. The default (8192) may not
               be optimal for all scenarios on modern hardware. We recommend
               using a power of 2 and not smaller than 8k.</entry>
@@ -629,9 +629,9 @@ BUILD(Vehicles,{lname,filepos},'vkey::lname');
 
     <para>Form 2 creates an index file containing extra <emphasis>payload
     </emphasis>fields in addition to the <emphasis>keys</emphasis>. This form
-    is used primarily to create indexes used by “half-key” JOIN operations to
+    is used primarily to create indexes used by "half-key" JOIN operations to
     eliminate the need to directly access the <emphasis>baserecset</emphasis>,
-    thus increasing performance over the “full-keyed” version of the same
+    thus increasing performance over the "full-keyed" version of the same
     operation (done with the KEYED option on the JOIN).</para>
 
     <para>By default, the <emphasis>payload</emphasis> fields are sorted
@@ -711,7 +711,7 @@ BUILD(i, ds);
 
     <para>Query libraries are suitable for packaging together sets of
     functions that are closely related. They aren't suited for including
-    attributes defined as MACROs—the meaning of a macro isn't known until its
+    attributes defined as MACROs--the meaning of a macro isn't known until its
     parameters are substituted.</para>
 
     <para>The name form of #WORKUNIT<indexterm>

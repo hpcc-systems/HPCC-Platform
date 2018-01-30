@@ -29,7 +29,7 @@
             <entry><emphasis>flag</emphasis></entry>
 
             <entry>Optional. Specify which spaces to remove. Valid flag values
-            are: RIGHT (remove trailing spaces—this is the default), LEFT
+            are: RIGHT (remove trailing spaces--this is the default), LEFT
             (remove leading spaces), LEFT, RIGHT (remove leading and trailing
             spaces), and ALL (remove all spaces, even those within the
             string_value).</entry>

@@ -14,7 +14,7 @@
 
     <para>However, <emphasis role="bold">a SuperKey may not contain INDEX
     sub-files that directly reference the sub-files of a SuperFile using the
-    {virtual(fileposition)} “record pointer” mechanism </emphasis>(used by
+    {virtual(fileposition)} "record pointer" mechanism </emphasis>(used by
     FETCH and full-keyed JOIN operations). This is because the
     {virtual(fileposition)} field is a virtual (exists only when the file is
     read from disk) field containing the relative byte position of each record

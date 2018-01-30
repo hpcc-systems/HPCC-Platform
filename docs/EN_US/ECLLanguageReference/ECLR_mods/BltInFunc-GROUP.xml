@@ -143,7 +143,7 @@
   <para>The <emphasis role="bold">GROUP </emphasis>function fragments a
   <emphasis>recordset</emphasis> into a set of sets. This allows aggregations
   and other operations (such as ITERATE, DEDUP, ROLLUP, SORT and others) to
-  occur within defined subsets of the data—the operation executes on each
+  occur within defined subsets of the data--the operation executes on each
   subset, individually. This means that the boundary condition code written in
   the TRANSFORM function for those functions that use them will be different
   than it would be for a <emphasis>recordset</emphasis> that has simply been
@@ -153,7 +153,7 @@
   as the <emphasis>breakcriteria</emphasis> if the ALL option is not
   specified. </para>
 
-  <para>The <emphasis>recordset</emphasis> gets ‘ungrouped’ by use in a TABLE
+  <para>The <emphasis>recordset</emphasis> gets 'ungrouped' by use in a TABLE
   function, by the JOIN function in some circumstances (see JOIN), by UNGROUP,
   or by another GROUP function with the second parameter omitted.</para>
 
@@ -168,7 +168,7 @@ GroupedSet := GROUP(SortedSet,last_name);  //then group them
 
 SecondSort := SORT(GroupedSet,Person.first_name);
    //sorts by first name within each last name group
-   // this is a “sort within group”
+   // this is a "sort within group"
 
 UnGroupedSet := GROUP(GroupedSet); //ungroup the dataset
 MyTable := TABLE(SecondSort,MyRec); //create table of sorted names

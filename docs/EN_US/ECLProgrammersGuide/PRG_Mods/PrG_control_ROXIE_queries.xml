@@ -26,7 +26,7 @@
     <para>Does an operation coordinate with the same operation on other nodes,
     or does each node operate independently?</para>
 
-    <para>Here's how queries “normally” execute on each type of
+    <para>Here's how queries "normally" execute on each type of
     cluster:</para>
 
     <para><informaltable colsep="0" frame="none" rowsep="0">
@@ -82,7 +82,7 @@
               <entry></entry>
 
               <entry>All parts of the dataset/index are accessed by directly
-              accessing the disk drive of the node with the data—no other
+              accessing the disk drive of the node with the data--no other
               interaction with the other nodes.</entry>
             </row>
 
@@ -103,7 +103,7 @@
               <entry></entry>
 
               <entry>All parts of the dataset/index are accessed by directly
-              accessing the disk drive of the node with the data—no other
+              accessing the disk drive of the node with the data--no other
               interaction with the other nodes.</entry>
             </row>
 
@@ -131,7 +131,7 @@
 
     <para>By default, everything within the ALLNODES() will be executed on all
     the nodes, but sometimes the ALLNODES() query requires some input or
-    arguments that shouldn't be executed on all the nodes—for example, the
+    arguments that shouldn't be executed on all the nodes--for example, the
     previous best guess at the results, or some information controlling the
     parallel query. The THISNODE() function can be used to surround element
     that are to be evaluated by the current node instead.</para>
@@ -185,10 +185,10 @@ FETCH(... ,LOCAL)</programlisting>
     <blockquote>
       <para>Use of the NOLOCAL() function</para>
 
-      <para>A non-local attribute—the operation stays non-local, but children
+      <para>A non-local attribute--the operation stays non-local, but children
       are still marked as local as necessary</para>
 
-      <para>A GLOBAL() or THISNODE() or workflow operation—since they will be
+      <para>A GLOBAL() or THISNODE() or workflow operation--since they will be
       evaluated in a different context</para>
 
       <para>Use of the ALLNODES() function (as in a nested child query)</para>

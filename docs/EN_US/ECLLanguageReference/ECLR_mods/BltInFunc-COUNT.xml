@@ -128,9 +128,9 @@ R1 := RECORD
   Number := COUNT(GROUP);
    //total in each state/sex category
   Hanks := COUNT(GROUP,person.per_first_name = 'HANK');
-   //total of “Hanks” in each state/sex category
+   //total of "Hanks" in each state/sex category
   NonHanks := COUNT(GROUP,person.per_first_name &lt;&gt; 'HANK');
-   //total of “Non-Hanks” in each state/sex category
+   //total of "Non-Hanks" in each state/sex category
 END;
 T1 := TABLE(person, R1,  per_st, per_sex);
 Cnt1    := COUNT(4,8,16,2,1); //returns 5

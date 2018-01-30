@@ -27,17 +27,17 @@
       <para>ECL IDE is the simple and easy way to create Queries into your
       data, and ECL files with which to build your queries. You build your
       Queries and files (see the <emphasis>ECL Language Reference
-      </emphasis>and<emphasis> </emphasis>the<emphasis> ECL Programmer’s
+      </emphasis>and<emphasis> </emphasis>the<emphasis> ECL Programmer's
       Guide) </emphasis>using Enterprise Control Language (ECL). ECL has been
       designed specifically for use in huge projects where many things can be
       similar.</para>
 
-      <para>ECL’s extreme scalability comes from a design that allows you to
+      <para>ECL's extreme scalability comes from a design that allows you to
       leverage every query you create for re-use in subsequent queries as
       needed. To do this, ECL takes a <emphasis>dictionary</emphasis> approach
       to building queries wherein each ECL definition defines an ECL file.
       Each previously defined ECL file can then be used in succeeding ECL File
-      definitions—<emphasis>the language extends itself as you use
+      definitions--<emphasis>the language extends itself as you use
       it</emphasis>.</para>
 
       <para>ECL IDE is an ECL programmer's tool. Its main use is to create the
@@ -85,7 +85,7 @@
 
         <para>Once the Query is built, you send it to a High Performance
         Computing Cluster (HPCC) which processes the query and returns the
-        result—extremely quickly.</para>
+        result--extremely quickly.</para>
 
         <para>Complex Queries that may have taken weeks to format, program,
         and execute using old-style mainframe data-mining tools can literally
@@ -271,7 +271,7 @@
           normal mode when all ESP web services are deployed using default
           settings.</para>
 
-          <para>In normal mode, you need only supply the ESP server’s IP
+          <para>In normal mode, you need only supply the ESP server's IP
           address or DNS machine name. The remaining values are automatically
           completed.</para>
 
@@ -857,7 +857,7 @@
 
           <para>Quick Access toolbar provides shortcut buttons for commonly
           used tasks, such as New Builder Window, Save, or Print. You can
-          customize this button to add other tasks or remove buttons you don’t
+          customize this button to add other tasks or remove buttons you don't
           want on the toolbar. You can also choose to display it beneath the
           Ribbon.</para>
 
@@ -1072,7 +1072,7 @@
           <title>WorkunitsToolbox</title>
 
           <para>This toolbox displays Workunits for the environment to which
-          you are connected. Workunits are organized into “folders” by date
+          you are connected. Workunits are organized into "folders" by date
           and displayed in a tree format. Expand any branch to see the
           Workunits within it.</para>
         </sect3>
@@ -1106,7 +1106,7 @@
                     <entry><emphasis role="bold">User</emphasis></entry>
 
                     <entry>If enabled, this filters on the username. Enter a
-                    user’s name to see only that user’s Workunits.</entry>
+                    user's name to see only that user's Workunits.</entry>
                   </row>
 
                   <row>
@@ -1114,7 +1114,7 @@
                     role="bold">Cluster</emphasis> </emphasis></entry>
 
                     <entry>If enabled, select a cluster from the drop list to
-                    see only that cluster’s Workunits.</entry>
+                    see only that cluster's Workunits.</entry>
                   </row>
 
                   <row>
@@ -1167,7 +1167,7 @@
 
           <para>This toolbox displays Logical files for the environment to
           which you are connected. Logical files are are organized into
-          “folders” by scope in which they were created and displayed in a
+          "folders" by scope in which they were created and displayed in a
           tree format. Expand any branch to see the files within it.
           Right-click to copy the label of the file to paste into your
           code.</para>
@@ -2317,7 +2317,7 @@
                   <entry><emphasis role="bold">Insert
                   Module</emphasis></entry>
 
-                  <entry>Adds a new ‘nested’ folder within the currently
+                  <entry>Adds a new 'nested' folder within the currently
                   selected folder</entry>
                 </row>
 
@@ -2442,7 +2442,7 @@
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Send to “”</emphasis></entry>
+                  <entry><emphasis role="bold">Send to ""</emphasis></entry>
 
                   <entry>sends the selected results to the application
                   associated with CSV files (for example, Microsoft
@@ -3475,7 +3475,7 @@ ENDMACRO;
       <sect2 id="Graph_Viewer" role="brk">
         <title>Graph Viewer</title>
 
-        <para>A workunit’s execution graph is displayed in the Graph
+        <para>A workunit's execution graph is displayed in the Graph
         Tab.</para>
 
         <para>Modify the display in the following ways:</para>
@@ -3509,7 +3509,7 @@ ENDMACRO;
       <sect2 id="ECLWatch_View" role="brk">
         <title>ECL Watch View</title>
 
-        <para>A workunit’s Workunit Details page view is displayed in the ECL
+        <para>A workunit's Workunit Details page view is displayed in the ECL
         Watch Tab.</para>
 
         <para>The Workunit Details page provides more information about a

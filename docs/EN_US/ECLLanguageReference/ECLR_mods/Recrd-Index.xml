@@ -90,8 +90,8 @@
           <entry>The RECORD structure of the <emphasis>indexfile</emphasis>
           that contains additional fields not used as keys. If the name of the
           <emphasis>baserecset</emphasis> is in the structure, it specifies
-          “all other fields not already named in the <emphasis>keys</emphasis>
-          parameter.” This may contain fields not present in the
+          "all other fields not already named in the <emphasis>keys</emphasis>
+          parameter." This may contain fields not present in the
           <emphasis>baserecordset</emphasis> (computed fields). The
           <emphasis>payload</emphasis> fields do not take up space in the
           non-leaf nodes of the index and cannot be referenced in a KEYED()
@@ -121,7 +121,7 @@
           <entry><emphasis role="bold">OPT</emphasis></entry>
 
           <entry><para>Optional. Specifies that using the index when the
-          <emphasis>indexfile</emphasis> doesn’t exist results in an empty
+          <emphasis>indexfile</emphasis> doesn't exist results in an empty
           recordset instead of an error condition.</para></entry>
         </row>
 
@@ -216,7 +216,7 @@
 
   <para><emphasis role="bold">INDEX </emphasis>declares a previously created
   index for use. INDEX is related to BUILD (or BUILDINDEX) in the same manner
-  that DATASET is to OUTPUT—BUILD creates an index file that INDEX then
+  that DATASET is to OUTPUT--BUILD creates an index file that INDEX then
   defines for use in ECL code. Index files are compressed. A single index
   record must be defined as less than 32K and result in a less than 8K page
   after compression.</para>
@@ -296,9 +296,9 @@ Bld := BUILDINDEX(AlphaInStateCity);</programlisting>
     rest of the record; accessing the BLOB data requires an additional
     seek.</para>
 
-    <para>This form is used primarily by “half-key” JOIN operations to
+    <para>This form is used primarily by "half-key" JOIN operations to
     eliminate the need to directly access the <emphasis>baserecset</emphasis>,
-    thus increasing performance over the “full-keyed” version of the same
+    thus increasing performance over the "full-keyed" version of the same
     operation (done with the KEYED option on the JOIN). By default, payload
     fields are not sorted during the BUILD action<indexterm>
         <primary>BUILD action</primary>

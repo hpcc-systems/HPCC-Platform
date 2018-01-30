@@ -71,7 +71,7 @@
 
   <para>A macro behaves as if you had typed the
   <emphasis>tokenstream</emphasis> into the exact position you use it, using
-  lexical substitution—the tokens defined in the
+  lexical substitution--the tokens defined in the
   <emphasis>parameterlist</emphasis> are substituted everywhere they appear in
   the <emphasis>tokenstream </emphasis>by the text passed to the macro. This
   makes it entirely possible to write a valid MACRO definition that could be

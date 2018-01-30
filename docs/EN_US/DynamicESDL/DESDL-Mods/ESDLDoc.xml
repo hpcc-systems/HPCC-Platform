@@ -147,7 +147,7 @@ ESPinclude(ws_topology);
       <title><emphasis role="bold">ESPservice</emphasis></title>
 
       <para>This defines a Web service. Once defined, you can add a service to
-      an ESP server’s configuration to expose its methods and ESDL interfaces.
+      an ESP server's configuration to expose its methods and ESDL interfaces.
       An ESPservice should contain one or more method definitions.</para>
 
       <para><emphasis role="bold">Example:</emphasis></para>
@@ -510,7 +510,7 @@ string6 Gender { xpath("Gender") };   </programlisting>
       <programlisting>[ecl_null(0)] int Age;
 [ecl_null('false')] bool IsMatch;   </programlisting>
 
-      <para>Age 0 means we don’t have data for this person. So if Age is 0,
+      <para>Age 0 means we don't have data for this person. So if Age is 0,
       tag &lt;Age&gt; will not be returned.</para>
 
       <para>Without this attribute, <emphasis
@@ -631,7 +631,7 @@ string6 Gender { xpath("Gender") };   </programlisting>
     <sect1 id="ESDL_Attributes_depr_ver">
       <title><emphasis role="bold">depr_ver</emphasis></title>
 
-      <para>The depr_ver attribute allows you to declare a field’s end of life
+      <para>The depr_ver attribute allows you to declare a field's end of life
       version. The field is deprecated at the specified version number.
       Requests using that version or any subsequent version will not have
       access to the field.</para>

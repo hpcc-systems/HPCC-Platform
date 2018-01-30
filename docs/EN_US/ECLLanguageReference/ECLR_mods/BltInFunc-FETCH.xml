@@ -206,7 +206,7 @@ SEQUENTIAL(PtblOut,Bld,OutFile)
 
 //NOTE the use of a filter on the index file. This is an important
 // use of standard filtering technique in conjunction with indexing
-// to achieve optimal “random” access into the base record set
+// to achieve optimal "random" access into the base record set
 </programlisting>
 
     <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM

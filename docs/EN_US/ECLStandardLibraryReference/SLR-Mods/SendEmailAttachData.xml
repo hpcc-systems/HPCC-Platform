@@ -42,7 +42,7 @@
           <entry><emphasis>body</emphasis></entry>
 
           <entry>A null-terminated string containing the text of the email to
-          send. This must be character encoding “ISO-8859-1 (latin1)” (the ECL
+          send. This must be character encoding "ISO-8859-1 (latin1)" (the ECL
           default character set). Text in any other character set must be sent
           as an <emphasis>attachment</emphasis>.</entry>
         </row>
@@ -58,9 +58,9 @@
 
           <entry>A null-terminated string containing the MIME-type of the
           <emphasis>attachment</emphasis>, which may include entrymeters (such
-          as ‘text/plain; charset=ISO-8859-3’). When attaching general binary
+          as 'text/plain; charset=ISO-8859-3'). When attaching general binary
           data for which no specific MIME type exists, use
-          ‘application/octet-stream’.</entry>
+          'application/octet-stream'.</entry>
         </row>
 
         <row>

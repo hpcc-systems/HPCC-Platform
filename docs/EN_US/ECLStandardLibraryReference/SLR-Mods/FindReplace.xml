@@ -82,7 +82,7 @@
   <para>Example:</para>
 
   <programlisting format="linespecific">A := STD.Str.FindReplace('ABCDEABCDE', 'BC','XY');
-   //A contains ‘AXYDEAXYDE’
+   //A contains 'AXYDEAXYDE'
 A := STD.Uni.FindReplace(u'abcde', u'a', u'AAAAA');
    //A contains u'AAAAAbcde'
 A := STD.Uni.FindReplace(u'aaaaa', u'aa', u'b');

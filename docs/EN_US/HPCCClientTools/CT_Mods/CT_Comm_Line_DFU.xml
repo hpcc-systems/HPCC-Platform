@@ -483,7 +483,7 @@ replicate=1</programlisting>
                     <entry><programlisting role="tab">    quote</programlisting></entry>
 
                     <entry>Optional. The string quote character. If omitted,
-                    the default is single quote (’).</entry>
+                    the default is single quote (').</entry>
                   </row>
 
                   <row>
@@ -1097,7 +1097,7 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
                   <entry>Optional. A boolean flag (1 | 0) indicating whether
                   to physically delete the <emphasis>subfiles</emphasis> in
                   addition to removing them from the superfile. If omitted,
-                  the default is 1—physically delete.</entry>
+                  the default is 1--physically delete.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -1415,7 +1415,7 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
           'flag' file instead of the file, itself or renaming the file once it
           has been created and completely written.</para>
 
-          <para>5) The EVENT function’s subtype parameter (its 2nd parameter)
+          <para>5) The EVENT function's subtype parameter (its 2nd parameter)
           when monitoring physical files is the full URL of the file, with an
           absolute IP rather than DNS/netbios name of the file. This parameter
           cannot be retrieved but can only be used for matching a particular

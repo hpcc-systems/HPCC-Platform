@@ -362,7 +362,7 @@
     <programlisting>__int64 rtlSumCharLen(unsigned len, char a[][20]) {
     __int64 sumtrimedlen = 0;
        for(unsigned i = 0; i &lt; len; i++) {
-          for(int j = 20-1; j &gt;= 0; j—) {
+          for(int j = 20-1; j &gt;= 0; j--) {
             if(a[i][j] != ' ') {
               break;
             }

@@ -45,7 +45,7 @@
 
                   <entry>One of the following options:
                   list|view|dump|delete|abort|query|graph(the default option
-                  is “query”).</entry>
+                  is "query").</entry>
                 </row>
 
                 <row>

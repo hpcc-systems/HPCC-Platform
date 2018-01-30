@@ -24,7 +24,7 @@
   <para>Example:</para>
 
   <programlisting>Ages := RECORD
-        INTEGER8 Age; //a field named “Age”
+        INTEGER8 Age; //a field named "Age"
 END;
 
 TodaysYear := 2001;

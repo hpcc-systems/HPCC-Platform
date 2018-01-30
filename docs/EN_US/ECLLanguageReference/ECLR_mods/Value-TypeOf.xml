@@ -33,17 +33,17 @@
 
 
   <para>The <emphasis role="bold">TYPEOF</emphasis> declaration allows you to
-  define an Attribute or parameter whose value type is “just like” the
+  define an Attribute or parameter whose value type is "just like" the
   <emphasis>expression</emphasis>. It is valid for use anywhere an explicit
   value type is valid.</para>
 
   <para>Its most typical use would be to specify the return type of a
-  TRANSFORM function as “just like” a dataset or recordset structure.</para>
+  TRANSFORM function as "just like" a dataset or recordset structure.</para>
 
   <para>Example:</para>
 
   <programlisting>STRING3 Fred := 'ABC'; //declare Fred as a 3-byte string
-TYPEOF(Fred) Sue := Fred; //declare Sue as “just like” Fred</programlisting>
+TYPEOF(Fred) Sue := Fred; //declare Sue as "just like" Fred</programlisting>
 
   <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link></para>
 </sect1>

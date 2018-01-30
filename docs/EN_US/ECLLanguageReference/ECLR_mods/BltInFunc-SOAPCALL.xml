@@ -89,7 +89,7 @@
             from which the XML input to the SOAP service is constructed. The
             name of the tags in the XML are derived from the names of the
             fields in the input record; this can be overridden by placing an
-            xpath on the field ( {xpath('tagname')} — see the XPATH Support
+            xpath on the field ( {xpath('tagname')} -- see the XPATH Support
             section of the RECORD Structure discussion). If the
             <emphasis>recset</emphasis> parameter is not present, each field
             definition must contain a default value that will constitute the
@@ -507,7 +507,7 @@ OUTPUT(SOAPCALL(ds, ip, svc, inRecord, t(LEFT),DATASET(outRecord), ONFAIL(SKIP),
 
     <para>The second form of SOAPCALL, the action, may take as input either a
     single record or a recordset. Neither type of input produces any returned
-    result—it simply launches the specified SOAP service, providing it input
+    result--it simply launches the specified SOAP service, providing it input
     data.</para>
 
     <para>Example:</para>

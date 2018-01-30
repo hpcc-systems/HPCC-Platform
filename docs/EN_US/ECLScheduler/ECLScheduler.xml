@@ -103,7 +103,7 @@
         from the Schedule list.</para>
 
         <para>For example, if you submit a Workunit using <emphasis
-        role="bold">WHEN(‘Event1’,’MyEvent’, COUNT(2)) </emphasis>in the
+        role="bold">WHEN('Event1','MyEvent', COUNT(2)) </emphasis>in the
         appropriate place, it will execute twice (the value of <emphasis
         role="bold">COUNT</emphasis>) before the ECL Scheduler removes it from
         the Schedule list and the Workunit is marked as completed.</para>

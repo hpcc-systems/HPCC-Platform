@@ -49,7 +49,7 @@
             <entry><emphasis>condition</emphasis></entry>
 
             <entry>Optional. A comma-delimited list of expressions or key
-            fields in the recordset that defines “duplicate” records. The
+            fields in the recordset that defines "duplicate" records. The
             keywords LEFT and RIGHT may be used as dataset qualifiers for
             fields in the recordset. If the condition is omitted, every
             recordset field becomes the match condition. You may use the
@@ -85,7 +85,7 @@
             <entry><emphasis role="bold">BEST</emphasis></entry>
 
             <entry>Optional. Provides additional control over which records
-            are retained from a set of “duplicate” records. The first in the
+            are retained from a set of "duplicate" records. The first in the
             &lt;sort-list&gt; order of records are retained. BEST cannot be
             used with a KEEP parameter greater than 1.</entry>
           </row>
@@ -235,13 +235,13 @@
   type. This is useful for sampling. The <emphasis role="bold">LEFT</emphasis>
   <emphasis>keeper</emphasis> value (implicit if neither LEFT nor RIGHT are
   specified) means that if the left and right records meet the de-dupe
-  criteria (that is, they “match”), the left record is kept. If the <emphasis
+  criteria (that is, they "match"), the left record is kept. If the <emphasis
   role="bold">RIGHT</emphasis> <emphasis>keeper</emphasis> appears instead,
   the right is kept. In both cases, the next comparison involves the de-dupe
   survivor; in this way, many duplicate records can collapse into one.</para>
 
   <para>The <emphasis role="bold">BEST</emphasis> option provides additional
-  control over which records are retained from a set of “duplicate” records.
+  control over which records are retained from a set of "duplicate" records.
   The first in the <emphasis>sort-list</emphasis> order of records are
   retained. The <emphasis>sort-list</emphasis> is comma delimited list of
   fields. The fields may be prefixed with a minus sign to require a reverse
@@ -326,8 +326,8 @@ MyNames2  := DEDUP(Names,RECORD, EXCEPT per_sex);
       // this is exactly equivalent to:
       //MyNames2 := DEDUP(Names, EXCEPT per_sex);
 
-/* In the following example, we want to determine how many ‘AN’ or ‘AU’ type inquiries 
-have occurred within 3 days of a ‘BB’ type inquiry. 
+/* In the following example, we want to determine how many 'AN' or 'AU' type inquiries 
+have occurred within 3 days of a 'BB' type inquiry. 
 The COUNT of inquiries in the deduped recordset is subtracted from the COUNT 
 of the inquiries in the original recordset to provide the result.*/
 INTEGER abs(INTEGER i) := IF ( i &lt; 0, -i, i );

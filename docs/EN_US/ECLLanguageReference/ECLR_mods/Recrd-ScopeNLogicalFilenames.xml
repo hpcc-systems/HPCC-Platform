@@ -30,7 +30,7 @@
 
     <para>The presence of a scope in the filename allows you to override the
     default scope name for the cluster. For example, assuming you are
-    operating on a cluster whose default scope name is “Training” then the
+    operating on a cluster whose default scope name is "Training" then the
     following two OUTPUT actions result in the same scope:</para>
 
     <programlisting>OUTPUT(SomeFile,,'SomeDir::SomeFileOut1');
@@ -55,7 +55,7 @@ ds2 := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlisti
 
     <para>However, once you know the scope name you can reference files from
     any other cluster within the same environment. For example, assuming you
-    are operating on a cluster whose default scope name is “Production” and
+    are operating on a cluster whose default scope name is "Production" and
     you want to use the data in the above two files. Then the following two
     DATASET definitions allow you to access that data:</para>
 
@@ -92,7 +92,7 @@ FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlis
     <para>The syntax looks like this:</para>
 
     <para><emphasis
-    role="bold">‘~foreign::&lt;dali-ip&gt;::&lt;scope&gt;::&lt;tail&gt;’</emphasis></para>
+    role="bold">'~foreign::&lt;dali-ip&gt;::&lt;scope&gt;::&lt;tail&gt;'</emphasis></para>
 
     <para>For example,</para>
 
@@ -117,7 +117,7 @@ FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlis
     <para>The syntax looks like this:</para>
 
     <para><emphasis
-    role="bold">‘~file::&lt;LZ-ip&gt;::&lt;path&gt;::&lt;filename&gt;’</emphasis></para>
+    role="bold">'~file::&lt;LZ-ip&gt;::&lt;path&gt;::&lt;filename&gt;'</emphasis></para>
 
     <para>For example,</para>
 
@@ -151,7 +151,7 @@ FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlis
 
     <para>The syntax looks like this:</para>
 
-    <para><emphasis role="bold">DYNAMIC(‘&lt;filename&gt;’ )</emphasis></para>
+    <para><emphasis role="bold">DYNAMIC('&lt;filename&gt;' )</emphasis></para>
 
     <para>For example,</para>
 
@@ -188,7 +188,7 @@ FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlis
     either on each appropriate file in the list, or outside the curly
     braces.</para>
 
-    <para>For example, assuming the default scope name is “thor,” the
+    <para>For example, assuming the default scope name is "thor," the
     following examples both define the same SuperFile:</para>
 
     <programlisting>MyFile :=DATASET('{in::file1,

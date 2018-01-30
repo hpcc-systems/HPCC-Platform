@@ -71,7 +71,7 @@
   </informaltable>
 
   <para>The <emphasis role="bold">LIBRARY </emphasis>function defines an
-  instance of a query library—the <emphasis>interface</emphasis> as
+  instance of a query library--the <emphasis>interface</emphasis> as
   implemented by the <emphasis>module</emphasis> when passed the specified
   <emphasis>parameters. </emphasis><emphasis role="bold">Query libraries are
   only used by hthor and Roxie.</emphasis></para>

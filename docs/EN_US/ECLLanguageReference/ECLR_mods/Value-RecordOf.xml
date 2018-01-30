@@ -74,7 +74,7 @@ CombinedRec := RECORD,MAXLENGTH(100000)
 END;
         //This ChildAccts definition is equivalent to:
         // DATASET(Layout_STD_AcctsFile) ChildAccts;
-        //but doesn’t require Layout_STD_AcctsFile to be visible (SHARED or
+        //but doesn't require Layout_STD_AcctsFile to be visible (SHARED or
         // EXPORT)</programlisting>
 
   <para>See Also: <link linkend="DATASET">DATASET</link>, <link

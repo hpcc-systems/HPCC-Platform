@@ -126,7 +126,7 @@
           <entry><emphasis role="bold">IFBLOCK</emphasis></entry>
 
           <entry>Optional. A block of <emphasis>fields</emphasis> that receive
-          “live” data only if the <emphasis>condition</emphasis> is met. The
+          "live" data only if the <emphasis>condition</emphasis> is met. The
           IFBLOCK must be terminated by an <emphasis
           role="bold">END</emphasis>. This is used to define variable-length
           records. If the <emphasis>condition</emphasis> expression references
@@ -139,7 +139,7 @@
           <entry><emphasis>condition</emphasis></entry>
 
           <entry>A logical expression that defines when the
-          <emphasis>fields</emphasis> within the IFBLOCK receive “live” data.
+          <emphasis>fields</emphasis> within the IFBLOCK receive "live" data.
           If the expression is not true, the <emphasis>fields</emphasis>
           receive their declared default values. If there's no default value,
           the <emphasis>fields</emphasis> receive blanks or zeros.</entry>
@@ -176,7 +176,7 @@
 
     <para>Curly braces ({}) are lexical equivalents to the keywords RECORD and
     END that can be used anywhere RECORD and END are appropriate. Either form
-    (RECORD/END or {}) can be used to create “on-the-fly” record formats
+    (RECORD/END or {}) can be used to create "on-the-fly" record formats
     within those functions that require record structures (OUTPUT, TABLE,
     DATASET etc.), instead of defining the record as a separate
     definition.</para>
@@ -301,7 +301,7 @@
             <entry>A previously defined data field, which implicitly provides
             the <emphasis>datatype</emphasis>,
             <emphasis>identifier</emphasis>, and
-            <emphasis>defaultvalue</emphasis> for the new field—inherited from
+            <emphasis>defaultvalue</emphasis> for the new field--inherited from
             the <emphasis>sourcefield</emphasis>.</entry>
           </row>
 
@@ -638,7 +638,7 @@ END;</programlisting>
             relative byte position of the record within the entire file (the
             record pointer). This must be an UNSIGNED8 field and must be the
             last field, because it only truly exists when the file is loaded
-            into memory from disk (hence, the “virtual”).</entry>
+            into memory from disk (hence, the "virtual").</entry>
           </row>
 
           <row>
@@ -651,7 +651,7 @@ END;</programlisting>
             relative byte position within the part. This must be an UNSIGNED8
             field and must be the last field, because it only truly exists
             when the file is loaded into memory from disk (hence, the
-            “virtual”).</entry>
+            "virtual").</entry>
           </row>
 
           <row>
@@ -905,7 +905,7 @@ END;
 
 Form3 := {Trades,UNSIGNED8 local_fpos {VIRTUAL(localfileposition)}};
           //use of {} instead of RECORD/END
-          //”Trades” includes all fields from the dataset at their
+          //"Trades" includes all fields from the dataset at their
           // already-defined names, types and sizes
           //local_fpos is the relative byte position in each part
 
@@ -934,10 +934,10 @@ END;
 
     <programlisting>ds := DATASET('d', { STRING s; }, THOR);
 t := TABLE(ds, { STRING60 s := ds.s; });
-    // new “s” field is OK with value type explicitly defined
+    // new "s" field is OK with value type explicitly defined
 </programlisting>
 
-    <para>”Child dataset” RECORD structures</para>
+    <para>"Child dataset" RECORD structures</para>
 
     <programlisting>ChildRec := RECORD
     UNSIGNED4 person_id;

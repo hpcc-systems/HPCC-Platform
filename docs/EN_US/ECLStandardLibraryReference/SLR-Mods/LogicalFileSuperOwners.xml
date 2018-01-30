@@ -51,5 +51,5 @@ END;</programlisting>
   <para>Example:</para>
 
   <programlisting format="linespecific">OUTPUT(STD.File.LogicalFileSuperowners('~CLASS::RT::SF::Daily1'));
-  //returns all SuperFiles that “own” the Daily1 file</programlisting>
+  //returns all SuperFiles that "own" the Daily1 file</programlisting>
 </sect1>

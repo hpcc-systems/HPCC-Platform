@@ -4,13 +4,13 @@
 <sect1 id="Using_ECL_Keys-INDEX_Files">
   <title>Using ECL Keys (INDEX Files)</title>
 
-  <para>The ETL (Extract, Transform, and Load—standard data ingest processing)
+  <para>The ETL (Extract, Transform, and Load--standard data ingest processing)
   operations in ECL typically operate against all or most of the records in
   any given dataset, which makes the use of keys (INDEX files) of little use.
   Many queries do the same.</para>
 
   <para>However, production data delivery to end-users rarely requires
-  accessing all records in a dataset. End-users always want “instant” access
+  accessing all records in a dataset. End-users always want "instant" access
   to the data they're interested in, and most often that data is a very small
   subset of the total set of records available. Therefore, using keys
   (INDEXes) becomes a requirement.</para>
@@ -81,7 +81,7 @@ OUTPUT(F1);	</programlisting>
     <para>You will note that the DATASET named as the first parameter has no
     filter, while the INDEX named as the second parameter does have a filter.
     This is always the case with FETCH. The purpose of an INDEX in ECL is
-    always to allow “direct” access to individual records in the base dataset,
+    always to allow "direct" access to individual records in the base dataset,
     therefore filtering the INDEX is always required to define the exact set
     of records to retrieve. Given that, filtering the base dataset is
     unnecessary.</para>
@@ -111,7 +111,7 @@ OUTPUT(F2);
 </programlisting>
 
     <para>Even with a TRANSFORM function, this code is still a very
-    straight-forward “go get me the records, please” operation.</para>
+    straight-forward "go get me the records, please" operation.</para>
   </sect2>
 
   <sect2 id="Full-keyed_JOIN">
@@ -156,7 +156,7 @@ OUTPUT(J1,ALL);
     the specified filter condition the left-hand Person recordset contains
     exactly one hundred records. A standard JOIN between these two would
     normally require that all five million Accounts records be read to produce
-    the result. However, by using the KEYED option the INDEX’s binary tree is
+    the result. However, by using the KEYED option the INDEX's binary tree is
     used to find the entries with the appropriate key field values and get the
     pointers to the exact set of Accounts records required to produce the
     correct result. That means that the only records read from the right-hand
@@ -226,7 +226,7 @@ OUTPUT(F1,ALL);
     <title>Payload INDEXes</title>
 
     <para>There is an extended form of INDEX that allows each entry to carry a
-    “payload”—additional data not included in the set of key fields. These
+    "payload"--additional data not included in the set of key fields. These
     additional fields may simply be additional fields from the base dataset
     (not required as part of the search key), or they may contain the result
     of some preliminary computation (computed fields). Since the data in an
@@ -280,7 +280,7 @@ OUTPUT(J2,ALL);
     <title>Computed Fields in Payload Keys</title>
 
     <para>There is a trick to putting computed fields in the payload. Since a
-    “computed field” by definition does not exist in the dataset, the
+    "computed field" by definition does not exist in the dataset, the
     technique required for their creation and use is to build the content of
     the INDEX beforehand.</para>
 
@@ -365,7 +365,7 @@ SEQUENTIAL(Bld,Get);
     <para>To demonstrate the use of a computed-field payload INDEX, this
     example code just does a simple FETCH to return the combined result
     containing all the fields from the Person dataset along with all the
-    computed field values. In “normal” use, this type of payload key would
+    computed field values. In "normal" use, this type of payload key would
     generally be used in a half-keyed JOIN operation.</para>
   </sect2>
 
@@ -373,13 +373,13 @@ SEQUENTIAL(Bld,Get);
     <title>Computed Fields in Search Keys</title>
 
     <para>There is one situation where using a computed field as a search key
-    is required—when the field you want to search on is a REAL or DECIMAL data
+    is required--when the field you want to search on is a REAL or DECIMAL data
     type. Neither of these two is valid for use as a search key. Therefore,
     making the search key a computed STRING field containing the value to
     search on is a way to get around this limitation.</para>
 
     <para>The trick to computed fields in the payload is the same for search
-    keys—build the content of the INDEX beforehand. The following example code
+    keys--build the content of the INDEX beforehand. The following example code
     (contained in IndexREALkey.ECL) illustrates how to accomplish this by
     building the content of computed search key fields on which the INDEX is
     built using a TABLE and PROJECT:</para>
@@ -439,7 +439,7 @@ SEQUENTIAL(DSout,Bld1Out,Bld2Out,JoinOut1,JoinOut2,JoinOut3,JoinOut4,JoinOut5,Jo
 
     <para>This code starts with some filename definitions. The record
     structure adds two fields to the existing set of fields from our base
-    dataset: a REAL8 field named “float” and a DECIMAL12_6 field named “dec.”
+    dataset: a REAL8 field named "float" and a DECIMAL12_6 field named "dec."
     These will contain our REAL and DECIMAL data that we want to search on.
     The PROJECT of the TABLE puts values into these two fields (in this case,
     just dividing the PersonID file by 1000 to achieve a floating point value
@@ -459,8 +459,8 @@ SEQUENTIAL(DSout,Bld1Out,Bld2Out,JoinOut1,JoinOut2,JoinOut3,JoinOut4,JoinOut5,Jo
 
     <para>Because of the two different methods of constructing the search key
     strings, the strings themselves are not equal, although the values used to
-    create them are the same. This means that you cannot expect to “mix and
-    match” between the two—you need to use each INDEX with the method used to
+    create them are the same. This means that you cannot expect to "mix and
+    match" between the two--you need to use each INDEX with the method used to
     create it. That's why the two JOIN operations that demonstrate their usage
     use the same method to create the string comparison value as was used to
     create the INDEX. This way, you are guaranteed to achieve matching

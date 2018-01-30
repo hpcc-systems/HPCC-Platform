@@ -62,7 +62,7 @@
               <primary>RETURN</primary>
             </indexterm></emphasis></entry>
 
-          <entry>Specifies the function's return value expression—the
+          <entry>Specifies the function's return value expression--the
           <emphasis>retval</emphasis>.</entry>
         </row>
 

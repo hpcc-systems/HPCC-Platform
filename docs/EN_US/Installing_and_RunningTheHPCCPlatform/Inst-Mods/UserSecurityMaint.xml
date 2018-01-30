@@ -13,7 +13,7 @@
 
     <para>HPCC systems<superscript>®</superscript> maintains security in a
     number of ways. HPCC Systems<superscript>®</superscript> can be configured
-    to manage users' security rights by pointing either at Microsoft’s Active
+    to manage users' security rights by pointing either at Microsoft's Active
     Directory on a Windows system, or a 389Directory Server on Linux
     systems.</para>
 
@@ -90,7 +90,7 @@
       <listitem>
         <para><emphasis
         role="bold">http://nnn.nnn.nnn.nnn:pppp</emphasis><emphasis
-        role="bold"> (where nnn.nnn.nnn.nnn is your ESP Server’s IP Address
+        role="bold"> (where nnn.nnn.nnn.nnn is your ESP Server's IP Address
         and pppp is the port. The default port is 8010)<emphasis>.
         </emphasis></emphasis></para>
       </listitem>
@@ -1646,7 +1646,7 @@
   <sect2 id="FeaturePermissions_FileAccessControl">
     <title><emphasis role="bold">File Access Control</emphasis></title>
 
-    <para>The HPCC’s LDAP <emphasis role="bold">Dali Server</emphasis>
+    <para>The HPCC's LDAP <emphasis role="bold">Dali Server</emphasis>
     technology provides the ability to set secure access permissions to data
     file folders (or file scopes). This is controlled by the use of file scope
     resources.</para>
@@ -1862,7 +1862,7 @@
         <listitem>
           <para>Check File Permissions for a user or group</para>
 
-          <para>This provides a way to check a user or group’s access to a
+          <para>This provides a way to check a user or group's access to a
           logical file.</para>
 
           <para><graphic fileref="../../images/Perm030.jpg"
@@ -1906,7 +1906,7 @@
       <listitem>
         <para>Feature Authentication for workunits allows you to set
         permissions to control whether users can view their own WUs and/or
-        other users’ WUs.</para>
+        other users' WUs.</para>
       </listitem>
 
       <listitem>
@@ -1920,11 +1920,11 @@
 
     <para>In other words, if someone is granted permission to see WUs in the
     scope <emphasis>johndoe </emphasis>but is denied permission to see other
-    users’ WUs in the Feature Authentication permissions, this user would be
+    users' WUs in the Feature Authentication permissions, this user would be
     denied access to see the WUs in the<emphasis> johndoe</emphasis>
     scope.</para>
 
-    <para>Conversely, if the user is allowed access to see other people’s WUs
+    <para>Conversely, if the user is allowed access to see other people's WUs
     but is denied access to the <emphasis>johndoe </emphasis>WU<emphasis>
     </emphasis>scope, this user will be able to see other WUs in that
     scope.</para>
@@ -1933,14 +1933,14 @@
     a WU, you will never be able to view it or even know of its
     existence.</para>
 
-    <para>By default, a submitted WU has a scope of the user’s ID. For
+    <para>By default, a submitted WU has a scope of the user's ID. For
     example, a WU JohnDoe submits has <emphasis>scope=johndoe</emphasis> in
     the WU. This value in a WU allows ESP and its services to use LDAP to
     check for permissions and enforce those permissions.</para>
 
     <para>You can override the default scope using ECL Code:</para>
 
-    <para><programlisting>#workunit(‘scope’,’MyScopeValue’);</programlisting></para>
+    <para><programlisting>#workunit('scope','MyScopeValue');</programlisting></para>
 
     <sect3 id="Securing_Workunit_Scopes">
       <title>Securing workunit scopes</title>
@@ -1953,7 +1953,7 @@
       explicitly.</para>
 
       <para>If a specific scope OU does not exist in LDAP (e.g., the scope
-      johndoe used in earlier example), then the parent OU’s permissions are
+      johndoe used in earlier example), then the parent OU's permissions are
       used. In other words, the scope of <emphasis>johndoe</emphasis> is
       implicitly under the <emphasis>workunits</emphasis> OU even though it
       might not be explicitly listed in the LDAP structure and therefore it

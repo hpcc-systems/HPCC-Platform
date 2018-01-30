@@ -56,7 +56,7 @@
 
           <entry>Definitions, which may be EXPORTed or SHARED. These may be
           similar to fields defined in a RECORD structure where only the type
-          and name are defined—the expression that defines the value may be
+          and name are defined--the expression that defines the value may be
           left off (except in some cases where the expression itself defines
           the type of definition, like TRANSFORM structures). If no default
           value is defined for a <emphasis>member</emphasis>, any MODULE
@@ -76,7 +76,7 @@
   except errors are given for private (not SHARED or EXPORTed)
   <emphasis>member</emphasis> definitions.</para>
 
-  <para>An INTERFACE is an abstract structure—a concrete instance must be
+  <para>An INTERFACE is an abstract structure--a concrete instance must be
   defined before it can be used in a query. A MODULE structure that inherits
   the INTERFACE and defines the values for the <emphasis>members</emphasis>
   creates the concrete instance for use by the query.</para>

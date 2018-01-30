@@ -16,7 +16,7 @@
   present. GROUP replaces the <emphasis>recordset</emphasis> parameter of any
   aggregate built-in function used in the output to indicate the operation is
   performed for each group of the <emphasis>expression</emphasis>. This is
-  similar to an SQL “GROUP BY” clause. The most common usage is to output a
+  similar to an SQL "GROUP BY" clause. The most common usage is to output a
   table as a crosstab report.</para>
 
   <para>There is also a GROUP built-in function which provides a similar

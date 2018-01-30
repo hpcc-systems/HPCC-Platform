@@ -212,7 +212,7 @@ IF (doIt, OUTPUT(customerNames.File));
       </listitem>
 
       <listitem>
-        <para>Some <emphasis>members</emphasis> can never be virtual – RECORD
+        <para>Some <emphasis>members</emphasis> can never be virtual -- RECORD
         structures.</para>
       </listitem>
     </itemizedlist>
@@ -291,7 +291,7 @@ IF (doIt, OUTPUT(customerNames.File));
     <para>Example:</para>
 
     <programlisting>EXPORT filterDataset(STRING search, BOOLEAN onlyOldies) := MODULE
-  f := namesTable; //local to the “g” definition
+  f := namesTable; //local to the "g" definition
   SHARED g := IF (onlyOldies, f(age &gt;= 65), f);
           //SHARED = visible only within the structure
   EXPORT included := g(surname != search);

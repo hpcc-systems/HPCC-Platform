@@ -289,7 +289,7 @@
           <para><programlisting>sudo apt-get install -f </programlisting>Alternatively
           you could combine the two:</para>
 
-          <para><programlisting>sudo dpkg –I &lt;deb filename&gt; &amp;&amp; sudo apt-get install –f</programlisting></para>
+          <para><programlisting>sudo dpkg --I &lt;deb filename&gt; &amp;&amp; sudo apt-get install --f</programlisting></para>
         </sect3>
 
         <sect3 id="HPCC_Plug-Ins" role="brk">
@@ -774,7 +774,7 @@
       <title>Configuring a Multi-Node System</title>
 
       <para>While the single-node system is fully-functional, it does not take
-      advantage of the true power of an HPCC—the ability to perform operations
+      advantage of the true power of an HPCC--the ability to perform operations
       using Massively Parallel Processing (MPP). This section provides the
       steps to expand your single-node system into a multi-node system using
       the Configuration Manager Wizard.</para>
@@ -1528,7 +1528,7 @@ OUTPUT(L);</programlisting></para>
         <title>Spray the Data File to your <emphasis>Data Refinery (Thor)
         Cluster</emphasis></title>
 
-        <para>To use the data file in our HPCC system, we must “spray” it to
+        <para>To use the data file in our HPCC system, we must "spray" it to
         all the nodes. A <emphasis>spray</emphasis> or
         <emphasis>import</emphasis> is the relocation of a data file from one
         location (such as a Landing Zone) to multiple file parts on nodes in a
@@ -1545,7 +1545,7 @@ OUTPUT(L);</programlisting></para>
             <para>Open ECL Watch using the following URL:</para>
 
             <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp(where
-            nnn.nnn.nnn.nnn is your ESP Server’s IP Address and pppp is the
+            nnn.nnn.nnn.nnn is your ESP Server's IP Address and pppp is the
             port. The default port is 8010)</emphasis></para>
           </listitem>
 
@@ -1943,7 +1943,7 @@ OUTPUT(ValidWords)
         on an HPCC platform. Use the following URL:</para>
 
         <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp (where
-        nnn.nnn.nnn.nnn is your ESP Server’s IP address and pppp is the port.
+        nnn.nnn.nnn.nnn is your ESP Server's IP address and pppp is the port.
         The default port is 8002)</emphasis></para>
 
         <orderedlist>
@@ -3172,8 +3172,8 @@ split_words('Once upon a time');
         <para>In order for Python to work properly it is important that the
         version of Python and the HPCC system are set up correctly to support
         using the installed version of Python. If you see "ld: cannot find
-        –lpy2embed" error then your system is likely set up for Python3.
-        Likewise, if you see "ld: cannot find –lpy3embed" then your system is
+        --lpy2embed" error then your system is likely set up for Python3.
+        Likewise, if you see "ld: cannot find --lpy3embed" then your system is
         set up for Python2.</para>
 
         <sect3>

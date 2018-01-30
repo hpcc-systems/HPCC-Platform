@@ -129,7 +129,7 @@
 
           <para>A <emphasis>spray</emphasis> or <emphasis>import</emphasis> is
           the relocation of a data file from one location to an HPCC cluster.
-          The term spray was adopted due to the nature of the file movement –
+          The term spray was adopted due to the nature of the file movement --
           the file is partitioned across all nodes within a cluster.</para>
         </listitem>
 
@@ -383,11 +383,11 @@
       <sect2 id="Spray_the_Data_File_to_your_DR-THOR_Cluster">
         <title>Spray the Data File to your Thor Cluster</title>
 
-        <para>To use the data file in our HPCC cluster, we must first “spray”
+        <para>To use the data file in our HPCC cluster, we must first "spray"
         it to a Thor cluster. A <emphasis>spray</emphasis> or
         <emphasis>import</emphasis> is the relocation of a data file from one
         location to a Thor cluster. The term spray was adopted due to the
-        nature of the file movement – the file is partitioned across all nodes
+        nature of the file movement -- the file is partitioned across all nodes
         within a cluster.</para>
 
         <para>In this example, the file is on your Landing Zone and is named
@@ -408,7 +408,7 @@
 
             <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
             </emphasis><emphasis role="bold">(where nnn.nnn.nnn.nnn is your
-            ESP Server’s IP Address and pppp is the port. The default port is
+            ESP Server's IP Address and pppp is the port. The default port is
             8010)</emphasis></para>
           </listitem>
 
@@ -563,7 +563,7 @@
               </mediaobject>
             </figure></para>
 
-          <para>For purposes of this tutorial, let’s create a folder called
+          <para>For purposes of this tutorial, let's create a folder called
           <emphasis role="bold">Tutorial</emphasis><emphasis
           role="bold">YourName</emphasis><emphasis> </emphasis>(where
           <emphasis>YourName</emphasis> is your name).</para>
@@ -829,7 +829,7 @@ COUNT(TutorialYourName.File_OriginalPerson);
 
             <para>For our purposes, it will be easier to have all the names in
             all uppercase. This demonstrates one of the steps in the basic
-            process of preparing data (Extract, Transform, and Load—ETL) using
+            process of preparing data (Extract, Transform, and Load--ETL) using
             ECL.</para>
           </listitem>
 
@@ -915,7 +915,7 @@ OUTPUT(UpperedDataset,,'~tutorial::YN::TutorialPerson',OVERWRITE);
         <para>Now that we have our data in a useful format and the file is in
         place, we can write more code to use the new data file. We will
         determine the indexes we will need and create them. For this tutorial,
-        let’s assume the field we need to index is the Zip code field.</para>
+        let's assume the field we need to index is the Zip code field.</para>
 
         <para></para>
 
@@ -1139,7 +1139,7 @@ OUTPUT(resultset);
         <para>Using the following URL:</para>
 
         <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp (where
-        nnn.nnn.nnn.nnn is your ESP Server’s IP address and pppp is the port.
+        nnn.nnn.nnn.nnn is your ESP Server's IP address and pppp is the port.
         Default port is 8002)</emphasis></para>
 
         <para><figure>
@@ -1308,7 +1308,7 @@ OUTPUT(resultset);
         using the WS-ECL service Using the following URL:</para>
 
         <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp (where
-        nnn.nnn.nnn.nnn is your ESP Server’s IP address and pppp is the port.
+        nnn.nnn.nnn.nnn is your ESP Server's IP address and pppp is the port.
         The default port is 8002)</emphasis></para>
 
         <orderedlist>
@@ -1364,7 +1364,7 @@ OUTPUT(resultset);
     <title>Summary</title>
 
     <para>Now that you have successfully processed raw data, sprayed it onto a
-    cluster, and deployed it to a RDDE cluster, what’s next?</para>
+    cluster, and deployed it to a RDDE cluster, what's next?</para>
 
     <!-- -->
 

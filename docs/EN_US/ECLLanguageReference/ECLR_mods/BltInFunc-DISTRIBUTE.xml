@@ -156,13 +156,13 @@
   the nodes of the cluster.</para>
 
   <sect2 id="Random_DISTRIBUTE">
-    <title>“Random” DISTRIBUTE</title>
+    <title>"Random" DISTRIBUTE</title>
 
     <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset
     </emphasis><emphasis role="bold">)</emphasis></para>
 
     <para>This form redistributes the <emphasis>recordset</emphasis>
-    “randomly” so there is no data skew across nodes, but without the
+    "randomly" so there is no data skew across nodes, but without the
     disadvantages the RANDOM() function could introduce. This is functionally
     equivalent to distributing by a hash of the entire record.</para>
   </sect2>
@@ -231,7 +231,7 @@
 
     <para>Example:</para>
 
-    <programlisting>MySet1 := DISTRIBUTE(Person); //”random” distribution - no skew
+    <programlisting>MySet1 := DISTRIBUTE(Person); //"random" distribution - no skew
 MySet2 := DISTRIBUTE(Person,HASH32(Person.per_ssn));
  //all people with the same SSN end up on the same node
  //INDEX example:

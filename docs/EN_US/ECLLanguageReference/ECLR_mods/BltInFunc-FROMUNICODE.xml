@@ -27,7 +27,7 @@
           <row>
             <entry><emphasis>encoding</emphasis></entry>
 
-            <entry>The encoding codepage (supported by IBM’s ICU) to use for
+            <entry>The encoding codepage (supported by IBM's ICU) to use for
             the translation.</entry>
           </row>
 

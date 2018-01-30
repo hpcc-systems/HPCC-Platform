@@ -248,7 +248,7 @@
 
           <orderedlist>
             <listitem>
-              <para>Log into Amazon’s AWS Management Console (<ulink
+              <para>Log into Amazon's AWS Management Console (<ulink
               url="http://aws.amazon.com">http://aws.amazon.com</ulink>) and
               select the EC2 tab.</para>
             </listitem>
@@ -452,7 +452,7 @@
                   <listitem>
                     <para>Linux or Mac:</para>
 
-                    <para><programlisting>ssh –i /&lt;pathto&gt;/&lt;identityfile.pem&gt; ubuntu@&lt;PUBLIC_DNS&gt; </programlisting></para>
+                    <para><programlisting>ssh --i /&lt;pathto&gt;/&lt;identityfile.pem&gt; ubuntu@&lt;PUBLIC_DNS&gt; </programlisting></para>
                   </listitem>
 
                   <listitem>
@@ -483,7 +483,7 @@
 
             <listitem>
               <para>Select <emphasis role="bold">Generate new environment
-              …</emphasis></para>
+              ...</emphasis></para>
             </listitem>
 
             <listitem>
@@ -1704,7 +1704,7 @@
               <listitem>
                 <para>Linux or Mac:</para>
 
-                <para><programlisting>ssh –i /&lt;pathto&gt;/&lt;identityfile.pem&gt; ubuntu@&lt;PUBLIC_DNS&gt; </programlisting></para>
+                <para><programlisting>ssh --i /&lt;pathto&gt;/&lt;identityfile.pem&gt; ubuntu@&lt;PUBLIC_DNS&gt; </programlisting></para>
               </listitem>
 
               <listitem>
@@ -1746,7 +1746,7 @@
 
       <para>At this point, your nodes are running and the HPCC Systems
       platform packages and all dependencies are installed. In this section,
-      you will use the HPCC’s Configuration Manager to configure your HPCC
+      you will use the HPCC's Configuration Manager to configure your HPCC
       Systems Thor platform.</para>
 
       <para>If you are using PuTTY, you should use PuTTYgen to convert the
@@ -1766,7 +1766,7 @@
                 <listitem>
                   <para>Linux or Mac:</para>
 
-                  <para><programlisting>ssh –i /&lt;pathto&gt;/&lt;identityfile.pem&gt; ubuntu@&lt;PUBLIC_DNS&gt; </programlisting></para>
+                  <para><programlisting>ssh --i /&lt;pathto&gt;/&lt;identityfile.pem&gt; ubuntu@&lt;PUBLIC_DNS&gt; </programlisting></para>
                 </listitem>
 
                 <listitem>
@@ -2475,7 +2475,7 @@ OUTPUT(L);</programlisting></para>
           <para>A <emphasis>spray</emphasis> or <emphasis>import</emphasis> is
           the relocation of a data file from one location (such as a Landing
           Zone) to a Data Refinery cluster. The term spray was adopted due to
-          the nature of the file movement – the file is partitioned across all
+          the nature of the file movement -- the file is partitioned across all
           nodes within a cluster.</para>
         </footnote> that file to our Thor cluster, then validate our anagrams
       against that file so that we determine which are valid words. The
@@ -2603,7 +2603,7 @@ OUTPUT(L);</programlisting></para>
         <title>Spray the Data File to your <emphasis>Thor
         Cluster</emphasis></title>
 
-        <para>To use the data file in our HPCC Thor system, we must “spray” it
+        <para>To use the data file in our HPCC Thor system, we must "spray" it
         to all the nodes. A <emphasis>spray</emphasis> or
         <emphasis>import</emphasis> is the relocation of a data file from one
         location (such as a Landing Zone) to multiple file parts on nodes in a

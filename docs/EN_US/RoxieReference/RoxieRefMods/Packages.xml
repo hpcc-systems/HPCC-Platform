@@ -335,7 +335,7 @@
 </programlisting><parameter>To add the packagmap to the target and activate
     it, you would use:</parameter></para>
 
-    <para><programlisting>ecl packagemap add &lt;target&gt; master.pkg –activate</programlisting></para>
+    <para><programlisting>ecl packagemap add &lt;target&gt; master.pkg --activate</programlisting></para>
 
     <para>To update the mappings, you would edit the package map file (or a
     copy) add and activate the new one, and then delete the old one.</para>

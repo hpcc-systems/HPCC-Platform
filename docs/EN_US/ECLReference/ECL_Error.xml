@@ -103,7 +103,7 @@
 
     <para>Example:</para>
 
-    <programlisting>      01: aaa := DATASET(‘aaa’,{STRING1 f1}, FLAT);
+    <programlisting>      01: aaa := DATASET('aaa',{STRING1 f1}, FLAT);
       02: distibuted_aaa := DISTRIBUTE(aaa, RANDOM());
       03: distibuted_aaax := DISTRIBUTED(aaa, RANDOM());
       04:
@@ -144,7 +144,7 @@
     <para>Solution: Add the LOCAL option, or make sure the dataset is not
     distributed. Example:</para>
 
-    <programlisting>      01: aaa := DATASET(‘aaa’,{STRING1 fa; }, FLAT);
+    <programlisting>      01: aaa := DATASET('aaa',{STRING1 fa; }, FLAT);
       02: distibuted_aaa := DISTRIBUTE(aaa, RANDOM());
       03: distibuted_aaax := DISTRIBUTED(aaa, RANDOM());
       04:
@@ -210,9 +210,9 @@
     <para>Example:</para>
 
     <programlisting>
-      01: aaa := DATASET(‘aaa’, {STRING1 fa; }, FLAT);
-      02: a1 := aaa(fa = ‘a’);
-      03: a2 := aaa(fa = ‘b’);
+      01: aaa := DATASET('aaa', {STRING1 fa; }, FLAT);
+      02: a1 := aaa(fa = 'a');
+      03: a2 := aaa(fa = 'b');
       04: OUTPUT(a1-a2);
   </programlisting>
 
@@ -623,28 +623,28 @@
 
     <para>In the context where the error occurs, a real value is expected. A
     real value can be an real con- stant, or an expression that evaluates to a
-    real value. Therefore, 12, 12.34, LOG(0.4)+3, are valid, but ‘12.34’ and
-    ‘String’ are not.</para>
+    real value. Therefore, 12, 12.34, LOG(0.4)+3, are valid, but '12.34' and
+    'String' are not.</para>
 
     <para>Solution: Make sure the expression in question evaluates to a real
-    number. A string constant, like ‘123.2’ is NOT a real number. For C
-    programmers, don’t think ‘C’ or ‘1’ is a char, and therefore can be used
+    number. A string constant, like '123.2' is NOT a real number. For C
+    programmers, don't think 'C' or '1' is a char, and therefore can be used
     as an integer (or real); there is no char type in ECL. Type casting may be
-    needed in some cases. For example: (REAL4)‘12.34’ creates a valid real
+    needed in some cases. For example: (REAL4)'12.34' creates a valid real
     value by casting the strinf to real. Checking the code before and after
     the offending code often helps.</para>
 
     <para>Example:</para>
 
-    <programlisting>        01: v1 := EXP(‘STR’);
-        02: v2 := LN(‘STR’);
-        03: v3 := LOG(‘STR’);
-        04: v4 := POWER(‘STR’, 12);
-        05: v5 := ROUND(‘STR’);
-        06: v6 := ROUNDUP(‘STR’);
-        07: v7 := SQRT(‘STR’);
-        08: v8 := TRUNCATE(‘STR’);
-        09: v9 := REALFORMAT(‘STR’,3,4);
+    <programlisting>        01: v1 := EXP('STR');
+        02: v2 := LN('STR');
+        03: v3 := LOG('STR');
+        04: v4 := POWER('STR', 12);
+        05: v5 := ROUND('STR');
+        06: v6 := ROUNDUP('STR');
+        07: v7 := SQRT('STR');
+        08: v8 := TRUNCATE('STR');
+        09: v9 := REALFORMAT('STR',3,4);
 </programlisting>
 
     <para>These examples all need to change to a real value. All the functions
@@ -658,7 +658,7 @@
       <primary>2002</primary>
     </indexterm>
 
-    <para><emphasis role="bold">Type mismatch – Integer value
+    <para><emphasis role="bold">Type mismatch -- Integer value
     expected</emphasis></para>
 
     <para>An integer value is expected in the context. An integer value can be
@@ -683,7 +683,7 @@
 
     <para>• CHOOSEN(dataset, value)</para>
 
-    <para>• DEDUP(…, KEEP value)</para>
+    <para>• DEDUP(..., KEEP value)</para>
 
     <para>• INTFORMAT(value1, value2, value3)</para>
 
@@ -693,7 +693,7 @@
     <para>Solution: Make sure the value is an integer value. Use type cast if
     necessary. Example:</para>
 
-    <programlisting>        01: WAIT(‘STR’);
+    <programlisting>        01: WAIT('STR');
         02: v1 := <emphasis role="bold">10.2 </emphasis>% <emphasis
         role="bold">11.2</emphasis>;
         03: v2 := <emphasis role="bold">10.2 </emphasis>DIV <emphasis
@@ -704,7 +704,7 @@
         role="bold">11.2</emphasis>;
         06: v5 := <emphasis role="bold">10.2 </emphasis>^ <emphasis
         role="bold">11.2</emphasis>;
-        07: STRING s := ‘This is a string.’;
+        07: STRING s := 'This is a string.';
         08: s[<emphasis role="bold">0.23</emphasis>];
         09: s[<emphasis role="bold">0.23</emphasis>..<emphasis role="bold">2.34</emphasis>];
         10: s[..<emphasis role="bold">2.3</emphasis>];
@@ -714,9 +714,9 @@
         13: REALFORMAT(1.0, <emphasis role="bold">2.0</emphasis>, <emphasis
         role="bold">3.0</emphasis>);
         14: CHOOSE(<emphasis role="bold">3.2</emphasis>, 9, 8, 7, 6, 5);
-        15: aaa := DATASET(‘aaa’,{STRING1 fa; }, FLAT);
+        15: aaa := DATASET('aaa',{STRING1 fa; }, FLAT);
         16: OUTPUT(choosen(aaa,<emphasis role="bold">10.2</emphasis>));
-        17: OUTPUT(DEDUP(aaa, fa = ‘A’, KEEP <emphasis role="bold">2.2</emphasis>));
+        17: OUTPUT(DEDUP(aaa, fa = 'A', KEEP <emphasis role="bold">2.2</emphasis>));
 </programlisting>
 
     <para>All bold expressions cause such an error.</para>
@@ -747,8 +747,8 @@
     <para>All bold expressions must be string values.</para>
 
     <para>For C/C++/Java/Pascal etc programmers, string constants are enclosed
-    in single quotes (‘’) in ECL, not double quotes (“”). Also, ECL currently
-    only supports two escape sequences: \’ and \\ which stands for the single
+    in single quotes ('') in ECL, not double quotes (""). Also, ECL currently
+    only supports two escape sequences: \' and \\ which stands for the single
     quote and backslash. Support for more escape sequences may be added as
     needed in the future.</para>
 
@@ -780,7 +780,7 @@
 
     <para>• expr1 + epxr2</para>
 
-    <para>• expr1 – expr2</para>
+    <para>• expr1 -- expr2</para>
 
     <para>• POWER(value1, value2)</para>
 
@@ -796,13 +796,13 @@
     <para>Solution: Make sure it is a integer or real value. Use type casting
     if necessary. Example:</para>
 
-    <programlisting>        01: aaa := DATASET(‘aaa’, {STRING1 fa; }, FLAT);
+    <programlisting>        01: aaa := DATASET('aaa', {STRING1 fa; }, FLAT);
         02: i := 3 + <emphasis role="bold">TRUE</emphasis>;
         03: j := 4 - <emphasis role="bold">TRUE</emphasis>;
         04: x1 := POWER(20, <emphasis role="bold">TRUE</emphasis>);
-        05: x2 := AVE(aaa, <emphasis role="bold">‘string’</emphasis>);
-        06: x3 := AVE(GROUP, <emphasis role="bold">‘string’</emphasis>);
-        07: d1 := DISTRIBUTE(aaa, <emphasis role="bold">‘abc’</emphasis>);
+        05: x2 := AVE(aaa, <emphasis role="bold">'string'</emphasis>);
+        06: x3 := AVE(GROUP, <emphasis role="bold">'string'</emphasis>);
+        07: d1 := DISTRIBUTE(aaa, <emphasis role="bold">'abc'</emphasis>);
         08: d2 := DISTRIBUTED(aaa, <emphasis role="bold">TRUE</emphasis>);
 </programlisting>
 
@@ -850,7 +850,7 @@
     <para>There is a type incompatiblity problem here. This normally a result
     of some other error, like</para>
 
-    <para>“Integer value is expected”.</para>
+    <para>"Integer value is expected".</para>
 
     <para>Solution: Resolve the error before this one (if any) first,
     otherwise, make sure the types are compatible.</para>
@@ -858,7 +858,7 @@
     <para>Example:</para>
 
     <programlisting>      01: i := 3 + TRUE;
-      02: STRING20 s := ‘ABC’;
+      02: STRING20 s := 'ABC';
       03: TYPEOF(s) y := 10;
 </programlisting>
 
@@ -898,7 +898,7 @@
       08: END;
       09:
       10: NeedC(INTEGER len) := TYPE
-      11: EXPORT String Load(String S) := ‘C’+S[1..len];
+      11: EXPORT String Load(String S) := 'C'+S[1..len];
       12: EXPORT String Store(String s) := S[2..len+1];
       13: EXPORT Integer PhysicalLength(String s) := len;
       14: END;
@@ -947,11 +947,11 @@
     the following are legal uses of TYPEOF:</para>
 
     <programlisting>
-TYPEOF(‘ABC’) x1 := ‘XYZ’; 
+TYPEOF('ABC') x1 := 'XYZ'; 
 TYPEOF(5) x2 := 10; 
-STRING20 s := ‘ABC’; 
-TYPEOF(s) x3 := ‘DEF’; 
-TYPEOF(x1) x4 := ‘GHI’
+STRING20 s := 'ABC'; 
+TYPEOF(s) x3 := 'DEF'; 
+TYPEOF(x1) x4 := 'GHI'
 
 </programlisting>
 
@@ -1001,7 +1001,7 @@ TYPEOF(x1) x4 := ‘GHI’
     <para><emphasis role="bold">Datasets must be the same
     type</emphasis></para>
 
-    <para>The datasets have different types. The + and – operations can be
+    <para>The datasets have different types. The + and -- operations can be
     applied to datasets and these</para>
 
     <para>two datasets must have the same type. Two datasets are of the same
@@ -1028,11 +1028,11 @@ TYPEOF(x1) x4 := ‘GHI’
 
     <para>The following example illustrates these rules.</para>
 
-    <programlisting>      01: aaa := DATASET(‘aaa’, {STRING1 fa; STRING1 fb;}, HOLE);
-      02: bbb := DATASET(‘bbb’, {STRING1 fa; STRING1 fb;}, HOLE);
+    <programlisting>      01: aaa := DATASET('aaa', {STRING1 fa; STRING1 fb;}, HOLE);
+      02: bbb := DATASET('bbb', {STRING1 fa; STRING1 fb;}, HOLE);
       03:
-      04: a1 := aaa(fa = ‘a’);
-      05: a2 := aaa(fa = ‘b’);
+      04: a1 := aaa(fa = 'a');
+      05: a2 := aaa(fa = 'b');
       06: a3 := TABLE(aaa, {aaa.fa,aaa.fb});
       07:
       08: OUTPUT(aaa+a1); // OK
@@ -1056,14 +1056,14 @@ TYPEOF(x1) x4 := ‘GHI’
 
     <para>Example:</para>
 
-    <programlisting>      01: aaa := DATASET(‘aaa’, {STRING1 fa; }, FLAT);
-      02: bbb := DATASET(‘bbb’, {STRING1 fa; }, HOLE);
+    <programlisting>      01: aaa := DATASET('aaa', {STRING1 fa; }, FLAT);
+      02: bbb := DATASET('bbb', {STRING1 fa; }, HOLE);
       03:
       04: OUTPUT(aaa+bbb,{fa});
       05: OUTPUT(aaa-bbb,{fa});
       06:
-      07: a1 := aaa(fa = ‘a’);
-      08: a2 := aaa(fa = ‘b’);
+      07: a1 := aaa(fa = 'a');
+      08: a2 := aaa(fa = 'b');
       09:
       10: OUTPUT(a1+a2);
       11: OUTPUT(a1-a2);</programlisting>
@@ -1085,13 +1085,13 @@ TYPEOF(x1) x4 := ‘GHI’
 
     <para>Solution: Make sure they have the same type. Example:</para>
 
-    <programlisting>      01: aaa := DATASET(‘aaa’, {STRING1 a;}, HOLE);
-      02: bbb := DATASET(‘bbb’, {STRING1 b;}, HOLE);
-      03: ccc := aaa(a=’a’);
-      04: s1 := if(aaa=bbb,’true’,’false’);
-      05: s2 := if(aaa=ccc,’true’,’false’);
-      06: s3 := if(aaa!=bbb,’true’,’false’);
-      07: s4 := if(aaa!=ccc,’true’,’false’);
+    <programlisting>      01: aaa := DATASET('aaa', {STRING1 a;}, HOLE);
+      02: bbb := DATASET('bbb', {STRING1 b;}, HOLE);
+      03: ccc := aaa(a='a');
+      04: s1 := if(aaa=bbb,'true','false');
+      05: s2 := if(aaa=ccc,'true','false');
+      06: s3 := if(aaa!=bbb,'true','false');
+      07: s4 := if(aaa!=ccc,'true','false');
 </programlisting>
 
     <para>In this example, we are comparing the equality of two datasets. Two
@@ -1123,7 +1123,7 @@ TYPEOF(x1) x4 := ‘GHI’
 
     <para>Solution: Make sure it is an valid INTEGER type. Example:</para>
 
-    <programlisting>      01: BIG_ENDIAN STRING i := ‘ABC’;
+    <programlisting>      01: BIG_ENDIAN STRING i := 'ABC';
       02: LITTLE_ENDIAN BOOLEAN b := FALSE;
 </programlisting>
 
@@ -1161,7 +1161,7 @@ TYPEOF(x1) x4 := ‘GHI’
     <para>Solution: Make sure it is a valid INTEGER or DECIMAL type.
     Example:</para>
 
-    <programlisting>      UNSIGNED STRING s := ‘ABC’;
+    <programlisting>      UNSIGNED STRING s := 'ABC';
       UNSIGNED BOOLEAN b := FALSE;</programlisting>
 
     <para>UNSIGNED cannot be used with STRING or BOOLEAN.</para>
@@ -1260,17 +1260,17 @@ TYPEOF(x1) x4 := ‘GHI’
     <programlisting>      01: NamesRec := RECORD
       02: UNSIGNED1 numRows := 0;
       03: STRING20 thename;
-      04: STRING20 addr1 := ‘’;
-      05: STRING20 addr2 := ‘’;
-      06: STRING20 addr3 := ‘’;
-      07: STRING20 addr4 := ‘’;
+      04: STRING20 addr1 := '';
+      05: STRING20 addr2 := '';
+      06: STRING20 addr3 := '';
+      07: STRING20 addr4 := '';
       08: END;
       09:
       10: NamesTable := DATASET([
-      11: {1, ‘Gavin’, ’10 Maltings Lane’},
-      12: {2, ‘Liz’, ’10 Maltings Lane’, ‘3 The Cottages’},
-      13: {0, ‘Mr Nobody’},
-      14: {4, ‘Mr Everywhere’, ‘Here’, ‘There’, ‘Near’, ‘Far’}
+      11: {1, 'Gavin', '10 Maltings Lane'},
+      12: {2, 'Liz', '10 Maltings Lane', '3 The Cottages'},
+      13: {0, 'Mr Nobody'},
+      14: {4, 'Mr Everywhere', 'Here', 'There', 'Near', 'Far'}
       15: ], NamesRec);
       16:
       17: OutRec := RECORD
@@ -1394,7 +1394,7 @@ TYPEOF(x1) x4 := ‘GHI’
     <para>Example:</para>
 
     <programlisting>      MyValue := COUNT + 3;
-      OUTPUT(Person( career = ‘Study’), {per_first_name, COUNT});
+      OUTPUT(Person( career = 'Study'), {per_first_name, COUNT});
 </programlisting>
 
     <para>Both statements will produce a C2002 error since they are not in the
@@ -1449,7 +1449,7 @@ TYPEOF(x1) x4 := ‘GHI’
       02: NamesRec := RECORD
       03: STRING20 thename;
       04: END;
-      05: NamesTable := DATASET([{‘Gavin’}], NamesRec);
+      05: NamesTable := DATASET([{'Gavin'}], NamesRec);
       06: OutRec := RECORD
       07: STRING20 thename;
       08: END;
@@ -1503,7 +1503,7 @@ TYPEOF(x1) x4 := ‘GHI’
     <para>SELF can only be used inside a TRANSFORM structure to indicate the
     current output record. Otherwise it is not legal.</para>
 
-    <para>Solution: Don’t use SELF outside a TRANSFORM structure.</para>
+    <para>Solution: Don't use SELF outside a TRANSFORM structure.</para>
   </sect1>
 
   <sect1 id="_2026">
@@ -1524,12 +1524,12 @@ TYPEOF(x1) x4 := ‘GHI’
 
     <para>• As a default value to a SET or SET OF parameter.</para>
 
-    <para>Solution: Make sure it is one of the above cases, otherwise, don’t
+    <para>Solution: Make sure it is one of the above cases, otherwise, don't
     use ALL. Example:</para>
 
-    <programlisting>      01: aaa := DATASET(‘aaa’, {STRING1 f1;}, HOLE);
+    <programlisting>      01: aaa := DATASET('aaa', {STRING1 f1;}, HOLE);
       02: bbb := GROUP(aaa, ALL);
-      03: s := ‘ abc ‘;
+      03: s := ' abc ';
       04: TRIM(s, ALL);
       05: f(SET is, INTEGER i) := i IN is;
       06: MyJobSet := [1,2,3];
@@ -1591,16 +1591,16 @@ TYPEOF(x1) x4 := ‘GHI’
       <primary>2029</primary>
     </indexterm>
 
-    <para><emphasis role="bold">Constant doesn’t make any sense
+    <para><emphasis role="bold">Constant doesn't make any sense
     here</emphasis></para>
 
-    <para>Using a Constant doesn’t make sense in this context. For example,
-    sorting or grouping by a constant doesn’t make sense.</para>
+    <para>Using a Constant doesn't make sense in this context. For example,
+    sorting or grouping by a constant doesn't make sense.</para>
 
     <para>Example:</para>
 
     <programlisting>
-      01: aaa := DATASET(‘aaa’,{STRING1 a; }, FLAT);
+      01: aaa := DATASET('aaa',{STRING1 a; }, FLAT);
       02: iftotal := IF(TRUE, 1, 0);
       03:
       04: countrec := RECORD
@@ -1789,7 +1789,7 @@ TYPEOF(x1) x4 := ‘GHI’
 
     <para>Solution: Choose a proper size. Example:</para>
 
-    <programlisting>01: DATA0 a := ’03DF21';</programlisting>
+    <programlisting>01: DATA0 a := '03DF21';</programlisting>
   </sect1>
 
   <sect1 id="_2043">
@@ -1809,7 +1809,7 @@ TYPEOF(x1) x4 := ‘GHI’
 
     <para>Solution: Choose a proper size. Example:</para>
 
-    <programlisting>STRING0 abc := ‘abc’;</programlisting>
+    <programlisting>STRING0 abc := 'abc';</programlisting>
   </sect1>
 
   <sect1 id="_2044">
@@ -1827,7 +1827,7 @@ TYPEOF(x1) x4 := ‘GHI’
 
     <para>Example:</para>
 
-    <programlisting>VARSTRING0 abc := ‘abc’;</programlisting>
+    <programlisting>VARSTRING0 abc := 'abc';</programlisting>
   </sect1>
 
   <sect1 id="_2045">
@@ -2055,7 +2055,7 @@ TYPEOF(x1) x4 := ‘GHI’
     <para>The file ends while the parser is still trying to look for macro
     parameters. This means that the code is not yet complete.</para>
 
-    <para>Solution: Complete the code with proper parameters, and ending ‘)’.
+    <para>Solution: Complete the code with proper parameters, and ending ')'.
     Example:</para>
 
     <programlisting>
@@ -2065,7 +2065,7 @@ TYPEOF(x1) x4 := ‘GHI’
       04: m2(1
  </programlisting>
 
-    <para>In line 4, macro call m2 doesn’t have complete parameters.</para>
+    <para>In line 4, macro call m2 doesn't have complete parameters.</para>
   </sect1>
 
   <sect1 id="_2053">
@@ -2188,7 +2188,7 @@ TYPEOF(x1) x4 := ‘GHI’
     to pass values to those parameters that do have default values. See
     Example 2 below.</para>
 
-    <para>Note that macros in ECL don’t have this default value concept,
+    <para>Note that macros in ECL don't have this default value concept,
     therefore this error can never happen to a macro call.</para>
 
     <para>Solution: Either pass a value for the parameter, or specify a
@@ -2312,15 +2312,15 @@ TYPEOF(x1) x4 := ‘GHI’
 
     <programlisting>
       01: f(integer i) := i+1;
-      02: f(‘123’);
+      02: f('123');
 
 </programlisting>
 
-    <para>In line 2, actual parameter ‘123’ is a string, not an integer as
+    <para>In line 2, actual parameter '123' is a string, not an integer as
     expected by the definition of f. We can use type casting to correct
     this:</para>
 
-    <programlisting>f((INTEGER)‘123’);</programlisting>
+    <programlisting>f((INTEGER)'123');</programlisting>
   </sect1>
 
   <sect1 id="_2065">
@@ -2357,12 +2357,12 @@ TYPEOF(x1) x4 := ‘GHI’
 
     <itemizedlist>
       <listitem>
-        <para>any constant value, such as: 123, ‘abc’.</para>
+        <para>any constant value, such as: 123, 'abc'.</para>
       </listitem>
 
       <listitem>
         <para>any expression that evaluates to a constant value, such as:
-        2*4+5, ‘abc’+’def ’, 3&gt;2 &amp;&amp; 3^2=8.</para>
+        2*4+5, 'abc'+'def ', 3&gt;2 &amp;&amp; 3^2=8.</para>
       </listitem>
 
       <listitem>
@@ -2376,8 +2376,8 @@ y := 3;</programlisting>Then c(y) is a constant since at compile time, it can
     </itemizedlist>
 
     <para>The third rule is different from languages like C and Java where a
-    function’s return value is never regarded as a compile time constant,
-    macros in C (Java doesn’t have macros) are not an issue since they
+    function's return value is never regarded as a compile time constant,
+    macros in C (Java doesn't have macros) are not an issue since they
     disappear after preprocessing.</para>
 
     <para>The following are not constants:</para>
@@ -2409,14 +2409,14 @@ y := 3;</programlisting>Then c(y) is a constant since at compile time, it can
 </programlisting>Both RANDOM() in line 1 and ct in line 6 are not constant,
         but c(y) in line 4 is constant. Example 2:</para>
 
-        <para><programlisting>      01: loadxml(‘myxml.xml’);
+        <para><programlisting>      01: loadxml('myxml.xml');
       02: #DECLARE (S)
       03: #SET (S, <emphasis role="bold">RANDOM()</emphasis>)
       04: #APPEND(S, <emphasis role="bold">RANDOM()</emphasis>)
       05: #IF (<emphasis role="bold">RANDOM()</emphasis>)
-      06: #APPEND(S, ‘x := 1; ‘)
+      06: #APPEND(S, 'x := 1; ')
       07: #ELSE
-      08: #APPEND(S, ‘x := 2; ‘)
+      08: #APPEND(S, 'x := 2; ')
       09: #END
 </programlisting></para>
       </listitem>
@@ -2452,9 +2452,9 @@ y := 3;</programlisting>Then c(y) is a constant since at compile time, it can
     cast to string (if it is not already string, and can be cast to string).
     For instance:</para>
 
-    <programlisting>x := 123 + ‘STR’</programlisting>
+    <programlisting>x := 123 + 'STR'</programlisting>
 
-    <para>is a legal expression, and x has the value: ‘123STR’. For other
+    <para>is a legal expression, and x has the value: '123STR'. For other
     operations (-, *, /), only numeric values are allowed. Implicit cast may
     be involved, but:</para>
 
@@ -2472,11 +2472,11 @@ y := 3;</programlisting>Then c(y) is a constant since at compile time, it can
 
     <programlisting>      01: x1 := <emphasis role="bold">TRUE </emphasis>+ 35;
       02:
-      03: x2 := 35 - <emphasis role="bold">‘STR’</emphasis>;
+      03: x2 := 35 - <emphasis role="bold">'STR'</emphasis>;
       04:
-      05: x3 := 34 * <emphasis role="bold">‘STR’</emphasis>;
+      05: x3 := 34 * <emphasis role="bold">'STR'</emphasis>;
       06:
-      07: x4 := 12 * <emphasis role="bold">x’abcd’</emphasis>;
+      07: x4 := 12 * <emphasis role="bold">x'abcd'</emphasis>;
 </programlisting>
 
     <para>All bold expressions are not numeric (and cannot be implicitly cast
@@ -2505,15 +2505,15 @@ y := 3;</programlisting>Then c(y) is a constant since at compile time, it can
 
     <para>• IF(condition, expr1,expr2)</para>
 
-    <para>• MAP(condtion1=&gt;expr1,…,condition_n=&gt;exprn, defvalue)</para>
+    <para>• MAP(condtion1=&gt;expr1,...,condition_n=&gt;exprn, defvalue)</para>
 
     <para>• IFBLOCK(condition)</para>
 
     <para>• WHEN</para>
 
-    <para>• WHICH(condition1,…,conditions)</para>
+    <para>• WHICH(condition1,...,conditions)</para>
 
-    <para>• REJECTED(condition1,…,conditions)</para>
+    <para>• REJECTED(condition1,...,conditions)</para>
 
     <para>• #IF(condition)</para>
 
@@ -2523,11 +2523,11 @@ y := 3;</programlisting>Then c(y) is a constant since at compile time, it can
     <para>Example:</para>
 
     <programlisting>      01: x1 := NOT <emphasis role="bold">2</emphasis>;
-      02: x2 := FALSE AND <emphasis role="bold">‘STR’</emphasis>;
-      03: x3 := TRUE OR <emphasis role="bold">x’abcd’</emphasis>;
+      02: x2 := FALSE AND <emphasis role="bold">'STR'</emphasis>;
+      03: x3 := TRUE OR <emphasis role="bold">x'abcd'</emphasis>;
       04: x4 := IF (<emphasis role="bold">2</emphasis>,3,4);
       05: x5 := MAP(<emphasis role="bold">1</emphasis>=&gt;3,4);
-      06: x6 := WHICH(<emphasis role="bold">‘2’</emphasis>,3&lt;4);
+      06: x6 := WHICH(<emphasis role="bold">'2'</emphasis>,3&lt;4);
 </programlisting>
 
     <para>All the bol expressions should be replaced by boolean
@@ -2541,9 +2541,9 @@ y := 3;</programlisting>Then c(y) is a constant since at compile time, it can
       <primary>2074</primary>
     </indexterm>
 
-    <para><emphasis role="bold">‘(‘ expected</emphasis></para>
+    <para><emphasis role="bold">'(' expected</emphasis></para>
 
-    <para>An open parenthesis ‘(’ is missing. This error normally happens in
+    <para>An open parenthesis '(' is missing. This error normally happens in
     ECL template commands:</para>
 
     <para>• #DECLARE</para>
@@ -2554,10 +2554,10 @@ y := 3;</programlisting>Then c(y) is a constant since at compile time, it can
 
     <para>• #SET</para>
 
-    <para>Solution: Add a ‘(‘ and ‘)’ if needed. Example:</para>
+    <para>Solution: Add a '(' and ')' if needed. Example:</para>
 
     <programlisting>
-      01: loadxml(‘myxml.xml’)
+      01: loadxml('myxml.xml')
       02:
       03: #DECLARE <emphasis role="bold">s</emphasis>
       04:
@@ -2566,8 +2566,8 @@ y := 3;</programlisting>Then c(y) is a constant since at compile time, it can
       07:
       08: #SET <emphasis role="bold">s</emphasis>
       09:
-      10: #FOR <emphasis role="bold">item(%’type’% = ‘count’)</emphasis>
-      11: #APPEND(s, ‘count’)
+      10: #FOR <emphasis role="bold">item(%'type'% = 'count')</emphasis>
+      11: #APPEND(s, 'count')
       12: #END
 
 </programlisting>
@@ -2582,17 +2582,17 @@ y := 3;</programlisting>Then c(y) is a constant since at compile time, it can
       <primary>2075</primary>
     </indexterm>
 
-    <para><emphasis role="bold">‘)’ expected</emphasis></para>
+    <para><emphasis role="bold">')' expected</emphasis></para>
 
-    <para>A close parenthesis ‘)’ is missing. This error normally happens in
+    <para>A close parenthesis ')' is missing. This error normally happens in
     ECL template commands:</para>
 
-    <para>Solution: Add the missing ‘)’.</para>
+    <para>Solution: Add the missing ')'.</para>
 
     <para>Example:</para>
 
     <programlisting>
-      01: loadxml(‘myxml.xml’)
+      01: loadxml('myxml.xml')
       02:
       03: #DECLARE (s
       04:
@@ -2601,13 +2601,13 @@ y := 3;</programlisting>Then c(y) is a constant since at compile time, it can
       07:
       08: #SET (s,3
       09:
-      10: #FOR (item(%’type’% = ‘cunt’)
-      11: #APPEND(s, ‘count’)
+      10: #FOR (item(%'type'% = 'cunt')
+      11: #APPEND(s, 'count')
       12: #END
 
 </programlisting>
 
-    <para>The compiler may not do well enough to point out every missing ‘)’
+    <para>The compiler may not do well enough to point out every missing ')'
     in this example, so looking around is always a good idea.</para>
   </sect1>
 
@@ -2620,7 +2620,7 @@ y := 3;</programlisting>Then c(y) is a constant since at compile time, it can
 
     <para><emphasis role="bold">',' expected </emphasis></para>
 
-    <para>A comma (‘,’) is expected. Normally this means another parameter is
+    <para>A comma (',') is expected. Normally this means another parameter is
     expected, or the program construct is incomplete.</para>
 
     <para>Solution: Check the context where the error occurs and make sure to
@@ -2736,7 +2736,7 @@ y := 3;</programlisting>Then c(y) is a constant since at compile time, it can
 
     <para>In the SORT function:</para>
 
-    <para>SORT (recordset, value [, value …], JOINED(joinedset)]);</para>
+    <para>SORT (recordset, value [, value ...], JOINED(joinedset)]);</para>
 
     <para>the parameter to JOINED must be a sorted set.</para>
 
@@ -2751,8 +2751,8 @@ y := 3;</programlisting>Then c(y) is a constant since at compile time, it can
 
     <para>Example:</para>
 
-    <programlisting>      01: aaa := DATASET(‘aaa’, {STRING1 fa}, hole);
-      02: bbb := DATASET(‘bbb’, {STRING1 fb}, hole, aaa);
+    <programlisting>      01: aaa := DATASET('aaa', {STRING1 fa}, hole);
+      02: bbb := DATASET('bbb', {STRING1 fb}, hole, aaa);
       03: sorted_bbb := SORTED(bbb, fb);
       04: OUTPUT(SORT(aaa, fa, JOINED(bbb)));
 </programlisting>
@@ -2774,7 +2774,7 @@ y := 3;</programlisting>Then c(y) is a constant since at compile time, it can
 
     <para>In the SORT statement:</para>
 
-    <para><programlisting>SORT (recordset, value, [value…], JOINED(joinedset));</programlisting></para>
+    <para><programlisting>SORT (recordset, value, [value...], JOINED(joinedset));</programlisting></para>
 
     <para>the number of sort fields in joinedset and the number of field to be
     sorted on for the recordset must be the same.</para>
@@ -2794,13 +2794,13 @@ y := 3;</programlisting>Then c(y) is a constant since at compile time, it can
     <para>Solution: Specify the same number of sort fields as required.
     Example:</para>
 
-    <programlisting>      01: aaa := DATASET(‘aaa’, {STRING1 f1, STRING1 f2}, hole);
+    <programlisting>      01: aaa := DATASET('aaa', {STRING1 f1, STRING1 f2}, hole);
       02: sored_aaa := SORT(aaa,f1,f2);
       03: OUTPUT(SORT(aaa, f2, JOINED(sorted_aaa)));
       04: // this is OK although sorted_aaa was sorted on 2 fields.
       05: sorted_aaa2 := SORTED(sorted_aaa,f1);
       06: OUTPUT(SORT(aaa, f2, JOINED(sorted_aaa2)));
-      07: bbb := DATASET(‘bbb’, {STRING1 fb}, hole);
+      07: bbb := DATASET('bbb', {STRING1 fb}, hole);
       08: sorted_bbb := SORTED(bbb,fb);
       09: OUTPUT(SORT(aaa, f1, f2, JOINED(sorted_bbb)));
 </programlisting>
@@ -2824,9 +2824,9 @@ y := 3;</programlisting>Then c(y) is a constant since at compile time, it can
 
     <para>In the SORT statement:</para>
 
-    <para><programlisting>SORT (recordset, value, [value…], JOINED(joinedset));</programlisting></para>
+    <para><programlisting>SORT (recordset, value, [value...], JOINED(joinedset));</programlisting></para>
 
-    <para>the type of each field specified in SORT (by value, [value…]) must
+    <para>the type of each field specified in SORT (by value, [value...]) must
     be the same as the sort fields</para>
 
     <para>in the joinedset. The type is compared in the order they are
@@ -2836,7 +2836,7 @@ y := 3;</programlisting>Then c(y) is a constant since at compile time, it can
 
     <para>Solution: Make sure they have the same types. Example:</para>
 
-    <programlisting>      01: aaa := DATASET(‘aaa’, {STRING1 f1, BOOLEAN f2}, hole);
+    <programlisting>      01: aaa := DATASET('aaa', {STRING1 f1, BOOLEAN f2}, hole);
       02: sorted_aaa := SORT(aaa,f1);
       03: OUTPUT(SORT(aaa, f2, JOINED(sorted_aaa)));
       04:
@@ -2865,7 +2865,7 @@ y := 3;</programlisting>Then c(y) is a constant since at compile time, it can
     <para>Solution: Remove extra JOINED clause, and only keep one.
     Example:</para>
 
-    <programlisting>      01: aaa := DATASET(‘aaa’, {STRING1 f1, BOOLEAN f2}, hole);
+    <programlisting>      01: aaa := DATASET('aaa', {STRING1 f1, BOOLEAN f2}, hole);
       02: sorted_aaa := SORT(aaa,f1);
       03: OUTPUT(SORT(aaa, f1, JOINED(sorted_aaa), JOINED(sorted_aaa)));
 </programlisting>
@@ -2998,8 +2998,8 @@ ECL code that is trying to use SmallPersonSet:
 
     <programlisting>      01: NamesRec := RECORD
       02: STRING20 thename;
-      03: STRING20 addr1 := ‘’;
-      04: STRING20 addr2 := ‘’;
+      03: STRING20 addr1 := '';
+      04: STRING20 addr2 := '';
       05: END;
       06:
       07: OutRec := RECORD
@@ -3011,7 +3011,7 @@ ECL code that is trying to use SmallPersonSet:
       13: TRANSFORM
       14: SELF := L;
       15: SELF.addr := CHOOSE(C, L.addr1, L.addr2);
-      16: SELF.addr := ‘ABC’;
+      16: SELF.addr := 'ABC';
       17: END;</programlisting>
   </sect1>
 
@@ -3041,8 +3041,8 @@ ECL code that is trying to use SmallPersonSet:
 
     <programlisting>      01: NamesRec := RECORD
       02: //STRING20 <emphasis role="bold">thename</emphasis>;
-      03: STRING20 addr1 := ‘’;
-      04: STRING20 addr2 := ‘’;
+      03: STRING20 addr1 := '';
+      04: STRING20 addr2 := '';
       05: END;
       06:
       07: OutRec := RECORD
@@ -3057,7 +3057,7 @@ ECL code that is trying to use SmallPersonSet:
 </programlisting>
 
     <para>Since we commented out the field thename in NamesRec definition
-    (line 2), and we don’t explicitly place a value in OutRec’s thename field
+    (line 2), and we don't explicitly place a value in OutRec's thename field
     (line 13-15), we get this error. We can either un- comment line 2, or
     place a value in OutRec.thename within the transform to resolve the
     problem.</para>
@@ -3075,7 +3075,7 @@ ECL code that is trying to use SmallPersonSet:
 
     <para>A field with the same name as the one in question is already defined
     in the record. Field names must be unique within a record definition. It
-    doesn’t matter if their types are the same or not.</para>
+    doesn't matter if their types are the same or not.</para>
 
     <para>Solution: Choose another name for the field, or remove one if they
     are just duplicated. Example:</para>
@@ -3168,13 +3168,13 @@ ECL code that is trying to use SmallPersonSet:
     given (to reduce the number of error messages). For the C/ C++/Java
     programmers, ECL indexing always starts at element 1 (not 0).</para>
 
-    <para>This error is a compiler error, not a runtime error. Don’t count on
+    <para>This error is a compiler error, not a runtime error. Don't count on
     the compiler to do all the index checking for you. It is always a good
     idea to mae sure the index is in proper range. For example:</para>
 
     <programlisting>      01: STRING concat(STRING x, STRING y) := x+y;
-      02: STRING a := ‘a’;
-      03: STRING b := ‘bc’;
+      02: STRING a := 'a';
+      03: STRING b := 'bc';
       04: STRING c := concat(a,b);
       05: c[10];
 </programlisting>
@@ -3189,7 +3189,7 @@ ECL code that is trying to use SmallPersonSet:
 
     <para>Example:</para>
 
-    <programlisting>      01: STRING3 s := ‘abc’;
+    <programlisting>      01: STRING3 s := 'abc';
       02: s1 := s[0];
       03: s2 := s[1..4];
       04: s3 := s[3..2];
@@ -3228,8 +3228,8 @@ ECL code that is trying to use SmallPersonSet:
     <para>Solution: Remove the offending field from the output record set.
     Example:</para>
 
-    <programlisting>      01: aaa := DATASET(‘aaa’, {STRING1 fa }, HOLE);
-      02: bbb := DATASET(‘bbb’, {STRING1 fb }, HOLE);
+    <programlisting>      01: aaa := DATASET('aaa', {STRING1 fa }, HOLE);
+      02: bbb := DATASET('bbb', {STRING1 fb }, HOLE);
       03:
       04: OUTPUT(aaa, {aaa.fa, bbb.fb});
 </programlisting>
@@ -3259,25 +3259,25 @@ ECL code that is trying to use SmallPersonSet:
     <para>• In SORTED, the field that is specified as having been sorted on
     must be a field of the dataset.</para>
 
-    <para>And much more…</para>
+    <para>And much more...</para>
 
     <para>Solution: Remove the offending field from the filter. Example
     1:</para>
 
-    <programlisting>      01: aaa := DATASET(‘aaa’, {STRING1 fa }, HOLE);
-      02: bbb := DATASET(‘bbb’, {STRING1 fb }, HOLE);
+    <programlisting>      01: aaa := DATASET('aaa', {STRING1 fa }, HOLE);
+      02: bbb := DATASET('bbb', {STRING1 fb }, HOLE);
       03:
-      04: OUTPUT(aaa(fa=’Good’, bbb.fb=’Bad’));
+      04: OUTPUT(aaa(fa='Good', bbb.fb='Bad'));
 </programlisting>
 
-    <para>This is a filter example. In line 4, the filter bbb.fb = ‘Bad’
+    <para>This is a filter example. In line 4, the filter bbb.fb = 'Bad'
     refers to a field of dataset bbb, but we are trying to filter dataset
     aaa.</para>
 
     <para>Example 2:</para>
 
-    <programlisting>      01: aaa := DATASET(‘aaa’, {STRING1 fa }, HOLE);
-      02: bbb := DATASET(‘aaa’, {STRING1 fb }, HOLE);
+    <programlisting>      01: aaa := DATASET('aaa', {STRING1 fa }, HOLE);
+      02: bbb := DATASET('aaa', {STRING1 fb }, HOLE);
       03: ccc := SORT(aaa, fa, bbb.fb);
 </programlisting>
 
@@ -3300,7 +3300,7 @@ ECL code that is trying to use SmallPersonSet:
     <para>Solution: Change the expression in question to a boolean expression.
     Example:</para>
 
-    <programlisting>      01: aaa := DATASET(‘aaa’, {STRING1 f1; STRING1 f2; }, HOLE);
+    <programlisting>      01: aaa := DATASET('aaa', {STRING1 f1; STRING1 f2; }, HOLE);
       02: bbb := aaa(f1);
       03: ccc := aaa(f1*2);
 </programlisting>
@@ -3349,7 +3349,7 @@ ECL code that is trying to use SmallPersonSet:
     <programlisting>      01: SHARED SHARED aa := 3;
 </programlisting>
 
-    <para>Here two SHARED are used at the same time – an illegal combination.
+    <para>Here two SHARED are used at the same time -- an illegal combination.
     Remove one of them.</para>
   </sect1>
 
@@ -3443,7 +3443,7 @@ ECL code that is trying to use SmallPersonSet:
     expression (which is used to include all the fields from the dataset at
     their declared sizes and value types). For example:</para>
 
-    <programlisting>      aaa := DATASET(‘aaa’,{STRING1 f1, INTEGER1 f2}, FLAT); MyRec :=
+    <programlisting>      aaa := DATASET('aaa',{STRING1 f1, INTEGER1 f2}, FLAT); MyRec :=
       RECORD
       aaa;
       STRING1 sex;
@@ -3457,17 +3457,17 @@ Example:
       01: STRING cat(STRING s1, STRING s2) := s1 + s2;
       02:
       03: MyRec := RECORD
-      04: cat(‘abc’,’def’);
+      04: cat('abc','def');
       05: END;
 </programlisting>
 
     <para>In line 4, no name is given to the to-be-defined field of MyRec. The
-    compiler tries to decide the type of the expression cat(‘abc’, ‘def ’) and
+    compiler tries to decide the type of the expression cat('abc', 'def ') and
     discovers it is STRING (with no specific length) from the definition the
     cat function in line 1. Therefore you get this unknown size error. Giving
     a name and a specific size type to the field solves the problem:</para>
 
-    <programlisting>      04: STRING6 magictag := cat(‘abc’,’def’);</programlisting>
+    <programlisting>      04: STRING6 magictag := cat('abc','def');</programlisting>
 
     <para>Note that we also have to give a size explicitly to the STRING type
     in the above code, otherwise, an error C2043 occurs.</para>
@@ -3496,12 +3496,12 @@ Example:
 
     <para>Example:</para>
 
-    <programlisting>      01: ASCII STRING3 x := ‘ABC’;
-      02: EBCDIC STRING4 y := ‘ABCD’;
+    <programlisting>      01: ASCII STRING3 x := 'ABC';
+      02: EBCDIC STRING4 y := 'ABCD';
       03: STRING7 a := x + y;
 </programlisting>
 
-    <para>Note that in line 3, y is not an ASCII string ‘ABCD’ since we are
+    <para>Note that in line 3, y is not an ASCII string 'ABCD' since we are
     defining it as an EBCDIC encoded string.</para>
   </sect1>
 
@@ -3518,7 +3518,7 @@ Example:
     <para>In a type transfer, the size of target type is larger the size of
     source type.</para>
 
-    <para>ECL doesn’t allow this because it doesn’t know how to fill the extra
+    <para>ECL doesn't allow this because it doesn't know how to fill the extra
     space in the target. However, it quietly accepts the other case: target
     size is smaller than the source type in which case data is lost. It
     assumes that the user doing the transfer knows what he is doing.</para>
@@ -3572,7 +3572,7 @@ Example:
     <para>Solution: Use SIZEOF only on a field or a dataset as required.
     Example:</para>
 
-    <programlisting>      01: aaa := DATASET(‘aaa’, {STRING1 f1, STRING1 f2}, hole);
+    <programlisting>      01: aaa := DATASET('aaa', {STRING1 f1, STRING1 f2}, hole);
       02: OUTPUT(aaa, {f1,SIZEOF(aaa),SIZEOF(f1)});
       03:
       04: INTEGER4 x := 3;
@@ -3601,16 +3601,16 @@ Example:
 
     <para>Solution: Split the attribute into two. Example:</para>
 
-    <programlisting>      01: aaa := DATASET(‘aaa’, {STRING1 fa}, hole);
-      02: bbb := DATASET(‘bbb’, {STRING1 fb}, hole, aaa);
+    <programlisting>      01: aaa := DATASET('aaa', {STRING1 fa}, hole);
+      02: bbb := DATASET('bbb', {STRING1 fb}, hole, aaa);
       03: OUTPUT(SORT(aaa, <emphasis role="bold">SORT</emphasis>(bbb, fb)[1].fb));
 </programlisting>
 
     <para>The compiler complains on the second SORT in line 3. We can solve
     the problem by splitting the attribute, like this:</para>
 
-    <programlisting>      01: aaa := DATASET(‘aaa’, {STRING1 fa}, hole);
-      02: bbb := DATASET(‘bbb’, {STRING1 fb}, hole, aaa);
+    <programlisting>      01: aaa := DATASET('aaa', {STRING1 fa}, hole);
+      02: bbb := DATASET('bbb', {STRING1 fb}, hole, aaa);
       03: temp := SORT(bbb, fb);
       04: OUTPUT(SORT(aaa, temp[1].fb));</programlisting>
   </sect1>
@@ -3631,16 +3631,16 @@ Example:
 
     <para>Solution: Split the attribute into two. Example:</para>
 
-    <programlisting>      01: aaa := DATASET(‘aaa’, {STRING1 fa}, hole);
-      02: bbb := DATASET(‘bbb’, {STRING1 fb}, hole, aaa);
+    <programlisting>      01: aaa := DATASET('aaa', {STRING1 fa}, hole);
+      02: bbb := DATASET('bbb', {STRING1 fb}, hole, aaa);
       03: OUTPUT(GROUP(aaa, <emphasis role="bold">GROUP</emphasis>(bbb, fb)[1].fb));
 </programlisting>
 
     <para>The compiler complains on the second GROUP in line 3. We can solve
     the problem by splitting the attribute, like this:</para>
 
-    <programlisting>      01: aaa := DATASET(‘aaa’, {STRING1 fa}, hole);
-      02: bbb := DATASET(‘bbb’, {STRING1 fb}, hole, aaa);
+    <programlisting>      01: aaa := DATASET('aaa', {STRING1 fa}, hole);
+      02: bbb := DATASET('bbb', {STRING1 fb}, hole, aaa);
       03: temp := GROUP(bbb, fb);
       04: OUTPUT(GROUP(aaa, temp[1].fb));</programlisting>
   </sect1>
@@ -3661,14 +3661,14 @@ Example:
     <para>Solution: Reduce the number of parameters as required.
     Example:</para>
 
-    <programlisting>      01: LOADXML(‘myxml.xml’);
+    <programlisting>      01: LOADXML('myxml.xml');
       02:
       03: #DECLARE(S)
       04:
       05: <emphasis role="bold">#IF(S &gt; 1, S &lt; 5)</emphasis>
       06: #ENDIF
       07:
-      08: <emphasis role="bold">#SET (S, ‘1’, 2)</emphasis>
+      08: <emphasis role="bold">#SET (S, '1', 2)</emphasis>
 </programlisting>
 
     <para>Both #IF and #SET need fewer parameters than they are
@@ -3699,7 +3699,7 @@ Example:
     <para>We can simply add a dummy loadxml statement before line 1 to resolve
     this error:</para>
 
-    <programlisting>     LOADXML(“myxml.xml”);
+    <programlisting>     LOADXML("myxml.xml");
 </programlisting>
 
     <para>The content for this example is not important, but it is important
@@ -3717,7 +3717,7 @@ Example:
     ".HQL"</emphasis></para>
 
     <para>The file extension used to provide input for an application is
-    illegal. For example, Seisint’s internal test program hqltest requires the
+    illegal. For example, Seisint's internal test program hqltest requires the
     .hql file extension on its input files.</para>
 
     <para>Solution: Change the file extension to the one required for the
@@ -3733,7 +3733,7 @@ Example:
 
     <para><emphasis role="bold">File XXX not found</emphasis></para>
 
-    <para>A file is not found. This only happens with Seisint’s internal test
+    <para>A file is not found. This only happens with Seisint's internal test
     programs hqltest or ecltest.</para>
 
     <para>Solution: Check the file name, and make sure the file exists in the
@@ -3770,7 +3770,7 @@ Example:
     a field of some structure (like record, or table), qualify it properly
     (such as: myrecord.field, mytable.field). If it is defined as a local
     attribute to another SHARED and EXPORT attribute, either promote it to
-    SHARED or EXPORTed scope, or move the code around so that the identifier’s
+    SHARED or EXPORTed scope, or move the code around so that the identifier's
     defintion and the defintion using it are within the same local
     scope.</para>
 
@@ -3826,7 +3826,7 @@ Example:
 
     <para>Example:</para>
 
-    <programlisting>01: bbb := DATASET(‘aaa’, {STRING1 fa; }, FLAT);
+    <programlisting>01: bbb := DATASET('aaa', {STRING1 fa; }, FLAT);
 02: table1 := TABLE(bbb, {STRING1 fa; STRING1 fb; });</programlisting>
 
     <para>In this example, we create a table from dataset aaa. Since bbb has a
@@ -3858,14 +3858,14 @@ Example:
     <para>Astring constant contains an unknown escape sequence. Currently, the
     only supported escape sequences are:</para>
 
-    <para>\’ and \\</para>
+    <para>\' and \\</para>
 
-    <para>For C/C++/Java programmers, don’t assume that ECL supports the
+    <para>For C/C++/Java programmers, don't assume that ECL supports the
     standard escape sequences in these languages.</para>
 
     <para>Solution: Remove the offending escape sequence. Example:</para>
 
-    <programlisting>      01: string x1 := ‘\r\n\t\b\x0123’;
+    <programlisting>      01: string x1 := '\r\n\t\b\x0123';
 </programlisting>
 
     <para>None of the above C escape sequences is supported in ECL.</para>
@@ -3884,23 +3884,23 @@ Example:
     <para>A string constant is terminated by a backslash (\). Most of the
     time, the intention of the user is</para>
 
-    <para>to have a single quote (‘) as the last character in the string. As a
+    <para>to have a single quote (') as the last character in the string. As a
     result, he/she puts an escape</para>
 
-    <para>character (\) in front of the single quote (‘) indicating the end of
+    <para>character (\) in front of the single quote (') indicating the end of
     the string constant and the</para>
 
     <para>terminating quote is ignored.</para>
 
-    <para>Solution: Add another ‘ to terminate the string or remove the
+    <para>Solution: Add another ' to terminate the string or remove the
     offending \ whichever is proper. Example:</para>
 
     <programlisting>
-      01: String s := ‘It is brothers\’;
+      01: String s := 'It is brothers\';
  </programlisting>
 
-    <para>The last character in this string is ‘, which has to be escaped as
-    \’, therefore we need another ‘ to terminate the string constant.</para>
+    <para>The last character in this string is ', which has to be escaped as
+    \', therefore we need another ' to terminate the string constant.</para>
   </sect1>
 
   <sect1 id="_2182">
@@ -3916,7 +3916,7 @@ Example:
     <para>Illegal characters are present in hex data. Hex data is defined
     as:</para>
 
-    <para><programlisting>X’hex-digits’ or x’hex-digits’</programlisting></para>
+    <para><programlisting>X'hex-digits' or x'hex-digits'</programlisting></para>
 
     <para>A hex digit may only be any of the numbers 0 through 9 or the
     letters A through F (upper or lower case). The number of digits in the hex
@@ -3925,10 +3925,10 @@ Example:
 
     <para>Solution: Remove the illegal characters in the hex. Example:</para>
 
-    <programlisting>      01: DATA x1 := x’ABC<emphasis role="bold">X</emphasis>’;
-      02: DATA x2 := x’<emphasis role="bold">^</emphasis>1';
-      03: DATA x3 := x’A B’;
-      04: DATA x4 := x’<emphasis role="bold">\n</emphasis>’;
+    <programlisting>      01: DATA x1 := x'ABC<emphasis role="bold">X</emphasis>';
+      02: DATA x2 := x'<emphasis role="bold">^</emphasis>1';
+      03: DATA x3 := x'A B';
+      04: DATA x4 := x'<emphasis role="bold">\n</emphasis>';
 </programlisting>
 
     <para>All bold chars are illegal hex digits (line 3 has a blank space
@@ -3953,11 +3953,11 @@ Example:
     <para>Solution: Check that there are no missing or extra digits. Add a
     leading or trailing 0 as required. Example:</para>
 
-    <programlisting>      DATA d := x’ABCD123';
+    <programlisting>      DATA d := x'ABCD123';
 </programlisting>
 
-    <para>The hex data string x’ABCD123' contains 7 digits (an odd number).
-    Make it: x’0ABCD123'.</para>
+    <para>The hex data string x'ABCD123' contains 7 digits (an odd number).
+    Make it: x'0ABCD123'.</para>
   </sect1>
 
   <sect1 id="_2184">
@@ -3974,7 +3974,7 @@ Example:
     <para>Solution: Change it to meaningful, non-empty hex data.
     Example:</para>
 
-    <programlisting>DATA d = ‘’;</programlisting>
+    <programlisting>DATA d = '';</programlisting>
   </sect1>
 
   <sect1 id="_2185">
@@ -4022,7 +4022,7 @@ Example:
     are allowed, note that this is not allowed in ECL.</para>
 
     <para>Solution: Provide at least one field for the record. If you really
-    don’t need a real field, add a dummy field.</para>
+    don't need a real field, add a dummy field.</para>
 
     <para>Example:</para>
 
@@ -4050,11 +4050,11 @@ Example:
 
     <para>• str [ one_index ]</para>
 
-    <para>Each index is an integer within the range of 1…LENGTH(str),
+    <para>Each index is an integer within the range of 1...LENGTH(str),
     inclusive. Solution: Either provide an index value or remove the square
     brackets. Example:</para>
 
-    <programlisting>      01: STRING s := ‘abc’;
+    <programlisting>      01: STRING s := 'abc';
       02: STRING subs := s[];</programlisting>
   </sect1>
 
@@ -4142,7 +4142,7 @@ Example:
     one line</emphasis></para>
 
     <para>In ECL, a string constant must be complete in one line. The string
-    delimitor is single quote (‘). Note that ECL doesn’t support string
+    delimitor is single quote ('). Note that ECL doesn't support string
     constants that span multiple lines. However, you can use the concatenation
     operator (+) to reach the goal. Since constants are folded at compile
     time, there is no performance penalty for this.</para>
@@ -4150,16 +4150,16 @@ Example:
     <para>Solution: Add a single quote at the end to terminate the string.
     Example:</para>
 
-    <programlisting>      01: STRING long_string := ‘the part on first line’
-      02: + ’the part on second line ‘
-      03: + ‘and the third line’;
+    <programlisting>      01: STRING long_string := 'the part on first line'
+      02: + 'the part on second line '
+      03: + 'and the third line';
       04:
-      05: STRING s := ‘unended string const;
+      05: STRING s := 'unended string const;
 </programlisting>
 
     <para>In line 1-3, we are defining a long string which spans multiple
-    lines. The string in line 5 doesn’t end with a single quote. Note that the
-    ‘;’ is regarded as part of the string, and will not end the string
+    lines. The string in line 5 doesn't end with a single quote. Note that the
+    ';' is regarded as part of the string, and will not end the string
     constant.</para>
   </sect1>
 
@@ -4173,17 +4173,17 @@ Example:
     <para><emphasis role="bold">is illegal string delimiter: use '
     instead</emphasis></para>
 
-    <para>In ECL, the string constant delimiter is the single quote (‘)
+    <para>In ECL, the string constant delimiter is the single quote (')
     character, not double quotes as in some other languages (C/C++/Java etc).
     Since single quote is the delimiter, it needs to be escaped if it is part
-    of the string, like: ‘He\’s a nice guy’. And double quote does not need
+    of the string, like: 'He\'s a nice guy'. And double quote does not need
     (and cannot use) escape.</para>
 
     <para>Solution: Change double quote to single quote</para>
 
     <para>Example:</para>
 
-    <programlisting>      01: string s := “abc”;</programlisting>
+    <programlisting>      01: string s := "abc";</programlisting>
   </sect1>
 
   <sect1 id="_2197">
@@ -4212,12 +4212,12 @@ Example:
 
     <para>Solution: Add #END if proper. Example:</para>
 
-    <programlisting>      01: loadxml(‘myxml.xml’);
+    <programlisting>      01: loadxml('myxml.xml');
       02: #DECLARE (x)
       03: #SET(x, 1)
       04:
       05: #FOR (x)
-      06: #APPEND(s, ‘1’)</programlisting>
+      06: #APPEND(s, '1')</programlisting>
   </sect1>
 
   <sect1 id="_2201">
@@ -4236,11 +4236,11 @@ Example:
     <para>Solution: Make sure the ECL is complete. Example:</para>
 
     <programlisting>
-      01: LOADXML(‘&lt;xml&gt;dummy&lt;/xml&gt;’);
+      01: LOADXML('&lt;xml&gt;dummy&lt;/xml&gt;');
       02: #IF(
  </programlisting>
 
-    <para>The #IF doesn’t have a parameter yet.</para>
+    <para>The #IF doesn't have a parameter yet.</para>
   </sect1>
 
   <sect1 id="_2202">
@@ -4263,7 +4263,7 @@ Example:
     <para>Solution: Make sure to only declare each symbol once in the current
     scope. Example:</para>
 
-    <programlisting>      01: LOADXML(‘&lt;xml&gt;x&lt;/xml&gt;’);
+    <programlisting>      01: LOADXML('&lt;xml&gt;x&lt;/xml&gt;');
       02:
       03: #DECLARE(s)
       04:
@@ -4276,7 +4276,7 @@ Example:
 </programlisting>
 
     <para>Since #FOR will start a new local scope, the #DECLARE in line 6
-    doesn’t cause problem. However, line 10 does cause problem, because s is
+    doesn't cause problem. However, line 10 does cause problem, because s is
     already defined in line 3 (which is in the same scope).</para>
   </sect1>
 
@@ -4298,8 +4298,8 @@ Example:
     <para>Solution: Make sure you declare it before you use it.
     Example:</para>
 
-    <programlisting>      01: LOADXML(‘&lt;xml&gt;&lt;/xml&gt;’);
-      02: #SET(s, ‘abc’)
+    <programlisting>      01: LOADXML('&lt;xml&gt;&lt;/xml&gt;');
+      02: #SET(s, 'abc')
 </programlisting>
 
     <para>In line 2, s is not declared.</para>
@@ -4327,7 +4327,7 @@ Example:
 
     <para>Solution: Add a matching #END. Example:</para>
 
-    <programlisting>      01: LOADXML(‘&lt;xml&gt;&lt;/xml&gt;’);
+    <programlisting>      01: LOADXML('&lt;xml&gt;&lt;/xml&gt;');
       02: #FOR(i)
 </programlisting>
 
@@ -4351,14 +4351,14 @@ Example:
 
     <para>Solution: Ensure the #ELSE is inside your #IF. Example:</para>
 
-    <programlisting>      01: LOADXML(‘&lt;xml&gt;dummy&lt;/xml&gt;’);
+    <programlisting>      01: LOADXML('&lt;xml&gt;dummy&lt;/xml&gt;');
       02:
       03: #ELSE
       04: #DECLARE(s)
       05: #END
 </programlisting>
 
-    <para>In line 3, #ELSE doesn’t match any #IF statement.</para>
+    <para>In line 3, #ELSE doesn't match any #IF statement.</para>
   </sect1>
 
   <sect1 id="_2206">
@@ -4379,7 +4379,7 @@ Example:
     <para>Solution: Make sure you use the proper number of #END.
     Example:</para>
 
-    <programlisting>      01: LOADXML(‘&lt;xml&gt;dummy&lt;/xml&gt;’);
+    <programlisting>      01: LOADXML('&lt;xml&gt;dummy&lt;/xml&gt;');
       02:
       03: #IF(true)
       04: #DECLARE(s)
@@ -4401,25 +4401,25 @@ Example:
 
     <para>LoadXML() failed. The reason it failed can be:</para>
 
-    <para>• The xml file doesn’t exist</para>
+    <para>• The xml file doesn't exist</para>
 
     <para>• The direct xml string is not well-formed.</para>
 
     <para>• The xml in the xml file is not well-formed. LoadXML() function can
     use a direct XML string, e.g.,</para>
 
-    <para>LoadXML(‘&lt;xml&gt;dummy&lt;/xml&gt;’);</para>
+    <para>LoadXML('&lt;xml&gt;dummy&lt;/xml&gt;');</para>
 
     <para>Or it can load from a file, e.g.,</para>
 
-    <para>LoadXML(‘myxml.xml’);</para>
+    <para>LoadXML('myxml.xml');</para>
 
     <para>Solution: If it is a file, make sure the file exists, and you have
     the proper permission. Also make sure the xml is well formed.</para>
 
     <para>Example:</para>
 
-    <programlisting>01: LOADXML(‘non-exist-xml.xml’);</programlisting>
+    <programlisting>01: LOADXML('non-exist-xml.xml');</programlisting>
 
     <para>If non-exist-xml.xml does not exist, such an error will
     occur.</para>
@@ -4441,7 +4441,7 @@ Example:
 
     <para>Example:</para>
 
-    <programlisting>      01: LOADXML(‘&lt;xml&gt;dummy&lt;/xml&gt;’);
+    <programlisting>      01: LOADXML('&lt;xml&gt;dummy&lt;/xml&gt;');
       02:
       03: #IF (true)
       04: #BREAK
@@ -4470,7 +4470,7 @@ Example:
     <para>not allowed.</para>
 
     <para>Note: The compiler uses a simple method to detect infinite loops.
-    Don’t depend on it to find infinite loops for you. For example:</para>
+    Don't depend on it to find infinite loops for you. For example:</para>
 
     <programlisting>      01: #LOOP
       02: #IF(false)
@@ -4488,7 +4488,7 @@ Example:
 
     <para>Example:</para>
 
-    <programlisting>      01: LOADXML(‘&lt;xml&gt;dummy&lt;/xml&gt;’);
+    <programlisting>      01: LOADXML('&lt;xml&gt;dummy&lt;/xml&gt;');
       02:
       03: #LOOP
       04: #END
@@ -4521,7 +4521,7 @@ Example:
 
     <para>Example:</para>
 
-    <programlisting>      01: LOADXML(‘&lt;xml&gt;&lt;/xml&gt;’);
+    <programlisting>      01: LOADXML('&lt;xml&gt;&lt;/xml&gt;');
       02:
       03: #LOOP
       04: #IF (false)
@@ -6001,7 +6001,7 @@ Example:
     <para><emphasis role="bold">Too many errors</emphasis></para>
 
     <para>Normally this means either the code is too complicated and has many
-    parsing errors, or the code’s logic confused the compiler, causing
+    parsing errors, or the code's logic confused the compiler, causing
     cascaded errors.</para>
 
     <para>Solution: Try to resolve the errors before this one first, and
@@ -6020,10 +6020,10 @@ Example:
     <para><emphasis role="bold">Expected ...</emphasis></para>
 
     <para>Normally this indicates a general syntax error. The compiler gives
-    out the symbols it expects based on the grammar. This is the compiler’s
+    out the symbols it expects based on the grammar. This is the compiler's
     last resort for reporting meaningful error messages.</para>
 
-    <para>Solution: Try to understand the context and the ECL grammer. Don’t
+    <para>Solution: Try to understand the context and the ECL grammer. Don't
     take the error message too serious. It may be simply the result of some
     error before this.</para>
   </sect1>
@@ -6070,7 +6070,7 @@ Example:
 
     <para>In the example, user defined types are not allowed to be nested (see
     error C2011), so the parser is trying to recover from the error in lines
-    2-4, but couldn’t find the terminating END when it reached the end of the
+    2-4, but couldn't find the terminating END when it reached the end of the
     file.</para>
   </sect1>
 

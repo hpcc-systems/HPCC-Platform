@@ -180,7 +180,7 @@ SET OF STRING5 SetZips := [
 CountCSZ := 9540;</programlisting>
 
     <para>Here is the beginning of the data generation code. The BlankSet is a
-    single empty “seed” record, used to start the process. The CountCSZ
+    single empty "seed" record, used to start the process. The CountCSZ
     attribute simply defines the maximum number of city, state, zip
     combinations that are available for use in subsequent calculations that
     will determine which to use in a given record.</para>
@@ -202,7 +202,7 @@ base_fln := NORMALIZE(base_fn ,P_Mult2,CreateRecs(LEFT,COUNTER,2));
     name records as a starting point. The NORMALIZE operation is unique in
     that its second parameter defines the number of times to call the
     TRANSFORM function for each input record. This makes it uniquely suited to
-    generating the kind of “bogus” data we need.</para>
+    generating the kind of "bogus" data we need.</para>
 
     <para>We're doing two NORMALIZE operations here. The first generates 1,000
     records with unique first names from the single blank record in the
@@ -211,9 +211,9 @@ base_fln := NORMALIZE(base_fn ,P_Mult2,CreateRecs(LEFT,COUNTER,2));
     each input record, resulting in 1,000,000 unique first/last name
     records.</para>
 
-    <para>One interesting “trick” here is the use of a single TRANSFORM
+    <para>One interesting "trick" here is the use of a single TRANSFORM
     function for both of the NORMALIZE operations. Defining the TRANSFORM to
-    receive one “extra” (third) parameter than it normally takes is what
+    receive one "extra" (third) parameter than it normally takes is what
     allows this. This parameter simply flags which NORMALIZE pass the
     TRANSFORM is doing.</para>
 
@@ -259,7 +259,7 @@ base_people_dist := DISTRIBUTE(base_people,HASH32(PersonID));
     work on each chunk of records in parallel.</para>
 
     <para>To introduce an element of randomity to the data choices, the
-    ITERATE passes a hash value to the TRANSFORM function as an “extra” third
+    ITERATE passes a hash value to the TRANSFORM function as an "extra" third
     parameter. This is the same technique used previously, but passing
     calculated values instead of constants.</para>
 
@@ -268,7 +268,7 @@ base_people_dist := DISTRIBUTE(base_people,HASH32(PersonID));
     once, then using it multiple times as needed to produce a valid city,
     state, zip combination. The rest of the fields are populated by data
     selected using the passed in hash value in their expressions. The modulus
-    division operator (%—produces the remainder of the division) is used to
+    division operator (%--produces the remainder of the division) is used to
     ensure that a value is calculated that is in the valid range of the number
     of elements for the given set of data from which the field is
     populated.</para>
@@ -300,7 +300,7 @@ SetNarrs     := [229,158,2,0,66,233,123,214,169,248,67,127,168,
                  247,244,121,54,220,98,97];
 </programlisting>
 
-    <para>Once again, we start by defining a “seed” record for the process as
+    <para>Once again, we start by defining a "seed" record for the process as
     an inline DATASET and several sets of appropriate data for the specific
     fields. The SET function builds a set of valid PersonID values to use to
     create the links between the parent and child records.</para>
@@ -407,7 +407,7 @@ P1 := PARALLEL(O1,O2,O3);
     <para>These OUTPUT attribute definitions will write the datasets to disk.
     They are written as attribute definitions because they will be used in a
     SEQUENTIAL action. The PARALLEL action attribute simply indicates that all
-    these disk writes can occur “simultaneously” if the optimizer decides it
+    these disk writes can occur "simultaneously" if the optimizer decides it
     can do that.</para>
 
     <para>The first OUTPUT uses a PROJECT to produce the parent records as a
@@ -451,8 +451,8 @@ P2 := PARALLEL(B1,B2,B3);
 
     <programlisting>SEQUENTIAL(P1,P2);</programlisting>
 
-    <para>This SEQUENTIAL action simply says, “write all the data files to
-    disk, and then build the indexes.”</para>
+    <para>This SEQUENTIAL action simply says, "write all the data files to
+    disk, and then build the indexes."</para>
   </sect2>
 
   <sect2 id="Adding_the_Files-to_the_Repository">

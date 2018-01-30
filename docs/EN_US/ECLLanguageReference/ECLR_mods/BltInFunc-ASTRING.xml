@@ -42,10 +42,10 @@
   <para>Example:</para>
 
   <programlisting>INTEGER1 MyInt := 65; //MyInt is an integer whose value is 65
-MyVal1 := ASSTRING(MyInt); //MyVal1 is “A” (ASCII 65)
+MyVal1 := ASSTRING(MyInt); //MyVal1 is "A" (ASCII 65)
  // this is directly equivalent to:
  // STRING1 MyVal1 := TRANSFER(MyInt,STRING1);INTEGER1 MyVal3 := (INTEGER)MyVal1; 
- //MyVal3 is 0 (zero) because “A” is not a numeric character
+ //MyVal3 is 0 (zero) because "A" is not a numeric character
 </programlisting>
 
   <para>See Also: <link linkend="TRANSFER">TRANSFER</link>, <link linkend="Type_Casting">Type Casting</link></para>

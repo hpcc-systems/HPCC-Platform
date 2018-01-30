@@ -4,7 +4,7 @@
 <sect1 id="Roxie_Overview">
   <title><emphasis role="bold">Roxie Overview</emphasis></title>
 
-  <para><emphasis>Let’s start with some definitions:</emphasis></para>
+  <para><emphasis>Let's start with some definitions:</emphasis></para>
 
   <para><informaltable colsep="0" frame="none" rowsep="0">
       <tgroup cols="2">
@@ -40,7 +40,7 @@
 
             <entry>An R&amp;D platform designed for iterative, interactive
             development and testing of Roxie queries. This is not a separate
-            supercomputer cluster, but a “piggyback” implementation of ECL
+            supercomputer cluster, but a "piggyback" implementation of ECL
             Agent and Thor. See the Data Delivery Engine Reference for
             complete documentation.</entry>
           </row>
@@ -72,11 +72,11 @@
   <sect2 id="Thor">
     <title>Thor</title>
 
-    <para>Thor clusters are used to do all the “heavy lifting” data
+    <para>Thor clusters are used to do all the "heavy lifting" data
     preparation work to process raw data into standard formats. Once that
     process is complete, end-users can query that standardized data to glean
     real information. However, end-users typically want to see their results
-    “immediately or sooner”—and usually more than one end-user wants their
+    "immediately or sooner"--and usually more than one end-user wants their
     result at the same time. The Thor platform only works on one query at a
     time, which makes it impractical for use by end-users, and that is why the
     Roxie platform was created.</para>
@@ -86,7 +86,7 @@
     <title>Roxie</title>
 
     <para>Roxie clusters can handle thousands of simultaneous end-users and
-    provide them all with the perception of “immediately or sooner” results.
+    provide them all with the perception of "immediately or sooner" results.
     It does this by only allowing end-users to run standard, pre-compiled
     queries that have been developed specifically for end-user use on the
     Roxie cluster. Typically, these queries use indexes and thus, provide
@@ -104,7 +104,7 @@
     Agent (which operates on a single server) that emulates the operation of a
     Roxie cluster. Just as with Thor queries, hThor queries are compiled each
     time they are run. These queries access data directly from an associated
-    Thor cluster’s disk drives without interfering with any Thor operations.
+    Thor cluster's disk drives without interfering with any Thor operations.
     This makes it an appropriate tool for developing queries that are destined
     for use on a Roxie cluster.</para>
   </sect2>
@@ -121,12 +121,12 @@
 
     <para>Once the data is ready to use, you can then write the query. Queries
     for Roxie clusters are always contained in MACRO structures, and those
-    MACROs always contain at least one action—usually a simple OUTPUT to
+    MACROs always contain at least one action--usually a simple OUTPUT to
     return the result set.</para>
 
     <para>Unlike MACROs used to generate ECL code for standard Thor processes,
     the MACROs for Roxie queries do not receive parameters. Instead, a SOAP
-    (Simple Object Access Protocol) interface is used to “pass in” data values
+    (Simple Object Access Protocol) interface is used to "pass in" data values
     (the <emphasis>SOAP-enabling MACROs</emphasis> article discusses the
     specifics of this interface). The values passed through the SOAP interface
     wind up in attributes that have been defined with the STORED workflow
@@ -155,7 +155,7 @@ EXPORT PeopleSearchService() := MACRO
 ENDMACRO;</programlisting>
 
     <para>The comment block contains XML that defines the SOAP interface for
-    the service. As a comment block, this doesn’t affect the ECL code at all,
+    the service. As a comment block, this doesn't affect the ECL code at all,
     but it is required.</para>
 
     <para>Notice that the MACRO does not receive any parameters. Instead, the
@@ -171,9 +171,9 @@ ENDMACRO;</programlisting>
     with payload keys (the <emphasis>Complex Roxie Queries</emphasis> article
     addresses this issue). Note that the OUTPUT contains a CHOOSEN as a simple
     example of how to ensure you should limit the maximum amount of data that
-    can be returned from the query to some “reasonable” amount—it doesn’t make
+    can be returned from the query to some "reasonable" amount--it doesn't make
     much sense to have a Roxie query that could possibly return 10 billion
-    records to an end-user’s PC (anybody actually needing that much data
+    records to an end-user's PC (anybody actually needing that much data
     should be working in Thor, not Roxie).</para>
   </sect2>
 
@@ -181,7 +181,7 @@ ENDMACRO;</programlisting>
     <title>Testing Queries with Doxie</title>
 
     <para>Once you have written your query you naturally need to test it.
-    That’s where Doxie comes into play. Doxie is the interactive test system
+    That's where Doxie comes into play. Doxie is the interactive test system
     that you can use before deploying your queries to Roxie. The easiest way
     to describe the process is to walk through it using this simple example
     query.</para>
@@ -197,50 +197,50 @@ ENDMACRO;</programlisting>
 
     <para>► Save the attribute definition</para>
 
-    <para>Now that you’ve saved this query, you’re ready to run it in
+    <para>Now that you've saved this query, you're ready to run it in
     Doxie.</para>
 
-    <para>You can find the IP and port for your environment’s Doxie by opening
-    the ECL Watch web page (not using QueryBuilder—open it in Internet
+    <para>You can find the IP and port for your environment's Doxie by opening
+    the ECL Watch web page (not using QueryBuilder--open it in Internet
     Explorer).</para>
 
     <para>► Click on <emphasis role="underline">System Servers</emphasis>
-    (it’s in the Topology section)</para>
+    (it's in the Topology section)</para>
 
     <para>► Find the <emphasis role="bold">ESP Servers</emphasis>
     section</para>
 
     <para>There may be several listed there, so locate the one that applies to
-    your Thor (not the one for your Roxie—we’ll get to that one later).</para>
+    your Thor (not the one for your Roxie--we'll get to that one later).</para>
 
     <para>► Note the IP listed beside it (this is frequently the same IP as
     ECL Watch)</para>
 
-    <para>► Click on the ESP server’s name link to display its list of
+    <para>► Click on the ESP server's name link to display its list of
     services and their ports</para>
 
     <para>► Note the port number beside the <emphasis
     role="bold">wsecl</emphasis> Service Type (this is usually 8002, but it
     could be set to something else)</para>
 
-    <para>Once you’ve obtained the IP and port for your Doxie, you can go
+    <para>Once you've obtained the IP and port for your Doxie, you can go
     there and run the query.</para>
 
-    <para>► Edit Internet Explorer’s address bar to point to the Doxie
+    <para>► Edit Internet Explorer's address bar to point to the Doxie
     IP:port</para>
 
     <para>► Press the Enter key</para>
 
-    <para>A login dialog should appear—your login ID and password are the same
-    as the ones you use for the QueryBuilder program. After you’ve logged in,
-    you’ll see a list of modules on the left.</para>
+    <para>A login dialog should appear--your login ID and password are the same
+    as the ones you use for the QueryBuilder program. After you've logged in,
+    you'll see a list of modules on the left.</para>
 
     <para>► Click on the <emphasis
     role="underline">Training_ProgGuide</emphasis> link</para>
 
     <para>A list of all the SOAP-enabled attributes (aka Roxie Queries) that
     are in that module appears in the frame to the right. in this case,
-    there’s only the one.</para>
+    there's only the one.</para>
 
     <para>► Click on the <emphasis
     role="underline">PeopleSearchService</emphasis> link</para>
@@ -250,10 +250,10 @@ ENDMACRO;</programlisting>
 
     <para>► Type in any last name from the set of last names that were used by
     the code in GenData.ECL to generate the data files for this
-    <emphasis>Programmer’s Guide</emphasis></para>
+    <emphasis>Programmer's Guide</emphasis></para>
 
     <para>COOLING is a good example to use. Note that, since this is an
-    extremely simple example, you’ll need to type it in ALL CAPS, otherwise
+    extremely simple example, you'll need to type it in ALL CAPS, otherwise
     the FETCH will fail to find any matching records (this is only due to the
     simplicity of this ECL code and not any inherent lack in the
     system).</para>
@@ -274,29 +274,29 @@ ENDMACRO;</programlisting>
   <sect2 id="Deploying_Queries_to_Roxie">
     <title>Deploying Queries to Roxie</title>
 
-    <para>Once you’ve done enough testing on Doxie to be sure the query does
+    <para>Once you've done enough testing on Doxie to be sure the query does
     what you expect it to do, the only step then required is to deploy it to
     Roxie and test it there, too (just to be completely certain that
-    everything operates the way it should). Once you’ve tested it on Roxie,
+    everything operates the way it should). Once you've tested it on Roxie,
     you can inform the users that the query is available for their use.</para>
 
     <para>The Roxie deployment process is fully documented in the
     <emphasis>Rapid Data Delivery Engine Reference</emphasis>. Interactive
     deployment is done through a web page similar to ECL Watch. You can find
-    the IP and port for this page on ECL Watch’s System Servers page, listed
-    under your Roxie’s ESP Server. The service to look for is <emphasis
+    the IP and port for this page on ECL Watch's System Servers page, listed
+    under your Roxie's ESP Server. The service to look for is <emphasis
     role="bold">ws_roxieconfig</emphasis>. Go to that IP and port, log in, and
     follow the deployment process outlined in the <emphasis>Rapid Data
     Delivery Engine Reference</emphasis>.</para>
 
-    <para>Once you’ve deployed the query, you can test it the same way you
-    tested it on Doxie, by finding the IP and port for your Roxie ESP Server’s
-    <emphasis role="bold">wsecl</emphasis> service. Once you’ve gone to that
+    <para>Once you've deployed the query, you can test it the same way you
+    tested it on Doxie, by finding the IP and port for your Roxie ESP Server's
+    <emphasis role="bold">wsecl</emphasis> service. Once you've gone to that
     web address (following the same process as listed above for Doxie) and
-    logged in, you will see Roxie’s version of the same page you just used for
+    logged in, you will see Roxie's version of the same page you just used for
     Doxie testing. The only difference between the two are the IP and port,
     and, of course, the execution speed of the Roxie query as opposed to the
-    Doxie version (Roxie’s response time should be MUCH faster).</para>
+    Doxie version (Roxie's response time should be MUCH faster).</para>
   </sect2>
 
   <sect2 id="Restrictions">

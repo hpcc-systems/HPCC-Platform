@@ -54,12 +54,12 @@
   attributes (which also qualifies as part of the
   <emphasis>joincondition</emphasis><indexterm>
       <primary>joincondition</primary>
-    </indexterm> for a “half-keyed” JOIN). They indicate to the compiler which
+    </indexterm> for a "half-keyed" JOIN). They indicate to the compiler which
   of the leading index fields are used as filters (KEYED) or wildcarded (WILD)
   so that the compiler can warn you if you've gotten it wrong. Trailing fields
   not used in the filter are ignored (always treated as wildcards).</para>
 
-  <para>The rules for their use are as follows (the term “segmonitor” refers
+  <para>The rules for their use are as follows (the term "segmonitor" refers
   to an internal object created to represent the possible match conditions for
   a single keyable field):</para>
 

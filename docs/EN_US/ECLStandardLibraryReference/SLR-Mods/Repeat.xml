@@ -48,6 +48,6 @@
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">A := STD.Str.Repeat('ABC',3); //A contains ‘ABCABCABC’
+  <programlisting format="linespecific">A := STD.Str.Repeat('ABC',3); //A contains 'ABCABCABC'
 </programlisting>
 </sect1>

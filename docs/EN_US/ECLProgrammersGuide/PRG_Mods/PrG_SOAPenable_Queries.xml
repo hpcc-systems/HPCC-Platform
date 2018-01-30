@@ -16,8 +16,8 @@
     use of the STORED workflow service. Each SOAP parameter name must be the
     STORED name for an ECL definition. The STORED workflow service creates a
     data storage space in the workunit that the SOAP interface uses to
-    populate the “passed” data. The ECL code simply uses those STORED
-    definitions to determine whether data was passed from that “parameter” and
+    populate the "passed" data. The ECL code simply uses those STORED
+    definitions to determine whether data was passed from that "parameter" and
     what that data is. The data type of the passed SOAP parameter is implied
     by the STORED definition.</para>
 

@@ -71,7 +71,7 @@
   </emphasis>and/or <emphasis>errormessage</emphasis>. The third form is
   available for use in contexts where a value type or dataset is required.
   FAIL may not be used in an expression context (such as within a
-  TRANSFORM)—use the ERROR function<indexterm>
+  TRANSFORM)--use the ERROR function<indexterm>
       <primary>ERROR function</primary>
     </indexterm> for those situations.</para>
 
@@ -86,7 +86,7 @@ nUniques  := COUNT(DEDUP(sPeople,Person.per_first_name AND
                    Person.address))
           : FAILURE(FailedJob);
 MyRecSet  := IF(EXISTS(Person),Person,
-             FAIL(Person,99,’Person does not exist!!’));
+             FAIL(Person,99,'Person does not exist!!'));
 </programlisting>
 
   <para>See Also: <link linkend="FAILURE">FAILURE</link>, <link

@@ -50,7 +50,7 @@
           <entry><emphasis>supernames</emphasis></entry>
 
           <entry>A set of null-terminated strings containing the logical names
-          of the superfiles to act on. Any that don’t exist will be created.
+          of the superfiles to act on. Any that don't exist will be created.
           The contents of each superfile will be moved to the next in the list
           (NB -- each superfile must contain different sub-files).</entry>
         </row>
@@ -85,7 +85,7 @@
 
           <entry>Optional. A boolean value specifying whether to reverse the
           order of processing the <emphasis>supernames</emphasis> list,
-          effectively “demoting” instead of “promoting” the sub-files. If
+          effectively "demoting" instead of "promoting" the sub-files. If
           omitted, the default is FALSE.</entry>
         </row>
 

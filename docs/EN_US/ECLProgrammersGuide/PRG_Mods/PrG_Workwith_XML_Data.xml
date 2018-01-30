@@ -6,7 +6,7 @@
 
   <para>Data is not always handed to you in nice, easy-to-work-with,
   fixed-length flat files; it comes in many forms. One form growing in usage
-  every day is XML. ECL has a number of ways of handling XML data—some obvious
+  every day is XML. ECL has a number of ways of handling XML data--some obvious
   and some not so obvious.</para>
 
   <para><emphasis role="bold">NOTE:</emphasis> XML reading and parsing can
@@ -80,7 +80,7 @@
     differently from their tag names.</para>
 
     <para>By defining the fields as STRING types without specifying their
-    length, you can be sure you're getting all the data—including any
+    length, you can be sure you're getting all the data--including any
     carriage-returns, line feeds, and tabs in the XML file that are contained
     within the field tags (as are present in this file). This simple OUTPUT
     shows the result (this and all subsequent code examples in this article
@@ -93,7 +93,7 @@ ds := $.DeclareData.timezonesXML;
 OUTPUT(ds);</programlisting>
 
     <para>Notice that the result displayed in the ECL IDE program contains
-    squares in the data—these are the carriage-returns, line feeds, and tabs
+    squares in the data--these are the carriage-returns, line feeds, and tabs
     in the data. You can get rid of the extraneous carriage-returns, line
     feeds, and tabs by simply passing the records through a PROJECT operation,
     like this:</para>
@@ -193,8 +193,8 @@ OUTPUT(ComplexXML,,'~PROGGUIDE::EXAMPLEDATA::OUT::Complextimezones301',
          XML('timezones/area'));
 </programlisting>
 
-    <para>The specified {XPATH('&lt;&gt;')} option basically says “give me
-    everything that's in this XML tag, including the tags themselves” so that
+    <para>The specified {XPATH('&lt;&gt;')} option basically says "give me
+    everything that's in this XML tag, including the tags themselves" so that
     you can then use ECL to parse through the text to do your work. The
     NewTimeZones data records look like this one (since it includes all the
     carriage return/line feeds) when you do a simple OUTPUT and copy the
@@ -234,7 +234,7 @@ OUTPUT(ParsedZones);
     <title>Input with Complex XML Formats</title>
 
     <para>XML data comes in many possible formats, and some of them make use
-    of “child datasets” such that a given tag may contain multiple instances
+    of "child datasets" such that a given tag may contain multiple instances
     of other tags that contain individual field tags themselves.</para>
 
     <para>Here's an example of such a complex structure using UCC data. An
@@ -369,7 +369,7 @@ UCC := DATASET('~PROGGUIDE::EXAMPLEDATA::XML_UCC',UCC_Rec,XML('UCC/Filing'));
     data.</para>
 
     <para>The XML option on the final DATASET declaration specifies the XPATH
-    to the record tag (Filing) then the child DATASET “field” definitions in
+    to the record tag (Filing) then the child DATASET "field" definitions in
     the RECORD structures handle the multiple instance issues. Because ECL is
     case insensitive and XML syntax is case sensitive, it is necessary to use
     the XPATH to define all the field tags. The PartyRec RECORD structure

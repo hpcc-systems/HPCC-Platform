@@ -4,7 +4,7 @@
 <sect2>
   <title><emphasis role="bold">Queries and Data</emphasis></title>
 
-  <para>Data files and index files referenced by a Roxie query’s ECL code are
+  <para>Data files and index files referenced by a Roxie query's ECL code are
   made available in one of four ways, depending on the configuration of the
   Roxie cluster.</para>
 
@@ -97,7 +97,7 @@
 
   <para>When <emphasis role="bold">copyResources</emphasis> is enabled, data
   files are copied from source locations to Roxie agent nodes. Index files are
-  also copied, with an extra file part that is a “key-of-keys” or a
+  also copied, with an extra file part that is a "key-of-keys" or a
   metakey.</para>
 
   <para>A copy of the metakey is always stored on each Roxie server and in
@@ -190,7 +190,7 @@
 
     <para>The ecl command line tool offers a means of copying queries from one
     Roxie to another. Typically, this means data and index files would be
-    copied or accessed remotely following Roxie’s configuration
+    copied or accessed remotely following Roxie's configuration
     settings.</para>
 
     <para>The ecl command line tool provides an option to instruct Roxie to

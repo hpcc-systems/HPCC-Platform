@@ -16,7 +16,7 @@
     one-off query execution, and provides the WSDL and schema which can be
     used for automated code generators for SOAP access. It also provides the
     HTTP-GET and form encodes support. Finally, it also provides a JSON
-    (Javascript Simple Object Notation) interface which is similar to Roxie’s
+    (Javascript Simple Object Notation) interface which is similar to Roxie's
     direct interface.</para>
 
     <para></para>
@@ -32,7 +32,7 @@
 
       <para>Web Services are available to any platform, object model, or
       programming language. This provides access to users over the Internet,
-      Intranet, or Extranet regardless of the user’s platform.</para>
+      Intranet, or Extranet regardless of the user's platform.</para>
 
       <para>It also simplifies distributed systems development. The use of
       standards-based components protects development investment regardless of

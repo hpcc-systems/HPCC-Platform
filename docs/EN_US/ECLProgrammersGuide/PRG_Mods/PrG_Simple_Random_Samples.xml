@@ -4,8 +4,8 @@
 <sect1 id="Simple_Random_Samples">
   <title>Simple Random Samples</title>
 
-  <para>There is a statistical concept called a “Simple Random Sample” in
-  which a statistically “random” (different from simply using the RANDOM()
+  <para>There is a statistical concept called a "Simple Random Sample" in
+  which a statistically "random" (different from simply using the RANDOM()
   function) sample of records is generated from any dataset. The algorithm
   implemented in the following code example was provided by a customer.</para>
 
@@ -65,7 +65,7 @@ ENDMACRO;
   <para>The algorithm itself is fairly simple. We first create a TABLE of
   uniquely numbered unique identifier fields. Then we use NORMALIZE to produce
   a recordset of the candidate records. Which candidate is chosen each time
-  the TRANSFORM function is called is determined by generating a “random”
+  the TRANSFORM function is called is determined by generating a "random"
   value between zero and one, using modulus division by one hundred thousand
   on the return from the RANDOM() function, then multiplying that result by
   the number of records to sample from, rounding up to the next larger
@@ -73,10 +73,10 @@ ENDMACRO;
   the set of positions within the TABLE is determined, they are used to define
   the SET of unique fields to use in the final result.</para>
 
-  <para>This algorithm is designed to produce a sample “with replacement” so
+  <para>This algorithm is designed to produce a sample "with replacement" so
   that it is possible to have a smaller number of records returned than the
   sample size requested. To produce exactly the size sample you need (that is,
-  a “without replacement” sample), you can request a larger sample size (say,
+  a "without replacement" sample), you can request a larger sample size (say,
   10% larger) then use the CHOOSEN function to retrieve only the actual number
   of records required, as in this example (also contained in the
   SimpleRandomSamples.ECL file).</para>

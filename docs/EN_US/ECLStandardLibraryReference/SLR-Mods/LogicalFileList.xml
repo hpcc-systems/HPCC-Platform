@@ -36,7 +36,7 @@
           <entry><emphasis>includenormal</emphasis></entry>
 
           <entry>Optional. A boolean flag indicating whether to include
-          “normal” files. If omitted, the default is TRUE.</entry>
+          "normal" files. If omitted, the default is TRUE.</entry>
         </row>
 
         <row>

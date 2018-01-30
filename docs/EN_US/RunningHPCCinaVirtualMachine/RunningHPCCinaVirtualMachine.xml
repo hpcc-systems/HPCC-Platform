@@ -1096,7 +1096,7 @@ OUTPUT(L);</programlisting></para>
           <title>Spray the Data File to your <emphasis>Data Refinery (Thor)
           Cluster</emphasis></title>
 
-          <para>To use the data file in our HPCC system, we must “spray” it to
+          <para>To use the data file in our HPCC system, we must "spray" it to
           all the nodes. A <emphasis>spray</emphasis> or
           <emphasis>import</emphasis> is the relocation of a data file from
           one location (such as a Landing Zone) to multiple file parts on
@@ -1115,7 +1115,7 @@ OUTPUT(L);</programlisting></para>
               <para>Open ECL Watch using the following URL:</para>
 
               <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp(where
-              nnn.nnn.nnn.nnn is your ESP Server’s IP Address and pppp is the
+              nnn.nnn.nnn.nnn is your ESP Server's IP Address and pppp is the
               port. The default port is 8010)</emphasis></para>
             </listitem>
 
@@ -1524,7 +1524,7 @@ OUTPUT(ValidWords)
           it using the WsECL service Using the following URL:</para>
 
           <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp (where
-          nnn.nnn.nnn.nnn is your ESP Server’s IP address and pppp is the
+          nnn.nnn.nnn.nnn is your ESP Server's IP address and pppp is the
           port. The default port is 8002)</emphasis></para>
 
           <orderedlist>

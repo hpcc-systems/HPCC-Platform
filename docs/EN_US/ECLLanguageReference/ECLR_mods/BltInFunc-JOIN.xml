@@ -141,7 +141,7 @@
     order as the input record sets</emphasis>. If JOIN does do a dynamic sort
     of its input record sets, that new sort order cannot be relied upon to
     exist past the execution of the JOIN. This principle also applies to any
-    GROUPing—the records are automatically "un-grouped" as needed except under
+    GROUPing--the records are automatically "un-grouped" as needed except under
     the following circumstances:</para>
 
     <para>* For LOOKUP and ALL joins, the GROUPing and sort order of the
@@ -190,7 +190,7 @@
     </informaltable>
 
     <para>This internal logic split allows the JOIN code to be optimized for
-    maximum efficiency—first the "equality" logic is evaluated to provide an
+    maximum efficiency--first the "equality" logic is evaluated to provide an
     interim result that is then evaluated against any "non-equality" in the
     matching <emphasis>joincondition<indexterm>
         <primary>joincondition</primary>
@@ -426,8 +426,8 @@
             is useful for situations where you need to eliminate all "too many
             matches" record pairs from the result set. ATMOST is not supported
             on RIGHT ONLY or RIGHT OUTER <emphasis>jointypes</emphasis>. There
-            are two forms: ATMOST(condition, n) — maximum is computed only for
-            the condition. ATMOST(n) — maximum is computed for the entire
+            are two forms: ATMOST(condition, n) -- maximum is computed only for
+            the condition. ATMOST(n) -- maximum is computed for the entire
             <emphasis>joincondition</emphasis>, unless KEYED is used in the
             <emphasis>joincondition</emphasis>, in which case only the KEYED
             expressions are used. When ATMOST is specified (and the JOIN is
@@ -649,7 +649,7 @@
 
     <para>If you get an error similar to this: </para>
 
-    <para><programlisting>“error: 1301: Pool memory exhausted:<indexterm>
+    <para><programlisting>"error: 1301: Pool memory exhausted:<indexterm>
           <primary>memory exhausted</primary>
         </indexterm><indexterm>
           <primary>Pool memory exhausted</primary>
@@ -669,7 +669,7 @@
     <emphasis>joincondition</emphasis> must be based on key fields in the
     <emphasis>index</emphasis>. The join is actually done between the
     <emphasis>leftrecset</emphasis> and the <emphasis>index </emphasis>into
-    the <emphasis>rightrecset—</emphasis>the <emphasis>index </emphasis>needs
+    the <emphasis>rightrecset--</emphasis>the <emphasis>index </emphasis>needs
     the dataset's record pointer (virtual(fileposition)) field to properly
     fetch records from the <emphasis>rightrecset</emphasis>. The typical KEYED
     join passes only the <emphasis>rightrecset </emphasis>to the
@@ -1002,7 +1002,7 @@ SEQUENTIAL(PtblOut,Bld1,Bld2,OUTPUT(FilledRecs1),OUTPUT(FilledRecs2))
             <emphasis>setofdatasets</emphasis>. This indicates a record set
             made up of all records from any dataset in the
             <emphasis>setofdatasets</emphasis> that match the
-            <emphasis>joincondition</emphasis>—this may not include all the
+            <emphasis>joincondition</emphasis>--this may not include all the
             datasets in the <emphasis>setofdatasets</emphasis>, depending on
             which <emphasis>jointype</emphasis> is specified.</entry>
           </row>

@@ -7,7 +7,7 @@
   <para>The ECL coding techniques used in Roxie queries can be quite complex,
   making use of multiple keys, payload keys, half-keyed JOINs, the KEYDIFF
   function, and various other ECL language features. All these techniques
-  share a single focus, though—to maximize the performance of the query so its
+  share a single focus, though--to maximize the performance of the query so its
   result is delivered as efficiently as possible, thereby maximizing the total
   transaction throughput rate possible for the Roxie that services the
   query.</para>
@@ -95,7 +95,7 @@ END;</programlisting>
     of data that may possibly be returned from the query. Since JOIN
     operations can possibly result in huge datasets, care should be taken to
     limit the number of records any given query may return to a number that is
-    “reasonable” for that specific type of query. Here are some techniques to
+    "reasonable" for that specific type of query. Here are some techniques to
     help accomplish that goal:</para>
 
     <para><informaltable colsep="0" frame="none" rowsep="0">

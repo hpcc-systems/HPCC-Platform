@@ -69,7 +69,7 @@
     partially).</para>
 
     <para>The easiest way to see the effect is with this example (contained in
-    SmartStepping1.ECL—this code must be run in hthor or Roxie, not
+    SmartStepping1.ECL--this code must be run in hthor or Roxie, not
     Thor):</para>
 
     <programlisting>IMPORT $; 
@@ -173,7 +173,7 @@ O2 := OUTPUT(SORT(j5,Letter));
 
     <para>Both of these examples produce the same one-record output, but
     without Smart Stepping you need four separate JOINs to accomplish the
-    goal, and in “real world” code you might need a separate TRANSFORM for
+    goal, and in "real world" code you might need a separate TRANSFORM for
     each, depending on what result you were trying to produce.</para>
 
     <para>In addition to the standard inner join between all the datasets, the
@@ -226,7 +226,7 @@ SEQUENTIAL(O1,O2,O3,O4,O5,O6,O7);</programlisting>
     the information to select from all the datasets in the set.</para>
 
     <para>This next example demonstrates the most probable use for this
-    technology in the real world—finding the set of parent records where
+    technology in the real world--finding the set of parent records where
     related child records exist that fit a specified set of filter criteria.
     That's exactly what this example (contained in the SmartStepping3.ECL
     file) does:</para>
@@ -319,7 +319,7 @@ OUTPUT(j1);
 OUTPUT(ds(link IN SET(j1,link)));</programlisting>
 
     <para>The first OUTPUT simply displays the same kind of result as the
-    previous example. The second OUTPUT produces the “real-world” result set
+    previous example. The second OUTPUT produces the "real-world" result set
     of the base dataset records that match the filter criteria for each of the
     child datasets.</para>
   </sect2>

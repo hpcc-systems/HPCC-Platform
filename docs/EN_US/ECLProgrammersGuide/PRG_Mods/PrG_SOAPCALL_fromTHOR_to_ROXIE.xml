@@ -43,7 +43,7 @@ OUTPUT(ManyRec1);</programlisting>
     relate to the set of passed parameters. The service receives a single set
     of input data and returns only those records that meet that criteria. The
     expected result from this query is a returned set of the 1000 records
-    whose LastName field contains “KLYDE.”</para>
+    whose LastName field contains "KLYDE."</para>
   </sect2>
 
   <sect2 id="Record_Set_Input_Record_Set_Return">
@@ -161,7 +161,7 @@ OUTPUT(ManyRec2);</programlisting>
   <sect2 id="A_Real_World_Example">
     <title>A Real World Example</title>
 
-    <para>A customer asked for help with a problem—how to compare two strings
+    <para>A customer asked for help with a problem--how to compare two strings
     and determine if the first contains every word in the second, in any
     order, when there are an indeterminate number of words in each string.
     This is a fairly straight-forward problem in ECL. Using JOIN and ROLLUP
@@ -192,11 +192,11 @@ END;</programlisting>
     <para>Next, it defines a Word as one or more allowable Char pattern
     characters. This pattern is defined as a TOKEN so that only the full word
     match is returned and not all the possible alternative matches (i.e.
-    returning just SOAP, instead of SOAP, SOA, SO, and S—all the possible
+    returning just SOAP, instead of SOAP, SOA, SO, and S--all the possible
     alternative matches that a PATTERN would generate).</para>
 
     <para>The one record in-line DATASET attribute (ds) creates the input
-    “file” for the PARSE function to work on, producing the result record set
+    "file" for the PARSE function to work on, producing the result record set
     of all the discrete words from the input string.</para>
 
     <para>Next, we need a Roxie query to compare the two strings (also
@@ -230,7 +230,7 @@ END;</programlisting>
 
     <para>The PROJECT operation does all the real work. It passes each word in
     turn from the second input string to its inline TRANSFORM function, which
-    produces a Boolean result for that word—TRUE or FALSE, is it present in
+    produces a Boolean result for that word--TRUE or FALSE, is it present in
     the set of words from the first input string or not?</para>
 
     <para>To determine if all the words in the second string were contained in
@@ -306,8 +306,8 @@ OUTPUT(RS);
     small change from that previous example of this type is the use of the
     shorthand TRANSFORM instead of an inline TRANSFORM function. Also, note
     that the XPATH for the first field in the DATASET parameter's inline
-    RECORD structure contains lower case “uid” while it is obviously
-    referencing the query's OUTPUT field named “UID”—the XML returned from the
+    RECORD structure contains lower case "uid" while it is obviously
+    referencing the query's OUTPUT field named "UID"--the XML returned from the
     SOAP service uses lower case tag names for the returned data
     fields.</para>
 

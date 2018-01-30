@@ -406,7 +406,7 @@
   <sect2 id="OUTPUT_Field_Names">
     <title>OUTPUT Field Names</title>
 
-    <para>Field names in an "on the fly" record format {…} must be unique or a
+    <para>Field names in an "on the fly" record format {...} must be unique or a
     syntax error results. For example:</para>
 
     <programlisting>          OUTPUT(person(), {module1.attr1, module2.attr1});</programlisting>
@@ -981,7 +981,7 @@ OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(FORMAT(STD.Str.ToUpperCase))));
     field's data. The valid set of <emphasis>xmloptions</emphasis> are:</para>
 
     <para><emphasis
-    role="bold">‘</emphasis><emphasis>rowtag</emphasis><emphasis
+    role="bold">'</emphasis><emphasis>rowtag</emphasis><emphasis
     role="bold">'</emphasis></para>
 
     <para><emphasis role="bold">HEADING<indexterm>
@@ -1207,7 +1207,7 @@ OUTPUT(B,,'fred3.xml',XML('MyRow',TRIM,OPT));
     are:</para>
 
     <para><emphasis
-    role="bold">‘</emphasis><emphasis>rowtag</emphasis><emphasis
+    role="bold">'</emphasis><emphasis>rowtag</emphasis><emphasis
     role="bold">'</emphasis></para>
 
     <para><emphasis role="bold">HEADING<indexterm>
