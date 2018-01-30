@@ -1510,7 +1510,7 @@ void CHThorIndexGroupAggregateActivity::ready()
     eof = false;
     gathered = false;
     aggregated.reset();
-    aggregated.start(rowAllocator);
+    aggregated.start(rowAllocator, agent.queryCodeContext(), activityId);
 }
 
 void CHThorIndexGroupAggregateActivity::processRow(const void * next)
