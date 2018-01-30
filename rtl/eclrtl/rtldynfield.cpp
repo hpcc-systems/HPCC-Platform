@@ -36,12 +36,12 @@
 
 extern ECLRTL_API RecordTranslationMode getTranslationMode(const char *val)
 {
-    if (strieq(val, "alwaysDisk"))
+    if (!val || strToBool(val) || strieq(val, "payload"))
+        return RecordTranslationMode::Payload;
+    else if (strieq(val, "alwaysDisk"))
         return RecordTranslationMode::AlwaysDisk;
     else if (strieq(val, "alwaysECL"))
         return RecordTranslationMode::AlwaysECL;
-    else if (!val || strToBool(val) || strieq(val, "payload"))
-        return RecordTranslationMode::Payload;
     else
         return RecordTranslationMode::None;
 }
