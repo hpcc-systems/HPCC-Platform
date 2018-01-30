@@ -127,8 +127,8 @@ public:
 
     virtual void addRange(TransitionMask lowerMask, const StringBuffer & lowerString, TransitionMask upperMask, const StringBuffer & upperString) override
     {
-        Owned<ValueTransition> lower = lowerString ? set.createUtf8Transition(lowerMask, rtlUtf8Length(lowerString.length(), lowerString), lowerString) : nullptr;
-        Owned<ValueTransition> upper = upperString ? set.createUtf8Transition(upperMask, rtlUtf8Length(upperString.length(), upperString), upperString) : nullptr;
+        Owned<IValueTransition> lower = lowerString ? set.createUtf8Transition(lowerMask, rtlUtf8Length(lowerString.length(), lowerString), lowerString) : nullptr;
+        Owned<IValueTransition> upper = upperString ? set.createUtf8Transition(upperMask, rtlUtf8Length(upperString.length(), upperString), upperString) : nullptr;
         set.addRange(lower, upper);
     }
 
@@ -153,7 +153,7 @@ void deserializeSet(IValueSet & set, const char * filter)
  * The value is always represented in the same way as a field of that type would be in a record.
  */
 
-class ValueTransition : implements CInterface
+class ValueTransition : implements CInterfaceOf<IValueTransition>
 {
 public:
     ValueTransition(TransitionMask _mask, const RtlTypeInfo & type, const void *_value)
@@ -355,7 +355,7 @@ private:
     OwnedMalloc<byte> value;
 };
 
-typedef CIArrayOf<ValueTransition> ValueTransitionArray;
+typedef IArrayOf<ValueTransition> ValueTransitionArray;
 
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -381,21 +381,21 @@ public:
     }
 
 // Methods for creating a value set
-    virtual ValueTransition * createTransition(TransitionMask mask, unsigned __int64 value) const override
+    virtual IValueTransition * createTransition(TransitionMask mask, unsigned __int64 value) const override
     {
         MemoryBuffer buff;
         MemoryBufferBuilder builder(buff, 0);
         type.buildInt(builder, 0, nullptr, value);
         return new ValueTransition(mask, type, buff.toByteArray());
     }
-    virtual ValueTransition * createStringTransition(TransitionMask mask, size32_t len, const char * value) const override
+    virtual IValueTransition * createStringTransition(TransitionMask mask, size32_t len, const char * value) const override
     {
         MemoryBuffer buff;
         MemoryBufferBuilder builder(buff, 0);
         type.buildString(builder, 0, nullptr, len, value);
         return new ValueTransition(mask, type, buff.toByteArray());
     }
-    virtual ValueTransition * createUtf8Transition(TransitionMask mask, size32_t len, const char * value) const override
+    virtual IValueTransition * createUtf8Transition(TransitionMask mask, size32_t len, const char * value) const override
     {
         MemoryBuffer buff;
         MemoryBufferBuilder builder(buff, 0);
@@ -403,8 +403,10 @@ public:
         return new ValueTransition(mask, type, buff.toByteArray());
     }
 
-    virtual void addRange(ValueTransition * lower, ValueTransition * upper) override
+    virtual void addRange(IValueTransition * _lower, IValueTransition * _upper) override
     {
+        ValueTransition * lower = static_cast<ValueTransition *>(_lower);
+        ValueTransition * upper = static_cast<ValueTransition *>(_upper);
         Owned<ValueTransition> minBound;
         Owned<ValueTransition> maxBound;
         if (!lower)
@@ -542,8 +544,10 @@ public:
         reset();
         addRange(nullptr, nullptr);
     }
-    virtual void killRange(ValueTransition * lower, ValueTransition * upper) override
+    virtual void killRange(IValueTransition * _lower, IValueTransition * _upper) override
     {
+        ValueTransition * lower = static_cast<ValueTransition *>(_lower);
+        ValueTransition * upper = static_cast<ValueTransition *>(_upper);
         Owned<ValueTransition> minBound;
         Owned<ValueTransition> maxBound;
         if (!lower)
@@ -1708,8 +1712,8 @@ protected:
 
 static void addRange(IValueSet * set, const char * lower, const char * upper)
 {
-    Owned<ValueTransition> lowerBound = lower ? set->createUtf8Transition(CMPge, rtlUtf8Length(strlen(lower), lower), lower) : nullptr;
-    Owned<ValueTransition> upperBound = upper ? set->createUtf8Transition(CMPle, rtlUtf8Length(strlen(upper), upper), upper) : nullptr;
+    Owned<IValueTransition> lowerBound = lower ? set->createUtf8Transition(CMPge, rtlUtf8Length(strlen(lower), lower), lower) : nullptr;
+    Owned<IValueTransition> upperBound = upper ? set->createUtf8Transition(CMPle, rtlUtf8Length(strlen(upper), upper), upper) : nullptr;
     set->addRange(lowerBound, upperBound);
 };
 

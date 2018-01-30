@@ -9831,7 +9831,8 @@ static IFieldFilter * createIfBlockFilter(IRtlFieldTypeDeserializer &deserialize
 {
     //See if the condition can be matched to a simple field filter
     OwnedHqlExpr dummyDataset = createDataset(no_anon, LINK(rowRecord));
-    OwnedHqlExpr mappedCondition = replaceSelector(ifblock->queryChild(0), querySelfReference(), dummyDataset);
+    IHqlExpression * cond = ifblock->queryChild(0);
+    OwnedHqlExpr mappedCondition = replaceSelector(cond, querySelfReference(), dummyDataset);
     Owned <IErrorReceiver> errorReceiver = createThrowingErrorReceiver();
 
     FilterExtractor extractor(*errorReceiver, dummyDataset, rowRecord->numChildren(), true, true);
@@ -9840,7 +9841,11 @@ static IFieldFilter * createIfBlockFilter(IRtlFieldTypeDeserializer &deserialize
 
     bool isComplex = extraFilter || !extractor.isSingleMatchCondition();
     if (isComplex)
-        return nullptr;
+    {
+        StringBuffer ecl;
+        getExprECL(cond, ecl);
+        throwError1(HQLERR_ExprTooComplexForValueSet, ecl.str());
+    }
 
     return extractor.createSingleFieldFilter(deserializer);
 }

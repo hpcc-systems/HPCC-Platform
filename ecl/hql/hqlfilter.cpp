@@ -371,6 +371,47 @@ static IHqlExpression * createExpandedRecord(IHqlExpression * expr)
 }
 
 
+IHqlExpression * castToFieldAndBack(IHqlExpression * left, IHqlExpression * right)
+{
+    node_operator op = left->getOperator();
+    switch (op)
+    {
+    case no_cast:
+    case no_implicitcast:
+        {
+            IHqlExpression * uncast = left->queryChild(0);
+            ITypeInfo * castType = right->queryType();
+            ITypeInfo * uncastType = uncast->queryType();
+
+            OwnedHqlExpr castRight = ensureExprType(right, uncastType);
+            OwnedHqlExpr base = castToFieldAndBack(uncast, castRight);
+            //If this cast doesn't lose any information and child didn't change then don't bother
+            //casting back and forwards.
+            if ((base == castRight) && !castLosesInformation(uncastType, castType))
+                return LINK(right);
+            return ensureExprType(base, castType);
+        }
+
+    case no_select:
+        {
+            ITypeInfo * leftType = left->queryType();
+            ITypeInfo * rightType = right->queryType();
+            if (leftType == rightType || !castLosesInformation(leftType, rightType))
+                return LINK(right);
+            OwnedHqlExpr castToField = ensureExprType(right, leftType);
+            return ensureExprType(castToField, rightType);
+        }
+    case no_substring:
+    case no_add:
+    case no_sub:
+        return castToFieldAndBack(left->queryChild(0), right);
+    default:
+        throwUnexpected();
+    }
+}
+
+
+
 //---------------------------------------------------------------------------------------------------------------------
 
 FilterExtractor::FilterExtractor(IErrorReceiver & _errorReceiver, IHqlExpression * _tableExpr, int _numKeyableFields, bool _isDiskRead, bool forceValueSets)
@@ -607,46 +648,6 @@ bool FilterExtractor::isIndexInvariant(IHqlExpression * expr, bool includeRoot)
     return true;
 }
 
-
-
-
-IHqlExpression * FilterExtractor::castToFieldAndBack(IHqlExpression * left, IHqlExpression * right)
-{
-    node_operator op = left->getOperator();
-    switch (op)
-    {
-    case no_cast:
-    case no_implicitcast:
-        {
-            IHqlExpression * uncast = left->queryChild(0);
-            ITypeInfo * castType = right->queryType();
-            ITypeInfo * uncastType = uncast->queryType();
-
-            OwnedHqlExpr castRight = ensureExprType(right, uncastType);
-            OwnedHqlExpr base = castToFieldAndBack(uncast, castRight);
-            //If this cast doesn't lose any information and child didn't change then don't bother
-            //casting back and forwards.
-            if ((base == castRight) && !castLosesInformation(uncastType, castType))
-                return LINK(right);
-            return ensureExprType(base, castType);
-        }
-
-    case no_select:
-        {
-            ITypeInfo * leftType = left->queryType();
-            ITypeInfo * rightType = right->queryType();
-            if (leftType == rightType || !castLosesInformation(leftType, rightType))
-                return LINK(right);
-            return ensureExprType(right, leftType);
-        }
-    case no_substring:
-    case no_add:
-    case no_sub:
-        return castToFieldAndBack(left->queryChild(0), right);
-    default:
-        UNIMPLEMENTED;
-    }
-}
 
 
 
@@ -1709,6 +1710,207 @@ IHqlExpression * FilterExtractor::querySimpleJoinValue(IHqlExpression * selector
 }
 
 //-- Runtime filter generation
+static __declspec(noreturn) void throwTooComplex(IHqlExpression * expr) __attribute__((noreturn));
+static void throwTooComplex(IHqlExpression * expr)
+{
+    StringBuffer ecl;
+    getExprECL(expr, ecl);
+    throwError1(HQLERR_ExprTooComplexForValueSet, ecl.str());
+}
+
+static IHqlExpression * getNormalizedCompareValue(IHqlExpression * expr)
+{
+    switch (expr->getOperator())
+    {
+    case no_cast:
+    case no_implicitcast:
+    {
+        OwnedHqlExpr arg = getNormalizedCompareValue(expr->queryChild(0));
+        return ensureExprType(arg, expr->queryType());
+    }
+    case no_nofold:
+        return getNormalizedCompareValue(expr->queryChild(0));
+    default:
+        return LINK(expr);
+    }
+}
+
+static bool normalizeValueCompare(OwnedHqlExpr & normalized, bool & truncated, IHqlExpression * lhs, IHqlExpression * value)
+{
+    //Primarily to aid creating test cases....
+    OwnedHqlExpr rhs = getNormalizedCompareValue(value);
+    if (!rhs->queryValue())
+        return false;
+
+    truncated = false;
+    LinkedHqlExpr compareValue = rhs->queryBody();
+    OwnedHqlExpr recastValue;
+    if ((lhs->getOperator() != no_select) || (lhs->queryType() != compareValue->queryType()))
+    {
+        OwnedHqlExpr temp  = castToFieldAndBack(lhs, compareValue);
+        if (temp != compareValue)
+        {
+            truncated = true;
+        }
+    }
+
+    normalized.set(rhs);
+    return true;
+}
+
+
+IValueSet * FilterExtractor::createValueSetInExpr(IHqlExpression * selector, const RtlTypeInfo & type, IHqlExpression * expr) const
+{
+    if (!exprReferencesDataset(expr, tableExpr))
+        throwTooComplex(expr);        //MORE: Possibly report another error
+
+    IHqlExpression * rhs = expr->queryChild(1);
+    Owned<IValueSet> values = createValueSet(type);
+    switch (rhs->getOperator())
+    {
+    case no_null:
+        return values.getClear();
+    case no_all:
+        values->addAll();
+        return values.getClear();
+    case no_list:
+        break;
+    default:
+        throwTooComplex(expr);
+    }
+
+    ForEachChild(i, rhs)
+    {
+        OwnedHqlExpr normalized;
+        bool truncated = false;
+        if (!normalizeValueCompare(normalized, truncated, selector, rhs->queryChild(i)))
+            throwTooComplex(expr);        //MORE: Possibly report another error
+
+        if (!normalized->queryValue())
+            throwTooComplex(expr);
+
+        if (!truncated)
+        {
+            MemoryBuffer compareValue;
+            if (!createConstantField(compareValue, selector, normalized))
+                throwTooComplex(expr);
+
+            const char * compareRaw = compareValue.toByteArray();
+            values->addRawRange(compareRaw, compareRaw);
+        }
+    }
+
+    if (expr->getOperator() == no_notin)
+        values->invertSet();
+    return values.getClear();
+}
+
+
+IValueSet * FilterExtractor::createValueSetCompareExpr(IHqlExpression * selector, const RtlTypeInfo & type, IHqlExpression * expr) const
+{
+    if (!exprReferencesDataset(expr, tableExpr))
+        throwTooComplex(expr);        //MORE: Possibly report another error
+
+    OwnedHqlExpr normalized;
+    bool truncated = false;
+    if (!normalizeValueCompare(normalized, truncated, selector, expr->queryChild(1)))
+        throwTooComplex(expr);        //MORE: Possibly report another error
+
+    Owned<IValueSet> values = createValueSet(type);
+
+    MemoryBuffer compareValue;
+    if (!normalized->queryValue())
+        throwTooComplex(expr);
+
+    if (!createConstantField(compareValue, selector, normalized))
+        throwTooComplex(expr);
+
+    node_operator op = expr->getOperator();
+    const char * compareRaw = compareValue.toByteArray();
+    switch (op)
+    {
+    case no_eq:
+        if (!truncated)
+            values->addRawRange(compareRaw, compareRaw);
+        break;
+    case no_ne:
+        values->addAll();
+        if (!truncated)
+            values->killRawRange(compareRaw, compareRaw);
+        break;
+    case no_le:
+    {
+        Owned<IValueTransition> upper = values->createRawTransition(CMPle, compareRaw);
+        values->addRange(nullptr, upper);
+        break;
+    }
+    case no_lt:
+    {
+        Owned<IValueTransition> upper = values->createRawTransition(truncated ? CMPle: CMPlt, compareRaw);
+        values->addRange(nullptr, upper);
+        break;
+    }
+    case no_ge:
+    {
+        Owned<IValueTransition> lower = values->createRawTransition(truncated ? CMPgt : CMPge, compareRaw);
+        values->addRange(lower, nullptr);
+        break;
+    }
+    case no_gt:
+    {
+        Owned<IValueTransition> lower = values->createRawTransition(CMPgt, compareRaw);
+        values->addRange(lower, nullptr);
+        break;
+    }
+    case no_between:
+    case no_notbetween:
+        {
+            //NB: This should only be generated for substring queries.  User betweens are converted
+            //to two separate comparisons to cope with range issues.
+            throwUnexpectedOp(op);
+        }
+    default:
+        throwUnexpectedOp(op);
+    }
+    return values.getClear();
+}
+
+
+IValueSet * FilterExtractor::createValueSetExpr(IHqlExpression * selector, const RtlTypeInfo & type, IHqlExpression * expr) const
+{
+    node_operator op = expr->getOperator();
+    switch (op)
+    {
+    case no_in:
+    case no_notin:
+        return createValueSetInExpr(selector, type, expr);
+    case no_if:
+        break; // Report an error
+    case no_and:
+    {
+        Owned<IValueSet> left = createValueSetExpr(selector, type, expr->queryChild(0));
+        Owned<IValueSet> right = createValueSetExpr(selector, type, expr->queryChild(1));
+        left->intersectSet(right);
+        return left.getClear();
+    }
+    case no_or:
+    {
+        Owned<IValueSet> left = createValueSetExpr(selector, type, expr->queryChild(0));
+        Owned<IValueSet> right = createValueSetExpr(selector, type, expr->queryChild(1));
+        left->unionSet(right);
+        return left.getClear();
+    }
+    case no_eq:
+    case no_ne:
+    case no_gt:
+    case no_ge:
+    case no_lt:
+    case no_le:
+        return createValueSetCompareExpr(selector, type, expr);
+    }
+
+    throwTooComplex(expr);
+}
 
 IFieldFilter * FilterExtractor::createSingleFieldFilter(IRtlFieldTypeDeserializer &deserializer) const
 {
@@ -1720,18 +1922,24 @@ IFieldFilter * FilterExtractor::createFieldFilter(IRtlFieldTypeDeserializer &des
 {
     const RtlTypeInfo * fieldType = buildRtlType(deserializer, selector->queryType());
     Owned<IValueSet> values;
+    HqlExprArray conditions;
     ForEachItemIn(i, keyed.conditions)
     {
         KeyCondition & cur = keyed.conditions.item(i);
         if (cur.selector == selector)
-        {
-            //MORE: This will be implemented in HPCC-18916
-        }
+            conditions.append(*LINK(cur.expr));
+    }
+
+    if (conditions.ordinality())
+    {
+        OwnedITypeInfo boolType = makeBoolType();
+        OwnedHqlExpr fullExpr = createBalanced(no_and, boolType, conditions);
+        values.setown(createValueSetExpr(selector, *fieldType, fullExpr));
     }
 
     unsigned fieldIndex = keyableSelects.find(*selector);
     if (values)
-        return ::createFieldFilter(fieldIndex, *fieldType, values);
+        return ::createFieldFilter(fieldIndex, values);
 
     return createWildFieldFilter(fieldIndex, *fieldType);
 }
