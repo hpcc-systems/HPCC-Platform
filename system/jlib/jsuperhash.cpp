@@ -315,9 +315,15 @@ void SuperHashTable::expand(unsigned newsize)
     void * *newtable = (void * *) checked_malloc(newsize*sizeof(void *),-603);
     memset(newtable,0,newsize*sizeof(void *));
     void * *oldtable = table;
+#ifdef HASHSIZE_POWER2
+    const unsigned oldmask = tablesize-1;
+#endif
     unsigned i;
     for (i = 0; i < tablesize; i++)
     {
+#ifdef HASHSIZE_POWER2
+        __builtin_prefetch(oldtable[(i+1) & oldmask]);
+#endif
         void *et = oldtable[i];
         if (et)
         {
