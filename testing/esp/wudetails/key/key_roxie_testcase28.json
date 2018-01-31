@@ -1,0 +1,265 @@
+testCase(ScopeFilter={
+    'MaxDepth': '999',
+    'Scopes': None,
+    'Ids': None,
+    'ScopeTypes': None,
+    'PropertyFilters': {
+        'PropertyFilter': {
+            'Name': 'NumIndexSeeks',
+            'ExactValue': None,
+            'MinValue': None,
+            'MaxValue': '3'
+        }
+    }
+}, NestedFilter={
+    'Depth': None,
+    'ScopeTypes': None
+}, PropertiesToReturn={
+    'AllStatistics': '1',
+    'AllAttributes': '1',
+    'AllHints': None,
+    'MinVersion': None,
+    'Measure': None,
+    'Properties': None,
+    'ExtraProperties': None
+}, ScopeOptions={
+    'IncludeMatchedScopesInResults': '1',
+    'IncludeScope': '1',
+    'IncludeId': '1',
+    'IncludeScopeType': '1'
+}, PropertyOptions={
+    'IncludeName': '1',
+    'IncludeRawValue': '1',
+    'IncludeFormatted': None,
+    'IncludeMeasure': '1',
+    'IncludeCreator': '1',
+    'IncludeCreatorType': '1'
+})
+{
+    'Exceptions': None,
+    'MaxVersion': '{masked number}',
+    'WUID': '{masked WUID - matches request}',
+    'Scopes': {
+        'Scope': [
+            {
+                'ScopeName': 'graph3:sg15:a16',
+                'Id': 'a16',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319023192752',
+                            'Formatted': '2018-01-30T13:30:23.192Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': '8623',
+                            'Formatted': '8623ns',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumIndexSeeks',
+                            'RawValue': '2',
+                            'Formatted': '2',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumLeafCacheAdds',
+                            'RawValue': '2',
+                            'Formatted': '2',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeFirstExecute',
+                            'RawValue': '8623',
+                            'Formatted': '8623ns',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeLocalExecute',
+                            'RawValue': '8623',
+                            'Formatted': '8623ns',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumAllocations',
+                            'RawValue': '2',
+                            'Formatted': '2',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph5:sg27:a28',
+                'Id': 'a28',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319023229605',
+                            'Formatted': '2018-01-30T13:30:23.229Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': '7198',
+                            'Formatted': '7198ns',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumIndexSeeks',
+                            'RawValue': '2',
+                            'Formatted': '2',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumLeafCacheAdds',
+                            'RawValue': '2',
+                            'Formatted': '2',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeFirstExecute',
+                            'RawValue': '7198',
+                            'Formatted': '7198ns',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeLocalExecute',
+                            'RawValue': '7198',
+                            'Formatted': '7198ns',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumAllocations',
+                            'RawValue': '4',
+                            'Formatted': '4',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph7:sg39:a40',
+                'Id': 'a40',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319023265736',
+                            'Formatted': '2018-01-30T13:30:23.265Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': '6652',
+                            'Formatted': '6652ns',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumIndexSeeks',
+                            'RawValue': '2',
+                            'Formatted': '2',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumLeafCacheAdds',
+                            'RawValue': '2',
+                            'Formatted': '2',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeFirstExecute',
+                            'RawValue': '6652',
+                            'Formatted': '6652ns',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeLocalExecute',
+                            'RawValue': '6652',
+                            'Formatted': '6652ns',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumAllocations',
+                            'RawValue': '6',
+                            'Formatted': '6',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}

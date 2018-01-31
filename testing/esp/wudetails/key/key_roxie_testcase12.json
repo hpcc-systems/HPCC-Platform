@@ -1,0 +1,869 @@
+testCase(ScopeFilter={
+    'MaxDepth': '1',
+    'Scopes': None,
+    'Ids': None,
+    'ScopeTypes': None,
+    'PropertyFilters': None
+}, NestedFilter={
+    'Depth': '1',
+    'ScopeTypes': None
+}, PropertiesToReturn={
+    'AllStatistics': '1',
+    'AllAttributes': '1',
+    'AllHints': None,
+    'MinVersion': None,
+    'Measure': None,
+    'Properties': None,
+    'ExtraProperties': None
+}, ScopeOptions={
+    'IncludeMatchedScopesInResults': None,
+    'IncludeScope': None,
+    'IncludeId': None,
+    'IncludeScopeType': None
+}, PropertyOptions={
+    'IncludeName': None,
+    'IncludeRawValue': None,
+    'IncludeFormatted': None,
+    'IncludeMeasure': None,
+    'IncludeCreator': None,
+    'IncludeCreatorType': None
+})
+{
+    'Exceptions': None,
+    'MaxVersion': '{masked number}',
+    'WUID': '{masked WUID - matches request}',
+    'Scopes': {
+        'Scope': [
+            {
+                'ScopeName': None,
+                'Id': None,
+                'ScopeType': None,
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenCreated',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'WhenCompiled',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'WhenFinished',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': None,
+                            'Formatted': '2018-01-30T13:30:23.144Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': None,
+                            'Formatted': '241.364ms',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'NumRowsProcessed',
+                            'RawValue': None,
+                            'Formatted': '350034',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'NumIndexSeeks',
+                            'RawValue': None,
+                            'Formatted': '18',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'NumLeafCacheAdds',
+                            'RawValue': None,
+                            'Formatted': '18',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TimeFirstExecute',
+                            'RawValue': None,
+                            'Formatted': '184.042ms',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TimeSortElapsed',
+                            'RawValue': None,
+                            'Formatted': '4.371ms',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TimeLocalExecute',
+                            'RawValue': None,
+                            'Formatted': '126.122ms',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'NumAllocations',
+                            'RawValue': None,
+                            'Formatted': '425111',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'NumDuplicateKeys',
+                            'RawValue': None,
+                            'Formatted': '124975',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SizePeakMemory',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'sz',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'WhenFinished',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph2',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'WhenFinished',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph2:sg6',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph3',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'WhenFinished',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph3:sg10',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph3:sg15',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph4',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'WhenFinished',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph4:sg18',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph5',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'WhenFinished',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph5:sg22',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph5:sg27',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph6',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'WhenFinished',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph6:sg30',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph7',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'WhenFinished',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph7:sg34',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph7:sg39',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph8',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'WhenFinished',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph8:sg42',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph9',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'WhenFinished',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph9:sg46',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph9:sg51',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph10',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'WhenFinished',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph10:sg54',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph11',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'WhenFinished',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph11:sg58',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph11:sg63',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph12',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'WhenFinished',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph12:sg66',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph13',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'WhenFinished',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph13:sg70',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph13:sg75',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': None
+            },
+            {
+                'ScopeName': 'compile',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SizePeakMemory',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'sz',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'compile:write c++',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'compile:compile c++',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'compile:generate',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'compile:parse',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': None,
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'Process',
+                'Id': None,
+                'ScopeType': None,
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': None,
+                            'Formatted': '246.325ms',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}

@@ -1,0 +1,1670 @@
+testCase(ScopeFilter={
+    'MaxDepth': '2',
+    'Scopes': None,
+    'Ids': None,
+    'ScopeTypes': None,
+    'PropertyFilters': None
+}, NestedFilter={
+    'Depth': None,
+    'ScopeTypes': None
+}, PropertiesToReturn={
+    'AllStatistics': None,
+    'AllAttributes': None,
+    'AllHints': None,
+    'MinVersion': None,
+    'Measure': 'ts',
+    'Properties': None,
+    'ExtraProperties': None
+}, ScopeOptions={
+    'IncludeMatchedScopesInResults': '1',
+    'IncludeScope': '1',
+    'IncludeId': '1',
+    'IncludeScopeType': '1'
+}, PropertyOptions={
+    'IncludeName': '1',
+    'IncludeRawValue': '1',
+    'IncludeFormatted': None,
+    'IncludeMeasure': '1',
+    'IncludeCreator': '1',
+    'IncludeCreatorType': '1'
+})
+{
+    'Exceptions': None,
+    'MaxVersion': '{masked number}',
+    'WUID': '{masked WUID - matches request}',
+    'Scopes': {
+        'Scope': [
+            {
+                'ScopeName': None,
+                'Id': None,
+                'ScopeType': 'global',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenCreated',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'esp'
+                        },
+                        {
+                            'Name': 'WhenCompiled',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        },
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'WhenFinished',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459688934',
+                            'Formatted': '2018-01-30T13:37:39.688Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1',
+                'Id': 'graph1',
+                'ScopeType': 'graph',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'WhenFinished',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1',
+                'Id': 'sg1',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e2_0',
+                'Id': 'e2_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e3_0',
+                'Id': 'e3_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e3_1',
+                'Id': 'e3_1',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e3_2',
+                'Id': 'e3_2',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e3_3',
+                'Id': 'e3_3',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e3_4',
+                'Id': 'e3_4',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e3_5',
+                'Id': 'e3_5',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e4_0',
+                'Id': 'e4_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e5_0',
+                'Id': 'e5_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e6_0',
+                'Id': 'e6_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e7_0',
+                'Id': 'e7_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e7_1',
+                'Id': 'e7_1',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e7_2',
+                'Id': 'e7_2',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e7_3',
+                'Id': 'e7_3',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e8_0',
+                'Id': 'e8_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e9_0',
+                'Id': 'e9_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e10_0',
+                'Id': 'e10_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e11_0',
+                'Id': 'e11_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e12_0',
+                'Id': 'e12_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e13_0',
+                'Id': 'e13_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e14_0',
+                'Id': 'e14_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e15_0',
+                'Id': 'e15_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e16_0',
+                'Id': 'e16_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e17_0',
+                'Id': 'e17_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e18_0',
+                'Id': 'e18_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e19_0',
+                'Id': 'e19_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e20_0',
+                'Id': 'e20_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e21_0',
+                'Id': 'e21_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e22_0',
+                'Id': 'e22_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e23_0',
+                'Id': 'e23_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:a2',
+                'Id': 'a2',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459688934',
+                            'Formatted': '2018-01-30T13:37:39.688Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1:a3',
+                'Id': 'a3',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459688934',
+                            'Formatted': '2018-01-30T13:37:39.688Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1:a4',
+                'Id': 'a4',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459688933',
+                            'Formatted': '2018-01-30T13:37:39.688Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1:a5',
+                'Id': 'a5',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459688912',
+                            'Formatted': '2018-01-30T13:37:39.688Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1:a6',
+                'Id': 'a6',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459688950',
+                            'Formatted': '2018-01-30T13:37:39.688Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1:a7',
+                'Id': 'a7',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459688950',
+                            'Formatted': '2018-01-30T13:37:39.688Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1:a8',
+                'Id': 'a8',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459688949',
+                            'Formatted': '2018-01-30T13:37:39.688Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1:a9',
+                'Id': 'a9',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459688923',
+                            'Formatted': '2018-01-30T13:37:39.688Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1:a10',
+                'Id': 'a10',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690550',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1:a11',
+                'Id': 'a11',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459688938',
+                            'Formatted': '2018-01-30T13:37:39.688Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1:a12',
+                'Id': 'a12',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690103',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1:a13',
+                'Id': 'a13',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459688954',
+                            'Formatted': '2018-01-30T13:37:39.688Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1:a14',
+                'Id': 'a14',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690129',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1:a15',
+                'Id': 'a15',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459688989',
+                            'Formatted': '2018-01-30T13:37:39.688Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1:a16',
+                'Id': 'a16',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690334',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1:a17',
+                'Id': 'a17',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459689006',
+                            'Formatted': '2018-01-30T13:37:39.689Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1:a18',
+                'Id': 'a18',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690141',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1:a19',
+                'Id': 'a19',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459689020',
+                            'Formatted': '2018-01-30T13:37:39.689Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1:a20',
+                'Id': 'a20',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690169',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1:a21',
+                'Id': 'a21',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459689042',
+                            'Formatted': '2018-01-30T13:37:39.689Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1:a22',
+                'Id': 'a22',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690517',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1:a23',
+                'Id': 'a23',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459689057',
+                            'Formatted': '2018-01-30T13:37:39.689Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg24',
+                'Id': 'sg24',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg24:a25',
+                'Id': 'a25',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg24:a26',
+                'Id': 'a26',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459689071',
+                            'Formatted': '2018-01-30T13:37:39.689Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg27',
+                'Id': 'sg27',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg27:a28',
+                'Id': 'a28',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg27:a29',
+                'Id': 'a29',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459689089',
+                            'Formatted': '2018-01-30T13:37:39.689Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30',
+                'Id': 'sg30',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e31_0',
+                'Id': 'e31_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e32_0',
+                'Id': 'e32_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e32_1',
+                'Id': 'e32_1',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e32_2',
+                'Id': 'e32_2',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e32_3',
+                'Id': 'e32_3',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e32_4',
+                'Id': 'e32_4',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e32_5',
+                'Id': 'e32_5',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e32_6',
+                'Id': 'e32_6',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e32_7',
+                'Id': 'e32_7',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e32_8',
+                'Id': 'e32_8',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e32_9',
+                'Id': 'e32_9',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e33_0',
+                'Id': 'e33_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e34_0',
+                'Id': 'e34_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e35_0',
+                'Id': 'e35_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e36_0',
+                'Id': 'e36_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e37_0',
+                'Id': 'e37_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e38_0',
+                'Id': 'e38_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e39_0',
+                'Id': 'e39_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e40_0',
+                'Id': 'e40_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e41_0',
+                'Id': 'e41_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e42_0',
+                'Id': 'e42_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e43_0',
+                'Id': 'e43_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e44_0',
+                'Id': 'e44_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e45_0',
+                'Id': 'e45_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e46_0',
+                'Id': 'e46_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e47_0',
+                'Id': 'e47_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e48_0',
+                'Id': 'e48_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e49_0',
+                'Id': 'e49_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e50_0',
+                'Id': 'e50_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e51_0',
+                'Id': 'e51_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e52_0',
+                'Id': 'e52_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e53_0',
+                'Id': 'e53_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e54_0',
+                'Id': 'e54_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e55_0',
+                'Id': 'e55_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e56_0',
+                'Id': 'e56_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e57_0',
+                'Id': 'e57_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e58_0',
+                'Id': 'e58_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e59_0',
+                'Id': 'e59_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e60_0',
+                'Id': 'e60_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e61_0',
+                'Id': 'e61_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e62_0',
+                'Id': 'e62_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:e63_0',
+                'Id': 'e63_0',
+                'ScopeType': 'edge',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg30:a31',
+                'Id': 'a31',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690212',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a32',
+                'Id': 'a32',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690211',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a33',
+                'Id': 'a33',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690346',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a34',
+                'Id': 'a34',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690346',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a35',
+                'Id': 'a35',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690346',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a36',
+                'Id': 'a36',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459689109',
+                            'Formatted': '2018-01-30T13:37:39.689Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a37',
+                'Id': 'a37',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690211',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a38',
+                'Id': 'a38',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690211',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a39',
+                'Id': 'a39',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459689122',
+                            'Formatted': '2018-01-30T13:37:39.689Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a40',
+                'Id': 'a40',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690235',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a41',
+                'Id': 'a41',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690235',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a42',
+                'Id': 'a42',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459689138',
+                            'Formatted': '2018-01-30T13:37:39.689Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a43',
+                'Id': 'a43',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690243',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a44',
+                'Id': 'a44',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690243',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a45',
+                'Id': 'a45',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459689154',
+                            'Formatted': '2018-01-30T13:37:39.689Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a46',
+                'Id': 'a46',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690262',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a47',
+                'Id': 'a47',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690262',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a48',
+                'Id': 'a48',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459689172',
+                            'Formatted': '2018-01-30T13:37:39.689Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a49',
+                'Id': 'a49',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690355',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a50',
+                'Id': 'a50',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690355',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a51',
+                'Id': 'a51',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459689188',
+                            'Formatted': '2018-01-30T13:37:39.689Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a52',
+                'Id': 'a52',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690271',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a53',
+                'Id': 'a53',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690271',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a54',
+                'Id': 'a54',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459689200',
+                            'Formatted': '2018-01-30T13:37:39.689Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a55',
+                'Id': 'a55',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690292',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a56',
+                'Id': 'a56',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690292',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a57',
+                'Id': 'a57',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459689212',
+                            'Formatted': '2018-01-30T13:37:39.689Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a58',
+                'Id': 'a58',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690536',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a59',
+                'Id': 'a59',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690535',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a60',
+                'Id': 'a60',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459689224',
+                            'Formatted': '2018-01-30T13:37:39.689Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a61',
+                'Id': 'a61',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690301',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a62',
+                'Id': 'a62',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459690301',
+                            'Formatted': '2018-01-30T13:37:39.690Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg30:a63',
+                'Id': 'a63',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459689236',
+                            'Formatted': '2018-01-30T13:37:39.689Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg64',
+                'Id': 'sg64',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg64:a65',
+                'Id': 'a65',
+                'ScopeType': 'activity',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg64:a66',
+                'Id': 'a66',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '1517319459689247',
+                            'Formatted': '2018-01-30T13:37:39.689Z',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'compile',
+                'Id': 'compile',
+                'ScopeType': 'compile',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'compile:write c++',
+                'Id': 'write c++',
+                'ScopeType': 'compile',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'compile:compile c++',
+                'Id': 'compile c++',
+                'ScopeType': 'compile',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'compile:generate',
+                'Id': 'generate',
+                'ScopeType': 'compile',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'compile:parse',
+                'Id': 'parse',
+                'ScopeType': 'compile',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'Process',
+                'Id': 'Process',
+                'ScopeType': 'section',
+                'Properties': None
+            }
+        ]
+    }
+}
