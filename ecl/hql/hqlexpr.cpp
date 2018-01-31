@@ -324,10 +324,11 @@ PURE(expression) - treat an expression as pure - probably superseded with WITHIN
 
 //---------------------------------------------------------------------------------------------------------------------
 
+const unsigned InitialExprCacheSize = 0x1000U; // Allocating larger than default has a very minor benefit
 class HqlExprCache : public JavaHashTableOf<CHqlExpression>
 {
 public:
-    HqlExprCache() : JavaHashTableOf<CHqlExpression>(false) {}
+    HqlExprCache() : JavaHashTableOf<CHqlExpression>(InitialExprCacheSize, false) {}
 
 protected:
     virtual unsigned getHashFromElement(const void * et) const
