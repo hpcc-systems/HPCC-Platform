@@ -2401,6 +2401,8 @@ jlib_decl const IProperties &queryEnvironmentConf()
     return *envConfFile;
 }
 
+
+
 static CriticalSection securitySettingsCrit;
 static DAFSConnectCfg connectMethod = SSLNone;
 static StringAttr DAFScertificate;//deprecated
@@ -2410,11 +2412,8 @@ static StringAttr HPCCcertificate;
 static StringAttr HPCCprivateKey;
 static StringAttr HPCCpassPhrase;
 static bool retrieved = false;
-jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
-                                     unsigned short *_port,
-                                     const char * *  _certificate,
-                                     const char * *  _privateKey,
-                                     const char * *  _passPhrase)
+
+bool retrieveSecuritySettings()
 {
     if (!retrieved)
     {
@@ -2466,7 +2465,7 @@ jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
 
                 if (DAFScertificate.isEmpty() && DAFSprivateKey.isEmpty() &&  DAFSpassPhrase.isEmpty())
                 {
-                    DAFScertificate.set(HPCCcertificate);
+                    DAFScertificate.set(HPCCcertificate);//populate deprecated legacy settings
                     DAFSprivateKey.set(HPCCprivateKey);
                     DAFSpassPhrase.set(HPCCpassPhrase);
                 }
@@ -2481,6 +2480,17 @@ jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
             }
         }
     }
+    return retrieved;
+}
+
+jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
+                                     unsigned short *_port,
+                                     const char * *  _certificate,
+                                     const char * *  _privateKey,
+                                     const char * *  _passPhrase)
+{
+    if (!retrieved)
+	    retrieveSecuritySettings();//read settings from environment.conf
     if (retrieved)
     {
         if (_connectMethod)
@@ -2533,16 +2543,18 @@ jlib_decl bool queryHPCCPKIKeyFiles(const char * *  _certificate,//HPCCCertFile
                                     const char * *  _privateKey, //HPCCPrivateKeyFile
                                     const char * *  _passPhrase) //HPCCPassPhrase
 {
-    bool rc = true;
-    if (HPCCcertificate.isEmpty() && HPCCprivateKey.isEmpty() && HPCCpassPhrase.isEmpty())
-        rc = querySecuritySettings(nullptr, nullptr, nullptr, nullptr, nullptr);
-    if (rc)
+    if (!retrieved)
+	    retrieveSecuritySettings();//read settings from environment.conf
+    if (retrieved)
     {
-        *_certificate = HPCCcertificate.get();
-        *_privateKey = HPCCprivateKey.get();
-        *_passPhrase = HPCCpassPhrase.get();
+        if (_certificate)
+           *_certificate = HPCCcertificate.get();
+        if (_privateKey)
+            *_privateKey = HPCCprivateKey.get();
+        if (_passPhrase)
+            *_passPhrase = HPCCpassPhrase.get();
     }
-    return rc;
+    return retrieved;
 }
 
 static IPropertyTree *getOSSdirTree()
