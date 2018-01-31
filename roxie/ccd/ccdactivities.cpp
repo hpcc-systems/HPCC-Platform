@@ -2167,7 +2167,7 @@ public:
           results(*helper, *helper)
     {
         onCreate();
-        results.start(rowAllocator);
+        results.start(rowAllocator, queryContext->queryCodeContext(), basefactory->queryId());
     }
 
     virtual bool needsRowAllocator()
@@ -2209,7 +2209,7 @@ public:
         resultAggregator(*helper, *helper)
     {
         onCreate();
-        resultAggregator.start(rowAllocator);
+        resultAggregator.start(rowAllocator, queryContext->queryCodeContext(), basefactory->queryId());
         if (meta.needsSerializeDisk())
         {
             // MORE - avoiding serializing to dummy would be more efficient...
@@ -3406,7 +3406,7 @@ public:
           results(*aggregateHelper, *aggregateHelper), kind(_kind)
     {
         onCreate();
-        results.start(rowAllocator);
+        results.start(rowAllocator, queryContext->queryCodeContext(), basefactory->queryId());
         assertex(!resent);
         groupSegCount = 0;
     }

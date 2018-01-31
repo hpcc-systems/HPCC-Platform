@@ -5518,7 +5518,7 @@ public:
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CRoxieServerChildBaseActivity::start(parentExtractSize, parentExtract, paused);
-        aggregated.start(rowAllocator);
+        aggregated.start(rowAllocator, ctx->queryCodeContext(), activityId);
     }
 
     virtual void reset()
@@ -11182,7 +11182,7 @@ public:
 
         if (!gathered)
         {
-            aggregated.start(rowAllocator);
+            aggregated.start(rowAllocator, ctx->queryCodeContext(), activityId);
             bool eog = true;
             for (;;)
             {
@@ -22403,7 +22403,7 @@ public:
     {
         gathered= false;
         CRoxieServerDiskAggregateBaseActivity::start(parentExtractSize, parentExtract, paused);
-        resultAggregator.start(rowAllocator);
+        resultAggregator.start(rowAllocator, ctx->queryCodeContext(), activityId);
     }
 
     virtual void reset()
@@ -24177,7 +24177,7 @@ public:
         groupSegCount = 0;
         if (!paused)
             processAllKeys();
-        resultAggregator.start(rowAllocator);
+        resultAggregator.start(rowAllocator, ctx->queryCodeContext(), activityId);
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -24206,7 +24206,7 @@ public:
     virtual bool processSingleKey(IKeyIndex *key, const IDynamicTransform * trans) override
     {
         Owned<CRowArrayMessageResult> result = new CRowArrayMessageResult(ctx->queryRowManager(), meta.isVariableSize());
-        singleAggregator.start(rowAllocator);
+        singleAggregator.start(rowAllocator, ctx->queryCodeContext(), activityId);
         ThorActivityKind kind = factory->getKind();
         while (tlk->lookup(true))
         {

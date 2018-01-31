@@ -3349,7 +3349,7 @@ const void * CHThorHashAggregateActivity::nextRow()
     if (!gathered)
     {
         bool eog = true;
-        aggregated.start(rowAllocator);
+        aggregated.start(rowAllocator, agent.queryCodeContext(), activityId);
         for (;;)
         {
             OwnedConstRoxieRow next(input->nextRow());
@@ -7884,7 +7884,7 @@ void CHThorChildGroupAggregateActivity::ready()
     CHThorSimpleActivityBase::ready();
     eof = false;
     gathered = false;
-    aggregated.start(rowAllocator);
+    aggregated.start(rowAllocator, agent.queryCodeContext(), activityId);
 }
 
 void CHThorChildGroupAggregateActivity::stop()
@@ -8937,7 +8937,7 @@ void CHThorDiskGroupAggregateActivity::gatherInfo(IFileDescriptor * fd)
 {
     PARENT::gatherInfo(fd);
     assertex(!grouped);
-    aggregated.start(rowAllocator);
+    aggregated.start(rowAllocator, agent.queryCodeContext(), activityId);
 }
 
 void CHThorDiskGroupAggregateActivity::processRow(const void * next)

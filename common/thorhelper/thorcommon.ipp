@@ -18,6 +18,7 @@
 #ifndef THORCOMMON_IPP
 #define THORCOMMON_IPP
 
+#include <type_traits>
 #include "eclrtl.hpp"
 #include "thorcommon.hpp"
 #include "jsort.hpp"
@@ -119,6 +120,27 @@ private:
     unsigned metaFlags;
 };
 
+template<class T> class CClassMeta : implements CInterfaceOf<IOutputMetaData>
+{
+public:
+    virtual size32_t getRecordSize(const void *rec)         { return sizeof(T); }
+    virtual size32_t getMinRecordSize() const               { return sizeof(T); }
+    virtual size32_t getFixedSize() const                   { return sizeof(T); }
+    virtual void toXML(const byte * self, IXmlWriter & out) { }
+    virtual unsigned getVersion() const                     { return OUTPUTMETADATA_VERSION; }
+    virtual unsigned getMetaFlags()                         { return std::is_pod<T>() ? 0 : MDFneeddestruct; }
+    virtual void destruct(byte * self)                      { reinterpret_cast<T *>(self)->~T(); }
+    virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual ISourceRowPrefetcher * createDiskPrefetcher() { return NULL; }
+    virtual IOutputMetaData * querySerializedDiskMeta() { return this; }
+    virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) {}
+    virtual IOutputMetaData * queryChildMeta(unsigned i) { return NULL; }
+    virtual const RtlRecord &queryRecordAccessor(bool expand) const { throwUnexpected(); } // could provide a static implementation if needed
+};
+
 //------------------------------------------------------------------------------------------------
 
 
@@ -154,9 +176,12 @@ protected:
 
 //------------------------------------------------------------------------------------------------
 
-class AggregateRowBuilder : public RtlDynamicRowBuilder, public CInterface
+class THORHELPER_API AggregateRowBuilder : public RtlDynamicRowBuilder
 {
 public:
+    void Link() const;
+    bool Release() const;
+
     AggregateRowBuilder(IEngineRowAllocator *_rowAllocator, unsigned _elementHash)
         : RtlDynamicRowBuilder(_rowAllocator, true), elementHash(_elementHash)
     {
@@ -194,7 +219,7 @@ public:
     IMPLEMENT_IINTERFACE
 
     void reset();
-    void start(IEngineRowAllocator *rowAllocator);
+    void start(IEngineRowAllocator *rowAllocator, ICodeContext *ctx, unsigned activityId);
     AggregateRowBuilder &addRow(const void * row);
     void mergeElement(const void * otherElement);
     AggregateRowBuilder *nextResult();
@@ -227,6 +252,7 @@ private:
     const void * cursor;
     bool eof;
     Owned<IEngineRowAllocator> rowAllocator;
+    Owned<IEngineRowAllocator> rowBuilderAllocator;
     memsize_t totalSize, overhead;
 };
 
