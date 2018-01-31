@@ -549,6 +549,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             topology->setPropInt("@allFilesDynamic", globals->getPropInt("--allFilesDynamic", 1));
             topology->setProp("@memTraceLevel", globals->queryProp("--memTraceLevel"));
             topology->setProp("@disableLocalOptimizations", globals->queryProp("--disableLocalOptimizations"));
+            topology->setPropInt("@indexReadChunkSize", globals->getPropInt("--indexReadChunkSize", 60000));
         }
         if (topology->hasProp("PreferredCluster"))
         {

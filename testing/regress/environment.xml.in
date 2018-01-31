@@ -69,7 +69,7 @@
                 highTimeout="2000"
                 ignoreMissingFiles="false"
                 ignoreOrphans="true"
-                indexReadChunkSize="60000"
+                indexReadChunkSize="10"
                 initIbytiDelay="100"
                 jumboFrames="false"
                 lazyOpen="smart"
