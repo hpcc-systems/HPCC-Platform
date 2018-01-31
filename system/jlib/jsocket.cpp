@@ -4782,14 +4782,17 @@ public:
         // must be in CriticalBlock block(sect);
         // to handle add(A), add(B), remove(A), remove(B), add(A), add(B)
         // and try to preserve add/remove order we use two loops
-        bool has_del = false;
+        unsigned toDel = 0;
+        unsigned startDel = 0;
         unsigned n = items.ordinality();
         for (unsigned i=0;i<n;i++)
         {
             SelectItem *si = items.element(i);
             if (si->del)
             {
-                has_del = true;
+                if (0 == toDel)
+                    startDel = i;
+                toDel++;
                 epoll_op(epfd, EPOLL_CTL_DEL, si, 0);
             }
             else if (si->add_epoll)
@@ -4810,10 +4813,10 @@ public:
             }
         }
 
-        if (!has_del)
+        if (0 == toDel)
             return;
 
-        for (unsigned i=0;i<n;)
+        for (unsigned i=startDel,numDel=0 ; i<n && numDel<toDel;)
         {
             SelectItem *si = items.element(i);
             if (si->del)
@@ -4838,6 +4841,7 @@ public:
                 if (i<n)
                     items.swap(i,n);
                 items.remove(n);
+                numDel++;
             }
             else
             {
