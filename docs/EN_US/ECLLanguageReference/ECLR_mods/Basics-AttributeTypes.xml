@@ -150,11 +150,11 @@ MySubString3 := MyString[2.. ]; // MySubString3 is 'BCDE'</programlisting>
   <sect2 id="Record_Set_Attributes">
     <title>Record Set Definitions</title>
 
-    <para>The term “Dataset”<indexterm>
+    <para>The term "Dataset"<indexterm>
         <primary>Dataset</primary>
-      </indexterm> in ECL explicitly means a “physical” data file in the
-    supercomputer (on disk or in memory), while the term “Record
-    Set”<indexterm>
+      </indexterm> in ECL explicitly means a "physical" data file in the
+    supercomputer (on disk or in memory), while the term "Record
+    Set"<indexterm>
         <primary>Record Set</primary>
       </indexterm> indicates any set of records derived from a Dataset (or
     another Record Set), usually based on some filter condition to limit the
@@ -189,7 +189,7 @@ MyRec2 := Person[1..10]; // first ten recs in dataset
 MyRec4 := Person[2..];   // all recs except the first</programlisting>
 
     <para><emphasis role="bold">Note:</emphasis> ds[1] and ds[1..1] are not
-    the same thing—ds[1..1] is a recordset (may be used in recordset context)
+    the same thing--ds[1..1] is a recordset (may be used in recordset context)
     while ds[1] is a single row (may be used to reference single
     fields).</para>
 

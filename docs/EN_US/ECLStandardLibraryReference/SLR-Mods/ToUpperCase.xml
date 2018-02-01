@@ -66,6 +66,6 @@
   <para>Example:</para>
 
   <programlisting format="linespecific">A := STD.Str.ToUpperCase('abcde');
- //A contains ‘ABCDE’
+ //A contains 'ABCDE'
 </programlisting>
 </sect1>

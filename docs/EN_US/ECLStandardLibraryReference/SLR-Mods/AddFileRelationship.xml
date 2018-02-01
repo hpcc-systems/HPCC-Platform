@@ -43,7 +43,7 @@
 
           <entry>A null-terminated string containing the name of the primary
           key field for the <emphasis>primary</emphasis> file. The value
-          “__fileposition__” indicates the <emphasis>secondary</emphasis> is
+          "__fileposition__" indicates the <emphasis>secondary</emphasis> is
           an INDEX that must use FETCH to access non-keyed fields.</entry>
         </row>
 
@@ -57,10 +57,10 @@
         <row>
           <entry><emphasis>relationship</emphasis></entry>
 
-          <entry>A null-terminated string containing either “link” or “view”
+          <entry>A null-terminated string containing either "link" or "view"
           indicating the type of relationship between the
           <emphasis>primary</emphasis> and <emphasis>secondary</emphasis>
-          files. If omitted, the default is “link.”</entry>
+          files. If omitted, the default is "link."</entry>
         </row>
 
         <row>
@@ -70,8 +70,8 @@
           between the <emphasis>primary</emphasis> and
           <emphasis>secondary</emphasis> files. The format is X:Y where X
           indicates the <emphasis>primary</emphasis> and Y indicates the
-          <emphasis>secondary</emphasis>. Valid values for X and Y are “1” or
-          ‘M’.</entry>
+          <emphasis>secondary</emphasis>. Valid values for X and Y are "1" or
+          'M'.</entry>
         </row>
 
         <row>
@@ -106,7 +106,7 @@
   <para>They are currently used in two different ways:</para>
 
   <para>First, the roxie browser needs a way of determining which indexes are
-  built from which files. A “view” relationship should be added each time an
+  built from which files. A "view" relationship should be added each time an
   index is built from a file, like this:</para>
 
   <programlisting>STD.File.AddFileRelationship(DG_FlatFileName, DG_IndexFileName,
@@ -164,7 +164,7 @@
 
   <para>While going through all the attributes it may be worth examining
   whether it makes sense to add relationships for any other combinations of
-  files. It won’t have any immediate beneficial effect, but would once we add
+  files. It won't have any immediate beneficial effect, but would once we add
   an ER diagram to the system. A couple of examples may help illustrate the
   syntax.</para>
 
@@ -173,7 +173,7 @@
 
   <programlisting>STD.File.AddFileRelationship('HHFile','PersonFile', 'hhid','hhid', 'link', '1:M', false);</programlisting>
 
-  <para>Here's a more hypothetical example—a file query with firstname,
+  <para>Here's a more hypothetical example--a file query with firstname,
   lastname related to an index with phonetic names you might have:</para>
 
   <programlisting>STD.File.AddFileRelationship('names', 'inquiries','plastname{set(phonetic)},

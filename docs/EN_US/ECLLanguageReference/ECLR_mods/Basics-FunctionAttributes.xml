@@ -148,7 +148,7 @@ OUTPUT(IsInSetFunction(,5)); // true</programlisting>
 SomeFile := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'}],MyRec);
 
 FilteredDS(DATASET(MyRec) ds) := ds(Letter NOT IN ['A','C','E']);
-           //passed dataset referenced as “ds” in expression
+           //passed dataset referenced as "ds" in expression
 
 OUTPUT(FilteredDS(SomeFile));</programlisting>
   </sect2>
@@ -344,7 +344,7 @@ OUTPUT(doMany(2, applyValue4, applyValue2,multiValues));
 
     <para>Passing values to a function defined to receive multiple parameters,
     many of which have default values (and are therefore omittable), is
-    usually accomplished by “counting commas” to ensure that the values you
+    usually accomplished by "counting commas" to ensure that the values you
     choose to pass are passed to the correct parameter by the parameter's
     position in the list. This method becomes untenable when there are many
     optional parameters.</para>
@@ -407,15 +407,15 @@ OUTPUT(doMany(2, applyValue4, applyValue2,multiValues));
 outputRow();                    //produce blanks
 outputRow(TRUE);                //produce "a=abc"
 outputRow(,,TRUE);              //produce "c=TRUE"
-outputRow(NAMED showB := TRUE); //produce “b=10”
+outputRow(NAMED showB := TRUE); //produce "b=10"
 
 outputRow(TRUE, NAMED aValue := 'Changed value');
-                                //produce “a=Changed value”
+                                //produce "a=Changed value"
 
 outputRow(,,,'Changed value2',NAMED showA := TRUE);
                                 //produce "a=Changed value2"
 
-outputRow(showB := TRUE);       //produce “b=10”
+outputRow(showB := TRUE);       //produce "b=10"
 
 outputRow(TRUE, aValue := 'Changed value');
 outputRow(,,,'Changed value2',showA := TRUE);

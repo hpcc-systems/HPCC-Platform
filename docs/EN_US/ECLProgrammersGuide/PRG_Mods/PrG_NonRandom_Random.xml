@@ -6,7 +6,7 @@
 
   <para>There are occasions when you need a random number, but once you've
   gotten it, you want that value to stay the same for the duration of the
-  workunit. For example, the “problem” with this code is that it will OUTPUT
+  workunit. For example, the "problem" with this code is that it will OUTPUT
   three different values (this code is in NonRandomRandom.ECL):</para>
 
   <programlisting>INTEGER1 Rand1 := (RANDOM() % 25) + 1;
@@ -14,7 +14,7 @@ OUTPUT(Rand1);
 OUTPUT(Rand1);
 OUTPUT(Rand1);</programlisting>
 
-  <para>To make the “random” value persistent throughout the workunit, you can
+  <para>To make the "random" value persistent throughout the workunit, you can
   simply add the STORED Workflow Service to the attribute definition, like
   this (this code is also in NonRandomRandom.ECL):</para>
 
@@ -23,12 +23,12 @@ OUTPUT(Rand2);
 OUTPUT(Rand2);
 OUTPUT(Rand2);</programlisting>
 
-  <para>This will cause the “random” value to be calculated once, then used
+  <para>This will cause the "random" value to be calculated once, then used
   throughout the rest of the workunit.</para>
 
   <para>The GLOBAL Workflow Service would accomplish the same thing, but using
-  STORED has the added advantage that the “random” value used for the workunit
+  STORED has the added advantage that the "random" value used for the workunit
   is displayed on the ECL Watch page for that workunit, allowing you to better
-  debug your code by seeing exactly what “random” value was used for the
+  debug your code by seeing exactly what "random" value was used for the
   job.</para>
 </sect1>

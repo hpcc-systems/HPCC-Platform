@@ -4,7 +4,7 @@
 <sect1 id="Scanning_Landing_Zone_Files">
   <title><emphasis>Scanning Landing Zone Files</emphasis></title>
 
-  <para>Here's the scenario—you've just received a data file from someone and
+  <para>Here's the scenario--you've just received a data file from someone and
   it has been put on your landing zone. Before you spray that file to your
   Thor cluster and start to work with it, you want to have a quick look to see
   exactly what kind of data it contains and whether the format of that data
@@ -100,9 +100,9 @@ PG.DeclareData.MAC_ScanFile( '10.173.9.4','C:\\training\\import\\BOCA.XML', 200)
   containing binary data.</para>
 
   <para>The ECL IDE Result_2 tab displays a single record with a single field.
-  You can click on that field to highlight it, right-click and select “Copy”
+  You can click on that field to highlight it, right-click and select "Copy"
   from the popup menu, then paste the text into any text editor to view.
-  Binary fields will appear as square blocks or “garbage” characters,
+  Binary fields will appear as square blocks or "garbage" characters,
   depending on their hex value. Once pasted into a text editor, you can easily
   look for data patterns that indicate the start for fields or records and
   validate that the data layout information provided by the data vendor is

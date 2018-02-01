@@ -13,12 +13,12 @@
     <para>A <emphasis>spray</emphasis> or <emphasis>import</emphasis> is the
     relocation of a data file from one location (such as a Landing Zone) to a
     cluster. The term spray was adopted due to the nature of the file movement
-    – the file is partitioned across all nodes within a cluster.</para>
+    -- the file is partitioned across all nodes within a cluster.</para>
 
     <para>A <emphasis>despray</emphasis> or <emphasis>export</emphasis> is the
     relocation of a data file from a cluster to a single machine location
     (such as a Landing Zone). The term despray was adopted due to the nature
-    of the file movement – the file is reassembled from its parts on all nodes
+    of the file movement -- the file is reassembled from its parts on all nodes
     in the cluster and placed in a single file on the destination.</para>
 
     <para>A <emphasis>copy </emphasis>is the replication of a data file from
@@ -297,7 +297,7 @@
         click on <emphasis role="bold">Logical Files</emphasis>.</para>
 
         <para>The Logical Files page displays showing all files with logical
-        entries in the Dali Server’s Distributed File System.</para>
+        entries in the Dali Server's Distributed File System.</para>
 
         <para><graphic fileref="../../images/DHMan-3.jpg"
         vendor="eclwatchSS" /></para>
@@ -1245,7 +1245,7 @@
 
                     <entry>Use the drop list to select the machine to despray
                     to. The items in the list are landing zones defined in the
-                    system’s confguration.</entry>
+                    system's confguration.</entry>
                   </row>
 
                   <row>

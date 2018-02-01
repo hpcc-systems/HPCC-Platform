@@ -36,11 +36,11 @@
   <para>The <emphasis role="bold">KEYUNICODE </emphasis>function returns a
   DATA value derived from the <emphasis>string</emphasis> parameter, such that
   a comparison of these data values is equivalent to a locale sensitive
-  comparison of the Unicode values that generated them—and, being a simple
+  comparison of the Unicode values that generated them--and, being a simple
   memcmp(), is significantly faster. The generating
   <emphasis>string</emphasis> values must be of the same locale or the results
   are unpredictable. This function is particularly useful if you're doing a
-  lot of compares on a UNICODE field in a large dataset—it can be a good idea
+  lot of compares on a UNICODE field in a large dataset--it can be a good idea
   to generate a key field and do the compares on that instead.</para>
 
   <para>Example:</para>

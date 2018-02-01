@@ -76,9 +76,9 @@
   <para>Example:</para>
 
   <programlisting format="linespecific">A := STD.Str.CompareIgnoreCase('ABCDE','abcde');
- //A contains 0 -- they “match”
+ //A contains 0 -- they "match"
 
 B := STD.Str.CompareIgnoreCase('ABCDE','edcba');
- //B contains -1 -- they do not “match”
+ //B contains -1 -- they do not "match"
 </programlisting>
 </sect1>

@@ -434,7 +434,7 @@
             <entry><emphasis>nbr</emphasis></entry>
 
             <entry>Optional. An integer constant specifying how many indexes
-            to create “on the fly” for speedier access to the dataset. If &gt;
+            to create "on the fly" for speedier access to the dataset. If &gt;
             1000, specifies the amount of memory set aside for these
             indexes.</entry>
           </row>
@@ -550,8 +550,8 @@ PtblE := DATASET('~Thor400::RTTEMP::TestFileEncrypted',
           <row>
             <entry><emphasis role="bold">CSV</emphasis></entry>
 
-            <entry>Specifies the <emphasis>file</emphasis> is a “comma
-            separated values” ASCII file.</entry>
+            <entry>Specifies the <emphasis>file</emphasis> is a "comma
+            separated values" ASCII file.</entry>
           </row>
 
           <row>
@@ -983,7 +983,7 @@ OUTPUT(books);</programlisting>
             <entry><emphasis role="bold">PIPE</emphasis></entry>
 
             <entry>Specifies the <emphasis>file</emphasis>comes from the
-            <emphasis>command</emphasis>program. This is a “read”
+            <emphasis>command</emphasis>program. This is a "read"
             pipe.</entry>
           </row>
 
@@ -1339,7 +1339,7 @@ OUTPUT(p3);</programlisting>
     <programlisting>TABLE(ds, { ds.id, ds.children(age != 10) });</programlisting>
 
     <para>is not supported, because a dataset in a record definition means
-    “expand all the fields from the dataset in the output.” However adding an
+    "expand all the fields from the dataset in the output." However adding an
     identifier creates a form that is supported:</para>
 
     <programlisting>TABLE(ds, { ds.id, newChildren := ds.children(age != 10); });</programlisting>
@@ -1444,7 +1444,7 @@ SomeFile := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'}],MyRec);
          
 //Passing a DATASET parameter
 FilteredDS(DATASET(MyRec) ds) := ds(Letter NOT IN ['A','C','E']);
-                  //passed dataset referenced as “ds” in expression
+                  //passed dataset referenced as "ds" in expression
           
 OUTPUT(FilteredDS(SomeFile));
 

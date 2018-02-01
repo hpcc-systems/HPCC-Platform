@@ -16,7 +16,7 @@
   Operators</emphasis>) in this context only.</para>
 
   <programlisting>MyRecordSet := Person(per_last_name &gt;= 'T', per_last_name &lt; 'U');
-     // MyRecordSet contains people whose last name begins with “T”
+     // MyRecordSet contains people whose last name begins with "T"
      // the comma is an implicit AND while also functioning as
      // an expression separator (implicit parentheses)
 

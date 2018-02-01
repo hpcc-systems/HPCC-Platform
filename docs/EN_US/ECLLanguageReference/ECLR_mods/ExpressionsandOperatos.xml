@@ -83,7 +83,7 @@
     <para>Division by zero<indexterm>
         <primary>Division by zero</primary>
       </indexterm> defaults to generating a zero result (0), rather than
-    reporting a “divide by zero” error. This avoids invalid or unexpected data
+    reporting a "divide by zero" error. This avoids invalid or unexpected data
     aborting a long job. The default behaviour can be changed using</para>
 
     <programlisting>#OPTION ('divideByZero', 'zero'); //evaluate to zero</programlisting>

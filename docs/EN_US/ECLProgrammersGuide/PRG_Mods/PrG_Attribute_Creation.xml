@@ -10,21 +10,21 @@
     <para>The similarities come from the fundamental requirement of solving
     any data processing problem: First, understand the problem.</para>
 
-    <para>After that, in many programming environments, you use a “top-down”
+    <para>After that, in many programming environments, you use a "top-down"
     approach to map out the most direct line of logic to get your input
     transformed into the desired output. This is where the process diverges in
     ECL, because the tool itself requires a different way of thinking about
     forming the solution, and the direct route is not always the fastest. ECL
-    requires a “bottom-up” approach to problem solving.</para>
+    requires a "bottom-up" approach to problem solving.</para>
   </sect2>
 
   <sect2 id="Atomic_Programming">
-    <title>“Atomic” Programming</title>
+    <title>"Atomic" Programming</title>
 
     <para>In ECL, once you understand what the end result needs to be, you
     ignore the direct line from problem input to end result and instead start
-    by breaking the issue into as many pieces as possible—the smaller the
-    better. By creating “atomic” bits of ECL code, you've done all the known
+    by breaking the issue into as many pieces as possible--the smaller the
+    better. By creating "atomic" bits of ECL code, you've done all the known
     and easy bits of the problem. This usually gets you 80% of the way to the
     solution without having to do anything terribly difficult.</para>
 
@@ -41,9 +41,9 @@
 
     <para>The basic Attribute building blocks in ECL are the Set, Boolean,
     Recordset, and Value Attribute types. Each of these can be made as
-    “atomic” as needed so that they may be used in combination to produce
-    “molecules” of more complex logic that may then be further combined to
-    produce a complete “organism” that produces the final result.</para>
+    "atomic" as needed so that they may be used in combination to produce
+    "molecules" of more complex logic that may then be further combined to
+    produce a complete "organism" that produces the final result.</para>
 
     <para>For example, assume you have a problem that requires you to produce
     a set of records wherein a particular field in your output must contain
@@ -70,23 +70,23 @@ OUTPUT(ValRecsMyFile);
 
     <para>The thought process behind writing this code is:</para>
 
-    <para>“I know I have a set of constant values in the spec, so I can start
+    <para>"I know I have a set of constant values in the spec, so I can start
     by creating a Set attribute of the valid values...</para>
 
-    <para>“And now that I have a Set defined, I can use that Set to create a
+    <para>"And now that I have a Set defined, I can use that Set to create a
     Boolean Attribute to test whether the field I'm interested in contains one
     of the valid values...</para>
 
-    <para>“And now that I have a Boolean defined, I can use that Boolean as
-    the filter condition to produce the Recordset I need to output.”</para>
+    <para>"And now that I have a Boolean defined, I can use that Boolean as
+    the filter condition to produce the Recordset I need to output."</para>
 
-    <para>The process starts with creating the Set Attribute “atom,” then
-    using it to build the Boolean “molecule,” then using the Boolean to grow
-    the “organism”—the final solution.</para>
+    <para>The process starts with creating the Set Attribute "atom," then
+    using it to build the Boolean "molecule," then using the Boolean to grow
+    the "organism"--the final solution.</para>
   </sect2>
 
   <sect2 id="Ugly_ECL_is_Possible_Too">
-    <title>“Ugly” ECL is Possible, Too</title>
+    <title>"Ugly" ECL is Possible, Too</title>
 
     <para>Of course, that particular set of ECL could have been written like
     this (following a more top down thinking process):</para>
@@ -96,7 +96,7 @@ OUTPUT(ValRecsMyFile);
     <para>The end result, in this case, would be the same.</para>
 
     <para>However, the overall usefulness of this code is drastically reduced
-    because, in the first form, all the “atomic” bits are available for re-use
+    because, in the first form, all the "atomic" bits are available for re-use
     elsewhere when similar problems come along. In this second form, they are
     not. And in all programming styles, code re-use is considered to be a good
     thing.</para>
@@ -106,10 +106,10 @@ OUTPUT(ValRecsMyFile);
     <title>Easy Optimization</title>
 
     <para>Most importantly, by breaking your ECL code into its smallest
-    possible components, you allow ECL’s optimizing compiler to do the best
+    possible components, you allow ECL's optimizing compiler to do the best
     job possible of determining how to accomplish your desired result. This
     leads to another dichotomy between ECL and other programming languages:
-    usually, the less code you write, the more “elegant” the solution; but in
+    usually, the less code you write, the more "elegant" the solution; but in
     ECL, the <emphasis role="underline">more</emphasis> code you write, the
     better and more elegant the solution is generated for you. Remember, your
     Attributes are just <emphasis role="bold">definitions</emphasis> telling

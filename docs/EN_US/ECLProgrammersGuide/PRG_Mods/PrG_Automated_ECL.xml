@@ -13,7 +13,7 @@
   ECLPlus application. By using MACROs, you can have standard processes that
   operate on different input each time, but produce the same result. Since
   ECLPlus is a command-line application, its use can be automatically launched
-  in many different ways — DOS Batch files, from within another application,
+  in many different ways -- DOS Batch files, from within another application,
   or ...</para>
 
   <para>Here's an example. This MACRO (contained in DeclareData.ECL) takes two
@@ -60,10 +60,10 @@ PG.DeclareData.MAC_CountFieldValues(PG.DeclareData.Person.file,gender);
 
   <para>Notice that you're using the <emphasis>ecl=</emphasis> command line
   option and not the <emphasis>$Module.Attribute</emphasis> option. This is
-  the “proper” way to make a MACRO expand and execute through ECLplus. The
+  the "proper" way to make a MACRO expand and execute through ECLplus. The
   <emphasis>$Module.Attribute</emphasis> option is only used to execute ECL
   Builder window queries that have been saved as attributes in the repository
-  (Builder Window Runnable—BWR code) and won't work with MACROs.</para>
+  (Builder Window Runnable--BWR code) and won't work with MACROs.</para>
 
   <para>When the MACRO expands and executes, you get a result that looks like
   this in your Command Prompt window:</para>
@@ -79,13 +79,13 @@ gender     cnt
 </programlisting>
 
   <para>You can re-direct this output to a file by using the
-  <emphasis>output=”filename”</emphasis> option on the command line, like
+  <emphasis>output="filename"</emphasis> option on the command line, like
   this:</para>
 
   <programlisting>C:\eclplus&gt;eclplus ecl=$ProgGuide.MAC_CountFieldValues( ProgrammersGuide.DeclareData.Person.File, gender) 
               output="MyFile.txt"</programlisting>
 
-  <para>This will send the output to the “MyFile.txt” file on your local PC.
+  <para>This will send the output to the "MyFile.txt" file on your local PC.
   For larger output files, you'll want to have the OUTPUT action in your ECL
   code write the result set to disk in the supercomputer then de-spray it to
   your landing zone (you can use the Standard Library's File.Despray function
@@ -105,7 +105,7 @@ PG.DeclareData.MAC_CountFieldValues(PG.DeclareData.person.File,state)</programli
 
     <para>These two MACRO calls will generate the field ordinality count and
     crosstab report for two fields in the same file. You could then execute
-    them like this (where “test.ECL” is the name of the file you
+    them like this (where "test.ECL" is the name of the file you
     created):</para>
 
     <programlisting>C:\eclplus&gt;eclplus @test.ecl</programlisting>
@@ -113,7 +113,7 @@ PG.DeclareData.MAC_CountFieldValues(PG.DeclareData.person.File,state)</programli
     <para>This will generate similar results to that above.</para>
 
     <para>The advantage this method has is the ability to include any
-    necessary “setup” ECL code in the file before the MACRO calls, like this
+    necessary "setup" ECL code in the file before the MACRO calls, like this
     (contained in RunText.ECL):</para>
 
     <programlisting>IMPORT ProgrammersGuide AS PG;

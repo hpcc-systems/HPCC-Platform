@@ -144,7 +144,7 @@
           <row>
             <entry><emphasis role="bold">STABLE</emphasis></entry>
 
-            <entry>Optional. Specifies a stable sort—duplicates output in the
+            <entry>Optional. Specifies a stable sort--duplicates output in the
             same order they were in the input. This is the default if neither
             STABLE nor UNSTABLE sorting is specified. Ignored if not supported
             by the target platform.</entry>
@@ -162,7 +162,7 @@
           <row>
             <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
-            <entry>Optional. Specifies an unstable sort—duplicates may output
+            <entry>Optional. Specifies an unstable sort--duplicates may output
             in any order. Ignored if not supported by the target
             platform.</entry>
           </row>
@@ -248,7 +248,7 @@
                   <primary>Thor</primary>
                 </indexterm></emphasis></entry>
 
-              <entry>Supports stable and unstable quicksort—the sort will
+              <entry>Supports stable and unstable quicksort--the sort will
               spill to disk, if necessary. Parallel sorting happens
               automatically on clusters with multiple-CPU or multi-CPU-core
               nodes.</entry>
@@ -266,7 +266,7 @@
                 </indexterm></emphasis></entry>
 
               <entry>Supports stable and unstable quicksort, stable and
-              unstable insertionsort, and stable heapsort—the sort will spill
+              unstable insertionsort, and stable heapsort--the sort will spill
               to disk, if necessary. Stable heapsort is the default if both
               STABLE and UNSTABLE are omitted or if STABLE is present without
               an algorithm parameter.</entry>
@@ -291,7 +291,7 @@
                 </indexterm></emphasis></entry>
 
               <entry>Supports unstable quicksort, stable insertionsort, and
-              stable heapsort—the sort does not spill to disk.</entry>
+              stable heapsort--the sort does not spill to disk.</entry>
             </row>
 
             <row>

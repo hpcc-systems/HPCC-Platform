@@ -76,7 +76,7 @@ MyString2 := U'abcd\353';    // becomes 'abcdë'
         <primary>Hexadecimal</primary>
       </indexterm> string constants<indexterm>
         <primary>string constants</primary>
-      </indexterm> </emphasis>must begin with a leading “x” character. Only
+      </indexterm> </emphasis>must begin with a leading "x" character. Only
     valid hexadecimal values (0-9, A-F) may be in the character string and
     there must be an even number of characters.</para>
 
@@ -86,14 +86,14 @@ MyString2 := U'abcd\353';    // becomes 'abcdë'
         <primary>Data string</primary>
       </indexterm> constants<indexterm>
         <primary>constants</primary>
-      </indexterm> </emphasis>must begin with a leading “D” character. This is
+      </indexterm> </emphasis>must begin with a leading "D" character. This is
     directly equivalent to casting the string constant to DATA.</para>
 
     <programlisting>MyDataString := D'abcd'; // same as: (DATA)'abcd'</programlisting>
 
     <para><emphasis role="bold">Unicode string<indexterm>
         <primary>Unicode string</primary>
-      </indexterm> constants </emphasis>must begin with a leading “U”
+      </indexterm> constants </emphasis>must begin with a leading "U"
     character. Characters between the quotes are utf8-encoded and the type of
     the constant is UNICODE.</para>
 
@@ -103,7 +103,7 @@ MyUnicodeString3 := U'abcd\u00EB'; // becomes 'abcdë'</programlisting>
 
     <para><emphasis role="bold">UTF8 string<indexterm>
         <primary>UTF8 string</primary>
-      </indexterm> constants </emphasis>must begin with leading “U8”
+      </indexterm> constants </emphasis>must begin with leading "U8"
     characters. Characters between the quotes are utf8-encoded and the type of
     the constant is UTF8.</para>
 
@@ -111,7 +111,7 @@ MyUnicodeString3 := U'abcd\u00EB'; // becomes 'abcdë'</programlisting>
 
     <para><emphasis role="bold">VARSTRING string constants<indexterm>
         <primary>VARSTRING string constants</primary>
-      </indexterm> </emphasis>must begin with a leading “V” character. The
+      </indexterm> </emphasis>must begin with a leading "V" character. The
     terminating null byte is implied and type of the constant is
     VARSTRING.</para>
 
@@ -119,7 +119,7 @@ MyUnicodeString3 := U'abcd\u00EB'; // becomes 'abcdë'</programlisting>
 
     <para><emphasis role="bold">QSTRING string constants<indexterm>
         <primary>QSTRING string constants</primary>
-      </indexterm> </emphasis>must begin with a leading “Q” character. The
+      </indexterm> </emphasis>must begin with a leading "Q" character. The
     terminating null byte is implied and type of the constant is
     VARSTRING.</para>
 
@@ -137,10 +137,10 @@ MyUnicodeString3 := U'abcd\u00EB'; // becomes 'abcdë'</programlisting>
     constants may be decimal, hexadecimal, or binary values.
     Hexadecimal<indexterm>
         <primary>Hexadecimal</primary>
-      </indexterm> values are specified with either a leading “0x” or a
-    trailing “x” character. Binary values<indexterm>
+      </indexterm> values are specified with either a leading "0x" or a
+    trailing "x" character. Binary values<indexterm>
         <primary>Binary values</primary>
-      </indexterm> are specified with either a leading “0b” or a trailing “b”
+      </indexterm> are specified with either a leading "0b" or a trailing "b"
     character.</para>
 
     <programlisting>MyInt1  := 10;     // value of MyInt1 is the INTEGER value 10

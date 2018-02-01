@@ -54,7 +54,7 @@
           <entry>A null-terminated string containing the protocol, IP, port,
           and directory, or the DNS equivalent, of the remote ESP server
           program. This is usually the same IP and port as its ECL Watch, with
-          “/FileSpray” appended.</entry>
+          "/FileSpray" appended.</entry>
         </row>
 
         <row>
@@ -183,7 +183,7 @@
   <para>The <emphasis role="bold">RemotePull </emphasis>function executes on
   the <emphasis>remoteURL</emphasis>, copying the
   <emphasis>sourcelogicalname</emphasis> from the local environment that
-  instantiated the operation to the remote environment’s
+  instantiated the operation to the remote environment's
   <emphasis>destinationGroup</emphasis> cluster, giving it the
   <emphasis>destinationlogicalname</emphasis>. This is very similar to using
   the STD.File.Copy function and specifying its <emphasis>espserverIPport

@@ -38,7 +38,7 @@
     <para>The <emphasis role="bold">CRON</emphasis> function defines a timer
     event for use within the WHEN workflow service<indexterm>
         <primary>WHEN workflow service</primary>
-      </indexterm> or WAIT function. This is synonymous with EVENT(‘CRON’,
+      </indexterm> or WAIT function. This is synonymous with EVENT('CRON',
     <emphasis>time</emphasis>).</para>
 
     <para>The <emphasis>time </emphasis>parameter is unix-standard cron time,
@@ -94,7 +94,7 @@
 
     <para>Any <emphasis>time</emphasis> component that you do not want to pass
     is replaced by an asterisk (*). You may define ranges of times using a
-    dash (-), lists using a comma (,), and ‘once every n’ using a slash (/).
+    dash (-), lists using a comma (,), and 'once every n' using a slash (/).
     For example, 6-18/3 in the hour field will fire the timer every three
     hours between 6am and 6pm, and 18-21/3,0-6/3 will fire the timer every
     three hours between 6pm and 6am.</para>

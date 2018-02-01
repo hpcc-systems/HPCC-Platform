@@ -79,7 +79,7 @@
 
             <entry>Optional. Specifies the operation is performed without
             sorting the <emphasis>parentrecset</emphasis> or
-            <emphasis>childrecset</emphasis> —both must already be sorted so
+            <emphasis>childrecset</emphasis> --both must already be sorted so
             matching records in both are in order. This allows programmer
             control of the order of the child records.</entry>
           </row>

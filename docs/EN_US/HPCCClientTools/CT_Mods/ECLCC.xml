@@ -124,13 +124,13 @@
       in a stand alone manner, to create stand alone programs, or workunits.
       The ECL Compiler can read ECL code from standard input, or can read it
       from a specified input file. It compiles the code into an executable
-      program (Such as an ‘EXE’ file in Windows). The resulting program, when
+      program (Such as an 'EXE' file in Windows). The resulting program, when
       executed, runs the job, writing any output to standard output.
       Alternatively, you could redirect the output to a file or pipe into
       another process. With the ECL Compiler, you do not need a supercomputer
       cluster to develop and run ECL code.</para>
 
-      <para>Running the ECL Compiler without any options (or specifying –help)
+      <para>Running the ECL Compiler without any options (or specifying --help)
       will display the syntax.</para>
 
       <para><programlisting>C:\eclcc&gt;eclcc -help

@@ -48,7 +48,7 @@
   <para>The <emphasis role="bold">FileExists </emphasis>function returns TRUE
   if the specified <emphasis>filename</emphasis> is present in the Distributed
   File Utility (DFU). If <emphasis>physicalcheck</emphasis> is set to TRUE,
-  then the file’s physical presence on disk is also checked.</para>
+  then the file's physical presence on disk is also checked.</para>
 
   <para>Example:</para>
 

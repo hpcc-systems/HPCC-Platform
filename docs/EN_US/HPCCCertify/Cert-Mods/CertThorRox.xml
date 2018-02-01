@@ -532,7 +532,7 @@
 
         <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
         </emphasis><emphasis role="bold">(where nnn.nnn.nnn.nnn is your ESP
-        Server’s IP Address and pppp is the port. The default port is
+        Server's IP Address and pppp is the port. The default port is
         8010)</emphasis></para>
       </listitem>
 
@@ -801,7 +801,7 @@
 
         <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
         </emphasis><emphasis role="bold">(where nnn.nnn.nnn.nnn is your ESP
-        Server’s IP Address and pppp is the port. The default port is
+        Server's IP Address and pppp is the port. The default port is
         8002)</emphasis></para>
 
         <para><figure>

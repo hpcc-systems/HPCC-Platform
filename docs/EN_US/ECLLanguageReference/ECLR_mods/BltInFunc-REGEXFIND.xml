@@ -71,10 +71,10 @@
   url="http://www.boost.org/doc/libs/1_58_0/libs/regex/doc/html/index.html">http://www.boost.org/doc/libs/1_58_0/libs/regex/doc/html/index.html</ulink>.
   Note that the version of Boost library may vary depending on your distro.
   For unicode <emphasis>text</emphasis>, see the ICU docs, the sections
-  ‘Regular Expression Metacharacters' and ‘Regular Expression Operators' at
+  'Regular Expression Metacharacters' and 'Regular Expression Operators' at
   <emphasis
   role="underline">http://userguide.icu-project.org/strings/regexp</emphasis>
-  and the links from there, in particular the section ‘UnicodeSet patterns' at
+  and the links from there, in particular the section 'UnicodeSet patterns' at
   <emphasis
   role="underline">http://userguide.icu-project.org/strings/unicodeset</emphasis>.
   We use version 2.6 which should support all listed features.</para>

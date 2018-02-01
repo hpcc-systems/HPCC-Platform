@@ -45,7 +45,7 @@
 
           <entry>A null-terminated string containing the name of the primary
           key field for the <emphasis>primary</emphasis> file. The value
-          “__fileposition__” indicates the <emphasis>secondary</emphasis> is
+          "__fileposition__" indicates the <emphasis>secondary</emphasis> is
           an INDEX that must use FETCH to access non-keyed fields. If omitted,
           the default is an empty string.</entry>
         </row>
@@ -61,10 +61,10 @@
         <row>
           <entry><emphasis>relationship</emphasis></entry>
 
-          <entry>A null-terminated string containing either “link” or “view”
+          <entry>A null-terminated string containing either "link" or "view"
           indicating the type of relationship between the
           <emphasis>primary</emphasis> and <emphasis>secondary</emphasis>
-          files. If omitted, the default is “link.”</entry>
+          files. If omitted, the default is "link."</entry>
         </row>
       </tbody>
     </tgroup>

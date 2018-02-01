@@ -255,7 +255,7 @@
       <para><orderedlist>
           <listitem>
             <para>In Eclipse IDE, select <emphasis role="bold">Help &gt;&gt;
-            Install New Software…</emphasis></para>
+            Install New Software...</emphasis></para>
           </listitem>
 
           <listitem>
@@ -413,7 +413,7 @@
       <para><orderedlist>
           <listitem>
             <para>In Eclipse IDE, select <emphasis role="bold">Help &gt;&gt;
-            Check for Updates…</emphasis></para>
+            Check for Updates...</emphasis></para>
 
             <para>A progress window displays as it checks for any available
             updates.<emphasis role="bold"></emphasis></para>
@@ -450,7 +450,7 @@
           <listitem>
             <para>From the Workbench File menu, select <emphasis
             role="bold">File <emphasis role="bold">&gt;&gt;</emphasis> New
-            <emphasis role="bold">&gt;&gt;</emphasis> Project…
+            <emphasis role="bold">&gt;&gt;</emphasis> Project...
             </emphasis></para>
 
             <para>This launches a <emphasis role="bold">New Project</emphasis>

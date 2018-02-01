@@ -70,9 +70,9 @@
   STRING field2;
 END;
 
-f := DATASET(‘myfilename’, myrecord, FLAT);    
+f := DATASET('myfilename', myrecord, FLAT);    
   // This will fail at runtime if file layout does not match myrecord
-f := DATASET(‘myfilename’, myrecord, FLAT, LOOKUP);    
+f := DATASET('myfilename', myrecord, FLAT, LOOKUP);    
   // This will automatically project from the actual to the requested layout
 </programlisting>
 
@@ -89,7 +89,7 @@ END;</programlisting>
     <para>Then the effect of the LOOKUP attribute will be as if your code
     was:</para>
 
-    <programlisting>actualfile := DATASET(‘myfilename’, myactualrecord, FLAT);
+    <programlisting>actualfile := DATASET('myfilename', myactualrecord, FLAT);
 f := PROJECT(actualfile, TRANSFORM(myrecord, SELF := LEFT; SELF := []));
 </programlisting>
 
@@ -123,12 +123,12 @@ f := PROJECT(actualfile, TRANSFORM(myrecord, SELF := LEFT; SELF := []));
 
     <para>The LOOKUP attribute in the RECORDOF function takes a filename
     rather than a dataset. The result is expanded at compile time to the
-    record layout stored in the named file’s metadata. There are several forms
+    record layout stored in the named file's metadata. There are several forms
     of this construct:</para>
 
-    <para><programlisting>RECORDOF(‘myfile’, LOOKUP);
-RECORDOF(‘myfile', defaultstructure, LOOKUP);
-RECORDOF(‘myfile’, defaultstructure, LOOKUP, OPT);</programlisting>You can
+    <para><programlisting>RECORDOF('myfile', LOOKUP);
+RECORDOF('myfile', defaultstructure, LOOKUP);
+RECORDOF('myfile', defaultstructure, LOOKUP, OPT);</programlisting>You can
     also specify a DATASET as the first parameter instead of a filename (a
     syntactic convenience) and the filename specified on the dataset will be
     used for the lookup.</para>
@@ -147,10 +147,10 @@ RECORDOF(‘myfile’, defaultstructure, LOOKUP, OPT);</programlisting>You can
     that it contains an ID field, and create an output file containing all
     records that matched a supplied value, you could write:</para>
 
-    <para><programlisting>myfile := DATASET(‘myinputfile’, RECORDOF(‘myinputfile’, { STRING id },
+    <para><programlisting>myfile := DATASET('myinputfile', RECORDOF('myinputfile', { STRING id },
                                                         LOOKUP), FLAT);
-filtered := myfile(id=‘123’);
-OUTPUT(filtered,,’myfilteredfile’);</programlisting></para>
+filtered := myfile(id='123');
+OUTPUT(filtered,,'myfilteredfile');</programlisting></para>
   </sect2>
 
   <sect2 id="LOOKUP-Additional_Details">

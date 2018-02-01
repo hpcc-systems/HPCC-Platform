@@ -75,7 +75,7 @@
 
   <para>The <emphasis role="bold">TOKEN </emphasis>value type defines a
   parsing expression very similar to a PATTERN, but once matched, the parser
-  doesn’t backtrack to find alternative matches as it would with
+  doesn't backtrack to find alternative matches as it would with
   PATTERN.</para>
 
   <para><emphasis role="bold">RULE </emphasis><indexterm>
@@ -183,7 +183,7 @@
 
             <entry>A fixed text <emphasis>string, </emphasis>which may contain
             escaped octal string control characters (for example, CtrlZ is
-            ‘\032’).</entry>
+            '\032').</entry>
           </row>
 
           <row>
@@ -327,9 +327,9 @@
             is in the <emphasis>range</emphasis>. <emphasis>Range
             </emphasis>can have the form
             &lt;value&gt;,&lt;min&gt;..&lt;max&gt;,&lt;min&gt;.. or
-            ..&lt;max&gt; So “digit*3 NOT BEFORE digit” could be represented
-            as “digit* LENGTH(3).” This is more efficient, and digit* can be
-            defined as a token. “digit* LENGTH(4..6)” matches 4,5 and 6 digit
+            ..&lt;max&gt; So "digit*3 NOT BEFORE digit" could be represented
+            as "digit* LENGTH(3)." This is more efficient, and digit* can be
+            defined as a token. "digit* LENGTH(4..6)" matches 4,5 and 6 digit
             sequences.</entry>
           </row>
 
@@ -343,7 +343,7 @@
             <emphasis>isValidExpression </emphasis>should use MATCHTEXT or
             MATCHUNICODE to refer to the text that matched the
             <emphasis>pattern</emphasis>. For example, VALIDATE(alpha*,
-            MATCHTEXT[4]=’Q’) is equivalent to alpha* = ANY*3 ‘Q’ ANY* or more
+            MATCHTEXT[4]='Q') is equivalent to alpha* = ANY*3 'Q' ANY* or more
             usefully: VALIDATE(alpha*,isSurnameService(MATCHTEXT));</entry>
           </row>
 
@@ -408,8 +408,8 @@ the following supported syntax elements:
  x{m} x{m,} x{m,n}   Bounded repeats, also minimal versions
  [0-9abcdef]    A set of characters
                         (may use ^ for exclusion list)
- (?=…) (?!...)     Look ahead assertion
- (?&lt;=…) (?&lt;!...)   Look behind assertion
+ (?=...) (?!...)     Look ahead assertion
+ (?&lt;=...) (?&lt;!...)   Look behind assertion
 
 Escape sequences can be used to define UNICODE Character ranges. 
 The encoding is UTF-16 Big Endian.  

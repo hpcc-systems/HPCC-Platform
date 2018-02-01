@@ -72,7 +72,7 @@
           <para>The <emphasis role="bold">CRON </emphasis>function defines a
           timer event for use within the <emphasis role="bold">WHEN
           </emphasis>workflow service. This is synonymous with <emphasis
-          role="bold">EVENT(‘CRON’, time)</emphasis>. CRON itself is not a
+          role="bold">EVENT('CRON', time)</emphasis>. CRON itself is not a
           statement, rather a parameter to WHEN/NOTIFY to describe what kind
           of event it is used for.</para>
         </sect3>
@@ -119,9 +119,9 @@
               <listitem>
                 <para>DFUServer file monitoring (either using the Standard
                 Library or DFUPlus) creates a DFU Workunit. While monitoring,
-                the Workunit’s state is <emphasis>monitoring </emphasis>and
+                the Workunit's state is <emphasis>monitoring </emphasis>and
                 once it triggers the event, it is set to
-                <emphasis>finished</emphasis>. You can Abort a “monitoring”
+                <emphasis>finished</emphasis>. You can Abort a "monitoring"
                 DFU Workunit to stop monitoring from ECL Watch.</para>
               </listitem>
             </varlistentry>

@@ -69,22 +69,22 @@
     consistently.</para>
 
     <para>Dynamic ESDL takes an interface-first development approach. It
-    leverages the ESDL Language to create a common interface “contract” that
+    leverages the ESDL Language to create a common interface "contract" that
     both Roxie Query and Web interface developers will adhere to. It is
     intended to allow developers to create production web services, with clean
     interfaces that can evolve and grow over time without breaking existing
     applications.</para>
 
-    <para>ESDL’s built-in versioning support helps ensure compiled and
+    <para>ESDL's built-in versioning support helps ensure compiled and
     deployed applications continue to operate while changes are made to the
-    deployed service’s interface for new functionality.</para>
+    deployed service's interface for new functionality.</para>
 
-    <para>ESDL’s ability to define and reuse common structures helps maintain
+    <para>ESDL's ability to define and reuse common structures helps maintain
     consistent interfaces across methods.</para>
 
     <para>The Dynamic ESDL service is built to scale horizontally, and hooks
     are provided to add custom logging and security to help create fully
-    “productionalized” web services.</para>
+    "productionalized" web services.</para>
 
     <para>Once a service is deployed, application developers and end-users can
     consume the service using REST, JSON, XML, SOAP, or form encoded posts.

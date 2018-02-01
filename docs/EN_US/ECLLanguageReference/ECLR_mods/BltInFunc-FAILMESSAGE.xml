@@ -23,7 +23,7 @@
 
             <entry>A string constant defining the name of XML tag containing
             the text to return, typically extra information returned by
-            SOAPCALL. If omitted, the default is ‘text.’</entry>
+            SOAPCALL. If omitted, the default is 'text.'</entry>
           </row>
         </tbody>
       </tgroup>

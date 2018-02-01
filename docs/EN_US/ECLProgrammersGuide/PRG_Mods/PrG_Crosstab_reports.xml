@@ -8,17 +8,17 @@
   information about the data that you work with. They can be easily produced
   using the TABLE function and the aggregate functions (COUNT, SUM, MIN, MAX,
   AVE, VARIANCE, COVARIANCE, CORRELATION). The resulting recordset contains a
-  single record for each unique value of the “group by” fields specified in
+  single record for each unique value of the "group by" fields specified in
   the TABLE function, along with the statistics you generate with the
   aggregate functions.</para>
 
-  <para>The TABLE function's “group by” parameters are used and duplicated as
+  <para>The TABLE function's "group by" parameters are used and duplicated as
   the first set of fields in the RECORD structure, followed by any number of
   aggregate function calls, all using the GROUP keyword as the replacement for
   the recordset required by the first parameter of each of the aggregate
   functions. The GROUP keyword specifies performing the aggregate operation on
   the group and is the key to creating a Cross-Tab report. This creates an
-  output table containing a single row for each unique value of the “group by”
+  output table containing a single row for each unique value of the "group by"
   parameters.</para>
 
   <sect2 id="A_Simple_Crosstab">

@@ -46,7 +46,7 @@ INTEGER8   -9,223,372,036,854,775,808  0 to 18,446,744,073,709,551,615
              to 9,223,372,036,854,775,807
 </programlisting>
 
-      <para>For example, if you have data coming in from the “outside world”
+      <para>For example, if you have data coming in from the "outside world"
       where a 4-byte integer field contains values that range from zero (0) to
       ninety-nine (99), then it makes sense to move that data into an
       UNSIGNED1 field. This saves three bytes per record, which, if the
@@ -61,7 +61,7 @@ INTEGER8   -9,223,372,036,854,775,808  0 to 18,446,744,073,709,551,615
 
       <para>Note that the use of the BIG_ENDIAN forms of all the integer types
       is limited to defining data as it comes in and goes back out to the
-      “outside world”—all integer data used internally must be in
+      "outside world"--all integer data used internally must be in
       LITTLE_ENDIAN format. The BIG_ENDIAN format is specifically designed for
       interfacing with external data sources, only.</para>
     </sect3>
@@ -112,12 +112,12 @@ REAL8   15 (999999999999999)   1.797693e+308      2.225074e-308</programlisting>
     <sect3 id="String_Data_String_vs_Varstring">
       <title><emphasis role="bold">STRING vs. VARSTRING</emphasis></title>
 
-      <para>Data that comes in from or goes out to the “outside world” may
+      <para>Data that comes in from or goes out to the "outside world" may
       contain null-terminated strings. If that is the case, then you need to
       use VARSTRING to define those fields in the ingest/output data file.
       However, the temptation of programmers with a lot of C/C++ programming
       experience is to use VARSTRING for everything, in the belief that it
-      will be more efficient—but that belief is mistaken.</para>
+      will be more efficient--but that belief is mistaken.</para>
 
       <para>There is no inherent advantage to using VARSTRING instead of
       STRING within the system. STRING is the base internal string data type,
@@ -140,7 +140,7 @@ REAL8   15 (999999999999999)   1.797693e+308      2.225074e-308</programlisting>
       maintain case sensitive data, then STRING is the only choice to
       make.</para>
 
-      <para>The advantage that QSTRING has over STRING is an “instant” 25%
+      <para>The advantage that QSTRING has over STRING is an "instant" 25%
       data compression rate, since QSTRING data characters are represented by
       six bits each instead of eight. It achieves this by storing the data in
       uppercase and only allowing alphanumeric characters and a small set of
@@ -176,10 +176,10 @@ REAL8   15 (999999999999999)   1.797693e+308      2.225074e-308</programlisting>
       variable length string passed as a parameter to a function. A string
       passed to a function in which the parameter has been declared as a
       STRING20 will always have a length of 20, regardless of its content. For
-      example, a STRING20 which contains ‘ABC’ will have a length of 20, not 3
+      example, a STRING20 which contains 'ABC' will have a length of 20, not 3
       (unless, of course, you include the TRIM function in the expression). A
       string that has been declared as a variable-length STRING and contains
-      ‘ABC’ will have a length of 3.</para>
+      'ABC' will have a length of 3.</para>
 
       <programlisting>STRING20 CityName := 'Orlando';  // LENGTH(CityName) is 20
 STRING   CityName := 'Orlando';  // LENGTH(CityName) is 7</programlisting>
@@ -208,7 +208,7 @@ STRING   CityName := 'Orlando';  // LENGTH(CityName) is 7</programlisting>
         <para>* the data type for parameters passed to TRANSFORM
         functions</para>
 
-        <para>* the data type for a “field” in another RECORD structure
+        <para>* the data type for a "field" in another RECORD structure
         (nested structures)</para>
 
         <para>* the structure of a nested child DATASET field in another
@@ -338,7 +338,7 @@ out := PROJECT(ds,MoveData(LEFT));
 OUTPUT(out);
 </programlisting>
 
-      <para>This example defines a “Pascal string” data type with the leading
+      <para>This example defines a "Pascal string" data type with the leading
       length stored as one to four bytes prepended to the data.</para>
     </sect3>
 

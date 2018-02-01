@@ -129,8 +129,8 @@
     tampered with, using the standard gpg package.</para>
 
     <para>A file that has been signed will have an attached signature
-    containing a cryptographic hash of the file contents with the signer’s
-    private key. Anyone in possession of the signer’s public key can then
+    containing a cryptographic hash of the file contents with the signer's
+    private key. Anyone in possession of the signer's public key can then
     verify that the signature is valid and that the content is
     unchanged.</para>
 

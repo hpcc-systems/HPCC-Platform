@@ -31,7 +31,7 @@
         <row>
           <entry>=&gt;</entry>
 
-          <entry>The "results in" operator—valid only in MAP, CASE, and
+          <entry>The "results in" operator--valid only in MAP, CASE, and
           CHOOSESETS.</entry>
         </row>
 

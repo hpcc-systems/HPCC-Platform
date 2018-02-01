@@ -1012,7 +1012,7 @@ OUTPUT(L);</programlisting></para>
           <para>A <emphasis>spray</emphasis> or <emphasis>import</emphasis> is
           the relocation of a data file from one location (such as a Landing
           Zone) to a Data Refinery cluster. The term spray was adopted due to
-          the nature of the file movement – the file is partitioned across all
+          the nature of the file movement -- the file is partitioned across all
           nodes within a cluster.</para>
         </footnote> that file to our Thor cluster, then validate our anagrams
       against that file so that we determine which are valid words. The
@@ -1141,7 +1141,7 @@ OUTPUT(L);</programlisting></para>
         <title>Spray the Data File to your <emphasis>Thor
         Cluster</emphasis></title>
 
-        <para>To use the data file in our HPCC Thor system, we must “spray” it
+        <para>To use the data file in our HPCC Thor system, we must "spray" it
         to all the nodes. A <emphasis>spray</emphasis> or
         <emphasis>import</emphasis> is the relocation of a data file from one
         location (such as a Landing Zone) to multiple file parts on nodes in a

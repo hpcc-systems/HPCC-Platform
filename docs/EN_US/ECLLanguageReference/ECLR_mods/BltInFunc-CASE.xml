@@ -9,7 +9,7 @@
     </indexterm><indexterm>
       <primary>CASE function</primary>
     </indexterm>(</emphasis><emphasis>expression, caseval =&gt; value,
-  </emphasis><emphasis role="bold">[</emphasis><emphasis>… , caseval =&gt;
+  </emphasis><emphasis role="bold">[</emphasis><emphasis>... , caseval =&gt;
   value </emphasis><emphasis role="bold">]</emphasis><emphasis>
   </emphasis><emphasis role="bold">[,</emphasis><emphasis> elsevalue
   </emphasis><emphasis role="bold">] )</emphasis></para>
@@ -37,7 +37,7 @@
           <row>
             <entry>=&gt;</entry>
 
-            <entry>The “results in” operator—valid only in CASE, MAP and
+            <entry>The "results in" operator--valid only in CASE, MAP and
             CHOOSESETS.</entry>
           </row>
 

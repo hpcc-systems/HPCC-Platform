@@ -284,7 +284,7 @@
                 </indexterm>(<emphasis>separator-pattern</emphasis>)</entry>
 
               <entry>Specify a pattern that can be inserted after each token
-              in a search pattern. For example, SKIP ( [‘ ‘,'\t']*) skips
+              in a search pattern. For example, SKIP ( [' ','\t']*) skips
               spaces and tabs between tokens.</entry>
             </row>
 
@@ -342,7 +342,7 @@
                   <primary>MATCHED ALL</primary>
                 </indexterm></emphasis></entry>
 
-              <entry>Retain all rule-names – if they are used by user match
+              <entry>Retain all rule-names -- if they are used by user match
               functions.</entry>
             </row>
 

@@ -37,18 +37,21 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='FooterInfo'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='DateVer'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
-    <xi:include href="common/Version.xml" xpointer="xpointer(//*[@id='Copyright'])"
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -609,7 +612,7 @@
       number of checks would depend on the needs in the cluster. Alerts are
       only useful if they are actionable. Consider who gets alerted (tiered
       escalations), when they get alerted (thresholds, multiple), and what
-      types of alerts (none?, email, text, phone, EclWatch etc…) before
+      types of alerts (none?, email, text, phone, EclWatch etc...) before
       configuring your environment.</para>
     </sect1>
 
@@ -824,7 +827,7 @@
 
         <para><programlisting>./hpcc-nagios-tools -ec -env /etc/HPCCSystems/environment.xml  \
 -enable_host_notify -enable_service_notify -set_url localhost/nagios3 \
--disable_check_all_disks –out /etc/nagios3/conf.d/hpcc_notifications.cfg
+-disable_check_all_disks -out /etc/nagios3/conf.d/hpcc_notifications.cfg
 </programlisting>The configurations you generate can be used as is, merged
         with existing configurations, or modified to meet your specific
         needs.</para>

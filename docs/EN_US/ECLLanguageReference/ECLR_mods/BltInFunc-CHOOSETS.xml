@@ -48,7 +48,7 @@
           <row>
             <entry>=&gt;</entry>
 
-            <entry>The “results in” operator—valid only in CHOOSESETS, CASE,
+            <entry>The "results in" operator--valid only in CHOOSESETS, CASE,
             and MAP.</entry>
           </row>
 
@@ -152,7 +152,7 @@
   the result sets of multiple CHOOSEN function calls to the same
   <emphasis>recset</emphasis> with different filter conditions<emphasis>,
   </emphasis>but CHOOSESETS executes significantly faster. This technique is
-  also know as a “cutback.”</para>
+  also know as a "cutback."</para>
 
   <para>Example:</para>
 

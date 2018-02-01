@@ -14,7 +14,7 @@
   <para>Query libraries are not supported in Thor, but may be in the
   future.</para>
 
-  <para>A Query Library is defined by two structures—an INTERFACE to define
+  <para>A Query Library is defined by two structures--an INTERFACE to define
   the parameters to pass, and a MODULE that implements the INTERFACE.</para>
 
   <sect2 id="Library_INTERFACE_Definition">
@@ -36,7 +36,7 @@ FilterLibIface1(DATASET(namesRec) ds, STRING search) := INTERFACE
 END;</programlisting>
 
     <para>This example defines the INTERFACE for a library that takes two
-    inputs—a DATASET (with the specified layout format) and a STRING—and which
+    inputs--a DATASET (with the specified layout format) and a STRING--and which
     gives you the ability to output two DATASET results.</para>
 
     <para>For most library queries it may be preferable to also use a separate
@@ -155,7 +155,7 @@ lib1 := LIBRARY(INTERNAL(FilterDsLib1),FilterLibIface1(NamesTable, 'Holliday'));
 </programlisting>
 
       <para>In this case, result is a MODULE with two EXPORTed
-      attributes—matches and others—that can be used just like any other
+      attributes--matches and others--that can be used just like any other
       MODULE, as in this example:</para>
 
       <programlisting>OUTPUT(lib1.matches);
@@ -284,7 +284,7 @@ MyResults := LIBRARY(LibToUse, InterfaceCommonToBoth(args));
     independent of both the queries that use it, and other query libraries.
     Instead of using STORED attributes (like SOAP-enabled Roxie queries use)
     to pass parameters to the library queries, the parameters must be
-    explicitly passed into the query library—either as an individual
+    explicitly passed into the query library--either as an individual
     parameter, or as part of an INTERFACE definition that provides the
     arguments. The query that uses the query library can use stored variables,
     and then map those stored variables to the parameters expected by the

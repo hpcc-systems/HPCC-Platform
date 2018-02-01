@@ -88,14 +88,14 @@ SEQUENTIAL(
   Std.File.FinishSuperFileTransaction());
 </programlisting>
 
-    <para>If the workunit failed with a “logical name
-    progguide::superfile::base already exists” error message, then open the
+    <para>If the workunit failed with a "logical name
+    progguide::superfile::base already exists" error message, then open the
     SuperFileRestart.ECL file and run it, then re-try the above code. Once
     you've successfully executed this code in a builder window, you've created
     the SuperFile and added two sub-files into it.</para>
 
     <para>The SuperFile1 DATASET declaration attribute makes the SuperFile
-    available for use just as any other DATASET would be—this is the key to
+    available for use just as any other DATASET would be--this is the key to
     using SuperFiles. That means the following types of actions can be
     executed against the SuperFile, just as with any other dataset:</para>
 
@@ -118,7 +118,7 @@ OUTPUT($.DeclareData.SuperFile1);
 
     <para>Nesting SuperFiles (a SuperFile containing a sub-file that is itself
     another SuperFile) is a technique that allows new data coming in on a
-    periodic basis (every day, or every hour, or ....) to be “instantly”
+    periodic basis (every day, or every hour, or ....) to be "instantly"
     available to the system. Since the ECL code that refers to a SuperFile
     always references the DATASET declaration, the only change necessary to
     make new data available to queries is to add the new data as a sub-file.
@@ -140,7 +140,7 @@ OUTPUT($.DeclareData.SuperFile1);
     is a simple process of using OUTPUT to write the complete contents of the
     SuperFile to a new, single logical file. Once all data is in a single
     file, a SuperFile transaction can clear the old set of sub-files then add
-    in the new “base” logical file.</para>
+    in the new "base" logical file.</para>
   </sect2>
 
   <sect2 id="Nested_SuperFile_Example">
@@ -361,7 +361,7 @@ $.DeclareData.MAC_ListSFsubfiles($.DeclareData.AllPeople);</programlisting>
 IMPORT Std;
 OUTPUT(Std.File.SuperFileContents($.DeclareData.AllPeople));</programlisting>
 
-    <para>The SuperFileContents() function has an advantage over the macro—it
+    <para>The SuperFileContents() function has an advantage over the macro--it
     has an option to return the sub-files from any nested SuperFile (which the
     macro can't do). That form looks like this:</para>
 

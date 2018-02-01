@@ -52,10 +52,10 @@
 
   <para><programlisting>Household(Person(personage &gt; AVE(Person,personage))</programlisting></para>
 
-  <para>means “households containing people whose age is above the average age
-  for the household.” It does <emphasis role="underline">not</emphasis> mean
-  “households containing people whose age is above the average for all the
-  households.” This is because the primary dataset (Household) encloses the
+  <para>means "households containing people whose age is above the average age
+  for the household." It does <emphasis role="underline">not</emphasis> mean
+  "households containing people whose age is above the average for all the
+  households." This is because the primary dataset (Household) encloses the
   child dataset (Person), making the evaluation of the AVE function operate at
   the level of the persons within the household.</para>
 
@@ -67,13 +67,13 @@
   <programlisting>AveAge := AVE(Person,personage);
 MyHouses := Household(Person(personage &gt; aveAge));</programlisting>
 
-  <para>means “households containing people whose age is above the average age
-  for the household.” However,</para>
+  <para>means "households containing people whose age is above the average age
+  for the household." However,</para>
 
   <programlisting>AveAge := AVE(Person,personage) : STORED('AveAge');
 MyHouses := Household(Person(personage &gt; aveAge));</programlisting>
 
-  <para>Means “households containing people whose age is above the average for
-  all the households.” This is because the AveAge attribute is now evaluated
+  <para>Means "households containing people whose age is above the average for
+  all the households." This is because the AveAge attribute is now evaluated
   outside the enclosing Household scope.</para>
 </sect1>

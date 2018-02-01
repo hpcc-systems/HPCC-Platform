@@ -129,7 +129,7 @@ ReplaceSuperFile()</programlisting>
     of the function calls within the transaction frame.</para>
 
     <para>2) The StartSuperFileTransaction() and FinishSuperFileTransaction()
-    functions are used to “lock” the SuperFile during maintenance, and always
+    functions are used to "lock" the SuperFile during maintenance, and always
     surround the SuperFile Maintenance function calls within the SEQUENTIAL
     action.</para>
 

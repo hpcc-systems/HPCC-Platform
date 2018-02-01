@@ -129,7 +129,7 @@ STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlist
             <entry>STRING</entry>
 
             <entry>ASCII or EBCDIC representation of the value, including
-            decimal and sign—may be expressed in scientific notation</entry>
+            decimal and sign--may be expressed in scientific notation</entry>
           </row>
 
           <row>
@@ -185,7 +185,7 @@ STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlist
             <entry>UNICODE</entry>
 
             <entry>UNICODE representation of the value, including decimal and
-            sign—may be expressed in scientific notation</entry>
+            sign--may be expressed in scientific notation</entry>
           </row>
 
           <row>
@@ -211,7 +211,7 @@ STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlist
             <entry>UTF8</entry>
 
             <entry>UTF8 representation of the value, including decimal and
-            sign—may be expressed in scientific notation</entry>
+            sign--may be expressed in scientific notation</entry>
           </row>
 
           <row>
@@ -297,7 +297,7 @@ STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlist
 
             <entry>INTEGER</entry>
 
-            <entry>Integer value, only—decimal portion is truncated</entry>
+            <entry>Integer value, only--decimal portion is truncated</entry>
           </row>
 
           <row>
@@ -305,7 +305,7 @@ STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlist
 
             <entry>INTEGER</entry>
 
-            <entry>Integer value, only—decimal portion is truncated</entry>
+            <entry>Integer value, only--decimal portion is truncated</entry>
           </row>
 
           <row>

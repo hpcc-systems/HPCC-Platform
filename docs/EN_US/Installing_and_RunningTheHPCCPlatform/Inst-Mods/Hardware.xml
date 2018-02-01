@@ -439,7 +439,7 @@
         <listitem>
           <para>Running the HPCC platform requires communication from your
           user workstation with a browser to the HPCC. You will use it to
-          access ECL Watch—a Web-based interface to your HPCC system. ECL
+          access ECL Watch--a Web-based interface to your HPCC system. ECL
           Watch enables you to examine and manage many aspects of the HPCC and
           allows you to see information about jobs you run, data files, and
           system metrics.</para>

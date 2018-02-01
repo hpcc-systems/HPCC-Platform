@@ -35,7 +35,7 @@
   <para>The <emphasis role="bold">#EXPORTXML </emphasis>statement produces the
   same XML as #EXPORT from the specified <emphasis>data</emphasis> and places
   it in the <emphasis>symbol</emphasis>, then does a LOADXML(<emphasis>symbol,
-  </emphasis>‘label') on the data.</para>
+  </emphasis>'label') on the data.</para>
 
   <para>Example:</para>
 

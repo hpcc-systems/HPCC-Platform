@@ -27,7 +27,7 @@
 
           <entry>A null-terminated string containing a comma-delimited list of
           the addresses of the intended recipients. The validity of the
-          addresses is not checked, so it is the programmer’s responsibility
+          addresses is not checked, so it is the programmer's responsibility
           to ensure they are all valid.</entry>
         </row>
 
@@ -41,7 +41,7 @@
           <entry><emphasis>body</emphasis></entry>
 
           <entry>A null-terminated string containing the text of the email to
-          send. This must be character encoding “ISO-8859-1 (latin1)” (the ECL
+          send. This must be character encoding "ISO-8859-1 (latin1)" (the ECL
           default character set). Text in any other character set must be sent
           as an attachment (see the STD.System.Email.SendEmailAttachText()
           function).</entry>

@@ -64,7 +64,7 @@ MySet := Person(Young);</programlisting>
 //expression, but Person is required here to bring Person.per_dbrth
 // into scope
 //This example compares each trades' Date of Last Activity to the
-// related person’s Date Of Birth</programlisting>
+// related person's Date Of Birth</programlisting>
 
     <para>Any field in a Record Set <emphasis role="underline">can</emphasis>
     be qualified with either the Dataset name the Record Set is based on, or

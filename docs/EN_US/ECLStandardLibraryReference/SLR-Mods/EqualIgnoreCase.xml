@@ -49,9 +49,9 @@
   <para>Example:</para>
 
   <programlisting format="linespecific">A := STD.Str.EqualIgnoreCase('ABCDE','abcde');
- //A contains TRUE -- they “match”
+ //A contains TRUE -- they "match"
 
 B := STD.Str.CompareIgnoreCase('ABCDE','edcba');
- //B contains FALSE -- they do not “match”
+ //B contains FALSE -- they do not "match"
 </programlisting>
 </sect1>

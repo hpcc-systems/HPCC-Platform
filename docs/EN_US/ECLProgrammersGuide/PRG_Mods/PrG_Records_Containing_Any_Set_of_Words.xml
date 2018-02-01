@@ -8,7 +8,7 @@
   or cartoon character names in the data. This can become an issue whenever
   you are working with data that originated from direct input by end-users to
   a website. The following code (contained in the BadWordSearch.ECL file) will
-  detect the presence of any of a set of “bad” words in a given field:</para>
+  detect the presence of any of a set of "bad" words in a given field:</para>
 
   <programlisting>IMPORT std;
 
@@ -50,15 +50,15 @@ OUTPUT(result(FoundWord=FALSE));
   <para>This code is a simple PROJECT of each record that you want to search.
   The result will be a record set containing the record ID field, the
   firstname search field, and a BOOLEAN FoundWord flag field indicating
-  whether any “bad” word was found.</para>
+  whether any "bad" word was found.</para>
 
   <para>The search itself is done by a nested PROJECT of the field to be
-  searched against the DATASET of “bad” words. Using the EXISTS function to
+  searched against the DATASET of "bad" words. Using the EXISTS function to
   detect if any records are returned from that PROJECT where the returned
   Found field is TRUE sets the FoundWord flag field value.</para>
 
   <para>The Std.Str.Find function simply detects the presence anywhere within
-  the search string of any of the “bad” words. The OUTPUT of the set of
+  the search string of any of the "bad" words. The OUTPUT of the set of
   records where the FoundWord is TRUE allows post-processing to evaluate
   whether the record is worth keeping or garbage (probably requiring human
   intervention).</para>
@@ -128,13 +128,13 @@ ENDMACRO;
   <para>Where this MACRO starts going beyond the previous example is in the
   MatchType parameter, which allows the MACRO to use the Template Language #IF
   function to generate three different kinds of searches from the same
-  codebase: a “contains” search (the default), an exact match, and a “starts
-  with” search.</para>
+  codebase: a "contains" search (the default), an exact match, and a "starts
+  with" search.</para>
 
   <para>It also has an expanded output RECORD structure that includes a
   FoundPos field to contain the pointer to the first entry in the passed in
   set that matched. This allows post processing to detect positional matches
-  within the set so that “matched pairs” of words can be detected, as in this
+  within the set so that "matched pairs" of words can be detected, as in this
   example (also contained in the BadWordSearch.ECL file):</para>
 
   <programlisting>SetCartoonFirstNames := ['GEORGE','FRED', 'FREDDY'];
@@ -164,6 +164,6 @@ OUTPUT(GoodGuys,NAMED('GoodGuys'));
   passes. Calling the MACRO twice, searching for the first and last names
   separately, allows you to post-process their results with a simple inner
   JOIN where the same record was found in each and, most importantly, the
-  positional values of the matches are the same. This prevents “GEORGE
-  KRUEGER” from being mis-labelled a cartoon character name.</para>
+  positional values of the matches are the same. This prevents "GEORGE
+  KRUEGER" from being mis-labelled a cartoon character name.</para>
 </sect1>

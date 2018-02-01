@@ -136,7 +136,7 @@
         <sect3 id="SysAdm_Thor_Cluster">
           <title>Thor</title>
 
-          <para>Data Refinery (Thor) – Used to process every one of billions
+          <para>Data Refinery (Thor) -- Used to process every one of billions
           of records in order to create billions of "improved" records. ECL
           Agent (hThor) is also used to process simple jobs that would be an
           inefficient use of the Thor cluster.</para>
@@ -145,7 +145,7 @@
         <sect3 id="SysAdm_Roxie_Cluster">
           <title>Roxie</title>
 
-          <para>Rapid Data Delivery Engine (Roxie) – Used to search quickly
+          <para>Rapid Data Delivery Engine (Roxie) -- Used to search quickly
           for a particular record or set of records.</para>
 
           <para>Queries are compiled and published, usually in ECL Watch. Data
@@ -202,9 +202,9 @@
         <sect3 id="SysAdm_Sahsa">
           <title>Sasha</title>
 
-          <para>The Sasha server is a companion “housekeeping” server to the
+          <para>The Sasha server is a companion "housekeeping" server to the
           Dali server. Sasha works independently of, yet in conjunction with
-          Dali. Sasha’s main function is to reduce the stress on the Dali
+          Dali. Sasha's main function is to reduce the stress on the Dali
           server. Wherever possible, Sasha reduces the resource utilization on
           Dali. A very important aspect of Sasha is coalescing, by saving the
           in-memory store to a new store edition.</para>
@@ -287,7 +287,7 @@
 
           <para>ESP (Enterprise Service Platform) Server is the
           inter-component communication server. ESP Server is a framework that
-          allows multiple services to be “plugged in” to provide various types
+          allows multiple services to be "plugged in" to provide various types
           of functionality to client applications via multiple
           protocols.</para>
 
@@ -533,7 +533,7 @@
       efficiency, provide at least 48GB of RAM, 6 or more CPU cores, 1Gb/sec
       network interface and a high availability disk for a single HPCC Dali.
       HPCC's Dali processes are one of the few native active/passive
-      components. Using standard “swinging disk” clustering is recommended for
+      components. Using standard "swinging disk" clustering is recommended for
       a high availability setup. For a single HPCC Dali process, any suitable
       High Availability (HA) RAID level is fine.</para>
 
@@ -647,13 +647,13 @@
       nodes that make up the cluster. A <emphasis>spray</emphasis> or import
       is the relocation of a data file from one location (such as a Landing
       Zone) to a cluster. The term spray was adopted due to the nature of the
-      file movement – the file is partitioned across all nodes within a
+      file movement -- the file is partitioned across all nodes within a
       cluster.</para>
 
       <para>A <emphasis>despray</emphasis> or export is the relocation of a
       data file from a Data Refinery cluster to a single machine location
       (such as a Landing Zone). The term despray was adopted due to the nature
-      of the file movement – the file is reassembled from its parts on all
+      of the file movement -- the file is reassembled from its parts on all
       nodes in the cluster and placed in a single file on the
       destination.</para>
 
@@ -1153,7 +1153,7 @@ lock=/var/lock/HPCCSystems</programlisting>
         cases needs the absolute path. If a process or component can't find a
         path you will get an error message such as the following:</para>
 
-        <programlisting>“There are no components configured to run on the node…” </programlisting>
+        <programlisting>"There are no components configured to run on the node..." </programlisting>
 
         <para>If the path changes from HPCCSystems, it does NOT change in the
         environment.xml file. Any changes would require manually modifying the
@@ -1277,7 +1277,7 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
 
               <listitem>
                 <para>Deals with restricting access to files. Also referred to
-                as “file scoping“.</para>
+                as "file scoping".</para>
               </listitem>
             </varlistentry>
 
@@ -1575,12 +1575,12 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
           indexing it, etc. You would be better off replicating an
           intermediate dataset (that we call base files), rather than
           replicating the large ingest. If the opposite is occurring (small
-          daily ingest and then blow the data up in size) – you would be
+          daily ingest and then blow the data up in size) -- you would be
           better off to ingest the input and then re-run it.</para>
 
-          <para>Thor has the ability to do a “Thor copy” which copies data
+          <para>Thor has the ability to do a "Thor copy" which copies data
           from one cluster to another. You can also do this through ECL code.
-          Additionally, you may decide you don’t want, or need to have a “hot”
+          Additionally, you may decide you don't want, or need to have a "hot"
           DR Thor. In that case, the most common minor disasters cause only a
           relatively brief, less than 1 day disaster. Since Thor is
           responsible for creating data updates it can take a day or a few to
@@ -1609,7 +1609,7 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
         <para>In the case of Roxie, a best practice is to have multiple Roxie
         clusters and use a proxy to balance. In case of how to keep the data
         in sync, a pull approach is best. The Roxie automatically pulls the
-        data it needs from the “source” listed in the package file. The data
+        data it needs from the "source" listed in the package file. The data
         can also be pulled from another Roxie or a Thor. In most cases you
         would pull to your DR Roxie from the primary Roxie out of the load
         balancer, but it can also pull from a Thor in the primary location as
@@ -1620,7 +1620,7 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
         <title>Middleware</title>
 
         <para>Replication of some components (ECL Agent, ESP/Eclwatch, DFU
-        Server, etc.) are pretty straight forward as they really don’t have
+        Server, etc.) are pretty straight forward as they really don't have
         anything to replicate. Dali is the biggest consideration when it comes
         to replication. In the case of Dali, you have Sasha as the backup
         locally. The Dali files can be replicated using rsync. A better
@@ -1630,7 +1630,7 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
 
         <para>There isn't just a one size fits all approach. Special care,
         design, and planning are required to make an effective DR strategy
-        that doesn't “over synchronize” across slow WAN links, but still
+        that doesn't "over synchronize" across slow WAN links, but still
         provides you with an acceptable level of redundancy for your business
         needs.</para>
       </sect2>
@@ -2011,7 +2011,7 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
             </listitem>
 
             <listitem>
-              <para>Significantly less communication of row data – equals
+              <para>Significantly less communication of row data -- equals
               significantly faster processing for larger RHS sets.</para>
             </listitem>
           </itemizedlist>

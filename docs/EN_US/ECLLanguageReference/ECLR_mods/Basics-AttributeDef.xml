@@ -27,8 +27,8 @@
 
   <para>The Definition Operator<indexterm>
       <primary>Definition Operator</primary>
-    </indexterm> (<emphasis role="bold"> :=</emphasis> read as “is defined
-  as”) defines an expression. On the left side of the operator is an optional
+    </indexterm> (<emphasis role="bold"> :=</emphasis> read as "is defined
+  as") defines an expression. On the left side of the operator is an optional
   <emphasis>Scope<indexterm>
       <primary>Scope</primary>
     </indexterm></emphasis> (see <emphasis role="bold">Attribute
@@ -80,7 +80,7 @@ My First Definition := 5;  // INVALID name, spaces not allowed</programlisting>
     them, as in this example:</para>
 
     <programlisting>ds2 := DEDUP(ds, ds.all, ALL); //ds.all is the 'all' field in the
-                               //ds dataset - not DEDUP’s ALL option</programlisting>
+                               //ds dataset - not DEDUP's ALL option</programlisting>
 
     <para>However, it is still a good idea to avoid using ECL keywords as
     definition or field names.</para>

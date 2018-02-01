@@ -78,7 +78,7 @@ imageData := DATASET('LE::imagedb',imageRecord,FLAT);
 
     <para>The upper size limit for any STRING or DATA value is 4GB.</para>
 
-    <para>The addition of the RecPos field (a standard ECL “record pointer”
+    <para>The addition of the RecPos field (a standard ECL "record pointer"
     field) allows us to create an INDEX, like this:</para>
 
     <programlisting>imageKey := INDEX(imageData,{filename,fpos},'LE::imageKey');  

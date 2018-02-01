@@ -54,7 +54,7 @@
   with any other workflow items.</para>
 
   <para>One use would be to provide a mechanism for commoning up code that is
-  shared between different arguments to a SEQUENTIAL action—normally they are
+  shared between different arguments to a SEQUENTIAL action--normally they are
   evaluated completely independently.</para>
 
   <para>Example:</para>

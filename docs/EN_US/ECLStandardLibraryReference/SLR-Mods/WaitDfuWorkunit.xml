@@ -27,7 +27,7 @@
 
           <entry>A null-terminated string containing the DFU workunit ID
           (DFUWUID) for the job to wait for. This value is returned by the
-          “leading-f” versions of the Copy, DKC, SprayFixed, SprayVariable,
+          "leading-f" versions of the Copy, DKC, SprayFixed, SprayVariable,
           SprayXML, and Despray FileServices functions.</entry>
         </row>
 
@@ -46,7 +46,7 @@
           <entry>Optional. A null-terminated string containing the protocol,
           IP, port, and directory, or the DNS equivalent, of the ESP server
           program. This is usually the same IP and port as ECL Watch, with
-          “/FileSpray” appended. If omitted, the default is the value
+          "/FileSpray" appended. If omitted, the default is the value
           contained in the lib_system.ws_fs_server attribute.</entry>
         </row>
 

@@ -39,7 +39,7 @@
 
             <entry>An R&amp;D platform designed for iterative, interactive
             development and testing of Roxie queries. This is not a separate
-            cluster, but a “piggyback” implementation of ECL Agent and Thor.
+            cluster, but a "piggyback" implementation of ECL Agent and Thor.
             See the HPCC operational manuals for complete
             documentation.</entry>
           </row>
@@ -50,11 +50,11 @@
   <sect2 id="Thor">
     <title>Thor</title>
 
-    <para>Thor clusters are used to do all the “heavy lifting” data
+    <para>Thor clusters are used to do all the "heavy lifting" data
     preparation work to process raw data into standard formats. Once that
     process is complete, end-users can query that standardized data to glean
     real information. However, end-users typically want to see their results
-    “immediately or sooner”—and usually more than one end-user wants their
+    "immediately or sooner"--and usually more than one end-user wants their
     result at the same time. The Thor platform only works on one query at a
     time, which makes it impractical for use by end-users, and that is why the
     Roxie platform was created.</para>
@@ -64,7 +64,7 @@
     <title>Roxie</title>
 
     <para>Roxie clusters can handle thousands of simultaneous end-users and
-    provide them all with the perception of “immediately or sooner” results.
+    provide them all with the perception of "immediately or sooner" results.
     It does this by only allowing end-users to run standard, pre-compiled
     queries that have been developed specifically for end-user use on the
     Roxie cluster. Typically, these queries use indexes and thus, provide
@@ -98,11 +98,11 @@
     in the right direction for that.</para>
 
     <para>Once the data is ready to use, you can then write the query. Queries
-    for Roxie clusters always contain at least one action—usually a simple
+    for Roxie clusters always contain at least one action--usually a simple
     OUTPUT to return the result set.</para>
 
     <para>Roxie queries use either a SOAP (Simple Object Access Protocol) or
-    JSON (JavaScript Object Notation) interface to “pass in” data values. The
+    JSON (JavaScript Object Notation) interface to "pass in" data values. The
     values passed through the interface wind up in definitions with the STORED
     workflow service. Your ECL code then can use those definitions to
     determine the passed values and return the appropriate result to the
@@ -141,7 +141,7 @@ END;</programlisting>
     with payload keys (the <emphasis>Complex Roxie Queries</emphasis> article
     addresses this issue). Note that the OUTPUT contains a CHOOSEN as a simple
     example of how to ensure you limit the maximum amount of data that can be
-    returned from the query to some “reasonable” amount—it doesn't make much
+    returned from the query to some "reasonable" amount--it doesn't make much
     sense to have a Roxie query that could possibly return 10 billion records
     to an end-user's PC (anybody actually needing that much data should be
     working in Thor, not Roxie).</para>
@@ -169,7 +169,7 @@ END;</programlisting>
 
     <para>5. Press the Publish button</para>
 
-    <para>Open the ECL Watch web page (not using the ECL IDE — open it in
+    <para>Open the ECL Watch web page (not using the ECL IDE -- open it in
     Internet Explorer). The IP for ECL Watch is the same as the IP you used to
     configure the ECL IDE to access the environment you're working in. The
     Port is 8010.</para>
@@ -197,7 +197,7 @@ END;</programlisting>
 
     <para>11. Press the Enter key</para>
 
-    <para>A login dialog may appear—your login ID and password are the same as
+    <para>A login dialog may appear--your login ID and password are the same as
     the ones you use for the ECL IDE. After you've logged in, you'll see a
     tree list of QuerySets on the left.</para>
 

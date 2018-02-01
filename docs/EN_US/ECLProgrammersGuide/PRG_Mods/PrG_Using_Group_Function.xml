@@ -22,8 +22,8 @@
   <sect2 id="GROUP_vs_SORT">
     <title>GROUP vs. SORT</title>
 
-    <para>The GROUP function does not automatically sort the records it’s
-    operating on—it will GROUP based on the order of the records it is given.
+    <para>The GROUP function does not automatically sort the records it's
+    operating on--it will GROUP based on the order of the records it is given.
     Therefore, SORTing the records first by the field(s) on which you want to
     GROUP is usually done (except in circumstances where the GROUP field(s)
     are used only to break a single large operation up into a number of much

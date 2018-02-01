@@ -8,7 +8,7 @@
     <title><emphasis role="bold">Scanning Landing Zone
     Files</emphasis></title>
 
-    <para><emphasis>Here’s the scenario—you’ve just received a data file from
+    <para><emphasis>Here's the scenario--you've just received a data file from
     someone and it has been put on your landing zone. Before you spray that
     file to your Thor cluster and start to work with it, you want to have a
     quick look to see exactly what kind of data it contains and whether the
@@ -18,7 +18,7 @@
     at the contents. </emphasis></para>
 
     <para>This article will show you how to accomplish this from within
-    QueryBuilder using ECL. Here’s the code (contained in the
+    QueryBuilder using ECL. Here's the code (contained in the
     Default.ProgGuide MODULE attribute):</para>
 
     <programlisting>IMPORT STD;
@@ -49,7 +49,7 @@ ENDMACRO;
     <para>This is written as a MACRO because you could have multiple Landing
     Zones, and you certainly are going to want to look into different files
     each time. Therefore, a MACRO that generates the standard process code to
-    scan the file is precisely what’s needed here.</para>
+    scan the file is precisely what's needed here.</para>
 
     <para>This MACRO takes three parameters: the IP of the landing zone
     containing the file the fully-qualified path to that file on the landing
@@ -76,8 +76,8 @@ ENDMACRO;
     Non-displayable binary characters show up as a square box in the text
     column display.</para>
 
-    <para>Next, we’ll construct a more text-friendly view of the data. To do
-    that we’ll start with the Rec RECORD structure, which defines a
+    <para>Next, we'll construct a more text-friendly view of the data. To do
+    that we'll start with the Rec RECORD structure, which defines a
     byte-counter field (UNSIGNED2 C) and a variable-length field (DATA S
     {MAXLENGTH(8*1024)} to contain the text representation of the data as a
     single horizontal line of text.</para>
@@ -111,8 +111,8 @@ ENDMACRO;
 
     <para>The QueryBuilder Result_2 tab displays a single record with a single
     field. You can click on that field to highlight it, right-click and select
-    “Copy” from the popup menu, then paste the text into any text editor to
-    view. Binary fields will appear as square blocks or “garbage” characters,
+    "Copy" from the popup menu, then paste the text into any text editor to
+    view. Binary fields will appear as square blocks or "garbage" characters,
     depending on their hex value. Once pasted into a text editor, you can
     easily look for data patterns that indicate the start for fields or
     records and validate that the data layout information provided by the data
@@ -220,7 +220,7 @@ SEQUENTIAL(Out1,Out2,Out3) </programlisting>
     After that, the process to achieve the Cartesian Product is exactly the
     same as the previous example.</para>
 
-    <para>Here’s an example of how this same operation can be done using JOIN
+    <para>Here's an example of how this same operation can be done using JOIN
     (also contained in Cartesian.ECL):</para>
 
     <programlisting>// outrec joinEm(rec L, rec R) := TRANSFORM
@@ -241,7 +241,7 @@ SEQUENTIAL(Out1,Out2,Out3) </programlisting>
     of profanity or cartoon character names in the data. This can become an
     issue whenever you are working with data that originated from direct input
     by end-users to a website. The following code (contained in the
-    BadWordSearch.ECL file) will detect the presence of any of a set of “bad”
+    BadWordSearch.ECL file) will detect the presence of any of a set of "bad"
     words in a given field:</emphasis></para>
 
     <programlisting>SetBadWords := ['JUNK', 'GARBAGE', 'CRAP'];
@@ -284,15 +284,15 @@ OUTPUT(result(FoundWord=FALSE),NAMED('NoBadWordsInFirstName'));
     <para>This code is a simple PROJECT of each record that you want to
     search. The result will be a record set containing the record ID field,
     the firstname search field, and a BOOLEAN FoundWord flag field indicating
-    whether any “bad” word was found.</para>
+    whether any "bad" word was found.</para>
 
     <para>The search itself is done by a nested PROJECT of the field to be
-    searched against the DATASET of “bad” words. Using the EXISTS function to
+    searched against the DATASET of "bad" words. Using the EXISTS function to
     detect if any records are returned from that PROJECT where the returned
     Found field is TRUE sets the FoundWord flag field value.</para>
 
     <para>The StringLib.StringFind function simoply detects the presence
-    anywhere within the search strin of any of the “bad” words. The OUTPUT of
+    anywhere within the search strin of any of the "bad" words. The OUTPUT of
     the set of records where the FoundWord is TRUE allows post-processing to
     evaluate whether the record is worth keeping or garbage (probably
     requiring human intervention).</para>
@@ -360,13 +360,13 @@ ENDMACRO;    </programlisting>
     <para>Where this MACRO starts going beyond the previous example is in the
     MatchType parameter, which allows the MACRO to use the Template Language
     #IF function to generate three different kinds of searches from the same
-    codebase: a “contains” search (the default), an exact match, and a “starts
-    with” search.</para>
+    codebase: a "contains" search (the default), an exact match, and a "starts
+    with" search.</para>
 
     <para>It also has an expanded output RECORD structure that includes a
     FoundPos field to contain the pointer to the first entry in the passed in
     set that matched. This allows post processing to detect positional matches
-    within the set so that “matched pairs” of words can be detected, as in
+    within the set so that "matched pairs" of words can be detected, as in
     this example (also contained in the BadWordSearch.ECL file):</para>
 
     <programlisting>SetCartoonFirstNames := ['GEORGE','FRED', 'FREDDY'];
@@ -396,15 +396,15 @@ OUTPUT(GoodGuys,NAMED('GoodGuys'));
     passes. Calling the MACRO twice, searching for the first and last names
     separately, allows you to post-process their results with a simple inner
     JOIN where the same record was found in each and, most importantly, the
-    positional values of the matches are the same. This prevents “GEORGE
-    KRUEGER” from being mis-labelled a cartoon chracter name.</para>
+    positional values of the matches are the same. This prevents "GEORGE
+    KRUEGER" from being mis-labelled a cartoon chracter name.</para>
   </sect2>
 
   <sect2 id="Simple_Random_Samples">
     <title><emphasis role="bold">Simple Random Samples</emphasis></title>
 
-    <para><emphasis>There is a statistical concept called a “Simple Random
-    Sample” in which a statistically “random” (different from simply using the
+    <para><emphasis>There is a statistical concept called a "Simple Random
+    Sample" in which a statistically "random" (different from simply using the
     RANDOM() function) sample of records is generated from any dataset. The
     algorithm inmplemented in the following code example was provided by a
     customer.</emphasis></para>
@@ -466,17 +466,17 @@ ENDMACRO;
     uniquely numbered unique identifier fields. Then we use NORMALIZE to
     produce a recordset of the candidate records. Which candidate is chosen
     each time the TRANSFORM function is called is determined by generating a
-    “random” value between zero and one, using modulus division by one hundred
+    "random" value between zero and one, using modulus division by one hundred
     thousand on the return from the RANDOM() function, then multiplying that
     result by the number of records to sample from, rounding up to the next
     larger integer. This determines the position of the field identifier to
     use. Once the set of positions within the TABLE is determined, they are
     used to define the SET of unique fields to use in the final result.</para>
 
-    <para>This algorithm is designed to produce a sample “with replacement” so
+    <para>This algorithm is designed to produce a sample "with replacement" so
     that it is possible to have a smaller number of records returned than the
     sample size requested. To produce exactly the size sample you need (that
-    is, a “without replacement” sample), you can request a larger sample size
+    is, a "without replacement" sample), you can request a larger sample size
     (say, 10% larger) then use the CHOOSEN function to retrieve only the
     actual number of records required, as in this example (also contained in
     the SimpleRandomSamples.ECL file).</para>
@@ -586,12 +586,12 @@ END;
     <para>This HexStr2Decimal FUNCTION takes a variable-length STRING
     parameter containing the hexadecimal value to evaluate. It begins by
     re-defining the eight possible sizes of unsigned BIG ENDIAN integers. This
-    re-definition is purely for cosmetic purposes—to make the subsequent code
+    re-definition is purely for cosmetic purposes--to make the subsequent code
     more readable.</para>
 
     <para>The next three attributes detect whether an even or odd number of
     hexadecimal characters have been passed. If an odd number is passed, then
-    a “0” character is prepended to the passed value to ensure the hex values
+    a "0" character is prepended to the passed value to ensure the hex values
     are placed inthe correct nibbles.</para>
 
     <para>The Str2Data FUNCTION takes a two-character STRING parameter and
@@ -600,9 +600,9 @@ END;
     character defines the first nibble and the second defines the second.
     These two values are ORed together (using the bitwise | operator) then the
     result is type transferred to a one-character string, using the shorthand
-    syntax— (&gt;STRING1&lt;) —so that the bit pattern remains untouched. The
+    syntax-- (&gt;STRING1&lt;) --so that the bit pattern remains untouched. The
     RETURN result from this FUNCTION is a STRING1 because each succeeding
-    two-character portion of the HexStr2Decimal FUNCTION’s input parameter
+    two-character portion of the HexStr2Decimal FUNCTION's input parameter
     will pass through the Str2Data FUNCTION and be concatenated with all the
     preceding results.</para>
 

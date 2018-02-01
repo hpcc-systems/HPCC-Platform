@@ -73,12 +73,12 @@ END;
   <para>This HexStr2Decimal FUNCTION takes a variable-length STRING parameter
   containing the hexadecimal value to evaluate. It begins by re-defining the
   eight possible sizes of unsigned BIG ENDIAN integers. This re-definition is
-  purely for cosmetic purposes—to make the subsequent code more
+  purely for cosmetic purposes--to make the subsequent code more
   readable.</para>
 
   <para>The next three attributes detect whether an even or odd number of
   hexadecimal characters has been passed. If an odd number is passed, then a
-  “0” character is prepended to the passed value to ensure the hex values are
+  "0" character is prepended to the passed value to ensure the hex values are
   placed in the correct nibbles.</para>
 
   <para>The Str2Data FUNCTION takes a two-character STRING parameter and
@@ -86,8 +86,8 @@ END;
   nibble of the resulting 1-character STRING that it returns. The first
   character defines the first nibble and the second defines the second. These
   two values are ORed together (using the bitwise | operator) then the result
-  is type transferred to a one-character string, using the shorthand syntax—
-  (&gt;STRING1&lt;) —so that the bit pattern remains untouched. The RETURN
+  is type transferred to a one-character string, using the shorthand syntax--
+  (&gt;STRING1&lt;) --so that the bit pattern remains untouched. The RETURN
   result from this FUNCTION is a STRING1 because each succeeding two-character
   portion of the HexStr2Decimal FUNCTION's input parameter will pass through
   the Str2Data FUNCTION and be concatenated with all the preceding

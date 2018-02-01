@@ -6,11 +6,11 @@
 
   <para>Beginning with version 6.0.0, you can configure your system to use
   Apache <trademark>Cassandra</trademark> database for Workunit storage.
-  Apache’s Cassandra NoSQL data store is a software framework that supports
+  Apache's Cassandra NoSQL data store is a software framework that supports
   data-intensive distributed applications under a free license.</para>
 
   <para>The default HPCC configuration continues to be the same--Workunits are
-  stored in Dali’s data store and Sasha is typically configured to archive
+  stored in Dali's data store and Sasha is typically configured to archive
   workunits to disk to save memory usage.</para>
 
   <para>Switching to Cassandra Workunit storage eliminates the need to archive
@@ -98,7 +98,7 @@
               </listitem>
 
               <listitem>
-                <para>If you want security, you should set up Cassandra’s
+                <para>If you want security, you should set up Cassandra's
                 authentication and create a superuser for HPCC to use. These
                 credentials must then be entered in the DaliPlugin
                 configuration in Configuration Manager.</para>

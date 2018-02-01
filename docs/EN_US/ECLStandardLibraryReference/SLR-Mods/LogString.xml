@@ -39,7 +39,7 @@
   </informaltable>
 
   <para>The <emphasis role="bold">LogString </emphasis>function outputs
-  “USER:” followed by the <emphasis>message</emphasis> text to the eclagent or
+  "USER:" followed by the <emphasis>message</emphasis> text to the eclagent or
   Roxie log file and returns the length of the text written to the
   file.</para>
 

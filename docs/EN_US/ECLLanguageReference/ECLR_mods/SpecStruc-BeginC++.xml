@@ -74,7 +74,7 @@ ENDEMBED</programlisting></para>
 
   <para><emphasis role="bold">WARNING: This feature could create memory
   corruption and/or security issues, so great care and forethought are
-  advised—consult with Technical Support before using.</emphasis></para>
+  advised--consult with Technical Support before using.</emphasis></para>
 
   <sect2 id="ECL_to_Cplus_Mapping">
     <title>ECL to C++ Mapping</title>

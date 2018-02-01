@@ -46,7 +46,7 @@
                   </indexterm>(LEFT)<indexterm>
                     <primary>ROWSET(LEFT)</primary>
                   </indexterm>   </emphasis>Specifies the set of input datasets, which may be indexed 
-                                  to specify the result set from any specific iteration — 
+                                  to specify the result set from any specific iteration -- 
                                   ROWSET(LEFT)[0] indicates the initial input <emphasis>recordset</emphasis> while
                                   ROWSET(LEFT)[1] indicates the result set from the first 
                                   iteration. This may also be used as the first parameter 
@@ -144,7 +144,7 @@ loopBody(SET OF DATASET(namesRec) ds, UNSIGNED4 c) :=
       PROJECT(ds[c-1],    //ds[0]=original input
      TRANSFORM(namesRec,
     SELF.age := LEFT.age+c; //c is graph COUNTER
-    SELF.ctr := COUNTER;    //PROJECT’s COUNTER
+    SELF.ctr := COUNTER;    //PROJECT's COUNTER
     SELF := LEFT));
 
 g1 := GRAPH(namesTable2,10,loopBody(ROWSET(LEFT),COUNTER));
