@@ -2027,6 +2027,7 @@ public:
         fileTimeStamp.serialize(mb);
         mb.append(fileCheckSum);
         mb.append(fileSize);
+        mb.append(isSuper);
         unsigned numSubFiles = subFiles.length();
         mb.append(numSubFiles);
         ForEachItemIn(idx, subFiles)
@@ -2504,6 +2505,7 @@ public:
                 fileTimeStamp.deserialize(serverData);
                 serverData.read(fileCheckSum);
                 serverData.read(fileSize);
+                serverData.read(isSuper);
                 unsigned numSubFiles;
                 serverData.read(numSubFiles);
                 for (unsigned fileNo = 0; fileNo < numSubFiles; fileNo++)
@@ -2635,9 +2637,15 @@ public:
             CriticalUnblock b1(crit);
             ret.setown(new CSlaveDynamicFile(logctx, lfn, header, isOpt, isLocal));
         }
-        while (files.length() > tableSize)
-            files.remove(files.length()-1);
-        files.add(*ret.getLink(), 0);
+        if (!ret->isSuperFile())
+        {
+            // Cache results for improved performance - we DON'T cache superfiles as they are liable to change during the course of a query.
+            // Note that even caching non-superfiles is also potentially going to give stale results, if the cache persists beyond the current
+            // query.
+            while (files.length() > tableSize)
+                files.remove(files.length()-1);
+            files.add(*ret.getLink(), 0);
+        }
         return ret.getClear();
     }
 
