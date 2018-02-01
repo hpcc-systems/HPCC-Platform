@@ -4780,13 +4780,47 @@ public:
     void updateItems()
     {
         // must be in CriticalBlock block(sect);
+        // to handle add(A), add(B), remove(A), remove(B), add(A), add(B)
+        // and try to preserve add/remove order we use two loops
+        unsigned toDel = 0;
+        unsigned startDel = 0;
         unsigned n = items.ordinality();
-        for (unsigned i=0;i<n;)
+        for (unsigned i=0;i<n;i++)
         {
             SelectItem *si = items.element(i);
             if (si->del)
             {
+                if (0 == toDel)
+                    startDel = i;
+                toDel++;
                 epoll_op(epfd, EPOLL_CTL_DEL, si, 0);
+            }
+            else if (si->add_epoll)
+            {
+                si->add_epoll = false;
+                if (si->mode != 0)
+                {
+                    unsigned int ep_mode = 0;
+                    if (si->mode & SELECTMODE_READ)
+                        ep_mode |= EPOLLIN;
+                    if (si->mode & SELECTMODE_WRITE)
+                        ep_mode |= EPOLLOUT;
+                    if (si->mode & SELECTMODE_EXCEPT)
+                        ep_mode |= EPOLLPRI;
+                    if (ep_mode != 0)
+                        epoll_op(epfd, EPOLL_CTL_ADD, si, ep_mode);
+                }
+            }
+        }
+
+        if (0 == toDel)
+            return;
+
+        for (unsigned i=startDel,numDel=0 ; i<n && numDel<toDel;)
+        {
+            SelectItem *si = items.element(i);
+            if (si->del)
+            {
                 // Release/dtors should not throw but leaving try/catch here until all paths checked
                 try
                 {
@@ -4807,25 +4841,10 @@ public:
                 if (i<n)
                     items.swap(i,n);
                 items.remove(n);
+                numDel++;
             }
             else
             {
-                if (si->add_epoll)
-                {
-                    si->add_epoll = false;
-                    if (si->mode != 0)
-                    {
-                        unsigned int ep_mode = 0;
-                        if (si->mode & SELECTMODE_READ)
-                            ep_mode |= EPOLLIN;
-                        if (si->mode & SELECTMODE_WRITE)
-                            ep_mode |= EPOLLOUT;
-                        if (si->mode & SELECTMODE_EXCEPT)
-                            ep_mode |= EPOLLPRI;
-                        if (ep_mode != 0)
-                            epoll_op(epfd, EPOLL_CTL_ADD, si, ep_mode);
-                    }
-                }
                 i++;
             }
         }
