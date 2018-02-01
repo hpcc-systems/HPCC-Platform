@@ -660,6 +660,7 @@ const char * getOperatorIRText(node_operator op)
     EXPAND_CASE(no,httpcall);
     EXPAND_CASE(no,getenv);
     EXPAND_CASE(no,json);
+    EXPAND_CASE(no,matched_injoin);
     }
 
     return "<unknown>";

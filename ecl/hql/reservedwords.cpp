@@ -245,6 +245,7 @@ static const char * eclReserved10[] = { //File IO
     "expire",
     "heading",
     "multiple",
+    "label",
     "nooverwrite",
     "overwrite",
     "preload",
