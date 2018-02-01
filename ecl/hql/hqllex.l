@@ -1041,6 +1041,7 @@ __STAND_ALONE__     {
                         setupdatepos; 
                         return (__STAND_ALONE__);
                     }
+__TARGET_PLATFORM__ { RETURNSYM(__TARGET_PLATFORM__); }
                         
 {percent}{alphanumcolon}*{percent} {
                         setupdatepos;

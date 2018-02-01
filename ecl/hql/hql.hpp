@@ -211,6 +211,10 @@ interface ICodegenContextCallback : public IInterface
      *
      */
     virtual unsigned lookupClusterSize() const = 0;
+    /*
+     * Which platform was this query originally targeted to?
+     */
+    virtual void getTargetPlatform(StringBuffer & result) = 0;
 };
 
 

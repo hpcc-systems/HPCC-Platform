@@ -4525,6 +4525,14 @@ ITypeInfo * HqlGram::queryElementType(const attribute & errpos, IHqlExpression *
 }
 
 
+IHqlExpression * HqlGram::getTargetPlatformExpr()
+{
+    StringBuffer platform;
+    lookupCtx.queryParseContext().codegenCtx->getTargetPlatform(platform);
+    return createConstant(platform);
+}
+
+
 void HqlGram::setDefaultString(attribute &a)
 {
     a.release();
@@ -11142,6 +11150,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case TABLE: msg.append("TABLE"); break;
     case TAN: msg.append("TAN"); break;
     case TANH: msg.append("TANH"); break;
+    case __TARGET_PLATFORM__: msg.append("__TARGET_PLATFORM__"); break;
     case TERMINATOR: msg.append("TERMINATOR"); break;
     case THEN: msg.append("THEN"); break;
     case THISNODE: msg.append("THISNODE"); break;

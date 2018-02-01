@@ -528,6 +528,7 @@ public:
     void ensureType(attribute &atr, ITypeInfo * type);
     void inheritRecordMaxLength(IHqlExpression * dataset, SharedHqlExpr & record);
 
+    IHqlExpression * getTargetPlatformExpr();
     void normalizeExpression(attribute & expr);
     void normalizeExpression(attribute & expr, type_t expectedType, bool isConstant);
 
