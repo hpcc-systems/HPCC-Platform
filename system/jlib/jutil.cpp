@@ -2404,6 +2404,7 @@ jlib_decl const IProperties &queryEnvironmentConf()
 
 
 static StringBuffer DAFSpassPhrase;//deprecated
+static CriticalSection DAFSpassPhraseCrit;
 jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
                                      unsigned short *_port,
                                      const char * *  _certificate,
@@ -2433,44 +2434,47 @@ jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
                 *_connectMethod = SSLNone;
         }
 
+        //Begin of deprecated code
         bool dfsKeywords = false;
         if (_certificate)
         {
-		    *_certificate = conf.queryProp("dfsSSLCertFile");
-		    if (*_certificate)
-		        dfsKeywords = true;
+            *_certificate = conf.queryProp("dfsSSLCertFile");
+            if (*_certificate)
+                dfsKeywords = true;
         }
         if (_privateKey)
         {
-		    *_privateKey = conf.queryProp("dfsSSLPrivateKeyFile");
-		    if (*_privateKey)
-		        dfsKeywords = true;
+            *_privateKey = conf.queryProp("dfsSSLPrivateKeyFile");
+            if (*_privateKey)
+                dfsKeywords = true;
         }
         if (_passPhrase)
-		{
-			if (DAFSpassPhrase.isEmpty())
-			{
-				const char *passPhrasePtr = conf.queryProp("dfsSSLPassPhrase");
-				if (!isEmptyString(passPhrasePtr))
-		        {
-		            dfsKeywords = true;
-					decrypt(DAFSpassPhrase, passPhrasePtr);
-		        }
-			}
-			*_passPhrase = DAFSpassPhrase.str();
-		}
+        {
+            CriticalBlock b(DAFSpassPhraseCrit);
+            if (DAFSpassPhrase.isEmpty())
+            {
+                const char *passPhrasePtr = conf.queryProp("dfsSSLPassPhrase");
+                if (!isEmptyString(passPhrasePtr))
+                {
+                    dfsKeywords = true;
+                    decrypt(DAFSpassPhrase, passPhrasePtr);
+                }
+            }
+            *_passPhrase = DAFSpassPhrase.str();
+        }
 
-		if (!dfsKeywords && (_certificate || _privateKey || _passPhrase))
-			queryHPCCPKIKeyFiles(_certificate, _privateKey, _passPhrase);//use new keywords
+        if (!dfsKeywords && (_certificate || _privateKey || _passPhrase))
+        //end of deprecated code
+            queryHPCCPKIKeyFiles(_certificate, _privateKey, _passPhrase);//use new keywords
 
-		if (_port)
-		{
-			// port to try first (or only) ...
-			if (!_connectMethod || *_connectMethod == SSLNone || *_connectMethod == UnsecureFirst)
-				*_port = DAFILESRV_PORT;
-			else
-				*_port = SECURE_DAFILESRV_PORT;
-		}
+        if (_port)
+        {
+            // port to try first (or only) ...
+            if (!_connectMethod || *_connectMethod == SSLNone || *_connectMethod == UnsecureFirst)
+                *_port = DAFILESRV_PORT;
+            else
+                *_port = SECURE_DAFILESRV_PORT;
+        }
     }
 
     return true;
@@ -2486,16 +2490,17 @@ jlib_decl bool queryDafsSecSettings(DAFSConnectCfg *_connectMethod,
     bool ret = querySecuritySettings(_connectMethod, nullptr, _certificate, _privateKey, _passPhrase);
     if (ret)
     {
-		if (_port)
-			*_port = DAFILESRV_PORT;
-		if (_sslport)
-			*_sslport = SECURE_DAFILESRV_PORT;
-	}
+        if (_port)
+            *_port = DAFILESRV_PORT;
+        if (_sslport)
+            *_sslport = SECURE_DAFILESRV_PORT;
+    }
     return ret;
 }
 
 //query PKI values from environment.conf
 static StringBuffer HPCCpassPhrase;
+static CriticalSection HPCCpassPhraseCrit;
 jlib_decl bool queryHPCCPKIKeyFiles(const char * *  _certificate,//HPCCCertFile
                                     const char * *  _privateKey, //HPCCPrivateKeyFile
                                     const char * *  _passPhrase) //HPCCPassPhrase
@@ -2507,11 +2512,12 @@ jlib_decl bool queryHPCCPKIKeyFiles(const char * *  _certificate,//HPCCCertFile
         *_privateKey = conf.queryProp("HPCCPrivateKeyFile");;
     if (_passPhrase)
     {
+        CriticalBlock b(HPCCpassPhraseCrit);
         if (HPCCpassPhrase.isEmpty())
         {
-		    const char *passPhrasePtr = conf.queryProp("HPCCPassPhrase");
-		    if (!isEmptyString(passPhrasePtr))
-			    decrypt(HPCCpassPhrase, passPhrasePtr);
+            const char *passPhrasePtr = conf.queryProp("HPCCPassPhrase");
+            if (!isEmptyString(passPhrasePtr))
+                decrypt(HPCCpassPhrase, passPhrasePtr);
         }
         *_passPhrase = HPCCpassPhrase.str();
     }
