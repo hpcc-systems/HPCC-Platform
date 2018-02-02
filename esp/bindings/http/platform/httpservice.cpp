@@ -1395,6 +1395,15 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
         return authFailed;
     }
 
+    StringBuffer peer;
+    const char* sessionStartIP = sessionTree->queryProp(PropSessionNetworkAddress);
+    if (!streq(m_request->getPeer(peer).str(), sessionStartIP))
+    {
+        ESPLOG(LogMin, "Authentication failed: session:<%u> received from <%s>, not from <%s>", sessionID, peer.str(), sessionStartIP);
+        sendMessage("Invalid session.", "text/html; charset=UTF-8");
+        return authFailed;
+    }
+
     authOptionalGroups(authReq);
 
     //The UserID has to be set before the populateRequest() because the UserID is used to create the user object.
