@@ -2421,17 +2421,24 @@ jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
     sslMethod.set(conf.queryProp("dfsUseSSL"));
     if (!sslMethod.isEmpty())
     {
-        if (_connectMethod )
+        DAFSConnectCfg tmpMethod;
+        // checking for true | false for backward compatibility
+        if ( strieq(sslMethod.str(), "SSLOnly") || strieq(sslMethod.str(), "true") )
+            tmpMethod = SSLOnly;
+        else if ( strieq(sslMethod.str(), "SSLFirst") )
+            tmpMethod = SSLFirst;
+        else if ( strieq(sslMethod.str(), "UnsecureFirst") )
+            tmpMethod = UnsecureFirst;
+        else // SSLNone or false or ...
+            tmpMethod = SSLNone;
+
+        if (_connectMethod)
+            *_connectMethod = tmpMethod;
+
+        if (_port)
         {
-            // checking for true | false for backward compatibility
-            if ( strieq(sslMethod.str(), "SSLOnly") || strieq(sslMethod.str(), "true") )
-                *_connectMethod = SSLOnly;
-            else if ( strieq(sslMethod.str(), "SSLFirst") )
-                *_connectMethod = SSLFirst;
-            else if ( strieq(sslMethod.str(), "UnsecureFirst") )
-                *_connectMethod = UnsecureFirst;
-            else // SSLNone or false or ...
-                *_connectMethod = SSLNone;
+            if (tmpMethod == SSLOnly || tmpMethod == SSLFirst)
+                *_port = SECURE_DAFILESRV_PORT;
         }
 
         //Begin of deprecated code
@@ -2445,8 +2452,8 @@ jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
         if (_privateKey)
         {
             *_privateKey = conf.queryProp("dfsSSLPrivateKeyFile");
-            if (*_privateKey)
-                dfsKeywords = true;
+             if (*_privateKey)
+                 dfsKeywords = true;
         }
         if (_passPhrase)
         {
@@ -2464,16 +2471,9 @@ jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
         }
 
         if (!dfsKeywords && (_certificate || _privateKey || _passPhrase))
+        {
         //end of deprecated code
             queryHPCCPKIKeyFiles(_certificate, _privateKey, _passPhrase);//use new keywords
-
-        if (_port)
-        {
-            // port to try first (or only) ...
-            if (!_connectMethod || *_connectMethod == SSLNone || *_connectMethod == UnsecureFirst)
-                *_port = DAFILESRV_PORT;
-            else
-                *_port = SECURE_DAFILESRV_PORT;
         }
     }
 
