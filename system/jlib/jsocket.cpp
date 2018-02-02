@@ -4875,9 +4875,11 @@ public:
                 si->del = true;
                 // remove from epoll fd list so add doesn't fail
                 if (!si->add_epoll)
+                {
                     epoll_op(epfd, EPOLL_CTL_DEL, si, 0);
-                selectvarschange = true;
-                triggerselect();
+                    selectvarschange = true;
+                    triggerselect();
+                }
                 return true;
             }
         }
@@ -4903,6 +4905,8 @@ public:
                 // remove from epoll fd list so add doesn't fail
                 if (!si->add_epoll)
                     epoll_op(epfd, EPOLL_CTL_DEL, si, 0);
+                // Q: seems we can break out of loop now ?
+                break;
             }
         }
         SelectItem *sn = new SelectItem;
