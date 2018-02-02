@@ -7599,6 +7599,8 @@ class CRoxieServerHashDedupActivity : public CRoxieServerActivity
         const void *keyRow;
     };
 
+    static CClassMeta<HashDedupElement> hashDedupElementMeta;
+
     class HashDedupTable : public SuperHashTable
     {
     public:
@@ -7629,13 +7631,13 @@ class CRoxieServerHashDedupActivity : public CRoxieServerActivity
         virtual void onAdd(void *et) {}
         virtual void onRemove(void *et)
         {
-            const HashDedupElement *element = reinterpret_cast<const HashDedupElement *>(et);
-            delete element;
+            ReleaseRoxieRow(et);
         }
 
         void onCreate(IRoxieSlaveContext *ctx)
         {
             keyRowAllocator.setown(activity.createRowAllocator(keySize.queryOriginal()));
+            elementRowAllocator.setown(activity.createRowAllocatorEx(&hashDedupElementMeta, roxiemem::RHFunique|roxiemem::RHFnofragment|roxiemem::RHFdelayrelease));
         }
 
         void reset()
@@ -7651,7 +7653,7 @@ class CRoxieServerHashDedupActivity : public CRoxieServerActivity
             OwnedConstRoxieRow keyRow = keyRowBuilder.finalizeRowClear(thisKeySize);
             if (find(hash, keyRow.get()))
                 return false;
-            addNew(new HashDedupElement(hash, keyRow.getClear()), hash);
+            addNew(createElement(hash, keyRow.getClear()), hash);
             return true;
         }
 
@@ -7668,7 +7670,7 @@ class CRoxieServerHashDedupActivity : public CRoxieServerActivity
                 removeExact( const_cast<void *>(et));
                 // drop-through to add new row
             }
-            addNew(new HashDedupElement(hash, nextrow), hash);
+            addNew(createElement(hash, nextrow), hash);
             return true;
         }
 
@@ -7679,9 +7681,14 @@ class CRoxieServerHashDedupActivity : public CRoxieServerActivity
         }
 
     private:
+        inline void *createElement(unsigned hash, const void *row)
+        {
+            return elementRowAllocator->finalizeRow(sizeof(HashDedupElement), new (elementRowAllocator->createRow()) HashDedupElement(hash, row), sizeof(HashDedupElement));
+        }
         IHThorHashDedupArg & helper;
         CachedOutputMetaData keySize;
         Owned<IEngineRowAllocator> keyRowAllocator;
+        Owned<IEngineRowAllocator> elementRowAllocator;
         CRoxieServerHashDedupActivity & activity;
         ICompare * bestCompare;
     } table;
@@ -7776,6 +7783,8 @@ private:
     bool hashTableFilled;
     SuperHashIteratorOf<HashDedupElement> hashDedupTableIter;
 };
+
+CClassMeta<CRoxieServerHashDedupActivity::HashDedupElement> CRoxieServerHashDedupActivity::hashDedupElementMeta;
 
 class CRoxieServerHashDedupActivityFactory : public CRoxieServerActivityFactory
 {
