@@ -4786,7 +4786,7 @@ public:
             SelectItem *si = items.element(i);
             if (si->del)
             {
-                epoll_op(epfd, EPOLL_CTL_DEL, si, 0);
+                // already removed from epoll fd list
                 // Release/dtors should not throw but leaving try/catch here until all paths checked
                 try
                 {
@@ -4833,6 +4833,7 @@ public:
 
     bool checkSocks()
     {
+        // must be holding CriticalBlock sect
         bool ret = false;
         ForEachItemIn(i,items)
         {
@@ -4842,6 +4843,9 @@ public:
             else if (!sockOk(si->handle))
             {
                 si->del = true;
+                // remove from epoll fd list so add doesn't fail
+                if (!si->add_epoll)
+                    epoll_op(epfd, EPOLL_CTL_DEL, si, 0);
                 ret = true;
             }
         }
@@ -4869,8 +4873,13 @@ public:
             if ( (!si->del) && (si->sock==sock) )
             {
                 si->del = true;
-                selectvarschange = true;
-                triggerselect();
+                // remove from epoll fd list so add doesn't fail
+                if (!si->add_epoll)
+                {
+                    epoll_op(epfd, EPOLL_CTL_DEL, si, 0);
+                    selectvarschange = true;
+                    triggerselect();
+                }
                 return true;
             }
         }
@@ -4891,7 +4900,14 @@ public:
         {
             SelectItem *si = items.element(i);
             if ( !si->del && (si->sock==sock) )
+            {
                 si->del = true;
+                // remove from epoll fd list so add doesn't fail
+                if (!si->add_epoll)
+                    epoll_op(epfd, EPOLL_CTL_DEL, si, 0);
+                // Q: seems we can break out of loop now ?
+                break;
+            }
         }
         SelectItem *sn = new SelectItem;
         sn->nfy = LINK(nfy);
