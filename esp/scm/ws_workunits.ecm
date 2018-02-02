@@ -444,7 +444,7 @@ ESPrequest [nil_remove] WUQueryRequest
     [min_ver("1.03")] int64 PageSize(0);
     [min_ver("1.03")] int64 PageStartFrom(0);
     [min_ver("1.03")] int64 PageEndAt;
-    [min_ver("1.26")] int LastNDays;
+    [min_ver("1.26"), depr_ver("1.72")] int LastNDays;
 
     string Sortby;
     bool Descending(false);
@@ -479,7 +479,7 @@ ESPresponse [nil_remove, exceptions_inline] WUQueryResponse
     bool First(true);
     [min_ver("1.03")] int64 PageStartFrom(-1);
     [min_ver("1.03")] int64 PageEndAt;
-    [min_ver("1.26")] int LastNDays;
+    [min_ver("1.26"), depr_ver("1.72")] int LastNDays;
 
     string Sortby;
     bool Descending(false);
@@ -2119,7 +2119,7 @@ ESPResponse [exceptions_inline] WUDetailsMetaResponse
 // ----------------------------------------------------------------------------------
 ESPservice [
     auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
-    version("1.71"), default_client_version("1.71"),
+    version("1.72"), default_client_version("1.72"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);

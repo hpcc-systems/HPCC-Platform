@@ -2519,7 +2519,7 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
         addToQueryString(basicQuery, "Owner", req.getOwner());
         addToQueryString(basicQuery, "StartDate", req.getStartDate());
         addToQueryString(basicQuery, "EndDate", req.getEndDate());
-        if (version > 1.25 && req.getLastNDays() > -1)
+        if (version >= 1.26 && version < 1.72 && req.getLastNDays() > -1)
             addToQueryString(basicQuery, "LastNDays", StringBuffer().append(req.getLastNDays()).str());
         addToQueryString(basicQuery, "ECL", req.getECL());
         addToQueryString(basicQuery, "Jobname", req.getJobname());
