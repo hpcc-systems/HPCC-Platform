@@ -523,9 +523,9 @@ public:
     virtual void stop(bool wait)=0;
 };
 
-extern jlib_decl ISocketSelectHandler *createSocketSelectHandler(const char *trc=NULL);
+extern jlib_decl ISocketSelectHandler *createSocketSelectHandler(const char *trc=NULL, unsigned hdlPerThrd=0);
 
-extern jlib_decl ISocketSelectHandler *createSocketEpollHandler(const char *trc=NULL);
+extern jlib_decl ISocketSelectHandler *createSocketEpollHandler(const char *trc=NULL, unsigned hdlPerThrd=0);
 
 
 class MemoryBuffer;
