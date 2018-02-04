@@ -3757,7 +3757,6 @@ struct SelectItem
     ISocketSelectNotify *nfy;
     byte mode;
     bool del;
-    bool add_epoll;
     bool operator == (const SelectItem & other) const { return sock == other.sock; }
 };
 
@@ -3946,7 +3945,7 @@ public:
             return true;
         else if (rc>0)
         {
-            if ( !(fds[0].revents & POLLNVAL) )
+            if ( !(fds[0].revents & POLLNVAL) ) // TODO: MCK - also check POLLERR here ?
             {
                 PROGLOG("CSocketBaseThread: poll handle %d selected(2) %d",sock,rc);
                 return true;
@@ -4234,7 +4233,6 @@ public:
         sn.handle = (T_SOCKET)sock->OShandle();
         CHECKSOCKRANGE(sn.handle);
         sn.del = false;
-        sn.add_epoll = false;
         items.append(sn);
         selectvarschange = true;        
         triggerselect();
@@ -4631,7 +4629,6 @@ class CSocketEpollThread: public CSocketBaseThread
             sidummy->sock = nullptr;
             sidummy->nfy = nullptr;
             sidummy->del = true;  // so its not added to tonotify ...
-            sidummy->add_epoll = false;
             sidummy->mode = 0;
 #ifdef _USE_PIPE_FOR_SELECT_TRIGGER
             if(pipe(dummysock))
@@ -4735,25 +4732,38 @@ public:
         opendummy();
     }
 
+    void delSelItem(SelectItem *si)
+    {
+        if (nullptr == si)
+            return;
+        epoll_op(epfd, EPOLL_CTL_DEL, si, 0);
+        // Release/dtors should not throw but leaving try/catch here until all paths checked
+        try
+        {
+            si->nfy->Release();
+            si->sock->Release();
+            delete si;
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e,"CSocketEpollThread::delSelItem()");
+            e->Release();
+        }
+    }
+
     ~CSocketEpollThread()
     {
         closedummy();
-        ForEachItemIn(i,items)
+        unsigned n = items.ordinality();
+        for (unsigned i=0;i<n;)
         {
             SelectItem *si = items.element(i);
-            epoll_op(epfd, EPOLL_CTL_DEL, si, 0);
-            // Release/dtors should not throw but leaving try/catch here until all paths checked
-            try
-            {
-                si->nfy->Release();
-                si->sock->Release();
-            }
-            catch (IException *e)
-            {
-                EXCLOG(e,"~CSocketEpollThread");
-                e->Release();
-            }
-            delete si;
+            delSelItem(si);
+            n--;
+            if (i<n)
+                items.swap(i,n);
+            items.remove(n);
+            i++;
         }
         if (epfd >= 0)
         {
@@ -4768,75 +4778,49 @@ public:
 
     Owned<IException> termexcept;
 
-    void updateItems()
+    bool checkSocks()
     {
-        // must be in CriticalBlock block(sect);
+        bool ret = false;
+        // must be holding CriticalBlock (sect)
         unsigned n = items.ordinality();
         for (unsigned i=0;i<n;)
         {
             SelectItem *si = items.element(i);
-            if (si->del)
+            if (!sockOk(si->handle))
             {
-                epoll_op(epfd, EPOLL_CTL_DEL, si, 0);
-                // Release/dtors should not throw but leaving try/catch here until all paths checked
-                try
-                {
-#ifdef SOCKTRACE
-                    PROGLOG("CSocketEpollThread::updateItems release %d",si->handle);
-#endif
-                    si->nfy->Release();
-                    si->sock->Release();
-                }
-                catch (IException *e)
-                {
-                    EXCLOG(e,"CSocketEpollThread::updateItems");
-                    e->Release();
-                }
-                delete si;
-                si = nullptr;
+                delSelItem(si);
                 n--;
                 if (i<n)
                     items.swap(i,n);
                 items.remove(n);
-            }
-            else
-            {
-                if (si->add_epoll)
-                {
-                    si->add_epoll = false;
-                    if (si->mode != 0)
-                    {
-                        unsigned int ep_mode = 0;
-                        if (si->mode & SELECTMODE_READ)
-                            ep_mode |= EPOLLIN;
-                        if (si->mode & SELECTMODE_WRITE)
-                            ep_mode |= EPOLLOUT;
-                        if (si->mode & SELECTMODE_EXCEPT)
-                            ep_mode |= EPOLLPRI;
-                        if (ep_mode != 0)
-                            epoll_op(epfd, EPOLL_CTL_ADD, si, ep_mode);
-                    }
-                }
-                i++;
-            }
-        }
-    }
-
-    bool checkSocks()
-    {
-        bool ret = false;
-        ForEachItemIn(i,items)
-        {
-            SelectItem *si = items.element(i);
-            if (si->del)
-                ret = true; // maybe that bad one
-            else if (!sockOk(si->handle))
-            {
-                si->del = true;
                 ret = true;
             }
+            else
+                i++;
         }
         return ret;
+    }
+
+    bool removeSelItem(ISocket *sock)
+    {
+        // must be holding CriticalBlock (sect)
+        unsigned n = items.ordinality();
+        for (unsigned i=0;i<n;)
+        {
+            SelectItem *si = items.element(i);
+            if (si->sock==sock)
+            {
+                delSelItem(si);
+                n--;
+                if (i<n)
+                    items.swap(i,n);
+                items.remove(n);
+                return true;
+            }
+            else
+                i++;
+        }
+        return false;
     }
 
     bool remove(ISocket *sock)
@@ -4854,44 +4838,41 @@ public:
             }
             return true;
         }
-        ForEachItemIn(i,items)
+        if (removeSelItem(sock))
         {
-            SelectItem *si = items.element(i);
-            if ( (!si->del) && (si->sock==sock) )
-            {
-                si->del = true;
-                selectvarschange = true;
-                triggerselect();
-                return true;
-            }
+            selectvarschange = true;
+            triggerselect();
+            return true;
         }
         return false;
     }
 
     bool add(ISocket *sock,unsigned mode,ISocketSelectNotify *nfy)
     {
-        if ( !sock || !nfy )
+        if ( !sock || !nfy ||
+             !(mode & (SELECTMODE_READ|SELECTMODE_WRITE|SELECTMODE_EXCEPT)) )
         {
-            WARNLOG("EPOLL: adding fd but sock or nfy is NULL");
+            WARNLOG("EPOLL: adding fd but sock or nfy is NULL or mode is empty");
             dbgassertex(false);
             return false;
         }
-        // maybe check once to prevent 1st delay? TBD
         CriticalBlock block(sect);
-        ForEachItemIn(i,items)
-        {
-            SelectItem *si = items.element(i);
-            if ( !si->del && (si->sock==sock) )
-                si->del = true;
-        }
+        removeSelItem(sock);
         SelectItem *sn = new SelectItem;
         sn->nfy = LINK(nfy);
         sn->sock = LINK(sock);
         sn->mode = (byte)mode;
         sn->handle = (T_SOCKET)sock->OShandle();
         sn->del = false;
-        sn->add_epoll = true;
         items.append(sn);
+        unsigned int ep_mode = 0;
+        if (mode & SELECTMODE_READ)
+            ep_mode |= EPOLLIN;
+        if (mode & SELECTMODE_WRITE)
+            ep_mode |= EPOLLOUT;
+        if (mode & SELECTMODE_EXCEPT)
+            ep_mode |= EPOLLPRI;
+        epoll_op(epfd, EPOLL_CTL_ADD, sn, ep_mode);
         selectvarschange = true;
         triggerselect();
         return true;
@@ -4919,7 +4900,6 @@ public:
         }
         else
             validateerrcount = 0;
-        updateItems();
 #ifndef _USE_PIPE_FOR_SELECT_TRIGGER
         opendummy();
 #endif
@@ -5096,19 +5076,6 @@ public:
         {
             EXCLOG(e,"CSocketEpollThread");
             termexcept.setown(e);
-        }
-        CriticalBlock block(sect);
-        try
-        {
-            updateItems();
-        }
-        catch (IException *e)
-        {
-            EXCLOG(e,"CSocketEpollThread(2)");
-            if (!termexcept)
-                termexcept.setown(e);
-            else
-                e->Release();
         }
         return 0;
     }
