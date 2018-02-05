@@ -1624,18 +1624,9 @@ int CSocket::wait_read(unsigned timeout)
                 errno = logPollError(fds[0].revents, "wait_read");
                 ret = -1;
             }
-            else if (fds[0].revents & POLLHUP)
-            {
-                // with poll() we can now differentiate this event from select()
-                // used to be that this fell thru ok and recv() would return 0
-                // indicating the socket has been closed, but the errno in that
-                // case could be misleading (ETIMEDOUT etc.)
-                LOGERR2(998,5,"wait_read POLLHUP");
-                errno = ENOTCONN;
-                ret = -1;
-            }
             else
             {
+                // cannot error out on POLLHUP as there can still be data to read
                 // POLLIN | POLLHUP ok
                 break;
             }
