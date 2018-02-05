@@ -7637,7 +7637,7 @@ class CRoxieServerHashDedupActivity : public CRoxieServerActivity
         void onCreate(IRoxieSlaveContext *ctx)
         {
             keyRowAllocator.setown(activity.createRowAllocator(keySize.queryOriginal()));
-            elementRowAllocator.setown(activity.createRowAllocatorEx(&hashDedupElementMeta, roxiemem::RHFunique|roxiemem::RHFnofragment|roxiemem::RHFdelayrelease));
+            elementRowAllocator.setown(activity.createRowAllocatorEx(&hashDedupElementMeta, roxiemem::RHFunique|roxiemem::RHFscanning|roxiemem::RHFdelayrelease));
         }
 
         void reset()

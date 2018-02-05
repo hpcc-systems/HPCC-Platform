@@ -1508,7 +1508,7 @@ public:
 
     void precreateFreeChain()
     {
-        if (heapFlags & RHFnofragment)
+        if (heapFlags & RHFscanning)
             return;
         //The function is to aid testing - it allows the cas code to be tested without a surrounding lock
         //Allocate all possible rows and add them to the free space map.
@@ -1588,7 +1588,7 @@ protected:
 
     inline void inlineReleasePointer(char * ptr)
     {
-        if (heapFlags & RHFnofragment)
+        if (heapFlags & RHFscanning)
         {
             if (heapFlags & RHFdelayrelease)
             {
@@ -1847,7 +1847,7 @@ public:
         while (leaked > 0 && base < limit)
         {
             const char *block = data() + base;
-            if (heapFlags & RHFnofragment)
+            if (heapFlags & RHFscanning)
             {
                 if (((std::atomic_uint *)block)->load(std::memory_order_relaxed) < FREE_ROW_COUNT_MIN)
                 {
@@ -2458,7 +2458,7 @@ public:
                     flags.append("U");
                 if (cur.heapFlags & RHFvariable)
                     flags.append("V");
-                if (cur.heapFlags & RHFnofragment)
+                if (cur.heapFlags & RHFscanning)
                     flags.append("S");
 
                 //Should never be called with numPages == 0, but protect against divide by zero in case of race condition etc.
@@ -3383,7 +3383,7 @@ char * ChunkedHeaplet::allocateSingle(unsigned allocated, bool incCounter, unsig
     char *ret;
     const size32_t size = chunkSize;
 
-    if (heapFlags & RHFnofragment)
+    if (heapFlags & RHFscanning)
     {
         unsigned numAllocs = count.load(std::memory_order_acquire)+allocated-1;
         unsigned curFreeBase = freeBase.load(std::memory_order_relaxed);
@@ -4258,7 +4258,7 @@ public:
             size32_t thisSize = ROUNDEDSIZE(rounded);
             unsigned flags = RHFvariable;
 #ifdef ALWAYS_USE_SCAN_HEAP
-            flags |= RHFnofragment;
+            flags |= RHFscanning;
 #ifdef ALWAYS_DELAY_RELEASE
             flags |= RHFdelayrelease;
 #endif
@@ -4735,15 +4735,16 @@ public:
                     dataBuffs, dataBuffPages, possibleGoers.load(), dataBuff, this);
     }
 
-    virtual IFixedRowHeap * createFixedRowHeap(size32_t fixedSize, unsigned activityId, unsigned roxieHeapFlags, unsigned maxSpillCost)
+    virtual IFixedRowHeap * createFixedRowHeap(size32_t fixedSize, unsigned activityId, unsigned roxieHeapFlags)
     {
 #ifdef ALWAYS_USE_SCAN_HEAP
-        roxieHeapFlags |= RHFnofragment;
+        roxieHeapFlags |= RHFscanning;
 #ifdef ALWAYS_DELAY_RELEASE
         roxieHeapFlags |= RHFdelayrelease;
 #endif
 #endif
-        CRoxieFixedRowHeapBase * rowHeap = doCreateFixedRowHeap(fixedSize, activityId, roxieHeapFlags, maxSpillCost);
+        unsigned defaultSpillCost = SpillAllCost; //i.e. if the allocation must fails then abort the query
+        CRoxieFixedRowHeapBase * rowHeap = doCreateFixedRowHeap(fixedSize, activityId, roxieHeapFlags, defaultSpillCost);
 
         SpinBlock block(fixedSpinLock);
         //The Row heaps are not linked by the row manager so it can determine when they are released.
@@ -4880,7 +4881,7 @@ protected:
         if ((roxieHeapFlags & RHFoldfixed) || (fixedSize > FixedSizeHeaplet::maxHeapSize()))
             return new CRoxieFixedRowHeap(this, activityId, (RoxieHeapFlags)roxieHeapFlags, fixedSize);
 
-        unsigned heapFlags = roxieHeapFlags & (RHFunique|RHFpacked|RHFnofragment|RHFdelayrelease);
+        unsigned heapFlags = roxieHeapFlags & (RHFunique|RHFpacked|RHFscanning|RHFdelayrelease);
         if (heapFlags & RHFpacked)
         {
             CPackedChunkingHeap * heap = createPackedHeap(fixedSize, activityId, heapFlags, maxSpillCost);
@@ -4939,7 +4940,7 @@ protected:
 #ifdef ALWAYS_USE_SCAN_HEAP
         if (!(flags & RHFunique))
 #else
-        if (!(flags & (RHFunique|RHFnofragment)))
+        if (!(flags & (RHFunique|RHFscanning)))
 #endif
         {
             size32_t whichHeap = ROUNDEDHEAP(rounded);
@@ -7790,16 +7791,16 @@ protected:
         testHeapletCas();
         testOldFixedCas();
         testSharedFixedCas("fixed", 0);
-        testSharedFixedCas("fixed scan", RHFnofragment);
+        testSharedFixedCas("fixed scan", RHFscanning);
         //NB: blocked allocators cannot be shared
         testFixedCas("fixed", 0);
         testFixedCas("packed", RHFpacked);
-        testFixedCas("packed scan", RHFpacked|RHFnofragment);
+        testFixedCas("packed scan", RHFpacked|RHFscanning);
         testFixedCas("packed blocked", RHFpacked|RHFblocked);
-        testFixedCas("packed blocked scan", RHFpacked|RHFnofragment|RHFblocked);
-        testFixedCas("packed delayed scan", RHFpacked|RHFnofragment|RHFdelayrelease);
+        testFixedCas("packed blocked scan", RHFpacked|RHFscanning|RHFblocked);
+        testFixedCas("packed delayed scan", RHFpacked|RHFscanning|RHFdelayrelease);
         testFixedCas("packed blocked", RHFpacked|RHFblocked);
-        testFixedCas("packed delayed blocked scan", RHFpacked|RHFnofragment|RHFblocked|RHFdelayrelease);
+        testFixedCas("packed delayed blocked scan", RHFpacked|RHFscanning|RHFblocked|RHFdelayrelease);
         testGeneralCas();
     }
 
@@ -8855,7 +8856,7 @@ protected:
 
     void createRows(IRowManager * rowManager, size_t numRows, ConstPointerArray & target, bool shuffle)
     {
-        Owned<IFixedRowHeap> heap = rowManager->createFixedRowHeap(tuningAllocSize, 0, RHFpacked, 0);
+        Owned<IFixedRowHeap> heap = rowManager->createFixedRowHeap(tuningAllocSize, 0, RHFpacked);
         target.ensure(numTuningRows);
         for (size_t i = 0; i < numRows; i++)
             target.append(heap->allocate());
