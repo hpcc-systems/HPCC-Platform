@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 #include "jliball.hpp"
-#include "build-config.h"
 #ifdef _USE_ZLIB
 #include <openssl/pem.h>
 #include <openssl/err.h>
@@ -44,16 +43,14 @@ public:
         verifyingConfigured = false;
 #ifdef _USE_ZLIB
         //query private key file location from environment.conf
-        StringBuffer configFileSpec;
-        configFileSpec.set(CONFIG_DIR).append(PATHSEPSTR).append("environment.conf");
-        Owned<IProperties> conf = createProperties(configFileSpec.str(), true);
-        if (conf)
-        {
-            publicKeyFile.set(conf->queryProp("HPCCPublicKey"));
-            privateKeyFile.set(conf->queryProp("HPCCPrivateKey"));
-            signingConfigured = !publicKeyFile.isEmpty();
-            verifyingConfigured = !privateKeyFile.isEmpty();
-        }
+        const char * cert=0, * privKey=0;
+        bool rc = queryHPCCPKIKeyFiles(&cert, &privKey, nullptr);
+        if (cert && *cert)
+            publicKeyFile.set(*cert);
+        if (privKey && *privKey)
+            privateKeyFile.set(*privKey);
+        signingConfigured = !publicKeyFile.isEmpty();
+        verifyingConfigured = !privateKeyFile.isEmpty();
 #else
         WARNLOG("CDigitalSignatureManager: Platform built without ZLIB!");
 #endif
@@ -169,6 +166,8 @@ public:
         if (EVP_DigestSignFinal(RSASignCtx, encMsg, &encMsgLen) <= 0)
         {
             free(encMsg);
+            EVP_PKEY_free(priKey);
+            EVP_MD_CTX_destroy(RSASignCtx);
             char buff[120];
             ERR_error_string(ERR_get_error(), buff);
             throw MakeStringException(-1, "digiSign:EVP_DigestSignFinal2: %s", buff);
@@ -215,6 +214,15 @@ public:
         EVP_PKEY* pubKey = EVP_PKEY_new();
         EVP_PKEY_assign_RSA(pubKey, rsa);
         EVP_MD_CTX * RSAVerifyCtx = EVP_MD_CTX_create();//allocate, initializes and return a digest context
+        if (RSAVerifyCtx == nullptr)
+        {
+            EVP_PKEY_free(pubKey);
+            BIO_free_all(keybio);
+            char buff[120];
+            ERR_error_string(ERR_get_error(), buff);
+            throw MakeStringException(-1, "digiVerify:EVP_MD_CTX_create: %s", buff);
+        }
+
         if (EVP_DigestVerifyInit(RSAVerifyCtx, nullptr, EVP_sha256(), nullptr, pubKey) <= 0)
         {
             EVP_PKEY_free(pubKey);
