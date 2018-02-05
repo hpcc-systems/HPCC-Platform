@@ -131,7 +131,7 @@ void doTrimRight(UnicodeString & source)
         bool uSpace = true;
         do {
             UChar32 c = source[--currentLength];
-            if(!(c == 0x20 || u_isWhitespace(c))) {
+            if(c != 0x20) {
                 currentLength++;
                 uSpace = false;
             }

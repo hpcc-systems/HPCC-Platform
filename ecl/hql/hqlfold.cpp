@@ -3383,6 +3383,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                     {
                     case type_string:
                     case type_varstring:
+                    case type_data:
                         newLen = childSize;
                         break;
                     case type_unicode:
