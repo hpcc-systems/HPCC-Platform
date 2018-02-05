@@ -439,6 +439,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   TABLE
   TAN
   TANH
+  __TARGET_PLATFORM__
   TERMINATOR
   THEN
   THISNODE
@@ -6941,6 +6942,10 @@ primexpr1
                         {
                             OwnedHqlExpr option = createConstant("targetClusterType");
                             $$.setExpr(createValue(no_debug_option_value, makeStringType(UNKNOWN_LENGTH, NULL), option.getClear()), $1);
+                        }
+    | __TARGET_PLATFORM__
+                        {
+                            $$.setExpr(parser->getTargetPlatformExpr(), $1);
                         }
     ;
 

@@ -15,12 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
-#if (True)
-OUTPUT('Temporarily disabled');
-#else
-//noversion multiPart=true,version=1
-//noversion multiPart=true,version=2
-//noversion multiPart=true,version=3
+//version multiPart=true,version=1
+//version multiPart=true,version=2
+//version multiPart=true,version=3
 
 import ^ as root;
 multiPart := #IFDEFINED(root.multiPart, true);
@@ -50,6 +47,7 @@ DG_FetchIndex1Alt2 := INDEX(Files.DG_FetchFile,{Lname,Fname},{ STRING100 blobfie
 DG_FetchIndex1Alt1 := INDEX(Files.DG_FetchFile,{Lname,Fname},{state ,__filepos},Files.DG_FetchIndex1Name);
 DG_FetchIndex1Alt2 := INDEX(Files.DG_FetchFile,{Lname,Fname},{__filepos},Files.DG_FetchIndex1Name);
 #END
+DG_FetchIndex1Alt3 := INDEX(Files.DG_FetchFile,{Lname,Fname},{varstring state := '', string2 newstate := 'UK', string newfield { default('new')}},Files.DG_FetchIndex1Name); // Note - the := 'UK' would only take effect at index build time, it does not set a default for the field when reading
 
 ds := DATASET([{'Anderson'}, {'Doe'}], {STRING25 Lname});
 
@@ -57,11 +55,13 @@ SEQUENTIAL(
     OUTPUT(SORT(Files.DG_FetchIndex1(Lname = 'Smith'), record), {Fname, Lname}),
     OUTPUT(SORT(DG_FetchIndex1Alt1(Lname = 'Smith'), record), {Fname, Lname}),
     OUTPUT(SORT(DG_FetchIndex1Alt2(Lname = 'Smith'), record), {Fname, Lname}),
+    OUTPUT(SORT(DG_FetchIndex1Alt3(Lname = 'Smith'), record), {Fname, Lname, state, newstate, newfield}),
     OUTPUT(SORT(Files.DG_FetchIndex1((Lname = 'Smith') AND (Fname >= 'Z')), record), {Fname, Lname}),
     OUTPUT(SORT(DG_FetchIndex1Alt1((Lname = 'Smith') AND (Fname >= 'Z')), record), {Fname, Lname}),
     OUTPUT(SORT(DG_FetchIndex1Alt2((Lname = 'Smith') AND (Fname >= 'Z')), record), {Fname, Lname}),
+    OUTPUT(SORT(DG_FetchIndex1Alt3(Lname = 'Smith' AND (Fname >= 'Z')), record), {Fname, Lname, state, newstate, newfield}),
     OUTPUT(SORT(JOIN(ds, Files.DG_FetchIndex1, LEFT.Lname = RIGHT.Lname), record), {Fname, Lname}),
     OUTPUT(SORT(JOIN(ds, DG_FetchIndex1Alt1, LEFT.Lname = RIGHT.Lname), record), {Fname, Lname}),
-    OUTPUT(SORT(JOIN(ds, DG_FetchIndex1Alt2, LEFT.Lname = RIGHT.Lname), record), {Fname, Lname})
+    OUTPUT(SORT(JOIN(ds, DG_FetchIndex1Alt2, LEFT.Lname = RIGHT.Lname), record), {Fname, Lname}),
+    OUTPUT(SORT(JOIN(ds, DG_FetchIndex1Alt3, LEFT.Lname = RIGHT.Lname), record), {Fname, Lname, state, newstate, newfield})
 );
-#end

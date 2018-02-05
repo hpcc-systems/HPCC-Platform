@@ -1387,19 +1387,10 @@ void CIfBlockInfo::buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx,
 
 bool CIfBlockInfo::buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, ReadAheadState & state)
 {
-    try
-    {
-        OwnedHqlExpr mappedCondition = state.selector->queryRootRow()->bindToRow(condition, queryRootSelf());
-        BuildCtx condctx(ctx);
-        translator.buildFilter(condctx, mappedCondition);
-        return CContainerInfo::buildReadAhead(translator, condctx, state);
-    }
-    catch (IException * e)
-    {
-        //yuk yuk yuk!!  Could't resolve the test condition for very unusual reason, e.g., based on a variable length string.
-        e->Release();
-    }
-    return false;
+    OwnedHqlExpr mappedCondition = state.selector->queryRootRow()->bindToRow(condition, queryRootSelf());
+    BuildCtx condctx(ctx);
+    translator.buildFilter(condctx, mappedCondition);
+    return CContainerInfo::buildReadAhead(translator, condctx, state);
 }
 
 void CIfBlockInfo::setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * value)

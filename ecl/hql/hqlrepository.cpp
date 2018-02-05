@@ -238,9 +238,10 @@ public:
     }
     IMPLEMENT_IINTERFACE
 
-    virtual IHqlScope * queryRootScope() { return rootScope->queryScope(); }
-    virtual bool loadModule(IHqlRemoteScope *scope, IErrorReceiver *errs, bool forceAll);
-    virtual IHqlExpression * loadSymbol(IHqlRemoteScope *scope, IIdAtom * searchName);
+    virtual IHqlScope * queryRootScope() override { return rootScope->queryScope(); }
+    virtual bool loadModule(IHqlRemoteScope *scope, IErrorReceiver *errs, bool forceAll) override;
+    virtual IHqlExpression * loadSymbol(IHqlRemoteScope *scope, IIdAtom * searchName) override;
+    virtual IEclSource * getSource(IHqlRemoteScope *scope, IIdAtom * searchName) override; // possibly change to IEclSource * parent
 
 protected:
     IHqlExpression * createSymbol(IHqlRemoteScope * rScope, IEclSource * source);
@@ -270,10 +271,18 @@ bool CNewEclRepository::loadModule(IHqlRemoteScope * rScope, IErrorReceiver *err
     return true;
 }
 
-IHqlExpression * CNewEclRepository::loadSymbol(IHqlRemoteScope * rScope, IIdAtom * searchName)
+IEclSource * CNewEclRepository::getSource(IHqlRemoteScope * rScope, IIdAtom * searchName)
 {
     IEclSource * parent = rScope->queryEclSource();
-    Owned<IEclSource> source = collection->getSource(parent, searchName);
+    return collection->getSource(parent, searchName);
+}
+
+
+IHqlExpression * CNewEclRepository::loadSymbol(IHqlRemoteScope * rScope, IIdAtom * searchName)
+{
+    Owned<IEclSource> source = getSource(rScope, searchName);
+    if (!source)
+        return nullptr;
     return createSymbol(rScope, source);
 }
 

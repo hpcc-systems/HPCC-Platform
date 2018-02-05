@@ -37,21 +37,21 @@
 
 struct ThorDataLinkMetaInfo
 {
-    __int64     totalRowsMin;           // set to 0 if not known
-    __int64     totalRowsMax;           // set to -1 if not known
-    offset_t    spilled;                // amount "spilled" to disk (approx) (offset_t)-1 for not known
+    __int64     totalRowsMin = 0;          // set to 0 if not known
+    __int64     totalRowsMax = -1;         // set to -1 if not known
+    offset_t    spilled = (offset_t)-1;    // amount "spilled" to disk (approx) (offset_t)-1 for not known
 
-    bool        isSource;
-    bool        isSequential;
-    bool        canStall;
-    bool        fastThrough;
-    bool        buffersInput;
-    bool        canBufferInput;
-    bool        singleRowOutput;
-    bool        canIncreaseNumRows;
-    bool        canReduceNumRows;
-    bool        unknownRowsOutput;      // cannot use input to deduce total
-    offset_t    byteTotal;                  // total (uncompressed) byte count of all rows
+    bool        isSource = false;
+    bool        isSequential = false;
+    bool        canStall = false;
+    bool        fastThrough = false;
+    bool        buffersInput = false;
+    bool        canBufferInput = false;
+    bool        singleRowOutput = false;
+    bool        canIncreaseNumRows = false;
+    bool        canReduceNumRows = false;
+    bool        unknownRowsOutput = false; // cannot use input to deduce total
+    offset_t    byteTotal = (offset_t)-1;  // total (uncompressed) byte count of all rows
 };
 
 #ifdef _MSC_VER

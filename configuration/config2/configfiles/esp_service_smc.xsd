@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema
+    xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
+    xmlns:hpcc="someuri">
+    <xs:include schemaLocation="types.xsd"/>
+    <xs:complexType name="espsmc" hpcc:class="component" hpcc:category="espservice" hpcc:componentName="espsmc" hpcc:displayName="ESP SMC" hpcc:namePrefix="myesmsmc">
+
+        <xs:attributeGroup name="Monitoring" hpcc:docid="SMC-T02">
+            <xs:attribute name="monitorDaliFileServer" type="xs:boolean" use="true" default="false" hpcc:displayName="Monior Dali File Server" hpcc:tooltip="Warn if dafilesrv process is not running on computers"/>
+            <xs:attribute name="excludePartitions" type="xs:string" use="optional" default="/dev*,/sys,/proc/*" hpcc:displayName="Exclude Partitions" hpcc:tooltip="Comma, space or semicolon delimited list of partitions not to be monitored for free space"/>
+            <xs:attribute name="warnIfCpuLoadOver" type="xs:nonNegativeInteger" use="optional" default="95" hpcc:displayName="Warn CPU Load" hpcc:tooltip="CPU load over this value is flagged as warning in monitoring output"/>
+            <xs:attribute name="warnIfFreeStorageUnder" type="xs:nonNegativeInteger" use="optional" default="5" hpcc:displayName="Warn Free Storage" hpcc:tooltip="Available disk storage space under this value is flagged as warning in monitoring output"/>
+            <xs:attribute name="warnIfFreeMemoryUnder" type="xs:nonNegativeInteger" use="optional" default="5" hpcc:displayName="Warn Free Memory" hpcc:tooltip="Available memory under this value is flagged as warning in monitoring output"/>
+        </xs:attributeGroup>
+
+        <xs:sequence>
+            <xs:element name="EspService" maxOccurs="unbounded" hpcc:docid="SMC-T01">
+                <xs:complexType>
+                    <xs:attributeGroup ref="buildInfo"/>
+                    <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Name" hpcc:autoGenerateType="prefix" hpcc:autoGenerateValue="EclWatch" hpcc:tooltip="Name for this ESP service" />
+                    <xs:attribute name="description" type="xs:string" use="optional" hpcc:displayName="Description" hpcc:tooltip="Description for this process" />
+                    <xs:attribute name="syntaxCheckQueue" type="xs:string" use="optional" hpcc:displayName="Syntax Check Queue" hpcc:tooltip="Queue Name of ECL server which is used for ECL Syntax Check" />
+                    <xs:attribute name="pluginsPath" type="xs:string" use="optional" default="${PLUGINS_PATH}" hpcc:displayName="Plugins Path" hpcc:tooltip="Path where plugin files are deployed" />
+                    <xs:attribute name="viewTimeout" type="xs:nonNegativeInteger" use="optional" default="1000" hpcc:displayName="View Timeout" hpcc:tooltip="timeout for XXXX (in seconds)" />
+                    <xs:attribute name="clusterQueryStateThreadPoolSize" type="xs:nonNegativeInteger" use="optional"  default="25" hpcc:displayName="" hpcc:tooltip="Default thread pool size for checking query state on clusters" />
+                    <xs:attribute name="AWUsCacheTimeout" type="xs:nonNegativeInteger" use="optional" default="15" hpcc:displayName="AWUs Cache Timeout" hpcc:tooltip="timeout for archived WU search cache (in minutes)" />
+                    <xs:attribute name="NodeGroupCacheMinutes" type="xs:nonNegativeInteger" use="optional" default="30" hpcc:displayName="Node Group Cache Minutes" hpcc:tooltip="timeout for node group cache (in minutes)" />
+                    <xs:attribute name="ActivityInfoCacheSeconds" type="xs:nonNegativeInteger" use="optional" default="10" hpcc:displayName="Activity Info Cache Sectonds" hpcc:tooltip="timeout for activity info cache (in seconds)" />
+                    <xs:attribute name="serverForArchivedECLWU" type="xs:string" use="optional" hpcc:displayName="Server For Archived ECLWU" hpcc:tooltip="Specify Sasha server for archiving ECL workunits" />
+                    <xs:attribute name="enableSystemUseRewrite" type="xs:boolean" use="optional" default="false" hpcc:displayName="Enable system Use Rewrite" hpcc:tooltip="To disable ESP Service links for System Servers that use rewrite rules" />
+                    <xs:attribute name="defaultTargetCluster" type="xs:string" use="optional" hpcc:displayName="Default Target Cluster" hpcc:tooltip="Default target for published queries" />
+                    <xs:attribute name="disableUppercaseTranslation" type="xs:boolean" use="optional" default="false" hpcc:displayName="Disable Uppercase Translation" hpcc:tooltip="To disable upper case translation for filter values in ViewKeyFile function" />
+                    <xs:attribute name="enableLogDaliConnection" type="xs:boolean" use="optional" default="false" hpcc:displayName="Enable Log Dali Connection" hpcc:tooltip="Enable ESP/Dali Connection ID to be logged into esp.xml" />
+                    <xs:attribute name="allowNewRoxieOnDemandQuery" type="xs:boolean" use="optional" default="false" hpcc:displayName="Allow New Roxie On Demand Query" hpcc:tooltip="allow new queries to be used by roxie on demand and roxie browser" />
+                    <xs:attributeGroup ref="Monitoring"/>
+                </xs:complexType>
+
+                <xs:key name="espservice_name_key" hpcc:allowDuplicate="true">
+                    <xs:selector xpath="." />
+                    <xs:field xpath="@name" />
+                </xs:key>
+
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

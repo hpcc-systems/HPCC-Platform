@@ -1452,6 +1452,31 @@ void printStackReport(__int64 startIP)
 
 //---------------------------------------------------------------------------------------------------------------------
 
+bool getAllStacks(StringBuffer &output)
+{
+#ifdef __linux__
+    const char *exePath = queryCurrentProcessPath();
+    if (!exePath)
+    {
+        output.append("Unable to capture stacks");
+        return false;
+    }
+    VStringBuffer cmd("gdb --batch -n -ex 'thread apply all bt' %s %u", exePath, GetCurrentProcessId());
+    Owned<IPipeProcess> pipe = createPipeProcess();
+    if (pipe->run("get stacks", cmd, nullptr, false, true, false))
+    {
+        Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
+        readSimpleStream(output, *pipeReader);
+    }
+    int retcode = pipe->wait();
+    return 0 == retcode;
+#else
+    return false; // unsupported
+#endif
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
 class jlib_decl CError : public CInterfaceOf<IError>
 {
 public:
@@ -1571,6 +1596,16 @@ IError *createError(IPropertyTree * tree)
 }
 
 //---------------------------------------------------------------------------------------------------------------------
+
+void IErrorReceiver::ThrowStringException(int code,const char *format, ...) const
+{
+    va_list args;
+    va_start(args, format);
+    IException *ret = MakeStringExceptionVA(code, format, args);
+    va_end(args);
+    throw ret;
+}
+
 
 void IErrorReceiver::reportError(int errNo, const char *msg, const char *filename, int lineno, int column, int position)
 {

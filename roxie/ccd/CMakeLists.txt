@@ -70,7 +70,6 @@ include_directories (
          ${HPCC_SOURCE_DIR}/roxie/udplib
          ${HPCC_SOURCE_DIR}/roxie/roxie
          ${HPCC_SOURCE_DIR}/common/environment
-         ${HPCC_SOURCE_DIR}/ecl/hql
          ${HPCC_SOURCE_DIR}/ecl/hthor
          ${HPCC_SOURCE_DIR}/ecl/schedulectrl
          ${HPCC_SOURCE_DIR}/rtl/nbcd
@@ -90,6 +89,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/dali/ft
          ${HPCC_SOURCE_DIR}/system/security/shared
          ${HPCC_SOURCE_DIR}/system/security/securesocket
+         ${HPCC_SOURCE_DIR}/system/libbase58
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DCCD_EXPORTS -DSTARTQUERY_EXPORTS )
@@ -104,7 +104,6 @@ install ( TARGETS ccd RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_
 target_link_libraries ( ccd 
          jlib
          nbcd
-         hql
          roxiemem 
          udplib 
          remote 
@@ -117,6 +116,7 @@ target_link_libraries ( ccd
          schedulectrl
          dllserver 
          workunit 
+         libbase58
     )
 
 IF (USE_OPENSSL)

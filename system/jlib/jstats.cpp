@@ -829,6 +829,7 @@ static const StatisticMeta statsMetaData[StMax] = {
     { NUMSTAT(TransformExprs) },
     { NUMSTAT(UniqueAnalyseExprs) },
     { NUMSTAT(UniqueTransformExprs) },
+    { NUMSTAT(DuplicateKeys) },
 };
 
 
@@ -1640,9 +1641,8 @@ public:
                 maxValue.set(name.str());
         }
 
-        SuperHashIteratorOf<CStatisticCollection> iter(children, false);
-        for (iter.first(); iter.isValid(); iter.next())
-            iter.query().getMinMaxScope(minValue, maxValue, searchScopeType);
+        for (auto & curChild : children)
+            curChild.getMinMaxScope(minValue, maxValue, searchScopeType);
     }
 
     virtual void getMinMaxActivity(unsigned & minValue, unsigned & maxValue) const override

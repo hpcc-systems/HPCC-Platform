@@ -38,6 +38,7 @@
 #include "eclrtl_imp.hpp"
 #include "rtlds_imp.hpp"
 #include "rtlcommon.hpp"
+#include "rtldynfield.hpp"
 #include "workunit.hpp"
 #include "eventqueue.hpp"
 #include "schedulectrl.hpp"
@@ -526,7 +527,6 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
 
     StringAttrAdaptor adaptor(clusterType);
     wuRead->getDebugValue("targetClusterType", adaptor);
-    rltCache.setown(createRecordLayoutTranslatorCache());
     pluginMap = NULL;
     stopAfter = globals->getPropInt("-limit",-1);
 
@@ -699,6 +699,17 @@ void EclAgent::abort()
 {
     if (activeGraph)
         activeGraph->abort();
+}
+
+RecordTranslationMode EclAgent::rltEnabled() const
+{
+    IConstWorkUnit *wu = queryWorkUnit();
+    SCMStringBuffer val;
+    if(wu->hasDebugValue("layoutTranslationEnabled"))
+        wu->getDebugValue("layoutTranslationEnabled", val);
+    else
+        wu->getDebugValue("hthorLayoutTranslationEnabled", val);
+    return getTranslationMode(val.str());
 }
 
 IConstWUResult *EclAgent::getResult(const char *name, unsigned sequence)
@@ -2071,6 +2082,31 @@ void EclAgent::runProcess(IEclProcess *process)
     bool retainMemory = agentTopology->getPropBool("@heapRetainMemory", false);
     retainMemory = globals->getPropBool("heapRetainMemory", retainMemory);
 
+    if (globals->hasProp("@httpGlobalIdHeader"))
+        updateDummyContextLogger().setHttpIdHeaders(globals->queryProp("@httpGlobalIdHeader"), globals->queryProp("@httpCallerIdHeader"));
+
+    if (queryWorkUnit()->hasDebugValue("GlobalId"))
+    {
+        SCMStringBuffer globalId;
+        queryWorkUnit()->getDebugValue("GlobalId", globalId);
+        if (globalId.length())
+        {
+            SocketEndpoint thorEp;
+            thorEp.setLocalHost(0);
+            updateDummyContextLogger().setGlobalId(globalId.str(), thorEp, GetCurrentProcessId());
+
+            VStringBuffer msg("GlobalId: %s", globalId.str());
+            SCMStringBuffer txId;
+            queryWorkUnit()->getDebugValue("CallerId", txId);
+            if (txId.length())
+                msg.append(", CallerId: ").append(txId.str());
+            txId.set(updateDummyContextLogger().queryLocalId());
+            if (txId.length())
+                msg.append(", LocalId: ").append(txId.str());
+            updateDummyContextLogger().CTXLOG("%s", msg.str());
+        }
+    }
+
 #ifndef __64BIT__
     if (memLimitMB > 4096)
     {
@@ -2995,7 +3031,7 @@ char * EclAgent::queryIndexMetaData(char const * lfn, char const * xpath)
     return out.detach();
 }
 
-IConstWorkUnit *EclAgent::queryWorkUnit()
+IConstWorkUnit *EclAgent::queryWorkUnit() const
 {
     return wuRead;
 }

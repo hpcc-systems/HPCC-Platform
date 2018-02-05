@@ -124,7 +124,7 @@ interface IIndexReadActivityInfo
 {
     virtual IKeyArray *getKeySet() const = 0;
     virtual const IResolvedFile *getVarFileInfo() const = 0;
-    virtual TranslatorArray *getTranslators() const = 0;
+    virtual ITranslatorSet *getTranslators() const = 0;
 
     virtual void mergeSegmentMonitors(IIndexReadContext *irc) const = 0;
     virtual IRoxieServerActivity *queryActivity() = 0;
@@ -221,7 +221,6 @@ interface IRoxieServerActivityFactory : extends IActivityFactory
     virtual unsigned __int64 queryLocalTimeNs() const = 0;
     virtual bool isGraphInvariant() const = 0;
     virtual IRoxieServerSideCache *queryServerSideCache() const = 0;
-    virtual IDefRecordMeta *queryActivityMeta() const = 0;
     virtual unsigned numInputs() const = 0;
     virtual const StatisticsMapping &queryStatsMapping() const = 0;
     virtual bool isInputOrdered(bool consumerOrdered, unsigned idx) const = 0;

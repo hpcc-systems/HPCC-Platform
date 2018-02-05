@@ -14,4 +14,4 @@
 #    limitations under the License.
 ################################################################################
 
-HPCC_ADD_SUBDIRECTORY (configurator)
+HPCC_ADD_SUBDIRECTORY (config2)

@@ -36,24 +36,24 @@ MACRO(RUN_XSLTPROC _xsl _file _out _in_dir _out_dir )
                 DEPENDS docbook-expand ${_xsl} ${_in_dir}/${_file} ${_xslt_target} ${FILES} ${DOC_IMAGE_LIST} ${XSLTPROC_DEPENDENCIES}
                 )
         set_source_files_properties(${_out_dir}/${_out} PROPERTIES GENERATED TRUE)
-        ADD_CUSTOM_TARGET(${_out} DEPENDS ${_out_dir}/${_out} )
+        ADD_CUSTOM_TARGET(${_out}_${DOC_LANG} DEPENDS ${_out_dir}/${_out} )
         SET(XSLTPROC_DEPENDENCIES)
 ENDMACRO(RUN_XSLTPROC)
 
 MACRO(RUN_FOP _file _out)
         ADD_CUSTOM_COMMAND(
-                COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/docs
-                COMMAND ${FOP_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/${_file} -pdf ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/docs/${_out}
-                OUTPUT ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/docs/${_out}
+                COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/docs/${DOC_LANG}
+                COMMAND ${FOP_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/${_file} -pdf ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/docs/${DOC_LANG}/${_out}
+                OUTPUT ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/docs/${DOC_LANG}/${_out}
                 DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${_file}
                 )
-        set_source_files_properties(${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/docs/${_out} PROPERTIES GENERATED TRUE)
-        ADD_CUSTOM_TARGET(${_out} DEPENDS ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/docs/${_out} )
+        set_source_files_properties(${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/docs/${DOC_LANG}/${_out} PROPERTIES GENERATED TRUE)
+        ADD_CUSTOM_TARGET(${_out} DEPENDS ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/docs/${DOC_LANG}/${_out} )
 ENDMACRO(RUN_FOP)
 
 MACRO(CLEAN_REL_BOOK _file _version_dir _doc_dir _in_dir _out_dir)
         STRING(REGEX REPLACE "([0-9a-z_-]*).xml" "\\1" _file_base "${_file}")
-        SET(_clean_target "clean_${_file}")
+        SET(_clean_target "clean_${_file}_${DOC_LANG}")
         SET(VERSION_DIR ${_version_dir})
         SET(ROOT "book")
         CONFIGURE_FILE(${HPCC_SOURCE_DIR}/docs/BuildTools/relrem.xsl.in ${CMAKE_CURRENT_BINARY_DIR}/${_file_base}.xsl @ONLY)
@@ -64,7 +64,7 @@ ENDMACRO(CLEAN_REL_BOOK)
 
 MACRO(CLEAN_REL_SET _file _version_dir _doc_dir _in_dir _out_dir)
         STRING(REGEX REPLACE "([0-9a-z_-]*).xml" "\\1" _file_base "${_file}")
-        SET(_clean_target "clean_${_file}")
+        SET(_clean_target "clean_${_file}_${DOC_LANG}")
         SET(VERSION_DIR ${_version_dir})
         SET(ROOT "set")
         CONFIGURE_FILE(${HPCC_SOURCE_DIR}/docs/BuildTools/relrem.xsl.in ${CMAKE_CURRENT_BINARY_DIR}/${_file_base}.xsl @ONLY)
@@ -84,7 +84,7 @@ MACRO(DOCBOOK_TO_PDF _xsl _file _name)
                 SET( _docs_target "doc_${_pdf_file}")  # File to Name of type.
                 CLEAN_REL_BOOK(${_file} ${VERSION_DIR} ${DOC_IMAGES} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
                 set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/${_file_base}.xsl  PROPERTIES GENERATED TRUE)
-                RUN_XSLTPROC(${_xsl} ${_file} ${_fo_file} ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR} "clean_${_file}" ${_DB_DEFAULT_ARGS})
+                RUN_XSLTPROC(${_xsl} ${_file} ${_fo_file} ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR} "clean_${_file}_${DOC_LANG}" ${_DB_DEFAULT_ARGS})
                 IF (DISABLE_PDF)
                    SET(DISABLE_PDF)
                    SET(_target_file ${_fo_file})
@@ -122,7 +122,7 @@ MACRO(DOCBOOK_TO_HTML _xsl_file _xml_file _out_dir _html_target _css_path _zip_t
            OUTPUT ${_out_dir}/${css_file_name}
            )
        ADD_CUSTOM_TARGET(${_html_target}
-           COMMAND xsltproc --nonet --xinclude --stringparam html.stylesheet ${css_file_name} --stringparam generate.toc "book toc"  --param use.id.as.filename 1 --param chapter.autolabel 0  ${_xsl_file} ${_xml_file}
+           COMMAND ${XSLTPROC_EXECUTABLE} --nonet --xinclude --stringparam html.stylesheet ${css_file_name} --stringparam generate.toc "book toc"  --param use.id.as.filename 1 --param chapter.autolabel 0  ${_xsl_file} ${_xml_file}
            WORKING_DIRECTORY ${_out_dir}
            DEPENDS docbook-expand ${_out_dir}/${css_file_name} ${HELP_DEPENDENCIES}
            #SOURCES ${_xsl_file}
@@ -158,23 +158,20 @@ MACRO(XSD_TO_XML _xsd_files _in_dir _out_dir)
 
         set(_xml_files)
         ADD_CUSTOM_COMMAND(
-                COMMAND mkdir -p ${_out_dir}
-                OUTPUT ${_out_dir}
-                )
+            COMMAND mkdir -p ${_out_dir}
+            OUTPUT ${_out_dir}
+            )
         foreach(_xsd_file ${_xsd_files})
-            STRING(REGEX REPLACE "(.*).xsd" "\\1.xml" _xml_file "${_xsd_file}")
+            #STRING(REGEX REPLACE "(.*).xsd" "\\1.xml" _xml_file "${_xsd_file}")
+            set (_xml_file "${_xsd_file}.mod.xml")
             ADD_CUSTOM_COMMAND(
-                COMMAND ./configurator --doc --use ${_xsd_file} -b ${_in_dir} -t ${_out_dir}
+                COMMAND ${SAXON_EXECUTABLE}   -o:${_out_dir}/${_xml_file}  -xsl:${HPCC_SOURCE_DIR}/docs/BuildTools/xsdattr2htmltable.xsl2 -s:${_in_dir}/${_xsd_file}
                 OUTPUT ${_out_dir}/${_xml_file}
-                WORKING_DIRECTORY ${CONFIGURATOR_DIRECTORY}
+                WORKING_DIRECTORY ${_out_dir}
                 DEPENDS ${_out_dir} ${_in_dir}/${_xsd_file} ${_in_dir}/environment.xsd
                 )
             list(APPEND _xml_files ${_out_dir}/${_xml_file})
         endforeach()
-        if (MAKE_CONFIGURATOR)
-            ADD_CUSTOM_TARGET("xsd_to_xml" ALL  DEPENDS ${_out_dir} ${_xml_files} "configurator" )
-        else()
-            ADD_CUSTOM_TARGET("xsd_to_xml" ALL  DEPENDS ${_out_dir} ${_xml_files} )
-        endif()
+        ADD_CUSTOM_TARGET("xsd_to_xml" ALL  DEPENDS ${_out_dir} ${_xml_files} )
         set_property(GLOBAL APPEND PROPERTY DOC_TARGETS "xsd_to_xml")
 ENDMACRO(XSD_TO_XML)

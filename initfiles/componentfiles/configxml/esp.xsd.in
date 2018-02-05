@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
 ################################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
@@ -16,7 +17,6 @@
 ################################################################################
 -->
 
-<?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
     <xs:include schemaLocation="environment.xsd"/>
     <xs:element name="EspProcess">
@@ -346,7 +346,7 @@
                             </xs:appinfo>
                           </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="getUserNameURL" type="xs:string" use="optional" default="/esp/files/eclwatch/templates/GetUserName.html">
+                        <xs:attribute name="getUserNameURL" type="xs:string" use="optional" default="/esp/files/GetUserName.html">
                           <xs:annotation>
                             <xs:appinfo>
                               <tooltip>URL to getUserName</tooltip>
@@ -399,7 +399,7 @@
 	                </xs:restriction>
 	              </xs:simpleType>
 	            </xs:attribute>
-	            <xs:attribute name="logonURL" type="xs:string" use="optional" default="/esp/files/eclwatch/templates/Login.html">
+	            <xs:attribute name="logonURL" type="xs:string" use="optional" default="/esp/files/Login.html">
 	              <xs:annotation>
 	                <xs:appinfo>
 	                  <tooltip>Logon URL</tooltip>

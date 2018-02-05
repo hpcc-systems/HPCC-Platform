@@ -2401,92 +2401,83 @@ jlib_decl const IProperties &queryEnvironmentConf()
     return *envConfFile;
 }
 
-static CriticalSection securitySettingsCrit;
-static DAFSConnectCfg connectMethod = SSLNone;
-static StringAttr certificate;
-static StringAttr privateKey;
-static StringAttr passPhrase;
-static bool retrieved = false;
+
+
+static StringBuffer DAFSpassPhrase;//deprecated
+static CriticalSection DAFSpassPhraseCrit;
 jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
                                      unsigned short *_port,
                                      const char * *  _certificate,
                                      const char * *  _privateKey,
                                      const char * *  _passPhrase)
 {
-    if (!retrieved)
+    if (_connectMethod)
+        *_connectMethod = SSLNone;//default
+    if (_port)
+        *_port = DAFILESRV_PORT;//default
+
+    const IProperties & conf = queryEnvironmentConf();
+    StringAttr sslMethod;
+    sslMethod.set(conf.queryProp("dfsUseSSL"));
+    if (!sslMethod.isEmpty())
     {
-        CriticalBlock b(securitySettingsCrit);
-        if (!retrieved)
-        {
-            try
-            {
-                StringBuffer configFileSpec;
-#ifndef _WIN32
-                configFileSpec.set(CONFIG_DIR).append(PATHSEPSTR).append("environment.conf");
-#endif
-                Owned<IProperties> conf = createProperties(configFileSpec.str(), true);
-                StringAttr sslMethod;
-                sslMethod.set(conf->queryProp("dfsUseSSL"));
-                if (sslMethod)
-                {
-                    // checking for true | false for backward compatibility
-                    if ( strieq(sslMethod.str(), "SSLOnly") || strieq(sslMethod.str(), "true") )
-                        connectMethod = SSLOnly;
-                    else if ( strieq(sslMethod.str(), "SSLFirst") )
-                        connectMethod = SSLFirst;
-                    else if ( strieq(sslMethod.str(), "UnsecureFirst") )
-                        connectMethod = UnsecureFirst;
-                    else // SSLNone or false or ...
-                        connectMethod = SSLNone;
-                }
-                if (connectMethod == SSLOnly || connectMethod == SSLFirst || connectMethod == UnsecureFirst)
-                {
-                    certificate.set(conf->queryProp("dfsSSLCertFile"));
-                    privateKey.set(conf->queryProp("dfsSSLPrivateKeyFile"));
-                    const char *passPhrasePtr = conf->queryProp("dfsSSLPassPhrase");
-                    if (!isEmptyString(passPhrasePtr))
-                    {
-                        StringBuffer passPhraseStr;
-                        decrypt(passPhraseStr, passPhrasePtr);
-                        passPhrase.set(passPhraseStr.str());
-                    }
-                }
-                retrieved = true;
-            }
-            catch (IException *e)
-            {
-                EXCLOG(e, "Error processing environment.conf\n");
-                throwUnexpected();
-            }
-        }
-    }
-    if (retrieved)
-    {
+        DAFSConnectCfg tmpMethod;
+        // checking for true | false for backward compatibility
+        if ( strieq(sslMethod.str(), "SSLOnly") || strieq(sslMethod.str(), "true") )
+            tmpMethod = SSLOnly;
+        else if ( strieq(sslMethod.str(), "SSLFirst") )
+            tmpMethod = SSLFirst;
+        else if ( strieq(sslMethod.str(), "UnsecureFirst") )
+            tmpMethod = UnsecureFirst;
+        else // SSLNone or false or ...
+            tmpMethod = SSLNone;
+
         if (_connectMethod)
-            *_connectMethod = connectMethod;
+            *_connectMethod = tmpMethod;
+
         if (_port)
         {
-            // port to try first (or only) ...
-            if ( (connectMethod == SSLNone) || (connectMethod == UnsecureFirst) )
-                *_port = DAFILESRV_PORT;
-            else
+            if (tmpMethod == SSLOnly || tmpMethod == SSLFirst)
                 *_port = SECURE_DAFILESRV_PORT;
         }
+
+        //Begin of deprecated code
+        bool dfsKeywords = false;
         if (_certificate)
-            *_certificate = certificate.get();
+        {
+            *_certificate = conf.queryProp("dfsSSLCertFile");
+            if (*_certificate)
+                dfsKeywords = true;
+        }
         if (_privateKey)
-            *_privateKey = privateKey.get();
+        {
+            *_privateKey = conf.queryProp("dfsSSLPrivateKeyFile");
+             if (*_privateKey)
+                 dfsKeywords = true;
+        }
         if (_passPhrase)
-            *_passPhrase = passPhrase.get();
+        {
+            CriticalBlock b(DAFSpassPhraseCrit);
+            if (DAFSpassPhrase.isEmpty())
+            {
+                const char *passPhrasePtr = conf.queryProp("dfsSSLPassPhrase");
+                if (!isEmptyString(passPhrasePtr))
+                {
+                    dfsKeywords = true;
+                    decrypt(DAFSpassPhrase, passPhrasePtr);
+                }
+            }
+            *_passPhrase = DAFSpassPhrase.str();
+        }
+
+        if (!dfsKeywords && (_certificate || _privateKey || _passPhrase))
+        {
+        //end of deprecated code
+            queryHPCCPKIKeyFiles(_certificate, _privateKey, _passPhrase);//use new keywords
+        }
     }
-    else
-    {
-        if (_connectMethod)
-            *_connectMethod = SSLNone;
-        if (_port)
-            *_port = DAFILESRV_PORT;
-    }
-    return retrieved;
+
+    return true;
 }
 
 jlib_decl bool queryDafsSecSettings(DAFSConnectCfg *_connectMethod,
@@ -2497,12 +2488,40 @@ jlib_decl bool queryDafsSecSettings(DAFSConnectCfg *_connectMethod,
                                     const char * *  _passPhrase)
 {
     bool ret = querySecuritySettings(_connectMethod, nullptr, _certificate, _privateKey, _passPhrase);
-    // these should really be in env, but currently they are not ...
-    if (_port)
-        *_port = DAFILESRV_PORT;
-    if (_sslport)
-        *_sslport = SECURE_DAFILESRV_PORT;
+    if (ret)
+    {
+        if (_port)
+            *_port = DAFILESRV_PORT;
+        if (_sslport)
+            *_sslport = SECURE_DAFILESRV_PORT;
+    }
     return ret;
+}
+
+//query PKI values from environment.conf
+static StringBuffer HPCCpassPhrase;
+static CriticalSection HPCCpassPhraseCrit;
+jlib_decl bool queryHPCCPKIKeyFiles(const char * *  _certificate,//HPCCCertFile
+                                    const char * *  _privateKey, //HPCCPrivateKeyFile
+                                    const char * *  _passPhrase) //HPCCPassPhrase
+{
+    const IProperties & conf = queryEnvironmentConf();
+    if (_certificate)
+        *_certificate = conf.queryProp("HPCCCertFile");
+    if (_privateKey)
+        *_privateKey = conf.queryProp("HPCCPrivateKeyFile");;
+    if (_passPhrase)
+    {
+        CriticalBlock b(HPCCpassPhraseCrit);
+        if (HPCCpassPhrase.isEmpty())
+        {
+            const char *passPhrasePtr = conf.queryProp("HPCCPassPhrase");
+            if (!isEmptyString(passPhrasePtr))
+                decrypt(HPCCpassPhrase, passPhrasePtr);
+        }
+        *_passPhrase = HPCCpassPhrase.str();
+    }
+    return true;
 }
 
 static IPropertyTree *getOSSdirTree()

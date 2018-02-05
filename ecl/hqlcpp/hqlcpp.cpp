@@ -2219,7 +2219,32 @@ IHqlExpression * HqlCppTranslator::queryActiveActivityLocation() const
     return NULL;
 }
 
-void HqlCppTranslator::ThrowStringException(int code,const char *format, ...)
+void HqlCppTranslator::report(IError* error)
+{
+    return errorProcessor->report(error);
+}
+
+IError * HqlCppTranslator::mapError(IError * error)
+{
+    return errorProcessor->mapError(error);
+}
+
+size32_t HqlCppTranslator::errCount()
+{
+    return errorProcessor->errCount();
+}
+
+size32_t HqlCppTranslator::warnCount()
+{
+    return errorProcessor->warnCount();
+}
+
+void HqlCppTranslator::exportMappings(IWorkUnit * wu) const
+{
+    errorProcessor->exportMappings(wu);
+}
+
+void HqlCppTranslator::ThrowStringException(int code,const char *format, ...) const
 {
     IHqlExpression * location = queryActiveActivityLocation();
     if (errorProcessor && location)
@@ -7002,6 +7027,7 @@ void HqlCppTranslator::doBuildExprCast(BuildCtx & ctx, ITypeInfo * to, CHqlBound
             return;
         case type_unicode:
         case type_varunicode:
+        case type_utf8:
             if ((from->getTypeCode() == to->getTypeCode()) && (to->getSize() == UNKNOWN_LENGTH))
             {
                 tgt.set(pure);
@@ -12060,6 +12086,7 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &ctx, IHqlExpressi
             StringBuffer typeText;
             getFriendlyTypeStr(paramType, typeText);
             throwError1(HQLERR_EmbeddedTypeNotSupported_X, typeText.str());
+            return; // Cannot reach here, but previous throw is virtual, so the compiler cannot be sure it does not return
         }
         args.append(*createActualFromFormal(param));
         buildFunctionCall(funcctx, bindFunc, args);
@@ -12124,6 +12151,7 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &ctx, IHqlExpressi
         StringBuffer typeText;
         getFriendlyTypeStr(returnType, typeText);
         throwError1(HQLERR_EmbeddedTypeNotSupported_X, typeText.str());
+        return; // Cannot reach here, but previous throw is virtual, so the compiler cannot be sure it does not return
     }
     OwnedHqlExpr call = bindFunctionCall(returnFunc, retargs, newReturnType);
     doBuildUserFunctionReturn(funcctx, returnType, call);

@@ -204,6 +204,9 @@ public:
         Owned<IDistributedFile> index = queryThorFileManager().lookup(container.queryJob(), helperFileName, false, 0 != (TIRoptional & indexBaseHelper->getFlags()), true);
         if (index)
         {
+            if (!isFileKey(index))
+                throw MakeActivityException(this, 0, "Attempting to read flat file as an index: %s", helperFileName.get());
+
             localKey = index->queryAttributes().getPropBool("@local");
 
             if (container.queryLocalData() && !localKey)

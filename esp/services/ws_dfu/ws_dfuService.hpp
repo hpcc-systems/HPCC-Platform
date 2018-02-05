@@ -132,7 +132,8 @@ public:
     bool onDFUSearchData(IEspContext &context, IEspDFUSearchDataRequest &req, IEspDFUSearchDataResponse &resp);
     bool onDFUGetFileMetaData(IEspContext &context, IEspDFUGetFileMetaDataRequest &req, IEspDFUGetFileMetaDataResponse &resp);
     bool onDFURecordTypeInfo(IEspContext &context, IEspDFURecordTypeInfoRequest &req, IEspDFURecordTypeInfoResponse &resp);
-	
+    bool onEclRecordTypeInfo(IEspContext &context, IEspEclRecordTypeInfoRequest &req, IEspEclRecordTypeInfoResponse &resp);
+
     virtual bool onSavexml(IEspContext &context, IEspSavexmlRequest &req, IEspSavexmlResponse &resp);
     virtual bool onAdd(IEspContext &context, IEspAddRequest &req, IEspAddResponse &resp);
     virtual bool onAddRemote(IEspContext &context, IEspAddRemoteRequest &req, IEspAddRemoteResponse &resp);

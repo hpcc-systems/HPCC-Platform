@@ -25,11 +25,39 @@
 #include "rtldynfield.hpp"
 #include "rtlrecord.hpp"
 #include "rtlembed.hpp"
+#include "rtlnewkey.hpp"
 
 //#define TRACE_TRANSLATION
 #define VALIDATE_TYPEINFO_HASHES
 
 #define RTLTYPEINFO_FORMAT_1   80   // In case we ever want to support more than one format
+
+//---------------------------------------------------------------------------------------------------------------------
+
+extern ECLRTL_API RecordTranslationMode getTranslationMode(const char *val)
+{
+    if (!val || strToBool(val) || strieq(val, "payload"))
+        return RecordTranslationMode::Payload;
+    else if (strieq(val, "alwaysDisk"))
+        return RecordTranslationMode::AlwaysDisk;
+    else if (strieq(val, "alwaysECL"))
+        return RecordTranslationMode::AlwaysECL;
+    else
+        return RecordTranslationMode::None;
+}
+
+extern ECLRTL_API const char *getTranslationModeText(RecordTranslationMode val)
+{
+    switch (val)
+    {
+    case RecordTranslationMode::AlwaysDisk: return "alwaysDisk";
+    case RecordTranslationMode::AlwaysECL: return "alwaysECL";
+    case RecordTranslationMode::Payload: return "payload";
+    case RecordTranslationMode::None: return "off";
+    }
+    throwUnexpected();
+}
+
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -116,7 +144,7 @@ const RtlTypeInfo *FieldTypeInfoStruct::createRtlTypeInfo(IThorIndexCallback *_c
         ret = new RtlRecordTypeInfo(fieldType, length, fieldsArray);
         break;
     case type_ifblock:
-        ret = new RtlDynamicIfBlockTypeInfo(fieldType, length, fieldsArray);
+        ret = new RtlDynamicIfBlockTypeInfo(fieldType, length, fieldsArray, nullptr, filter);
         break;
     case type_alien:
         assert(childType);
@@ -170,9 +198,9 @@ private:
         if (!serialized(type))
         {
             // Make sure all child types are serialized first
-            const RtlTypeInfo *child = type->queryChildType();
-            if (child)
-                serializeType(child);
+            const RtlTypeInfo *childType = type->queryChildType();
+            if (childType)
+                serializeType(childType);
             const RtlFieldInfo * const * fields = type->queryFields();
             if (fields)
             {
@@ -206,9 +234,18 @@ private:
         addPropHex("fieldType", type->fieldType);
         addProp("length", type->length);
         addPropNonEmpty("locale", type->queryLocale());
-        const RtlTypeInfo *child = type->queryChildType();
-        if (child)
-            addPropType("child", child);
+        const RtlTypeInfo *childType = type->queryChildType();
+        if (childType)
+            addPropType("child", childType);
+        const IFieldFilter * filter = type->queryFilter();
+        if (filter)
+        {
+            StringBuffer filterText;
+            filter->serialize(filterText);
+            addProp("filterField", filter->queryFieldIndex());
+            addPropType("filterType", &filter->queryType());
+            addProp("filter", filterText);
+        }
         const RtlFieldInfo * const * fields = type->queryFields();
         if (fields)
         {
@@ -400,6 +437,13 @@ private:
             out.append(locale);
         if (child)
             out.appendPacked(queryTypeIdx(child));
+        const IFieldFilter * filter = type->queryFilter();
+        if (filter)
+        {
+            out.appendPacked(filter->queryFieldIndex());
+            out.appendPacked(queryTypeIdx(&filter->queryType()));
+            filter->serialize(out);
+        }
         if (fields)
         {
             unsigned count = countFields(fields);
@@ -476,6 +520,7 @@ public:
     {
         // Need some care - all the RtlTypeInfo objects I created need to be destroyed, together with anything else I had to create
         // Strings (other than the init strings) are preserved in the AtomTable
+        // First allow the types to clean up any critical cached information, then delete them in a second pass
         HashIterator allTypes(types);
         ForEach(allTypes)
         {
@@ -483,6 +528,13 @@ public:
             cleanupType(*type);
         }
         cleanupType(base);
+
+        ForEach(allTypes)
+        {
+            const RtlTypeInfo **type = types.mapToValue(&allTypes.query());
+            deleteType(*type);
+        }
+        deleteType(base);
     }
     /**
      * Obtain the deserialized type information
@@ -577,21 +629,25 @@ public:
         }
     }
 
-    virtual const RtlTypeInfo *addType(FieldTypeInfoStruct &info, const ITypeInfo *type) override
+    virtual const RtlTypeInfo *addType(FieldTypeInfoStruct &info, const IInterface *typeOrIfblock) override
     {
-        VStringBuffer name("%p", type);
+        VStringBuffer name("%p", typeOrIfblock);
         const RtlTypeInfo ** found = types.getValue(name);
         if (found)
             return *found;
+        savedTypes.append(LINK(typeOrIfblock));
         info.locale = keep(info.locale);
         const RtlTypeInfo * ret = info.createRtlTypeInfo(callback);
         types.setValue(name, ret);
+        unsigned baseType = (info.fieldType & RFTMkind);
+        if (baseType == type_record)
+            patchIfBlockParentRow(ret, static_cast<const RtlRecordTypeInfo *>(ret));
         return ret;
     }
 
-    virtual const RtlTypeInfo *lookupType(const ITypeInfo *type) const override
+    virtual const RtlTypeInfo *lookupType(const IInterface * typeOrIfBlock) const override
     {
-        VStringBuffer name("%p", type);
+        VStringBuffer name("%p", typeOrIfBlock);
         const RtlTypeInfo ** found = types.getValue(name);
         if (found)
             return *found;
@@ -609,7 +665,8 @@ private:
     MapStringTo<const RtlTypeInfo *> types;  // Ensures structures only generated once
     const RtlTypeInfo *base = nullptr;       // Holds the resulting type
     IThorIndexCallback *callback = nullptr;
-    void cleanupType(const RtlTypeInfo *type)
+    IConstPointerArray savedTypes; // ensure types remain alive for subsequent lookups
+    void deleteType(const RtlTypeInfo *type)
     {
         if (type)
         {
@@ -625,7 +682,7 @@ private:
                         break;
                     // We don't need to delete other strings - they are owned by atom table.
                     // But the initializer is decoded and thus owned by me
-                    delete child->initializer;
+                    free((void *)child->initializer);
                     delete child;
                     cur++;
                 }
@@ -633,6 +690,11 @@ private:
             }
             type->doDelete();
         }
+    }
+    void cleanupType(const RtlTypeInfo *type)
+    {
+        if (type)
+            type->doCleanup();
     }
     const RtlTypeInfo *lookupType(const char *name, IPropertyTree *all)
     {
@@ -674,7 +736,8 @@ private:
         const char *child = type->queryProp("child");
         if (child)
             info.childType = lookupType(child, all);
-        if ((info.fieldType & RFTMkind) == type_record)
+        unsigned baseType = (info.fieldType & RFTMkind);
+        if ((baseType == type_record) || (baseType == type_ifblock))
         {
             unsigned numFields = type->getCount("fields");
             info.fieldsArray = new const RtlFieldInfo * [numFields+1];
@@ -699,7 +762,17 @@ private:
                 n++;
             }
         }
-        return info.createRtlTypeInfo(callback);
+        if (baseType == type_ifblock)
+        {
+            unsigned fieldId = type->getPropInt("filterField");
+            const RtlTypeInfo * fieldType = lookupType(type->queryProp("filterType"), all);
+            info.filter = deserializeFieldFilter(fieldId, *fieldType, type->queryProp("filter"));
+        }
+
+        const RtlTypeInfo * result = info.createRtlTypeInfo(callback);
+        if (baseType == type_record)
+            patchIfBlockParentRow(result, static_cast<const RtlRecordTypeInfo *>(result));
+        return result;
     }
 
     const RtlTypeInfo *deserializeType(MemoryBuffer &type)
@@ -719,6 +792,18 @@ private:
             type.readPacked(childIdx);
             info.childType = lookupType(childIdx);
         }
+
+        unsigned baseType = (info.fieldType & RFTMkind);
+        if (baseType == type_ifblock)
+        {
+            unsigned fieldId;
+            type.readPacked(fieldId);
+            unsigned childIdx;
+            type.readPacked(childIdx);
+            const RtlTypeInfo * fieldType = lookupType(childIdx);
+            info.filter = deserializeFieldFilter(fieldId, *fieldType, type);
+        }
+
         if (info.fieldType & RFTMhasFields)
         {
             unsigned numFields;
@@ -729,6 +814,8 @@ private:
             {
                 const char *fieldName;
                 type.read(fieldName);
+                if (fieldName[0] == '\0')
+                    fieldName = nullptr;
                 unsigned fieldType;
                 type.readPacked(fieldType);
                 unsigned fieldFlags;
@@ -749,7 +836,10 @@ private:
             }
         }
         info.fieldType &= ~RFTMserializerFlags;
-        return info.createRtlTypeInfo(callback);
+        const RtlTypeInfo * result = info.createRtlTypeInfo(callback);
+        if (baseType == type_record)
+            patchIfBlockParentRow(result, static_cast<const RtlRecordTypeInfo *>(result));
+        return result;
     }
     void patchIndexFilePos()
     {
@@ -768,6 +858,25 @@ private:
                 {
                     static_cast<RtlBlobTypeInfo *>(const_cast<RtlTypeInfo *>(field->type))->setCallback(callback);
                 }
+            }
+        }
+    }
+    void patchIfBlockParentRow(const RtlTypeInfo * fieldType, const RtlRecordTypeInfo * parentRow)
+    {
+        const RtlFieldInfo * const * fields = fieldType->queryFields();
+        for (;*fields;fields++)
+        {
+            const RtlFieldInfo * cur = *fields;
+            if (!cur)
+                break;
+
+            const RtlTypeInfo * curType = cur->type;
+            if ((curType->fieldType & RFTMkind) == type_ifblock)
+            {
+                const RtlDynamicIfBlockTypeInfo * constifblock = static_cast<const RtlDynamicIfBlockTypeInfo *>(curType);
+                RtlDynamicIfBlockTypeInfo * ifblock = const_cast<RtlDynamicIfBlockTypeInfo *>(constifblock);
+                ifblock->setParent(parentRow);
+                patchIfBlockParentRow(curType, parentRow);
             }
         }
     }
@@ -800,7 +909,15 @@ extern ECLRTL_API bool dumpTypeInfo(MemoryBuffer &ret, const RtlTypeInfo *t)
 extern ECLRTL_API void serializeRecordType(size32_t & __lenResult, void * & __result, IOutputMetaData &  metaVal)
 {
     MemoryBuffer ret;
-    CRtlFieldTypeBinSerializer::serialize(ret, metaVal.queryTypeInfo());
+    try
+    {
+        CRtlFieldTypeBinSerializer::serialize(ret, metaVal.queryTypeInfo());
+    }
+    catch (IException * e)
+    {
+        ret.clear();
+        e->Release();
+    }
     __lenResult = ret.length();
     __result = ret.detach();
 }
@@ -808,19 +925,27 @@ extern ECLRTL_API void serializeRecordType(size32_t & __lenResult, void * & __re
 extern ECLRTL_API void dumpRecordType(size32_t & __lenResult,char * & __result,IOutputMetaData &metaVal)
 {
     StringBuffer ret;
-    CRtlFieldTypeSerializer::serialize(ret, metaVal.queryTypeInfo());
+    try
+    {
+        CRtlFieldTypeSerializer::serialize(ret, metaVal.queryTypeInfo());
 
 #ifdef _DEBUG
-    StringBuffer ret2;
-    CRtlFieldTypeDeserializer deserializer(nullptr);
-    CRtlFieldTypeSerializer::serialize(ret2, deserializer.deserialize(ret));
-    assert(streq(ret, ret2));
-    MemoryBuffer out;
-    CRtlFieldTypeBinSerializer::serialize(out, metaVal.queryTypeInfo());
-    CRtlFieldTypeDeserializer bindeserializer(nullptr);
-    CRtlFieldTypeSerializer::serialize(ret2.clear(), bindeserializer.deserialize(out));
-    assert(streq(ret, ret2));
+        StringBuffer ret2;
+        CRtlFieldTypeDeserializer deserializer(nullptr);
+        CRtlFieldTypeSerializer::serialize(ret2, deserializer.deserialize(ret));
+        assert(streq(ret, ret2));
+        MemoryBuffer out;
+        CRtlFieldTypeBinSerializer::serialize(out, metaVal.queryTypeInfo());
+        CRtlFieldTypeDeserializer bindeserializer(nullptr);
+        CRtlFieldTypeSerializer::serialize(ret2.clear(), bindeserializer.deserialize(out));
+        assert(streq(ret, ret2));
 #endif
+    }
+    catch (IException * e)
+    {
+        e->errorMessage(ret.clear());
+        e->Release();
+    }
 
     __lenResult = ret.length();
     __result = ret.detach();
@@ -861,9 +986,10 @@ enum FieldMatchType {
     match_none        = 0x40,    // No matching field in source - use null value
     match_recurse     = 0x80,    // Use recursive translator for child records/datasets
     match_fail        = 0x100,   // no translation possible
+    match_keychange   = 0x200,   // at least one affected field not marked as payload (set on translator)
 
     // This flag may be set in conjunction with the others
-    match_inifblock   = 0x200,   // matching to a field in an ifblock - may not be present
+    match_inifblock   = 0x400,   // matching to a field in an ifblock - may not be present
 };
 
 StringBuffer &describeFlags(StringBuffer &out, FieldMatchType flags)
@@ -880,6 +1006,7 @@ StringBuffer &describeFlags(StringBuffer &out, FieldMatchType flags)
     if (flags & match_none) out.append("|none");
     if (flags & match_recurse) out.append("|recurse");
     if (flags & match_inifblock) out.append("|ifblock");
+    if (flags & match_keychange) out.append("|keychange");
     if (flags & match_fail) out.append("|fail");
     assertex(out.length() > origlen);
     return out.remove(origlen, 1);
@@ -907,8 +1034,12 @@ public:
     }
     virtual size32_t translate(ARowBuilder &builder, const byte *sourceRec) const override
     {
-        dbgassertex(canTranslate());
         return doTranslate(builder, 0, sourceRec);
+    }
+    virtual size32_t translate(ARowBuilder &builder, const RtlRow &sourceRow) const override
+    {
+        sourceRow.lazyCalcOffsets(-1);  // MORE - could save the max one we actually need...
+        return doTranslate(builder, 0, sourceRow);
     }
     virtual bool canTranslate() const override
     {
@@ -917,6 +1048,10 @@ public:
     virtual bool needsTranslate() const override
     {
         return (matchFlags & ~match_link) != 0;
+    }
+    virtual bool keyedTranslated() const override
+    {
+        return (matchFlags & match_keychange) != 0;
     }
 private:
     void doDescribe(unsigned indent) const
@@ -949,9 +1084,14 @@ private:
     {
         unsigned numOffsets = sourceRecInfo.getNumVarFields() + 1;
         size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
+        RtlRow sourceRow(sourceRecInfo, sourceRec, numOffsets, variableOffsets);  // MORE - could save the max source offset we actually need, and only set up that many...
+        return doTranslate(builder, offset, sourceRow);
+    }
+    size32_t doTranslate(ARowBuilder &builder, size32_t offset, const RtlRow &sourceRow) const
+    {
+        dbgassertex(canTranslate());
         byte * destConditions = (byte *)alloca(destRecInfo.getNumIfBlocks() * sizeof(byte));
         memset(destConditions, 2, destRecInfo.getNumIfBlocks() * sizeof(byte));
-        RtlRow sourceRow(sourceRecInfo, sourceRec, numOffsets, variableOffsets);
         size32_t estimate = destRecInfo.getFixedSize();
         if (!estimate)
         {
@@ -973,7 +1113,7 @@ private:
                 unsigned matchField = match.matchIdx;
                 const RtlTypeInfo *sourceType = sourceRecInfo.queryType(matchField);
                 size_t sourceOffset = sourceRow.getOffset(matchField);
-                const byte *source = sourceRec + sourceOffset;
+                const byte *source = sourceRow.queryRow() + sourceOffset;
                 size_t copySize = sourceRow.getSize(matchField);
                 if (copySize == 0 && (match.matchType & match_inifblock))  // Field is missing because of an ifblock - use default value
                 {
@@ -1283,6 +1423,8 @@ private:
                 info.matchType = match_none;
                 size32_t defaultSize = field->initializer ? type->size(field->initializer, nullptr) : type->getMinSize();
                 fixedDelta -= defaultSize;
+                if ((field->flags & RFTMispayloadfield) == 0)
+                    matchFlags |= match_keychange;
                 //DBGLOG("Decreasing fixedDelta size by %d to %d for defaulted field %d (%s)", defaultSize, fixedDelta, idx, destRecInfo.queryName(idx));
             }
             else
@@ -1378,12 +1520,15 @@ private:
                 }
                 else
                     info.matchType = match_typecast;
-                if (sourceRecInfo.queryField(info.matchIdx)->flags & RFTMinifblock)
+                unsigned sourceFlags = sourceRecInfo.queryField(info.matchIdx)->flags;
+                if (sourceFlags & RFTMinifblock)
                     info.matchType |= match_inifblock;  // Avoids incorrect commoning up of adjacent matches
                 // MORE - could note the highest interesting fieldnumber in the source and not bother filling in offsets after that
                 // Not sure it would help much though - usually need to know the total record size anyway in real life
                 if (idx != info.matchIdx)
                     matchFlags |= match_move;
+                if (info.matchType != match_perfect && ((field->flags & RFTMispayloadfield) == 0 || (sourceFlags & RFTMispayloadfield) == 0))
+                    matchFlags |= match_keychange;
             }
             matchFlags |= info.matchType;
         }
@@ -1395,17 +1540,22 @@ private:
             {
                 const RtlFieldInfo *field = sourceRecInfo.queryField(idx);
                 const char *name = sourceRecInfo.queryName(idx);
-                const RtlTypeInfo *type = field->type;
                 if (destRecInfo.getFieldNum(name) == (unsigned) -1)
                 {
                     // unmatched field
-                    if (type->isFixedSize())
+                    if ((field->flags & RFTMispayloadfield) == 0)
+                        matchFlags |= match_keychange;
+                    if (!destRecInfo.getFixedSize())
                     {
-                        //DBGLOG("Reducing estimated size by %d for (fixed size) omitted field %s", (int) type->getMinSize(), field->name);
-                        fixedDelta += type->getMinSize();
+                        const RtlTypeInfo *type = field->type;
+                        if (type->isFixedSize())
+                        {
+                            //DBGLOG("Reducing estimated size by %d for (fixed size) omitted field %s", (int) type->getMinSize(), field->name);
+                            fixedDelta += type->getMinSize();
+                        }
+                        else
+                            unmatched.append(idx);
                     }
-                    else
-                        unmatched.append(idx);
                 }
             }
             //DBGLOG("Source record contains %d bytes of omitted fixed size fields", fixedDelta);
@@ -1482,3 +1632,112 @@ extern ECLRTL_API IRowStream * transformRecord(IEngineRowAllocator * resultAlloc
     else
         return stream.getClear();
 }
+
+// A key translator allows us to transform a RowFilter that refers to src to one that refers to dest.
+// Basically just a map of those fields with matching types.
+
+class CKeyTranslator : public CInterfaceOf<IKeyTranslator>
+{
+public:
+    CKeyTranslator(const RtlRecord &actual, const RtlRecord &expected)
+    {
+        translateNeeded = false;
+        for (unsigned expectedIdx = 0; expectedIdx < expected.getNumFields(); expectedIdx++)
+        {
+            unsigned actualIdx = actual.getFieldNum(expected.queryName(expectedIdx));
+            if (actualIdx != -1)
+            {
+                const RtlTypeInfo *expectedType = expected.queryType(expectedIdx);
+                const RtlTypeInfo *actualType = actual.queryType(actualIdx);
+                if (!actualType->equivalent(expectedType))
+                    actualIdx = (unsigned) -2;
+            }
+            map.append(actualIdx);
+            if (actualIdx != expectedIdx)
+                translateNeeded = true;
+        }
+    }
+    virtual void describe() const override
+    {
+        ForEachItemIn(idx, map)
+        {
+            unsigned mapped = map.item(idx);
+            switch (mapped)
+            {
+            case (unsigned) -1: DBGLOG("No match for field %d", idx); break;
+            case (unsigned) -2: DBGLOG("Incompatible field match for field %d", idx); break;
+            default: DBGLOG("keyed field %d can map to field %d", idx, mapped); break;
+            }
+        }
+    }
+    virtual bool translate(RowFilter &filters) const override
+    {
+        bool mapNeeded = false;
+        if (translateNeeded)
+        {
+            unsigned numFields = filters.numFilterFields();
+            for (unsigned idx = 0; idx < numFields; idx++)
+            {
+                unsigned fieldNum = filters.queryFilter(idx).queryFieldIndex();
+                unsigned mappedFieldNum = map.isItem(fieldNum) ? map.item(fieldNum) : (unsigned) -1;
+                if (mappedFieldNum != fieldNum)
+                {
+                    mapNeeded = true;
+                    switch (mappedFieldNum)
+                    {
+                    case (unsigned) -1: throw makeStringExceptionV(0, "Cannot translate keyed filter on field %u - no matching field", idx);
+                    case (unsigned) -2: throw makeStringExceptionV(0, "Cannot translate keyed filter on field %u - incompatible matching field type", idx);
+                    default:
+                        filters.remapField(idx, mappedFieldNum);
+                        break;
+                    }
+                }
+            }
+            if (mapNeeded)
+                filters.recalcFieldsRequired();
+        }
+        return mapNeeded;
+    }
+    virtual bool translate(RowFilter &filter, IConstArrayOf<IFieldFilter> &in) const override
+    {
+        bool mapNeeded = false;
+        if (translateNeeded)
+        {
+            unsigned numFields = in.length();
+            for (unsigned idx = 0; idx < numFields; idx++)
+            {
+                unsigned fieldNum = in.item(idx).queryFieldIndex();
+                unsigned mappedFieldNum = map.isItem(fieldNum) ? map.item(fieldNum) : (unsigned) -1;
+                if (mappedFieldNum != fieldNum)
+                {
+                    mapNeeded = true;
+                    switch (mappedFieldNum)
+                    {
+                    case (unsigned) -1: throw makeStringExceptionV(0, "Cannot translate keyed filter on field %u - no matching field", idx);
+                    case (unsigned) -2: throw makeStringExceptionV(0, "Cannot translate keyed filter on field %u - incompatible matching field type", idx);
+                    default:
+                        filter.addFilter(*in.item(idx).remap(mappedFieldNum));
+                        break;
+                    }
+                }
+                else
+                    filter.addFilter(OLINK(in.item(idx)));
+            }
+        }
+        return mapNeeded;
+    }
+    virtual bool needsTranslate() const
+    {
+        return translateNeeded;
+    }
+protected:
+    UnsignedArray map;
+    bool translateNeeded = false;
+};
+
+extern ECLRTL_API const IKeyTranslator *createKeyTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo)
+{
+    return new CKeyTranslator(_destRecInfo, _srcRecInfo);
+}
+
+

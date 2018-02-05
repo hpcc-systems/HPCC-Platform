@@ -1,7 +1,6 @@
 /*##############################################################################
 
 
-    Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
     You may obtain a copy of the License at
 
@@ -128,8 +127,8 @@ public:
 
     virtual void addRange(TransitionMask lowerMask, const StringBuffer & lowerString, TransitionMask upperMask, const StringBuffer & upperString) override
     {
-        Owned<ValueTransition> lower = lowerString ? set.createUtf8Transition(lowerMask, rtlUtf8Length(lowerString.length(), lowerString), lowerString) : nullptr;
-        Owned<ValueTransition> upper = upperString ? set.createUtf8Transition(upperMask, rtlUtf8Length(upperString.length(), upperString), upperString) : nullptr;
+        Owned<IValueTransition> lower = lowerString ? set.createUtf8Transition(lowerMask, rtlUtf8Length(lowerString.length(), lowerString), lowerString) : nullptr;
+        Owned<IValueTransition> upper = upperString ? set.createUtf8Transition(upperMask, rtlUtf8Length(upperString.length(), upperString), upperString) : nullptr;
         set.addRange(lower, upper);
     }
 
@@ -154,7 +153,7 @@ void deserializeSet(IValueSet & set, const char * filter)
  * The value is always represented in the same way as a field of that type would be in a record.
  */
 
-class ValueTransition : implements CInterface
+class ValueTransition : implements CInterfaceOf<IValueTransition>
 {
 public:
     ValueTransition(TransitionMask _mask, const RtlTypeInfo & type, const void *_value)
@@ -168,17 +167,54 @@ public:
             memcpy(value, _value, size);
         }
     }
+    ValueTransition(const RtlTypeInfo & type, MemoryBuffer & in)
+    {
+        byte inmask;
+        in.read(inmask);
+        if (!(inmask & CMPnovalue))
+        {
+            mask = (TransitionMask)inmask;
+            size32_t size = type.size(in.readDirect(0), nullptr);
+            value.allocateN(size, false);
+            in.read(size, value);
+        }
+        else
+        {
+            mask = (TransitionMask)(inmask & ~CMPnovalue);
+        }
+    }
     ValueTransition(TransitionMask _mask) : mask(_mask)
     {
         dbgassertex(isMaximum() || isMinimum());
     }
 
-    MemoryBuffer &serialize(const RtlTypeInfo & type, MemoryBuffer &mb) const
+    bool equals(const RtlTypeInfo & type, const ValueTransition & other) const
     {
-        mb.append((byte)mask);
-        size32_t size = type.size(value, nullptr);
-        memcpy(mb.reserve(size), value, size);
-        return mb;
+        if (mask != other.mask)
+            return false;
+        if (value && other.value)
+        {
+            return type.compare(value, other.value) == 0;
+        }
+        else
+            return !value && !other.value;
+    }
+
+    MemoryBuffer & serialize(const RtlTypeInfo & type, MemoryBuffer & out) const
+    {
+        byte outmask = mask;
+        if (value)
+        {
+            size32_t size = type.size(value, nullptr);
+            out.append(outmask);
+            out.append(size, value);
+        }
+        else
+        {
+            outmask |= CMPnovalue;
+            out.append(outmask);
+        }
+        return out;
     }
 
     int compareRaw(const RtlTypeInfo & type, const byte * field) const
@@ -319,7 +355,7 @@ private:
     OwnedMalloc<byte> value;
 };
 
-typedef CIArrayOf<ValueTransition> ValueTransitionArray;
+typedef IArrayOf<ValueTransition> ValueTransitionArray;
 
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -336,22 +372,30 @@ public:
     {
     }
 
+    ValueSet(const RtlTypeInfo & _type, MemoryBuffer & in) : type(_type)
+    {
+        unsigned cnt;
+        in.readPacked(cnt);
+        for (unsigned i = 0; i < cnt; i++)
+            transitions.append(*new ValueTransition(type, in));
+    }
+
 // Methods for creating a value set
-    virtual ValueTransition * createTransition(TransitionMask mask, unsigned __int64 value) const override
+    virtual IValueTransition * createTransition(TransitionMask mask, unsigned __int64 value) const override
     {
         MemoryBuffer buff;
         MemoryBufferBuilder builder(buff, 0);
         type.buildInt(builder, 0, nullptr, value);
         return new ValueTransition(mask, type, buff.toByteArray());
     }
-    virtual ValueTransition * createStringTransition(TransitionMask mask, size32_t len, const char * value) const override
+    virtual IValueTransition * createStringTransition(TransitionMask mask, size32_t len, const char * value) const override
     {
         MemoryBuffer buff;
         MemoryBufferBuilder builder(buff, 0);
         type.buildString(builder, 0, nullptr, len, value);
         return new ValueTransition(mask, type, buff.toByteArray());
     }
-    virtual ValueTransition * createUtf8Transition(TransitionMask mask, size32_t len, const char * value) const override
+    virtual IValueTransition * createUtf8Transition(TransitionMask mask, size32_t len, const char * value) const override
     {
         MemoryBuffer buff;
         MemoryBufferBuilder builder(buff, 0);
@@ -359,8 +403,10 @@ public:
         return new ValueTransition(mask, type, buff.toByteArray());
     }
 
-    virtual void addRange(ValueTransition * lower, ValueTransition * upper) override
+    virtual void addRange(IValueTransition * _lower, IValueTransition * _upper) override
     {
+        ValueTransition * lower = static_cast<ValueTransition *>(_lower);
+        ValueTransition * upper = static_cast<ValueTransition *>(_upper);
         Owned<ValueTransition> minBound;
         Owned<ValueTransition> maxBound;
         if (!lower)
@@ -498,8 +544,10 @@ public:
         reset();
         addRange(nullptr, nullptr);
     }
-    virtual void killRange(ValueTransition * lower, ValueTransition * upper) override
+    virtual void killRange(IValueTransition * _lower, IValueTransition * _upper) override
     {
+        ValueTransition * lower = static_cast<ValueTransition *>(_lower);
+        ValueTransition * upper = static_cast<ValueTransition *>(_upper);
         Owned<ValueTransition> minBound;
         Owned<ValueTransition> maxBound;
         if (!lower)
@@ -743,6 +791,21 @@ public:
         killRange(lowerBound, upperBound);
     }
 
+    virtual bool equals(const IValueSet & _other) const override
+    {
+        const ValueSet & other = static_cast<const ValueSet &>(_other);
+        if (!type.equivalent(&other.type))
+            return false;
+        if (transitions.ordinality() != other.transitions.ordinality())
+            return false;
+        ForEachItemIn(i, transitions)
+        {
+            if (!transitions.item(i).equals(type, other.transitions.item(i)))
+                return false;
+        }
+        return true;
+    }
+
 // Methods for using a value set
     virtual bool isWild() const override;
     virtual unsigned numRanges() const override;
@@ -763,6 +826,14 @@ public:
     {
         //Does this need to include the type information?
         return describe(out);
+    }
+
+    virtual MemoryBuffer & serialize(MemoryBuffer & out) const override
+    {
+        out.appendPacked((unsigned)transitions.ordinality());
+        ForEachItemIn(i, transitions)
+            transitions.item(i).serialize(type, out);
+        return out;
     }
 
     virtual const RtlTypeInfo & queryType() const override
@@ -1000,6 +1071,7 @@ int ValueSet::findForwardMatchRange(const byte * field, unsigned & matchRange) c
 }
 
 IValueSet * createValueSet(const RtlTypeInfo & _type) { return new ValueSet(_type); }
+IValueSet * createValueSet(const RtlTypeInfo & _type, MemoryBuffer & in) { return new ValueSet(_type, in); }
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -1020,6 +1092,11 @@ public:
     virtual unsigned queryFieldIndex() const override
     {
         return field;
+    }
+
+    virtual const RtlTypeInfo & queryType() const override
+    {
+        return type;
     }
 
 protected:
@@ -1046,6 +1123,10 @@ public:
     virtual int compareHighest(const RtlRow & left, unsigned range) const override;
     virtual int findForwardMatchRange(const RtlRow & row, unsigned & matchRange) const override;
 
+    virtual unsigned queryScore() const override;
+    virtual IFieldFilter *remap(unsigned newField) const override { return new SetFieldFilter(newField, values); }
+    virtual StringBuffer & serialize(StringBuffer & out) const override;
+    virtual MemoryBuffer & serialize(MemoryBuffer & out) const override;
 protected:
     Linked<IValueSet> values;
 };
@@ -1084,6 +1165,26 @@ int SetFieldFilter::compareHighest(const RtlRow & left, unsigned range) const
 int SetFieldFilter::findForwardMatchRange(const RtlRow & row, unsigned & matchRange) const
 {
     return values->findForwardMatchRange(row.queryField(field), matchRange);
+}
+
+unsigned SetFieldFilter::queryScore() const
+{
+    // MORE - the score should probably depend on the number and nature of ranges too.
+    unsigned score = type.getMinSize();
+    if (!score)
+        score = 5;   // Arbitrary guess for average field length in a variable size field
+    return score;
+}
+
+StringBuffer & SetFieldFilter::serialize(StringBuffer & out) const
+{
+    out.append('=');
+    return values->serialize(out);
+}
+MemoryBuffer & SetFieldFilter::serialize(MemoryBuffer & out) const
+{
+    out.append('=');
+    return values->serialize(out);
 }
 
 IFieldFilter * createFieldFilter(unsigned fieldId, IValueSet * values)
@@ -1155,12 +1256,66 @@ public:
         matchRange = 0;
         return true;
     }
+    virtual unsigned queryScore() const override
+    {
+        return 0;
+    }
+    virtual IFieldFilter *remap(unsigned newField) const override { return new WildFieldFilter(newField, type); }
+
+    virtual StringBuffer & serialize(StringBuffer & out) const override
+    {
+        return out.append('*');
+    }
+
+    virtual MemoryBuffer & serialize(MemoryBuffer & out) const override
+    {
+        return out.append('*');
+    }
 };
 
 IFieldFilter * createWildFieldFilter(unsigned fieldId, const RtlTypeInfo & type)
 {
     //MORE: Is it worth special casing, or would a SetFieldFilter of null..null be just as good?
     return new WildFieldFilter(fieldId, type);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+//Note, the fieldId could be serialized within the string, but it is needed to determine the type, and
+//passing it in allows this code to be decoupled from the type serialization code.
+IFieldFilter * deserializeFieldFilter(unsigned fieldId, const RtlTypeInfo & type, const char * src)
+{
+    switch (*src)
+    {
+    case '*':
+        return createWildFieldFilter(fieldId, type);
+    case '=':
+        {
+            Owned<IValueSet> values = createValueSet(type);
+            deserializeSet(*values, src+1);
+            return createFieldFilter(fieldId, values);
+        }
+    }
+
+    UNIMPLEMENTED_X("Unknown Field Filter");
+}
+
+IFieldFilter * deserializeFieldFilter(unsigned fieldId, const RtlTypeInfo & type, MemoryBuffer & in)
+{
+    char kind;
+    in.read(kind);
+    switch (kind)
+    {
+    case '*':
+        return createWildFieldFilter(fieldId, type);
+    case '=':
+        {
+            Owned<IValueSet> values = createValueSet(type, in);
+            return createFieldFilter(fieldId, values);
+        }
+    }
+
+    UNIMPLEMENTED_X("Unknown Field Filter");
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -1172,14 +1327,18 @@ static int compareFieldFilters(IInterface * const * left, IInterface * const * r
     return leftFilter->queryFieldIndex() - rightFilter->queryFieldIndex();
 }
 
-void RowFilter::addFilter(IFieldFilter & filter)
+void RowFilter::addFilter(const IFieldFilter & filter)
 {
     //assertex(filter.queryField() == filters.ordinality()); //MORE - fill with wild filters and replace existing wild
     filters.append(filter);
+    unsigned fieldNum = filter.queryFieldIndex();
+    if (fieldNum >= numFieldsRequired)
+        numFieldsRequired = fieldNum+1;
 }
 
 bool RowFilter::matches(const RtlRow & row) const
 {
+    row.lazyCalcOffsets(numFieldsRequired);
     ForEachItemIn(i, filters)
     {
         if (!filters.item(i).matches(row))
@@ -1188,24 +1347,21 @@ bool RowFilter::matches(const RtlRow & row) const
     return true;
 }
 
-int RowFilter::compareRows(const RtlRow & left, const RtlRow & right) const
+void RowFilter::appendFilters(IConstArrayOf<IFieldFilter> & _filters)
 {
-    ForEachItemIn(i, filters)
+    ForEachItemIn(i, _filters)
     {
-        int rc = filters.item(i).compareRow(left, right);
-        if (rc != 0)
-            return rc;
+        addFilter(OLINK(_filters.item(i)));
     }
-    return 0;
 }
 
-void RowFilter::extractKeyFilter(const RtlRecord & record, IArrayOf<IFieldFilter> & keyFilters) const
+void RowFilter::extractKeyFilter(const RtlRecord & record, IConstArrayOf<IFieldFilter> & keyFilters) const
 {
     if (!filters)
         return;
 
     // for an index must be in field order, and all values present
-    IArrayOf<IFieldFilter> temp;
+    IConstArrayOf<IFieldFilter> temp;
     ForEachItemIn(i, filters)
         temp.append(OLINK(filters.item(i)));
     temp.sort(compareFieldFilters);
@@ -1214,7 +1370,7 @@ void RowFilter::extractKeyFilter(const RtlRecord & record, IArrayOf<IFieldFilter
     unsigned curIdx=0;
     for (unsigned field = 0; field <= maxField; field++)
     {
-        IFieldFilter & cur = temp.item(curIdx);
+        const IFieldFilter & cur = temp.item(curIdx);
         if (field == cur.queryFieldIndex())
         {
             keyFilters.append(OLINK(cur));
@@ -1225,15 +1381,89 @@ void RowFilter::extractKeyFilter(const RtlRecord & record, IArrayOf<IFieldFilter
     }
 }
 
+void RowFilter::extractMemKeyFilter(const RtlRecord & record, const UnsignedArray &sortOrder, IConstArrayOf<IFieldFilter> & keyFilters) const
+{
+    if (!filters)
+        return;
+
+    // for in-memory index, we want filters in the same order as the sort fields, with wilds added
+    ForEachItemIn(idx, sortOrder)
+    {
+        unsigned sortField = sortOrder.item(idx);
+        bool needWild = true;
+        ForEachItemIn(fidx, filters)
+        {
+            const IFieldFilter &filter = filters.item(fidx);
+            if (filter.queryFieldIndex()==sortField)
+            {
+                keyFilters.append(OLINK(filter));
+                needWild = false;
+                break;
+            }
+        }
+        if (needWild)
+            keyFilters.append(*createWildFieldFilter(sortField, *record.queryType(sortField)));
+    }
+}
+
+const IFieldFilter *RowFilter::findFilter(unsigned fieldNum) const
+{
+    ForEachItemIn(i, filters)
+    {
+        const IFieldFilter &field = filters.item(i);
+        if (field.queryFieldIndex() == fieldNum)
+            return &field;
+    }
+    return nullptr;
+}
+
+const IFieldFilter *RowFilter::extractFilter(unsigned fieldNum)
+{
+    ForEachItemIn(i, filters)
+    {
+        const IFieldFilter &field = filters.item(i);
+        if (field.queryFieldIndex() == fieldNum)
+        {
+            filters.remove(i, true);
+            return &field;
+        }
+    }
+    return nullptr;
+}
+
+void RowFilter::remove(unsigned idx)
+{
+    filters.remove(idx);
+}
+
+void RowFilter::clear()
+{
+    filters.kill();
+    numFieldsRequired = 0;
+}
+
+void RowFilter::recalcFieldsRequired()
+{
+    numFieldsRequired = 0;
+    ForEachItemIn(i, filters)
+    {
+        const IFieldFilter &field = filters.item(i);
+        if (field.queryFieldIndex() >= numFieldsRequired)
+            numFieldsRequired = field.queryFieldIndex()+1;
+    }
+}
+
+void RowFilter::remapField(unsigned filterIdx, unsigned newFieldNum)
+{
+    filters.replace(*filters.item(filterIdx).remap(newFieldNum), filterIdx);
+}
+
+
 //---------------------------------------------------------------------------------------------------------------------
-
-
-
-
 
 bool RowCursor::setRowForward(const byte * row)
 {
-    currentRow.setRow(row, numFilterFields());
+    currentRow.setRow(row, numFieldsRequired);
 
     unsigned field = 0;
     //Now check which of the fields matches, and update matchedRanges to indicate
@@ -1329,53 +1559,6 @@ bool RowCursor::findNextRange(unsigned field)
 
 //---------------------------------------------------------------------------------------------
 
-class KeySearcher
-{
-public:
-    KeySearcher(const RtlRecord & _info, RowFilter & _filter, ISourceRowCursor * _rows) : cursor(_info, _filter), rows(_rows)
-    {
-    }
-
-    bool first()
-    {
-        rows->reset();
-        cursor.selectFirst();
-        return resolveValidRow();
-    }
-
-    bool next()
-    {
-        const byte * next = rows->next(); // MORE: Return a RtlRow?
-        if (!next)
-            return false;
-        if (cursor.setRowForward(next))
-            return true;
-        return resolveValidRow();
-    }
-
-    bool resolveValidRow()
-    {
-        for (;;)
-        {
-            if (cursor.noMoreMatches())
-                return false;
-            const byte * match;
-            match = rows->findNext(cursor); // more - return the row pointer to avoid recalculation
-            if (!match)
-                return false;
-            if (cursor.setRowForward(match))
-                return true;
-        }
-    }
-
-    const RtlRow & queryRow() const { return cursor.queryRow(); }
-
-protected:
-    ISourceRowCursor * rows = nullptr;
-    RowCursor cursor;
-};
-
-
 class InMemoryRows
 {
 public:
@@ -1451,7 +1634,7 @@ public:
     }
 
 protected:
-    size_t cur;
+    size_t cur = 0;
     InMemoryRows & source;
     RtlDynRow seekRow;
 };
@@ -1529,8 +1712,8 @@ protected:
 
 static void addRange(IValueSet * set, const char * lower, const char * upper)
 {
-    Owned<ValueTransition> lowerBound = lower ? set->createUtf8Transition(CMPge, rtlUtf8Length(strlen(lower), lower), lower) : nullptr;
-    Owned<ValueTransition> upperBound = upper ? set->createUtf8Transition(CMPle, rtlUtf8Length(strlen(upper), upper), upper) : nullptr;
+    Owned<IValueTransition> lowerBound = lower ? set->createUtf8Transition(CMPge, rtlUtf8Length(strlen(lower), lower), lower) : nullptr;
+    Owned<IValueTransition> upperBound = upper ? set->createUtf8Transition(CMPle, rtlUtf8Length(strlen(upper), upper), upper) : nullptr;
     set->addRange(lowerBound, upperBound);
 };
 
@@ -1637,6 +1820,17 @@ protected:
         deserializeSet(*set, filter);
         checkSet(set, expected ? expected : filter);
 
+        MemoryBuffer mb;
+        set->serialize(mb);
+        Owned<IValueSet> newset = createValueSet(type, mb);
+        checkSet(newset, expected ? expected : filter);
+        CPPUNIT_ASSERT(set->equals(*newset));
+
+        StringBuffer s;
+        set->serialize(s);
+        Owned<IValueSet> newset2 = createValueSet(type);
+        deserializeSet(*newset2, s);
+        CPPUNIT_ASSERT(set->equals(*newset2));
     }
     void testUnion(RtlTypeInfo & type, const char * filter, const char * next, const char * expected)
     {
@@ -2312,12 +2506,10 @@ protected:
         KeySearcher searcher(source.queryRecord(), filter, &sourceCursor);
 
         StringBuffer matches;
-        if (searcher.first())
+        while (searcher.next())
         {
-            do
-            {
-                matches.append(searcher.queryRow().getInt(0)).append("|");
-            } while (searcher.next());
+            searcher.queryRow().lazyCalcOffsets(1);  // In unkeyed case we may not have calculated field 0 offset (though it is always going to be 0).
+            matches.append(searcher.queryRow().getInt(0)).append("|");
         }
 
         if (!streq(matches, expected))
@@ -2435,11 +2627,9 @@ protected:
             InMemoryRowCursor sourceCursor(source); // could be created by source.createCursor()
             KeySearcher searcher(source.queryRecord(), filter, &sourceCursor);
 
-            bool hasSearch = searcher.first();
-            while (hasSearch)
+            while (searcher.next())
             {
                 countKeyed++;
-                hasSearch = searcher.next();
             }
         }
         unsigned __int64 keyedMs = timeKeyed.elapsedNs();
@@ -2474,7 +2664,7 @@ protected:
         RowScanner scanner(source.queryRecord(), filter, rows);
 
         unsigned count = 0;
-        bool hasSearch = searcher.first();
+        bool hasSearch = searcher.next();
         bool hasScan = scanner.first();
         while (hasSearch && hasScan)
         {

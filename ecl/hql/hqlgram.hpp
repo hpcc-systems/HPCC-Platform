@@ -528,6 +528,7 @@ public:
     void ensureType(attribute &atr, ITypeInfo * type);
     void inheritRecordMaxLength(IHqlExpression * dataset, SharedHqlExpr & record);
 
+    IHqlExpression * getTargetPlatformExpr();
     void normalizeExpression(attribute & expr);
     void normalizeExpression(attribute & expr, type_t expectedType, bool isConstant);
 
@@ -734,6 +735,7 @@ public:
     IHqlExpression* clearFieldMap(IHqlExpression* expr);
     void setExpectedAttribute(IIdAtom * _expectedAttribute)             { expectedAttribute = _expectedAttribute; current_id = _expectedAttribute; }
     void setCurrentToExpected()             { current_id = expectedAttribute; }
+    void setPendingGlobalImport(bool _globalImportPending) { globalImportPending = _globalImportPending; }
     IHqlScope * queryPrimaryScope(bool isPrivate);
     unsigned nextParameterIndex()               { return 0; } // not commoned up at moment{ return activeParameters.length()+savedParameters.length(); }
     void addActiveParameterOwn(const attribute & errpos, IHqlExpression * expr, IHqlExpression * defaultValue);
@@ -904,6 +906,7 @@ protected:
     bool parseConstantText;
     bool expandingMacroPosition;
     bool inSignedModule;
+    bool globalImportPending = false;
     OwnedHqlExpr gpgSignature;
 
     IErrorArray pendingWarnings;

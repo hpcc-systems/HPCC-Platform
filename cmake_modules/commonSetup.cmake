@@ -95,6 +95,8 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(USE_UNSIGNED_CHAR "Build system with default char type is unsigned" OFF)
   option(USE_MYSQL "Enable mysql support" ON)
   option(USE_LIBMEMCACHED "Enable libmemcached support" ON)
+  option(USE_PYTHON2 "Enable python2 language support for platform build" ON)
+  option(USE_PYTHON3 "Enable python3 language support for platform build" ON)
   option(USE_OPTIONAL "Automatically disable requested features with missing dependencies" ON)
   option(JLIB_ONLY  "Build JLIB for other projects such as Configurator, Ganglia Monitoring, etc" OFF)
   # Generates code that is more efficient, but will cause problems if target platforms do not support it.
@@ -113,15 +115,9 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(LOGGING_SERVICE "Configure use of logging service" ON)
   option(WSSQL_SERVICE "Configure use of ws_sql service" ON)
 
-  option(MAKE_CONFIGURATOR "Build Configurator" ON)
-  option(CONFIGURATOR_LIB "Build Configurator static library (.a)" OFF)
-
-  if ( CONFIGURATOR_LIB )
-        set( MAKE_CONFIGURATOR ON )
-  endif()
 
 
-    MACRO(SET_PLUGIN_PACKAGE plugin)
+     MACRO(SET_PLUGIN_PACKAGE plugin)
         string(TOLOWER "${plugin}" pname)
 	    if(DEFINED pluginname)
             message(FATAL_ERROR "Cannot enable ${pname}, already declared ${pluginname}")
@@ -146,8 +142,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     REMBED
     V8EMBED
     MEMCACHED
-    PY2EMBED
-    PY3EMBED
     REDIS
     SQS
     MYSQLEMBED
@@ -173,15 +167,17 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   set(CMAKE_MODULE_PATH "${HPCC_SOURCE_DIR}/cmake_modules/")
 
-  set(LIBMEMCACHED_MINVERSION "1.0.10")
-  if(USE_LIBMEMCACHED)
-    if(WIN32)
-      message(STATUS "libmemcached not available on windows.  Disabling for build")
-      set(USE_LIBMEMCACHED OFF)
-    else()
-      find_package(LIBMEMCACHED ${LIBMEMCACHED_MINVERSION} REQUIRED)
-      add_definitions(-DUSE_LIBMEMCACHED)
-      include_directories(${LIBMEMCACHED_INCLUDE_DIR})
+  if ( NOT MAKE_DOCS_ONLY )
+    set(LIBMEMCACHED_MINVERSION "1.0.10")
+    if(USE_LIBMEMCACHED)
+      if(WIN32)
+        message(STATUS "libmemcached not available on windows.  Disabling for build")
+        set(USE_LIBMEMCACHED OFF)
+      else()
+        find_package(LIBMEMCACHED ${LIBMEMCACHED_MINVERSION} REQUIRED)
+        add_definitions(-DUSE_LIBMEMCACHED)
+        include_directories(${LIBMEMCACHED_INCLUDE_DIR})
+      endif()
     endif()
   endif()
 
@@ -252,7 +248,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   endif()
 
   if ( CLIENTTOOLS_ONLY )
-      set(PY2EMBED ON)
       set(PLATFORM OFF)
       set(DEVEL OFF)
   endif()
@@ -700,13 +695,15 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       message(FATAL_ERROR "FOP requested but package not found")
     ENDIF()
 
-    if (DOCS_AUTO)
-       if ("${CONFIGURATOR_DIRECTORY}" STREQUAL "")
-         set(MAKE_CONFIGURATOR ON)
-         set(JLIB_ONLY ON)
-         set  (CONFIGURATOR_DIRECTORY ${EXECUTABLE_OUTPUT_PATH})
-       endif()
-    endif()
+    IF ( DOCS_AUTO )
+      find_package(SAXON)
+      IF (SAXON_FOUND)
+        add_definitions (-D_USE_SAXON)
+      ELSE()
+        message(FATAL_ERROR "SAXON, a XSLT and XQuery processor, is required for documentation build but not found.")
+      ENDIF()
+    ENDIF()
+
   ENDIF(MAKE_DOCS)
 
   IF ( NOT MAKE_DOCS_ONLY )

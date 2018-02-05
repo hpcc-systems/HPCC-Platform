@@ -50,11 +50,22 @@
 
 class NullContextCallback : implements ICodegenContextCallback, public CInterface
 {
+public:
+    NullContextCallback(IWorkUnit * _wu) : workunit(_wu) {}
     IMPLEMENT_IINTERFACE
 
     virtual void noteCluster(const char *clusterName) override {}
+    virtual void pushCluster(const char *clusterName) override {}
+    virtual void popCluster() override {}
     virtual bool allowAccess(const char * category, bool isSigned) override { return true; }
     virtual IHqlExpression *lookupDFSlayout(const char *filename, IErrorReceiver &errs, const ECLlocation &location, bool isOpt) const override { return nullptr; }
+    virtual unsigned lookupClusterSize() const override { return 0; }
+    virtual void getTargetPlatform(StringBuffer & result) override
+    {
+        workunit->getDebugValue("targetClusterType", StringBufferAdaptor(result));
+    }
+protected:
+    Linked<IWorkUnit> workunit;
 };
 
 class HqlDllGenerator : implements IHqlExprDllGenerator, implements IAbortRequestCallback, public CInterface
@@ -64,7 +75,7 @@ public:
         errs(_errs), wuname(_wuname), targetDir(_targetdir), wu(_wu), template_dir(_template_dir), targetClusterType(_targetClusterType), ctxCallback(_ctxCallback), checkForLocalFileUploads(_checkForLocalFileUploads), okToAbort(_okToAbort)
     {
         if (!ctxCallback)
-            ctxCallback.setown(new NullContextCallback);
+            ctxCallback.setown(new NullContextCallback(_wu));
         noOutput = true;
         defaultMaxCompileThreads = 1;
         generateTarget = EclGenerateNone;

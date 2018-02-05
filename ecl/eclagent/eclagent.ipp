@@ -23,8 +23,8 @@
 #include "deftype.hpp"
 #include "jthread.hpp"
 #include "dllserver.hpp"
+#include "rtldynfield.hpp"
 
-//#include "agentctx.hpp"
 #include "hthor.hpp"
 #include "thorxmlwrite.hpp"
 #include "workflow.hpp"
@@ -155,7 +155,7 @@ public:
     {
         ctx->reportProgress(msg, flags);
     }
-    virtual IConstWorkUnit *queryWorkUnit()
+    virtual IConstWorkUnit *queryWorkUnit() const override
     {
         return ctx->queryWorkUnit();
     }
@@ -199,10 +199,6 @@ public:
     {
         ctx->logFileAccess(file, component, type);
     }
-    virtual IRecordLayoutTranslatorCache * queryRecordLayoutTranslatorCache() const
-    {
-        return ctx->queryRecordLayoutTranslatorCache();
-    }
     virtual void addWuException(const char * text, unsigned code, unsigned severity, char const * source)
     {
         ctx->addWuException(text, code, severity, source);
@@ -236,6 +232,11 @@ public:
     }
 
     virtual void updateWULogfile()                  { return ctx->updateWULogfile(); }
+
+    virtual RecordTranslationMode rltEnabled() const override
+    {
+        return ctx->rltEnabled();
+    }
 
 protected:
     IAgentContext * ctx;
@@ -368,7 +369,6 @@ private:
     Owned<IDistributedFileTransaction> superfiletransaction;
     mutable Owned<IRowAllocatorMetaActIdCache> allocatorMetaCache;
     Owned<EclGraph> activeGraph;
-    Owned<IRecordLayoutTranslatorCache> rltCache;
     Owned<CHThorDebugContext> debugContext;
     Owned<IProbeManager> probeManager;
     StringAttr allowedPipeProgs;
@@ -507,6 +507,7 @@ public:
     virtual IEngineContext *queryEngineContext() { return this; }
     virtual char *getDaliServers();
 
+    virtual RecordTranslationMode rltEnabled() const override;
     unsigned __int64 queryStopAfter() { return stopAfter; }
 
     virtual ISectionTimer * registerTimer(unsigned activityId, const char * name)
@@ -560,7 +561,6 @@ public:
     //virtual void logException(IEclException *e);  
     virtual char *resolveName(const char *in, char *out, unsigned outlen);
     virtual void logFileAccess(IDistributedFile * file, char const * component, char const * type);
-    virtual IRecordLayoutTranslatorCache * queryRecordLayoutTranslatorCache() const { return rltCache; }
     virtual ILocalOrDistributedFile  *resolveLFN(const char *logicalName, const char *errorTxt=NULL, bool optional=false, bool noteRead=true, bool write=false, StringBuffer * expandedlfn=NULL);
 
     virtual void executeThorGraph(const char * graphName);
@@ -594,8 +594,8 @@ public:
     virtual const char *loadResource(unsigned id);
     virtual ICodeContext *queryCodeContext();
     virtual bool isResult(const char * name, unsigned sequence);
-    virtual unsigned getWorkflowId();// { return workflow->queryCurrentWfid(); }
-    virtual IConstWorkUnit *queryWorkUnit();  // no link
+    virtual unsigned getWorkflowId();
+    virtual IConstWorkUnit *queryWorkUnit() const override;  // no link
     virtual IWorkUnit *updateWorkUnit() const; // links
     virtual void unlockWorkUnit();      
     virtual void reloadWorkUnit();
@@ -695,7 +695,7 @@ public:
     virtual void destruct(byte * self) {}
     virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
-    virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual ISourceRowPrefetcher * createDiskPrefetcher() { return NULL; }
     virtual IOutputMetaData * querySerializedDiskMeta() { return this; }
     virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }

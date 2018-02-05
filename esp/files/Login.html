@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title class="loginStr"></title>
+        <style type="text/css">
+            body {
+                font-family: Lucida Sans, Lucida Grande, Arial !important;
+                font-size: 15px !important;
+                background-color: #1A9BD7;
+            }
+
+            .container {
+                width: 99%;
+                position: absolute;
+                top: 50%;
+                transform: translateY(-50%);
+            }
+
+            .formContainer {
+                width: 500px;
+                padding: 20px 0 20px 0;
+                border-radius: 5px;
+                background-color: #fff;
+                margin: auto;
+            }
+
+            .login {
+                width: 400px;
+                margin: auto;
+            }
+
+            .login input {
+                margin-bottom: 20px;
+                width: 300px;
+                padding: 8px;
+                border: 1px solid #bfbfbf;
+            }
+
+            .login form {
+                margin: auto;
+                width: 300px;
+            }
+
+            img {
+                display: block;
+                margin: auto;
+            }
+
+            p {
+                text-align: center
+            }
+
+            #button {
+                background-color: #1A9BD7;
+                border: none;
+                color: white;
+                padding: 15px 32px;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 16px;
+                border-radius: 4px;
+                cursor: pointer;
+                -webkit-transition-duration: 0.4s;
+                /* Safari */
+                transition-duration: 0.4s;
+                margin: auto;
+                display: block;
+            }
+
+            .button:hover {
+                background-color: #13b1f9;
+                color: white;
+            }
+
+            .visible {
+                display: none;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="container" class="container visible">
+            <div class="formContainer">
+                <img src="eclwatch/img/Loginlogo.png" alt="HPCC Systems">
+                <p class="loginStr">Please log into ECL Watch</p>
+                <div class="login">
+                    <form method="POST" action="/esp/login">
+                        <input type="text" name="username" placeholder="username" class="loginStr"></input>
+                        <input type="password" name="password" placeholder="password" class="loginStr"></input>
+                        <button class="loginStr" id="button" type="submit">Login</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <script>
+            var element = document.getElementById('container');
+
+            if (navigator.cookieEnabled) {
+                var element = document.getElementById("container");
+                element.classList.remove("visible");
+            } else {
+                alert("ECL Watch requires cookies enabled to continue.");
+            }
+        </script>
+    </body>
+</html>

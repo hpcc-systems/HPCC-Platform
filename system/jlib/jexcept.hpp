@@ -148,6 +148,8 @@ void  jlib_decl printStackReport(__int64 startIP = 0);
 // Macro for legacy name of above function
 #define PrintStackReport printStackReport
 
+bool jlib_decl getAllStacks(StringBuffer &output);
+
 #ifdef _DEBUG
 #define RELEASE_CATCH_ALL       int*********
 #else
@@ -232,6 +234,7 @@ interface jlib_decl IErrorReceiver : public IInterface
     virtual size32_t errCount() = 0;
     virtual size32_t warnCount() = 0;
     virtual void exportMappings(IWorkUnit * wu) const = 0;
+    virtual __declspec(noreturn) void ThrowStringException(int code,const char *format, ...) const __attribute__((format(printf, 3, 4), noreturn));            // override the global function to try and add more context information
 
     //global helper functions
     void reportError(int errNo, const char *msg, const char *filename, int lineno, int column, int pos);

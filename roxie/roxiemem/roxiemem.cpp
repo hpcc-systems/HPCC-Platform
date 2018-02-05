@@ -7463,30 +7463,40 @@ protected:
             }
             catch (...)
             {
+                aborted = true;
                 if (rm)
                     rm->removeRowBuffer(&saved);
                 throw;
             }
             return 0;
         }
+        bool queryAborted() const { return aborted; }
     protected:
         Semaphore & sem;
         IRowManager * rm;
         unsigned cost;
         unsigned id;
+        bool aborted = false;
     };
-    unsigned runCasTest(const char * title, Semaphore & sem, CasAllocatorThread * threads[])
+    unsigned runCasTest(const char * title, Semaphore & sem, CasAllocatorThread * threads[], bool * wasAborted = nullptr)
     {
         for (unsigned i2 = 0; i2 < numCasThreads; i2++)
         {
             threads[i2]->start();
         }
 
+        bool aborted = false;
         unsigned startTime = msTick();
         sem.signal(numCasThreads);
         for (unsigned i3 = 0; i3 < numCasThreads; i3++)
+        {
             threads[i3]->join();
+            if (threads[i3]->queryAborted())
+                aborted = true;
+        }
         unsigned endTime = msTick();
+        if (wasAborted)
+            *wasAborted = aborted;
 
         for (unsigned i4 = 0; i4 < numCasThreads; i4++)
             threads[i4]->Release();
@@ -7814,9 +7824,14 @@ protected:
             threads[i1] = cur;
         }
         VStringBuffer title("callback(%u,%u,%u,%f,%x)", numPerPage,pages, spillPages, scale, flags);
-        runCasTest(title.str(), sem, threads);
+        bool aborted = true;
+        runCasTest(title.str(), sem, threads, &aborted);
+
         //This test can very occasionally fail if each thread has 1 single row from a different page buffered, and a buffer allocated from a different page
-        CPPUNIT_ASSERT_EQUAL(2 * numCasThreads * numCasIter * numCasAlloc, (int)rowCache.counter);
+        if (aborted)
+            CPPUNIT_ASSERT(2 * numCasThreads * numCasIter * numCasAlloc != (int)rowCache.counter);
+        else
+            CPPUNIT_ASSERT_EQUAL(2 * numCasThreads * numCasIter * numCasAlloc, (int)rowCache.counter);
     }
     void testCallbacks()
     {
@@ -8393,9 +8408,9 @@ public:
     unsigned locks;
 };
 
-class RoxieMemTimingTests : public RoxieMemTests
+class RoxieMemTimingTests1 : public RoxieMemTests
 {
-    CPPUNIT_TEST_SUITE( RoxieMemTimingTests );
+    CPPUNIT_TEST_SUITE( RoxieMemTimingTests1 );
         CPPUNIT_TEST(testSetup);
         CPPUNIT_TEST(testBitmapThreading);
         CPPUNIT_TEST(testCas);
@@ -8864,8 +8879,8 @@ protected:
 
 CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemTests );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieMemTests, "RoxieMemTests" );
-CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemTimingTests );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieMemTimingTests, "RoxieMemTimingTests" );
+CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemTimingTests1 );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieMemTimingTests1, "RoxieMemTimingTests1" );
 CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemStressTests );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieMemStressTests, "RoxieMemStressTests" );
 

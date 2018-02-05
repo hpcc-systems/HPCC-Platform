@@ -324,10 +324,11 @@ PURE(expression) - treat an expression as pure - probably superseded with WITHIN
 
 //---------------------------------------------------------------------------------------------------------------------
 
+const unsigned InitialExprCacheSize = 0x1000U; // Allocating larger than default has a very minor benefit
 class HqlExprCache : public JavaHashTableOf<CHqlExpression>
 {
 public:
-    HqlExprCache() : JavaHashTableOf<CHqlExpression>(false) {}
+    HqlExprCache() : JavaHashTableOf<CHqlExpression>(InitialExprCacheSize, false) {}
 
 protected:
     virtual unsigned getHashFromElement(const void * et) const
@@ -3868,10 +3869,8 @@ void displayHqlCacheStats()
     static HqlExprCopyArray prev;
     DBGLOG("CachedItems = %d", exprCache->count());
     exprCache->dumpStats();
-    JavaHashIteratorOf<IHqlExpression> iter(*exprCache, false);
-    ForEach(iter)
+    for (CHqlExpression & ret : *exprCache)
     {
-        IHqlExpression & ret = iter.query();
         if (!prev.contains(ret))
         {
             StringBuffer s;
@@ -3881,9 +3880,9 @@ void displayHqlCacheStats()
     }
 
     prev.kill();
-    ForEach(iter)
+    for (auto & iter2 : *exprCache)
     {
-        prev.append(iter.query());
+        prev.append(iter2);
     }
 #endif
 }
@@ -4371,7 +4370,6 @@ void CHqlRealExpression::updateFlagsAfterOperands()
             }
             break;
         }
-
     }
 
 #ifdef VERIFY_EXPR_INTEGRITY
@@ -5330,10 +5328,8 @@ void CUsedTablesBuilder::addActiveTable(IHqlExpression * expr)
 void CUsedTablesBuilder::cleanupProduction()
 {
     HqlExprCopyArray toRemove;
-    SuperHashIteratorOf<IHqlExpression> iter(inScopeTables);
-    ForEach(iter)
+    for (IHqlExpression& cur : inScopeTables)
     {
-        IHqlExpression & cur = iter.query();
         switch (cur.getOperator())
         {
         case no_matchattr:
@@ -5393,10 +5389,8 @@ void CUsedTablesBuilder::removeRows(IHqlExpression * expr, IHqlExpression * left
 void CUsedTablesBuilder::removeActiveRecords()
 {
     HqlExprCopyArray toRemove;
-    SuperHashIteratorOf<IHqlExpression> iter(inScopeTables);
-    ForEach(iter)
+    for (IHqlExpression&cur : inScopeTables)
     {
-        IHqlExpression & cur = iter.query();
         if (cur.isRecord())
             toRemove.append(cur);
     }
@@ -5407,12 +5401,8 @@ void CUsedTablesBuilder::removeActiveRecords()
 
 inline void expand(HqlExprCopyArray & target, const UsedExpressionHashTable & source)
 {
-    SuperHashIteratorOf<IHqlExpression> iter(source);
-    ForEach(iter)
-    {
-        IHqlExpression & cur = iter.query();
+    for (auto& cur : source)
         target.append(cur);
-    }
 }
 
 void CUsedTablesBuilder::set(CUsedTables & tables)
@@ -6551,11 +6541,6 @@ IHqlDataset *CHqlDataset::queryTable()
     StringBuffer s("queryDataset() return NULL for: ");
     s.append(getOpString(op));
     throw MakeStringExceptionDirect(2, s.str());
-}
-
-void CHqlDataset::sethash() 
-{ 
-    CHqlExpression::sethash(); 
 }
 
 //==============================================================================================================
@@ -8373,6 +8358,13 @@ IHqlExpression *CHqlScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFla
 }
 
 
+IFileContents * CHqlScope::lookupContents(IIdAtom * searchName, HqlLookupContext & ctx)
+{
+    return nullptr;
+}
+
+
+
 int CHqlScope::getPropInt(IAtom * a, int def) const
 {
     return def;
@@ -8388,13 +8380,13 @@ bool CHqlScope::getProp(IAtom * a, StringBuffer &ret) const
 void CHqlScope::getSymbols(HqlExprArray& exprs) const
 {
     SymbolTable & localSymbols = const_cast<SymbolTable &>(symbols);
-    SymbolTableIterator iter(localSymbols);
-    for (iter.first(); iter.isValid(); iter.next()) 
+    SymbolTableLock lock(localSymbols);
+    for (auto & iter : localSymbols)
     {
-        IHqlExpression *cur = localSymbols.mapToValue(&iter.query());
+        IHqlExpression *cur = localSymbols.mapToValue(&iter);
         if (!cur)
         {
-            IAtom * name = * static_cast<IAtom * const *>(iter.query().getKey());
+            IAtom * name = * static_cast<IAtom * const *>(iter.getKey());
             throw MakeStringException(ERR_INTERNAL_NOEXPR, "INTERNAL: getSymbol %s has no associated expression", name ? str(name) : "");
         }
 
@@ -8672,6 +8664,11 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
     return newSymbol.getClear();
 }
 
+IFileContents * CHqlRemoteScope::lookupContents(IIdAtom * searchName, HqlLookupContext & ctx)
+{
+    return nullptr;
+}
+
 void CHqlRemoteScope::getSymbols(HqlExprArray& exprs) const
 {
     //ensureSymbolsDefined should have been called before this function.  If not the symbols won't be present...
@@ -8734,7 +8731,7 @@ IHqlExpression * CHqlRemoteScope::repositoryLoadSymbol(IIdAtom * attrName)
         return NULL;
 
     OwnedHqlExpr symbol = ownerRepository->loadSymbol(this, attrName);
-    if(!symbol || !symbol->hasText())
+    if(!symbol || ((symbol->getOperator() == no_nobody) && !symbol->hasText()))
         return NULL;
 
     return symbol.getClear();
@@ -9562,22 +9559,6 @@ void CHqlVirtualScope::defineSymbol(IHqlExpression * expr)
     CHqlScope::defineSymbol(expr);
 }
 
-bool CHqlVirtualScope::queryForceSymbolVirtual(IIdAtom * searchName, HqlLookupContext & ctx)
-{
-    if (allVirtual)
-        return true;
-
-    IHqlExpression * definitionModule = NULL;
-    OwnedHqlExpr match = lookupBaseSymbol(definitionModule, searchName, LSFsharedOK, ctx);
-    if (match)
-    {
-        IHqlNamedAnnotation * symbol = static_cast<IHqlNamedAnnotation *>(match->queryAnnotation());
-        assertex(symbol && symbol->getAnnotationKind() == annotate_symbol);
-        return symbol->isVirtual();
-    }
-    return false;
-}
-
 IHqlExpression * CHqlVirtualScope::lookupBaseSymbol(IHqlExpression * & definitionModule, IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     ForEachChild(i, this)
@@ -10163,11 +10144,6 @@ CHqlDelayedScope::CHqlDelayedScope(HqlExprArray &_ownedOperands)
         addOperand(createSequence(no_attr, makeNullType(), _virtualSeq_Atom, virtualSequence.next()));
 }
 
-bool CHqlDelayedScope::assignableFrom(ITypeInfo * source)
-{
-    return type->assignableFrom(source);
-}
-
 bool CHqlDelayedScope::equals(const IHqlExpression & _other) const
 {
     if (!CHqlExpressionWithTables::equals(_other))
@@ -10204,6 +10180,11 @@ IHqlExpression * CHqlDelayedScope::lookupSymbol(IIdAtom * searchName, unsigned l
     return createDelayedReference(no_delayedselect, this, match, lookupFlags, ctx);
 }
 
+
+IFileContents * CHqlDelayedScope::lookupContents(IIdAtom * searchName, HqlLookupContext & ctx)
+{
+    return nullptr;
+}
 
 void CHqlDelayedScope::ensureSymbolsDefined(HqlLookupContext & ctx)
 {
@@ -10709,6 +10690,11 @@ IHqlExpression * CHqlDelayedScopeCall::lookupSymbol(IIdAtom * searchName, unsign
         return match.getClear();
 
     return createDelayedReference(no_delayedselect, this, match, lookupFlags, ctx);
+}
+
+IFileContents * CHqlDelayedScopeCall::lookupContents(IIdAtom * searchName, HqlLookupContext & ctx)
+{
+    return nullptr;
 }
 
 void CHqlDelayedScopeCall::getSymbols(HqlExprArray& exprs) const
@@ -14069,9 +14055,18 @@ void exportJsonType(StringBuffer &ret, IHqlExpression *table)
 
 bool exportBinaryType(MemoryBuffer &ret, IHqlExpression *table)
 {
-    Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer(nullptr));
-    const RtlTypeInfo *typeInfo = buildRtlType(*deserializer.get(), table->queryType());
-    return dumpTypeInfo(ret, typeInfo);
+    try
+    {
+        Owned<IRtlFieldTypeDeserializer> deserializer(createRtlFieldTypeDeserializer(nullptr));
+        const RtlTypeInfo *typeInfo = buildRtlType(*deserializer.get(), table->queryType());
+        return dumpTypeInfo(ret, typeInfo);
+    }
+    catch (IException * e)
+    {
+        DBGLOG(e);
+        e->Release();
+    }
+    return false;
 }
 
 const RtlTypeInfo *queryRtlType(IRtlFieldTypeDeserializer &deserializer, IHqlExpression *table)

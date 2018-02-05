@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
 ################################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
@@ -16,7 +17,6 @@
 ################################################################################
 -->
 
-<?xml version="1.0" encoding="UTF-8"?>
 <!-- edited with XMLSPY v5 rel. 4 U (http://www.xmlspy.com) by Rajeev Moondhra (Seisint, Inc.) -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
     <xs:include schemaLocation="environment.xsd"/>
@@ -638,6 +638,20 @@
         <xs:annotation>
           <xs:appinfo>
             <tooltip>Restrict allocations to memory attached to the cpu sockets the slave process is bound to</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="httpCallerIdHeader" type="xs:string" use="optional" default="HPCC-Caller-Id">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>HTTP Header field to use for sending and receiving CallerId</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="httpGlobalIdHeader" type="xs:string" use="optional" default="HPCC-Global-Id">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>HTTP Header field to use for sending and receiving GlobalId</tooltip>
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>

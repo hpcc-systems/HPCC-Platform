@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
 ################################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
@@ -16,7 +17,6 @@
 ################################################################################
 -->
 
-<?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
   <xs:include schemaLocation="environment.xsd"/>
   <xs:element name="RoxieCluster">
@@ -649,6 +649,20 @@
       <xs:annotation>
         <xs:appinfo>
           <tooltip>Timeout (in ms) before high priority requests are resent to agents</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="httpCallerIdHeader" type="xs:string" use="optional" default="HPCC-Caller-Id">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>HTTP Header field to use for sending and receiving CallerId</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="httpGlobalIdHeader" type="xs:string" use="optional" default="HPCC-Global-Id">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>HTTP Header field to use for sending and receiving GlobalId</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>

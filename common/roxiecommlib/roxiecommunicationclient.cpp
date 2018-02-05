@@ -321,7 +321,7 @@ public:
     {
         unsigned start = msTick();
         if (!sendRoxieControlLock(sock, allOrNothing, wait))
-            throw MakeStringException(-1, "Roxie control:lock failed");
+            throw MakeStringException(-1, "Roxie is too busy (control:lock failed) - please try again later.");
         return sendRoxieControlQuery(sock, msg, remainingMsWait(wait, start));
     }
 

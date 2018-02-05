@@ -19,6 +19,7 @@
 #define rtldynfield_hpp
 
 #include "rtlfield.hpp"
+#include "rtlnewkey.hpp"
 
 //These classes support the dynamic creation of type and field information
 
@@ -36,6 +37,7 @@ public:
     const char *className = nullptr;
     const RtlTypeInfo *childType = nullptr;
     const RtlFieldInfo * * fieldsArray = nullptr;
+    const IFieldFilter * filter = nullptr;
 
     const RtlTypeInfo *createRtlTypeInfo(IThorIndexCallback *_callback) const;
 };
@@ -79,14 +81,14 @@ interface IRtlFieldTypeDeserializer : public IInterface
      * @param key  A unique pointer used to dedup typeinfo structures
      * @return     RtlTypeInfo structure
      */
-    virtual const RtlTypeInfo *addType(FieldTypeInfoStruct &info, const ITypeInfo *key) = 0;
+    virtual const RtlTypeInfo *addType(FieldTypeInfoStruct &info, const IInterface *typeOrIfblock) = 0;
     /*
      * Check if a type has already been created for a given key
      *
      * @param key  A unique pointer used to dedup typeinfo structures
      * @return     RtlTypeInfo structure, or nullptr if not yet created
      */
-    virtual const RtlTypeInfo *lookupType(const ITypeInfo *key) const = 0;
+    virtual const RtlTypeInfo *lookupType(const IInterface *key) const = 0;
     /*
      * Create RtlFieldInfo structure as part of a RtlTypeInfo tree
      *
@@ -101,15 +103,52 @@ interface IRtlFieldTypeDeserializer : public IInterface
 
 };
 
+enum class RecordTranslationMode { None = 0, All = 1, Payload = 2, AlwaysDisk = 3, AlwaysECL = 4 };  // Latter 2 are for testing purposes only
+
+extern ECLRTL_API RecordTranslationMode getTranslationMode(const char *modeStr);
+extern ECLRTL_API const char *getTranslationModeText(RecordTranslationMode val);
+
 interface IDynamicTransform : public IInterface
 {
     virtual void describe() const = 0;
     virtual size32_t translate(ARowBuilder &builder, const byte *sourceRec) const = 0;
+    virtual size32_t translate(ARowBuilder &builder, const RtlRow &sourceRow) const = 0;
     virtual bool canTranslate() const = 0;
+    virtual bool needsTranslate() const = 0;
+    virtual bool keyedTranslated() const = 0;
+};
+
+interface IKeyTranslator : public IInterface
+{
+    /*
+     * Describe the operations of a translator to the log
+     */
+    virtual void describe() const = 0;
+    /*
+     * Translate the field numbers of a RowFilter array in-situ. An exception will be thrown if an
+     * untranslatable field is encountered.
+     *
+     * @param filters  The RowFilter array to be updated
+     * @return         Indicates whether any field numbers changed
+     */
+    virtual bool translate(RowFilter &filters) const = 0;
+    /*
+     * Translate the field numbers of a RowFilter array, creating a new RowFilter array. An exception will be thrown if an
+     * untranslatable field is encountered.
+     *
+     * @param filters  The input RowFilter array to be translated
+     * @param result   Updated to add translated versions of all the FieldFilters in the input
+     * @return         Indicates whether any field numbers changed
+     */
+    virtual bool translate(RowFilter &result, IConstArrayOf<IFieldFilter> &filters) const = 0;
+    /*
+     * Return whether any fields are translated by this translator
+     */
     virtual bool needsTranslate() const = 0;
 };
 
 extern ECLRTL_API const IDynamicTransform *createRecordTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo);
+extern ECLRTL_API const IKeyTranslator *createKeyTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo);
 
 extern ECLRTL_API IRtlFieldTypeDeserializer *createRtlFieldTypeDeserializer(IThorIndexCallback *callback);
 

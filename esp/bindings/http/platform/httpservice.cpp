@@ -986,17 +986,18 @@ EspHttpBinding* CEspHttpServer::getEspHttpBinding(EspAuthRequest& authReq)
         //is set to nullptr only if !authReq.isSoapPost.
         if (!authReq.isSoapPost && espHttpBinding && !espHttpBinding->isValidServiceName(*authReq.ctx, authReq.serviceName.str()))
             espHttpBinding=nullptr;
-        return espHttpBinding;
     }
-
-    for (unsigned index=0; index<(unsigned)ordinality; index++)
+    else
     {
-        CEspBindingEntry *entry = m_apport->queryBindingItem(index);
-        EspHttpBinding* lbind = (entry) ? dynamic_cast<EspHttpBinding*>(entry->queryBinding()) : nullptr;
-        if (lbind && lbind->isValidServiceName(*authReq.ctx, authReq.serviceName.str()))
+        for (unsigned index=0; index<(unsigned)ordinality; index++)
         {
-            espHttpBinding=lbind;
-            break;
+            CEspBindingEntry *entry = m_apport->queryBindingItem(index);
+            EspHttpBinding* lbind = (entry) ? dynamic_cast<EspHttpBinding*>(entry->queryBinding()) : nullptr;
+            if (lbind && lbind->isValidServiceName(*authReq.ctx, authReq.serviceName.str()))
+            {
+                espHttpBinding=lbind;
+                break;
+            }
         }
     }
 
@@ -1139,7 +1140,7 @@ EspAuthState CEspHttpServer::checkUserAuthPerSession(EspAuthRequest& authReq)
 
     if (unlock)
     {
-        sendMessage("Unlock failed: empty user name or password.", "text/html; charset=UTF-8");
+        sendLockResponse(false, true, "Empty user name or password");
         return authTaskDone;
     }
 
@@ -1213,12 +1214,37 @@ EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char*
     clearCookie(SESSION_START_URL_COOKIE);
     if (unlock)
     {
-        sendMessage("Unlock successed.", "text/html; charset=UTF-8");
+        sendLockResponse(false, false, "Unlocked");
         return authTaskDone;
     }
 
     m_response->redirect(*m_request, sessionStartURL);
     return authSucceeded;
+}
+
+void CEspHttpServer::sendLockResponse(bool lock, bool error, const char* msg)
+{
+    StringBuffer resp;
+    ESPSerializationFormat format = m_request->queryContext()->getResponseFormat();
+    if (format == ESPSerializationJSON)
+    {
+        resp.set("{ ");
+        resp.appendf(" \"%sResponse\": { ", lock ? "Lock" : "Unlock");
+        resp.appendf("\"Error\": %d", error);
+        if (!isEmptyString(msg))
+            resp.appendf(", \"Message\": \"%s\"", msg);
+        resp.append(" }");
+        resp.append(" }");
+    }
+    else
+    {
+        resp.setf("<%sResponse>", lock ? "Lock" : "Unlock");
+        resp.appendf("<Error>%d</Error>", error);
+        if (!isEmptyString(msg))
+            resp.appendf("<Message>%s</Message>", msg);
+        resp.appendf("</%sResponse>", lock ? "Lock" : "Unlock");
+    }
+    sendMessage(resp.str(), (format == ESPSerializationJSON) ? "application/json" : "text/xml");
 }
 
 void CEspHttpServer::createGetSessionTimeoutResponse(StringBuffer& resp, ESPSerializationFormat format, IPropertyTree* sessionTree)
@@ -1439,6 +1465,8 @@ void CEspHttpServer::logoutSession(EspAuthRequest& authReq, unsigned sessionID, 
     const char* logoutURL = authReq.authBinding->queryLogoutURL();
     if (!isEmptyString(logoutURL) && !lock)
         m_response->redirect(*m_request, authReq.authBinding->queryLogoutURL());
+    else if (lock)
+        sendLockResponse(true, false, "Locked");
     else
         sendMessage(nullptr, "text/html; charset=UTF-8");
 }
@@ -1461,7 +1489,7 @@ EspAuthState CEspHttpServer::handleAuthFailed(bool sessionAuth, EspAuthRequest& 
     if (unlock)
     {
         ESPLOG(LogMin, "Unlock failed: invalid user name or password.");
-        sendMessage("Unlock failed: invalid user name or password.", "text/html; charset=UTF-8");
+        sendLockResponse(false, true, "Invalid user name or password");
         return authTaskDone;
     }
 

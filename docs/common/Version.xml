@@ -1,15 +1,15 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter>
   <chapterinfo>
     <date id="DateVer">DEVELOPER NON-GENERATED VERSION</date>
 
-    <releaseinfo id="FooterInfo">© 2017 HPCC
+    <releaseinfo id="FooterInfo">© 2018 HPCC
     Systems<superscript>®</superscript>. All rights reserved</releaseinfo>
 
     <copyright id="Copyright">
-      <year>2017 HPCC Systems<superscript>®</superscript>. All rights
+      <year>2018 HPCC Systems<superscript>®</superscript>. All rights
       reserved</year>
     </copyright>
   </chapterinfo>
@@ -19,12 +19,12 @@
   <section>
     <title>Version Section</title>
 
-    <para id="bpara">This document contains no actual content, information, or
-    other interesting material. In fact it is only here to serve one purpose
-    and that is to store the chapterinfo the above sections that are being
-    used by several other documents.</para>
+    <para id="bpara">This document contains no actual content, information, 
+    or other interesting material. In fact it is only here to
+    serve one purpose and that is to store the chapterinfo the above sections
+    that are being used by several other documents.</para>
 
-    <para id="CHMVer">2017 Version X.X</para>
+    <para id="CHMVer">2018 Version ${DOC_VERSION}</para>
 
     <para>The following line is the code to be put into the document you wish
     to include the above version info in:</para>

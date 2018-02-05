@@ -100,14 +100,14 @@ SuperHashTable::~SuperHashTable()
     doKill();
 }
 
-#ifdef TRACE_HASH
 void SuperHashTable::dumpStats() const
 {
+#ifdef TRACE_HASH
     if (tablecount && search_tot && search_num)
         printf("Hash table %d entries, %d size, average search length %d(%d/%d) max %d\n", tablecount, tablesize,
                (int) (search_tot/search_num), search_tot, search_num, search_max);
-}
 #endif
+}
  
 #ifdef TRACE_HASH
 void SuperHashTable::note_searchlen(int len) const
@@ -315,9 +315,15 @@ void SuperHashTable::expand(unsigned newsize)
     void * *newtable = (void * *) checked_malloc(newsize*sizeof(void *),-603);
     memset(newtable,0,newsize*sizeof(void *));
     void * *oldtable = table;
+#ifdef HASHSIZE_POWER2
+    const unsigned oldmask = tablesize-1;
+#endif
     unsigned i;
     for (i = 0; i < tablesize; i++)
     {
+#ifdef HASHSIZE_POWER2
+        __builtin_prefetch(oldtable[(i+1) & oldmask]);
+#endif
         void *et = oldtable[i];
         if (et)
         {
@@ -446,6 +452,13 @@ bool SuperHashTable::removeExact(void *et)
     doDeleteElement(v);
     onRemove(et);
     return true;
+}
+
+unsigned SuperHashTable::validIdx(unsigned i) const
+{
+    while (i < tablesize && !table[i])
+        i++;
+    return i;
 }
 
 void *SuperHashTable::findElement(unsigned hash, const void * findEt) const

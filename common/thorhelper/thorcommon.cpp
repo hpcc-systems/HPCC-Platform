@@ -28,14 +28,21 @@
 #include "eclrtl.hpp"
 #include "rtlread_imp.hpp"
 #include "rtlcommon.hpp"
+#include "eclhelper_dyn.hpp"
+#include "hqlexpr.hpp"
 #include <algorithm>
 #ifdef _USE_NUMA
 #include <numa.h>
 #endif
 
 #include "thorstep.hpp"
+#include "roxiemem.hpp"
 
 #define ROWAGG_PERROWOVERHEAD (sizeof(AggregateRowBuilder))
+
+void AggregateRowBuilder::Link() const { LinkRoxieRow(this); }
+bool AggregateRowBuilder::Release() const { ReleaseRoxieRow(this); return false; }  // MORE - return value is iffy
+
 RowAggregator::RowAggregator(IHThorHashAggregateExtra &_extra, IHThorRowAggregator & _helper) : helper(_helper)
 {
     comparer = _extra.queryCompareRowElement();
@@ -52,9 +59,12 @@ RowAggregator::~RowAggregator()
     reset();
 }
 
-void RowAggregator::start(IEngineRowAllocator *_rowAllocator)
+static CClassMeta<AggregateRowBuilder> AggregateRowBuilderMeta;
+
+void RowAggregator::start(IEngineRowAllocator *_rowAllocator, ICodeContext *ctx, unsigned activityId)
 {
     rowAllocator.set(_rowAllocator);
+    rowBuilderAllocator.setown(ctx->getRowAllocatorEx(&AggregateRowBuilderMeta, activityId, roxiemem::RHFunique|roxiemem::RHFnofragment|roxiemem::RHFdelayrelease));
 }
 
 void RowAggregator::reset()
@@ -63,9 +73,9 @@ void RowAggregator::reset()
     {
         AggregateRowBuilder *n = nextResult();
         if (n)
-            n->Release();
+            ReleaseRoxieRow(n);
     }
-    SuperHashTable::_releaseAll();
+    _releaseAll();
     eof = false;
     cursor = NULL;
     rowAllocator.clear();
@@ -87,7 +97,7 @@ AggregateRowBuilder &RowAggregator::addRow(const void * row)
     }
     else
     {
-        Owned<AggregateRowBuilder> rowBuilder = new AggregateRowBuilder(rowAllocator, hash);
+        Owned<AggregateRowBuilder> rowBuilder = new (rowBuilderAllocator->createRow()) AggregateRowBuilder(rowAllocator, hash);
         helper.clearAggregate(*rowBuilder);
         size32_t sz = helper.processFirst(*rowBuilder, row);
         rowBuilder->setSize(sz);
@@ -113,7 +123,7 @@ void RowAggregator::mergeElement(const void * otherElement)
     }
     else
     {
-        Owned<AggregateRowBuilder> rowBuilder = new AggregateRowBuilder(rowAllocator, hash);
+        Owned<AggregateRowBuilder> rowBuilder = new (rowBuilderAllocator->createRow()) AggregateRowBuilder(rowAllocator, hash);
         rowBuilder->setSize(cloneRow(*rowBuilder, otherElement, rowAllocator->queryOutputMeta()));
         addNew(rowBuilder.getClear(), hash);
     }
@@ -991,7 +1001,7 @@ public:
             strm.setown(createFileSerialStream(fileio,_ofs,_len,(size32_t)-1, _tallycrc?&crccb:NULL));
         else
             strm.setown(createFileSerialStream(mmfile,_ofs,_len,_tallycrc?&crccb:NULL));
-        prefetcher.setown(rowif->queryRowMetaData()->createDiskPrefetcher(rowif->queryCodeContext(), rowif->queryActivityId()));
+        prefetcher.setown(rowif->queryRowMetaData()->createDiskPrefetcher());
         if (prefetcher)
             prefetchBuffer.setStream(strm);
         source.setStream(strm);
@@ -1815,3 +1825,29 @@ void bindMemoryToLocalNodes()
     numa_bitmask_free(nodes);
 #endif
 }
+
+extern THORHELPER_API IOutputMetaData *getDaliLayoutInfo(IPropertyTree const &props)
+{
+    bool isGrouped = props.getPropBool("@grouped", false);
+    if (props.hasProp("_rtlType"))
+    {
+        MemoryBuffer layoutBin;
+        props.getPropBin("_rtlType", layoutBin);
+        return createTypeInfoOutputMetaData(layoutBin, isGrouped, nullptr);
+    }
+    else if (props.hasProp("ECL"))
+    {
+        StringBuffer layoutECL;
+        props.getProp("ECL", layoutECL);
+        MultiErrorReceiver errs;
+        Owned<IHqlExpression> expr = parseQuery(layoutECL.str(), &errs);
+        if (errs.errCount() == 0)
+        {
+            MemoryBuffer layoutBin;
+            if (exportBinaryType(layoutBin, expr))
+                return createTypeInfoOutputMetaData(layoutBin, isGrouped, nullptr);
+        }
+    }
+    return nullptr;
+}
+

@@ -1726,12 +1726,14 @@ class CRemoteFile : public CRemoteBase, implements IFile
 {
     StringAttr remotefilename;
     unsigned flags;
+    bool isShareSet;
 public:
     IMPLEMENT_IINTERFACE
     CRemoteFile(const SocketEndpoint &_ep, const char * _filename)
         : CRemoteBase(_ep, _filename)
     {
         flags = ((unsigned)IFSHread)|((S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)<<16);
+        isShareSet = false;
         if (filename.length()>2 && isPathSepChar(filename[0]) && isShareChar(filename[2]))
         {
             VStringBuffer winDriveFilename("%c:%s", filename[1], filename+3);
@@ -2163,11 +2165,17 @@ public:
     {
         flags &= ~(IFSHfull|IFSHread);
         flags |= (unsigned)(shmode&(IFSHfull|IFSHread));
+        isShareSet = true;
     }
 
     unsigned short getShareMode()
     {
         return (unsigned short)(flags&0xffff);
+    }
+
+    bool getIsShareSet()
+    {
+        return isShareSet;
     }
 
     void remoteExtractBlobElements(const char * prefix, ExtractedBlobArray & extracted)
@@ -2353,20 +2361,23 @@ public:
         // then also send sMode, cFlags
         unsigned short sMode = parent->getShareMode();
         unsigned short cFlags = parent->getCreateFlags();
-        switch ((compatIFSHmode)_compatmode)
+        if (!(parent->getIsShareSet()))
         {
-            case compatIFSHnone:
-                sMode = IFSHnone;
-                break;
-            case compatIFSHread:
-                sMode = IFSHread;
-                break;
-            case compatIFSHwrite:
-                sMode = IFSHfull;
-                break;
-            case compatIFSHall:
-                sMode = IFSHfull;
-                break;
+            switch ((compatIFSHmode)_compatmode)
+            {
+                case compatIFSHnone:
+                    sMode = IFSHnone;
+                    break;
+                case compatIFSHread:
+                    sMode = IFSHread;
+                    break;
+                case compatIFSHwrite:
+                    sMode = IFSHfull;
+                    break;
+                case compatIFSHall:
+                    sMode = IFSHfull;
+                    break;
+            }
         }
         sendBuffer.append((RemoteFileCommandType)RFCopenIO).append(localname).append((byte)_mode).append((byte)_compatmode).append((byte)_extraFlags).append(sMode).append(cFlags);
         parent->sendRemoteCommand(sendBuffer, replyBuffer);
@@ -2625,6 +2636,9 @@ void clientDisconnectRemoteIoOnExit(IFileIO *fileio,bool set)
 
 IFileIO * CRemoteFile::openShared(IFOmode mode,IFSHmode shmode,IFEflags extraFlags)
 {
+    // 0x0, 0x8, 0x10 and 0x20 are only share modes supported in this assert
+    // currently only 0x0 (IFSHnone), 0x8 (IFSHread) and 0x10 (IFSHfull) are used so this could be 0xffffffe7
+    // note: IFSHfull also includes read sharing (ie write|read)
     assertex(((unsigned)shmode&0xffffffc7)==0);
     compatIFSHmode compatmode;
     unsigned fileflags = (flags>>16) &  (S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IWGRP|S_IXGRP|S_IROTH|S_IWOTH|S_IXOTH);
@@ -3558,7 +3572,7 @@ class CRemoteDiskReadActivity : public CSimpleInterfaceOf<IRemoteActivity>
 
             inputStream.setown(createFileSerialStream(iFileIO, startPos));
             prefetchBuffer.setStream(inputStream);
-            prefetcher.setown(helper->queryDiskRecordSize()->createDiskPrefetcher(nullptr, 0));
+            prefetcher.setown(helper->queryDiskRecordSize()->createDiskPrefetcher());
 
             outBuilder = new MemoryBufferBuilder(resultBuffer, helper->queryOutputMeta()->getMinRecordSize());
             chooseN = helper->getChooseNLimit();
@@ -6303,9 +6317,9 @@ static StringBuffer basePath;
 static Owned<CSimpleInterface> serverThread;
 
 
-class RemoteFileTest : public CppUnit::TestFixture
+class RemoteFileSlowTest : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE(RemoteFileTest);
+    CPPUNIT_TEST_SUITE(RemoteFileSlowTest);
         CPPUNIT_TEST(testRemoteFilename);
         CPPUNIT_TEST(testStartServer);
         CPPUNIT_TEST(testBasicFunctionality);
@@ -6632,8 +6646,8 @@ protected:
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION( RemoteFileTest );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RemoteFileTest, "RemoteFileTests" );
+CPPUNIT_TEST_SUITE_REGISTRATION( RemoteFileSlowTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RemoteFileSlowTest, "RemoteFileSlowTests" );
 
 
 #endif // _USE_CPPUNIT

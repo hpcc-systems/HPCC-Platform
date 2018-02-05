@@ -193,16 +193,7 @@ int main(int argc, char* argv[])
         if (pipe->run("configgen", cmd.str(), ".", false, true, true, 0))
         {
             Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
-            const size32_t chunkSize = 8192;
-            for (;;)
-            {
-                size32_t sizeRead = pipeReader->read(chunkSize, configBuff.reserve(chunkSize));
-                if (sizeRead < chunkSize)
-                {
-                    configBuff.setLength(configBuff.length() - (chunkSize - sizeRead));
-                    break;
-                }
-            }
+            readSimpleStream(configBuff, *pipeReader);
             pipe->closeOutput();
         }
         int retcode = pipe->wait();

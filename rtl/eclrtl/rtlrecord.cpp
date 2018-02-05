@@ -112,8 +112,8 @@ static unsigned countFields(const RtlFieldInfo * const * fields, bool & contains
 class IfBlockInfo
 {
 public:
-    IfBlockInfo(const RtlFieldInfo &_field, const IfBlockInfo *_parent, unsigned _idx, unsigned _startIdx)
-    : field(_field), parent(_parent), idx(_idx), startIdx(_startIdx)
+    IfBlockInfo(const RtlFieldInfo &_field, const IfBlockInfo *_parent, unsigned _idx, unsigned _startIdx, unsigned _prevFields)
+    : field(_field), parent(_parent), idx(_idx), startIdx(_startIdx), prevFields(_prevFields)
     {
     }
 
@@ -132,11 +132,14 @@ public:
         return conditions[idx]==0;
     }
     inline unsigned queryStartField() const { return startIdx; }
+    inline unsigned numPrevFields() const { return prevFields; }
+    inline bool matchIfBlock(const RtlIfBlockTypeInfo * ifblock) const { return ifblock == field.type; }
 private:
     const RtlFieldInfo &field;
     const IfBlockInfo *parent = nullptr;  // for nested ifblocks
     unsigned idx;
     unsigned startIdx; // For ifblocks inside child records
+    unsigned prevFields; // number of fields before the if block
 };
 
 class RtlCondFieldStrInfo : public RtlFieldStrInfo
@@ -164,7 +167,7 @@ static unsigned expandNestedRows(unsigned idx, unsigned startIdx, const char *pr
             const IfBlockInfo *nestIfBlock = inIfBlock;
             if (isIfBlock)
             {
-                nestIfBlock = new IfBlockInfo(*cur, inIfBlock, ifblocks.ordinality(), startIdx);
+                nestIfBlock = new IfBlockInfo(*cur, inIfBlock, ifblocks.ordinality(), startIdx, idx);
                 ifblocks.append(nestIfBlock);
             }
             const RtlFieldInfo * const * nested = type->queryFields();
@@ -201,7 +204,7 @@ static unsigned expandNestedRows(unsigned idx, unsigned startIdx, const char *pr
 class FieldNameToFieldNumMap
 {
 public:
-    FieldNameToFieldNumMap(const RtlRecord &record)
+    FieldNameToFieldNumMap(const RtlRecord &record) : map(true)
     {
         unsigned numFields = record.getNumFields();
         for (unsigned idx = 0; idx < numFields;idx++)
@@ -335,7 +338,8 @@ RtlRecord::~RtlRecord()
         {
             delete(ifblocks[i]);
         }
-        delete [] ifblocks;
+        //following as allocated as a ConstPointerArrayOf<IfBlockInfo>, rather than new []
+        free(ifblocks);
     }
     delete [] fixedOffsets;
     delete [] whichVariableOffset;
@@ -453,20 +457,38 @@ size32_t RtlRecord::deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource
 void RtlRecord::readAhead(IRowPrefetcherSource & in) const
 {
     // Note - this should not and can not be used when ifblocks present - canprefetch flag should take care of that.
-    dbgassertex(numIfBlocks==0);
-    for (unsigned i=0; i < numVarFields; i++)
+    if (numIfBlocks==0)
     {
-        unsigned fieldIndex = variableFieldIds[i];
-        in.skip(fixedOffsets[fieldIndex]);
-        queryType(fieldIndex)->readAhead(in);
+        for (unsigned i=0; i < numVarFields; i++)
+        {
+            unsigned fieldIndex = variableFieldIds[i];
+            in.skip(fixedOffsets[fieldIndex]);
+            queryType(fieldIndex)->readAhead(in);
+        }
+        in.skip(fixedOffsets[numFields]);
     }
-    in.skip(fixedOffsets[numFields]);
+    else
+    {
+        const RtlFieldInfo * const * field;
+        for (field = originalFields; *field; field++)
+            (*field)->type->readAhead(in);
+    }
 }
 
 int RtlRecord::compare(const byte * left, const byte * right) const
 {
     //Use originalFields so that ifblocks are processed correctly
     return compareFields(originalFields, left, right, false);
+}
+
+unsigned RtlRecord::queryIfBlockLimit(const RtlIfBlockTypeInfo * ifblock) const
+{
+    for (unsigned i=0; i < numIfBlocks; i++)
+    {
+        if (ifblocks[i]->matchIfBlock(ifblock))
+            return ifblocks[i]->numPrevFields();
+    }
+    throwUnexpected();
 }
 
 static const FieldNameToFieldNumMap *setupNameMap(const RtlRecord &record, std::atomic<const FieldNameToFieldNumMap *> &aNameMap)
@@ -662,14 +684,16 @@ void RtlRow::getUtf8(size32_t & resultLen, char * & result, unsigned field) cons
     }
 }
 
-void RtlRow::setRow(const void * _row)
+void RtlRow::setRow(const void * _row, unsigned _numFieldsUsed)
 {
     row = (const byte *)_row;
     if (_row)
     {
-        info.calcRowOffsets(variableOffsets, _row);
+        numFieldsUsed = _numFieldsUsed;
+        if (numFieldsUsed)
+            info.calcRowOffsets(variableOffsets, _row, _numFieldsUsed);
 #if defined(_DEBUG) && defined(TRACE_ROWOFFSETS)
-        for (unsigned i = 0; i < info.getNumFields(); i++)
+        for (unsigned i = 0; i < info.getNumFields() && i < numFieldsUsed; i++)
         {
             printf("Field %d (%s) offset %d", i, info.queryName(i), (int) getOffset(i));
             if (getSize(i))
@@ -683,13 +707,22 @@ void RtlRow::setRow(const void * _row)
         }
 #endif
     }
+    else
+        numFieldsUsed = 0;
 }
 
-void RtlRow::setRow(const void * _row, unsigned _numFields)
+void RtlRow::lazyCalcOffsets(unsigned _numFieldsUsed) const
 {
-    row = (const byte *)_row;
-    if (_row)
-        info.calcRowOffsets(variableOffsets, _row, _numFields);
+    // This is a little iffy as it's not really const - but it clears up a lot of other code if you
+    // treat it as if it is. Logically it kind-of is, in that we are doing lazy-evaluation of the
+    // offsets but logically we are not creating information here.
+    // Another alternative would be to do the lazy eval in getOffset/getRecordSize ?
+    assert(row);
+    if (_numFieldsUsed > numFieldsUsed)
+    {
+        info.calcRowOffsets(variableOffsets, row, _numFieldsUsed); // MORE - could be optimized t oonly calc ones not previously calculated
+        numFieldsUsed = _numFieldsUsed;
+    }
 }
 
 RtlDynRow::RtlDynRow(const RtlRecord & _info, const void * optRow) : RtlRow(_info, optRow, _info.getNumVarFields()+1, new size_t[_info.getNumVarFields()+1])
@@ -798,9 +831,9 @@ IOutputRowSerializer * COutputMetaData::createDiskSerializer(ICodeContext * ctx,
     return new CVariableOutputRowSerializer(activityId, this);
 }
 
-ISourceRowPrefetcher * COutputMetaData::createDiskPrefetcher(ICodeContext * ctx, unsigned activityId)
+ISourceRowPrefetcher * COutputMetaData::createDiskPrefetcher()
 {
-    ISourceRowPrefetcher * fetcher = defaultCreateDiskPrefetcher(ctx, activityId);
+    ISourceRowPrefetcher * fetcher = defaultCreateDiskPrefetcher();
     if (fetcher)
         return fetcher;
     return new CDefaultPrefetcher(queryRecordAccessor(true));
@@ -811,14 +844,14 @@ IOutputRowDeserializer *COutputMetaData::createDiskDeserializer(ICodeContext * c
     return new CDefaultDeserializer(queryRecordAccessor(true));
 }
 
-ISourceRowPrefetcher *COutputMetaData::defaultCreateDiskPrefetcher(ICodeContext * ctx, unsigned activityId)
+ISourceRowPrefetcher *COutputMetaData::defaultCreateDiskPrefetcher()
 {
     if (getMetaFlags() & MDFneedserializedisk)
-        return querySerializedDiskMeta()->createDiskPrefetcher(ctx, activityId);
-    CSourceRowPrefetcher * fetcher = doCreateDiskPrefetcher(activityId);
+        return querySerializedDiskMeta()->createDiskPrefetcher();
+    CSourceRowPrefetcher * fetcher = doCreateDiskPrefetcher();
     if (fetcher)
     {
-        fetcher->onCreate(ctx);
+        fetcher->onCreate();
         return fetcher;
     }
     return NULL;
@@ -834,12 +867,12 @@ IOutputRowDeserializer *CFixedOutputMetaData::createDiskDeserializer(ICodeContex
     return new CFixedOutputRowDeserializer(activityId, fixedSize);
 }
 
-ISourceRowPrefetcher *CFixedOutputMetaData::createDiskPrefetcher(ICodeContext * ctx, unsigned activityId)
+ISourceRowPrefetcher *CFixedOutputMetaData::createDiskPrefetcher()
 {
-    ISourceRowPrefetcher * fetcher = defaultCreateDiskPrefetcher(ctx, activityId);
+    ISourceRowPrefetcher * fetcher = defaultCreateDiskPrefetcher();
     if (fetcher)
         return fetcher;
-    return new CFixedSourceRowPrefetcher(activityId, fixedSize);
+    return new CFixedSourceRowPrefetcher(fixedSize);
 }
 
 IOutputRowSerializer * CActionOutputMetaData::createDiskSerializer(ICodeContext * ctx, unsigned activityId)
@@ -852,9 +885,9 @@ IOutputRowDeserializer * CActionOutputMetaData::createDiskDeserializer(ICodeCont
     return new CFixedOutputRowDeserializer(activityId, 0);
 }
 
-ISourceRowPrefetcher * CActionOutputMetaData::createDiskPrefetcher(ICodeContext * ctx, unsigned activityId)
+ISourceRowPrefetcher * CActionOutputMetaData::createDiskPrefetcher()
 {
-    return new CFixedSourceRowPrefetcher(activityId, 0);
+    return new CFixedSourceRowPrefetcher(0);
 }
 
 

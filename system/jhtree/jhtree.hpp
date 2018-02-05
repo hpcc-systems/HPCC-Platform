@@ -27,6 +27,7 @@
 #include "jiface.hpp"
 #include "jfile.hpp"
 #include "jlog.hpp"
+#include "errorlist.h"
 
 interface jhtree_decl IDelayedFile : public IInterface
 {
@@ -155,11 +156,13 @@ typedef unsigned short UChar;
 #include "jmisc.hpp"
 
 class RtlRecord;
+interface IDynamicTransform;
+
 class jhtree_decl SegMonitorList : implements IInterface, implements IIndexReadContext, public CInterface
 {
     unsigned _lastRealSeg() const;
-    unsigned cachedLRS;
-    bool modified;
+    unsigned cachedLRS = 0;
+    bool modified = true;
     bool needWild;
     const RtlRecord &recInfo;
     unsigned keySegCount;
@@ -193,8 +196,6 @@ public:
     virtual void append(FFoption option, IFieldFilter * filter) override;
 };
 
-class IRecordLayoutTranslator;
-
 interface IKeyManager : public IInterface, extends IIndexReadContext
 {
     virtual void reset(bool crappyHack = false) = 0;
@@ -222,7 +223,7 @@ interface IKeyManager : public IInterface, extends IIndexReadContext
     virtual void releaseBlobs() = 0;
     virtual void resetCounts() = 0;
 
-    virtual void setLayoutTranslator(IRecordLayoutTranslator * trans) = 0;
+    virtual void setLayoutTranslator(const IDynamicTransform * trans) = 0;
     virtual void setSegmentMonitors(SegMonitorList &segmentMonitors) = 0;
     virtual void deserializeSegmentMonitors(MemoryBuffer &mb) = 0;
     virtual void finishSegmentMonitors() = 0;
@@ -258,5 +259,7 @@ public:
 };
 
 extern jhtree_decl bool isCompressedIndex(const char *filename);
+
+#define JHTREE_KEY_NOT_SORTED JHTREE_ERROR_START
 
 #endif

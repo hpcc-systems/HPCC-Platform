@@ -1350,3 +1350,23 @@ void writeStringToStream(IIOStream &out, const char *s) { out.write((size32_t)st
 void writeCharsNToStream(IIOStream &out, char c, unsigned cnt) { while(cnt--) out.write(1, &c); }
 void writeCharToStream(IIOStream &out, char c) { out.write(1, &c); }
 #endif
+
+template<typename T> size32_t readSimpleStream(T &target, ISimpleReadStream &stream, size32_t readChunkSize)
+{
+    size32_t totalSz = 0;
+    while (true)
+    {
+        size32_t sizeRead = stream.read(readChunkSize, target.reserve(readChunkSize));
+        if (sizeRead < readChunkSize)
+        {
+            target.setLength(target.length() - (readChunkSize - sizeRead));
+            if (!sizeRead)
+                break;
+        }
+        totalSz += sizeRead;
+    }
+    return totalSz;
+}
+template size32_t readSimpleStream<StringBuffer>(StringBuffer &, ISimpleReadStream &, size32_t);
+template size32_t readSimpleStream<MemoryBuffer>(MemoryBuffer &, ISimpleReadStream &, size32_t);
+

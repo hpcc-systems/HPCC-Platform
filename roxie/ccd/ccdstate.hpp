@@ -25,7 +25,6 @@
 #include "jhtree.hpp"
 #include "jisem.hpp"
 #include "dllserver.hpp"
-#include "layouttrans.hpp"
 #include "thorcommon.hpp"
 #include "ccddali.hpp"
 #include "thorcommon.ipp"
@@ -104,9 +103,11 @@ interface IFileIOArray : extends IInterface
 interface ITranslatorSet : extends IInterface
 {
     virtual const IDynamicTransform *queryTranslator(unsigned subFile) const = 0;
-    virtual ISourceRowPrefetcher *getPrefetcher(unsigned subFile, bool addGroupedFlag, ICodeContext *ctx, unsigned actId) const = 0;
+    virtual const IKeyTranslator *queryKeyTranslator(unsigned subFile) const = 0;
+    virtual ISourceRowPrefetcher *getPrefetcher(unsigned subFile) const = 0;
     virtual IOutputMetaData *queryActualLayout(unsigned subFile) const = 0;
     virtual int queryTargetFormatCrc() const = 0;
+    virtual const RtlRecord &queryTargetFormat() const = 0;
     virtual bool isTranslating() const = 0;
 };
 

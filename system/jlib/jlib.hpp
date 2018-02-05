@@ -139,6 +139,25 @@ public:
     inline bool zap(TYPE & obj, bool nodel=false) { assert(&obj); return IArray::zap(obj, nodel); }
 };
 
+template <class BTYPE>
+class IConstArrayOf : public IArray
+{
+    typedef const BTYPE TYPE;
+public:
+    inline TYPE & item(aindex_t pos) const        { return (TYPE &)IArray::item(pos); }
+    inline TYPE & popGet()                        { return (TYPE &)IArray::popGet(); }
+    inline TYPE & tos(void) const                 { return (TYPE &)IArray::tos(); }
+    inline TYPE & tos(aindex_t num) const         { return (TYPE &)IArray::tos(num); }
+    inline TYPE **getArray(aindex_t pos = 0)      { return (TYPE **)IArray::getArray(pos); }
+    inline TYPE **detach()                        { return (TYPE **)IArray::detach(); }
+    inline void append(TYPE& obj)                 { assert(&obj); IArray::append((BTYPE &) obj); }
+    inline void appendUniq(TYPE& obj)             { assert(&obj); IArray::appendUniq((BTYPE &) obj); }
+    inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); IArray::add((BTYPE &) obj, pos); }
+    inline aindex_t find(TYPE & obj) const        { assert(&obj); return IArray::find((BTYPE &) obj); }
+    inline void replace(TYPE &obj, aindex_t pos, bool nodel=false) { assert(&obj); IArray::replace((BTYPE &) obj, pos, nodel); }
+    inline bool zap(TYPE & obj, bool nodel=false) { assert(&obj); return IArray::zap((BTYPE &) obj, nodel); }
+};
+
 template <class TYPE, class BASE>
 class IBasedArrayOf : public IArray
 {
@@ -218,7 +237,7 @@ public:
     inline void add(TYPE * x, aindex_t pos)     { PointerArray::add(x, pos); }
     inline void append(TYPE * x)                { PointerArray::append(x); }
     inline aindex_t bAdd(TYPE * & newItem, PointerOfCompareFunc f, bool & isNew) { return PointerArray::bAdd(*(void * *)&newItem, (CompareFunc)f, isNew); }
-    inline aindex_t bSearch(const TYPE * & key, PointerOfCompareFunc f) const    { return PointerArray:: bSearch(*(const void * *)&key, (CompareFunc)f); }
+    inline aindex_t bSearch(const TYPE * & key, PointerOfCompareFunc f) const    { return PointerArray:: bSearch(*(void * const *)&key, (CompareFunc)f); }
     inline aindex_t find(TYPE * x) const        { return PointerArray::find(x); }
     inline TYPE **getArray(aindex_t pos = 0)    { return (TYPE **)PointerArray::getArray(pos); }
     inline TYPE **detach()                      { return (TYPE **)PointerArray::detach(); }
@@ -238,8 +257,8 @@ class ConstPointerArrayOf : public ConstPointerArray
 public:
     inline void add(TYPE * x, aindex_t pos)     { ConstPointerArray::add(x, pos); }
     inline void append(TYPE * x)                { ConstPointerArray::append(x); }
-    inline aindex_t bAdd(TYPE * & newItem, PointerOfCompareFunc f, bool & isNew) { return ConstPointerArray::bAdd(*(void * *)&newItem, (CompareFunc)f, isNew); }
-    inline aindex_t bSearch(const TYPE * & key, PointerOfCompareFunc f) const    { return ConstPointerArray:: bSearch(*(const void * *)&key, (CompareFunc)f); }
+    inline aindex_t bAdd(TYPE * & newItem, PointerOfCompareFunc f, bool & isNew) { return ConstPointerArray::bAdd(*(const void * *)&newItem, (CompareFunc)f, isNew); }
+    inline aindex_t bSearch(const TYPE * & key, PointerOfCompareFunc f) const    { return ConstPointerArray:: bSearch(*(const void * const *)&key, (CompareFunc)f); }
     inline aindex_t find(TYPE * x) const        { return ConstPointerArray::find(x); }
     inline TYPE **getArray(aindex_t pos = 0)    { return (TYPE **)ConstPointerArray::getArray(pos); }
     inline TYPE **detach()                      { return (TYPE **)ConstPointerArray::detach(); }

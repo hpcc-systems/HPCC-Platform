@@ -500,6 +500,8 @@
 #define HQLWRN_DFSlookupTypeMismatch            3147
 #define HQLWRN_NoFieldsMatch                    3148
 #define HQLWRN_DFSdenied                        3149
+#define HQLERR_NonConstantRange                 3150
+#define HQLERR_ExprTooComplexForValueSet        3151
 
 #define HQLERR_DedupFieldNotFound_Text          "Field removed from dedup could not be found"
 #define HQLERR_CycleWithModuleDefinition_Text   "Module definition contains an illegal cycle/recursive definition %s"
@@ -543,9 +545,30 @@
 #define HQLWRN_DFSlookupFailure_Text            "Error in DFS file resolution"
 #define HQLERR_DFSlookupFailure_Text            "Failed to resolve record information in DFS for file %s"
 #define HQLERR_DFSlookupIncompatible_Text       "Resolved record information is not compatible file %s"
+#define HQLERR_NonConstantRange_Text            "Non constant substrings not supported"
+#define HQLERR_ExprTooComplexForValueSet_Text   "Cannot create a value set for expression %s"
 
 /* parser error */
 #define ERR_PARSER_CANNOTRECOVER    3005  /* The parser can not recover from previous error(s) */
+
+//Migrated from hqlcpp - error numbers staying the same
+
+#define HQLERR_SubstringOutOfRange              4021
+#define HQLERR_WildNotReferenceIndex            4090
+#define HQLERR_LookupNotActiveDataset           4096
+#define HQLERR_KeyedJoinTooComplex              4097
+#define HQLERR_KeyAccessNeedCast                4098
+#define HQLERR_KeyAccessNoKeyField              4099
+#define HQLERR_OrMultipleKeyfields              4129
+
+#define HQLERR_SubstringOutOfRange_Text         "Substring index %d is outside the field range"
+#define HQLERR_WildNotReferenceIndex_Text       "WILD() does not reference fields in key %s"
+#define HQLERR_LookupNotActiveDataset_Text      "Attempting to lookup field %s in a dataset which has no active element"
+#define HQLERR_KeyedJoinTooComplex_Text         "Key condition (%s) is too complex, it cannot be done with the key."
+#define HQLERR_KeyAccessNeedCast_Text           "Key condition (%s) requires casts on comparison of field '%s'"
+#define HQLERR_KeyAccessNoKeyField_Text         "Key condition (%s) does not have any comparisons against key fields"
+#define HQLERR_OrMultipleKeyfields_Text         "Cannot OR together conditions on multiple key fields (%s)"
+
 
 /////////////////////////////////////////////////////////////////////////////
 /* Code Generation errors - defined in hqlcerrors.hpp */

@@ -177,6 +177,7 @@ public:
 };
 
 interface IFileContents;
+interface IEclSource;
 interface IEclRepository: public IInterface
 {
     virtual IHqlScope * queryRootScope() = 0;
@@ -188,11 +189,14 @@ interface IEclRepositoryCallback : public IEclRepository
 //Should only be called and implemented for concrete repositories
     virtual bool loadModule(IHqlRemoteScope * rScope, IErrorReceiver * errs, bool forceAll) = 0;
     virtual IHqlExpression * loadSymbol(IHqlRemoteScope *scope, IIdAtom * searchName) = 0;
+    virtual IEclSource * getSource(IHqlRemoteScope *scope, IIdAtom * searchName) = 0;
 };
 
 interface ICodegenContextCallback : public IInterface
 {
     virtual void noteCluster(const char *clusterName) = 0;
+    virtual void pushCluster(const char *clusterName) = 0;
+    virtual void popCluster() = 0;
     virtual bool allowAccess(const char * category, bool isSigned) = 0;
     /**
      * Lookup a file in DFS and return the record definition
@@ -202,6 +206,15 @@ interface ICodegenContextCallback : public IInterface
      * @param location      Location to use when reporting errors
      */
     virtual IHqlExpression *lookupDFSlayout(const char *filename, IErrorReceiver &errs, const ECLlocation &location, bool isOpt) const = 0;
+    /**
+     * Return number of nodes for the current cluster, via Dali lookup, or 0 if cannot be determined.
+     *
+     */
+    virtual unsigned lookupClusterSize() const = 0;
+    /*
+     * Which platform was this query originally targeted to?
+     */
+    virtual void getTargetPlatform(StringBuffer & result) = 0;
 };
 
 

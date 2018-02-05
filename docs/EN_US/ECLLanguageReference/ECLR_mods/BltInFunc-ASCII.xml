@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ASCII">
+  <title>ASCII</title>
+
+  <para role="syntax"><emphasis role="bold">ASCII<indexterm>
+      <primary>ASCII</primary>
+    </indexterm><indexterm>
+      <primary>ASCII function</primary>
+    </indexterm>(</emphasis><emphasis>recordset</emphasis>
+    <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]</emphasis>
+    <emphasis role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="78.75pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The set of records to process. This may be the name of a
+            dataset or a record set derived from some filter condition, or any
+            expression that results in a derived record set.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+
+            <entry>Optional. Specifies the output record order is not significant.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+
+            <entry>Specifies the significance of the output record order.</entry>
+          </row>
+          <row>
+            <entry><emphasis>bool</emphasis></entry>
+
+            <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Optional. Specifies the input record order is significant.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Optional. Specifies the input record order is not significant.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+            <entry>Optional. Try to evaluate this activity in parallel.</entry>
+          </row>
+          <row>
+            <entry><emphasis>numthreads</emphasis></entry>
+
+            <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
+          </row>
+          <row>
+            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+            <entry>Optional. Override the algorithm used for this activity.</entry>
+          </row>
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>ASCII returns a set of records.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">ASCII </emphasis>function returns the
+  <emphasis>recordset </emphasis>with all STRING fields translated from EBCDIC
+  to ASCII.</para>
+
+  <para>Example:</para>
+
+  <para><programlisting>AsciiRecs := ASCII(SomeEBCDICInput);</programlisting></para>
+
+  <para>See Also: <link linkend="EBCDIC">EBCDIC</link></para>
+</sect1>

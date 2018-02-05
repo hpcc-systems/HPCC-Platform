@@ -169,15 +169,15 @@ int main(int argc, char* argv[])
     else
         removeLog();
 
-    if (!includeNames.length())
-        includeNames.append("*");
-
-    if (!includeAll)
+    if (!includeAll && includeNames.empty())
     {
         excludeNames.append("*stress*");
         excludeNames.append("*timing*");
         excludeNames.append("*slow*");
     }
+
+    if (!includeNames.length())
+        includeNames.append("*");
 
     if (useDefaultLocations)
     {
@@ -283,9 +283,9 @@ class InternalStatisticsTest : public CppUnit::TestFixture
 CPPUNIT_TEST_SUITE_REGISTRATION( InternalStatisticsTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( InternalStatisticsTest, "StatisticsTest" );
 
-class PtreeThreadingTest : public CppUnit::TestFixture
+class PtreeThreadingStressTest : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE( PtreeThreadingTest  );
+    CPPUNIT_TEST_SUITE( PtreeThreadingStressTest  );
         CPPUNIT_TEST(testContention);
     CPPUNIT_TEST_SUITE_END();
 
@@ -299,7 +299,7 @@ class PtreeThreadingTest : public CppUnit::TestFixture
         enum ContentionMode { max_contention, some_contention, min_contention, some_control, min_control };
         class casyncfor: public CAsyncFor
         {
-            volatile int v;
+            volatile int v = 0;
             void donothing()
             {
                 v++;
@@ -548,8 +548,8 @@ class PtreeThreadingTest : public CppUnit::TestFixture
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION( PtreeThreadingTest );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( PtreeThreadingTest, "PtreeThreadingTest" );
+CPPUNIT_TEST_SUITE_REGISTRATION( PtreeThreadingStressTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( PtreeThreadingStressTest, "PtreeThreadingStressTest" );
 
 //MORE: This can't be included in jlib because of the dll dependency
 class StringBufferTest : public CppUnit::TestFixture

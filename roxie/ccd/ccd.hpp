@@ -31,8 +31,8 @@
 #include "roxiedebug.ipp"
 #include "eclrtl.hpp"
 #include "rtlformat.hpp"
+#include "rtldynfield.hpp"
 #include "workunit.hpp"
-#include "layouttrans.hpp"
 
 #ifdef CCD_EXPORTS
 #define CCD_API DECL_EXPORT
@@ -75,7 +75,7 @@ extern unsigned myNodeIndex;
 #define ROXIE_PRIORITY_MASK (ROXIE_SLA_PRIORITY | ROXIE_HIGH_PRIORITY | ROXIE_LOW_PRIORITY)
 #else
 #define ROXIE_PRIORITY_MASK (ROXIE_HIGH_PRIORITY | ROXIE_LOW_PRIORITY )
-#endif  
+#endif
 
 #define ROXIE_ACTIVITY_FETCH 0x20000000    // or'ed into activityId for fetch part of full keyed join activities
 
@@ -119,7 +119,7 @@ class RemoteActivityId
 {
 public:
     hash64_t queryHash;
-    unsigned activityId; 
+    unsigned activityId;
 
     inline bool isHighPriority() const { return (activityId & ROXIE_PRIORITY_MASK) == ROXIE_HIGH_PRIORITY; }
     inline bool isSLAPriority() const { return (activityId & ROXIE_PRIORITY_MASK) == ROXIE_SLA_PRIORITY; }
@@ -148,13 +148,13 @@ public:
     unsigned packetlength;
     unsigned short retries;         // how many retries on this query, the high bits are used as flags, see above
     unsigned short overflowSequence;// Used if more than one packet-worth of data from server - eg keyed join. We don't mind if we wrap...
-    unsigned short continueSequence;// Used if more than one chunk-worth of data from slave. We don't mind if we wrap 
+    unsigned short continueSequence;// Used if more than one chunk-worth of data from slave. We don't mind if we wrap
     unsigned short channel;         // multicast family to send on
     unsigned activityId;            // identifies the helper factory to be used (activityId in graph)
     hash64_t queryHash;             // identifies the query
 
     ruid_t uid;                     // unique id
-    unsigned serverIdx;             // final result (server) destination 
+    unsigned serverIdx;             // final result (server) destination
 #ifdef TIME_PACKETS
     unsigned tick;
 #endif
@@ -218,11 +218,11 @@ public:
     {
         // used when matching up a kill packet against a pending one...
         // DO NOT compare activityId - they are not supposed to match, since 0 in activityid identifies ibyti!
-        return 
-            oh.uid==uid && 
-            (oh.overflowSequence & ~OUTOFBAND_SEQUENCE) == (overflowSequence & ~OUTOFBAND_SEQUENCE) && 
-            oh.continueSequence == continueSequence && 
-            oh.serverIdx==serverIdx && 
+        return
+            oh.uid==uid &&
+            (oh.overflowSequence & ~OUTOFBAND_SEQUENCE) == (overflowSequence & ~OUTOFBAND_SEQUENCE) &&
+            oh.continueSequence == continueSequence &&
+            oh.serverIdx==serverIdx &&
             oh.channel==channel;
     }
 
@@ -240,7 +240,7 @@ public:
 
     StringBuffer &toString(StringBuffer &ret) const;
 
-    bool allChannelsFailed() 
+    bool allChannelsFailed()
     {
         unsigned mask = (1 << (numSlaves[channel] * SUBCHANNEL_BITS)) - 1;
         return (retries & mask) == mask;
@@ -422,7 +422,7 @@ struct PartNoType
 extern unsigned statsExpiryTime;
 extern time_t startupTime;
 extern unsigned miscDebugTraceLevel;
-extern IRecordLayoutTranslator::Mode fieldTranslationEnabled;
+extern RecordTranslationMode fieldTranslationEnabled;
 
 extern unsigned defaultParallelJoinPreload;
 extern unsigned defaultConcatPreload;
@@ -487,7 +487,7 @@ class LogItem : public CInterface
     unsigned channel;
 
 public:
-    LogItem(TracingCategory _category, const char *_prefix, unsigned _time, unsigned _channel, const char *_text) 
+    LogItem(TracingCategory _category, const char *_prefix, unsigned _time, unsigned _channel, const char *_text)
         : category(_category), prefix(_prefix), time(_time), channel(_channel), text(_text)
     {
     }
@@ -568,6 +568,10 @@ public: // Not very clean but I don't care
     mutable bool aborted;
     mutable CIArrayOf<LogItem> log;
 private:
+    StringAttr globalIdHeader = "HPCC-Global-Id";
+    StringAttr callerIdHeader = "HPCC-Caller-Id";
+    StringAttr globalId;
+    StringBuffer localId;
     ContextLogger(const ContextLogger &);  // Disable copy constructor
 public:
     IMPLEMENT_IINTERFACE;
@@ -580,6 +584,8 @@ public:
         start = msTick();
         channel = 0;
         aborted = false;
+        if ( topology && topology->hasProp("@httpGlobalIdHeader"))
+            setHttpIdHeaders(topology->queryProp("@httpGlobalIdHeader"), topology->queryProp("@httpCallerIdHeader"));
     }
 
     void outputXML(IXmlStreamFlusher &out)
@@ -698,6 +704,34 @@ public:
     {
         stats.reset();
     }
+    virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid)
+    {
+        globalId.set(id);
+        appendLocalId(localId.clear(), ep, pid);
+    }
+    virtual const char *queryGlobalId() const
+    {
+        return globalId.get();
+    }
+    virtual const char *queryLocalId() const
+    {
+        return localId.str();
+    }
+    virtual void setHttpIdHeaders(const char *global, const char *caller)
+    {
+        if (global && *global)
+            globalIdHeader.set(global);
+        if (caller && *caller)
+            callerIdHeader.set(caller);
+    }
+    virtual const char *queryGlobalIdHttpHeader() const
+    {
+        return globalIdHeader.str();
+    }
+    virtual const char *queryCallerIdHttpHeader() const
+    {
+        return callerIdHeader.str();
+    }
 };
 
 class StringContextLogger : public ContextLogger
@@ -712,7 +746,7 @@ public:
     }
     virtual StringBuffer &getLogPrefix(StringBuffer &ret) const
     {
-        return ret.append(id);  
+        return ret.append(id);
     }
     void set(const char *_id)
     {

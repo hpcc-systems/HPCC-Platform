@@ -188,6 +188,8 @@ public:
     {
         Owned<IClientWsSMC> client = createCmdClient(WsSMC, *this);
         Owned<IClientRoxieControlCmdRequest> req = client->createRoxieControlCmdRequest();
+        setCmdRequestTimeouts(req->rpc(), optMsToWait, optWaitConnectMs, optWaitReadSec);
+
         req->setWait(optMsToWait);
         req->setProcessCluster(optProcess);
         req->setCommand(attach ? CRoxieControlCmdType_ATTACH : CRoxieControlCmdType_DETACH);
@@ -296,6 +298,8 @@ public:
     {
         Owned<IClientWsSMC> client = createCmdClient(WsSMC, *this);
         Owned<IClientRoxieControlCmdRequest> req = client->createRoxieControlCmdRequest();
+        setCmdRequestTimeouts(req->rpc(), optMsToWait, optWaitConnectMs, optWaitReadSec);
+
         req->setWait(optMsToWait);
         req->setProcessCluster(optProcess);
         if (!reload)
@@ -424,6 +428,8 @@ public:
     {
         Owned<IClientWsDFUXRef> client = createCmdClientExt(WsDFUXRef, *this, "?ver_=1.29");
         Owned<IClientDFUXRefUnusedFilesRequest> req = client->createDFUXRefUnusedFilesRequest();
+        setCmdRequestTimeouts(req->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+
         req->setProcessCluster(optProcess);
         req->setCheckPackageMaps(optCheckPackageMaps);
 

@@ -255,37 +255,67 @@ class HashKeyOf : public MappingBase
 };
 
 
+template <class MAPPING>
+class KeptHashTableBase : extends KeptHashTable
+{
+  public:
+    typedef KeptHashTableBase<MAPPING> SELF;
+    friend class ConstHashItem;
+    class ConstHashItem
+    {
+    public:
+        ConstHashItem(const SELF & _self, unsigned _idx) : self(_self), idx(_idx) {}
+
+        MAPPING & operator * () const { return self.element(idx); }
+        bool operator != (const ConstHashItem & other) const { return &self != &other.self || idx != other.idx; }
+        ConstHashItem & operator ++ () { idx = self.validIdx(idx+1); return *this; }
+    private:
+        const SELF & self;
+        unsigned idx;
+    };
+
+  private:
+    bool remove(MAPPING * mem);
+    MAPPING & element(unsigned idx) const { return *static_cast<MAPPING *>(this->table[idx]); }
+
+  public:
+    KeptHashTableBase(int _keysize, bool _ignorecase) : KeptHashTable(_keysize, _ignorecase) {}
+    KeptHashTableBase(unsigned initsize, int _keysize, bool _ignorecase) : KeptHashTable(initsize, _keysize, _ignorecase) {}
+    ~KeptHashTableBase() {}
+
+    inline bool add(MAPPING &mem)               { return KeptHashTable::add(mem); }
+    inline bool removeExact(MAPPING * mem)           { return KeptHashTable::removeExact(mem); }
+    ConstHashItem begin() const { return ConstHashItem(*this, firstIdx()); }
+    ConstHashItem end() const { return ConstHashItem(*this, SELF::tablesize); }
+};
+
 template <class KEY, class MAPPING>
-class MapOf : extends KeptHashTable
+class MapOf : extends KeptHashTableBase<MAPPING>
 {
   private:
     bool remove(MAPPING * mem);
+
   public:
-    MapOf() : KeptHashTable(sizeof(KEY), false) {}
-    MapOf(unsigned initsize) : KeptHashTable(initsize, sizeof(KEY), false) {}
+    MapOf() : KeptHashTableBase<MAPPING>(sizeof(KEY), false) {}
+    MapOf(unsigned initsize) : KeptHashTableBase<MAPPING>(initsize, sizeof(KEY), false) {}
 
     ~MapOf()                                            {}
 
-    inline bool add(MAPPING &mem)               { return KeptHashTable::add(mem); }
     inline bool remove(const KEY & key)         { return KeptHashTable::remove(&key); }
-    inline bool removeExact(MAPPING * mem)           { return KeptHashTable::removeExact(mem); }
-    inline MAPPING * find(const KEY & key) const     { return (MAPPING *)KeptHashTable::find(&key); }
-    inline MAPPING * findLink(const KEY & key) const { return (MAPPING *)KeptHashTable::findLink(&key); }
+    inline MAPPING * find(const KEY & key) const     { return (MAPPING *)KeptHashTableBase<MAPPING>::find(&key); }
+    inline MAPPING * findLink(const KEY & key) const { return (MAPPING *)KeptHashTableBase<MAPPING>::findLink(&key); }
+
 };
 
 template <class MAPPING>
-class StringMapOf : extends KeptHashTable
+class StringMapOf : extends KeptHashTableBase<MAPPING>
 {
-  private:
-    bool remove(MAPPING * mem);
   public:
-    StringMapOf(bool _ignorecase) : KeptHashTable(0, _ignorecase) {}
-    StringMapOf(unsigned initsize, bool _ignorecase) : KeptHashTable(initsize, 0, _ignorecase) {}
+    StringMapOf(bool _ignorecase) : KeptHashTableBase<MAPPING>(0, _ignorecase) {}
+    StringMapOf(unsigned initsize, bool _ignorecase) : KeptHashTableBase<MAPPING>(initsize, 0, _ignorecase) {}
     ~StringMapOf()                                             {}
 
-    inline bool add(MAPPING &mem)               { return KeptHashTable::add(mem); }
     inline bool remove(const char *key)         { return KeptHashTable::remove(key); }
-    inline bool removeExact(MAPPING * mem)           { return KeptHashTable::removeExact(mem); }
     inline MAPPING * find(const char *key) const     { return (MAPPING *)KeptHashTable::find(key); }
 
 };

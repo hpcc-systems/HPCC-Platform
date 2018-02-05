@@ -1,0 +1,161 @@
+<?xml version="1.0"?>
+<xsl:stylesheet version="2.0"
+  xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:hpcc="https://www.hpccsystems.com"
+  exclude-result-prefixes="xs"
+  >
+  <xsl:output method="xml" indent="yes" omit-xml-declaration="no" encoding="UTF-8"/>
+
+  <xsl:variable name="title" select="xs:schema/xs:element[1]/@name"/>
+  <xsl:template match="/xs:schema">
+    <xsl:text disable-output-escaping="yes">&lt;!DOCTYPE sect1 PUBLIC &quot;-//OASIS//DTD DocBook XML V4.5//EN&quot;
+&quot;http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd&quot;&gt; </xsl:text>
+    <sect2>
+      <xsl:attribute name="id"><xsl:value-of select="$title"/>_mod</xsl:attribute>
+      <title><xsl:value-of select="$title"/></title>
+      <xsl:apply-templates select = "//xs:element"/>
+      <xsl:apply-templates select = "//xs:complexType"/>
+      <xsl:apply-templates select = "//xs:attributeGroup"/>
+    </sect2>
+  </xsl:template>
+
+
+  <xsl:function name = "hpcc:has_attributes_to_process" as = "xs:boolean">
+     <xsl:param name = "parent" />
+     <xsl:choose>
+       <xsl:when test = "count($parent/xs:attribute) gt
+          count($parent/xs:attribute/xs:annotation/xs:appinfo/viewType/'hidden')">
+          true
+        </xsl:when>
+        <xsl:otherwise>
+          false
+        </xsl:otherwise>
+     </xsl:choose>
+  </xsl:function>
+
+  <xsl:template match="xs:element">
+     <xsl:if test = "hpcc:has_attributes_to_process(.)">
+        <xsl:variable name = "index"><xsl:number level="any"/></xsl:variable>
+        <xsl:call-template name = "element-ancestors"/>
+        <para><emphasis role="bold">Attributes</emphasis></para>
+        <xsl:call-template name = "informaltable">
+          <xsl:with-param name = "undef-id" select = "$index"/>
+        </xsl:call-template>
+     </xsl:if>
+  </xsl:template>
+
+  <xsl:template match="xs:complexType">
+     <xsl:if test = "hpcc:has_attributes_to_process(.)">
+        <xsl:variable name = "index">CT<xsl:number level="any"/></xsl:variable>
+        <xsl:call-template name = "element-ancestors"/>
+        <para><emphasis role="bold">Attributes</emphasis></para>
+        <xsl:call-template name = "informaltable">
+          <xsl:with-param name = "undef-id" select = "$index"/>
+        </xsl:call-template>
+     </xsl:if>
+  </xsl:template>
+
+  <xsl:template match="xs:attributeGroup">
+     <xsl:if test = "hpcc:has_attributes_to_process(.)">
+        <xsl:variable name = "index">AG<xsl:number level="any"/></xsl:variable>
+        <para><emphasis role="bold"><xsl:value-of select = "@name"/></emphasis></para>
+        <para><emphasis role="bold"></emphasis></para>
+        <xsl:call-template name = "informaltable">
+          <xsl:with-param name = "undef-id" select = "$index"/>
+        </xsl:call-template>
+     </xsl:if>
+  </xsl:template>
+
+  <xsl:template name = "element-ancestors">
+    <xsl:for-each select="ancestor::*">
+       <xsl:if test = "name() = 'xs:element'">
+         <para><emphasis role="bold"> <xsl:value-of select = "@name"/></emphasis></para>
+       </xsl:if>
+    </xsl:for-each>
+  </xsl:template>
+
+
+  <xsl:template name = "informaltable">
+    <xsl:param name = "undef-id"/>
+
+    <informaltable>
+      <xsl:attribute name="colsep">1</xsl:attribute>
+      <xsl:attribute name="rowsep">1</xsl:attribute>
+      <xsl:choose>
+        <xsl:when test = "xs:annotation/xs:appinfo/docid">
+          <xsl:attribute name="id">
+            <xsl:value-of select="xs:annotation/xs:appinfo/docid"/>
+          </xsl:attribute>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:attribute name="id">UNDEFINED-<xsl:value-of select="$undef-id"/></xsl:attribute>
+        </xsl:otherwise>
+      </xsl:choose>
+
+      <tgroup cols="4" align="left">
+        <colspec colwidth="155pt" /><colspec colwidth="2*" /><colspec colwidth="1*" /><colspec colwidth="0.5*" />
+        <thead>
+          <row>
+            <entry>attribute</entry>
+            <entry>values</entry>
+            <entry>default</entry>
+            <entry>required</entry>
+          </row>
+        </thead>
+        <tbody>
+          <xsl:apply-templates select="xs:attribute"/>
+        </tbody>
+      </tgroup>
+    </informaltable>
+  </xsl:template>
+
+  <xsl:template match = "xs:attribute">
+       <xsl:variable name="viewType">
+         <xsl:choose>
+           <xsl:when test="xs:annotation/xs:appinfo/viewType">
+             <xsl:value-of select="xs:annotation/xs:appinfo/viewType/text()"/>
+           </xsl:when>
+           <xsl:otherwise>visible</xsl:otherwise>
+         </xsl:choose>
+       </xsl:variable>
+
+       <xsl:variable name="tooltip">
+         <xsl:choose>
+           <xsl:when test="xs:annotation/xs:appinfo/tooltip">
+             <xsl:value-of select="xs:annotation/xs:appinfo/tooltip/text()"/>
+           </xsl:when>
+           <xsl:otherwise></xsl:otherwise>
+         </xsl:choose>
+       </xsl:variable>
+
+       <xsl:variable name="use">
+         <xsl:choose>
+           <xsl:when test="xs:annotation/xs:appinfo/required">
+             <xsl:value-of select="xs:annotation/xs:appinfo/required/text()"/>
+           </xsl:when>
+           <xsl:when test="@use">
+             <xsl:value-of select="@use"/>
+           </xsl:when>
+           <xsl:otherwise>optional</xsl:otherwise>
+         </xsl:choose>
+       </xsl:variable>
+
+       <xsl:variable name="use2">
+         <xsl:choose>
+           <xsl:when test="$use = 'true'">required</xsl:when>
+           <xsl:when test="$use = 'required'">required</xsl:when>
+           <xsl:otherwise>optional</xsl:otherwise>
+         </xsl:choose>
+       </xsl:variable>
+
+       <xsl:if test="$viewType != 'hidden'">
+         <row>
+           <entry><xsl:value-of select="@name"/></entry>
+           <entry><xsl:value-of select="$tooltip"/></entry>
+           <entry><xsl:value-of select="@default"/></entry>
+           <entry><xsl:value-of select="$use2"/></entry>
+         </row>
+       </xsl:if>
+  </xsl:template>
+</xsl:stylesheet>

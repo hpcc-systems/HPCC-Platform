@@ -30,8 +30,8 @@ class CFirstNSlaveBase : public CSlaveActivity
     typedef CSlaveActivity PARENT;
 
 protected:
-    rowcount_t limit, skipCount;
-    bool stopped;
+    rowcount_t limit = RCUNBOUND, skipCount = 0;
+    bool stopped = true;
     IHThorFirstNArg *helper;
 
 public:
@@ -74,8 +74,8 @@ class CFirstNSlaveLocal : public CFirstNSlaveBase
 {
     typedef CFirstNSlaveBase PARENT;
 
-    bool firstget;
-    rowcount_t skipped;
+    bool firstget = true;
+    rowcount_t skipped = 0;
 public:
     CFirstNSlaveLocal(CGraphElementBase *_container) : CFirstNSlaveBase(_container)
     {
@@ -130,7 +130,7 @@ class CFirstNSlaveGrouped : public CFirstNSlaveBase
 {
     typedef CFirstNSlaveBase PARENT;
 
-    unsigned countThisGroup;
+    unsigned countThisGroup = 0;
 public:
     CFirstNSlaveGrouped(CGraphElementBase *_container) : CFirstNSlaveBase(_container)
     {
@@ -212,21 +212,25 @@ class CFirstNSlaveGlobal : public CFirstNSlaveBase, implements ILookAheadStopNot
 
     Semaphore limitgot;
     CriticalSection crit;
-    rowcount_t maxres, skipped, totallimit;
-    bool firstget;
+    rowcount_t maxres = RCUNBOUND, skipped = 0, totallimit = RCUNBOUND;
+    bool firstget = true;
     ThorDataLinkMetaInfo inputMeta;
     Owned<IEngineRowStream> originalInputStream;
 
+    void sendOnce(rowcount_t count)
+    {
+        {
+            CriticalBlock b(crit);
+            if (RCUNBOUND != maxres) // already set and sent
+                return;
+            maxres = count;
+        }
+        sendCount();
+    }
     void ensureSendCount()
     {
-        if (isFastThrough(input)) // i.e. no readahead
-        {
-            if (RCUNBOUND == maxres)
-            {
-                maxres = getDataLinkCount();
-                sendCount();
-            }
-        }
+        if (hasStarted() && isFastThrough(input)) // i.e. if fast through there is no readahead
+            sendOnce(getDataLinkCount() + skipped);
     }
     void doStopInput()
     {
@@ -294,14 +298,7 @@ public:
             if (limit+skipCount<r)
                 r = limit+skipCount;
             // sneaky short circuit
-            {
-                CriticalBlock b(crit);
-                if (RCUNBOUND == maxres)
-                {
-                    maxres = r;
-                    sendCount();
-                }
-            }
+            sendOnce(r);
         }
         ActPrintLog("FIRSTN: Record limit is %" RCPF "d %" RCPF "d", limit, skipCount); 
         return true;
@@ -384,13 +381,7 @@ public:
 // ILookAheadStopNotify
     virtual void onInputFinished(rowcount_t count) override // count is the total read from input (including skipped)
     {
-        // sneaky short circuit
-        {
-            CriticalBlock b(crit);
-            if (RCUNBOUND != maxres) return;
-            maxres = count;
-            sendCount();
-        }
+        sendOnce(count);
         ActPrintLog("FIRSTN: maximum row count %" RCPF "d", count);
     }
 };

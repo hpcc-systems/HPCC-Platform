@@ -102,7 +102,8 @@ ESPStruct DFUJob
 
 ESPStruct ServerJobQueue
 {
-    string QueueName;
+    [depr_ver("1.20")] string QueueName;
+    [min_ver("1.20")] ESParray<string, QueueName> QueueNames;
     string ServerName;
     string ServerType;
     string QueueStatus;
@@ -397,7 +398,7 @@ ESPresponse [exceptions_inline] LockQueryResponse
     int NumLocks;
 };
 
-ESPservice [auth_feature("DEFERRED"), noforms, version("1.19"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
+ESPservice [auth_feature("DEFERRED"), noforms, version("1.20"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
 {
     ESPmethod Index(SMCIndexRequest, SMCIndexResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/index.xslt")] Activity(ActivityRequest, ActivityResponse);

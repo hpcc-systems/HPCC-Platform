@@ -3525,6 +3525,13 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
     if (expectedUnknownId)
         return NULL;
 
+    if (globalImportPending)
+    {
+        if (lexObject->hasLegacyImportSemantics())
+            importRootModulesToScope(globalScope, lookupCtx);
+        globalImportPending = false;
+    }
+
     //Check periodically if parsing a referenced identifier has caused the compile to abort.
     checkAborting();//NOTE: checkAborting() checks whether the parseContext is aborting and implicitly propagates this state, thus consistently triggering the parser to abort.
 
@@ -4515,6 +4522,14 @@ ITypeInfo * HqlGram::queryElementType(const attribute & errpos, IHqlExpression *
 
     reportError(ERR_CANNOT_DEDUCE_TYPE, errpos, "Can't deduce type of elements in list");
     return defaultIntegralType;
+}
+
+
+IHqlExpression * HqlGram::getTargetPlatformExpr()
+{
+    StringBuffer platform;
+    lookupCtx.queryParseContext().codegenCtx->getTargetPlatform(platform);
+    return createConstant(platform);
 }
 
 
@@ -10599,7 +10614,7 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
     const char * parentName = str(parent->queryId());
     if (name == _container_Atom)
     {
-        const char * containerName = str(parent->queryFullContainerId());
+        const char * containerName = str(parent->queryBody()->queryFullContainerId());
         //This is a bit ugly - remove the last qualified module, and resolve the name again.  A more "correct" method
         //saving container pointers hit problems because remote scopes within CHqlMergedScope containers have a remote
         //scope as the parent, rather than the merged scope...
@@ -10966,6 +10981,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case KEYED: msg.append("KEYED"); break;
     case KEYPATCH: msg.append("KEYPATCH"); break;
     case KEYUNICODE: msg.append("KEYUNICODE"); break;
+    case LABEL: msg.append("LABEL"); break;
     case LABELED: msg.append("LABELED"); break;
     case LAST: msg.append("LAST"); break;
     case LEFT: msg.append("LEFT"); break;
@@ -11134,6 +11150,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case TABLE: msg.append("TABLE"); break;
     case TAN: msg.append("TAN"); break;
     case TANH: msg.append("TANH"); break;
+    case __TARGET_PLATFORM__: msg.append("__TARGET_PLATFORM__"); break;
     case TERMINATOR: msg.append("TERMINATOR"); break;
     case THEN: msg.append("THEN"); break;
     case THISNODE: msg.append("THISNODE"); break;
@@ -12089,6 +12106,9 @@ extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * con
             ctx.noteBeginQuery(scope, contents);
 
         HqlGram parser(scope, scope, contents, ctx, xmlScope, false, loadImplicit);
+        if (isRoot)
+            parser.setPendingGlobalImport(true);
+
         parser.setQuery(true);
         parser.getLexer()->set_yyLineNo(1);
         parser.getLexer()->set_yyColumn(1);

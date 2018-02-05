@@ -811,7 +811,6 @@ void CSlaveGraph::initWithActData(MemoryBuffer &in, MemoryBuffer &out)
 
 bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *parentExtract)
 {
-    bool ret = true;
     unsigned needActInit = 0;
     unsigned uninitialized = 0;
     Owned<IThorActivityIterator> iter = getConnectedIterator();
@@ -892,6 +891,7 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
             msg.read(len);
         }
     }
+    Owned<IException> exception;
     if (len)
     {
         try
@@ -906,8 +906,7 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
             actInitRtnData.clear();
             actInitRtnData.append(true);
             serializeThorException(e, actInitRtnData);
-            e->Release();
-            ret = false;
+            exception.setown(e);
         }
     }
     if (syncInitData() || needActInit)
@@ -915,6 +914,8 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
         if (!queryJobChannel().queryJobComm().send(actInitRtnData, 0, replyTag, LONGTIMEOUT))
             throw MakeStringException(0, "Timeout sending init data back to master");
     }
+    if (exception)
+        throw exception.getClear();
     // initialize any for which no data was sent
     ForEach(*iter)
     {
@@ -929,7 +930,7 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
             assertex(0 == out.length());
         }
     }
-    return ret;
+    return true;
 }
 
 bool CSlaveGraph::preStart(size32_t parentExtractSz, const byte *parentExtract)
@@ -1490,6 +1491,26 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
     workUnitInfo->getProp("scope", scope);
 
     init();
+
+    if (workUnitInfo->hasProp("Debug/globalid"))
+    {
+        const char *globalId = workUnitInfo->queryProp("Debug/globalid");
+        if (globalId && *globalId)
+        {
+            SocketEndpoint thorEp;
+            thorEp.setLocalHost(getMachinePortBase());
+            logctx->setGlobalId(globalId, thorEp, 0);
+
+            VStringBuffer msg("GlobalId: %s", globalId);
+            const char *callerId = workUnitInfo->queryProp("debug/callerid");
+            if (callerId && *callerId)
+                msg.append(", CallerId: ").append(callerId);
+            const char *localId = logctx->queryLocalId();
+            if (localId && *localId)
+                msg.append(", LocalId: ").append(localId);
+            logctx->CTXLOG("%s", msg.str());
+        }
+    }
 
     oldNodeCacheMem = 0;
     mpJobTag = _mpJobTag;

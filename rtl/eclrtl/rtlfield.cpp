@@ -18,12 +18,15 @@
 #include "platform.h"
 #include <math.h>
 #include <stdio.h>
+#include <atomic>
 #include "jmisc.hpp"
 #include "jlib.hpp"
 #include "eclhelper.hpp"
 #include "eclrtl_imp.hpp"
 #include "rtlfield.hpp"
 #include "rtlds_imp.hpp"
+#include "rtlrecord.hpp"
+#include "rtlkey.hpp"
 #include "nbcd.hpp"
 
 static const char * queryXPath(const RtlFieldInfo * field)
@@ -177,6 +180,62 @@ double RtlTypeInfoBase::getReal(const void * ptr) const
     return rtlStrToReal(len, value.getstr());
 }
 
+bool RtlTypeInfoBase::equivalent(const RtlTypeInfo *to) const
+{
+    if (to==this)
+        return true;
+    if (!to)
+        return false;
+    if (to->length != length || to->fieldType != fieldType)
+        return false;
+    if (queryLocale())
+    {
+        // do we permit a locale difference?
+    }
+    auto child = queryChildType();
+    if (child && !child->equivalent(to->queryChildType()))
+        return false;
+    auto fields = queryFields();
+    if (fields)
+    {
+        auto tofields = to->queryFields();
+        if (!tofields)
+            return false; // Should never happen
+        for (unsigned idx = 0; fields[idx]; idx++)
+        {
+            if (!fields[idx]->equivalent(tofields[idx]))
+                return false;
+        }
+    }
+    return true;
+}
+
+static bool strequivalent(const char *name1, const char *name2)
+{
+    if (name1)
+        return name2 && streq(name1, name2);
+    else
+        return name2==nullptr;
+}
+
+bool RtlFieldInfo::equivalent(const RtlFieldInfo *to) const
+{
+    if (to==this)
+        return true;
+    if (!to)
+        return false;
+    if (!strequivalent(name, to->name))
+        return false;
+    if (!strequivalent(xpath, to->xpath))
+        return false;
+    if (!type->equivalent(to->type))
+        return false;
+    // Initializer differences can be ignored
+    if (flags != to->flags)
+        return false;
+    return true;
+}
+
 const char * RtlTypeInfoBase::queryLocale() const 
 {
     return NULL; 
@@ -195,6 +254,11 @@ const RtlFieldInfo * const * RtlTypeInfoBase::queryFields() const
 const RtlTypeInfo * RtlTypeInfoBase::queryChildType() const 
 {
     return NULL; 
+}
+
+const IFieldFilter * RtlTypeInfoBase::queryFilter() const
+{
+    return nullptr;
 }
 
 size32_t RtlTypeInfoBase::deserialize(ARowBuilder & builder, IRowDeserializerSource & in, size32_t offset) const
@@ -2793,8 +2857,10 @@ size32_t RtlRecordTypeInfo::deserialize(ARowBuilder & builder, IRowDeserializerS
 
 void RtlRecordTypeInfo::readAhead(IRowPrefetcherSource & in) const
 {
-    //Will not generally be called because it will have been expanded
-    return readAheadFields(fields, in);
+    //This could be called if the record contains ifblocks
+    in.noteStartChild();
+    readAheadFields(fields, in);
+    in.noteFinishChild();
 }
 
 
@@ -3746,12 +3812,75 @@ unsigned RtlIfBlockTypeInfo::hash(const byte * self, unsigned inhash) const
     return inhash;
 }
 
-bool RtlDynamicIfBlockTypeInfo::getCondition(const byte * selfrow) const
+bool RtlComplexIfBlockTypeInfo::getCondition(const RtlRow & selfrow) const
 {
-#ifdef _DEBUG
-    // Temporary code to help my testing, until proper implementation available
-    return selfrow[3] != 2;
-#endif
+    //Call the function in the derived class that evaluates the test condition
+    return getCondition(selfrow.queryRow());
+}
+
+
+static CriticalSection ifcs;
+RtlSerialIfBlockTypeInfo::~RtlSerialIfBlockTypeInfo()
+{
+    ::Release(filter);
+    delete parentRecord;
+}
+
+void RtlSerialIfBlockTypeInfo::doCleanup() const
+{
+    delete parentRecord;
+    parentRecord = nullptr;
+    ::Release(filter);
+    filter = nullptr;
+    RtlIfBlockTypeInfo::doCleanup();
+}
+
+
+bool RtlSerialIfBlockTypeInfo::getCondition(const byte * selfrow) const
+{
+    const IFieldFilter * filter = resolveCondition();
+    RtlDynRow row(*parentRecord, nullptr);
+    //Can only expand offset for fields up to and including this if block - otherwise it will call getCondition() again...
+    row.setRow(selfrow, numPrevFields);
+    return filter->matches(row);
+}
+
+bool RtlSerialIfBlockTypeInfo::getCondition(const RtlRow & selfrow) const
+{
+    return resolveCondition()->matches(selfrow);
+}
+
+const IFieldFilter * RtlSerialIfBlockTypeInfo::queryFilter() const
+{
+    return resolveCondition();
+}
+
+const IFieldFilter * RtlSerialIfBlockTypeInfo::resolveCondition() const
+{
+    //The following cast is a hack to avoid <atomic> being included from the header
+    //if parentRecord is not initialised then may need to create the filter condition
+    typedef std::atomic<RtlRecord *> AtomicRtlRecord;
+    AtomicRtlRecord & atomicParentRecord = *reinterpret_cast<AtomicRtlRecord *>(&parentRecord);
+    RtlRecord * parent = atomicParentRecord.load(std::memory_order_relaxed);
+    if (!parent)
+    {
+        CriticalBlock block(ifcs);
+        parent = atomicParentRecord.load(std::memory_order_relaxed);
+        if (!parent)
+        {
+            if (!filter)
+                filter = createCondition();
+            parent = new RtlRecord(*rowType, true);
+            atomicParentRecord.store(parent, std::memory_order_relaxed);
+            numPrevFields = parentRecord->queryIfBlockLimit(this);
+        }
+    }
+    return filter;
+}
+
+IFieldFilter * RtlDynamicIfBlockTypeInfo::createCondition() const
+{
+    //The filter should be initialised on deserialization
     UNIMPLEMENTED;
 }
 

@@ -45,6 +45,7 @@ set (   SRCS
         hqlesp.cpp
         hqlexpr.cpp
         hqlfield.cpp
+        hqlfilter.cpp
         hqlfold.cpp
         hqlgram2.cpp
         hqlmanifest.cpp
@@ -82,6 +83,7 @@ set (   SRCS
         hqlesp.hpp
         hqlexpr.hpp
         hqlfield.hpp
+        hqlfilter.hpp
         hqlfold.hpp
         hqlgram.hpp
         hqlmeta.hpp

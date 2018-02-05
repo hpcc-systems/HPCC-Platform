@@ -58,8 +58,8 @@
 #include "jhtree.ipp"
 #include "keybuild.hpp"
 #include "eclhelper_dyn.hpp"
-#include "layouttrans.hpp"
 #include "rtlrecord.hpp"
+#include "rtldynfield.hpp"
 
 static std::atomic<CKeyStore *> keyStore(nullptr);
 static unsigned defaultKeyIndexLimit = 200;
@@ -317,9 +317,9 @@ protected:
     unsigned keySize;       // size of key record including payload
     unsigned keyedSize;     // size of non-payload part of key
     unsigned numsegs;
-    bool matched;
-    bool eof;
-    bool started;
+    bool matched = false;
+    bool eof = false;
+    bool started = false;
     StringAttr keyName;
     unsigned seeks;
     unsigned scans;
@@ -327,13 +327,9 @@ protected:
     unsigned nullSkips;
     unsigned wildseeks;
 
-    Owned<IRecordLayoutTranslator> layoutTrans;
-    bool transformSegs;
-    IIndexReadContext * activitySegs;
-    CMemoryBlock layoutTransBuff;
+    Owned<const IDynamicTransform> layoutTrans;
+    MemoryBuffer buf;  // used when translating
     size32_t layoutSize = 0;
-    Owned<IRecordLayoutTranslator::SegmentMonitorContext> layoutTransSegCtx;
-    Owned<IRecordLayoutTranslator::RowTransformContext> layoutTransRowCtx;
 
     inline void setLow(unsigned segNo) 
     {
@@ -353,12 +349,6 @@ protected:
     inline void endRange(unsigned segno)
     {
         segs.endRange(segno, keyBuffer);
-    }
-
-    byte const * doRowLayoutTransform()
-    {
-        layoutSize = layoutTrans->transformRow(layoutTransRowCtx, reinterpret_cast<byte const *>(keyBuffer), keySize, layoutTransBuff);
-        return layoutTransBuff.get();
     }
 
     bool skipTo(const void *_seek, size32_t seekOffset, size32_t seeklen)
@@ -483,16 +473,12 @@ public:
         keyCursor = NULL;
         keySize = 0;
         keyedSize = 0;
-        started = false;
         setKey(_key);
         seeks = 0;
         scans = 0;
         skips = 0;
-        eof = false;
         nullSkips = 0;
         wildseeks = 0;
-        transformSegs = false;
-        activitySegs = &segs;
     }
 
     ~CKeyLevelManager()
@@ -592,14 +578,12 @@ public:
     {
         segs.reset();
         started = false;
-        if(layoutTransSegCtx)
-            layoutTransSegCtx->reset();
     }
 
     virtual void append(IKeySegmentMonitor *segment) 
     { 
         assertex(!started);
-        activitySegs->append(segment);
+        segs.append(segment);
     }
 
 
@@ -610,18 +594,23 @@ public:
 
     virtual unsigned ordinality() const 
     {
-        return activitySegs->ordinality();
+        return segs.ordinality();
     }
 
     virtual IKeySegmentMonitor *item(unsigned idx) const
     {
-        return activitySegs->item(idx);
+        return segs.item(idx);
     }
 
     inline const byte *queryKeyBuffer()
     {
         if(layoutTrans)
-            return doRowLayoutTransform();
+        {
+            buf.setLength(0);
+            MemoryBufferBuilder aBuilder(buf, 0);
+            layoutSize = layoutTrans->translate(aBuilder, reinterpret_cast<byte const *>(keyBuffer));
+            return reinterpret_cast<byte const *>(buf.toByteArray());
+        }
         else
             return reinterpret_cast<byte const *>(keyBuffer);
     }
@@ -742,31 +731,29 @@ public:
 
     unsigned __int64 getCount()
     {
+        assertex(keyCursor);
         matched = false;
         eof = false;
         setLow(0);
         keyCursor->reset();
         unsigned __int64 result = 0;
         unsigned lseeks = 0;
-        if (keyCursor)
+        unsigned lastRealSeg = segs.lastRealSeg();
+        for (;;)
         {
-            unsigned lastRealSeg = segs.lastRealSeg();
-            for (;;)
+            if (_lookup(true, lastRealSeg))
             {
-                if (_lookup(true, lastRealSeg))
-                {
-                    unsigned __int64 locount = keyCursor->getSequence();
-                    endRange(lastRealSeg);
-                    keyCursor->ltEqual(keyBuffer, NULL, true);
-                    lseeks++;
-                    result += keyCursor->getSequence()-locount+1;
-                    if (!incrementKey(lastRealSeg))
-                        break;
-                    matched = false;
-                }
-                else
+                unsigned __int64 locount = keyCursor->getSequence();
+                endRange(lastRealSeg);
+                keyCursor->ltEqual(keyBuffer, NULL, true);
+                lseeks++;
+                result += keyCursor->getSequence()-locount+1;
+                if (!incrementKey(lastRealSeg))
                     break;
+                matched = false;
             }
+            else
+                break;
         }
         noteSeeks(lseeks, 0, 0);
         return result;
@@ -796,41 +783,39 @@ public:
 
     unsigned __int64 checkCount(unsigned __int64 max)
     {
+        assertex(keyCursor);
         matched = false;
         eof = false;
         setLow(0);
         keyCursor->reset();
         unsigned __int64 result = 0;
         unsigned lseeks = 0;
-        if (keyCursor)
+        unsigned lastFullSeg = segs.lastFullSeg();
+        if (lastFullSeg == (unsigned) -1)
         {
-            unsigned lastFullSeg = segs.lastFullSeg();
-            if (lastFullSeg == (unsigned) -1)
+            noteSeeks(1, 0, 0);
+            if (keyCursor->last(NULL))
+                return keyCursor->getSequence()+1;
+            else
+                return 0;
+        }
+        for (;;)
+        {
+            if (_lookup(true, lastFullSeg))
             {
-                noteSeeks(1, 0, 0);
-                if (keyCursor->last(NULL))
-                    return keyCursor->getSequence()+1;
-                else
-                    return 0;
-            }
-            for (;;)
-            {
-                if (_lookup(true, lastFullSeg))
-                {
-                    unsigned __int64 locount = keyCursor->getSequence();
-                    endRange(lastFullSeg);
-                    keyCursor->ltEqual(keyBuffer, NULL, true);
-                    lseeks++;
-                    result += keyCursor->getSequence()-locount+1;
-                    if (max && (result > max))
-                        break;
-                    if (!incrementKey(lastFullSeg))
-                        break;
-                    matched = false;
-                }
-                else
+                unsigned __int64 locount = keyCursor->getSequence();
+                endRange(lastFullSeg);
+                keyCursor->ltEqual(keyBuffer, NULL, true);
+                lseeks++;
+                result += keyCursor->getSequence()-locount+1;
+                if (max && (result > max))
                     break;
+                if (!incrementKey(lastFullSeg))
+                    break;
+                matched = false;
             }
+            else
+                break;
         }
         noteSeeks(lseeks, 0, 0);
         return result;
@@ -868,29 +853,9 @@ public:
             keyCursor->releaseBlobs();
     }
 
-    virtual void setLayoutTranslator(IRecordLayoutTranslator * trans)
+    virtual void setLayoutTranslator(const IDynamicTransform * trans) override
     {
         layoutTrans.set(trans);
-        if(layoutTrans && layoutTrans->queryKeysTransformed())
-        {
-            transformSegs = true;
-            layoutTransSegCtx.setown(layoutTrans->getSegmentMonitorContext());
-            activitySegs = layoutTransSegCtx;
-        }
-        else
-        {
-            transformSegs = false;
-            layoutTransSegCtx.clear();
-            activitySegs = &segs;
-        }
-        if(layoutTrans)
-        {
-            layoutTransRowCtx.setown(layoutTrans->getRowTransformContext());
-        }
-        else
-        {
-            layoutTransRowCtx.clear();
-        }
     }
 
     virtual void setSegmentMonitors(SegMonitorList &segmentMonitors) override
@@ -906,17 +871,6 @@ public:
     virtual void finishSegmentMonitors()
     {
         segs.finish(keyedSize);
-        if(transformSegs)
-        {
-            layoutTrans->createDiskSegmentMonitors(*layoutTransSegCtx, segs);
-            if(!layoutTrans->querySuccess())
-            {
-                StringBuffer err;
-                err.append("Could not translate index read filters during layout translation of index ").append(keyName.get()).append(": ");
-                layoutTrans->queryFailure().getDetail(err);
-                throw MakeStringExceptionDirect(0, err.str());
-            }
-        }
     }
 };
 
@@ -2367,6 +2321,7 @@ class CKeyMerger : public CKeyLevelManager
         for (unsigned segno = 0; segno < sortFromSeg; segno++)
         {
             IOverrideableKeySegmentMonitor *sm = QUERYINTERFACE(&segs.segMonitors.item(segno), IOverrideableKeySegmentMonitor);
+            assertex(sm);
             sm->setOverrideBuffer(fixeds[key]);
         }
         segs.recalculateCache();
@@ -2533,11 +2488,11 @@ public:
         }
     }
 
-    virtual void setLayoutTranslator(IRecordLayoutTranslator * trans) 
+    virtual void setLayoutTranslator(const IDynamicTransform * trans) override
     { 
         if (trans)
             throw MakeStringException(0, "Layout translation not supported when merging key parts, as it may change sort order"); 
-        // it MIGHT be possible to support translation still if all keyCursors have the same translation 
+        // It MIGHT be possible to support translation still if all keyCursors have the same translation
         // would have to translate AFTER the merge, but that's ok
         // HOWEVER the result won't be guaranteed to be in sorted order afterwards so is there any point?
     }
@@ -2569,6 +2524,7 @@ public:
         for (segno = 0; segno < sortFromSeg; segno++)
         {
             IOverrideableKeySegmentMonitor *sm = QUERYINTERFACE(&segs.segMonitors.item(segno), IOverrideableKeySegmentMonitor);
+            assertex(sm);
             sm->setOverrideBuffer(NULL);
         }
         segs.recalculateCache();
@@ -2875,8 +2831,8 @@ extern jhtree_decl IKeyManager *createSingleKeyMerger(const RtlRecord &_recInfo,
 class CKeyIndexSet : implements IKeyIndexSet, public CInterface
 {
     IPointerArrayOf<IKeyIndex> indexes;
-    offset_t recordCount;
-    offset_t totalSize;
+    offset_t recordCount = 0;
+    offset_t totalSize = 0;
     StringAttr origFileName;
 
 public:
@@ -2913,8 +2869,6 @@ public:
         if (!keys.isItem(partNo))
         {
             return NULL;
-            DBGLOG("getKeyPart requested invalid part %d", partNo);
-            throw MakeStringException(0, "queryKeyPart requested invalid part %d", partNo);
         }
         IKeyIndexBase *key = keys.item(partNo);
         return key;

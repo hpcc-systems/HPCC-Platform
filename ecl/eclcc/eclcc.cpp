@@ -175,11 +175,12 @@ static bool getHomeFolder(StringBuffer & homepath)
     return true;
 }
 
-struct EclCompileInstance
+class EclCC;
+struct EclCompileInstance : public CInterfaceOf<ICodegenContextCallback>
 {
 public:
-    EclCompileInstance(IFile * _inputFile, IErrorReceiver & _errorProcessor, FILE * _errout, const char * _outputFilename, bool _legacyImport, bool _legacyWhen, bool _ignoreSignatures, bool _optXml) :
-      inputFile(_inputFile), errorProcessor(&_errorProcessor), errout(_errout), outputFilename(_outputFilename), legacyImport(_legacyImport), legacyWhen(_legacyWhen), ignoreSignatures(_ignoreSignatures), optXml(_optXml)
+    EclCompileInstance(EclCC & _eclcc, IFile * _inputFile, IErrorReceiver & _errorProcessor, FILE * _errout, const char * _outputFilename, bool _legacyImport, bool _legacyWhen, bool _ignoreSignatures, bool _optXml) :
+      eclcc(_eclcc), inputFile(_inputFile), errorProcessor(&_errorProcessor), errout(_errout), outputFilename(_outputFilename), legacyImport(_legacyImport), legacyWhen(_legacyWhen), ignoreSignatures(_ignoreSignatures), optXml(_optXml)
 {
         stats.parseTime = 0;
         stats.generateTime = 0;
@@ -192,8 +193,17 @@ public:
     bool reportErrorSummary();
     inline IErrorReceiver & queryErrorProcessor() { return *errorProcessor; }
 
+// interface ICodegenContextCallback
+    virtual void noteCluster(const char *clusterName) override;
+    virtual void pushCluster(const char *clusterName) override;
+    virtual void popCluster() override;
+    virtual bool allowAccess(const char * category, bool isSigned) override;
+    virtual IHqlExpression *lookupDFSlayout(const char *filename, IErrorReceiver &errs, const ECLlocation &location, bool isOpt) const override;
+    virtual unsigned lookupClusterSize() const override;
+    virtual void getTargetPlatform(StringBuffer & result) override;
 
 public:
+    EclCC & eclcc;
     Linked<IFile> inputFile;
     Linked<IPropertyTree> archive;
     Linked<IWorkUnit> wu;
@@ -223,7 +233,7 @@ protected:
     Linked<IErrorReceiver> errorProcessor;
 };
 
-class EclCC : public CInterfaceOf<ICodegenContextCallback>
+class EclCC
 {
 public:
     EclCC(int _argc, const char **_argv)
@@ -257,11 +267,15 @@ public:
 
     // interface ICodegenContextCallback
 
-    virtual void noteCluster(const char *clusterName);
-    virtual bool allowAccess(const char * category, bool isSigned);
-    virtual IHqlExpression *lookupDFSlayout(const char *filename, IErrorReceiver &errs, const ECLlocation &location, bool isOpt) const override;
+    void pushCluster(const char *clusterName);
+    void popCluster();
+    bool allowAccess(const char * category, bool isSigned);
+    IHqlExpression *lookupDFSlayout(const char *filename, IErrorReceiver &errs, const ECLlocation &location, bool isOpt) const;
+    unsigned lookupClusterSize() const;
+    void getTargetPlatform(StringBuffer & result);
 
 protected:
+    bool checkDaliConnected() const;
     void addFilenameDependency(StringBuffer & target, EclCompileInstance & instance, const char * filename);
     void applyApplicationOptions(IWorkUnit * wu);
     void applyDebugOptions(IWorkUnit * wu);
@@ -320,10 +334,13 @@ protected:
     StringAttr optQueryRepositoryReference;
     StringAttr optComponentName;
     StringAttr optDFS;
+    StringAttr optCluster;
     StringAttr optScope;
     StringAttr optUser;
     StringAttr optPassword;
     StringAttr optWUID;
+    StringArray clusters;
+    mutable int prevClusterSize = -1;  // i.e. not cached
     FILE * batchLog = nullptr;
 
     StringAttr optManifestFilename;
@@ -768,7 +785,7 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
             bool optSaveCpp = optSaveTemps || optNoCompile || wu->getDebugValueBool("saveCppTempFiles", false) || wu->getDebugValueBool("saveCpp", false);
             //New scope - testing things are linked correctly
             {
-                Owned<IHqlExprDllGenerator> generator = createDllGenerator(&errorProcessor, processName.str(), NULL, wu, templateDir, optTargetClusterType, this, false, false);
+                Owned<IHqlExprDllGenerator> generator = createDllGenerator(&errorProcessor, processName.str(), NULL, wu, templateDir, optTargetClusterType, &instance, false, false);
 
                 setWorkunitHash(wu, instance.query);
                 if (!optShared)
@@ -1128,7 +1145,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
 
     {
         //Minimize the scope of the parse context to reduce lifetime of cached items.
-        HqlParseContext parseCtx(instance.dataServer, this, instance.archive);
+        HqlParseContext parseCtx(instance.dataServer, &instance, instance.archive);
         if (optFastSyntax)
             parseCtx.setFastSyntax();
         unsigned maxErrorsDebugOption = instance.wu->getDebugValueInt("maxErrors", 0);
@@ -1192,9 +1209,6 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             else
             {
                 Owned<IHqlScope> scope = createPrivateScope();
-                if (instance.legacyImport)
-                    importRootModulesToScope(scope, ctx);
-
                 instance.query.setown(parseQuery(scope, queryContents, ctx, NULL, NULL, true, true));
 
                 if (instance.archive)
@@ -1715,16 +1729,7 @@ void EclCC::generateOutput(EclCompileInstance & instance)
                             unsigned retcode = pipe->wait();
                             StringBuffer buf;
                             Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
-                            const size32_t chunkSize = 128;
-                            for (;;)
-                            {
-                                size32_t sizeRead = pipeReader->read(chunkSize, buf.reserve(chunkSize));
-                                if (sizeRead < chunkSize)
-                                {
-                                    buf.setLength(buf.length() - (chunkSize - sizeRead));
-                                    break;
-                                }
-                            }
+                            readSimpleStream(buf, *pipeReader, 128);
                             if (retcode)
                                 WARNLOG("Failed to run git describe: returned %d (%s)", retcode, buf.str());
                             else if (buf.length())
@@ -1929,7 +1934,7 @@ bool EclCC::processFiles()
     else if (inputFiles.ordinality() == 0)
     {
         assertex(optQueryRepositoryReference);
-        EclCompileInstance info(NULL, *errs, stderr, optOutputFilename, optLegacyImport, optLegacyWhen, optIgnoreSignatures, optXml);
+        EclCompileInstance info(*this, NULL, *errs, stderr, optOutputFilename, optLegacyImport, optLegacyWhen, optIgnoreSignatures, optXml);
         processReference(info, optQueryRepositoryReference);
         ok = (errs->errCount() == 0);
 
@@ -1937,7 +1942,7 @@ bool EclCC::processFiles()
     }
     else
     {
-        EclCompileInstance info(&inputFiles.item(0), *errs, stderr, optOutputFilename, optLegacyImport, optLegacyWhen, optIgnoreSignatures, optXml);
+        EclCompileInstance info(*this, &inputFiles.item(0), *errs, stderr, optOutputFilename, optLegacyImport, optLegacyWhen, optIgnoreSignatures, optXml);
         processFile(info);
         ok = (errs->errCount() == 0);
 
@@ -2019,10 +2024,105 @@ bool EclCompileInstance::reportErrorSummary()
     return errorProcessor->errCount() != 0;
 }
 
-//=========================================================================================
-
-void EclCC::noteCluster(const char *clusterName)
+void EclCompileInstance::noteCluster(const char *clusterName)
 {
+}
+
+void EclCompileInstance::pushCluster(const char *clusterName)
+{
+    eclcc.pushCluster(clusterName);
+}
+
+void EclCompileInstance::popCluster()
+{
+    eclcc.popCluster();
+}
+
+unsigned EclCompileInstance::lookupClusterSize() const
+{
+    return eclcc.lookupClusterSize();
+}
+
+bool EclCompileInstance::allowAccess(const char * category, bool isSigned)
+{
+    return eclcc.allowAccess(category, isSigned);
+}
+
+IHqlExpression * EclCompileInstance::lookupDFSlayout(const char *filename, IErrorReceiver &errs, const ECLlocation &location, bool isOpt) const
+{
+    return eclcc.lookupDFSlayout(filename, errs, location, isOpt);
+}
+
+void EclCompileInstance::getTargetPlatform(StringBuffer & result)
+{
+    SCMStringBuffer targetText;
+    wu->getDebugValue("targetClusterType", targetText);
+    ClusterType clusterType = getClusterType(targetText.s.str());
+    if (clusterType != NoCluster)
+        result.append(clusterTypeString(clusterType, true));
+    else
+        return eclcc.getTargetPlatform(result);
+}
+
+void EclCC::pushCluster(const char *clusterName)
+{
+    clusters.append(clusterName);
+    prevClusterSize = -1;  // i.e. not cached
+}
+
+void EclCC::popCluster()
+{
+    clusters.pop();
+    prevClusterSize = -1;  // i.e. not cached
+}
+
+
+bool EclCC::checkDaliConnected() const
+{
+    if (!daliConnected)
+    {
+        try
+        {
+            Owned<IGroup> serverGroup = createIGroup(optDFS.str(), DALI_SERVER_PORT);
+            if (!initClientProcess(serverGroup, DCR_EclCC, 0, NULL, NULL, optDaliTimeout))
+            {
+                disconnectReported = true;
+                return false;
+            }
+            if (!optUser.isEmpty())
+            {
+                udesc.setown(createUserDescriptor());
+                udesc->set(optUser, optPassword);
+            }
+        }
+        catch (IException *E)
+        {
+            E->Release();
+            disconnectReported = true;
+            return false;
+        }
+        daliConnected = true;
+    }
+    return true;
+}
+
+unsigned EclCC::lookupClusterSize() const
+{
+    CriticalBlock b(dfsCrit);  // Overkill at present but maybe one day codegen will start threading? If it does the stack is also iffy!
+    if (!optDFS || disconnectReported || !checkDaliConnected())
+        return 0;
+    if (prevClusterSize != -1)
+        return (unsigned) prevClusterSize;
+    const char *cluster = clusters ? clusters.tos() : optCluster.str();
+    if (isEmptyString(cluster) || strieq(cluster, "<unknown>"))
+        prevClusterSize = 0;
+    else
+    {
+        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster);
+        prevClusterSize = clusterInfo ? clusterInfo->getSize() : 0;
+    }
+    DBGLOG("Cluster %s has size %d", cluster, prevClusterSize);
+    return prevClusterSize;
 }
 
 IHqlExpression *EclCC::lookupDFSlayout(const char *filename, IErrorReceiver &errs, const ECLlocation &location, bool isOpt) const
@@ -2039,36 +2139,12 @@ IHqlExpression *EclCC::lookupDFSlayout(const char *filename, IErrorReceiver &err
         }
         return nullptr;
     }
-    if (!daliConnected)
+    if (!checkDaliConnected())
     {
-        try
-        {
-            Owned<IGroup> serverGroup = createIGroup(optDFS.str(), DALI_SERVER_PORT);
-            if (!initClientProcess(serverGroup, DCR_EclCC, 0, NULL, NULL, optDaliTimeout))
-            {
-                VStringBuffer msg("Error looking up file %s in DFS - failed to connect to %s", filename, optDFS.str());
-                errs.reportError(HQLWRN_DFSlookupFailure, msg.str(), str(location.sourcePath), location.lineno, location.column, location.position);
-                disconnectReported = true;
-                return nullptr;
-            }
-            if (!optUser.isEmpty())
-            {
-                udesc.setown(createUserDescriptor());
-                udesc->set(optUser, optPassword);
-            }
-        }
-        catch (IException *E)
-        {
-            StringBuffer emsg;
-            VStringBuffer msg("Error looking up file %s in DFS - failed to connect to %s (%s)", filename, optDFS.str(), E->errorMessage(emsg).str());
-            E->Release();
-            errs.reportError(HQLWRN_DFSlookupFailure, msg.str(), str(location.sourcePath), location.lineno, location.column, location.position);
-            disconnectReported = true;
-            return nullptr;
-        }
-        daliConnected = true;
+        VStringBuffer msg("Error looking up file %s in DFS - failed to connect to %s", filename, optDFS.str());
+        errs.reportError(HQLWRN_DFSlookupFailure, msg.str(), str(location.sourcePath), location.lineno, location.column, location.position);
+        return nullptr;
     }
-
     // Do any scope manipulation
     StringBuffer lookupName;  // do NOT move inside the curly braces below - this needs to stay in scope longer than that
     if (filename[0]=='~')
@@ -2197,6 +2273,11 @@ bool EclCC::allowAccess(const char * category, bool isSigned)
     return defaultAllowed[isSigned];
 }
 
+void EclCC::getTargetPlatform(StringBuffer & result)
+{
+    result.append(clusterTypeString(optTargetClusterType, true));
+}
+
 //=========================================================================================
 int EclCC::parseCommandLineOptions(int argc, const char* argv[])
 {
@@ -2248,6 +2329,9 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
         }
         else if (iter.matchFlag(optCheckDirty, "-checkDirty"))
+        {
+        }
+        else if (iter.matchOption(optCluster, "-cluster"))
         {
         }
         else if (iter.matchOption(optDFS, "-dfs") || /*deprecated*/ iter.matchOption(optDFS, "-dali"))
@@ -2644,7 +2728,7 @@ void EclCC::processBatchedFile(IFile & file, bool multiThreaded)
             }
 
             Owned<IErrorReceiver> localErrs = createFileErrorReceiver(logFile);
-            EclCompileInstance info(&file, *localErrs, logFile, outFilename, optLegacyImport, optLegacyWhen, optIgnoreSignatures, optXml);
+            EclCompileInstance info(*this, &file, *localErrs, logFile, outFilename, optLegacyImport, optLegacyWhen, optIgnoreSignatures, optXml);
             info.metaOutputFilename.set(metaFilename);
             processFile(info);
             if (info.wu &&

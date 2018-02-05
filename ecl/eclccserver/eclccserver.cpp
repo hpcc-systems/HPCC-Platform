@@ -177,6 +177,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
     StringAttr wuid;
     Owned<IWorkUnit> workunit;
     StringBuffer idxStr;
+    StringArray filesSeen;
 
     virtual void reportError(IException *e)
     {
@@ -188,6 +189,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
     {
         // A typical error looks like this: stdin:(385,29): warning C1041: Record doesn't have an explicit maximum record size
         // we will also see (and want to skip) nn error(s), nn warning(s)
+        // Errors reported in generated c++ files are a bit special - we want to add the generated c++ file (if it still exists) to the workunit
         RegExpr errCount, errParse, timings;
         timings.init("^<stat");
         errParse.init("^<exception");
@@ -214,6 +216,13 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
             {
                 Owned<IError> error = createError(exception);
                 addWorkunitException(workunit, error, false);
+                const char *filename = exception->queryProp("@filename");
+                StringArray filesSeen;
+                if (filename && filesSeen.appendUniq(filename) && endsWithIgnoreCase(filename, ".cpp") && checkFileExists(filename))
+                {
+                    Owned<IWUQuery> query = workunit->updateQuery();
+                    associateLocalFile(query, FileTypeCpp, filename, pathTail(filename), 0, 0, 0);
+                }
             }
             else
                 DBGLOG("Unrecognised error: %s", errStr);
@@ -314,6 +323,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
             const char *wuScope = workunit->queryWuScope();
             if (!isEmptyString(wuScope))
                 eclccCmd.appendf(" -scope=%s", wuScope);
+            eclccCmd.appendf(" -cluster=%s", targetCluster);
             SCMStringBuffer token;
             workunit->getSecurityToken(token);
             if (token.length())

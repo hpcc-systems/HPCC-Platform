@@ -1,0 +1,817 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ldap_config">
+  <title>Configuring HPCC for Authentication</title>
+
+  <para>This section details the steps to configure your HPCC platform to use
+  authentication. There are currently a few ways to use authentication with
+  your HPCC system: simple htpasswd authentication, LDAP, or another plugin
+  security method.</para>
+
+  <para>The htpasswd authentication method is basic password authentication.
+  It only grants or denies access to a user, based upon MD5 encrypted password
+  authentication.</para>
+
+  <para>LDAP authentication offers more features and options. LDAP can not
+  only authenticate users, but adds granularity to the authentication. LDAP
+  allows you to control grouped access to features, functions, and
+  files.</para>
+
+  <para>You should consider your system needs and decide which of these
+  methods is appropriate for your environment.</para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <?dbfo keep-together="always"?>
+
+    <tgroup cols="2">
+      <colspec colwidth="49.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><inlinegraphic fileref="../../images/caution.png" /></entry>
+
+          <entry><emphasis role="bold">When implementing any form of
+          authentication, we strongly recommend that you enable your ESP
+          server to use HTTPS (SSL) and set ALL service bindings to only use
+          HTTPS. This ensures that credentials are passed over the network
+          using SSL encryption. See </emphasis><link
+          linkend="ssl4esp"><emphasis>Configuring ESP Server to use HTTPS
+          (SSL)</emphasis></link> <emphasis role="bold">for details.
+          </emphasis><para><emphasis role="bold">You should not attempt this
+          until you have already deployed, configured, and certified the
+          environment you will use. </emphasis></para></entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <sect2 id="Using_htpasswd_Authentication">
+    <title>Using htpasswd authentication</title>
+
+    <para>htpasswd provides basic password authentication to the entire
+    system. This section contains the information to install and implement
+    htpasswd authentication.</para>
+
+    <sect3 id="htpasswd_ConnectToConfigMgr">
+      <title>Connect to Configuration Manager</title>
+
+      <para>In order to change the configuration for HPCC components, connect
+      to the Configuration Manager.</para>
+
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Stop all HPCC Components, if they are running.</para>
+        </listitem>
+
+        <listitem>
+          <para>Verify that they are stopped. You can use a single command,
+          such as : <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Start Configuration Manager.</para>
+
+          <para><programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Connect your web browser to the Configuration Manager web
+          interface.</para>
+
+          <para>(using the url of
+          http://<emphasis>&lt;configmgr_IP_Address&gt;</emphasis>:8015, where
+          <emphasis>&lt;configmgr_IP_Address&gt;</emphasis> is the IP address
+          of the node running Configuration Manager)</para>
+        </listitem>
+
+        <listitem>
+          <para>Select the <emphasis role="bold">Advanced View</emphasis>
+          radio button.</para>
+        </listitem>
+
+        <listitem>
+          <para>Use the drop list to select the XML configuration file.
+          <variablelist>
+              <varlistentry>
+                <term>Note:</term>
+
+                <listitem>
+                  <para>Configuration Manager <emphasis
+                  role="bold">never</emphasis> works on the active
+                  configuration file. After you finish editing you will have
+                  to copy the environment.xml to the active location and push
+                  it out to all nodes.</para>
+                </listitem>
+              </varlistentry>
+            </variablelist></para>
+        </listitem>
+
+        <listitem>
+          <para>Check the <emphasis role="bold">Write Access</emphasis>
+          box.</para>
+
+          <para>Default access is read-only. Many options are only available
+          when write-access is enabled.</para>
+        </listitem>
+      </orderedlist>
+    </sect3>
+
+    <sect3 id="Enabling_htpasswd_AUthentication">
+      <title>Enabling htpasswd authentication in HPCC</title>
+
+      <orderedlist continuation="continues">
+        <listitem>
+          <para>Create an instance of the <emphasis role="bold">Security
+          Manager</emphasis> Plugin: <orderedlist numeration="loweralpha">
+              <listitem>
+                <para>Right-click on Navigator Pane on the left side.</para>
+              </listitem>
+
+              <listitem>
+                <para>Select <emphasis role="bold">New
+                Components</emphasis></para>
+              </listitem>
+
+              <listitem>
+                <para>Select the <emphasis
+                role="bold">htpasswdsecmgr</emphasis> component</para>
+              </listitem>
+            </orderedlist></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Configure the htpasswd plugin<figure>
+              <title>Security Mgr Configuration page</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/SECM_001.jpg"
+                             vendor="configmgrSS" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <orderedlist numeration="loweralpha">
+            <listitem>
+              <para>Enter the location of the Htpasswd file containing the
+              username and password on the Linux file system for the value of
+              <emphasis role="bold">htpasswdFile</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">InstanceFactoryName</emphasis> is
+              the name of the security manager factory function, implemented
+              in the security library. The default is "createInstance". For
+              implementing Htpasswd, leave the default.</para>
+            </listitem>
+
+            <listitem>
+              <para>Provide a library name value for <emphasis
+              role="bold">libName</emphasis>. For Htpasswd, use <emphasis
+              role="blue">libhtpasswdSecurity.so</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Provide an instance <emphasis role="bold">name</emphasis>
+              for the name value. For example, <emphasis
+              role="blue">htpasswdsecmgr</emphasis>.</para>
+            </listitem>
+          </orderedlist>
+        </listitem>
+
+        <listitem>
+          <para>Select <emphasis role="bold">Esp - myesp</emphasis> in the
+          Navigator panel on the left hand side.</para>
+
+          <variablelist>
+            <varlistentry>
+              <term>Note:</term>
+
+              <listitem>
+                <para>If you have more than one ESP Server, you would only use
+                one of them for authentication.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Associate the Security Manager Plugin with the ESP binding(s)
+          <orderedlist numeration="loweralpha">
+              <listitem>
+                <para>Click on the target <emphasis role="bold">Esp</emphasis>
+                in the Navigator Pane on the left side.</para>
+              </listitem>
+
+              <listitem>
+                <para>Select the<emphasis role="bold"> ESP</emphasis>
+                <emphasis role="bold">Service bindings</emphasis> tab</para>
+              </listitem>
+
+              <listitem>
+                <para>On the target binding(s) select the appropriate
+                securityMgrPlugin instance from the drop list. <graphic
+                fileref="../../images/SECM_004.jpg"
+                vendor="configmgrSS" /></para>
+              </listitem>
+            </orderedlist></para>
+        </listitem>
+
+        <listitem>
+          <para>Select the security Plugin for each service that requires a
+          security manager.</para>
+
+          <para>For example, in the above image, select <emphasis
+          role="blue">htpasswdsecmgr</emphasis> for the smc service. Then,
+          select it for ws_ecl and every other service that you want to use
+          htpassword security.</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Select the <emphasis role="bold">Authentication</emphasis>
+          tab<graphic fileref="../../images/gs-ht01.jpg"
+          vendor="configmgrSS" /></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Click on the value column drop list to display the choices for
+          <emphasis role="bold">method</emphasis>. <graphic
+          fileref="../../images/gs-ht02.jpg" vendor="configmgrSS" /></para>
+        </listitem>
+
+        <listitem>
+          <para>Choose <emphasis role="bluebold">secmgrPlugin</emphasis> from
+          the drop list.</para>
+        </listitem>
+
+        <listitem>
+          <para>Click on the disk icon to save.</para>
+        </listitem>
+      </orderedlist>
+    </sect3>
+
+    <sect3 id="htpasswd_UserAdminWhtpasswd">
+      <title>User administration with htpasswd</title>
+
+      <para>Users and passwords are kept in the htpasswd file. The htpasswd
+      file must exist on the ESP Node where you have enabled authentication.
+      HPCC only recognizes MD5 encrypted passwords.</para>
+
+      <para>The default location is: <emphasis
+      role="bold">/etc/HPCCSystems/.htpasswd</emphasis> on the ESP node that
+      has been configured to authenticate, but it is configurable from the
+      Htpasswd Security Manager as outlined above (step 9).</para>
+
+      <para>You can use the htpasswd utility to create the .htpasswd file to
+      administer users.</para>
+
+      <para>You may already have the htpasswd utility on your system, as it is
+      a part of some Linux distributions. Check your Linux distribution to see
+      if you already have it. If you do not have it you should download the
+      utility for your distribution from The Apache Software
+      Foundation.</para>
+
+      <para>For more information about using htpasswd see: <ulink
+      url="http://httpd.apache.org/docs/2.2/programs/htpasswd.html">http://httpd.apache.org/docs/2.2/programs/htpasswd.html</ulink>.</para>
+    </sect3>
+  </sect2>
+
+  <sect2 id="Using_LDAP_Authentication" role="brk">
+    <title>Using LDAP Authentication</title>
+
+    <para>This section contains the information to install and implement LDAP
+    based authentication. LDAP Authentication provides the most options for
+    securing your system, or parts of your system. In addition to these
+    configuration settings you should run the <emphasis
+    role="bold">initldap</emphasis> utility to create the required default
+    HPCC Admin user on your LDAP server.</para>
+
+    <para>If you choose to use LDAP authentication you must enable LDAP
+    security in your HPCC System configuration. With LDAP security enabled on
+    your system you can then choose to enable file scope security. You can
+    choose to use LDAP authentication without enabling file scope security.
+    The following sections describe how to enable LDAP authentication and file
+    scope security for your HPCC system.</para>
+
+    <!--***Note: (9/2014) Adding Documentation for initLdap.*** -->
+
+    <sect3 id="UsingLDAP_ConnectToConfigMgr">
+      <title>Connect to Configuration Manager</title>
+
+      <para>In order to change the configuration for HPCC components, connect
+      to the Configuration Manager.</para>
+
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Stop all HPCC Components, if they are running.</para>
+        </listitem>
+
+        <listitem>
+          <para>Verify that they are stopped. You can use a single command,
+          such as : <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Start Configuration Manager.</para>
+
+          <para><programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Connect to the Configuration Manager web interface.</para>
+
+          <para>(using the url of
+          http://<emphasis>&lt;configmgr_IP_Address&gt;</emphasis>:8015, where
+          <emphasis>&lt;configmgr_IP_Address&gt;</emphasis> is the IP address
+          of the node running Configuration Manager)</para>
+        </listitem>
+
+        <listitem>
+          <para>Select the <emphasis role="bold">Advanced View</emphasis>
+          radio button.</para>
+        </listitem>
+
+        <listitem>
+          <para>Use the drop list to select the XML configuration file.</para>
+        </listitem>
+      </orderedlist>
+
+      <para><emphasis role="bold">Note:</emphasis> Configuration Manager
+      <emphasis role="bold">never</emphasis> works on the active configuration
+      file. After you finish editing you will have to copy the environment.xml
+      to the active location and push it out to all nodes.</para>
+    </sect3>
+  </sect2>
+
+  <sect2 id="UsingLDAP_ModifyingConfiguration">
+    <title>Modifying the configuration</title>
+
+    <para>Follow the steps below to modify your configuration.</para>
+
+    <orderedlist numeration="arabic">
+      <listitem>
+        <para>Check the box for <emphasis role="bold">Write
+        Access.</emphasis></para>
+      </listitem>
+
+      <listitem>
+        <para>From the <emphasis role="bold">Navigator</emphasis> pane, select
+        <emphasis role="bold">Hardware</emphasis>.</para>
+      </listitem>
+
+      <listitem>
+        <para>Select the <emphasis role="bold">Computers</emphasis> tab from
+        the panel on the right.</para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Right-click on the table below computers and select <emphasis
+        role="bold">New </emphasis>from the pop up menu.</para>
+
+        <para><graphic fileref="../../images/LDAP_001.jpg"
+        vendor="configmgrSS" /></para>
+
+        <para>The <emphasis role="bold">Add New Computers</emphasis> dialog
+        displays.</para>
+      </listitem>
+
+      <listitem>
+        <para>Fill in the values for the <emphasis role="bold">Computer
+        Attributes</emphasis></para>
+
+        <para><graphic fileref="../../images/LDAP_002.jpg"
+        vendor="configmgrSS" /></para>
+      </listitem>
+    </orderedlist>
+
+    <orderedlist numeration="loweralpha">
+      <listitem>
+        <para>Provide a <emphasis role="bold">Name Prefix</emphasis>, for
+        example: <emphasis role="blue">ldap</emphasis>.</para>
+
+        <para>This helps you to identify it in the list of computers.</para>
+      </listitem>
+
+      <listitem>
+        <para>Fill in <emphasis role="bold">Domain</emphasis> and <emphasis
+        role="bold">Type</emphasis> with the values of your domain name, as
+        well as the types of machines you are using.</para>
+
+        <para>In the example above, <emphasis role="bold">Domain</emphasis> is
+        <emphasis role="blue">localdomain</emphasis>, and the <emphasis
+        role="bold">Type</emphasis> is <emphasis
+        role="blue">linuxmachine</emphasis>. These should correspond to your
+        domain and type.</para>
+
+        <para>If you need to add a new domain or machine type to your system
+        to be able to define an existing LDAP server, you should set these up
+        first in the other two tabs in the hardware section.</para>
+      </listitem>
+
+      <listitem>
+        <para>Add the IP address as appropriate for the LDAP server.</para>
+      </listitem>
+
+      <listitem>
+        <para>Press the <emphasis role="bold">Ok</emphasis> button.</para>
+      </listitem>
+
+      <listitem>
+        <para>Click on the disk icon to save.</para>
+      </listitem>
+    </orderedlist>
+  </sect2>
+
+  <sect2 id="UsingLDAP_Adding_ldapServer_component">
+    <title>Adding the ldapServer component</title>
+
+    <para>After the LDAP Server node has been added to the Hardware
+    configuration, configure the Software LDAP server definition.</para>
+
+    <orderedlist numeration="arabic">
+      <listitem>
+        <para>Right-click on <emphasis role="bold">Navigator</emphasis> Pane
+        and choose <emphasis role="bold">New Components</emphasis> from the
+        pop-up menu, then choose <emphasis role="bold">ldapServer</emphasis>
+        from the pop-up menu. <graphic fileref="../../images/LDAP_003.jpg"
+        vendor="configmgrSS" /></para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <?dbfo keep-together="always"?>
+
+            <tgroup cols="2">
+              <colspec colwidth="49.50pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><inlinegraphic
+                  fileref="../../images/caution.png" /></entry>
+
+                  <entry><emphasis role="bold">Note</emphasis>: The ldapServer
+                  component is merely a definition that specifies an existing
+                  LDAP server. It does not install one.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </listitem>
+    </orderedlist>
+
+    <?hard-pagebreak ?>
+
+    <orderedlist continuation="continues" numeration="arabic">
+      <listitem>
+        <para>Fill in the <emphasis role="bold">LDAP Server Process</emphasis>
+        properties:</para>
+
+        <para><orderedlist numeration="loweralpha">
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>On the <emphasis role="bold">Instances</emphasis> tab,
+              Right-click on the table on the right hand side, choose
+              <emphasis role="bold">Add Instances...</emphasis></para>
+
+              <para><graphic fileref="../../images/LDAP_008.jpg"
+              vendor="configmgrSS" /></para>
+
+              <para>The <emphasis role="bold">Select computers</emphasis>
+              dialog appears.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Select the computer to use by checking the box next to it.
+              <graphic fileref="../../images/LDAP_009.jpg"
+              vendor="configmgrSS" /></para>
+
+              <para>This is the computer you added in the <emphasis
+              role="bold">Hardware</emphasis> / <emphasis role="bold">Add New
+              Computers</emphasis> portion earlier.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Ok</emphasis>
+              button.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Fill in the <emphasis role="bold">Attributes</emphasis>
+              tab with the appropriate settings from your existing LDAP
+              Server. <graphic fileref="../../images/LDAP_010.jpg"
+              vendor="configmgrSS" /></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Choose the LDAP server type from the serverType attribute
+              drop box. <graphic fileref="../../images/LDAP_004.jpg"
+              vendor="configmgrSS" /></para>
+
+              <para><variablelist>
+                  <varlistentry>
+                    <term>NOTE:</term>
+
+                    <listitem>
+                      <para>Support for OpenLDAP has been deprecated. The
+                      option is included only for legacy purposes.</para>
+                    </listitem>
+                  </varlistentry>
+                </variablelist></para>
+            </listitem>
+
+            <listitem>
+              <para>Click on the disk icon to save.</para>
+            </listitem>
+          </orderedlist></para>
+
+        <para><emphasis role="bold">Note</emphasis>: The <emphasis
+        role="bold">cacheTimeout </emphasis>value is the number of minutes
+        that permissions are cached in ESP. If you change any permissions in
+        LDAP, the new settings will not take effect until ESP and Dali refresh
+        the permissions. This could take as long as the cacheTimeout. Setting
+        this to 0 means no cache, but this has performance overhead so it
+        should not be used in production.</para>
+      </listitem>
+    </orderedlist>
+
+    <orderedlist continuation="continues" inheritnum="inherit"
+                 numeration="arabic">
+      <listitem override="3">
+        <para>In the Navigator pane, click on <emphasis role="bold">ESP --
+        myesp</emphasis></para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>On the <emphasis role="bold">EspProcess </emphasis>page on the
+        right hand side, select the <emphasis
+        role="bold">Authentication</emphasis> tab.</para>
+
+        <para><graphic fileref="../../images/LDAP_005.jpg"
+        vendor="configmgrSS" /></para>
+
+        <para>Fill in the appropriate values:</para>
+
+        <para><orderedlist numeration="loweralpha">
+            <listitem>
+              <para>Change the <emphasis role="bold">ldapAuthMethod</emphasis>
+              to <emphasis role="blue">kerberos.</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Change the <emphasis
+              role="bold">ldapConnections</emphasis> to the number appropriate
+              for your system (10 is for example only, may not be necessary in
+              your environment).</para>
+            </listitem>
+
+            <listitem>
+              <para>Select the <emphasis role="bold">ldapServer</emphasis>
+              component that you added earlier from the drop list, for
+              example: <emphasis role="blue">ldapserver. </emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Change the <emphasis role="bold">method</emphasis> value
+              to <emphasis role="blue">ldap.</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Select the ESP Service bindings tab. Verify that your LDAP
+              settings appear in the <emphasis
+              role="bold">resourcesBasedn</emphasis> and <emphasis
+              role="bold">workunitsBasedn</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Click on the disk icon to save.</para>
+            </listitem>
+          </orderedlist></para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>To enable the file scope permissions, configure the file scope
+        security for the Dali Server.</para>
+
+        <para>In the Navigator pane, click on the <emphasis role="bold">Dali
+        Server -- mydali </emphasis><graphic
+        fileref="../../images/LDAP_006.jpg" vendor="configmgrSS" /></para>
+
+        <para>Fill in the values as appropriate:</para>
+
+        <para><orderedlist continuation="restarts" numeration="loweralpha">
+            <listitem>
+              <para>Select the <emphasis role="bold">LDAP</emphasis>
+              tab.</para>
+            </listitem>
+
+            <listitem>
+              <para>Change the <emphasis role="bold">authMethod</emphasis> to
+              <emphasis role="blue">simple</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Set the <emphasis role="bold">checkScopeScans</emphasis>
+              value to <emphasis>true</emphasis>.</para>
+
+              <para>Only set this value to true when you want file scope
+              security enabled. Security settings can have three
+              states.</para>
+
+              <itemizedlist>
+                <listitem>
+                  <para>None, no authentication and no file scope
+                  security.</para>
+                </listitem>
+
+                <listitem>
+                  <para>LDAP security for authentication only, without
+                  enabling file scope security.</para>
+                </listitem>
+
+                <listitem>
+                  <para>LDAP authentication and file scope security
+                  enabled.</para>
+                </listitem>
+              </itemizedlist>
+            </listitem>
+
+            <listitem>
+              <para>Change the LDAP values as appropriate to match the
+              settings in your LDAP server component in configuration
+              manager.</para>
+
+              <para>For example, change the <emphasis
+              role="bold">ldapServer</emphasis> to the value you gave your
+              LDAP Server, in our example it is:
+              <emphasis>ldapserver.</emphasis></para>
+
+              <para>Confirm the change when prompted.</para>
+
+              <para>The <emphasis role="bold">filesDefaultUser</emphasis> is
+              an LDAP account used to access files when no user credentials
+              are supplied. This is similar to a guest account, so it should
+              be an account with <emphasis role="bold">very</emphasis> limited
+              access, if used at all. To disable access without credentials,
+              leave <emphasis role="bold">filesDefaultUser</emphasis>
+              blank.</para>
+
+              <para>The <emphasis role="bold">filesDefaultPassword</emphasis>
+              is the password for that account.</para>
+            </listitem>
+
+            <listitem>
+              <para>Click on the disk icon to save.</para>
+            </listitem>
+          </orderedlist></para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>In the Navigator pane, click on the <emphasis role="bold">Roxie
+        Cluster -- myroxie </emphasis><graphic
+        fileref="../../images/LDAP_007.jpg" vendor="configmgrSS" /></para>
+
+        <para><orderedlist continuation="restarts" numeration="loweralpha">
+            <listitem>
+              <para>On the <emphasis role="bold">RoxieCluster</emphasis> page
+              on the right hand side, select the <emphasis
+              role="bold">LDAP</emphasis> tab.</para>
+            </listitem>
+
+            <listitem>
+              <para>Locate the <emphasis role="bold">ldapUser</emphasis> field
+              and verify that there is a valid HPCC user who is a member of
+              the Authenticated Users group on your LDAP server. For example,
+              the "<emphasis>roxie</emphasis>" user assumes that the
+              "<emphasis>roxie</emphasis>" user is a valid HPCC authenticated
+              user.</para>
+            </listitem>
+
+            <listitem>
+              <para>Add the password security for Roxie by adding it to the
+              <emphasis role="bold">ldapPassword</emphasis> field on the same
+              tab.</para>
+            </listitem>
+          </orderedlist></para>
+      </listitem>
+    </orderedlist>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <?dbfo keep-together="always"?>
+
+        <tgroup cols="2">
+          <colspec colwidth="49.50pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><inlinegraphic
+              fileref="../../images/caution.png" /></entry>
+
+              <entry><para>In order to run Roxie queries with File Scope
+              security, ensure that a Roxie user is created in the list of
+              authenticated users.</para>In the following section, <link
+              linkend="Adding_Users"><emphasis>Adding and editing
+              users</emphasis></link>, add the <emphasis>roxie</emphasis> user
+              and make sure that password is the same as the one entered in
+              Configuration Manager.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+  </sect2>
+
+  <sect2 id="UsingLDAP_Installing_Default_AdminUser">
+    <title>Installing the Default Admin user</title>
+
+    <para>After enabling your configuration for LDAP security, you must copy
+    your environment file to the /etc/HPCCSystems directory. See the section
+    <link linkend="configuring-a-multi-node-system"><emphasis>Configuring a
+    Multi-Node System</emphasis></link> for more info about configuring your
+    system. With the correct environment.xml file in place, you must then run
+    the <emphasis role="bold">initldap</emphasis> utility that initializes the
+    security components and the default users.</para>
+
+    <sect3 id="UsingLDAP_theInitldapUtility">
+      <title>The initldap Utility</title>
+
+      <para>The initldap utility creates the HPCC Administrator's user account
+      and the HPCC OUs for a newly defined LDAP server. The initldap utility
+      extracts these settings from the LDAPServer component(s) in the
+      environment.xml bound to the configured ESPs.</para>
+
+      <para>You run the <emphasis role="bold">initldap</emphasis> utility once
+      you complete your configuration with LDAP components enabled and have
+      distributed your environment.xml file to all nodes.</para>
+
+      <programlisting>sudo /opt/HPCCSystems/bin/initldap</programlisting>
+
+      <para>The <emphasis role="bold">initldap</emphasis> utility prompts you
+      for LDAP Administrator credentials. Enter the appropriate values when
+      prompted.</para>
+
+      <para>The following example of initldap for a 389DirectoryServer
+      deployment.</para>
+
+      <para><programlisting>Enter the '389DirectoryServer' LDAP Admin User name on '10.123.456.78'...Directory Manager        
+Enter the LDAP Admin user 'Directory Manager' password...********
+
+Ready to initialize HPCC LDAP Environment, using the following settings
+       LDAP Server     : 10.123.456.78
+       LDAP Type       : 389DirectoryServer
+       HPCC Admin User : HPCCAdmin389
+Proceed?  y/n 
+</programlisting></para>
+    </sect3>
+
+    <sect3 id="UsingLDAP_Using_addScopesTool">
+      <title>Using the addScopes tool</title>
+
+      <para>When a new ESP user account is created, a private
+      "hpccinternal::&lt;user&gt;" file scope is also created granting new
+      users full access to that scope and restricting access to other users.
+      This file scope is used to store temporary HPCC files such as spill
+      files and temp files.</para>
+
+      <para>If you are enabling LDAP file scope security and already have user
+      accounts, you should run the addScopes utility program to create the
+      hpccinternal::&lt;user&gt; scope for those existing users.</para>
+
+      <para>Users which already have this scope defined are ignored and so it
+      can be used on both new and legacy ESP user accounts safely.</para>
+
+      <para>The tool is located in the <emphasis
+      role="bold">/opt/HPCCSystems/bin/</emphasis> folder and to run it you
+      must pass the location of <emphasis role="bold">daliconf.xml</emphasis>,
+      for example:</para>
+
+      <para><programlisting>/opt/HPCCSystems/bin/addScopes /var/lib/HPCCSystems/mydali/daliconf.xml</programlisting></para>
+    </sect3>
+  </sect2>
+</sect1>

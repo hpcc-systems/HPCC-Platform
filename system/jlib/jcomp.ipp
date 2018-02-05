@@ -22,7 +22,7 @@
 
 #include "jlib.hpp"
 
-class CppCompiler : implements ICppCompiler, implements IThreadFactory, public CInterface
+class CppCompiler : implements ICppCompiler, implements IThreadFactory, public CInterface, implements IExceptionHandler
 {
 public:
     CppCompiler(const char * _coreName, const char * _sourceDir, const char * _targetDir, unsigned _targetCompiler, bool _verbose);
@@ -50,6 +50,7 @@ public:
     virtual void setSaveTemps(bool _save) { saveTemps = _save; }
     virtual void setPrecompileHeader(bool _pch);
     virtual void setAbortChecker(IAbortRequestCallback * _abortChecker) {abortChecker = _abortChecker;}
+    virtual bool fireException(IException *e);
 
 protected:
     void expandCompileOptions(StringBuffer & target);
@@ -85,6 +86,8 @@ protected:
     bool            precompileHeader;
     bool            linkFailed;
     IAbortRequestCallback * abortChecker;
+    CriticalSection cs;
+    IArrayOf<IException> exceptions;
 };
 
 

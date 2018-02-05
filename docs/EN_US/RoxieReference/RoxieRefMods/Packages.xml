@@ -1,0 +1,594 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter>
+  <title>Packages and Package Maps</title>
+
+  <para>A Roxie query has one or more data files associated with it. At times,
+  you may want to update data without changing the query.</para>
+
+  <para>Packages are a way to separate the data definition from the
+  query.</para>
+
+  <para>A package defines a superkey that a query will use. A newer package
+  that redefines the contents of that superkey can later be sent to a Roxie
+  cluster without recompiling any queries. This allows you to refresh data and
+  while ensuring that you are using identical code in your query. It also
+  eliminates the need to recompile it and republish it.</para>
+
+  <para>This simplifies change control and allows query developers to continue
+  development without the risk of a query being deployed to production before
+  it is ready while still allowing data to be updated.</para>
+
+  <para>A package map provides a reference to the contents of a superkey used
+  in queries that overrides the original definition . This affords greater
+  flexibility and control over the data used by a query or a collection of
+  queries.</para>
+
+  <para>Roxie resolves data files at query load time. First, it will look for
+  a package defining the superkey contents. If there is no package, it will
+  look in the Dali Server's DFU (Distributed File Utility).</para>
+
+  <para>The end result is quicker, more flexible process, without the need of
+  recompiling complex queries. This allows you to update data without the
+  chance of deploying new code that has not been approved for migration to
+  production.</para>
+
+  <para>Without packages, you would do one of the following:</para>
+
+  <para>- Add new subfile(s) to the superkey via ECL code, ECLWatch, or
+  DFUPlus, then reload the cluster.</para>
+
+  <para>- Revise the query to use a different key file, compile it, and
+  republish it.</para>
+
+  <para>A package map file can contain one or more packages. The file is used
+  to transfer the information to the Dali server. Once it is sent, the file is
+  no longer used. It is a good idea to keep a copy as a backup, but it serves
+  no other purpose.</para>
+
+  <para>The definition of a superfile or superkey inside of a package file
+  overrides the definition in Dali, but does NOT change the superfile or
+  superkey definition in Dali Server's DFU.</para>
+
+  <para>Package information is used as soon as it is added to Dali and the
+  package is activated. This can be done using using <emphasis role="bold">ecl
+  packagemap add --activate</emphasis> (or <emphasis role="bold">ecl
+  packagemap add</emphasis> &amp; <emphasis role="bold">ecl packagemap
+  activate</emphasis>).</para>
+
+  <!--You should always validate or run the reporting step on the packages (NYI)-->
+
+  <sect1>
+    <title>Example</title>
+
+    <para>In this example, we have a query named MyQuery which uses a superkey
+    named MyDataKey that includes two subfiles:</para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para><emphasis role="bold">~thor::Mysubfile1</emphasis></para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">~thor::Mysubfile2</emphasis></para>
+      </listitem>
+    </itemizedlist>
+
+    <para>If we wanted to add a third subfile, we can use a package map to
+    redefine the MyDataKey superkey definition so it contains three
+    files:</para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para><emphasis role="bold">~thor::Mysubfile1</emphasis></para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">~thor::Mysubfile2</emphasis></para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">~thor::Mysubfile3</emphasis></para>
+      </listitem>
+    </itemizedlist>
+
+    <para><emphasis role="redbold"></emphasis></para>
+
+    <para><emphasis role="bold">Example 1:</emphasis></para>
+
+    <programlisting>&lt;RoxiePackages&gt;
+ &lt;Package id="MyQuery"&gt;
+  &lt;Base id="thor::MyData_Key"/&gt;
+ &lt;/Package&gt;
+ &lt;Package id="thor::MyData_Key"&gt;
+  &lt;SuperFile id="~thor::MyData_Key"&gt;
+   &lt;SubFile value="~thor::Mysubfile1"/&gt;
+   &lt;SubFile value="~thor::Mysubfile2"/&gt;
+  &lt;/SuperFile&gt;
+ &lt;/Package&gt;
+&lt;/RoxiePackages&gt;
+
+</programlisting>
+
+    <para><emphasis role="bold">Example 2:</emphasis></para>
+
+    <para><programlisting>&lt;RoxiePackages&gt;
+ &lt;Package id="MyQuery"&gt;
+  &lt;Base id="thor::MyData_Key"/&gt;
+ &lt;/Package&gt;
+ &lt;Package id="thor::MyData_Key"&gt;
+  &lt;SuperFile id="~thor::MyData_Key"&gt;
+   &lt;SubFile value="~thor::Mysubfile1"/&gt;
+   &lt;SubFile value="~thor::Mysubfile2"/&gt;
+   &lt;SubFile value="~thor::Mysubfile3"/&gt;
+  &lt;/SuperFile&gt;
+ &lt;/Package&gt;
+&lt;/RoxiePackages&gt;
+
+</programlisting></para>
+  </sect1>
+
+  <sect1>
+    <title>Updating Data</title>
+
+    <para>This section details the typical steps a query developer and a data
+    developer follow once a query is ready for production.</para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Prepare the data (in this workflow, the data is defined as a
+        superkey)</para>
+      </listitem>
+
+      <listitem>
+        <para>Write the query and test</para>
+      </listitem>
+
+      <listitem>
+        <para>Publish a query using the data</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>Later when you want to update the data:</para>
+
+    <para>Deploy the data in one of the following manners:</para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Create a package map containing a package redefining the
+        contents of the superkey</para>
+      </listitem>
+
+      <listitem>
+        <para>Add the package map(s) by associating the package information
+        with a QuerySet.</para>
+
+        <!--You should always validate or run the reporting step on the packages (NYI)-->
+      </listitem>
+
+      <listitem>
+        <para>Activate the package map(s) with the pertinent package
+        information targeting a QuerySet.</para>
+
+        <para>Use the command:</para>
+      </listitem>
+    </itemizedlist>
+
+    <para><programlisting role="bold">ecl packagemap add --activate</programlisting></para>
+
+    <para></para>
+
+    <para>Later when new data arrives, follow these steps to update the data
+    using packages:</para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Prepare the data and create a new subfile</para>
+      </listitem>
+    </itemizedlist>
+
+    <variablelist>
+      <varlistentry>
+        <term>Note:</term>
+
+        <listitem>
+          <para>We strongly recommend against reusing a file name. It is
+          generally better to create new files. Roxie shares file handles so
+          trying to change an existing file while it is loaded could cause
+          issues.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Create a package with a superkey definition that includes the
+        new subfile</para>
+      </listitem>
+    </itemizedlist>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Add the package map redefining the contents of the
+        superkey.</para>
+
+        <para>Use the command:</para>
+
+        <!--You should always validate or run the reporting step on the packages (NYI)-->
+      </listitem>
+    </itemizedlist>
+
+    <para><programlisting role="bold">ecl packagemap add --activate</programlisting></para>
+
+    <para></para>
+  </sect1>
+
+  <sect1>
+    <title>Package File Syntax</title>
+
+    <para>Package files are formatted in XML using the conventions detailed in
+    this section.</para>
+
+    <para>A Package file must begin with <emphasis
+    role="bold">&lt;RoxiePackages&gt;</emphasis> and end with <emphasis
+    role="bold">&lt;/RoxiePackages&gt;</emphasis>.</para>
+
+    <para>Package tags have an <emphasis role="bold">id</emphasis> attribute
+    that specifies what the package is referring to.</para>
+
+    <para>Inside the <emphasis role="bold">&lt;Package&gt;</emphasis>
+    structure, references are made either to superfiles or other named
+    packages. This indirect naming convention allows you to group file
+    definitions together and reference the package containing the
+    group.</para>
+
+    <para>The example shows query references first and file references
+    following; however, this order is not required.</para>
+
+    <para><emphasis role="bold">The lines are numbered only for reference
+    purposes. The comments are included for clarity, but are not required.
+    </emphasis></para>
+
+    <para><emphasis role="bold">Example</emphasis>:</para>
+
+    <para></para>
+
+    <programlisting> 1.  &lt;RoxiePackages&gt;
+ 2.   &lt;!-- Begin Queries --&gt;
+ 3.     &lt;Package id="MyQuery"&gt;
+ 4.     &lt;Base id="thor::MyData_Key"/&gt;
+ 5.    &lt;/Package&gt;
+ 6.    &lt;!-- End Queries --&gt;
+ 7.    &lt;!-- Begin File references --&gt;
+ 8.    &lt;Package id="thor::MyData_Key"&gt;
+ 9.      &lt;SuperFile id="~thor::MyData_Key"&gt;
+10.       &lt;SubFile value="~thor::Mysubfile1"/&gt;
+11.       &lt;SubFile value="~thor::Mysubfile2"/&gt;
+12.        &lt;SubFile value="~thor::Mysubfile3"/&gt;
+13.      &lt;/SuperFile&gt;
+14.    &lt;/Package&gt;
+15.    &lt;!--End File references --&gt;
+16.  &lt;/RoxiePackages&gt;
+</programlisting>
+
+    <para>In this example, we have a query: <emphasis
+    role="bold">MyQuery</emphasis>. The query uses a superkey defined in a
+    package named <emphasis role="bold">thor::MyData_Key</emphasis>. This is
+    later defined on line 8. The <emphasis role="bold"><emphasis
+    role="bold">thor::MyData_Key</emphasis></emphasis> package contains one
+    superkey definition.</para>
+
+    <para>The example shows query references first and file references
+    following; however, this order is not required.</para>
+
+    <para>You can specify daliIP(s) and/or sourcecluster(s) to use to resolve
+    files to be specified in the package map. This can be specified at
+    different levels to affect files within a given scope.</para>
+
+    <para>For example:</para>
+
+    <para><programlisting>&lt;PackageMap daliip="10.239.8.10"&gt;
+  &lt;Package id="MyPackage" daliip="10.239.7.1" sourceCluster="thor1" &gt;
+    &lt;SuperFile id="thor::Mykey1_idx"&gt;
+      &lt;SubFile value="thor::mySub1"/&gt;
+    &lt;/SuperFile&gt;
+    &lt;SuperFile id="thor::Mykey2_idx"  daliip="10.239.8.1" sourceCluster="thor2"&gt;
+      &lt;SubFile value="thor::mySubKeyA"/&gt;
+      &lt;SubFile value="thor::mySubKeyB"/&gt;
+    &lt;/SuperFile&gt;
+  &lt;/Package&gt;
+&lt;/PackageMap&gt;
+</programlisting></para>
+  </sect1>
+
+  <sect1>
+    <title>Multi-Part package maps</title>
+
+    <para>In version 6.0.0 or later, you can organize your package map file
+    mappings into a collection of files that define the files for some subset
+    of queries. These subsets are called parts and can be used to organize by
+    various groupings such as function, files, or developer, etc.</para>
+
+    <para>With a single part packagmap file like:</para>
+
+    <para><emphasis role="bold">master.pkg</emphasis></para>
+
+    <para><programlisting>&lt;RoxiePackages&gt;
+  &lt;Package id="my_base" preload="1"&gt;
+    &lt;SuperFile id="thor1::people::key::person_superkey"&gt;
+       &lt;SubFile value="thor1::key::people::person_file_today"/&gt;
+    &lt;/SuperFile&gt;
+  &lt;/Package&gt;
+  &lt;Package id="another_base" preload="1"&gt;
+    &lt;SuperFile id="thor1::people::key::contact_superkey"&gt;
+      &lt;SubFile value="thor1::key::people::contacts"/&gt;
+    &lt;/SuperFile&gt;
+  &lt;/Package&gt;
+  &lt;Package id="person_query" 2016HondaAccordLX-23041.xhtml preload="1"&gt;
+    &lt;Base id="my_base"/&gt;
+  &lt;/Package&gt;
+  &lt;Package id="contacts_query" preload="1"&gt;
+    &lt;Base id="another_base"/&gt;
+  &lt;/Package&gt;
+&lt;/RoxiePackages&gt;
+</programlisting><parameter>To add the packagmap to the target and activate
+    it, you would use:</parameter></para>
+
+    <para><programlisting>ecl packagemap add &lt;target&gt; master.pkg --activate</programlisting></para>
+
+    <para>To update the mappings, you would edit the package map file (or a
+    copy) add and activate the new one, and then delete the old one.</para>
+
+    <para>Using <emphasis role="bold">parts</emphasis>, package management can
+    be performed in a more granular fashion. You can break the mappings up
+    into individual part files.</para>
+
+    <para><emphasis role="bold">contacts.pkg</emphasis></para>
+
+    <para><programlisting>&lt;RoxiePackages&gt;
+  &lt;Package id="contact_base" preload="1"&gt;
+    &lt;SuperFile id="thor1::people::key::contacts_superkey"&gt;
+      &lt;SubFile value="thor1::key::people::contacts_file_today"/&gt;
+    &lt;/SuperFile&gt;
+  &lt;/Package&gt;
+  &lt;Package id="contact_query" preload="1"&gt;
+    &lt;Base id="contact_base"/&gt;
+  &lt;/Package&gt;
+  &lt;Package id="contact_references_query" preload="1"&gt;
+    &lt;Base id="contact_base"/&gt;
+  &lt;/Package&gt;
+&lt;/RoxiePackages&gt;
+</programlisting></para>
+
+    <para><emphasis role="bold">persons.pkg</emphasis></para>
+
+    <para><programlisting>&lt;RoxiePackages&gt;
+  &lt;Package id="person_base" preload="1"&gt;
+    &lt;SuperFile id="thor1::people::key::person_superkey"&gt;
+      &lt;SubFile value="thor1::key::people::person_file_today"/&gt;
+    &lt;/SuperFile&gt;
+  &lt;/Package&gt;
+  &lt;Package id="person_query" preload="1"&gt;
+    &lt;Base id="person_base"/&gt;
+  &lt;/Package&gt;
+&lt;/RoxiePackages&gt;
+</programlisting></para>
+
+    <para>This allows you to add them separately:</para>
+
+    <programlisting>ecl packagemap add-part &lt;target&gt; target_pmid contacts.pkg
+ecl packagemap add-part &lt;target&gt; target_pmid persons.pkg
+</programlisting>
+
+    <para>And then activate the entire package map (which consists of all
+    parts added to the given target_pmid):</para>
+
+    <programlisting>ecl packagemap activate &lt;target&gt; target_pmid</programlisting>
+
+    <para>You can then change individual parts, and update them in the package
+    map:</para>
+
+    <programlisting>ecl packagemap add-part &lt;target&gt; &lt;target_pmid&gt; persons.pkg --delete-previous</programlisting>
+
+    <para>Notice that target_pmid is the identifier for the collection of all
+    the packagmap parts. That identifier can be used to activate or delete the
+    entire collection (package map).</para>
+
+    <para>You can use "get-part" to see what the named part looks like in Dali
+    for the given identifier:</para>
+
+    <programlisting>ecl packagemap get-part &lt;target&gt; &lt;packagemap&gt; contents.pkg</programlisting>
+
+    <para>You could potentially retrieve the part that way, edit it, and
+    replace it as shown above. You can use <emphasis
+    role="bold">remove-part</emphasis> to remove a part explicitly from a
+    package map.</para>
+
+    <para>You can still treat the entire package map as a single file,
+    although its organization has changed a bit to reflect its parts:</para>
+
+    <para><emphasis role="bold">multipart.pkg</emphasis></para>
+
+    <para><programlisting>&lt;PackageMaps multipart="1"&gt;
+  &lt;Part id="contacts.pkg"&gt;
+    &lt;Package id="contact_base" preload="1"&gt;
+      &lt;SuperFile id="thor1::people::key::contacts_superkey"&gt;
+        &lt;SubFile value="thor1::key::people::contacts_file_today"/&gt;
+      &lt;/SuperFile&gt;
+    &lt;/Package&gt;
+    &lt;Package id="contact_query" preload="1"&gt;
+      &lt;Base id="contact_base"/&gt;
+    &lt;/Package&gt;
+    &lt;Package id="contact_references_query" preload="1"&gt;
+      &lt;Base id="contact_base"/&gt;
+    &lt;/Package&gt;
+  &lt;/Part&gt;
+  &lt;Part id="persons.pkg"&gt;
+    &lt;Package id="person_base" preload="1"&gt;
+      &lt;SuperFile id="thor1::people::key::person_superkey"&gt;
+        &lt;SubFile value="thor1::key::people::person_file_today"/&gt;
+      &lt;/SuperFile&gt;
+    &lt;/Package&gt;
+    &lt;Package id="person_query" preload="1"&gt;
+      &lt;Base id="person_base"/&gt;
+    &lt;/Package&gt;
+  &lt;/Part&gt;
+&lt;/PackageMaps&gt;
+</programlisting></para>
+
+    <para>Notice how the content is now divided into &lt;Part/&gt; parts. But
+    you can still use</para>
+
+    <para><programlisting>ecl packagemap add &lt;target&gt; master.pkg</programlisting>on
+    that multipart package map and then continue by managing its individual
+    parts. In this case:</para>
+
+    <programlisting>ecl packagemap add &lt;target&gt; multipart.pkg
+ecl packagemap add-part &lt;target&gt; multipart.pkg addresses.pkg 
+ecl packagemap activate &lt;target&gt; multipart.pkg
+</programlisting>
+
+    <para>This would be useful, for example, when copying an entire package
+    map from one target to another.</para>
+  </sect1>
+
+  <sect1>
+    <title>Working with Packages using the ecl command line tool</title>
+
+    <para>This section contains details about the actions and options used to
+    work with packages. The ECL command line tool is fully documented in the
+    Client Tools Manual.</para>
+
+
+		   
+		     <xi:include  href="../../common/Version.xml" xpointer="Copyright" 
+		                 xmlns:xi="http://www.w3.org/2001/XInclude">
+		                   <xi:fallback>
+		                       <para>Copyright 201x </para>
+		                 </xi:fallback>
+              
+		     </xi:include>
+		
+		
+
+
+    <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
+               xpointer="xpointer(//*[@id='eclpackageadd'])" 
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+                <xi:fallback>
+		   <para><emphasis>eclpackageadd Failed to load</emphasis></para>
+		</xi:fallback>
+    </xi:include>
+
+    <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
+               xpointer="xpointer(//*[@id='eclpackagedelete'])" 
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+                <xi:fallback>
+		   <para><emphasis>eclpackageadd Failed to load</emphasis></para>
+		</xi:fallback>
+    </xi:include>
+    
+     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
+                xpointer="eclpackageactivate"
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+                <xi:fallback>
+		   <para><emphasis>eclpackagectivate Failed to load</emphasis></para>
+		</xi:fallback>
+	  </xi:include>
+ 
+
+    <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
+                xpointer="eclpackagedeactivate"
+                                xmlns:xi="http://www.w3.org/2001/XInclude">
+		                <xi:fallback>
+				   <para><emphasis>eclpackdeactivate Failed to load</emphasis></para>
+				</xi:fallback>
+			  </xi:include>
+ 
+    <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
+                xpointer="eclpackagelist"
+                                xmlns:xi="http://www.w3.org/2001/XInclude">
+		                <xi:fallback>
+				   <para><emphasis>eclpackagelist Failed to load</emphasis></para>
+				</xi:fallback>
+			  </xi:include>
+ 
+
+    <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
+                xpointer="eclpackageinfo"
+                                xmlns:xi="http://www.w3.org/2001/XInclude">
+		                <xi:fallback>
+				   <para><emphasis>eclpackageInfo Failed to load</emphasis></para>
+				</xi:fallback>
+			  </xi:include>
+ 
+
+    <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
+                xpointer="eclpackagemapaddpart"
+                                xmlns:xi="http://www.w3.org/2001/XInclude">
+		                <xi:fallback>
+				   <para><emphasis>eclpackmapaddpart Failed to load</emphasis></para>
+				</xi:fallback>
+			  </xi:include>
+ 
+
+    <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
+                xpointer="eclpackagemapgetpart"
+                                xmlns:xi="http://www.w3.org/2001/XInclude">
+		                <xi:fallback>
+				   <para><emphasis>eclpackagemapgetpart Failed to load</emphasis></para>
+				</xi:fallback>
+			  </xi:include>
+ 
+
+    <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
+                xpointer="eclpackagemapremovepart"
+                                           xmlns:xi="http://www.w3.org/2001/XInclude">
+				                <xi:fallback>
+						   <para><emphasis>eclpackagemapremovepart Failed to load</emphasis></para>
+						</xi:fallback>
+					  </xi:include>
+ 
+
+    <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
+                xpointer="eclpackagevalidate"
+                                           xmlns:xi="http://www.w3.org/2001/XInclude">
+				                <xi:fallback>
+						   <para><emphasis>eclpackagevalidate Failed to load</emphasis></para>
+						</xi:fallback>
+					  </xi:include>
+ 
+    <sect2 role="brk">
+      <title>Tips:</title>
+
+      <itemizedlist mark="bullet">
+        <listitem>
+          <para>Always use superfiles or superkeys to take advantage of
+          indirect naming and to allow the use of packages. Roxie does not
+          require this, but it works best this way.</para>
+        </listitem>
+
+        <listitem>
+          <para>Use unique filenames instead of overwriting existing files.
+          This prevents accidental overwrites and provides an easy way to roll
+          back.</para>
+        </listitem>
+
+        <listitem>
+          <para>If you have a large collection of keys, it is easier to
+          maintain if you use superkeys with a single subindex-file. Multiple
+          subfiles are useful when you need to add data quickly, but if time
+          allows, it is better to rebuild a new single key file.</para>
+        </listitem>
+
+        <listitem>
+          <para>Before you delete a package map, make sure you have a backup
+          copy.</para>
+
+          <!--You should always validate or run the reporting step on the packages (NYI)-->
+        </listitem>
+      </itemizedlist>
+    </sect2>
+  </sect1>
+</chapter>

@@ -121,7 +121,7 @@ void CommonFieldProcessor::processEndRow(const RtlFieldInfo * field)
 
 
 //=============================================================================================
-
+// MORE - this function should probably move into IIndexReadContext interface rather than leaking ordinality() and item() out of that interface just for me
 void printKeyedValues(StringBuffer &out, IIndexReadContext *segs, IOutputMetaData *rowMeta)
 {
     unsigned totalKeyedSize = 0;

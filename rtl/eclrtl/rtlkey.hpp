@@ -182,11 +182,17 @@ enum TransitionMask : byte
     CMPge = CMPgt | CMPeq,
     CMPminmask = CMPgt|CMPmin,
     CMPmaxmask = CMPlt|CMPmax,
+
+    CMPnovalue = 0x80,  // Used when serializing.
 };
 
-class ValueTransition;
 interface RtlTypeInfo;
 class RtlRow;
+
+//Currently just an opaque link counted type
+interface IValueTransition : public IInterface
+{
+};
 
 /*
  * The IValueSet interface represents a set of ranges of values.
@@ -196,21 +202,23 @@ class RtlRow;
 interface IValueSet : public IInterface
 {
 //The following methods are used for creating a valueset
-    virtual ValueTransition * createTransition(TransitionMask mask, unsigned __int64 value) const = 0;
-    virtual ValueTransition * createStringTransition(TransitionMask mask, size32_t len, const char * value) const = 0;
-    virtual ValueTransition * createUtf8Transition(TransitionMask mask, size32_t len, const char * value) const = 0;
-    virtual void addRange(ValueTransition * loval, ValueTransition * hival) = 0;
+    virtual IValueTransition * createTransition(TransitionMask mask, unsigned __int64 value) const = 0;
+    virtual IValueTransition * createStringTransition(TransitionMask mask, size32_t len, const char * value) const = 0;
+    virtual IValueTransition * createUtf8Transition(TransitionMask mask, size32_t len, const char * value) const = 0;
+    virtual void addRange(IValueTransition * loval, IValueTransition * hival) = 0;
     virtual void addAll() = 0;
-    virtual void killRange(ValueTransition * loval, ValueTransition * hival) = 0;
+    virtual void killRange(IValueTransition * loval, IValueTransition * hival) = 0;
     virtual void reset() = 0;
     virtual void invertSet() = 0;
     virtual void unionSet(const IValueSet *) = 0;
     virtual void excludeSet(const IValueSet *) = 0;
     virtual void intersectSet(const IValueSet *) = 0;
-    virtual StringBuffer & serialize(StringBuffer & out) const= 0;
+    virtual StringBuffer & serialize(StringBuffer & out) const = 0;
+    virtual MemoryBuffer & serialize(MemoryBuffer & out) const = 0;
+    virtual bool equals(const IValueSet & _other) const = 0;
 
 //following are primarily for use from the code generator
-    virtual ValueTransition * createRawTransition(TransitionMask mask, const void * value) const = 0;
+    virtual IValueTransition * createRawTransition(TransitionMask mask, const void * value) const = 0;
     virtual void addRawRange(const void * lower, const void * upper) = 0;
     virtual void killRawRange(const void * lower, const void * upper) = 0;
 
@@ -287,14 +295,20 @@ public:
 //Simple row matching
     virtual bool matches(const RtlRow & row) const = 0;
     virtual unsigned queryFieldIndex() const = 0;
+    virtual const RtlTypeInfo & queryType() const = 0;
     virtual int compareRow(const RtlRow & left, const RtlRow & right) const = 0;
     virtual int compareLowest(const RtlRow & left, unsigned range) const = 0;
     virtual int compareHighest(const RtlRow & left, unsigned range) const = 0;
     virtual bool isEmpty() const = 0;
     virtual bool isWild() const = 0;
 
+    virtual StringBuffer & serialize(StringBuffer & out) const = 0;
+    virtual MemoryBuffer & serialize(MemoryBuffer & out) const = 0;
+
     virtual unsigned numRanges() const = 0;
     virtual int findForwardMatchRange(const RtlRow & row, unsigned & matchRange) const = 0;
+    virtual unsigned queryScore() const = 0;
+    virtual IFieldFilter *remap(unsigned newFieldIndex) const = 0;
 };
 
 //More types of IFieldFilter to come later
@@ -302,6 +316,9 @@ extern ECLRTL_API IFieldFilter * createEmptyFieldFilter(unsigned _fieldId, const
 extern ECLRTL_API IFieldFilter * createFieldFilter(unsigned fieldId, const RtlTypeInfo & type, const void * value);
 extern ECLRTL_API IFieldFilter * createFieldFilter(unsigned fieldId, IValueSet * values);
 extern ECLRTL_API IFieldFilter * createWildFieldFilter(unsigned fieldId, const RtlTypeInfo & type);
+
+extern ECLRTL_API IFieldFilter * deserializeFieldFilter(unsigned fieldId, const RtlTypeInfo & type, const char * src);
+extern ECLRTL_API IFieldFilter * deserializeFieldFilter(unsigned fieldId, const RtlTypeInfo & type, MemoryBuffer & in);
 
 
 

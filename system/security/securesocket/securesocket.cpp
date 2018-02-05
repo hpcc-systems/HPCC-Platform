@@ -150,7 +150,7 @@ public:
     virtual int secure_accept(int logLevel);
     virtual int secure_connect(int logLevel);
 
-    virtual void logPollError(unsigned revents, const char *rwstr);
+    virtual int logPollError(unsigned revents, const char *rwstr);
     virtual int wait_read(unsigned timeoutms);
     virtual void read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,unsigned timeoutsecs);
     virtual void readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeoutms);
@@ -677,9 +677,9 @@ int CSecureSocket::secure_connect(int logLevel)
 //
 // log poll() errors
 //
-void CSecureSocket::logPollError(unsigned revents, const char *rwstr)
+int CSecureSocket::logPollError(unsigned revents, const char *rwstr)
 {
-    m_socket->logPollError(revents, rwstr);
+    return m_socket->logPollError(revents, rwstr);
 }
 
 //

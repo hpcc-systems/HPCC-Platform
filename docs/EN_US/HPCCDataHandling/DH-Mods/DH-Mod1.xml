@@ -1,0 +1,1580 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter>
+  <title>Data Handling Components</title>
+
+  <para>This document <emphasis role="bold">Module</emphasis> is used to allow
+  us to include data handling sections in multiple books.</para>
+
+  <sect1 id="Data_Handling_Terms">
+    <title>Data Handling Terms</title>
+
+    <para>A <emphasis>spray</emphasis> or <emphasis>import</emphasis> is the
+    relocation of a data file from one location (such as a Landing Zone) to a
+    cluster. The term spray was adopted due to the nature of the file movement
+    -- the file is partitioned across all nodes within a cluster.</para>
+
+    <para>A <emphasis>despray</emphasis> or <emphasis>export</emphasis> is the
+    relocation of a data file from a cluster to a single machine location
+    (such as a Landing Zone). The term despray was adopted due to the nature
+    of the file movement -- the file is reassembled from its parts on all nodes
+    in the cluster and placed in a single file on the destination.</para>
+
+    <para>A <emphasis>copy </emphasis>is the replication of a data file from
+    one cluster to another cluster within the same environment.</para>
+
+    <para>A <emphasis>Remote copy </emphasis>is the replication of a data file
+    from one cluster to another cluster in a different environment.</para>
+
+    <para>A <emphasis>Landing Zone</emphasis> (or Drop Zone) is a physical
+    storage location defined in your system's environment. There can be one or
+    more of these locations defined. A daemon (DaFileSrv) must be running on
+    that server to enable file sprays and desprays.</para>
+  </sect1>
+
+  <sect1 id="Working_with_a_data_file">
+    <title>Working with data files</title>
+
+    <para>Once you start working with your HPCC system, you will want to
+    process some real data, this section shows you how to load data to your
+    HPCC system.</para>
+
+    <sect2 id="Cautions_and_Warnings">
+      <title>Before you begin</title>
+
+      <para>First, you should consider the size of the data and the capacity
+      of your system. A typical production HPCC system would have much more
+      data capacity than a development system. The size of the files you wish
+      to work with is limited by the size of your system.</para>
+    </sect2>
+
+    <sect2 id="Uploading_a_file">
+      <title>Uploading a file</title>
+
+      <para>For smaller data files, maximum of 2GB, you can use the
+      upload/download file utility in ECL Watch.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>In your browser, go to the <emphasis role="bold">ECL
+          Watch</emphasis> URL displayed example, http://nnn.nnn.nnn.nnn:8010,
+          where nnn.nnn.nnn.nnn is your ESP Server's IP address.</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic
+                    fileref="../../images/caution.png" /></entry>
+
+                    <entry>Your IP address could be different from the ones
+                    provided in the example images. Please use the IP address
+                    provided by <emphasis role="bold">your</emphasis>
+                    installation.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>From the ECL Watch home page, press the <emphasis
+          role="bold">Files</emphasis> icon link at the top, then press the
+          <emphasis role="bold">Landing Zones</emphasis> button from the
+          sub-menu, and then click on the <emphasis
+          role="bold">Upload</emphasis> action button as illustrated in the
+          following image.</para>
+
+          <para><figure>
+              <title>Upload/download</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/LZimg03-1.jpg"
+                             vendor="eclwatchSS" />
+                </imageobject>
+              </mediaobject>
+            </figure>A system file dialog opens. Browse and select the file to
+          upload and then press the <emphasis role="bold">Open</emphasis>
+          button.</para>
+
+          <para><figure>
+              <title>Dropzones</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA440b.jpg"
+                             vendor="eclwatchSS" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <para>Once you choose the file to upload, it will take you to the
+          <emphasis role="bold">File Uploader</emphasis> dialog, where you can
+          choose the landing zone, machine, and/or folder for the file to
+          upload.</para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Start</emphasis> button to
+          complete the file upload.</para>
+        </listitem>
+      </orderedlist>
+    </sect2>
+
+    <sect2 id="Uploading_files_w_secure_client">
+      <title>Uploading files with a Secure Copy Client</title>
+
+      <para>To upload a large file for processing to your virtual machine, you
+      will need a tool that supports the secure copy protocol. In this
+      section, we discuss using WinSCP. There are other tools available, but
+      the steps are similar.</para>
+
+      <para><orderedlist>
+          <listitem>
+            <para>Open the WinSCP tool, and login to your Landing Zone node
+            using the username and password given.</para>
+
+            <para><informaltable colsep="1" rowsep="1">
+                <tgroup cols="2">
+                  <colspec colwidth="80pt" />
+
+                  <colspec colwidth="100pt" />
+
+                  <tbody>
+                    <row>
+                      <entry>Login ID:</entry>
+
+                      <entry>hpccdemo</entry>
+                    </row>
+
+                    <row>
+                      <entry>Password:</entry>
+
+                      <entry>hpccdemo</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <para>Once logged in, it should, navigate automatically to the
+            landing zone folder. (/var/lib/LexisNexis/mydropzone)</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Navigate to where your local file is in the left part of the
+            window.</para>
+
+            <para><figure>
+                <title>WinSCP</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="../../images/LZimg05.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Select the data file to send and copy it to the landing
+            zone, using drag-and-drop.</para>
+          </listitem>
+        </orderedlist></para>
+    </sect2>
+  </sect1>
+
+  <sect1 id="Data_Handling_Methods">
+    <title>Data Handling Methods</title>
+
+    <para>There are several ways to spray, despray, or copy data files:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>The DFU interface in Ecl Watch</para>
+      </listitem>
+
+      <listitem>
+        <para>The DFU Plus command line utility</para>
+
+        <para>See the <emphasis>Client Tools</emphasis> manual for
+        details</para>
+      </listitem>
+
+      <listitem>
+        <para>Using ECL Code and FileServices library functions.</para>
+
+        <para>See the <emphasis>ECL Language Reference</emphasis> for
+        details.</para>
+      </listitem>
+    </itemizedlist>
+
+    <sect2 id="LZ_Spray" role="brk">
+      <title>Spray Files</title>
+
+      <para>One way you can spray files to your clusters is from the <emphasis
+      role="bold">Landing Zone</emphasis> page in ECL Watch. <orderedlist>
+          <listitem>
+            <para>Select the file from your drop zone by checking the box next
+            to it.</para>
+          </listitem>
+
+          <listitem>
+            <para>Select the appropriate drop menu option for the type of
+            spray you want.</para>
+
+            <para>For example, to spray a delimited file, select the <emphasis
+            role="bold">Delimited</emphasis> action button.</para>
+
+            <para><figure>
+                <title>Landing Zone Spray</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="../../images/IMDB_01.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Fill in the values as appropriate for the spray.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Spray</emphasis> button to
+            spray the file(s).</para>
+          </listitem>
+        </orderedlist></para>
+
+      <sect3 id="multi-fileSpray">
+        <title>Spray multiple files</title>
+
+        <para>You can choose to spray multiple files with the multi-file spray
+        feature. This is useful for spraying a number of files of the same
+        type using the same spray options.</para>
+
+        <para>Fixed (length) files can have different record lengths and XML
+        files can have different row tags which must be specified individually
+        for each file. To specify these differences select the files you want
+        to spray and the spray type. You will then see the files listed. Enter
+        the record length or row tag information for each file if using the
+        Fixed or XML spray types, then check all other applicable options and
+        Spray.</para>
+      </sect3>
+    </sect2>
+  </sect1>
+
+  <sect1 id="Data_Handling_Using_ECL-Watch">
+    <title>Data Handling Using ECL Watch</title>
+
+    <itemizedlist>
+      <listitem>
+        <para>Login to ECL Watch for the environment.</para>
+
+        <para>The URL is the IP address where the ESP Server is installed plus
+        the port to which the WsSMC service is bound. The default port is
+        8010. For example:<programlisting>http://&lt;ESPserverIP&gt;:8010/</programlisting></para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Click on the <emphasis role="bold"> Files</emphasis> icon, then
+        click on <emphasis role="bold">Logical Files</emphasis>.</para>
+
+        <para>The Logical Files page displays showing all files with logical
+        entries in the Dali Server's Distributed File System.</para>
+
+        <para><graphic fileref="../../images/DHMan-3.jpg"
+        vendor="eclwatchSS" /></para>
+
+        <para>From this page, you can despray or copy any file.</para>
+      </listitem>
+    </itemizedlist>
+
+    <sect2 id="Spray_Fixed" role="brk">
+      <title><emphasis role="bold">Spray Fixed</emphasis></title>
+
+      <itemizedlist>
+        <listitem>
+          <para>Click on the <emphasis role="bold">Files</emphasis> icon, then
+          click the <emphasis role="bold">Landing Zones</emphasis> link from
+          the navigation sub-menu.</para>
+        </listitem>
+
+        <listitem>
+          <para>Click on the arrow next to your dropzone to expand the
+          list.</para>
+
+          <para>The files on your drop zone display.</para>
+        </listitem>
+
+        <listitem>
+          <para>Check the checkboxes for the file(s) you want to spray, then
+          press the Spray: <emphasis role="bold">Fixed</emphasis> action
+          button.</para>
+
+          <para>The <emphasis role="bold">Spray Fixed</emphasis> dialog
+          displays.</para>
+        </listitem>
+
+        <listitem>
+          <para>Fill in relevant details:</para>
+
+          <para><informaltable colsep="0" frame="none" rowsep="0">
+              <tgroup cols="2">
+                <colspec colwidth="122.40pt" />
+
+                <colspec colwidth="333.00pt" />
+
+                <tbody>
+                  <row>
+                    <entry align="right"><emphasis
+                    role="bold">Target</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Group</emphasis></entry>
+
+                    <entry>Select the name of cluster to spray to. You can
+                    only select a cluster in your environment.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Queue</emphasis></entry>
+
+                    <entry>Select the queue.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Target
+                    Scope</emphasis></entry>
+
+                    <entry>The prefix for the logical file</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Target
+                    Name</emphasis></entry>
+
+                    <entry>The logical filename to create. This is pre-filled
+                    with the name of the source file on the landing zone, but
+                    can be changed.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Record
+                    Length</emphasis></entry>
+
+                    <entry>The size of each record.</entry>
+                  </row>
+
+                  <row>
+                    <entry align="right"><emphasis
+                    role="bold">Options:</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Overwrite</emphasis></entry>
+
+                    <entry>Check this box to overwrite files of the same
+                    name.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Replicate</emphasis></entry>
+
+                    <entry><para>Check this box to create backup copies of all
+                    file parts in the backup directory (by convention on the
+                    secondary drive of the node following in the
+                    cluster).</para><para><emphasis role="bold">This option is
+                    only available on systems where replication has been
+                    enabled.</emphasis></para></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Compress</emphasis></entry>
+
+                    <entry>Check this box to compress the files.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">No Split</emphasis></entry>
+
+                    <entry>Check this box to prevent splitting file parts to
+                    multiple target parts.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Fail if no source
+                    file</emphasis></entry>
+
+                    <entry>Check this box to allow the spray to fail if no
+                    source file is found.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Spray
+          </emphasis>button.</para>
+
+          <para>A <emphasis role="bold">DFU Workunit</emphasis> tab displays
+          for each job. You can see the progress of each spray operation on
+          the tab. If a job fails, information related to the cause of the
+          failure also displays.</para>
+        </listitem>
+      </itemizedlist>
+    </sect2>
+
+    <sect2 id="Spray_Delimited" role="brk">
+      <title><emphasis role="bold">Spray Delimited</emphasis></title>
+
+      <itemizedlist>
+        <listitem>
+          <para>Click on the <emphasis role="bold">Files</emphasis> icon, then
+          click the<emphasis role="bold"> Landing Zones</emphasis> link from
+          the navigation sub-menu.</para>
+        </listitem>
+
+        <listitem>
+          <para>Click on the arrow next to your dropzone to expand the
+          list.</para>
+
+          <para>The files on your drop zone display.</para>
+        </listitem>
+
+        <listitem>
+          <para>Check the checkboxes for the file(s) you want to spray, then
+          press the Spray: <emphasis role="bold">Delimited</emphasis> action
+          button.</para>
+
+          <para>The <emphasis role="bold">Spray Delimited</emphasis> page
+          displays.</para>
+        </listitem>
+
+        <listitem>
+          <para>Fill in relevant details:</para>
+
+          <para><informaltable colsep="0" frame="none" rowsep="0">
+              <tgroup cols="2">
+                <colspec colwidth="1*" />
+
+                <colspec colwidth="3*" />
+
+                <tbody>
+                  <row>
+                    <entry align="right"><emphasis
+                    role="bold">Target</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Group</emphasis></entry>
+
+                    <entry>Select the name of cluster to spray to. You can
+                    only select a cluster in your environment.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Queue</emphasis></entry>
+
+                    <entry>Select the queue.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Target
+                    Scope</emphasis></entry>
+
+                    <entry>The prefix for the logical file</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Target
+                    Name</emphasis></entry>
+
+                    <entry>The logical filename to create. This is pre-filled
+                    with the name of the source file on the landing zone, but
+                    can be changed.</entry>
+                  </row>
+
+                  <row>
+                    <entry align="right"><emphasis
+                    role="bold">Options:</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Format</emphasis></entry>
+
+                    <entry>Select the format from the droplist</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Max Record
+                    Length</emphasis></entry>
+
+                    <entry>The length of longest record in the file.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Separators</emphasis></entry>
+
+                    <entry>The character(s) used as a separator in the source
+                    file.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Omit
+                    Separator</emphasis></entry>
+
+                    <entry>Check this box to omit the separator.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Escape</emphasis></entry>
+
+                    <entry>A null-terminated string containing the CSV escape
+                    characters.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Line
+                    Terminators</emphasis></entry>
+
+                    <entry>The character(s) used as a line terminators in the
+                    source file.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Quote</emphasis></entry>
+
+                    <entry>The character used as a quote in the source
+                    file.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Overwrite</emphasis></entry>
+
+                    <entry>Check this box to overwrite files of the same
+                    name.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">No Split</emphasis></entry>
+
+                    <entry>Check this box to prevent splitting file parts to
+                    multiple target parts.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Fail if no source
+                    file</emphasis></entry>
+
+                    <entry>Check this box to allow the spray to fail if no
+                    source file is found.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Replicate</emphasis></entry>
+
+                    <entry><para>Check this box to create backup copies of all
+                    file parts in the backup directory (by convention on the
+                    secondary drive of the node following in the
+                    cluster).</para><para><emphasis role="bold">This option is
+                    only available on systems where replication has been
+                    enabled.</emphasis></para></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Compress</emphasis></entry>
+
+                    <entry>Check this box to compress the files.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Quoted
+                    Terminator</emphasis></entry>
+
+                    <entry>Check this box to indicate that the terminator
+                    character can be included in a quoted field. If unchecked,
+                    it allows quicker partitioning of the file (avoiding a
+                    complete file scan).</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Record Structure
+                    Present</emphasis></entry>
+
+                    <entry>Flag indicating whether to derive the record
+                    structure from the header of the file.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Spray</emphasis>
+          button.</para>
+
+          <para>A <emphasis role="bold">DFU Workunit</emphasis> tab displays
+          for each job. You can see the progress of each spray operation on
+          the tab. If a job fails, information related to the cause of the
+          failure also displays.</para>
+        </listitem>
+      </itemizedlist>
+    </sect2>
+
+    <sect2 id="Spray_XML" role="brk">
+      <title><emphasis role="bold">Spray XML</emphasis></title>
+
+      <itemizedlist>
+        <listitem>
+          <para>Click on the <emphasis role="bold">Files</emphasis> icon, then
+          click the <emphasis role="bold">Landing Zones</emphasis> link from
+          the navigation sub-menu.</para>
+        </listitem>
+
+        <listitem>
+          <para>Click on the arrow next to your dropzone to expand the
+          list.</para>
+
+          <para>The files on your drop zone display.</para>
+        </listitem>
+
+        <listitem>
+          <para>Check the checkboxes for the file(s) you want to spray, then
+          press the Spray:<emphasis role="bold"> XML</emphasis>action
+          button.</para>
+
+          <para>The <emphasis role="bold">Spray XML</emphasis> dialog
+          displays.</para>
+        </listitem>
+
+        <listitem>
+          <para>Fill in relevant details:</para>
+
+          <para><informaltable colsep="0" frame="none" rowsep="0">
+              <tgroup cols="2">
+                <colspec colwidth="122.40pt" />
+
+                <colspec colwidth="333.00pt" />
+
+                <tbody>
+                  <row>
+                    <entry align="right"><emphasis
+                    role="bold">Target</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Group</emphasis></entry>
+
+                    <entry>Select the name of cluster to spray to. You can
+                    only select a cluster in your environment.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Queue</emphasis></entry>
+
+                    <entry>Select the queue.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Target
+                    Scope</emphasis></entry>
+
+                    <entry>The prefix for the logical file</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Target
+                    Name</emphasis></entry>
+
+                    <entry>The logical filename to create. This is pre-filled
+                    with the name of the source file on the landing zone, but
+                    can be changed.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Row Tag </emphasis></entry>
+
+                    <entry>The tag name of the row delimiter.
+                    Required.</entry>
+                  </row>
+
+                  <row>
+                    <entry align="right"><emphasis
+                    role="bold">Options:</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Format</emphasis></entry>
+
+                    <entry>Select the format from the droplist</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Max Record
+                    Length</emphasis></entry>
+
+                    <entry>The length of longest record in the file.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Overwrite</emphasis></entry>
+
+                    <entry>Check this box to overwrite files of the same
+                    name.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">No Split</emphasis></entry>
+
+                    <entry>Check this box to prevent splitting file parts to
+                    multiple target parts.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Fail if no source
+                    file</emphasis></entry>
+
+                    <entry>Check this box to allow the spray to fail if no
+                    source file is found.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Replicate</emphasis></entry>
+
+                    <entry><para>Check this box to create backup copies of all
+                    file parts in the backup directory (by convention on the
+                    secondary drive of the node following in the
+                    cluster).</para><para><emphasis role="bold">This option is
+                    only available on systems where replication has been
+                    enabled.</emphasis></para></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Compress</emphasis></entry>
+
+                    <entry>Check this box to compress the files.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Spray</emphasis>
+          button.</para>
+
+          <para>A <emphasis role="bold">DFU Workunit</emphasis> tab displays
+          for each job. You can see the progress of each spray operation on
+          the tab. If a job fails, information related to the cause of the
+          failure also displays.</para>
+        </listitem>
+      </itemizedlist>
+    </sect2>
+
+    <sect2 id="Spray_JSON" role="brk">
+      <title><emphasis role="bold">Spray JSON</emphasis></title>
+
+      <itemizedlist>
+        <listitem>
+          <para>Click on the <emphasis role="bold">Files</emphasis> icon, then
+          click the <emphasis role="bold">Landing Zones</emphasis> link from
+          the navigation sub-menu.</para>
+        </listitem>
+
+        <listitem>
+          <para>Click on the arrow next to your dropzone to expand the
+          list.</para>
+
+          <para>The files on your drop zone display.</para>
+        </listitem>
+
+        <listitem>
+          <para>Check the checkboxes for the file(s) you want to spray, then
+          press the Spray:<emphasis role="bold"> JSON </emphasis> action
+          button.</para>
+
+          <para>The dialog displays.</para>
+        </listitem>
+
+        <listitem>
+          <para>Fill in relevant details:</para>
+
+          <para><informaltable colsep="0" frame="none" rowsep="0">
+              <tgroup cols="2">
+                <colspec colwidth="122.40pt" />
+
+                <colspec colwidth="333.00pt" />
+
+                <tbody>
+                  <row>
+                    <entry align="right"><emphasis
+                    role="bold">Target</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Group</emphasis></entry>
+
+                    <entry>Select the name of cluster to spray to. You can
+                    only select a cluster in your environment.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Queue</emphasis></entry>
+
+                    <entry>Select the queue.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Target
+                    Scope</emphasis></entry>
+
+                    <entry>The prefix for the logical file</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Target
+                    Name</emphasis></entry>
+
+                    <entry>The logical filename to create. This is pre-filled
+                    with the name of the source file on the landing zone, but
+                    can be changed.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Row Path </emphasis></entry>
+
+                    <entry>The path specifier to the JSON content. The default
+                    takes the root level content as an array of objects to be
+                    treated as rows.</entry>
+                  </row>
+
+                  <row>
+                    <entry align="right"><emphasis
+                    role="bold">Options:</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Format</emphasis></entry>
+
+                    <entry>Select the format from the droplist</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Max Record
+                    Length</emphasis></entry>
+
+                    <entry>The length of longest record in the file.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Overwrite</emphasis></entry>
+
+                    <entry>Check this box to overwrite files of the same
+                    name.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">No Split</emphasis></entry>
+
+                    <entry>Check this box to prevent splitting file parts to
+                    multiple target parts.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Fail if no source
+                    file</emphasis></entry>
+
+                    <entry>Check this box to allow the spray to fail if no
+                    source file is found.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Replicate</emphasis></entry>
+
+                    <entry><para>Check this box to create backup copies of all
+                    file parts in the backup directory (by convention on the
+                    secondary drive of the node following in the
+                    cluster).</para><para><emphasis role="bold">This option is
+                    only available on systems where replication has been
+                    enabled.</emphasis></para></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Compress</emphasis></entry>
+
+                    <entry>Check this box to compress the files.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Spray</emphasis>
+          button.</para>
+
+          <para>A <emphasis role="bold">DFU Workunit</emphasis> tab displays
+          for each job. You can see the progress of each spray operation on
+          the tab. If a job fails, information related to the cause of the
+          failure also displays.</para>
+        </listitem>
+      </itemizedlist>
+    </sect2>
+
+    <sect2 id="Spray_Variable" role="brk">
+      <title><emphasis role="bold">Spray Variable</emphasis></title>
+
+      <itemizedlist>
+        <listitem>
+          <para>Click on the <emphasis role="bold">Files</emphasis> icon, then
+          click the <emphasis role="bold">Landing Zones</emphasis> link on the
+          navigation sub-menu.</para>
+        </listitem>
+
+        <listitem>
+          <para>Click on the arrow next to your dropzone to expand the
+          list.</para>
+
+          <para>The files on your drop zone display.</para>
+        </listitem>
+
+        <listitem>
+          <para>Check the checkboxes for the file(s) you want to spray, then
+          press the Spray: <emphasis role="bold">Variable </emphasis>action
+          button.</para>
+
+          <para>The Spray<emphasis role="bold"> Variable</emphasis> dialog
+          displays.</para>
+        </listitem>
+
+        <listitem>
+          <para>Fill in relevant details:</para>
+
+          <para><informaltable colsep="0" frame="none" rowsep="0">
+              <tgroup cols="2">
+                <colspec colwidth="122.40pt" />
+
+                <colspec colwidth="333.00pt" />
+
+                <tbody>
+                  <row>
+                    <entry align="right"><emphasis
+                    role="bold">Target</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Group</emphasis></entry>
+
+                    <entry>Select the name of cluster to spray to. You can
+                    only select a cluster in your environment.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Queue</emphasis></entry>
+
+                    <entry>Select the queue.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Target
+                    Scope</emphasis></entry>
+
+                    <entry>The prefix for the logical file</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Target
+                    Name</emphasis></entry>
+
+                    <entry>The logical filename to create. This is pre-filled
+                    with the name of the source file on the landing zone, but
+                    can be changed.</entry>
+                  </row>
+
+                  <row>
+                    <entry align="right"><emphasis
+                    role="bold">Options:</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Source
+                    Type</emphasis></entry>
+
+                    <entry>Select the source type from the drop list. Values:
+                    recfmv, recfmvb, Variable, or Variable Big-endian.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Overwrite</emphasis></entry>
+
+                    <entry>Check this box to overwrite files of the same
+                    name.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">No Split</emphasis></entry>
+
+                    <entry>Check this box to prevent splitting file parts to
+                    multiple target parts.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Fail if no source
+                    file</emphasis></entry>
+
+                    <entry>Check this box to allow the spray to fail if no
+                    source file is found.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Replicate</emphasis></entry>
+
+                    <entry><para>Check this box to create backup copies of all
+                    file parts in the backup directory (by convention on the
+                    secondary drive of the node following in the
+                    cluster).</para><para><emphasis role="bold">This option is
+                    only available on systems where replication has been
+                    enabled.</emphasis></para></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Compress</emphasis></entry>
+
+                    <entry>Check this box to compress the files.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Spray</emphasis>
+          button.</para>
+
+          <para>A <emphasis role="bold">DFU Workunit</emphasis> tab displays
+          for each job. You can see the progress of each spray operation on
+          the tab. If a job fails, information related to the cause of the
+          failure also displays.</para>
+        </listitem>
+      </itemizedlist>
+    </sect2>
+
+    <sect2 id="Spray_Blob" role="brk">
+      <title><emphasis role="bold">Spray Blob</emphasis></title>
+
+      <itemizedlist>
+        <listitem>
+          <para>Click on the <emphasis role="bold">Files</emphasis> icon, then
+          click the <emphasis role="bold">Landing Zones</emphasis> link on the
+          navigation sub-menu.</para>
+        </listitem>
+
+        <listitem>
+          <para>Click on the arrow next to your dropzone to expand the
+          list.</para>
+
+          <para>The files on your drop zone display.</para>
+        </listitem>
+
+        <listitem>
+          <para>Check the checkboxes for the file(s) you want to spray, then
+          press the Spray: <emphasis role="bold">BLOB </emphasis>action
+          button.</para>
+
+          <para>The Spray<emphasis role="bold"> BLOB</emphasis> dialog
+          displays.</para>
+        </listitem>
+
+        <listitem>
+          <para>Fill in relevant details:</para>
+
+          <para><informaltable colsep="0" frame="none" rowsep="0">
+              <tgroup cols="2">
+                <colspec colwidth="122.40pt" />
+
+                <colspec colwidth="333.00pt" />
+
+                <tbody>
+                  <row>
+                    <entry align="right"><emphasis
+                    role="bold">Target</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Group</emphasis></entry>
+
+                    <entry>Select the name of cluster to spray to. You can
+                    only select a cluster in your environment.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Queue</emphasis></entry>
+
+                    <entry>Select the queue.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Target
+                    Name</emphasis></entry>
+
+                    <entry>The logical target name to create. Required. You
+                    must provide a target name.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Source
+                    Path</emphasis></entry>
+
+                    <entry>The path to the file. This is pre-filled with the
+                    name of the selected source file(s) on the landing zone,
+                    but can be changed. Supports wildcards.</entry>
+                  </row>
+
+                  <row>
+                    <entry align="right"><emphasis
+                    role="bold">Options:</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Blob
+                    Prefix</emphasis></entry>
+
+                    <entry>The prefix for the file.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Overwrite</emphasis></entry>
+
+                    <entry>Check this box to overwrite files of the same
+                    name.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">No Split</emphasis></entry>
+
+                    <entry>Check this box to prevent splitting file parts to
+                    multiple target parts.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Replicate</emphasis></entry>
+
+                    <entry><para>Check this box to create backup copies of all
+                    file parts in the backup directory (by convention on the
+                    secondary drive of the node following in the
+                    cluster).</para><para><emphasis role="bold">This option is
+                    only available on systems where replication has been
+                    enabled.</emphasis></para></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Compress</emphasis></entry>
+
+                    <entry>Check this box to compress the files.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Fail if no source
+                    file</emphasis></entry>
+
+                    <entry>Check this box to allow the spray to fail if no
+                    source file is found.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Spray</emphasis>
+          button.</para>
+
+          <para>A <emphasis role="bold">DFU Workunit</emphasis> tab displays
+          for each job. You can see the progress of each spray operation on
+          the tab. If a job fails, information related to the cause of the
+          failure also displays.</para>
+        </listitem>
+      </itemizedlist>
+    </sect2>
+
+    <sect2 id="Desprays" role="brk">
+      <title>Desprays</title>
+
+      <itemizedlist>
+        <listitem>
+          <para>Locate the file(s) to despray in the list of files, then Press
+          the the <emphasis role="bold">Despray</emphasis> action
+          button.</para>
+
+          <para><graphic fileref="../../images/DHMan-3a.jpg"
+          vendor="eclwatchSS" /></para>
+        </listitem>
+
+        <listitem>
+          <para>Provide <emphasis role="bold">Destination</emphasis>
+          information.</para>
+
+          <para><informaltable colsep="0" frame="none" rowsep="0">
+              <tgroup cols="2">
+                <colspec align="left" colwidth="122.40pt" />
+
+                <colspec colwidth="333.00pt" />
+
+                <tbody>
+                  <row>
+                    <entry><emphasis role="bold">Drop Zone</emphasis></entry>
+
+                    <entry>Use the drop list to select the machine to despray
+                    to. The items in the list are landing zones defined in the
+                    system's confguration.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">IP Address</emphasis></entry>
+
+                    <entry>This is prefilled based upon the selected
+                    machine.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Path</emphasis></entry>
+
+                    <entry>Provide the complete file path of the destination
+                    including file name and extention.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Split
+                    Prefix</emphasis></entry>
+
+                    <entry>Prefix</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Overwrite</emphasis></entry>
+
+                    <entry>Check this box to overwrite a file with the same
+                    name if it exists.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Use Single
+                    Connection</emphasis></entry>
+
+                    <entry>Check this box to use a single network connection
+                    to despray.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Despray</emphasis>
+          button.</para>
+
+          <para>A DFU Workunit tab for each job opens. You can see the
+          progress of each despray operation on the tab. If a job fails,
+          information related to the cause of the failure also
+          displays.</para>
+        </listitem>
+      </itemizedlist>
+    </sect2>
+
+    <sect2 id="Copy" role="brk">
+      <title><emphasis role="bold">Copy</emphasis></title>
+
+      <itemizedlist>
+        <listitem>
+          <para>Click on the <emphasis role="bold">Files</emphasis> icon, then
+          click the Logical Files button on the navigation bar.</para>
+        </listitem>
+
+        <listitem>
+          <para>Select the file(s) to copy in the list of files, then click on
+          the <emphasis role="bold">Copy </emphasis>action button.</para>
+        </listitem>
+
+        <listitem>
+          <para>Fill in <emphasis role="bold">Destination</emphasis> and
+          <emphasis role="bold">Options </emphasis>information.</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec colwidth="122.40pt" />
+
+              <colspec colwidth="333.00pt" />
+
+              <tbody>
+                <row>
+                  <entry align="right"><emphasis
+                  role="bold">Target:</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Group</emphasis></entry>
+
+                  <entry>Select the name of cluster to copy to. You can only
+                  select a cluster in your environment.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Target Name</emphasis></entry>
+
+                  <entry>The logical filename to create. This is pre-filled
+                  with the name of the source file on the landing zone, but
+                  can be changed.</entry>
+                </row>
+
+                <row>
+                  <entry align="right"><emphasis
+                  role="bold">Options:</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Replicate</emphasis></entry>
+
+                  <entry><para>Check this box to create backup copies of all
+                  file parts in the backup directory (by convention on the
+                  secondary drive of the node following in the
+                  cluster).</para><para><emphasis role="bold">This option is
+                  only available on systems where replication has been
+                  enabled.</emphasis></para></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Wrap</emphasis></entry>
+
+                  <entry>Check this box to keep the number of parts the same
+                  and wrap if the target cluster is smaller that the
+                  original.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">No Split</emphasis></entry>
+
+                  <entry>Check this box to prevent splitting file parts to
+                  multiple target parts.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Overwrite</emphasis></entry>
+
+                  <entry>Check this box to overwrite files of the same
+                  name.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Compress</emphasis></entry>
+
+                  <entry>Check this box to compress the files.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Retain Superfile
+                  Structure</emphasis></entry>
+
+                  <entry>Check this box to retain the superfile
+                  structure.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Preserve
+                  Compression</emphasis></entry>
+
+                  <entry>Check this box to preserve the compression of the
+                  original file when copying</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Copy </emphasis>button.</para>
+
+          <para>A <emphasis role="bold">DFU Workunit</emphasis> tab displays
+          for each job. You can see the progress of each copy operation on the
+          tab. If a job fails, information related to the cause of the failure
+          also displays.</para>
+        </listitem>
+      </itemizedlist>
+    </sect2>
+
+    <sect2 id="Remote_Copy" role="brk">
+      <title><emphasis role="bold">Remote Copy</emphasis></title>
+
+      <para>Remote Copy allows you to copy data from a cluster outside your
+      environment to one in your environment.</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Click on the <emphasis role="bold">Files</emphasis> icon, then
+          click the Logical Files button on the navigation bar.</para>
+        </listitem>
+
+        <listitem>
+          <para>Click on the <emphasis role="bold">Remote Copy
+          </emphasis>link</para>
+
+          <para>The <emphasis role="bold">Copy File </emphasis>page
+          displays.</para>
+        </listitem>
+
+        <listitem>
+          <para>Fill in <emphasis role="bold">Source, Destination,</emphasis>
+          and <emphasis role="bold">Options </emphasis>information.</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec colwidth="122.40pt" />
+
+              <colspec colwidth="333.00pt" />
+
+              <tbody>
+                <row>
+                  <entry align="right"><emphasis
+                  role="bold">Source:</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Dali</emphasis></entry>
+
+                  <entry>The Dali Server in the remote environment</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">User ID</emphasis></entry>
+
+                  <entry>The Username to use to authenticate on the Remote
+                  environment (if needed)</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Password</emphasis></entry>
+
+                  <entry>The password to use to authenticate on the Remote
+                  environment (if needed)</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Logical File</emphasis></entry>
+
+                  <entry>The logical filename in the remote
+                  environment.</entry>
+                </row>
+
+                <row>
+                  <entry align="right"><emphasis
+                  role="bold">Destination:</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Group</emphasis></entry>
+
+                  <entry>Select the name of cluster to copy to. You can only
+                  select a cluster in your environment.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Logical Name</emphasis></entry>
+
+                  <entry>The logical name for the copied file.</entry>
+                </row>
+
+                <row>
+                  <entry align="right"><emphasis
+                  role="bold">Options:</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Replicate</emphasis></entry>
+
+                  <entry><para>Check this box to create backup copies of all
+                  file parts in the backup directory (by convention on the
+                  secondary drive of the node following in the
+                  cluster).</para><para><emphasis role="bold">This option is
+                  only available on systems where replication has been
+                  enabled.</emphasis></para></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Wrap</emphasis></entry>
+
+                  <entry>Check this box to keep the number of parts the same
+                  and wrap if the target cluster is smaller that the
+                  original.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Overwrite</emphasis></entry>
+
+                  <entry>Check this box to overwrite files of the same
+                  name.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Compress</emphasis></entry>
+
+                  <entry>Check this box to compress the files.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">No Split</emphasis></entry>
+
+                  <entry>Check this box to prevent splitting file parts to
+                  multiple target parts.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Retain Superfile
+                  Structure</emphasis></entry>
+
+                  <entry>Check this box to retain the superfile
+                  structure.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Submit
+          </emphasis>button.</para>
+
+          <para>A <emphasis role="bold">DFU Workunit</emphasis> tab displays.
+          You can see the progress of the copy operation on the tab. If a job
+          fails, information related to the cause of the failure also
+          displays.</para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Refresh </emphasis>button
+          periodically until the status of your request indicates it is
+          <emphasis role="bold">Finished </emphasis>or click on the <emphasis
+          role="bold">View Progress</emphasis> hyperlink to see a progress
+          indicator.</para>
+        </listitem>
+      </itemizedlist>
+    </sect2>
+  </sect1>
+</chapter>

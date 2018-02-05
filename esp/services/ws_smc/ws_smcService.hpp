@@ -124,11 +124,11 @@ class CActivityInfo : public CInterface, implements IInterface
     void readRunningWUsAndJobQueueforOtherStatusServers(IEspContext& context, IPropertyTree* serverStatusRoot);
     void createActiveWorkUnit(IEspContext& context, Owned<IEspActiveWorkunit>& ownedWU, const char* wuid, const char* location,
         unsigned index, const char* serverName, const char* queueName, const char* instanceName, const char* targetClusterName, bool useContext);
-    void getDFUServersAndWUs(IPropertyTree* envRoot, IPropertyTree* serverStatusRoot);
+    void getDFUServersAndWUs(IEspContext& context, IPropertyTree* envRoot, IPropertyTree* serverStatusRoot);
     unsigned readDFUWUIDs(IPropertyTree* serverStatusRoot, const char* queueName, StringArray& wuidList);
     void readDFUWUDetails(const char* queueName, const char* serverName, StringArray& wuidList, unsigned runningWUCount);
     void getDFURecoveryJobs();
-    void getServerJobQueue(const char* queueName, const char* serverName, const char* serverType, const char* networkAddress, unsigned port);
+    void getServerJobQueue(IEspContext &context, const char* queueName, const char* serverName, const char* serverType, const char* networkAddress, unsigned port);
     void readServerJobQueueStatus(IEspServerJobQueue* jobQueue);
     CWsSMCTargetCluster* findWUClusterInfo(const char* wuid, bool isOnECLAgent, CIArrayOf<CWsSMCTargetCluster>& targetClusters,
         CIArrayOf<CWsSMCTargetCluster>& targetClusters1, CIArrayOf<CWsSMCTargetCluster>& targetClusters2);

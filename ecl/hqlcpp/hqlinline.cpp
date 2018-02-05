@@ -2056,6 +2056,8 @@ void HqlCppTranslator::ensureContextAvailable(BuildCtx & ctx)
     EvalContext * instance = queryEvalContext(ctx);
     if (instance)
         instance->ensureContextAvailable();
+    if (!ctx.queryMatchExpr(codeContextMarkerExpr))
+        throwError(HQLERR_CodeContextNotAvailable);
 }
 
 /*

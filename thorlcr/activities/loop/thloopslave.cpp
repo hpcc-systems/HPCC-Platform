@@ -1125,7 +1125,7 @@ public:
         gathered = eos = false;
         aggregated.clear();
         aggregated.setown(new RowAggregator(*helper, *helper));
-        aggregated->start(queryRowAllocator());
+        aggregated->start(queryRowAllocator(), queryCodeContext(), queryId());
     }
     CATCH_NEXTROW()
     {

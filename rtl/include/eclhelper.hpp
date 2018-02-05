@@ -64,6 +64,7 @@ interface IOutputMetaData;
 interface ICodeContext;
 interface IAtom;
 interface IException;
+interface IFieldFilter;
 class MemoryBuffer;
 class StringBuffer;
 class rtlRowBuilder;
@@ -381,6 +382,7 @@ interface RtlITypeInfo
     virtual const char * queryLocale() const = 0;
     virtual const RtlFieldInfo * const * queryFields() const = 0;               // null terminated list
     virtual const RtlTypeInfo * queryChildType() const = 0;
+    virtual const IFieldFilter * queryFilter() const = 0;
 
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const = 0;
     virtual size32_t buildNull(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field) const = 0;
@@ -427,7 +429,9 @@ struct RtlTypeInfo : public RtlITypeInfo
     virtual bool canExtend(char &) const = 0;
     virtual bool canMemCmp() const = 0;
 
+    virtual void doCleanup() const = 0; // delete any special cached variables.
     virtual void doDelete() const = 0;  // Used in place of virtual destructor to allow constexpr constructors.
+    virtual bool equivalent(const RtlTypeInfo *other) const = 0;
 public:
     unsigned fieldType;
     unsigned length;                // for bitfield (int-size, # bits, bitoffset) << 16
@@ -475,6 +479,7 @@ struct RtlFieldInfo
     {
         return type->toXML(self, selfrow, this, target);
     }
+    bool equivalent(const RtlFieldInfo *to) const;
 };
 
 enum
@@ -515,7 +520,7 @@ interface IOutputMetaData : public IRecordSize
     virtual IOutputMetaData * querySerializedDiskMeta() = 0;
     virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId) = 0;        // ctx is currently allowed to be NULL
     virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId) = 0;
-    virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId) = 0;
+    virtual ISourceRowPrefetcher * createDiskPrefetcher() = 0;
 
     virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId) = 0;        // ctx is currently allowed to be NULL
     virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) = 0;
@@ -2247,8 +2252,6 @@ interface ISteppingMeta
 //These were commoned up, but really they are completely different - so keep them separate
 interface IThorDiskCallback : extends IFilePositionProvider
 {
-    virtual unsigned __int64 getFilePosition(const void * row) = 0;
-    virtual unsigned __int64 getLocalFilePosition(const void * row) = 0;
     virtual const char * queryLogicalFilename(const void * row) = 0;
 };
 

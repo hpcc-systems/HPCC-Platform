@@ -2558,10 +2558,10 @@ public:
             diskDeserializer.setown(new CDeserializer(childMeta->createDiskDeserializer(ctx, activityId), childAllocator, extraSz));
         return LINK(diskDeserializer);
     }
-    virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId)
+    virtual ISourceRowPrefetcher * createDiskPrefetcher()
     {
         if (!prefetcher)
-            prefetcher.setown(new CPrefetcher(childMeta->createDiskPrefetcher(ctx, activityId), extraSz));
+            prefetcher.setown(new CPrefetcher(childMeta->createDiskPrefetcher(), extraSz));
         return LINK(prefetcher);
     }
     virtual IOutputMetaData * querySerializedDiskMeta() { return this; }

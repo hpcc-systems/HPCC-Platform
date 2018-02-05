@@ -350,8 +350,13 @@ bool CWsDfuEx::onDFUInfo(IEspContext &context, IEspDFUInfoRequest &req, IEspDFUI
 
         if (req.getUpdateDescription())
         {
-            doGetFileDetails(context, userdesc.get(), req.getFileName(), req.getCluster(), req.getFileDesc(),
-                             req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), resp.updateFileDetail());
+            double version = context.getClientVersion();
+            if (version < 1.38)
+                doGetFileDetails(context, userdesc.get(), req.getFileName(), req.getCluster(), req.getFileDesc(),
+                    req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), resp.updateFileDetail());
+            else
+                doGetFileDetails(context, userdesc.get(), req.getName(), req.getCluster(), req.getFileDesc(),
+                    req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), resp.updateFileDetail());
         }
         else
         {
@@ -561,6 +566,7 @@ bool CWsDfuEx::onDFUSpace(IEspContext &context, IEspDFUSpaceRequest & req, IEspD
             i++;
         }
 
+        double version = context.getClientVersion();
         IArrayOf<IEspDFUSpaceItem> SpaceItems;
         for(; i < SpaceItems64.length();i++)
         {
@@ -570,20 +576,35 @@ bool CWsDfuEx::onDFUSpace(IEspContext &context, IEspDFUSpaceRequest & req, IEspD
 
             StringBuffer buf;
             Owned<IEspDFUSpaceItem> item1 = createDFUSpaceItem("","");
+
+            __int64 numOfFiles = item64.getNumOfFilesInt();
+            __int64 numOfFilesIntUnknown = item64.getNumOfFilesIntUnknown();
+            __int64 totalSize = item64.getTotalSizeInt();
+            __int64 largestSize = item64.getLargestSizeInt();
+            __int64 smallestSize = item64.getSmallestSizeInt();
+            if (version >= 1.38)
+            {
+                item1->setNumOfFilesInt64(numOfFiles);
+                item1->setNumOfFilesUnknownInt64(numOfFilesIntUnknown);
+                item1->setTotalSizeInt64(totalSize);
+                item1->setLargestSizeInt64(largestSize);
+                item1->setSmallestSizeInt64(smallestSize);
+            }
+
             item1->setName(item64.getName());
-            buf << comma(item64.getNumOfFilesInt());
+            buf << comma(numOfFiles);
             item1->setNumOfFiles(buf.str());
             buf.clear();
-            buf << comma(item64.getNumOfFilesIntUnknown());
+            buf << comma(numOfFilesIntUnknown);
             item1->setNumOfFilesUnknown(buf.str());
             buf.clear();
-            buf << comma(item64.getTotalSizeInt());
+            buf << comma(totalSize);
             item1->setTotalSize(buf.str());
             buf.clear();
-            buf << comma(item64.getLargestSizeInt());
+            buf << comma(largestSize);
             item1->setLargestSize(buf.str());
             buf.clear();
-            buf << comma(item64.getSmallestSizeInt());
+            buf << comma(smallestSize);
             item1->setSmallestSize(buf.str());
             item1->setLargestFile(item64.getLargestFile());
             item1->setSmallestFile(item64.getSmallestFile());
@@ -1494,6 +1515,10 @@ bool CWsDfuEx::onDFUDefFile(IEspContext &context,IEspDFUDefFileRequest &req, IEs
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "Failed to access DFUDefFile. Permission denied.");
 
+        CDFUDefFileFormat format = req.getFormat();
+        if (format == DFUDefFileFormat_Undefined)
+            throw MakeStringException(ECLWATCH_INVALID_INPUT,"Invalid format");
+
         const char* fileName = req.getName();
         if (!fileName || !*fileName)
             throw MakeStringException(ECLWATCH_MISSING_PARAMS, "File name required");
@@ -1513,7 +1538,7 @@ bool CWsDfuEx::onDFUDefFile(IEspContext &context,IEspDFUDefFileRequest &req, IEs
 
         getDefFile(userdesc.get(), req.getName(),rawStr);
         StringBuffer xsltFile;
-        xsltFile.append(getCFD()).append("smc_xslt/").append(req.getFormat()).append("_def_file.xslt");
+        xsltFile.append(getCFD()).append("smc_xslt/").append(req.getFormatAsString()).append("_def_file.xslt");
         xsltTransformer(xsltFile.str(),rawStr,returnStr);
 
         //set the file
@@ -1522,12 +1547,12 @@ bool CWsDfuEx::onDFUDefFile(IEspContext &context,IEspDFUDefFileRequest &req, IEs
         resp.setDefFile(buff);
 
         //set the type
-        StringBuffer type;
-        const char* format = req.getFormat();
-        if (!stricmp(format, "def"))
-            format = "plain";
+        StringBuffer type = "text/";
+        if (format == CDFUDefFileFormat_xml)
+            type.append("xml");
+        else
+            type.append("plain");
 
-        type.append("text/").append(format);
         resp.setDefFile_mimetype(type.str());
     }
     catch(IException* e)
@@ -1604,6 +1629,32 @@ bool CWsDfuEx::onDFURecordTypeInfo(IEspContext &context, IEspDFURecordTypeInfoRe
     }
     return true;
 }
+
+bool CWsDfuEx::onEclRecordTypeInfo(IEspContext &context, IEspEclRecordTypeInfoRequest &req, IEspEclRecordTypeInfoResponse &resp)
+{
+    try
+    {
+        OwnedHqlExpr record = getEclRecordDefinition(req.getEcl());
+        if (req.getIncludeJsonTypeInfo())
+        {
+            StringBuffer jsonFormat;
+            exportJsonType(jsonFormat,record);
+            resp.setJsonInfo(jsonFormat);
+        }
+        if (req.getIncludeBinTypeInfo())
+        {
+            MemoryBuffer binFormat;
+            exportBinaryType(binFormat,record);
+            resp.setBinInfo(binFormat);
+        }
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
 void CWsDfuEx::xsltTransformer(const char* xsltPath,StringBuffer& source,StringBuffer& returnStr)
 {
     if (m_xsl.get() == 0)
@@ -1814,13 +1865,14 @@ void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char* clusterR
             IPartDescriptor& part = pi->query();
             unsigned partIndex = part.queryPartIndex();
 
+            __int64 size = -1;
             StringBuffer partSizeStr;
             IPropertyTree* partPropertyTree = &part.queryProperties();
             if (!partPropertyTree)
                 partSizeStr.set("<N/A>");
             else
             {
-                __uint64 size = partPropertyTree->getPropInt64("@size");
+                size = partPropertyTree->getPropInt64("@size", -1);
                 comma c4(size);
                 partSizeStr<<c4;
 
@@ -1838,6 +1890,8 @@ void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char* clusterR
                 Owned<IEspDFUPart> FilePart = createDFUPart("","");
                 FilePart->setId(partIndex+1);
                 FilePart->setPartsize(partSizeStr.str());
+                if (version >= 1.38)
+                    FilePart->setPartSizeInt64(size);
                 FilePart->setIp(b.str());
                 FilePart->setCopy(i+1);
 
@@ -1933,6 +1987,8 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
 
     FileDetails.setDescription(strDesc);
 
+    if (version >= 1.38)
+        FileDetails.setFileSizeInt64(size);
     comma c1(size);
     StringBuffer tmpstr;
     tmpstr<<c1;
@@ -1962,20 +2018,29 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
         }
     }
 
+    if (version >= 1.38)
+        FileDetails.setRecordSizeInt64(recordSize);
     comma c2(recordSize);
     tmpstr.clear();
     tmpstr<<c2;
     FileDetails.setRecordSize(tmpstr.str());
 
     tmpstr.clear();
+    __int64 recordCount = -1;
     if (df->queryAttributes().hasProp("@recordCount"))
     {
-        comma c3(df->queryAttributes().getPropInt64("@recordCount"));
-        tmpstr<<c3;
+        recordCount = df->queryAttributes().getPropInt64("@recordCount");
     }
     else if (recordSize)
     {
-        comma c3(size/recordSize);
+        recordCount = size/recordSize;
+    }
+    if (version >= 1.38)
+        FileDetails.setRecordCountInt64(recordCount);
+
+    if (recordCount != -1)
+    {
+        comma c3(recordCount);
         tmpstr<<c3;
     }
     FileDetails.setRecordCount(tmpstr.str());
@@ -2136,6 +2201,9 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
                try
                 {
                     offset_t size=queryDistributedFileSystem().getSize(part);
+                    if (version >= 1.38)
+                        FilePart->setPartSizeInt64(size);
+
                     comma c4(size);
                     tmpstr.clear();
                     tmpstr<<c4;
@@ -2168,13 +2236,20 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
     {
         IEspDFUFileStat& Stat = FileDetails.updateStat();
         offset_t avg=sum/count;
+        offset_t minSkew = avg-mn;
+        offset_t maxSkew = mx-avg;
+        if (version >= 1.38)
+        {
+            Stat.setMinSkewInt64(minSkew);
+            Stat.setMaxSkewInt64(maxSkew);
+        }
 
-        comma c5(avg-mn);
+        comma c5(minSkew);
         tmpstr.clear();
         tmpstr<<c5;
         Stat.setMinSkew(tmpstr.str());
 
-        comma c6(mx-avg);
+        comma c6(maxSkew);
         tmpstr.clear();
         tmpstr<<c6;
         Stat.setMaxSkew(tmpstr.str());

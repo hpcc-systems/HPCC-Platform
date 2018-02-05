@@ -86,7 +86,7 @@ unsigned defaultTraceLimit = 10;
 unsigned watchActivityId = 0;
 unsigned testSlaveFailure = 0;
 unsigned restarts = 0;
-IRecordLayoutTranslator::Mode fieldTranslationEnabled = IRecordLayoutTranslator::NoTranslation;
+RecordTranslationMode fieldTranslationEnabled = RecordTranslationMode::None;
 bool mergeSlaveStatistics = true;
 PTreeReaderOptions defaultXmlReadFlags = ptr_ignoreWhiteSpace;
 bool runOnce = false;
@@ -548,7 +548,9 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             topology->setProp("@traceLevel", globals->queryProp("--traceLevel"));
             topology->setPropInt("@allFilesDynamic", globals->getPropInt("--allFilesDynamic", 1));
             topology->setProp("@memTraceLevel", globals->queryProp("--memTraceLevel"));
+            topology->setPropInt64("@totalMemoryLimit", globals->getPropInt("--totalMemoryLimitMb", 0) * (memsize_t) 0x100000);
             topology->setProp("@disableLocalOptimizations", globals->queryProp("--disableLocalOptimizations"));
+            topology->setPropInt("@indexReadChunkSize", globals->getPropInt("--indexReadChunkSize", 60000));
         }
         if (topology->hasProp("PreferredCluster"))
         {
@@ -834,19 +836,10 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         coresPerQuery = topology->getPropInt("@coresPerQuery", 0);
 
         diskReadBufferSize = topology->getPropInt("@diskReadBufferSize", 0x10000);
-        fieldTranslationEnabled = IRecordLayoutTranslator::NoTranslation;
+        fieldTranslationEnabled = RecordTranslationMode::None;
         const char *val = topology->queryProp("@fieldTranslationEnabled");
         if (val)
-        {
-            if (strieq(val, "alwaysDisk"))
-                fieldTranslationEnabled = IRecordLayoutTranslator::TranslateAlwaysDisk;
-            else if (strieq(val, "alwaysECL"))
-                fieldTranslationEnabled = IRecordLayoutTranslator::TranslateAlwaysECL;
-            else if (strieq(val, "payload"))
-                fieldTranslationEnabled = IRecordLayoutTranslator::TranslatePayload;
-            else if (strToBool(val))
-                fieldTranslationEnabled = IRecordLayoutTranslator::TranslateAll;
-        }
+            fieldTranslationEnabled = getTranslationMode(val);
 
         pretendAllOpt = topology->getPropBool("@ignoreMissingFiles", false);
         memoryStatsInterval = topology->getPropInt("@memoryStatsInterval", 60);

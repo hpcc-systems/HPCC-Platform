@@ -28,7 +28,6 @@
 
 #include "eclhelper.hpp" // tmp for IHThorArg interface
 #include "thdiskbase.ipp"
-#include "rtldynfield.hpp"
 
 CDiskReadMasterBase::CDiskReadMasterBase(CMasterGraphElement *info) : CMasterActivity(info), diskStats(info->queryJob(), diskReadRemoteStatistics)
 {
@@ -49,6 +48,8 @@ void CDiskReadMasterBase::init()
     Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), helperFileName, 0 != ((TDXtemporary|TDXjobtemp) & helper->getFlags()), 0 != (TDRoptional & helper->getFlags()), true);
     if (file)
     {
+        if (isFileKey(file))
+            throw MakeActivityException(this, 0, "Attempting to read index as a flat file: %s", helperFileName.get());
         if (file->isExternal() && (helper->getFlags() & TDXcompress))
             file->queryAttributes().setPropBool("@blockCompressed", true);
         if (file->numParts() > 1)
@@ -191,12 +192,7 @@ void CWriteMasterBase::init()
         const char *rececl= diskHelperBase->queryRecordECL();
         if (rececl&&*rececl)
             props.setProp("ECL", rececl);
-        if (diskHelperBase->queryDiskRecordSize()->queryTypeInfo())
-        {
-            MemoryBuffer out;
-            if (dumpTypeInfo(out, diskHelperBase->queryDiskRecordSize()->queryTypeInfo()))
-                props.setPropBin("_rtlType", out.length(), out.toByteArray());
-        }
+        setRtlFormat(props, diskHelperBase->queryDiskRecordSize());
 
         bool blockCompressed=false;
         void *ekey;

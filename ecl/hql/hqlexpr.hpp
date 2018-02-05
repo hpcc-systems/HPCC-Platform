@@ -1014,6 +1014,7 @@ interface IHqlScope : public IInterface
 {
     virtual IHqlExpression * queryExpression() = 0;
     virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx) = 0;
+    virtual IFileContents * lookupContents(IIdAtom * searchName, HqlLookupContext & ctx) = 0;
 
     virtual void getSymbols(HqlExprArray& exprs) const= 0;
     virtual IAtom * queryName() const = 0;

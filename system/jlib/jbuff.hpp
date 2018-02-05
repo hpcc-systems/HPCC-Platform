@@ -57,36 +57,6 @@ private:
 
 //--------------------------------------------------------------------------------------------------------------------
 
-interface IMemoryBlock
-{
-public:
-    virtual const byte * get() const = 0;
-    virtual byte * getMem() const = 0;
-    virtual byte * ensure(size32_t len) = 0;
-};
-
-class jlib_decl CMemoryBlock : public IMemoryBlock
-{
-public:
-    virtual const byte * get() const
-    {
-        return reinterpret_cast<const byte *>(memory.get());
-    }
-    virtual byte * getMem() const
-    {
-        return reinterpret_cast<byte *>(memory.mem());
-    }
-    virtual byte * ensure(size32_t len)
-    {
-        return reinterpret_cast<byte *>(memory.ensure(len));
-    }
-
-protected:
-    MemoryAttr memory;
-};
-
-//--------------------------------------------------------------------------------------------------------------------
-
 template <class CLASS> class OwnedMalloc
 {
 public:

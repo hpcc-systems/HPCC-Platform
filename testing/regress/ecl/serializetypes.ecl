@@ -67,3 +67,41 @@ nfd := s.serializeRecordTypeNF(d[1]);  // not folded
 fd;
 nfd;
 fd = nfd;
+
+nestedRecord := RECORD
+    boolean hasForename;
+    unsigned surnameCount;
+    IFBLOCK (SELF.hasForename)
+        STRING forename;
+    END;
+    IFBLOCK (SELF.surnameCount != 0)
+        STRING surname;
+    END;
+END;
+
+mainRecord := RECORD
+    UNSIGNED id;
+    nestedRecord first;
+    nestedRecord second;
+    DATASET(nestedRecord) nestedRecord;
+//    DATASET(nestedRecord, COUNT(SELF.numNested)) nestedRecord;
+    IFBLOCK(SELF.id in [1,3,5,7,12])
+         STRING extra;
+    END;
+END;
+
+dx := dataset([], mainRecord);
+
+fx := s.dumpRecordType(dx[1]);     // folded
+nfx := s.dumpRecordTypeNF(dx[1]);  // not folded
+
+fx;
+nfx;
+fx = nfx; // currently false because Folded generating of meta for ifblocks is not yet implemented.
+
+fdx := s.serializeRecordType(dx[1]);     // folded
+nfdx := s.serializeRecordTypeNF(dx[1]);  // not folded
+
+fdx;
+nfdx;
+fdx = nfdx;

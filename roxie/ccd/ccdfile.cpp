@@ -41,9 +41,9 @@
 #include <sys/syscall.h>
 #include "ioprio.h"
 #endif
+#include "thorcommon.hpp"
 #include "eclhelper_dyn.hpp"
 #include "rtldynfield.hpp"
-#include "hqlexpr.hpp"
 
 atomic_t numFilesOpen[2];
 
@@ -1689,19 +1689,29 @@ public:
 class CTranslatorSet : implements CInterfaceOf<ITranslatorSet>
 {
     IConstPointerArrayOf<IDynamicTransform> transformers;
+    IConstPointerArrayOf<IKeyTranslator> keyTranslators;
     IPointerArrayOf<IOutputMetaData> actualLayouts;
+    const RtlRecord &targetLayout;
     int targetFormatCrc = 0;
     bool anyTranslators = false;
 public:
-    CTranslatorSet(int _targetFormatCrc) : targetFormatCrc(_targetFormatCrc) {}
+    CTranslatorSet(const RtlRecord &_targetLayout, int _targetFormatCrc)
+    : targetLayout(_targetLayout), targetFormatCrc(_targetFormatCrc)
+    {}
 
-    void addTranslator(const IDynamicTransform *translator, IOutputMetaData *actualLayout)
+    void addTranslator(const IDynamicTransform *translator, const IKeyTranslator *keyTranslator, IOutputMetaData *actualLayout)
     {
         assertex(actualLayout);
-        if (translator)
+        if (translator || keyTranslator)
             anyTranslators = true;
         transformers.append(translator);
+        keyTranslators.append(keyTranslator);
         actualLayouts.append(actualLayout);
+    }
+
+    virtual const RtlRecord &queryTargetFormat() const override
+    {
+        return targetLayout;
     }
 
     virtual int queryTargetFormatCrc() const override
@@ -1720,14 +1730,18 @@ public:
         return nullptr;
     }
 
-    virtual ISourceRowPrefetcher *getPrefetcher(unsigned subFile, bool addGroupFlag, ICodeContext *ctx, unsigned actId) const override
+    virtual const IKeyTranslator *queryKeyTranslator(unsigned subFile) const override
+    {
+        if (anyTranslators && keyTranslators.isItem(subFile))
+            return keyTranslators.item(subFile);
+        return nullptr;
+    }
+
+    virtual ISourceRowPrefetcher *getPrefetcher(unsigned subFile) const override
     {
         IOutputMetaData *actualLayout = actualLayouts.item(subFile);
         assertex(actualLayout);
-        if (addGroupFlag && actualLayout->isGrouped())
-            return new CSuffixedRowPrefetcher(1, actualLayout->createDiskPrefetcher(ctx, actId));
-        else
-            return actualLayout->createDiskPrefetcher(ctx, actId);
+        return actualLayout->createDiskPrefetcher();
     }
 
     virtual IOutputMetaData *queryActualLayout(unsigned subFile) const override
@@ -1790,7 +1804,6 @@ protected:
     StringArray subNames;
     IPointerArrayOf<IFileDescriptor> subFiles; // note - on slaves, the file descriptors may have incomplete info. On originating server is always complete
     IPointerArrayOf<IFileDescriptor> remoteSubFiles; // note - on slaves, the file descriptors may have incomplete info. On originating server is always complete
-    IPointerArrayOf<IDefRecordMeta> diskMeta;  // Old info used by Pete's format translator
     IntArray formatCrcs;
     IPointerArrayOf<IOutputMetaData> diskTypeInfo;  // New info using RtlTypeInfo structures
     IArrayOf<IDistributedFile> subDFiles;  // To make sure subfiles get locked too
@@ -1806,14 +1819,6 @@ protected:
         subFiles.append(fdesc);
         remoteSubFiles.append(remoteFDesc);
         IPropertyTree const & props = fdesc->queryProperties();
-        if(props.hasProp("_record_layout"))
-        {
-            MemoryBuffer mb;
-            props.getPropBin("_record_layout", mb);
-            diskMeta.append(deserializeRecordMeta(mb, true));
-        }
-        else
-            diskMeta.append(NULL);
 
         // NOTE - grouping is not included in the formatCRC, nor is the trailing byte that indicates grouping
         // included in the rtlTypeInfo.
@@ -1826,25 +1831,8 @@ protected:
         if (formatCrcs.length() && formatCrc == formatCrcs.item(prevIdx) &&
             diskTypeInfo.item(prevIdx) && isGrouped==diskTypeInfo.item(prevIdx)->isGrouped())
             actualFormat.set(diskTypeInfo.item(prevIdx));
-        else if (props.hasProp("_rtlType"))
-        {
-            MemoryBuffer layoutBin;
-            props.getPropBin("_rtlType", layoutBin);
-            actualFormat.setown(createTypeInfoOutputMetaData(layoutBin, isGrouped, nullptr));
-        }
-        else if (props.hasProp("ECL"))
-        {
-            StringBuffer layoutECL;
-            props.getProp("ECL", layoutECL);
-            MultiErrorReceiver errs;
-            Owned<IHqlExpression> expr = parseQuery(layoutECL.str(), &errs);
-            if (errs.errCount() == 0)
-            {
-                MemoryBuffer layoutBin;
-                if (exportBinaryType(layoutBin, expr))
-                    actualFormat.setown(createTypeInfoOutputMetaData(layoutBin, isGrouped, nullptr));
-            }
-        }
+        else
+            actualFormat.setown(getDaliLayoutInfo(props));
         diskTypeInfo.append(actualFormat.getClear());
         formatCrcs.append(formatCrc);
 
@@ -2039,6 +2027,7 @@ public:
         fileTimeStamp.serialize(mb);
         mb.append(fileCheckSum);
         mb.append(fileSize);
+        mb.append(isSuper);
         unsigned numSubFiles = subFiles.length();
         mb.append(numSubFiles);
         ForEachItemIn(idx, subFiles)
@@ -2069,17 +2058,6 @@ public:
             else
                 mb.append((byte) 0);
 
-            if (fileType == ROXIE_KEY) // for now we only support translation on index files
-            {
-                IDefRecordMeta *meta = diskMeta.item(idx);
-                if (meta)
-                {
-                    mb.append(true);
-                    serializeRecordMeta(mb, meta, true);
-                }
-                else
-                    mb.append(false);
-            }
         }
         if (properties)
         {
@@ -2089,13 +2067,15 @@ public:
         else
             mb.append(false);
     }
-    virtual ITranslatorSet *getTranslators(int formatCrc, IOutputMetaData *projected, IOutputMetaData *expected, IRecordLayoutTranslator::Mode mode) const override
+    virtual ITranslatorSet *getTranslators(int formatCrc, IOutputMetaData *projected, IOutputMetaData *expected, RecordTranslationMode mode, bool isIndex) const override
     {
         // NOTE - projected and expected and anything fetched from them such as type info may reside in dynamically loaded (and unloaded)
         // query DLLs - this means it is not safe to include them in any sort of cache that might outlive the current query.
-        Owned<CTranslatorSet> result = new CTranslatorSet(formatCrc);
-        Owned<const IDynamicTransform> translator;
+        Owned<CTranslatorSet> result = new CTranslatorSet(expected->queryRecordAccessor(true), formatCrc);
+        Owned<const IDynamicTransform> translator;    // Translates rows from actual to projected
+        Owned<const IKeyTranslator> keyedTranslator;  // translate filter conditions from expected to actual
         int prevFormatCrc = 0;
+        assertex(projected != nullptr);
         ForEachItemIn(idx, subFiles)
         {
             IOutputMetaData *actual = expected;
@@ -2103,16 +2083,18 @@ public:
             {
                 const char *subname = subNames.item(idx);
                 int thisFormatCrc = formatCrcs.item(idx);
-                if (mode == IRecordLayoutTranslator::TranslateAlwaysDisk && diskTypeInfo.item(idx))
+                if (mode == RecordTranslationMode::AlwaysDisk && diskTypeInfo.item(idx))
                 {
                     actual = diskTypeInfo.item(idx);
                     translator.setown(createRecordTranslator(projected->queryRecordAccessor(true), actual->queryRecordAccessor(true)));
+                    keyedTranslator.setown(createKeyTranslator(actual->queryRecordAccessor(true), expected->queryRecordAccessor(true)));
                     if (!translator->canTranslate())
                         throw MakeStringException(ROXIE_MISMATCH, "Untranslatable record layout mismatch detected for file %s", subname);
                 }
-                else if (mode == IRecordLayoutTranslator::TranslateAlwaysECL)
+                else if (mode == RecordTranslationMode::AlwaysECL)
                 {
                     translator.setown(createRecordTranslator(projected->queryRecordAccessor(true), expected->queryRecordAccessor(true)));
+                    keyedTranslator.setown(createKeyTranslator(actual->queryRecordAccessor(true), expected->queryRecordAccessor(true)));
                     if (!translator->canTranslate())
                         throw MakeStringException(ROXIE_MISMATCH, "Untranslatable record layout mismatch detected for file %s", subname);
                 }
@@ -2124,18 +2106,27 @@ public:
                     if (thisFormatCrc != prevFormatCrc)  // Check if same translation as last subfile
                     {
                         translator.clear();
-                        if (projected && actual)
+                        keyedTranslator.clear();
+                        if (actual)
                         {
                             translator.setown(createRecordTranslator(projected->queryRecordAccessor(true), actual->queryRecordAccessor(true)));
                             // translator->describe();
                         }
                         if (!translator || !translator->canTranslate())
                             throw MakeStringException(ROXIE_MISMATCH, "Untranslatable record layout mismatch detected for file %s", subname);
+                        if (translator->needsTranslate())
+                        {
+                            if (mode == RecordTranslationMode::None)
+                                throw MakeStringException(ROXIE_MISMATCH, "Translatable record layout mismatch detected for file %s, but translation disabled", subname);
+                            if (isIndex && translator->keyedTranslated())
+                                throw MakeStringException(ROXIE_MISMATCH, "Record layout mismatch detected in keyed fields for file %s", subname);
+                            keyedTranslator.setown(createKeyTranslator(actual->queryRecordAccessor(true), expected->queryRecordAccessor(true)));
+                        }
                     }
                 }
                 prevFormatCrc = thisFormatCrc;
             }
-            result->addTranslator(LINK(translator), LINK(actual));
+            result->addTranslator(LINK(translator), LINK(keyedTranslator), LINK(actual));
         }
         return result.getClear();
     }
@@ -2195,7 +2186,8 @@ public:
         }
         return f.getClear();
     }
-    virtual IKeyArray *getKeyArray(IDefRecordMeta *activityMeta, TranslatorArray *translators, bool isOpt, unsigned channel, IRecordLayoutTranslator::Mode allowFieldTranslation) const override
+
+    virtual IKeyArray *getKeyArray(bool isOpt, unsigned channel) const override
     {
         unsigned maxParts = 0;
         ForEachItemIn(subFile, subFiles)
@@ -2208,26 +2200,6 @@ public:
                     numParts--; // Don't include TLK
                 if (numParts > maxParts)
                     maxParts = numParts;
-            }
-
-            if (translators)
-            {
-                IDefRecordMeta *thisDiskMeta = diskMeta.isItem(subFile) ? diskMeta.item(subFile) : nullptr;
-                if (fdesc && thisDiskMeta && activityMeta && !thisDiskMeta->equals(activityMeta))
-                    if (allowFieldTranslation != IRecordLayoutTranslator::NoTranslation)
-                        translators->append(createRecordLayoutTranslator(lfn, thisDiskMeta, activityMeta, allowFieldTranslation));
-                    else
-                    {
-                        DBGLOG("Key layout mismatch: %s", lfn.get());
-                        StringBuffer q, d;
-                        getRecordMetaAsString(q, activityMeta);
-                        getRecordMetaAsString(d, thisDiskMeta);
-                        DBGLOG("Activity: %s", q.str());
-                        DBGLOG("Disk: %s", d.str());
-                        throw MakeStringException(ROXIE_MISMATCH, "Key layout mismatch detected for index %s", lfn.get());
-                    }
-                else
-                    translators->append(NULL);
             }
         }
         CriticalBlock b(lock);
@@ -2329,7 +2301,7 @@ public:
         return ret.getClear();
     }
 
-    virtual IInMemoryIndexManager *getIndexManager(bool isOpt, unsigned channel, IOutputMetaData *preloadLayout, bool preload, int numKeys) const
+    virtual IInMemoryIndexManager *getIndexManager(bool isOpt, unsigned channel, IOutputMetaData *preloadLayout, bool preload) const
     {
         // MORE - I don't know that it makes sense to pass isOpt in to these calls
         // Failures to resolve will not be cached, only successes.
@@ -2339,9 +2311,9 @@ public:
         IInMemoryIndexManager *ret = indexMap.get(channel);
         if (!ret)
         {
-            ret = createInMemoryIndexManager(isOpt, lfn);
+            ret = createInMemoryIndexManager(preloadLayout->queryRecordAccessor(true), isOpt, lfn);
             Owned<IFileIOArray> files = getIFileIOArray(isOpt, channel);
-            ret->load(files, preloadLayout, preload, numKeys);   // note - files (passed in) are also channel specific
+            ret->load(files, preloadLayout, preload);   // note - files (passed in) are also channel specific
             indexMap.set(ret, channel);
         }
         return LINK(ret);
@@ -2438,7 +2410,6 @@ public:
         subRFiles.kill();
         subNames.kill();
         remoteSubFiles.kill();
-        diskMeta.kill();
         properties.clear();
         notifier.clear();
         if (isSuper)
@@ -2534,6 +2505,7 @@ public:
                 fileTimeStamp.deserialize(serverData);
                 serverData.read(fileCheckSum);
                 serverData.read(fileSize);
+                serverData.read(isSuper);
                 unsigned numSubFiles;
                 serverData.read(numSubFiles);
                 for (unsigned fileNo = 0; fileNo < numSubFiles; fileNo++)
@@ -2570,15 +2542,6 @@ public:
                         break;
                     default:
                         throwUnexpected();
-                    }
-                    if (fileType==ROXIE_KEY)
-                    {
-                        bool diskMetaPresent;
-                        serverData.read(diskMetaPresent);
-                        if (diskMetaPresent)
-                            diskMeta.append(deserializeRecordMeta(serverData, true));
-                        else
-                            diskMeta.append(NULL);
                     }
                 }
                 bool propertiesPresent;
@@ -2674,9 +2637,15 @@ public:
             CriticalUnblock b1(crit);
             ret.setown(new CSlaveDynamicFile(logctx, lfn, header, isOpt, isLocal));
         }
-        while (files.length() > tableSize)
-            files.remove(files.length()-1);
-        files.add(*ret.getLink(), 0);
+        if (!ret->isSuperFile())
+        {
+            // Cache results for improved performance - we DON'T cache superfiles as they are liable to change during the course of a query.
+            // Note that even caching non-superfiles is also potentially going to give stale results, if the cache persists beyond the current
+            // query.
+            while (files.length() > tableSize)
+                files.remove(files.length()-1);
+            files.add(*ret.getLink(), 0);
+        }
         return ret.getClear();
     }
 

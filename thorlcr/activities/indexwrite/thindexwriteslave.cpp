@@ -28,7 +28,7 @@
 #include "keybuild.hpp"
 #include "thbufdef.hpp"
 #include "backup.hpp"
-#include "rtldynfield.hpp"
+#include "thorfile.hpp"
 
 #define SINGLEPART_KEY_TRANSFER_SIZE 0x10000
 #define FEWWARNCAP 10
@@ -51,6 +51,7 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
     unsigned __int64 totalCount;
 
     size32_t maxDiskRecordSize, lastRowSize, firstRowSize;
+    unsigned __int64 duplicateKeyCount;
     MemoryBuffer rowBuff;
     OwnedConstThorRow lastRow, firstRow;
     bool needFirstRow, enableTlkPart0, receivingTag2;
@@ -86,6 +87,7 @@ public:
         refactor = false;
         enableTlkPart0 = (0 != container.queryJob().getWorkUnitValueInt("enableTlkPart0", globals->getPropBool("@enableTlkPart0", true)));
         reInit = (0 != (TIWvarfilename & helper->getFlags()));
+        duplicateKeyCount = 0;
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
@@ -204,12 +206,7 @@ public:
         if(!metadata) metadata.setown(createPTree("metadata"));
         metadata->setProp("_record_ECL", helper->queryRecordECL());
 
-        if (helper->queryDiskRecordSize()->queryTypeInfo())
-        {
-            MemoryBuffer out;
-            if (dumpTypeInfo(out, helper->queryDiskRecordSize()->queryTypeInfo()))
-                metadata->setPropBin("_rtlType", out.length(), out.toByteArray());
-        }
+        setRtlFormat(*metadata, helper->queryDiskRecordSize());
     }
 
     void close(IPartDescriptor &partDesc, unsigned &crc)
@@ -363,6 +360,7 @@ public:
                     close(*partDesc, partCrc);
                     throw;
                 }
+                duplicateKeyCount = builder->getDuplicateCount();
                 close(*partDesc, partCrc);
                 stop();
             }
@@ -421,6 +419,7 @@ public:
                     close(*partDesc, partCrc);
                     throw;
                 }
+                duplicateKeyCount = builder->getDuplicateCount();
                 close(*partDesc, partCrc);
                 stop();
 
@@ -558,6 +557,7 @@ public:
             return;
         rowcount_t _processed = processed & THORDATALINK_COUNT_MASK;
         mb.append(_processed);
+        mb.append(duplicateKeyCount);
         if (!singlePartKey || firstNode())
         {
             StringBuffer partFname;

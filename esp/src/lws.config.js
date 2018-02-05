@@ -61,7 +61,11 @@ module.exports = {
         {
             from: "/WsPackageProcess/*",
             to: "http://" + debugServerIP + ":8010/WsPackageProcess/$1"
-        }
+        },
+        {
+            from: "/*",
+            to: "/$1"
+        }        
     ]
 }
 
