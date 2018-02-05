@@ -3031,6 +3031,7 @@ public:
     virtual IOutputRowDeserializer *createInternalDeserializer(ICodeContext *ctx) override { throwUnexpected(); }
     virtual IEngineRowAllocator *createChildRowAllocator(const RtlTypeInfo *type) override { throwUnexpected(); }
     virtual void gatherStats(CRuntimeStatisticCollection & stats) override {}
+    virtual void releaseAllRows() override { throwUnexpected(); }
 };
 
 //Use a (constant) transform to map selectors of the form queryActiveTableSelector().field

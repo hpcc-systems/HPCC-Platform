@@ -310,6 +310,11 @@ public:
         heap->gatherStats(stats);
     }
 
+    virtual void releaseAllRows() override
+    {
+        heap->releaseAllRows();
+    }
+
 protected:
     Owned<roxiemem::IFixedRowHeap> heap;
 };
@@ -369,6 +374,12 @@ public:
     virtual void gatherStats(CRuntimeStatisticCollection & stats) override
     {
         heap->gatherStats(stats);
+    }
+
+    virtual void releaseAllRows() override
+    {
+        //It is not legal to call releaseAllRows on a variable size allocator - they are not allocated in a single heap
+        throwUnexpected();
     }
 
 protected:

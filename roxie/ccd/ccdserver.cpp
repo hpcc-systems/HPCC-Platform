@@ -7611,7 +7611,12 @@ class CRoxieServerHashDedupActivity : public CRoxieServerActivity
         {
             bestCompare=helper.queryCompareBest();
         }
-        virtual ~HashDedupTable() { _releaseAll(); }
+        virtual ~HashDedupTable()
+        {
+            //elementRowAllocator is a unique allocator, so all rows can be freed in a single call
+            elementRowAllocator->releaseAllRows();
+            tablecount = 0;
+        }
 
         virtual unsigned getHashFromElement(const void *et) const       
         {

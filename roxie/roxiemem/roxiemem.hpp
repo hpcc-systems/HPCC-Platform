@@ -36,6 +36,7 @@
 #define ROXIEMM_INVALID_MEMORY_ALIGNMENT  ROXIEMM_ERROR_START+2
 #define ROXIEMM_HEAP_ERROR                ROXIEMM_ERROR_START+3
 #define ROXIEMM_TOO_MUCH_MEMORY           ROXIEMM_ERROR_START+4
+#define ROXIEMM_RELEASE_ALL_SHARED_HEAP   ROXIEMM_ERROR_START+5
 // NB: max ROXIEMM_* error is ROXIEMM_ERROR_END (see errorlist.h)
 
 #ifdef __64BIT__
@@ -398,6 +399,7 @@ interface IFixedRowHeap : extends IRowHeap
     virtual void *allocate() = 0;
     virtual void *finalizeRow(void *final) = 0;
     virtual void emptyCache() = 0;
+    virtual void releaseAllRows() = 0; // Release any active heaplets and rows within those heaplets.  Use with extreme care.
 };
 
 interface IVariableRowHeap : extends IRowHeap

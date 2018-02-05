@@ -1352,6 +1352,8 @@ public:
     virtual void checkHeap() const = 0;
     virtual void getPeakActivityUsage(IActivityMemoryUsageMap *map) const = 0;
     virtual bool isFull() const = 0;
+    virtual void releaseAllRows() = 0;
+
 #ifdef _WIN32
 #ifdef new
 #define __new_was_defined
@@ -1857,7 +1859,7 @@ public:
             }
             else
             {
-                const char *ptr = block + (chunkSize-chunkCapacity);  // assumes the overhead is all at the start
+                const char *ptr = block + chunkHeaderSize;  // assumes the overhead is all at the start
                 std::atomic_uint * ptrCount = (std::atomic_uint *)(ptr - sizeof(std::atomic_uint));
                 unsigned rowCount = ptrCount->load(std::memory_order_relaxed);
                 if (ROWCOUNT(rowCount) != 0)
@@ -1869,6 +1871,33 @@ public:
             base += chunkSize;
         }
     }
+
+    virtual void releaseAllRows() override
+    {
+        unsigned base = 0;
+        unsigned limit = freeBase.load(std::memory_order_acquire); // acquire ensures that any link counts will be initialised
+        while (base < limit)
+        {
+            char *block = data() + base;
+            if (heapFlags & RHFscanning)
+            {
+                if (((std::atomic_uint *)block)->load(std::memory_order_relaxed) < FREE_ROW_COUNT_MIN)
+                {
+                    callDestructor(block);
+                }
+            }
+            else
+            {
+                const char *ptr = block + chunkHeaderSize;  // assumes the overhead is all at the start
+                std::atomic_uint * ptrCount = (std::atomic_uint *)(ptr - sizeof(std::atomic_uint));
+                unsigned rowCount = ptrCount->load(std::memory_order_relaxed);
+                if (ROWCOUNT(rowCount) != 0)
+                    callDestructor(block);
+            }
+            base += chunkSize;
+        }
+    }
+
 
     virtual void checkHeap() const 
     {
@@ -1962,6 +1991,17 @@ private:
 
         const char * ptr = (const char *)block + chunkHeaderSize;
         logctx.CTXLOG("Block size %u at %p %swas allocated by activity %u and not freed (%d)", chunkSize, ptr, hasChildren ? "(with children) " : "", getActivityId(allocatorId), ROWCOUNT(rowCount));
+    }
+
+    void callDestructor(char * block)
+    {
+        ChunkHeader * header = (ChunkHeader *)block;
+        unsigned rowCount = header->count.load();
+        if (rowCount & ROWCOUNT_DESTRUCTOR_FLAG)
+        {
+            unsigned allocatorId = header->allocatorId;
+            allocatorCache->onDestroy(allocatorId & MAX_ACTIVITY_ID, (block + chunkHeaderSize));
+        }
     }
 };
 
@@ -2110,6 +2150,30 @@ public:
         leaked -= numLeaked;
     }
 
+    virtual void releaseAllRows() override
+    {
+        unsigned base = 0;
+        unsigned limit = freeBase.load(std::memory_order_acquire); // acquire ensures that any link counts will be initialised
+        while (base < limit)
+        {
+            char *block = data() + base;
+            if (heapFlags & RHFscanning)
+            {
+                if (((std::atomic_uint *)block)->load(std::memory_order_relaxed) < FREE_ROW_COUNT_MIN)
+                    callDestructor(block);
+            }
+            else
+            {
+                const char *ptr = block + chunkHeaderSize;  // assumes the overhead is all at the start
+                std::atomic_uint * ptrCount = (std::atomic_uint *)(ptr - sizeof(std::atomic_uint));
+                unsigned rowCount = ptrCount->load(std::memory_order_relaxed);
+                if (ROWCOUNT(rowCount) != 0)
+                    callDestructor(block);
+            }
+            base += chunkSize;
+        }
+    }
+
     virtual unsigned _rawAllocatorId(const void *ptr) const
     {
         return sharedAllocatorId;
@@ -2144,6 +2208,14 @@ public:
         {
             map->noteMemUsage(sharedAllocatorId, numAllocs * chunkSize, numAllocs);
         }
+    }
+
+    void callDestructor(char * block)
+    {
+        ChunkHeader * header = (ChunkHeader *)block;
+        unsigned rowCount = header->count.load();
+        if (rowCount & ROWCOUNT_DESTRUCTOR_FLAG)
+            allocatorCache->onDestroy(sharedAllocatorId & MAX_ACTIVITY_ID, (block + chunkHeaderSize));
     }
 };
 
@@ -2328,6 +2400,13 @@ public:
     virtual bool isFull() const
     {
         return (count.load(std::memory_order_relaxed) > 1);
+    }
+
+    virtual void releaseAllRows() override
+    {
+        //Weird for this to ever be called.
+        if (allocatorId & ACTIVITY_FLAG_NEEDSDESTRUCTOR)
+            allocatorCache->onDestroy(allocatorId & MAX_ACTIVITY_ID, data());
     }
 };
 
@@ -2563,6 +2642,11 @@ public:
 
     virtual void *allocate();
 
+    virtual void releaseAllRows()
+    {
+        throw MakeStringExceptionDirect(ROXIEMM_RELEASE_ALL_SHARED_HEAP, "Illegal to release all rows for a shared heap");
+    }
+
 protected:
     size32_t chunkCapacity;
 };
@@ -2604,6 +2688,11 @@ public:
         CRoxieFixedRowHeapBase::clearRowManager();
     }
 
+    virtual void releaseAllRows() override
+    {
+        heap->releaseAllRows();
+    }
+
 protected:
     Owned<T> heap;
 };
@@ -2637,6 +2726,12 @@ public:
     {
         while (curRow < numRows)
             ::ReleaseRoxieRow(rows[curRow++]);
+    }
+
+    virtual void releaseAllRows() override
+    {
+        curRow = numRows;
+        CRoxieDirectFixedRowHeap<T>::releaseAllRows();
     }
 
 protected:
@@ -3276,6 +3371,8 @@ public:
     {
         curCompactTarget = target;
     }
+
+    void releaseAllRows();
 
 protected:
     void * doAllocateRow(unsigned allocatorId, unsigned maxSpillCost);
@@ -5999,6 +6096,32 @@ void CChunkedHeap::checkScans(unsigned allocatorId)
         reportScanProblem(allocatorId, numScans, merged);
 }
 
+void CChunkedHeap::releaseAllRows()
+{
+    CriticalBlock b(heapletLock);
+
+    if (heaplets)
+    {
+        Heaplet *finger = heaplets;
+
+        //Note: This loop doesn't unlink the list because the list and all blocks are going to be disposed.
+        do
+        {
+            Heaplet *next = getNext(finger);
+            finger->releaseAllRows();
+            delete finger;
+            finger = next;
+        } while (finger != heaplets);
+
+        heaplets = nullptr;
+        activeHeaplet = nullptr;
+    }
+
+    possibleEmptyPages.store(false, std::memory_order_release);
+    headMaybeSpace.store(BLOCKLIST_NULL, std::memory_order_release);
+}
+
+
 //================================================================================
 
 ChunkedHeaplet * CFixedChunkedHeap::allocateHeaplet()
@@ -6687,6 +6810,7 @@ class RoxieMemTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testCompressSize);
         CPPUNIT_TEST(testBitmap);
         CPPUNIT_TEST(testAllocSize);
+        CPPUNIT_TEST(testReleaseAll);
         CPPUNIT_TEST(testHuge);
         CPPUNIT_TEST(testAll);
         CPPUNIT_TEST(testRecursiveCallbacks);
@@ -7418,6 +7542,7 @@ protected:
         virtual void checkValid(unsigned cacheId, const void *row) const { }
 
         void clear() { counter = 0; }
+        unsigned getCounter() { return counter.load(); };
 
         mutable std::atomic_uint counter;
     };
@@ -7802,6 +7927,56 @@ protected:
         testFixedCas("packed blocked", RHFpacked|RHFblocked);
         testFixedCas("packed delayed blocked scan", RHFpacked|RHFscanning|RHFblocked|RHFdelayrelease);
         testGeneralCas();
+    }
+
+    void testReleaseAll(IFixedRowHeap * heap, CountingRowAllocatorCache & rowCache)
+    {
+        rowCache.clear();
+
+        const unsigned numRows = 200;
+        const void * rows[numRows];
+        for (unsigned i=0; i < numRows; i++)
+            rows[i] = heap->finalizeRow(heap->allocate());
+
+        //test that calling releaseAllRows() calls all the destructors
+        CPPUNIT_ASSERT_EQUAL(0U, rowCache.getCounter());
+        heap->releaseAllRows();
+        CPPUNIT_ASSERT_EQUAL(numRows, rowCache.getCounter());
+
+        //Check the heap is still in a valid state
+        //Test again - releasing half the rows before calling releaseAllRows() to free any that remain
+        rowCache.clear();
+        for (unsigned i2=0; i2 < numRows; i2++)
+            rows[i2] = heap->finalizeRow(heap->allocate());
+
+        for (unsigned i3=0; i3 < numRows; i3 += 2)
+            ::ReleaseRoxieRow(rows[i3]);
+
+        CPPUNIT_ASSERT_EQUAL(numRows / 2, rowCache.getCounter());
+        heap->releaseAllRows();
+        CPPUNIT_ASSERT_EQUAL(numRows, rowCache.getCounter());
+    }
+
+    void testReleaseAll(CountingRowAllocatorCache & rowCache, IRowManager * rowManager, unsigned flags)
+    {
+        Owned<IFixedRowHeap> heap = rowManager->createFixedRowHeap(100, ACTIVITY_FLAG_ISREGISTERED|0, flags);
+        testReleaseAll(heap, rowCache);
+    }
+
+    void testReleaseAll()
+    {
+        CountingRowAllocatorCache rowCache;
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache);
+
+        //Test releaseAll on various different heap variants
+        testReleaseAll(rowCache, rowManager, RHFhasdestructor|RHFunique);
+        testReleaseAll(rowCache, rowManager, RHFhasdestructor|RHFunique|RHFpacked);
+        testReleaseAll(rowCache, rowManager, RHFhasdestructor|RHFunique|RHFscanning);
+        testReleaseAll(rowCache, rowManager, RHFhasdestructor|RHFunique|RHFpacked|RHFscanning);
+        testReleaseAll(rowCache, rowManager, RHFhasdestructor|RHFunique|RHFblocked);
+        testReleaseAll(rowCache, rowManager, RHFhasdestructor|RHFunique|RHFpacked|RHFblocked);
+        testReleaseAll(rowCache, rowManager, RHFhasdestructor|RHFunique|RHFscanning|RHFdelayrelease);
+        testReleaseAll(rowCache, rowManager, RHFhasdestructor|RHFunique|RHFpacked|RHFscanning|RHFdelayrelease);
     }
 
     void testCallback(unsigned numPerPage, unsigned pages, unsigned spillPages, double scale, unsigned flags)
