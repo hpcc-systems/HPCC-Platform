@@ -221,13 +221,13 @@ ESPresponse EchoResponse
 
 ESPStruct RelatedIndexSet
 {
-    String FileName;
-    ESParray<String, Index> Indexes;
+    string FileName;
+    ESParray<string, Index> Indexes;
 };
 
 ESPrequest GetRelatedIndexesRequest
 {
-    ESParray<String, FileName> FileNames;
+    ESParray<string, FileName> FileNames;
 };
 
 ESPresponse GetRelatedIndexesResponse
@@ -264,21 +264,21 @@ ESPenum HPCCFieldType : string
 ESPStruct EclFieldType
 {
     ESPenum HPCCFieldType Type;
-    String Locale;
+    string Locale;
     Integer Length;
     Integer Precision;
 };
 
 ESPStruct EclFieldDeclaration
 {
-    String FieldName;
+    string FieldName;
     ESPStruct EclFieldType EclFieldType;
 };
 
 ESPstruct DataTypeParam
 {
-    String Name;
-    ESParray<String, Value> Values;
+    string Name;
+    ESParray<string, Value> Values;
 };
 
 ESPenum HPCCFileType : string
@@ -297,20 +297,20 @@ ESPStruct DataType
 
 ESPStruct DataSourceInfo
 {
-    String SprayedFileName;
-    String LandingZoneIP;
-    String LandingZonePath;
-    String LandingZoneFileName;
+    string SprayedFileName;
+    string LandingZoneIP;
+    string LandingZonePath;
+    string LandingZoneFileName;
 };
 
 ESPrequest CreateTableAndLoadRequest
 {
-    String  TableName;
-    String  TableDescription;
+    string  TableName;
+    string  TableDescription;
     Boolean Overwrite;
     ESParray<ESPstruct EclFieldDeclaration, EclField> EclFields;
-    String  TargetCluster;
-    String  Owner;
+    string  TargetCluster;
+    string  Owner;
     ESPStruct DataSourceInfo DataSource;
     ESPStruct DataType DataSourceType;
     int Wait(-1);
@@ -318,9 +318,9 @@ ESPrequest CreateTableAndLoadRequest
 
 ESPresponse CreateTableAndLoadResponse
 {
-    String TableName;
+    string TableName;
     Boolean Success;
-    String EclRecordDefinition;
+    string EclRecordDefinition;
     ESPstruct ECLWorkunit Workunit;
 };
 
