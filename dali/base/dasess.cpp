@@ -405,7 +405,8 @@ enum MSessionRequestKind {
     MSR_CLEAR_PERMISSIONS_CACHE,
     MSR_EXIT, // TBD
     MSR_QUERY_SCOPE_SCANS_ENABLED,
-    MSR_ENABLE_SCOPE_SCANS
+    MSR_ENABLE_SCOPE_SCANS,
+    MSR_LOOKUP_LDAP_PERMISSIONS_EX,
 };
 
 class CQueryScopeScansEnabledReq : implements IMessageWrapper
@@ -584,7 +585,8 @@ public:
                 coven.reply(mb);
             }
             break;
-        case MSR_LOOKUP_LDAP_PERMISSIONS: {
+        case MSR_LOOKUP_LDAP_PERMISSIONS:
+        case MSR_LOOKUP_LDAP_PERMISSIONS_EX: {
                 StringAttr key;
                 StringAttr obj;
                 Owned<IUserDescriptor> udesc=createUserDescriptor();
@@ -602,7 +604,8 @@ public:
                 unsigned auditflags = 0;
                 if (mb.length()-mb.getPos()>=sizeof(auditflags))
                     mb.read(auditflags);
-                udesc->deserializeExtra(mb);//deserialize sessionToken and user signature if present (hpcc ver 7.0.0 and newer)
+                if (fn == MSR_LOOKUP_LDAP_PERMISSIONS_EX)
+                    udesc->deserializeExtra(mb);//deserialize session token and digital signature
                 int err = 0;
                 SecAccessFlags perms = manager.getPermissionsLDAP(key,obj,udesc,auditflags,&err);
                 mb.clear().append((int)perms);
@@ -654,6 +657,7 @@ public:
                 coven.reply(mb);
             }
             break;
+
         }
     }
 
@@ -895,8 +899,12 @@ public:
         }
         if (!udesc)
             return SecAccess_Unknown;
+
+        //If Dali is signature aware, and the user's signature is present, we will send it instead of password
+        bool sendSignature = queryDaliServerVersion().compare("3.14") >= 0 && udesc->querySignature() && udesc->querySignature()[0];
+
         CMessageBuffer mb;
-        mb.append((int)MSR_LOOKUP_LDAP_PERMISSIONS);
+        mb.append((int)(sendSignature ? MSR_LOOKUP_LDAP_PERMISSIONS_EX : MSR_LOOKUP_LDAP_PERMISSIONS));
         mb.append(key).append(obj);
 #ifdef NULL_DALIUSER_STACKTRACE
         //following debug code to be removed
@@ -911,7 +919,8 @@ public:
 #endif
         udesc->serialize(mb);
         mb.append(auditflags);
-        udesc->serializeExtra(mb);//serialize sessionToken and user signature if Dali version
+        if (sendSignature)
+            udesc->serializeExtra(mb);//serialize sessionToken and user signature
         if (!queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
             return SecAccess_None;
         SecAccessFlags perms = SecAccess_Unavailable;
@@ -2010,8 +2019,8 @@ class CUserDescriptor: implements IUserDescriptor, public CInterface
 {
     StringAttr username;
     StringAttr passwordenc;
-    MemoryBuffer sessionToken;//ESP session token
-    MemoryBuffer signature;//user's digital Signature
+    unsigned sessionToken;//ESP session token
+    StringBuffer signature;//user's digital Signature
 public:
     IMPLEMENT_IINTERFACE;
     StringBuffer &getUserName(StringBuffer &buf)
@@ -2023,13 +2032,13 @@ public:
         decrypt(buf,passwordenc);
         return buf;
     }
-    const MemoryBuffer *querySessionToken()
+    unsigned querySessionToken()
     {
-        return &sessionToken;
+        return sessionToken;
     }
-    const MemoryBuffer *querySignature()
+    const char * querySignature()
     {
-        return &signature;
+        return signature.str();
     }
     virtual void set(const char *name,const char *password)
     {
@@ -2038,17 +2047,17 @@ public:
         encrypt(buf,password);
         passwordenc.set(buf.str());
     }
-    void set(const char *_name, const char *_password, const MemoryBuffer *_sessionToken, const MemoryBuffer *_signature)
+    void set(const char *_name, const char *_password, unsigned _sessionToken, const char  *_signature)
     {
         set(_name, _password);
-        sessionToken.clear().append(_sessionToken);
+        sessionToken = _sessionToken;
         signature.clear().append(_signature);
     }
     virtual void clear()
     {
         username.clear();
         passwordenc.clear();
-        sessionToken.clear();
+        sessionToken = 0;
         signature.clear();
     }
     void serialize(MemoryBuffer &mb)
@@ -2058,7 +2067,7 @@ public:
     void serializeExtra(MemoryBuffer &mb)
     {
         if (queryDaliServerVersion().compare("3.14") >= 0)
-            mb.append(sessionToken.length()).append(sessionToken).append(signature.length()).append(signature);
+            mb.append(sessionToken).append(signature.length()).append(signature);
     }
     void deserialize(MemoryBuffer &mb)
     {
@@ -2066,18 +2075,17 @@ public:
     }
     void deserializeExtra(MemoryBuffer &mb)
     {
+        signature.clear();
+        sessionToken = 0;
         if (mb.remaining() > 0)
         {
-            size32_t len = 0;
-            mb.read(len);
-            if (len)
-                sessionToken.append(len, mb.readDirect(len));
-
+            mb.read((unsigned &)sessionToken);
             if (mb.remaining() > 0)
             {
+                unsigned len = 0;
                 mb.read(len);
                 if (len)
-                    signature.append(len, mb.readDirect(len));
+                    signature.append(len, (const char *)mb.readDirect(len));
             }
         }
     }

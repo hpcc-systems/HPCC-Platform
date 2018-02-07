@@ -171,23 +171,23 @@ public:
     {
         return m_password.get();
     }
-    virtual void setSessionToken(const MemoryBuffer & token)
+    virtual void setSessionToken(unsigned token)
     {
         if (m_user)
-            m_user->credentials().setSessionToken(&token);
+            m_user->credentials().setSessionToken(token);
     }
-    virtual const MemoryBuffer * querySessionToken()
+    virtual unsigned querySessionToken()
     {
-        return m_user ? &m_user->credentials().getSessionToken() : nullptr;
+        return m_user ? m_user->credentials().getSessionToken() : 0;
     }
-    virtual void setSignature(const MemoryBuffer & signature)
+    virtual void setSignature(const char * signature)
     {
         if (m_user)
-            m_user->credentials().setSignature(&signature);
+            m_user->credentials().setSignature(signature);
     }
-    virtual const MemoryBuffer * querySignature()
+    virtual const char * querySignature()
     {
-        return m_user ? &m_user->credentials().getSignature() : nullptr;
+        return m_user ? m_user->credentials().getSignature() : 0;
     }
     virtual void setRealm(const char* realm)
     {
