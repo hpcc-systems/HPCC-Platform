@@ -416,7 +416,7 @@ enum RoxieHeapFlags
     RHFoldfixed         = 0x0008,  // Don't create a special fixed size heap for this
     RHFvariable         = 0x0010,  // only used for tracing
     RHFblocked          = 0x0040,  // allocate blocks of rows
-    RHFnofragment       = 0x0080,  // the allocated records will not be fragmented
+    RHFscanning         = 0x0080,  // scan the heaplet for free items instead of using a free list
     RHFdelayrelease     = 0x0100,
 
     //internal flags
@@ -459,7 +459,7 @@ interface IRowManager : extends IInterface
     virtual void noteDataBuffReleased(DataBuffer *dataBuff) = 0 ;
     virtual void reportLeaks() = 0;
     virtual void checkHeap() = 0;
-    virtual IFixedRowHeap * createFixedRowHeap(size32_t fixedSize, unsigned activityId, unsigned roxieHeapFlags, unsigned maxSpillCost = SpillAllCost) = 0;
+    virtual IFixedRowHeap * createFixedRowHeap(size32_t fixedSize, unsigned activityId, unsigned roxieHeapFlags) = 0;
     virtual IVariableRowHeap * createVariableRowHeap(unsigned activityId, unsigned roxieHeapFlags) = 0;            // should this be passed the initial size?
     virtual void addRowBuffer(IBufferedRowCallback * callback) = 0;
     virtual void removeRowBuffer(IBufferedRowCallback * callback) = 0;

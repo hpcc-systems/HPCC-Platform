@@ -277,8 +277,8 @@ RowBlockAllocator::RowBlockAllocator(roxiemem::IRowManager & rowManager, size32_
 
     size_t classSize = sizeof(RoxieRowBlock) - RoxieRowBlock::numDummyDynamicRows * sizeof(void *);
     size_t requestedSize = classSize + minRowsPerBlock * sizeof(void*);
-    roxiemem::RoxieHeapFlags heapFlags = roxiemem::RHFunique|roxiemem::RHFnofragment;
-    heap.setown(rowManager.createFixedRowHeap(requestedSize, 0, heapFlags, 0));
+    roxiemem::RoxieHeapFlags heapFlags = roxiemem::RHFunique|roxiemem::RHFscanning;
+    heap.setown(rowManager.createFixedRowHeap(requestedSize, 0, heapFlags));
     rowsPerBlock = (rowManager.getExpectedCapacity(requestedSize, heapFlags) - classSize ) / sizeof(void*);
     assertex(rowsPerBlock >= minRowsPerBlock);
 }

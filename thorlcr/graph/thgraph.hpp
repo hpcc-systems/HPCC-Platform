@@ -58,7 +58,7 @@
 
 
 enum ActivityAttributes { ActAttr_Source=1, ActAttr_Sink=2 };
-const static unsigned defaultHeapFlags = roxiemem::RHFnofragment;
+const static unsigned defaultHeapFlags = roxiemem::RHFscanning;
 
 #define INVALID_UNIQ_ID -1;
 typedef activity_id unique_id;
