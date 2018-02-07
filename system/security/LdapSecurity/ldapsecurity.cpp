@@ -32,6 +32,7 @@ CLdapSecUser::CLdapSecUser(const char *name, const char *pw) :
     setPosixenabled(false);
     setSudoersEnabled(false);
     setInSudoers(false);
+    setSessionToken(0);
 }
 
 CLdapSecUser::~CLdapSecUser()

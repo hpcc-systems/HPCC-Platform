@@ -48,7 +48,7 @@ public:
     IMPLEMENT_IINTERFACE
 
     CSecureUser(const char *name, const char *pw) : 
-        m_name(name), m_pw(pw), m_authenticateStatus(AS_UNKNOWN), m_userID(0), m_status(SecUserStatus_Unknown)
+        m_name(name), m_pw(pw), m_authenticateStatus(AS_UNKNOWN), m_userID(0), m_status(SecUserStatus_Unknown), m_sessionToken(0)
     {
     }
 
