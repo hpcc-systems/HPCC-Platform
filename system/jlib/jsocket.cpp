@@ -5046,6 +5046,7 @@ public:
                             }
                         }
                     }
+                    Owned<IException> nfyexcept;
                     ForEachItemIn(j,tonotify)
                     {
                         const SelectItem &si = tonotify.item(j);
@@ -5055,9 +5056,12 @@ public:
                         }
                         catch (IException *e)
                         {   // should be acted upon by notifySelected
-                            // could also not throw until after handling all events ...
+                            // Don't throw until after handling all events ...
                             EXCLOG(e,"CSocketEpollThread notifySelected");
-                            throw ;
+                            if (!nfyexcept)
+                                nfyexcept.setown(e);
+                            else
+                                e->Release();
                         }
                         // Release/dtors should not throw but leaving try/catch here until all paths checked
                         try
@@ -5071,6 +5075,8 @@ public:
                             e->Release();
                         }
                     }
+                    if (nfyexcept)
+                        throw nfyexcept.getClear();
                 }
                 else
                 {
