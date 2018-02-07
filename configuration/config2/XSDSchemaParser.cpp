@@ -111,7 +111,8 @@ void XSDSchemaParser::parseXSD(const std::string &filename)
     try
     {
         auto schemaIt = xsdTree.find("xs:schema");
-        const pt::ptree &keys = schemaIt->second.get_child("", pt::ptree());
+        pt::ptree emptyTree;
+        const pt::ptree &keys = schemaIt->second.get_child("", emptyTree);
         parseXSD(keys);
     }
     catch (ParseException &pe)
