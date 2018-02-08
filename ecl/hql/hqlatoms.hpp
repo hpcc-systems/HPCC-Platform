@@ -460,6 +460,7 @@ extern HQL_API IAtom * volatileAtom;
 extern HQL_API IAtom * _volatileId_Atom;
 extern HQL_API IAtom * warningAtom;
 extern HQL_API IAtom * webserviceAtom;
+extern HQL_API IAtom * whitespaceAtom;
 extern HQL_API IAtom * wholeAtom;
 extern HQL_API IAtom * widthAtom;
 extern HQL_API IAtom * wipeAtom;

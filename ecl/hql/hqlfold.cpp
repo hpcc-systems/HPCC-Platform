@@ -3822,12 +3822,12 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             IValue * constValue = child->queryValue();
             IValue* resultstr = NULL;
             if (constValue) 
-                resultstr = trimStringValue(constValue, typecode);
+                resultstr = trimStringValue(constValue, typecode, expr->hasAttribute(whitespaceAtom));
 
             if (resultstr) 
                 return createConstant(resultstr);
 
-            //extendin a string won't change the alue of trim(x), unless not trimming the rhs
+            //extending a string won't change the value of trim(x), unless not trimming the rhs
             //i.e., trim((string60)string12expression)  => trim(string12expression);
             if ((typecode != 'L') && isCast(child))
             {

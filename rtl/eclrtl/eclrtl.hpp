@@ -285,6 +285,11 @@ ECLRTL_API void rtlTrimUnicodeAll(unsigned &tlen, UChar * &tgt, unsigned slen, U
 ECLRTL_API void rtlTrimUtf8All(unsigned &tlen, char * &tgt, unsigned slen, const char * src);
 ECLRTL_API void rtlTrimVAll(unsigned &tlen, char * &tgt, const char * src); // YMA
 ECLRTL_API void rtlTrimVUnicodeAll(unsigned &tlen, UChar * &tgt, UChar const * src);
+ECLRTL_API void rtlTrimWS(unsigned &tlen, char * &tgt, unsigned slen, const char * src, bool left, bool all, bool right);
+ECLRTL_API void rtlTrimUnicodeWS(unsigned &tlen, UChar * &tgt, unsigned slen, UChar const * src, bool left, bool all, bool right);
+ECLRTL_API void rtlTrimUtf8WS(unsigned &tlen, char * &tgt, unsigned slen, const char * src, bool left, bool all, bool right);
+ECLRTL_API void rtlTrimVWS(unsigned &tlen, char * &tgt, const char * src, bool left, bool all, bool right);
+ECLRTL_API void rtlTrimVUnicodeWS(unsigned &tlen, UChar * &tgt, UChar const* src, bool left, bool all, bool right);
 ECLRTL_API unsigned rtlTrimStrLenNonBlank(size32_t l, const char * t);
 ECLRTL_API unsigned rtlTrimVStrLenNonBlank(const char * t);
 
