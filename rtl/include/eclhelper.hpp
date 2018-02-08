@@ -270,6 +270,7 @@ interface IEngineRowAllocator : extends IInterface
     virtual IEngineRowAllocator *createChildRowAllocator(const RtlTypeInfo *childtype) = 0;
 
     virtual void gatherStats(CRuntimeStatisticCollection & stats) = 0;
+    virtual void releaseAllRows() = 0; // Only valid on unique allocators, use with extreme care
 };
 
 interface IRowSerializerTarget
