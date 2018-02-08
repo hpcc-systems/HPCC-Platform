@@ -1948,7 +1948,7 @@ unsigned rtlTrimDataLen(size32_t l, const void * _t)
 
 inline size32_t rtlQuickTrimUnicode(size32_t len, UChar const * str)
 {
-    while (len && u_isspace(str[len-1]))
+    while (len && (str[len-1] == ' '))
         len--;
     return len;
 }
@@ -1960,9 +1960,9 @@ unsigned rtlTrimUnicodeStrLen(size32_t l, UChar const * t)
         return 0;
     UCharCharacterIterator iter(t, l);
     for(iter.last32(); iter.hasPrevious(); iter.previous32())
-        if(!u_isspace(iter.current32()))
+        if(iter.current32() != ' ')
             break;
-    if(u_isspace(iter.current32())) return iter.getIndex(); // required as the reverse iteration above doesn't hit the first character
+    if(iter.current32() == ' ') return iter.getIndex(); // required as the reverse iteration above doesn't hit the first character
     return iter.getIndex() + 1;
 #else
     return rtlQuickTrimUnicode(l, t);
@@ -2000,7 +2000,7 @@ inline unsigned rtlLeftTrimUnicodeStrStart(size32_t slen, UChar const * src)
 #ifdef _USE_ICU
     UCharCharacterIterator iter(src, slen);
     for(iter.first32(); iter.hasNext(); iter.next32())
-        if(!u_isspace(iter.current32()))
+        if(iter.current32() != ' ')
             break;
     return iter.getIndex();
 #else
@@ -2025,7 +2025,7 @@ inline void rtlTrimUtf8Len(unsigned & trimLen, size32_t & trimSize, size32_t len
     for (unsigned i=0; i < len; i++)
     {
         unsigned next = readUtf8Character(UTF8_MAXSIZE, cur);
-        if (!u_isspace(next))
+        if (next != ' ')
         {
             trimLength = i+1;
             trimEnd = cur;
@@ -2043,7 +2043,7 @@ inline void rtlTrimUtf8Start(unsigned & trimLen, size32_t & trimSize, size32_t l
     {
         const byte * prev = cur;
         unsigned next = readUtf8Character(UTF8_MAXSIZE, cur);
-        if (!u_isspace(next))
+        if (next != ' ')
         {
             trimLen = i;
             trimSize = prev-start;
@@ -2095,7 +2095,7 @@ unsigned rtlTrimUtf8StrLen(size32_t len, const char * t)
     for (unsigned i=0; i < len; i++)
     {
         unsigned next = readUtf8Character(UTF8_MAXSIZE, cur);
-        if (!u_isspace(next))
+        if (next != ' ')
             trimLength = i+1;
     }
     return trimLength;
@@ -2324,7 +2324,7 @@ void rtlTrimUnicodeAll(unsigned & tlen, UChar * & tgt, unsigned slen, const UCha
     UnicodeString rawStr;
     UCharCharacterIterator iter(src, slen);
     for(iter.first32(); iter.hasNext(); iter.next32())
-        if(!u_isspace(iter.current32()))
+        if(iter.current32() != ' ')
             rawStr.append(iter.current32());
     UnicodeString tgtStr;
     normalizeUnicodeString(rawStr, tgtStr); // normalized in case crazy string like [combining accent] [space] [vowel]

@@ -476,7 +476,7 @@ void CSVOutputStream::writeUtf8(size32_t len, const char * data)
             const byte *p=s;
             UChar next = readUtf8Character(sizeof(UChar), s);
             cl[i] = (size32_t)(s-p);
-            if (!u_isspace(next)) {
+            if (next != ' ') {
                 end = i;
                 if (start==(unsigned)-1)
                     start = i;
