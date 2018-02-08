@@ -738,4 +738,6 @@ extern int ECLRTL_API compareFields(const RtlFieldInfo * const * cur, const byte
 extern unsigned ECLRTL_API hashFields(const RtlFieldInfo * const * cur, const byte *self, unsigned inhash, bool excludePayload = false);
 extern bool ECLRTL_API hasTrailingFileposition(const RtlFieldInfo * const * fields);
 extern bool ECLRTL_API hasTrailingFileposition(const RtlTypeInfo * type);
+extern size32_t translateScalar(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, const RtlTypeInfo &destType, const RtlTypeInfo &sourceType, const byte *source);
+
 #endif

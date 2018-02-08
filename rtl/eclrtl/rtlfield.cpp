@@ -4213,6 +4213,99 @@ unsigned ECLRTL_API countFields(const RtlFieldInfo * const * fields)
     return cnt;
 }
 
+//-------------------------------------------------------------------------------------------------------------------
+
+static const unsigned sameTypeMask = RFTMkind|RFTMebcdic;
+size32_t translateScalar(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, const RtlTypeInfo &destType, const RtlTypeInfo &sourceType, const byte *source)
+{
+    switch(destType.getType())
+    {
+    case type_boolean:
+    case type_int:
+    case type_swapint:
+    case type_packedint:
+    case type_filepos:
+        offset = destType.buildInt(builder, offset, field, sourceType.getInt(source));
+        break;
+    case type_real:
+        offset = destType.buildReal(builder, offset, field, sourceType.getReal(source));
+        break;
+    case type_data:
+    case type_string:
+        //Special case if source and destination types are identical to avoid cloning strings
+        if ((destType.fieldType & sameTypeMask) == (sourceType.fieldType & sameTypeMask))
+        {
+            size32_t length = sourceType.length;
+            if (!sourceType.isFixedSize())
+            {
+                length = rtlReadSize32t(source);
+                source += sizeof(size32_t);
+            }
+            offset = destType.buildString(builder, offset, field, length, (const char *)source);
+            break;
+        }
+        //fallthrough
+    case type_decimal:  // Go via string - not common enough to special-case
+    case type_varstring:
+    case type_qstring:
+    {
+        size32_t size;
+        rtlDataAttr text;
+        sourceType.getString(size, text.refstr(), source);
+        offset = destType.buildString(builder, offset, field, size, text.getstr());
+        break;
+    }
+    case type_utf8:
+        //MORE: Could special case casting from utf8 to utf8 similar to strings above
+    case type_unicode:
+    case type_varunicode:
+    {
+        size32_t utf8chars;
+        rtlDataAttr utf8Text;
+        sourceType.getUtf8(utf8chars, utf8Text.refstr(), source);
+        offset = destType.buildUtf8(builder, offset, field, utf8chars, utf8Text.getstr());
+        break;
+    }
+    case type_set:
+    {
+        bool isAll = *(bool *) source;
+        source+= sizeof(bool);
+        byte *dest = builder.ensureCapacity(offset+sizeof(bool)+sizeof(size32_t), field->name)+offset;
+        *(size32_t *) (dest + sizeof(bool)) = 0; // Patch later when size known
+        offset += sizeof(bool) + sizeof(size32_t);
+        if (isAll)
+        {
+            *(bool*) dest = true;
+        }
+        else
+        {
+            *(bool*) dest = false;
+            size32_t sizeOffset = offset - sizeof(size32_t);  // Where we need to patch
+            size32_t childSize = *(size32_t *)source;
+            source += sizeof(size32_t);
+            const byte *initialSource = source;
+            size32_t initialOffset = offset;
+            const RtlTypeInfo *destChildType = destType.queryChildType();
+            const RtlTypeInfo *sourceChildType = sourceType.queryChildType();
+            while ((size_t)(source - initialSource) < childSize)
+            {
+                offset = translateScalar(builder, offset, field, *destChildType, *sourceChildType, source);
+                source += sourceChildType->size(source, nullptr); // MORE - shame to repeat a calculation that the translate above almost certainly just did
+            }
+            dest = builder.getSelf() + sizeOffset;  // Note - man have been moved by reallocs since last calculated
+            *(size32_t *)dest = offset - initialOffset;
+        }
+        break;
+    }
+    default:
+        throwUnexpected();
+    }
+    return offset;
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+
 /* 
 
 Stack:

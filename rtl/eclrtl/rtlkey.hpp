@@ -216,6 +216,7 @@ interface IValueSet : public IInterface
     virtual StringBuffer & serialize(StringBuffer & out) const = 0;
     virtual MemoryBuffer & serialize(MemoryBuffer & out) const = 0;
     virtual bool equals(const IValueSet & _other) const = 0;
+    virtual IValueSet * cast(const RtlTypeInfo & newType) const = 0;
 
 //following are primarily for use from the code generator
     virtual IValueTransition * createRawTransition(TransitionMask mask, const void * value) const = 0;

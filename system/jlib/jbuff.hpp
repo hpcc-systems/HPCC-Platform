@@ -167,7 +167,6 @@ public:
     inline bool     needSwapEndian() { return swapEndian; }
     int             setEndian(int endian);          // pass __[BIG|LITTLE]_ENDIAN
     bool            setSwapEndian(bool swap);
-    inline const char * toByteArray() const { return curLen ? buffer : NULL; }
     void            swapWith(MemoryBuffer & other);
 
     inline size32_t capacity() { return (maxLen - curLen); }
@@ -189,6 +188,8 @@ public:
     inline void     Release() const                         { delete this; }    // for consistency even though not link counted
 
     inline void *   bufferBase() const { return buffer; }
+    inline const char * toByteArray() const { return curLen ? buffer : nullptr; }
+    inline const byte * bytes() const { return curLen ? (const byte *)buffer : nullptr; }
 
 
 protected:
