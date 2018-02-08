@@ -279,6 +279,7 @@ class ECLFile:
         FILE.close()
 
     def __checkSkip(self, skipText, skip):
+        logging.debug("%3d.__checkSkip (skipText:'%s', skip:'%s')", self.taskId, skipText, skip)
         skipText = skipText.lower()
         skip = skip.lower()
         eclText = open(self.getEcl(), 'r')
@@ -292,14 +293,21 @@ class ECLFile:
                 skipParts = skipLine.split()
                 skipType = skipParts[1]
                 skipReason = None
+
                 if len(skipParts) == 3:
                     skipReason = skipParts[2]
+                splitChar = '='
+
                 if "==" in skipType:
-                    skipType = skipType.split("==")[1]
+                    splitChar='=='
+                skipType = skipType.split(splitChar)[1]
+
                 if not skip:
                     return {'reason': skipReason, 'type': skipType}
-                if skip in skipType:
+
+                if skip == skipType:
                     return {'skip': True, 'type' : skipType, 'reason': skipReason}
+
         return {'skip': False}
 
     def __checkTag(self,  tag):
@@ -384,7 +392,6 @@ class ECLFile:
         if self.isVersions == False and not self.args.noversion:
             tag = b'//version'
             logging.debug("%3d. testVesion (ecl:'%s', tag:'%s')", self.taskId, self.ecl, tag)
-            retVal = False
             self.versions = []
             eclText = open(self.getEcl(), 'rb')
             for line in eclText:
@@ -392,7 +399,6 @@ class ECLFile:
                     items = line.replace(tag, '').strip().replace('"', '')
                     if '=' in items:
                         self.versions.append(items)
-                        retVal = True
                         self.isVersions = True
                         pass
         logging.debug("%3d. testVesion() returns with isVersions = '%s'", self.taskId,  self.isVersions)
@@ -434,7 +440,6 @@ class ECLFile:
         self.timeout = timeout
 
     def testResults(self):
-        d = difflib.Differ()
         try:
             expectedKeyPath = self.getExpected()
             logging.debug("%3d. EXP: " + expectedKeyPath,  self.taskId )
