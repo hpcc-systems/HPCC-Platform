@@ -8237,6 +8237,8 @@ bool CHThorDiskReadBaseActivity::openNext()
                     if (thisFormatCrc != helper.getFormatCrc() && helper.getFormatCrc() && (helper.getFlags() & TDRnocrccheck) == 0)
                     {
                         actualDiskMeta.setown(getDaliLayoutInfo(props));
+                        if (grouped)
+                            actualDiskMeta.setown(new CSuffixedOutputMeta(+1, actualDiskMeta));
                         if (actualDiskMeta)
                         {
                             translator.setown(createRecordTranslator(projectedDiskMeta->queryRecordAccessor(true), actualDiskMeta->queryRecordAccessor(true)));
@@ -8567,6 +8569,7 @@ const void *CHThorDiskReadActivity::nextRow()
                     prefetcher->readAhead(prefetchBuffer);
                     const byte * next = prefetchBuffer.queryRow();
                     size32_t sizeRead = prefetchBuffer.queryRowSize();
+                    bool eog = grouped && next[sizeRead-1];
                     size32_t thisSize;
                     if (segMonitorsMatch(next)) // NOTE - keyed fields are checked pre-translation
                     {
@@ -8582,7 +8585,6 @@ const void *CHThorDiskReadActivity::nextRow()
                     else
                         thisSize = 0;
 
-                    bool eog = grouped && next[sizeRead-1];
                     prefetchBuffer.finishedRow();
 
                     localOffset += sizeRead;
