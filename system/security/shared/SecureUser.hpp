@@ -40,15 +40,15 @@ private:
     StringBuffer    m_Peer;
     SecUserStatus   m_status;
     Owned<IProperties> m_parameters;
-    MemoryBuffer    m_sessionToken;
-    MemoryBuffer    m_signature;
+    unsigned        m_sessionToken;
+    StringBuffer    m_signature;
 
     CriticalSection crit;
 public:
     IMPLEMENT_IINTERFACE
 
     CSecureUser(const char *name, const char *pw) : 
-        m_name(name), m_pw(pw), m_authenticateStatus(AS_UNKNOWN), m_userID(0), m_status(SecUserStatus_Unknown)
+        m_name(name), m_pw(pw), m_authenticateStatus(AS_UNKNOWN), m_userID(0), m_status(SecUserStatus_Unknown), m_sessionToken(0)
     {
     }
 
@@ -214,24 +214,24 @@ public:
         return m_pw.str();
     }
 
-    void setSessionToken(const MemoryBuffer * const token)
+    void setSessionToken(unsigned token)
     {
-        m_sessionToken.clear().append(token);
+        m_sessionToken = token;
     }
 
-    const MemoryBuffer & getSessionToken()
+    unsigned getSessionToken()
     {
         return m_sessionToken;
     }
 
-    void setSignature(const MemoryBuffer * const signature)
+    void setSignature(const char * signature)
     {
         m_signature.clear().append(signature);
     }
 
-    const MemoryBuffer & getSignature()
+    const char * getSignature()
     {
-        return m_signature;
+        return m_signature.str();
     }
 
     virtual unsigned getUserID()

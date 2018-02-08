@@ -32,6 +32,7 @@ CLdapSecUser::CLdapSecUser(const char *name, const char *pw) :
     setPosixenabled(false);
     setSudoersEnabled(false);
     setInSudoers(false);
+    setSessionToken(0);
 }
 
 CLdapSecUser::~CLdapSecUser()
@@ -202,24 +203,24 @@ bool CLdapSecUser::setEncodedPassword(SecPasswordEncoding enc, void * pw, unsign
     return FALSE;  //not supported yet
 }
 
-void CLdapSecUser::setSessionToken(const MemoryBuffer * const token)
+void CLdapSecUser::setSessionToken(unsigned token)
 {
-    m_sessionToken.clear().append(token);
+    m_sessionToken = token;
 }
 
-const MemoryBuffer & CLdapSecUser::getSessionToken()
+unsigned CLdapSecUser::getSessionToken()
 {
     return m_sessionToken;
 }
 
-void CLdapSecUser::setSignature(const MemoryBuffer * const signature)
+void CLdapSecUser::setSignature(const char * signature)
 {
-    m_signature.clear().append(*signature);
+    m_signature.clear().append(signature);
 }
 
-const MemoryBuffer & CLdapSecUser::getSignature()
+const char * CLdapSecUser::getSignature()
 {
-    return m_signature;
+    return m_signature.str();
 }
 
 void CLdapSecUser::copyTo(ISecUser& destination)
@@ -243,8 +244,8 @@ void CLdapSecUser::copyTo(ISecUser& destination)
     dest->setUserID(m_userid);
     dest->setPasswordExpiration(m_passwordExpiration);
     dest->setDistinguishedName(m_distinguishedName);
-    dest->credentials().setSessionToken(&m_sessionToken);
-    dest->credentials().setSignature(&m_signature);
+    dest->credentials().setSessionToken(m_sessionToken);
+    dest->credentials().setSignature(m_signature.str());
 }
 
 ISecUser * CLdapSecUser::clone()
@@ -662,7 +663,7 @@ bool CLdapSecManager::authenticate(ISecUser* user)
         return true;
     }
 
-    if (user->credentials().getSessionToken().length())//Already authenticated it token exists
+    if ((user->credentials().getSessionToken() != 0) || user->credentials().getSignature())//Already authenticated it token or signature exist
     {
         user->setAuthenticateStatus(AS_AUTHENTICATED);
         if(m_permissionsCache->isCacheEnabled() && !m_usercache_off)
