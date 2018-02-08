@@ -333,21 +333,21 @@ void  printTree(pANTLR3_BASE_TREE t, int indent)
 
     if ( t != NULL )
     {
-    children = t->getChildCount(t);
-    for ( i = 0; i < indent; i++ )
-      ind += "   ";
+        children = t->getChildCount(t);
+        for ( i = 0; i < indent; i++ )
+          ind += "   ";
 
-    for ( i = 0; i < children; i++ )
-      {
-        pANTLR3_BASE_TREE child = (pANTLR3_BASE_TREE)(t->getChild(t, i));
-        ANTLR3_UINT32 tokenType = child->getType(child);
+        for ( i = 0; i < children; i++ )
+        {
+            pANTLR3_BASE_TREE child = (pANTLR3_BASE_TREE)(t->getChild(t, i));
+            ANTLR3_UINT32 tokenType = child->getType(child);
 
-        tokenText = (char *)child->toString(child)->chars;
-        fprintf(stderr, "%s%s\n", ind.c_str(), tokenText);
-        if (tokenText == "<EOF>")
-          break;
-        printTree(child, indent+1);
-      }
+            tokenText = (char *)child->toString(child)->chars;
+            fprintf(stderr, "%s%s\n", ind.c_str(), tokenText);
+            if (tokenType == ANTLR3_TOKEN_EOF)
+                break;
+            printTree(child, indent+1);
+        }
     }
 }
 
