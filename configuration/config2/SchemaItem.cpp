@@ -380,7 +380,7 @@ void SchemaItem::findSchemaValues(const std::string &path, std::vector<std::shar
             auto rangeIt = m_children.equal_range(elem);
             for (auto it = rangeIt.first; it != rangeIt.second; ++it)
             {
-                return it->second->findSchemaValues(path.substr(end + ((path[end] == '/') ? 1 : 0)), schemaValues);
+                it->second->findSchemaValues(path.substr(end + ((path[end] == '/') ? 1 : 0)), schemaValues);
             }
         }
     }
