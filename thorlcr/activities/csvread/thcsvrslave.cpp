@@ -59,6 +59,38 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
         bool readFinished;
         offset_t localOffset;
         size32_t maxRowSize;
+        bool processHeaderLines = false;
+
+        unsigned splitLine(ISerialStream *inputStream, size32_t maxRowSize)
+        {
+            if (processHeaderLines)
+            {
+                processHeaderLines = false;
+                unsigned subFile = 0;
+                unsigned pnum = partDesc->queryPartIndex();
+                if (activity.superFDesc)
+                {
+                    unsigned lnum;
+                    if (!activity.superFDesc->mapSubPart(pnum, subFile, lnum))
+                        throwUnexpected(); // was validated earlier
+                    pnum = lnum;
+                }
+                unsigned &headerLinesRemaining = activity.getHeaderLines(subFile);
+                if (headerLinesRemaining)
+                {
+                    do
+                    {
+                        size32_t lineLength = csvSplitter.splitLine(inputStream, maxRowSize);
+                        if (0 == lineLength)
+                            break;
+                        inputStream->skip(lineLength);
+                    }
+                    while (--headerLinesRemaining);
+                }
+                activity.sendHeaderLines(subFile, pnum);
+            }
+            return csvSplitter.splitLine(inputStream, maxRowSize);
+        }
     public:
         CCsvPartHandler(CCsvReadSlaveActivity &_activity) : CDiskPartHandlerBase(_activity), activity(_activity)
         {
@@ -99,30 +131,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
 
             inputStream.setown(createFileSerialStream(iFileIO));
             if (activity.headerLines)
-            {
-                unsigned subFile = 0;
-                unsigned pnum = partDesc->queryPartIndex();
-                if (activity.superFDesc)
-                {
-                    unsigned lnum;
-                    if (!activity.superFDesc->mapSubPart(pnum, subFile, lnum))
-                        throwUnexpected(); // was validated earlier
-                    pnum = lnum;
-                }
-                unsigned &headerLinesRemaining = activity.getHeaderLines(subFile);
-                if (headerLinesRemaining)
-                {
-                    do
-                    {
-                        size32_t lineLength = csvSplitter.splitLine(inputStream, maxRowSize);
-                        if (0 == lineLength)
-                            break;
-                        inputStream->skip(lineLength);
-                    }
-                    while (--headerLinesRemaining);
-                }
-                activity.sendHeaderLines(subFile, pnum);
-            }
+                processHeaderLines = true;
         }
         virtual void close(CRC32 &fileCRC)
         {
@@ -143,7 +152,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
             {
                 if (eoi || activity.abortSoon)
                     return NULL;
-                size32_t lineLength = csvSplitter.splitLine(inputStream, maxRowSize);
+                size32_t lineLength = splitLine(inputStream, maxRowSize);
                 if (!lineLength)
                     return NULL;
                 size32_t res = activity.helper->transform(row, csvSplitter.queryLengths(), (const char * *)csvSplitter.queryData());
@@ -374,7 +383,7 @@ public:
             cachedMetaInfo.isSource = true;
             getPartsMetaInfo(cachedMetaInfo, partDescs.ordinality(), partDescs.getArray(), partHandler);
             cachedMetaInfo.unknownRowsOutput = true; // at least I don't think we know
-            cachedMetaInfo.fastThrough = true;
+            cachedMetaInfo.fastThrough = (0 == headerLines);
         }
         info = cachedMetaInfo;
     }
