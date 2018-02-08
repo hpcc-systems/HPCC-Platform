@@ -21731,9 +21731,9 @@ class CRoxieServerDiskReadActivity : public CRoxieServerDiskReadBaseActivity
     IHThorDiskReadArg * readHelper;
     ConstPointerArray readrows;
     bool readAheadDone;
-    bool eogPending;
     unsigned readIndex;
     unsigned lastGroupProcessed;
+    bool someInGroup = false;
 
 public:
     CRoxieServerDiskReadActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager, ITranslatorSet *_translators)
@@ -21744,7 +21744,6 @@ public:
         limitTransformExtra = readHelper;
         readAheadDone = false;
         readIndex = 0;
-        eogPending = false;
         lastGroupProcessed = processed;
     }
 
@@ -21755,8 +21754,8 @@ public:
         CRoxieServerDiskReadBaseActivity::start(parentExtractSize, parentExtract, paused);
         readAheadDone = false;
         readIndex = 0;
-        eogPending = false;
         lastGroupProcessed = processed;
+        someInGroup = false;
     }
 
     virtual void reset()
@@ -21765,8 +21764,8 @@ public:
         readrows.kill();
         readAheadDone = false;
         readIndex = 0;
-        eogPending = false;
         lastGroupProcessed = processed;
+        someInGroup = false;
         CRoxieServerDiskReadBaseActivity::reset();
     }
 
@@ -21853,12 +21852,6 @@ public:
 
     const void *_nextRow()
     {
-        if (eogPending && (lastGroupProcessed != processed))
-        {
-            eogPending = false;
-            lastGroupProcessed = processed;
-            return NULL;
-        }
         RtlDynamicRowBuilder rowBuilder(rowAllocator);
         unsigned transformedSize = 0;
         for (;;)
@@ -21866,15 +21859,25 @@ public:
             const byte *nextRec = reader->nextRow();
             if (nextRec)
             {
+                someInGroup = true;
                 transformedSize = readHelper->transform(rowBuilder, nextRec);
                 reader->finishedRow();
                 if (transformedSize)
                     break;
             }
-            else if (isGrouped && lastGroupProcessed != processed)
+            else if (isGrouped)
             {
-                lastGroupProcessed = processed;
-                return NULL;
+                if (lastGroupProcessed != processed)
+                {
+                    someInGroup = false;
+                    lastGroupProcessed = processed;
+                    return nullptr;
+                }
+                else if (!someInGroup)
+                {
+                    eof = true;
+                    return nullptr;
+                }
             }
             else
             {

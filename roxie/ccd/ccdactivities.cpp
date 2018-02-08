@@ -1278,12 +1278,14 @@ public:
         unsigned totalSizeSent = 0;
         helper->setCallback(reader);
         unsigned lastGroupProcessed = processed;
+        bool someInGroup = false;
         while (!aborted)
         {
             // This loop is the inner loop for memory diskreads - so keep it efficient!
             const byte *nextRec = reader->nextRow();
             if (nextRec)
             {
+                someInGroup = true;
                 size32_t transformedSize = owner.doTransform(output, nextRec);
                 reader->finishedRow();
                 if (transformedSize)
@@ -1301,11 +1303,17 @@ public:
                         break;
                 }
             }
-            else if (isGrouped && processed>lastGroupProcessed)
-                break; // We return grouped data one whole group at a time
+            else if (isGrouped)
+            {
+                if (processed>lastGroupProcessed)
+                    break; // We return grouped data one whole group at a time
+                else if (!someInGroup) // eof
+                    return;
+            }
             else
                 return;
         }
+        // Send continuation message indicating end of group or too much data
         if (!aborted)
         {
             MemoryBuffer si;
