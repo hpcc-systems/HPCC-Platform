@@ -2709,12 +2709,12 @@ void DiskReadBuilderBase::buildMembers(IHqlExpression * expr)
     StringBuffer s;
 
     //Process any KEYED() information
-    if (monitors.isFiltered())
+    if (monitors.isKeyed())
     {
         MemberFunction func(translator, instance->startctx, "virtual void createSegmentMonitors(IIndexReadContext *irc) override");
         monitors.buildSegments(func.ctx, "irc", true);
     }
-    instance->addAttributeBool("_isKeyed", monitors.isFiltered());
+    instance->addAttributeBool("_isKeyed", monitors.isKeyed());
 
     //---- virtual unsigned getFlags()
     instance->addAttributeBool("preload", isPreloaded);
@@ -2778,7 +2778,7 @@ void DiskReadBuilderBase::buildFlagsMember(IHqlExpression * expr)
     if (tableExpr->hasAttribute(optAtom)) flags.append("|TDRoptional");
     if (tableExpr->hasAttribute(_workflowPersist_Atom)) flags.append("|TDXupdateaccessed");
     if (isPreloaded) flags.append("|TDRpreload");
-    if (monitors.isFiltered()) flags.append("|TDRkeyed");
+    if (monitors.isKeyed()) flags.append("|TDRkeyed");
     if (limitExpr)
     {
         if (limitExpr->hasAttribute(onFailAtom))
@@ -2819,34 +2819,54 @@ void DiskReadBuilderBase::buildTransformFpos(BuildCtx & transformCtx)
 
 void DiskReadBuilderBase::extractMonitors(IHqlExpression * ds, SharedHqlExpr & unkeyedFilter, HqlExprArray & conds)
 {
-    ForEachItemIn(i, conds)
+    HqlExprAttr mode = tableExpr->queryChild(2);
+    //KEYED filters can only currently be implemented for binary files - not csv, xml or pipe....
+    if (queryTableMode(tableExpr) == no_flat)
     {
-        IHqlExpression * filter = &conds.item(i);
-        if (isSourceInvariant(ds, filter))                  // more actually isSourceInvariant.
-            extendConditionOwn(globalGuard, no_and, LINK(filter));
-        else
+        OwnedHqlExpr implicitFilter;
+        ForEachItemIn(i, conds)
         {
-            node_operator op = filter->getOperator();
-            switch (op)
+            IHqlExpression * filter = &conds.item(i);
+            if (isSourceInvariant(ds, filter))                  // more actually isSourceInvariant.
+                extendConditionOwn(globalGuard, no_and, LINK(filter));
+            else
             {
-            case no_assertkeyed:
-            case no_assertwild:
+                node_operator op = filter->getOperator();
+                switch (op)
                 {
-                    //MORE: This needs to test that the fields are at fixed offsets, fixed length, and collatable.
-                    OwnedHqlExpr extraFilter;
-                    monitors.extractFilters(filter, extraFilter);
+                case no_assertkeyed:
+                case no_assertwild:
+                    {
+                        //MORE: This needs to test that the fields are at fixed offsets, fixed length, and collatable.
+                        OwnedHqlExpr extraFilter;
+                        monitors.extractFilters(filter, extraFilter);
 
-                    //NB: Even if it is keyed then (part of) the test condition might be duplicated.
-                    appendFilter(unkeyedFilter, extraFilter);
+                        //NB: Even if it is keyed then (part of) the test condition might be duplicated.
+                        appendFilter(unkeyedFilter, extraFilter);
+                        break;
+                    }
+                default:
+                    // Add this condition to the catchall filter
+                    appendFilter(implicitFilter, filter);
                     break;
                 }
-            default:
-                // Add this condition to the catchall filter
-                appendFilter(unkeyedFilter, filter);
-                break;
             }
         }
+
+        if (implicitFilter)
+        {
+            if (translator.queryOptions().implicitKeyedDiskFilter && !monitors.isKeyed())
+            {
+                OwnedHqlExpr extraFilter;
+                monitors.extractFilters(implicitFilter.get(), extraFilter);
+                appendFilter(unkeyedFilter, extraFilter);
+            }
+            else
+                appendFilter(unkeyedFilter, implicitFilter);
+        }
     }
+    else
+        SourceBuilder::extractMonitors(ds, unkeyedFilter, conds);
 }
 
 //---------------------------------------------------------------------------

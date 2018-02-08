@@ -40,5 +40,5 @@ output(sq.HousePersonBookDs, {count(persons(id != skipId, exists(books(id != ski
 output(sq.HousePersonBookDs, {count(persons(id != sq.HousePersonBookDs.id, exists(books(id != skipId)))), count(persons) });
 
 // cse
-string fullname := trim(persons.surname) + ', ' + trim(persons.forename);
+string fullname := (string)trim(persons.surname) + ', ' + trim(persons.forename);
 output(sq.HousePersonBookDs, {count(persons(fullname != '', exists(books(author != fullname)))), count(persons) });

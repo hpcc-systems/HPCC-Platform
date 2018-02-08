@@ -28,6 +28,7 @@ public:
     bool isKeyed()          { return (keyedKind != KeyedNo); }
 
     HqlExprAttr     selector;
+    HqlExprAttr     subrange;
     HqlExprAttr     expr;
     KeyedKind       keyedKind;
     bool            isWild;
@@ -79,10 +80,11 @@ enum MonitorFilterKind { NoMonitorFilter, MonitorFilterSkipEmpty, MonitorFilterS
 struct HQL_API KeySelectorInfo
 {
 public:
-    KeySelectorInfo(KeyedKind _keyedKind, IHqlExpression * _selector, IHqlExpression * _expandedSelector, unsigned _fieldIdx, size32_t _offset, size32_t _size)
+    KeySelectorInfo(KeyedKind _keyedKind, IHqlExpression * _selector, IHqlExpression * _subrange, IHqlExpression * _expandedSelector, unsigned _fieldIdx, size32_t _offset, size32_t _size)
     {
         keyedKind = _keyedKind;
         selector = _selector;
+        subrange = _subrange;
         expandedSelector = _expandedSelector;
         fieldIdx = _fieldIdx;
         offset = _offset;
@@ -92,6 +94,7 @@ public:
     const char * getFFOptions();
 
     IHqlExpression * selector;
+    IHqlExpression * subrange;
     IHqlExpression * expandedSelector;
     unsigned fieldIdx;
     size32_t offset;

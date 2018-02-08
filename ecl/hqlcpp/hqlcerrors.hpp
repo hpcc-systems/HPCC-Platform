@@ -219,6 +219,7 @@
 #define HQLERR_HashStoredDuplication            4207
 #define HQLERR_DatafileRequiresSigned           4208
 #define HQLERR_ExpectedFileLhsFetch             4209
+#define HQLERR_IncompatibleKeyedSubString       4210
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -386,7 +387,7 @@
 #define HQLERR_SetUnknownLength_Text            "Sets of items of unknown length are not yet supported!"
 #define HQLERR_HashStoredTypeMismatch_Text      "#STORED (%s) type mismatch (was '%s' replacement '%s')"
 #define HQLERR_CountAllSet_Text                 "Cannot count number of elements in ALL"
-#define HQLERR_OnlyKeyFixedField_Text           "Can only key fixed fields at fixed offsets"
+#define HQLERR_OnlyKeyFixedField_Text           "Cannot key field %s - only fixed fields at fixed offsets"
 #define HQLERR_DuplicateStoredDiffType_Text     "Duplicate definition of %s with different type (use #stored to override default value)"
 #define HQLERR_RegexFeatureNotSupport_Text      "Features are not supported by regex - did you mean repeat() instead of {}?"
 #define HQLERR_UnsupportedAttribute_Text        "Option %s not yet supported on child datasets"
@@ -519,6 +520,7 @@
 #define HQLERR_HashStoredDuplication_Text       "Inconsistent #%s(%s, %s) and #%s(%s, %s)"
 #define HQLERR_DatafileRequiresSigned_Text      "Insufficient access rights to use datafiles"
 #define HQLERR_ExpectedFileLhsFetch_Text        "The first argument of FETCH must be a disk file (had %s)"
+#define HQLERR_IncompatibleKeyedSubString_Text  "Cannot use two different KEYED substring filters for field %s in key %s"
 
 //Warnings.
 #define HQLWRN_CannotRecreateDistribution_Text  "Cannot recreate the distribution for a persistent dataset"

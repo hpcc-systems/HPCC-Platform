@@ -318,6 +318,8 @@ extern ECLRTL_API IFieldFilter * createFieldFilter(unsigned fieldId, const RtlTy
 extern ECLRTL_API IFieldFilter * createFieldFilter(unsigned fieldId, IValueSet * values);
 extern ECLRTL_API IFieldFilter * createWildFieldFilter(unsigned fieldId, const RtlTypeInfo & type);
 
+extern ECLRTL_API IFieldFilter * createSubStringFieldFilter(unsigned fieldId, size32_t subLength, IValueSet * values);
+
 extern ECLRTL_API IFieldFilter * deserializeFieldFilter(unsigned fieldId, const RtlTypeInfo & type, const char * src);
 extern ECLRTL_API IFieldFilter * deserializeFieldFilter(unsigned fieldId, const RtlTypeInfo & type, MemoryBuffer & in);
 

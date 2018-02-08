@@ -370,9 +370,9 @@ public:
             // x >= 'ab' becomes x > 'a' => clear the equal item
             // x < 'ab' becomes x <= 'a' => set the equal item
             if (newMask & CMPlt)
-                newMask &= ~CMPeq;
-            else if (newMask & CMPgt)
                 newMask |= CMPeq;
+            else if (newMask & CMPgt)
+                newMask &= ~CMPeq;
         }
         return new ValueTransition(newMask, newType, resized.toByteArray());
     }

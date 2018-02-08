@@ -794,6 +794,7 @@ struct HqlCppOptions
     bool                timeTransforms;
     bool                useGlobalCompareClass;
     bool                createValueSets;
+    bool                implicitKeyedDiskFilter;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class

@@ -1933,6 +1933,9 @@ node_operator getReverseOp(node_operator op)
     case no_eq:
     case no_ne:
         return op;
+    case no_in:
+    case no_notin:
+        return no_none;
     default:
         assertex(!"Should not be called");
     }

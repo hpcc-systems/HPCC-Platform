@@ -19,7 +19,7 @@ unsigned2       yearBuilt := 0;
 EXPORT PersonRec :=
             record
 string          forename;
-string          surname;
+utf8            surname;
 udecimal8       dob;
 udecimal8       booklimit := 0;
 unsigned2       aage := 0;
