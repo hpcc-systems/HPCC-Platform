@@ -64,34 +64,26 @@ if(NOT "${DESTDIR}" STREQUAL "")
         DEPENDS ${INIT_PATH}/hpcc-init
         ${INIT_PATH}/dafilesrv)
 
+
+    install(CODE "
+    if(NOT EXISTS ${CONFIG_DIR}/${ENV_XML_FILE})
+        execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/${ENV_XML_FILE} ${CONFIG_DIR})
+        message(STATUS \"Copying ${ENV_XML_FILE} to ${CONFIG_DIR}\")
+    else()
+        message(STATUS \"Copy of ${ENV_XML_FILE} already exists at ${CONFIG_DIR}\")
+    endif()
+    if(NOT EXISTS ${CONFIG_DIR}/${ENV_CONF_FILE})
+        execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/${ENV_CONF_FILE} ${CONFIG_DIR})
+        message(STATUS \"Copying ${ENV_CONF_FILE} to ${CONFIG_DIR}\")
+    else()
+        message(STATUS \"Copy of ${ENV_CONF_FILE} already exists at ${CONFIG_DIR}\")
+    endif()
+    " COMPONENT Runtime)
+
     add_custom_target(configure ALL
         DEPENDS configure_directories
         configure_genenvrules_conf
         configure_service_files
         COMMENT "Configuring ${DESTDIR} for deployment")
-
-    if(NOT EXISTS ${CONFIG_DIR}/${ENV_XML_FILE})
-        add_custom_command(OUTPUT ${CONFIG_DIR}/${ENV_XML_FILE}
-            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/${ENV_XML_FILE} ${CONFIG_DIR}
-            DEPENDS configure_directories ${CMAKE_CURRENT_BINARY_DIR}/environment.xml)
-        add_custom_target(configure_environment_xml
-            DEPENDS ${CONFIG_DIR}/${ENV_XML_FILE}
-            COMMENT "copying ${ENV_XML_FILE} to ${CONFIG_DIR}")
-        add_dependencies(configure configure_environment_xml)
-    else()
-        message(STATUS "A copy of ${ENV_XML_FILE} already exists and will not be updated")
-    endif()
-
-    if(NOT EXISTS ${CONFIG_DIR}/${NEW_CONF_FILE})
-        add_custom_command(OUTPUT ${CONFIG_DIR}/${ENV_CONF_FILE}
-            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/${ENV_CONF_FILE} ${CONFIG_DIR}
-            DEPENDS configure_directories ${CMAKE_CURRENT_BINARY_DIR}/environment.conf)
-        add_custom_target(configure_environment_conf
-            DEPENDS ${CONFIG_DIR}/${ENV_CONF_FILE}
-            COMMENT "Copying ${ENV_CONF_FILE} to ${CONFIG_DIR}")
-        add_dependencies(configure configure_environment_conf)
-    else()
-        message(STATUS "A copy of ${ENV_CONF_FILE} already exists and will not be updated")
-    endif()
 
 endif()
