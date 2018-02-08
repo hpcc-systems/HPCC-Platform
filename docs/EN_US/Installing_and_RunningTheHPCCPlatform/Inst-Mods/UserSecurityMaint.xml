@@ -1292,7 +1292,7 @@
               <row>
                 <entry></entry>
 
-                <entry>Erase file history metadata </entry>
+                <entry>Erase file history metadata</entry>
 
                 <entry>Full</entry>
               </row>
@@ -2180,7 +2180,9 @@
       </listitem>
 
       <listitem>
-        <para>Access the Physical Files permission page</para>
+        <para>Access the Physical Files permission page. The Physical Files
+        settings specify the default permissions for files that do not have a
+        scope explicitly specified. </para>
       </listitem>
 
       <listitem>
