@@ -1381,7 +1381,7 @@
     <xs:attribute name="initIbytiDelay" type="xs:nonNegativeInteger" use="optional" default="100">
       <xs:annotation>
         <xs:appinfo>
-          <tooltip>Initial time (in milliseconds) a agent will wait for an IBYTI packet from a peer.</tooltip>
+          <tooltip>Initial time (in milliseconds) a secondary agent will wait for an IBYTI packet from a primary peer.</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
@@ -1424,13 +1424,6 @@
       <xs:annotation>
         <xs:appinfo>
           <tooltip>Generate stacktrace whenever a request is made for a row larger than this threshold (0 to disable)</tooltip>
-        </xs:appinfo>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="minIbytiDelay" type="xs:nonNegativeInteger" use="optional" default="0">
-      <xs:annotation>
-        <xs:appinfo>
-          <tooltip>Minimum time (millsec) a agent will wait for an IBYTI packet from a peer.</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
