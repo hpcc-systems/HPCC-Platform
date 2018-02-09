@@ -442,10 +442,22 @@ void EsdlServiceImpl::configureUrlMethod(const char *method, IPropertyTree &entr
     entry.setProp("@prot", protocol);
     entry.setProp("@path", path);
 
-    Owned<ISmartSocketFactory> sf = createSmartSocketFactory(iplist, true);
+    try
+    {
+        Owned<ISmartSocketFactory> sf = createSmartSocketFactory(iplist, true);
 
-    connMap.remove(method);
-    connMap.setValue(method, sf.getClear());
+        connMap.remove(method);
+        connMap.setValue(method, sf.getClear());
+    }
+    catch(IException* ie)
+    {
+        ESPLOG(LogMin,"DESDL: Error while setting up connection for method \"%s\" verify its configuration.", method);
+        StringBuffer msg;
+        ie->errorMessage(msg);
+        ESPLOG(LogMin,"%s",msg.str());
+        connMap.remove(method);
+        ie->Release();
+    }
 }
 
 void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
