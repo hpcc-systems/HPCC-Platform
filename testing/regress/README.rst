@@ -572,8 +572,10 @@ The format of the output is the same as 'run', except there is a log, result and
     To exclude testcase from cluster or clusters, the tag is:
 //no<cluster_name>
 
-    To skip (similar to exclusion)
+    To skip (similar to exclusion, but can have reason)
 //skip type==<cluster> <reason>
+    or
+//skip type=<cluster> <reason>
 
     To build and publish testcase (e.g.:for libraries)
 //publish
