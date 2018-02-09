@@ -107,7 +107,7 @@ class CascadeManager : public CInterface
             if (traceLevel > 5)
                 DBGLOG("globalLock released");
             globalLock.signal();
-            atomic_inc(&globalSignals);
+            globalSignals++;
         }
     }
 
@@ -256,7 +256,7 @@ private:
             DBGLOG("in getGlobalLock");
         if (!globalLock.wait(2000))  // since all lock in the same order it's ok to block for a bit here
             throw MakeStringException(ROXIE_LOCK_ERROR, "lock failed");
-        atomic_inc(&globalLocks);
+        globalLocks++;
         entered = true;
         if (traceLevel > 5)
             DBGLOG("globalLock locked");
@@ -275,7 +275,7 @@ private:
             assertex(entered);
             entered = false;
             globalLock.signal();
-            atomic_inc(&globalSignals);
+            globalSignals++;
             if (traceLevel > 5)
                 DBGLOG("globalLock released");
             throw;
@@ -1219,8 +1219,7 @@ public:
         unsigned priority = (unsigned) -2;
         try
         {
-            atomic_inc(&queryCount);
-
+            queryCount++;
             bool isBlind = wu->getDebugValueBool("blindLogging", false);
             if (pool)
             {
@@ -1350,7 +1349,7 @@ public:
     {
         ep.set(_ep);
         unknownQueryStats.noteActive();
-        atomic_inc(&queryCount);
+        queryCount++;
     }
     ~RoxieProtocolMsgContext()
     {

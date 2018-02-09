@@ -3840,7 +3840,7 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
                     if (!localSlave) 
                     {
                         ROQ->sendPacket(i, activity.queryLogCtx());
-                        atomic_inc(&retriesSent);
+                        retriesSent++;
                     }
                 }
             }
@@ -4724,7 +4724,7 @@ public:
                 }
                 else 
                 {
-                    atomic_inc(&resultsReceived);
+                    resultsReceived++;
                     switch (header.activityId)
                     {
                     case ROXIE_DEBUGCALLBACK:
@@ -4885,7 +4885,7 @@ public:
 
                     default:
                         if (header.retries & ROXIE_RETRIES_MASK)
-                            atomic_inc(&retriesNeeded);
+                            retriesNeeded++;
                         unsigned metaLen;
                         const void *metaData = mr->getMessageMetadata(metaLen);
                         if (metaLen)
@@ -6590,7 +6590,7 @@ public:
         if (next)
         {
             processed++;
-            atomic_inc(&rowsIn);
+            rowsIn++;
         }
         return next;
     }
@@ -6653,7 +6653,7 @@ public:
         if (next)
         {
             processed++;
-            atomic_inc(&rowsIn);
+            rowsIn++;
         }
         return next;
     }
@@ -6932,7 +6932,7 @@ public:
         if (next)
         {
             processed++;
-            atomic_inc(&rowsIn);
+            rowsIn++;
         }
         return next;
     }
@@ -25394,10 +25394,12 @@ public:
                                 Owned<CRowArrayMessageResult> result = new CRowArrayMessageResult(ctx->queryRowManager(), true);
                                 jg->notePending();
                                 unsigned candidateCount = 0;
+                                ScopedAtomic<unsigned> indexRecordsRead(::indexRecordsRead);
+                                ScopedAtomic<unsigned> postFiltered(::postFiltered);
                                 while (tlk->lookup(true))
                                 {
                                     candidateCount++;
-                                    atomic_inc(&indexRecordsRead);
+                                    indexRecordsRead++;
                                     KLBlobProviderAdapter adapter(tlk);
                                     const byte *indexRow = tlk->queryKeyBuffer();
                                     size_t fposOffset = tlk->queryRowSize() - sizeof(offset_t);
@@ -25413,7 +25415,7 @@ public:
                                     else
                                     {
                                         rejected++;
-                                        atomic_inc(&postFiltered);
+                                        postFiltered++;
                                     }
                                 }
                                 // output an end marker for the matches to this group
@@ -26241,10 +26243,12 @@ public:
                                 // MORE - This code seems to be duplicated in keyedJoinHead
                                 jg->notePending();
                                 unsigned candidateCount = 0;
+                                ScopedAtomic<unsigned> indexRecordsRead(::indexRecordsRead);
+                                ScopedAtomic<unsigned> postFiltered(::postFiltered);
                                 while (tlk->lookup(true))
                                 {
                                     candidateCount++;
-                                    atomic_inc(&indexRecordsRead);
+                                    indexRecordsRead++;
                                     KLBlobProviderAdapter adapter(tlk);
                                     const byte *indexRow = tlk->queryKeyBuffer();
                                     size_t fposOffset = tlk->queryRowSize() - sizeof(offset_t);
@@ -26268,9 +26272,10 @@ public:
                                     else
                                     {
                                         rejected++;
-                                        atomic_inc(&postFiltered);
+                                        postFiltered++;
                                     }
                                 }
+
                                 // output an end marker for the matches to this group
                                 KeyedJoinHeader *rec = (KeyedJoinHeader *) ctx->queryRowManager().allocate(KEYEDJOIN_RECORD_SIZE(0), activityId);
                                 rec->fpos = (offset_t) candidateCount;

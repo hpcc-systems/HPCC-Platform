@@ -762,7 +762,7 @@ public:
         if (dataBuff) 
         {   
             dataBuff->Release();
-            atomic_inc(&unwantedDiscarded);
+            unwantedDiscarded++;
         }
     }
 

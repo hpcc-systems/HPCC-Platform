@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include <algorithm>
+#include <queue>
 #include "jlog.hpp"
 #include "jtime.hpp"
 #include "jptree.hpp"
@@ -30,63 +31,61 @@
 
 #define DEFAULT_PULSE_INTERVAL 30
 
-atomic_t queryCount;
+RelaxedAtomic<unsigned> queryCount;
 RoxieQueryStats unknownQueryStats;
 RoxieQueryStats loQueryStats;
 RoxieQueryStats hiQueryStats;
 RoxieQueryStats slaQueryStats;
 RoxieQueryStats combinedQueryStats;
-atomic_t retriesIgnoredPrm;
-atomic_t retriesIgnoredSec;
-atomic_t retriesNeeded;
-atomic_t retriesReceivedPrm;
-atomic_t retriesReceivedSec;
-atomic_t retriesSent;
-atomic_t rowsIn;
-atomic_t ibytiPacketsFromSelf;
-atomic_t ibytiPacketsSent;
-atomic_t ibytiPacketsWorked;
-atomic_t ibytiPacketsHalfWorked;
-atomic_t ibytiPacketsReceived;
-atomic_t ibytiPacketsTooLate;
-atomic_t ibytiNoDelaysPrm;
-atomic_t ibytiNoDelaysSec;
-atomic_t packetsSent;
-atomic_t packetsReceived;
-atomic_t resultsReceived;
-atomic_t indexRecordsRead;
-atomic_t postFiltered;
-atomic_t abortsSent;
-atomic_t activitiesStarted;
-atomic_t activitiesCompleted;
-atomic_t diskReadStarted;
-atomic_t diskReadCompleted;
-atomic_t globalSignals;
-atomic_t globalLocks;
-atomic_t numFilesToProcess;
+RelaxedAtomic<unsigned> retriesIgnoredPrm;
+RelaxedAtomic<unsigned> retriesIgnoredSec;
+RelaxedAtomic<unsigned> retriesNeeded;
+RelaxedAtomic<unsigned> retriesReceivedPrm;
+RelaxedAtomic<unsigned> retriesReceivedSec;
+RelaxedAtomic<unsigned> retriesSent;
+RelaxedAtomic<unsigned> rowsIn;
+RelaxedAtomic<unsigned> ibytiPacketsFromSelf;
+RelaxedAtomic<unsigned> ibytiPacketsSent;
+RelaxedAtomic<unsigned> ibytiPacketsWorked;
+RelaxedAtomic<unsigned> ibytiPacketsHalfWorked;
+RelaxedAtomic<unsigned> ibytiPacketsReceived;
+RelaxedAtomic<unsigned> ibytiPacketsTooLate;
+RelaxedAtomic<unsigned> ibytiNoDelaysPrm;
+RelaxedAtomic<unsigned> ibytiNoDelaysSec;
+RelaxedAtomic<unsigned> packetsSent;
+RelaxedAtomic<unsigned> packetsReceived;
+RelaxedAtomic<unsigned> resultsReceived;
+RelaxedAtomic<unsigned> indexRecordsRead;
+RelaxedAtomic<unsigned> postFiltered;
+RelaxedAtomic<unsigned> abortsSent;
+RelaxedAtomic<unsigned> activitiesStarted;
+RelaxedAtomic<unsigned> activitiesCompleted;
+RelaxedAtomic<unsigned> diskReadStarted;
+RelaxedAtomic<unsigned> diskReadCompleted;
+RelaxedAtomic<unsigned> globalSignals;
+RelaxedAtomic<unsigned> globalLocks;
+RelaxedAtomic<unsigned> numFilesToProcess;
 
-CriticalSection counterCrit;
-unsigned queueLength;
-unsigned maxQueueLength;
-unsigned rowsOut;
-unsigned maxScanLength;
-unsigned totScanLength;
-unsigned totScans;
-unsigned meanScanLength;
+RelaxedAtomic<unsigned> queueLength;
+RelaxedAtomic<unsigned> maxQueueLength;
+RelaxedAtomic<unsigned> rowsOut;
+RelaxedAtomic<unsigned> maxScanLength;
+RelaxedAtomic<unsigned> totScanLength;
+RelaxedAtomic<unsigned> totScans;
 
 #ifdef TIME_PACKETS
-unsigned __int64 packetWaitElapsed; 
-unsigned packetWaitMax;
-atomic_t packetWaitCount;
-unsigned __int64 packetRunElapsed; 
-unsigned packetRunMax;
-atomic_t packetRunCount;
+RelaxedAtomic<unsigned __int64> packetWaitElapsed;
+RelaxedAtomic<unsigned> packetWaitMax;
+RelaxedAtomic<unsigned> packetWaitCount;
+RelaxedAtomic<unsigned __int64> packetRunElapsed;
+RelaxedAtomic<unsigned> packetRunMax;
+RelaxedAtomic<unsigned> packetRunCount;
 #endif
 
-unsigned lastQueryDate = 0;
-unsigned lastQueryTime = 0;
-unsigned slavesActive = 0;
-unsigned maxSlavesActive = 0;
+RelaxedAtomic<unsigned> lastQueryDate;
+RelaxedAtomic<unsigned> lastQueryTime;
+RelaxedAtomic<unsigned> slavesActive;
+RelaxedAtomic<unsigned> maxSlavesActive;
 
 #define addMetric(a, b) doAddMetric(a, #a, b)
 
@@ -102,44 +101,23 @@ interface ITimerCallback : extends IInterface
     virtual void onTimer() = 0;
 };
 
-class AtomicMetric : implements INamedMetric, public CInterface
-{
-    atomic_t &counter;
-    bool cumulative;
-public:
-    IMPLEMENT_IINTERFACE;
-    AtomicMetric(atomic_t &_counter, bool _cumulative)
-    : counter(_counter), cumulative(_cumulative)
-    {
-    }
-    virtual long getValue() 
-    {
-        return atomic_read(&counter);
-    }
-    virtual bool isCumulative()
-    {
-        return cumulative;
-    }
-    virtual void resetValue()
-    {
-        if (cumulative)
-            atomic_set(&counter, 0);
-    }
-};
-
 class RelaxedAtomicMetric : implements INamedMetric, public CInterface
 {
     RelaxedAtomic<unsigned> &counter;
     const bool cumulative;
+    const bool isMinVal;
 public:
     IMPLEMENT_IINTERFACE;
-    RelaxedAtomicMetric(RelaxedAtomic<unsigned> &_counter, bool _cumulative)
-    : counter(_counter), cumulative(_cumulative)
+    RelaxedAtomicMetric(RelaxedAtomic<unsigned> &_counter, bool _cumulative, bool _isMinVal)
+    : counter(_counter), cumulative(_cumulative), isMinVal(_isMinVal)
     {
     }
     virtual long getValue()
     {
-        return counter.load();
+        unsigned ret = counter.load();
+        if (isMinVal && ret == (unsigned) -1)
+            ret = 0;
+        return (long) ret;
     }
     virtual bool isCumulative()
     {
@@ -149,36 +127,6 @@ public:
     {
         if (cumulative)
             counter.store(0);
-    }
-};
-
-class CounterMetric : implements INamedMetric, public CInterface
-{
-protected:
-    unsigned &counter;
-    bool cumulative;
-public:
-    IMPLEMENT_IINTERFACE;
-    CounterMetric(unsigned &_counter, bool _cumulative)
-    : counter(_counter), cumulative(_cumulative)
-    {
-    }
-    virtual long getValue() 
-    {
-        CriticalBlock c(counterCrit);
-        return counter;
-    }
-    virtual bool isCumulative()
-    {
-        return cumulative;
-    }
-    virtual void resetValue()
-    {
-        if (cumulative)
-        {
-            CriticalBlock c(counterCrit);
-            counter = 0;
-        }
     }
 };
 
@@ -257,6 +205,7 @@ public:
 
     void addListener(ITimerCallback *l)
     {
+        CriticalBlock c(crit);
         listeners.append(*LINK(l));
     }
 
@@ -319,17 +268,16 @@ public:
 
 };
 
-class RatioMetric : implements INamedMetric, public CInterface
+class UnsignedRatioMetric : implements INamedMetric, public CInterface
 {
-    atomic_t &counter;
-    unsigned __int64 &elapsed;
+    RelaxedAtomic<unsigned> &counter;
+    RelaxedAtomic<unsigned __int64> &elapsed;
 public:
     IMPLEMENT_IINTERFACE;
-    RatioMetric(atomic_t &_counter, unsigned __int64 &_elapsed) : counter(_counter) , elapsed(_elapsed) {}
+    UnsignedRatioMetric(RelaxedAtomic<unsigned> &_counter, RelaxedAtomic<unsigned __int64> &_elapsed) : counter(_counter) , elapsed(_elapsed) {}
     virtual long getValue() 
     {
-        CriticalBlock c(counterCrit);
-        unsigned count = atomic_read(&counter);
+        unsigned count = counter;
         if (count)
             return (unsigned) (elapsed / count);
         else
@@ -339,33 +287,8 @@ public:
 
     virtual void resetValue()
     {
-        CriticalBlock c(counterCrit);
-        atomic_set(&counter, 0);
-    }
-
-};
-
-class UnsignedRatioMetric : implements INamedMetric, public CInterface
-{
-    unsigned &counter;
-    unsigned __int64 &elapsed;
-public:
-    IMPLEMENT_IINTERFACE;
-    UnsignedRatioMetric(unsigned &_counter, unsigned __int64 &_elapsed) : counter(_counter) , elapsed(_elapsed) {}
-    virtual long getValue() 
-    {
-        CriticalBlock c(counterCrit);
-        if (counter)
-            return (unsigned) (elapsed / counter);
-        else
-            return 0;
-    }
-    virtual bool isCumulative() { return true; }
-
-    virtual void resetValue()
-    {
-        CriticalBlock c(counterCrit);
         counter = 0;
+        elapsed = 0;
     }
 
 };
@@ -383,13 +306,10 @@ public:
     StringBuffer &getMetrics(StringBuffer &xml);
     void resetMetrics();
 
-    void doAddMetric(atomic_t &counter, const char *name, unsigned interval);
-    void doAddMetric(RelaxedAtomic<unsigned> &counter, const char *name, unsigned interval);
-    void doAddMetric(unsigned &counter, const char *name, unsigned interval);
+    void doAddMetric(RelaxedAtomic<unsigned> &counter, const char *name, unsigned interval, bool isMinVal = false);
     void doAddMetric(INamedMetric *n, const char *name, unsigned interval);
     void doAddMetric(AccessorFunction function, const char *name, unsigned interval);
-    void addRatioMetric(atomic_t &counter, const char *name, unsigned __int64 &elapsed);
-    void addRatioMetric(unsigned &counter, const char *name, unsigned __int64 &elapsed);
+    void addRatioMetric(RelaxedAtomic<unsigned> &counter, const char *name, RelaxedAtomic<unsigned __int64> &elapsed);
     void addUserMetric(const char *name, const char *regex);
 
 private:
@@ -402,11 +322,11 @@ private:
 void RoxieQueryStats::addMetrics(CRoxieMetricsManager *snmpManager, const char *prefix, unsigned interval)
 {
     StringBuffer name;
-    snmpManager->doAddMetric(count, name.clear().append(prefix).append("QueryCount"), interval);
-    snmpManager->doAddMetric(failedCount, name.clear().append(prefix).append("QueryFailed"), interval);
-    snmpManager->doAddMetric(active, name.clear().append(prefix).append("QueryActive"), 0);
-    snmpManager->doAddMetric(maxTime, name.clear().append(prefix).append("QueryMaxTime"), 0);
-    snmpManager->doAddMetric(minTime, name.clear().append(prefix).append("QueryMinTime"), 0);
+    snmpManager->doAddMetric(count, name.clear().append(prefix).append("QueryCount"), interval, false);
+    snmpManager->doAddMetric(failedCount, name.clear().append(prefix).append("QueryFailed"), interval, false);
+    snmpManager->doAddMetric(active, name.clear().append(prefix).append("QueryActive"), 0, false);
+    snmpManager->doAddMetric(maxTime, name.clear().append(prefix).append("QueryMaxTime"), 0, false);
+    snmpManager->doAddMetric(minTime, name.clear().append(prefix).append("QueryMinTime"), 0, true);
     snmpManager->addRatioMetric(count, name.clear().append(prefix).append("QueryAverageTime"), totalTime);
 }
 
@@ -478,7 +398,6 @@ CRoxieMetricsManager::CRoxieMetricsManager()
     addMetric(maxScanLength, 0);
     addMetric(totScanLength, 0);
     addMetric(totScans, 0);
-    addMetric(meanScanLength, 0);
     addMetric(lastQueryDate, 0);
     addMetric(lastQueryTime, 0);
 
@@ -492,19 +411,9 @@ CRoxieMetricsManager::CRoxieMetricsManager()
     ticker.start();
 }
 
-void CRoxieMetricsManager::doAddMetric(atomic_t &counter, const char *name, unsigned interval)
+void CRoxieMetricsManager::doAddMetric(RelaxedAtomic<unsigned> &counter, const char *name, unsigned interval, bool isMinVal)
 {
-    doAddMetric(new AtomicMetric(counter, interval != 0), name, interval);
-}
-
-void CRoxieMetricsManager::doAddMetric(RelaxedAtomic<unsigned> &counter, const char *name, unsigned interval)
-{
-    doAddMetric(new RelaxedAtomicMetric(counter, interval != 0), name, interval);
-}
-
-void CRoxieMetricsManager::doAddMetric(unsigned &counter, const char *name, unsigned interval)
-{
-    doAddMetric(new CounterMetric(counter, interval != 0), name, interval);
+    doAddMetric(new RelaxedAtomicMetric(counter, interval != 0, isMinVal), name, interval);
 }
 
 void CRoxieMetricsManager::doAddMetric(INamedMetric *n, const char *name, unsigned interval)
@@ -528,7 +437,7 @@ void CRoxieMetricsManager::doAddMetric(AccessorFunction function, const char *na
     doAddMetric(new FunctionMetric(function), name, interval);
 }
 
-void CRoxieMetricsManager::addRatioMetric(unsigned &counter, const char *name, unsigned __int64 &elapsed)
+void CRoxieMetricsManager::addRatioMetric(RelaxedAtomic<unsigned> &counter, const char *name, RelaxedAtomic<unsigned __int64> &elapsed)
 {
     doAddMetric(new UnsignedRatioMetric(counter, elapsed), name, 0);
 }
@@ -649,7 +558,7 @@ Owned<IRoxieMetricsManager> roxieMetrics;
 
 class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregator
 {
-    class QueryStatsRecord : public CInterface
+    class QueryStatsRecord
     {
         // one of these per query in last hour...
     private:
@@ -693,22 +602,23 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
             return l->elapsedTimeMs - r->elapsedTimeMs;
         }
 
-        static void getStats(IPropertyTree &result, CIArrayOf<QueryStatsRecord> &useStats, time_t from, time_t to)
+        static void getStats(IPropertyTree &result, std::deque<QueryStatsRecord> &useStats, time_t from, time_t to)
         {
+            unsigned *times = (unsigned *) alloca(useStats.size() * sizeof(unsigned));
             QueryStatsAggregateRecord aggregator(from, to);
-            ForEachItemIn(idx, useStats)
+            unsigned i = 0;
+            for (auto r : useStats)
             {
-                QueryStatsRecord &r = useStats.item(idx); 
                 aggregator.noteQuery(r.failed, r.elapsedTimeMs, r.memUsed, r.slavesReplyLen, r.bytesOut);
+                times[i++] = r.elapsedTimeMs;
             }
             aggregator.getStats(result, false);
-
             // Add in the exact percentiles
-            if (useStats.length())
+            if (i)
             {
-                unsigned percentile97Pos = (useStats.length() * 97) / 100;
-                useStats.sort(QueryStatsRecord::compareTime);
-                result.setPropInt("percentile97", useStats.item(percentile97Pos).elapsedTimeMs);
+                unsigned percentile97Pos = (i * 97) / 100;
+                qsort(times, i, sizeof(unsigned),  [] (const void *a, const void *b)  -> int {return *(const unsigned *)a - *(const unsigned *) b; });
+                result.setPropInt("percentile97", times[percentile97Pos]);
             }
             else
                 result.setPropInt("percentile97", 0);
@@ -723,7 +633,7 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
 
     };
     
-    class QueryStatsAggregateRecord : public CInterface
+    class QueryStatsAggregateRecord
     {
         // one of these per hour...
     private:
@@ -877,30 +787,53 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
         }
     };
 
-    QueueOf<QueryStatsRecord, false> recent;
-    CIArrayOf<QueryStatsAggregateRecord> aggregated; // stored with most recent first
+    CriticalSection statsLock;  // Protects multithreaded access to recent and aggregated structures
+    std::deque<QueryStatsRecord> recent;
+    std::deque<QueryStatsAggregateRecord> aggregated; // stored with most recent first
     unsigned expirySeconds;  // time to keep exact info (rather than just aggregated)
     StringAttr queryName;
-    SpinLock lock; // MORE: This could be held this for a while.  Is this significant?  Should it be a CriticalSection?
+    time_t lastStartTime = 0;
+    time_t firstStartTime = 0;
 
     QueryStatsAggregateRecord &findAggregate(time_t startTime)
     {
-        unsigned idx = 0;
-        while (aggregated.isItem(idx))
+        for (QueryStatsAggregateRecord &thisSlot : aggregated)
         {
-            QueryStatsAggregateRecord &thisSlot = aggregated.item(idx);
             if (thisSlot.matches(startTime))
                 return thisSlot; // This is the most common case!
-            else if (thisSlot.older(startTime))
-                break;
-            idx++;
         }
-        time_t slotStart;
-        time_t slotEnd;
-        calcSlotStartTime(startTime, SLOT_LENGTH, slotStart, slotEnd);
-        QueryStatsAggregateRecord *newSlot = new QueryStatsAggregateRecord(slotStart, slotEnd);
-        aggregated.add(*newSlot, idx);
-        return *newSlot;
+        // Add slots as needed at start or end (never in middle due to deque invalidation rules)
+        // This can be done in a critsec - it's rare
+        if (aggregated.empty())
+        {
+            calcSlotStartTime(startTime, SLOT_LENGTH, firstStartTime, lastStartTime);
+            aggregated.emplace(aggregated.begin(), firstStartTime, lastStartTime);
+            return aggregated.front();
+        }
+        else if (startTime > lastStartTime)
+        {
+            do
+            {
+                time_t slotStart;
+                time_t slotEnd;
+                calcSlotStartTime(lastStartTime+1, SLOT_LENGTH, slotStart, slotEnd);
+                aggregated.emplace(aggregated.begin(), slotStart, slotEnd);
+                lastStartTime = slotEnd;
+            } while (startTime > lastStartTime);
+            return aggregated.front();
+        }
+        else
+        {
+            while (startTime < firstStartTime)
+            {
+                time_t slotStart;
+                time_t slotEnd;
+                calcSlotStartTime(firstStartTime-1, SLOT_LENGTH, slotStart, slotEnd);
+                aggregated.emplace(aggregated.end(), slotStart, slotEnd);
+                firstStartTime = slotStart;
+            }
+            return aggregated.back();
+        }
     }
 
     static void calcSlotStartTime(time_t queryTime, unsigned slotLengthSeconds, time_t &slotStart, time_t &slotEnd)
@@ -916,7 +849,7 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
     }
     
     static CQueryStatsAggregator globalStatsAggregator;
-    static SpinLock queryStatsCrit;
+    static ReadWriteLock queryStatsLock;
 
 public:
     static CIArrayOf<CQueryStatsAggregator> queryStatsAggregators;
@@ -925,9 +858,9 @@ public:
     {
         if (CInterface::Release())
             return true;
-        SpinBlock b(queryStatsCrit);
         if (!IsShared())
         {
+            WriteLockBlock b(queryStatsLock);
             queryStatsAggregators.zap(* const_cast<CQueryStatsAggregator*>(this));
             return true;
         }
@@ -938,23 +871,18 @@ public:
         : queryName(_queryName)
     {
         expirySeconds = _expirySeconds;
-
-        SpinBlock b(queryStatsCrit); // protect the global list
+        WriteLockBlock b(queryStatsLock); // protect the global list
         queryStatsAggregators.append(*LINK(this));
     }
     ~CQueryStatsAggregator()
     {
-        while (recent.ordinality())
-        {
-            recent.dequeue()->Release();
-        }
     }
     static IPropertyTree *getAllQueryStats(bool includeQueries, time_t from, time_t to)
     {
         Owned<IPTree> result = createPTree("QueryStats", ipt_fast);
         if (includeQueries)
         {
-            SpinBlock b(queryStatsCrit);
+            ReadLockBlock b(queryStatsLock);
             ForEachItemIn(idx, queryStatsAggregators)
             {
                 CQueryStatsAggregator &thisQuery = queryStatsAggregators.item(idx);
@@ -969,19 +897,14 @@ public:
     {
         time_t timeNow;
         time(&timeNow);
-        SpinBlock b(lock);
+        CriticalBlock b(statsLock);
         if (expirySeconds)
-        {
-            QueryStatsRecord *statsRec = new QueryStatsRecord(startTime, failed, elapsedTimeMs, memUsed, slavesReplyLen, bytesOut);
-            recent.enqueue(statsRec, QueryStatsRecord::checkOlder);
-        }
+            recent.emplace(recent.end(), startTime, failed, elapsedTimeMs, memUsed, slavesReplyLen, bytesOut);
         // Now remove any that have expired
         if (expirySeconds != (unsigned) -1)
         {
-            while (recent.ordinality() && recent.head()->expired(timeNow, expirySeconds))
-            {
-                recent.dequeue()->Release();
-            }
+            while (!recent.empty() && recent.front().expired(timeNow, expirySeconds))
+                recent.pop_front();
         }
 
         QueryStatsAggregateRecord &aggregator = findAggregate(startTime);
@@ -997,19 +920,15 @@ public:
         if (expirySeconds && difftime(timeNow, from) <= expirySeconds)
         {
             // we can calculate exactly
-            CIArrayOf<QueryStatsRecord> useStats;
+            std::deque<QueryStatsRecord> useStats;
             {
-                SpinBlock b(lock); // be careful not to take too much time in here! If it gets to take a while, we will have to rethink
-                ForEachQueueItemIn(idx, recent)
+                CriticalBlock b(statsLock);
+                for (auto rec : recent)
                 {
-                    QueryStatsRecord *rec = recent.item(idx);
-                    if (rec->inRange(from, to))
-                    {
-                        rec->Link();
-                        useStats.append(*rec);
-                    }
+                    if (rec.inRange(from, to))
+                        useStats.push_back(rec);
                 }
-                // Spinlock is released here, and we process the useStats array at our leisure...
+                // lock is released here, and we process the useStats array at our leisure...
             }
             QueryStatsRecord::getStats(*result, useStats, from, to);
         }
@@ -1017,16 +936,15 @@ public:
         {
             QueryStatsAggregateRecord aggregator(from, to);
             {
-                SpinBlock b(lock);
-                ForEachItemInRev(idx, aggregated)
+                CriticalBlock b(statsLock);
+                for (auto thisSlot: aggregated)
                 {
-                    QueryStatsAggregateRecord &thisSlot = aggregated.item(idx);
                     if (thisSlot.inRange(from, to))
                         aggregator.mergeStats(thisSlot);
                     else if (thisSlot.older(from))
                         break;
                 }
-                // Spinlock is released here, and we process the aggregator at our leisure...
+                // lock is released here, and we process the aggregator at our leisure...
             }
             aggregator.getStats(*result, true);
         }
@@ -1040,7 +958,7 @@ public:
 
 CIArrayOf<CQueryStatsAggregator> CQueryStatsAggregator::queryStatsAggregators;
 CQueryStatsAggregator CQueryStatsAggregator::globalStatsAggregator(NULL, SLOT_LENGTH);
-SpinLock CQueryStatsAggregator::queryStatsCrit; //MORE: Should probably be a critical section
+ReadWriteLock CQueryStatsAggregator::queryStatsLock;
 
 IQueryStatsAggregator *queryGlobalQueryStatsAggregator()
 {

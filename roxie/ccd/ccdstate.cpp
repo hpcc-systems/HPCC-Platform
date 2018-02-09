@@ -2063,7 +2063,7 @@ private:
             }
             else if (stricmp(queryName, "control:alive")==0)
             {
-                reply.appendf("<Alive restarts='%d'/>", restarts);
+                reply.appendf("<Alive restarts='%d'/>", restarts.load());
             }
             else
                 unknown = true;

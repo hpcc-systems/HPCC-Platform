@@ -966,7 +966,7 @@ public:
         size32_t size = rowDeserializer->deserialize(rowBuilder, rowSource);
         if (isGrouped)
             rowSource.read(sizeof(bool), &eogPending);
-        atomic_inc(&rowsIn);
+        rowsIn++;
         return rowBuilder.finalizeRowClear(size);
     }
 };
