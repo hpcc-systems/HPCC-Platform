@@ -34,6 +34,8 @@ ERROR = {
     "6002": "OS error when try to call ecl command!",
     "6003": "Parameter error when try to call ecl command!",
     "6004": "Can't connect to remote HPCC System!",
+    "6005": "Syntax error in //skip tag!",
+    "6006": "Error in build suite"
 }
 
 

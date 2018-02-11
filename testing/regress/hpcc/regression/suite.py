@@ -18,13 +18,12 @@
 '''
 
 import os
-import sys
 import time
 import glob
 
 from ..util.ecl.file import ECLFile
 from ..common.error import Error
-from ..util.util import checkClusters, getConfig
+from ..util.util import getConfig
 
 class Suite:
     def __init__(self, clusterName, dir_ec, dir_a, dir_ex, dir_r, logDir, dir_inc, args, isSetup=False,  fileList = None):
@@ -81,44 +80,53 @@ class Suite:
             classExcluded = args.excludeclass[0].split(',')
             pass
 
+        exceptions =  ''
         for file in allfiles:
             if file.endswith(".ecl"):
-                ecl = os.path.join(self.dir_ec, file)
-                eclfile = ECLFile(ecl, self.dir_a, self.dir_ex,
-                                  self.dir_r, self.dir_inc, self.clusterName,   args)
-                if isSetup:
-                    skipResult = eclfile.testSkip('setup')
-                else:
-                    skipResult = eclfile.testSkip(self.targetName)
-
-                if not skipResult['skip']:
-                    exclude=False
-                    exclusionReason=''
+                try:
+                    ecl = os.path.join(self.dir_ec, file)
+                    eclfile = ECLFile(ecl, self.dir_a, self.dir_ex,
+                                      self.dir_r, self.dir_inc, self.clusterName,   args)
                     if isSetup:
-                        exclude = eclfile.testExclusion('setup')
-                        exclusionReason=' setup'
-                    elif ( 'all' not in  classIncluded ) or ('none' not in classExcluded):
-                        included = True
-                        if 'all' not in classIncluded:
-                            included = eclfile.testInClass(classIncluded)
-                        excluded = False
-                        if 'none' not in classExcluded:
-                            excluded = eclfile.testInClass(classExcluded)
-                        exclude = (not included )  or excluded
-                        exclusionReason=' class member excluded'
-                    if not exclude:
-                        exclude = eclfile.testExclusion(self.targetName)
-                        exclusionReason=' ECL excluded'
-
-                    if not exclude:
-                        self.addFileToSuite(eclfile)
+                        skipResult = eclfile.testSkip('setup')
                     else:
-                        self.exclude.append(format(file, "30")+exclusionReason)
-                else:
-                    self.exclude.append(format(file, "30")+" skipped (reason:"+skipResult['reason']+")");
+                        skipResult = eclfile.testSkip(self.targetName)
 
-                if eclfile.testPublish():
-                    self.publish.append(eclfile.getBaseEcl())
+                    if not skipResult['skip']:
+                        exclude=False
+                        exclusionReason=''
+                        if isSetup:
+                            exclude = eclfile.testExclusion('setup')
+                            exclusionReason=' setup'
+                        elif ( 'all' not in  classIncluded ) or ('none' not in classExcluded):
+                            included = True
+                            if 'all' not in classIncluded:
+                                included = eclfile.testInClass(classIncluded)
+                            excluded = False
+                            if 'none' not in classExcluded:
+                                excluded = eclfile.testInClass(classExcluded)
+                            exclude = (not included )  or excluded
+                            exclusionReason=' class member excluded'
+                        if not exclude:
+                            exclude = eclfile.testExclusion(self.targetName)
+                            exclusionReason=' ECL excluded'
+
+                        if not exclude:
+                            self.addFileToSuite(eclfile)
+                        else:
+                            self.exclude.append(format(file, "30")+exclusionReason)
+                    else:
+                        self.exclude.append(format(file, "30")+" skipped (reason:"+skipResult['reason']+")");
+
+                    if eclfile.testPublish():
+                        self.publish.append(eclfile.getBaseEcl())
+                except Error as e:
+                    exceptions += str(e)
+                except:
+                    raise
+
+        if exceptions != '':
+            raise Error("6006", err="%s" % (exceptions))
 
     def addFileToSuite(self, eclfile):
         haveVersions = eclfile.testVesion()

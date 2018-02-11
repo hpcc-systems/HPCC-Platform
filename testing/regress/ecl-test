@@ -284,6 +284,7 @@ class RegressMain:
             logging.critical(e)
             exit(e.getErrorCode());
         except Exception as e:
+            logging.critical("Regression Test Engine internal error")
             logging.critical(e)
             logging.critical(traceback.format_exc())
         except KeyboardInterrupt:
