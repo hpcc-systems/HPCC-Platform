@@ -2561,7 +2561,6 @@ FILESERVICES_API char * FILESERVICES_CALL fsGetEspURL(const char *username, cons
                                         }
 
                                         espURL.setf("%s://%s%s:%d", bindingProtocol.str(), credentials.str(), instanceAddress.str(), espBindingIter->query().getPropInt("@port",8010));
-
                                         return espURL.detach();
                                     }
                                 }
@@ -2572,8 +2571,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsGetEspURL(const char *username, cons
             }
         }
     }
-
-    return NULL;
+    return strdup("");
 }
 
 
