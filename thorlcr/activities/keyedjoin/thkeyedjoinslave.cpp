@@ -567,7 +567,6 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     Owned<IEngineRowAllocator> fetchInputMetaAllocator;
     Owned<IThorRowInterfaces> fetchInputMetaRowIf, fetchOutputRowIf;
     MemoryBuffer rawFetchMb;
-    IConstPointerArrayOf<ITranslator> translators;
 
 #ifdef TRACE_USAGE
     atomic_t debugats[10];
@@ -1197,12 +1196,14 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         IKeyIndex *currentTlk;
         CJoinGroup *currentJG;
         RtlDynamicRowBuilder indexReadFieldsRow;
-        IArrayOf<IKeyManager> partKeyManagers;
+        Owned<IKeyManager> partManager;
+        IArrayOf<IKeyIndex> partKeyIndexes;
 
-        IKeyManager *currentPartKeyManager = nullptr;
+        IKeyIndex *currentPart = nullptr;
         unsigned nextPart;
         unsigned candidateCount;
         __int64 lastSeeks, lastScans;
+        IConstPointerArrayOf<ITranslator> translators;
 
         inline void noteStats(unsigned seeks, unsigned scans)
         {
@@ -1227,19 +1228,49 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             currentTlk = NULL;
             lastSeeks = lastScans = 0;
             nextPart = 0; // only used for superkeys of single part keys
-            currentPartKeyManager = nullptr;
+            currentPart = nullptr;
             candidateCount = 0;
         }
+        void configurePart(unsigned partNo, const void *row)
+        {
+            currentPart = &partKeyIndexes.item(partNo);
+            partManager->setKey(currentPart);
+            owner.helper->createSegmentMonitors(partManager, row);
+            partManager->finishSegmentMonitors();
+            partManager->reset();
+            const ITranslator *translator = translators.item(partNo);
+            if (translator)
+                partManager->setLayoutTranslator(&translator->queryTranslator());
+        }
+
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
         CKeyLocalLookup(CKeyedJoinSlave &_owner, const RtlRecord &_keyRecInfo) : owner(_owner), keyRecInfo(_keyRecInfo), indexReadFieldsRow(_owner.indexInputAllocator)
         {
             tlkManager.setown(owner.keyHasTlk ? createLocalKeyManager(keyRecInfo, nullptr, nullptr) : nullptr);
-
-            if (owner.getKeyManagers(partKeyManagers)) // true signifies that dealing with a local mergable set of index parts
-                currentPartKeyManager = &partKeyManagers.item(0);
             reset();
+            owner.getKeyIndexes(partKeyIndexes);
+            RecordTranslationMode translationMode = getTranslationMode(owner);
+            IOutputMetaData *projectedFormat = owner.helper->queryProjectedIndexRecordSize();
+            unsigned expectedFormatCrc = owner.helper->getIndexFormatCrc();
+            if (owner.localKey && (partKeyIndexes.ordinality() > 1))
+            {
+                Owned<IKeyIndexSet> partKeySet = createKeyIndexSet();
+                ForEachItemIn(i, partKeyIndexes)
+                    partKeySet->addIndex(LINK(&partKeyIndexes.item(i)));
+                currentPart = &partKeyIndexes.item(0);
+                partManager.setown(createKeyMerger(owner.helper->queryIndexRecordSize()->queryRecordAccessor(true), partKeySet, 0, nullptr));
+                Owned<const ITranslator> translator = getLayoutTranslation(owner.helper->getFileName(), owner.indexParts.item(0), translationMode, owner.helper->queryIndexRecordSize(), projectedFormat, expectedFormatCrc);
+                if (translator)
+                    partManager->setLayoutTranslator(&translator->queryTranslator());
+                translators.append(translator.getClear());
+            }
+            else
+            {
+                partManager.setown(createLocalKeyManager(owner.helper->queryIndexRecordSize()->queryRecordAccessor(true), nullptr, nullptr));
+                getLayoutTranslations(translators, owner.helper->getFileName(), owner.indexParts, translationMode, owner.helper->queryIndexRecordSize(), projectedFormat, expectedFormatCrc);
+            }
         }
         ~CKeyLocalLookup()
         {
@@ -1318,16 +1349,16 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             {
                 for (;;)
                 {
-                    if (currentPartKeyManager)
+                    if (currentPart)
                     {
-                        while (currentPartKeyManager->lookup(true))
+                        while (partManager->lookup(true))
                         {
                             ++candidateCount;
                             if (candidateCount > owner.atMost)
                                 break;
-                            KLBlobProviderAdapter adapter(currentPartKeyManager);
-                            byte const * keyRow = currentPartKeyManager->queryKeyBuffer();
-                            size_t fposOffset = currentPartKeyManager->queryRowSize() - sizeof(offset_t);
+                            KLBlobProviderAdapter adapter(partManager);
+                            byte const * keyRow = partManager->queryKeyBuffer();
+                            size_t fposOffset = partManager->queryRowSize() - sizeof(offset_t);
                             offset_t fpos = rtlReadBigUInt8(keyRow + fposOffset);
                             if (owner.helper->indexReadMatch(indexReadFieldsRow.getSelf(), keyRow, &adapter))
                             {
@@ -1354,7 +1385,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 #ifdef TRACE_JOINGROUPS
                                 ::ActPrintLog(&owner, "CJoinGroup [result] %x from %d", currentJG, __LINE__);
 #endif
-                                noteStats(currentPartKeyManager->querySeeks(), currentPartKeyManager->queryScans());
+                                noteStats(partManager->querySeeks(), partManager->queryScans());
                                 size32_t lorsz = owner.keyLookupAllocator->queryOutputMeta()->getRecordSize(lookupRow.getSelf());
                                 // must be easier way
                                 return lookupRow.finalizeRowClear(lorsz);
@@ -1365,21 +1396,16 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                                 owner.statsArr[AS_PostFiltered]++;
                             }
                         }
-                        currentPartKeyManager->releaseSegmentMonitors();
-                        noteStats(currentPartKeyManager->querySeeks(), currentPartKeyManager->queryScans());
-                        currentPartKeyManager = nullptr;
+                        partManager->releaseSegmentMonitors();
+                        noteStats(partManager->querySeeks(), partManager->queryScans());
+                        currentPart = nullptr;
                         if (owner.localKey)
                         { // merger done
                         }
                         else if (!owner.keyHasTlk)
                         {
-                            if (nextPart < partKeyManagers.ordinality())
-                            {
-                                currentPartKeyManager = &partKeyManagers.item(nextPart++);
-                                owner.helper->createSegmentMonitors(currentPartKeyManager, indexReadFieldsRow.getSelf());
-                                currentPartKeyManager->finishSegmentMonitors();
-                                currentPartKeyManager->reset();
-                            }
+                            if (nextPart < partKeyIndexes.ordinality())
+                                configurePart(nextPart++, indexReadFieldsRow.getSelf());
                         }
                     }
                     else if (currentTlk)
@@ -1393,14 +1419,11 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                                 unsigned partNo = (unsigned)node;
                                 partNo = owner.superWidth ? owner.superWidth*nextTlk+(partNo-1) : partNo-1;
 
-                                currentPartKeyManager = &partKeyManagers.item(partNo);
-                                owner.helper->createSegmentMonitors(currentPartKeyManager, indexReadFieldsRow.getSelf());
-                                currentPartKeyManager->finishSegmentMonitors();
-                                currentPartKeyManager->reset();
+                                configurePart(partNo, indexReadFieldsRow.getSelf());
                                 break;
                             }
                         }
-                        if (!currentPartKeyManager)
+                        if (!currentPart)
                         {
                             if (++nextTlk < owner.tlkKeySet->numParts())
                             {
@@ -1441,8 +1464,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 #ifdef TRACE_JOINGROUPS
                             ::ActPrintLog(&owner, "CJoinGroup [end marker returned] %x from %d", currentJG, __LINE__);
 #endif
-                            if (currentPartKeyManager)
-                                noteStats(currentPartKeyManager->querySeeks(), currentPartKeyManager->queryScans());
+                            if (currentPart)
+                                noteStats(partManager->querySeeks(), partManager->queryScans());
                             currentJG = NULL;
                             size32_t lorsz = owner.keyLookupAllocator->queryOutputMeta()->getRecordSize(lookupRow.getSelf());
                             // must be easier way
@@ -1457,18 +1480,15 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                         currentJG->notePendingEndCandidate();
 
                         candidateCount = 0;
-                        if (0 == partKeyManagers.ordinality()) // if empty key
+                        if (0 == partKeyIndexes.ordinality()) // if empty key
                         {
                             // will terminate row/group next cycle
                         }
                         else if (!owner.keyHasTlk)
                         {
-                            currentPartKeyManager = &partKeyManagers.item(0);
-                            if (!owner.localKey || 1 == partKeyManagers.ordinality())
-                                nextPart = 1;
-                            owner.helper->createSegmentMonitors(currentPartKeyManager, indexReadFieldsRow.getSelf());
-                            currentPartKeyManager->finishSegmentMonitors();
-                            currentPartKeyManager->reset();
+                            configurePart(0, indexReadFieldsRow.getSelf());
+                            if (!owner.localKey || 1 == partKeyIndexes.ordinality())
+                                nextPart = 1; // no next part
                         }
                         else
                         {
@@ -1487,8 +1507,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 ::ActPrintLog(&owner, e);
                 throw;
             }
-            if (currentPartKeyManager)
-                noteStats(currentPartKeyManager->querySeeks(), currentPartKeyManager->queryScans());
+            if (currentPart)
+                noteStats(partManager->querySeeks(), partManager->queryScans());
             return NULL;
         }
 
@@ -1598,16 +1618,9 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     friend class CKeyLookupPoolMember;
     };
 
-    bool getKeyManagers(IArrayOf<IKeyManager> &keyManagers)
+    void getKeyIndexes(IArrayOf<IKeyIndex> &keyIndexes)
     {
         unsigned numIndexParts = indexParts.ordinality();
-        if (0 == numIndexParts)
-            return false;
-        bool localMergedKey = localKey && (numIndexParts > 1);
-        Owned<IKeyIndexSet> partKeySet;
-        RecordTranslationMode translationMode = getTranslationMode(*this);
-        IOutputMetaData *projectedFormat = helper->queryProjectedIndexRecordSize();
-        unsigned expectedFormatCrc = helper->getIndexFormatCrc();
         for (unsigned ip=0; ip<numIndexParts; ip++)
         {
             IPartDescriptor &filePart = indexParts.item(ip);
@@ -1621,43 +1634,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             IPropertyTree const &props = filePart.queryOwner().queryProperties();
             unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
             Owned<IDelayedFile> lfile = queryThor().queryFileCache().lookup(*this, indexName, filePart);
-            Owned<const IDynamicTransform> translator;
-            Owned<IKeyManager> klManager;
-            if (localMergedKey)
-            {
-                Owned<IKeyIndex> partIndex = createKeyIndex(filename.str(), crc, *lfile, false, false);
-                if (!partKeySet)
-                    partKeySet.setown(createKeyIndexSet());
-                partKeySet->addIndex(partIndex.getClear());
-            }
-            else
-            {
-                Owned<IKeyIndex> keyIndex = createKeyIndex(filename, crc, *lfile, false, false);
-                klManager.setown(createLocalKeyManager(helper->queryIndexRecordSize()->queryRecordAccessor(true), keyIndex, nullptr));
-                keyManagers.append(*klManager.getClear());
-            }
-        }
-        if (localMergedKey)
-        {
-            dbgassertex(0 == keyManagers.ordinality());
-            Owned<IKeyManager> keyManager = createKeyMerger(helper->queryIndexRecordSize()->queryRecordAccessor(true), partKeySet, 0, nullptr);
-            Owned<const ITranslator> translator = getLayoutTranslation(helper->getFileName(), indexParts.item(0), translationMode, helper->queryIndexRecordSize(), projectedFormat, expectedFormatCrc);
-            if (translator)
-                keyManager->setLayoutTranslator(&translator->queryTranslator());
-            translators.append(translator.getClear());
-            keyManagers.append(*keyManager.getClear());
-            return true;
-        }
-        else
-        {
-            getLayoutTranslations(translators, helper->getFileName(), indexParts, translationMode, helper->queryIndexRecordSize(), projectedFormat, expectedFormatCrc);
-            ForEachItemIn(k, keyManagers)
-            {
-                const ITranslator *translator = translators.item(k);
-                if (translator)
-                    keyManagers.item(k).setLayoutTranslator(&translator->queryTranslator());
-            }
-            return false;
+            Owned<IKeyIndex> keyIndex = createKeyIndex(filename, crc, *lfile, false, false);
+            keyIndexes.append(*keyIndex.getClear());
         }
     }
 
