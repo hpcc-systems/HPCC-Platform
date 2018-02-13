@@ -310,6 +310,10 @@ class ECLFile:
 
                     if skip == skipType:
                         return {'skip': True, 'type' : skipType, 'reason': skipReason}
+
+                    if skip == 'thor' and 'thorlcr' == skipType:
+                        return {'skip': True, 'type' : skipType, 'reason': skipReason}
+
             except Exception as e:
                 logging.debug( e, extra={'taskId':self.taskId})
                 logging.debug("%s",  traceback.format_exc().replace("\n","\n\t\t"),  extra={'taskId':self.taskId} )
