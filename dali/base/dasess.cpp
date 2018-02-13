@@ -2014,6 +2014,10 @@ class CUserDescriptor: implements IUserDescriptor, public CInterface
     StringBuffer signature;//user's digital Signature
 public:
     IMPLEMENT_IINTERFACE;
+    CUserDescriptor()
+    {
+        sessionToken = 0;
+    }
     StringBuffer &getUserName(StringBuffer &buf)
     {
         return buf.append(username);
