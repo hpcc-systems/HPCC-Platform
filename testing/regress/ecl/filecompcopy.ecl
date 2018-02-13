@@ -18,7 +18,7 @@
 import $.setup;
 prefix := setup.Files(false, false).FilePrefix;
 //noroxie 
-//skip nodfu       
+//skip type=roxie nodfu       
 
 // testing compressed->compressed, expanded->compressed, and compressed->expanded copies
 // requires dfuserver
