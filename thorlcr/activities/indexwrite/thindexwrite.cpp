@@ -102,7 +102,7 @@ public:
             isLocal = true;
             buildTlk = false;
         }
-        else if (!isLocal || globals->getPropBool("@buildLocalTlks", true))
+        else if (!isLocal || getOptBool("buildLocalTlks", true))
             buildTlk = true;
 
         fillClusterArray(container.queryJob(), fileName, clusters, groups);

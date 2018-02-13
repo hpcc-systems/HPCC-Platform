@@ -157,7 +157,7 @@ public:
         if (!isFastThrough(input))
             setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), INDEXWRITE_SMART_BUFFER_SIZE, true, false, RCUNBOUND, this, &container.queryJob().queryIDiskUsage()));
     }
-    void open(IPartDescriptor &partDesc, bool isTopLevel, bool isVariable)
+    void open(IPartDescriptor &partDesc, bool isTopLevel, bool isVariable, bool isTlk)
     {
         StringBuffer partFname;
         getPartFilename(partDesc, 0, partFname);
@@ -177,7 +177,7 @@ public:
         buildUserMetadata(metadata);                
         buildLayoutMetadata(metadata);
         unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;
-        builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), isTopLevel ? 0 : totalCount));
+        builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), isTopLevel ? 0 : totalCount, !isTlk));
     }
 
 
@@ -312,7 +312,7 @@ public:
             {
                 try
                 {
-                    open(*partDesc, false, helper->queryDiskRecordSize()->isVariableSize());
+                    open(*partDesc, false, helper->queryDiskRecordSize()->isVariableSize(), false);
                     for (;;)
                     {
                         OwnedConstThorRow row = inputStream->ungroupedNextRow();
@@ -399,7 +399,7 @@ public:
                     StringBuffer partFname;
                     getPartFilename(*partDesc, 0, partFname);
                     ActPrintLog("INDEXWRITE: process: handling fname : %s", partFname.str());
-                    open(*partDesc, false, helper->queryDiskRecordSize()->isVariableSize());
+                    open(*partDesc, false, helper->queryDiskRecordSize()->isVariableSize(), false);
                     ActPrintLog("INDEXWRITE: write");
 
                     BooleanOnOff tf(receiving);
@@ -477,7 +477,7 @@ public:
                         ActPrintLog("INDEXWRITE: creating toplevel key file : %s", path.str());
                         try
                         {
-                            open(*tlkDesc, true, helper->queryDiskRecordSize()->isVariableSize());
+                            open(*tlkDesc, true, helper->queryDiskRecordSize()->isVariableSize(), true);
                             if (tlkRows.length())
                             {
                                 CNodeInfo &lastNode = tlkRows.item(tlkRows.length()-1);
