@@ -26,7 +26,7 @@ import xml.etree.ElementTree as ET
 import unicodedata
 
 from ...util.util import isPositiveIntNum, getConfig
-
+from ...common.error import Error
 class ECLFile:
     ecl = None
     xml_e = None
@@ -284,29 +284,36 @@ class ECLFile:
         skip = skip.lower()
         eclText = open(self.getEcl(), 'r')
         skipLines = []
+        lineNo=0
         for line in eclText:
+            lineNo += 1
             line = line.lower()
             if skipText in line:
-                skipLines.append(line.rstrip('\n'))
+                skipLines.append({'line': line.rstrip('\n'),  'lineNo' : lineNo})
         if len(skipLines) > 0:
-            for skipLine in skipLines:
-                skipParts = skipLine.split()
-                skipType = skipParts[1]
-                skipReason = None
+            try:
+                for skipLine in skipLines:
+                    skipParts = skipLine['line'].split()
+                    skipType = skipParts[1]
+                    skipReason = None
 
-                if len(skipParts) == 3:
-                    skipReason = skipParts[2]
-                splitChar = '='
+                    if len(skipParts) == 3:
+                        skipReason = skipParts[2]
+                    splitChar = '='
 
-                if "==" in skipType:
-                    splitChar='=='
-                skipType = skipType.split(splitChar)[1]
+                    if "==" in skipType:
+                        splitChar='=='
+                    skipType = skipType.split(splitChar)[1]
 
-                if not skip:
-                    return {'reason': skipReason, 'type': skipType}
+                    if not skip:
+                        return {'reason': skipReason, 'type': skipType}
 
-                if skip == skipType:
-                    return {'skip': True, 'type' : skipType, 'reason': skipReason}
+                    if skip == skipType:
+                        return {'skip': True, 'type' : skipType, 'reason': skipReason}
+            except Exception as e:
+                logging.debug( e, extra={'taskId':self.taskId})
+                logging.debug("%s",  traceback.format_exc().replace("\n","\n\t\t"),  extra={'taskId':self.taskId} )
+                raise Error("6005", err='file: %s:%d\n text: \"%s\"' % (self.getEcl(), skipLine['lineNo'], skipLine['line']))
 
         return {'skip': False}
 
