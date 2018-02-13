@@ -30,7 +30,7 @@ define([
 
     "src/CodeMirror",
 
-    "hpcc/WsPackageMaps",
+    "src/WsPackageMaps",
 
     "dojo/text!../templates/PackageSourceWidget.html"
 ],

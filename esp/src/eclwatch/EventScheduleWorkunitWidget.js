@@ -32,8 +32,8 @@ define([
     "hpcc/_TabContainerWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/WUDetailsWidget",
-    "hpcc/WsWorkunits",
-    "hpcc/ESPUtil",
+    "src/WsWorkunits",
+    "src/ESPUtil",
     "hpcc/FilterDropDownWidget",
 
     "dojo/text!../templates/EventScheduleWorkunitWidget.html",

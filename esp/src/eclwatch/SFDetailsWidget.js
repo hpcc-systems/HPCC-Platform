@@ -46,10 +46,10 @@ define([
     "dgrid/selector",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/ESPUtil",
-    "hpcc/ESPLogicalFile",
+    "src/ESPUtil",
+    "src/ESPLogicalFile",
     "hpcc/DelayLoadWidget",
-    "hpcc/Utility",
+    "src/Utility",
 
     "dojo/text!../templates/SFDetailsWidget.html",
 

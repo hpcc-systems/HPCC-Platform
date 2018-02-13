@@ -28,8 +28,8 @@ define([
     "dijit/Dialog",
     "dijit/form/Button",
 
-    "hpcc/ESPUtil",
-    "hpcc/Utility",
+    "src/ESPUtil",
+    "src/Utility",
     "hpcc/LockDialogWidget",
 
     "dojox/html/entities",

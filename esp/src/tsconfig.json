@@ -12,6 +12,7 @@
         "importHelpers": true,
         "experimentalDecorators": true,
         "allowJs": true,
+        "skipLibCheck": true,
         "lib": [
             "dom",
             "es5",

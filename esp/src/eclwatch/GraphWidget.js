@@ -37,8 +37,8 @@ define([
     "dojox/xml/parser",
 
     "hpcc/_Widget",
-    "hpcc/ESPUtil",
-    "hpcc/Utility",
+    "src/ESPUtil",
+    "src/Utility",
 
     "dojo/text!../templates/GraphWidget.html",
 

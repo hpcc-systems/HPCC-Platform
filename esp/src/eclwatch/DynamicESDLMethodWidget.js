@@ -28,9 +28,9 @@ define([
     "dijit/ToolbarSeparator",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/ESPQuery",
-    "hpcc/ESPUtil",
-    "hpcc/WsESDLConfig",
+    "src/ESPQuery",
+    "src/ESPUtil",
+    "src/WsESDLConfig",
 
     "dgrid/selector",
     "dgrid/editor",

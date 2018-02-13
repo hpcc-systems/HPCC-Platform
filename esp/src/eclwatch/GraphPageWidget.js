@@ -33,11 +33,11 @@ define([
     "hpcc/_Widget",
     "hpcc/GraphWidget",
     "hpcc/JSGraphWidget",
-    "hpcc/ESPUtil",
-    "hpcc/ESPWorkunit",
+    "src/ESPUtil",
+    "src/ESPWorkunit",
     "hpcc/TimingTreeMapWidget",
-    "hpcc/WsWorkunits",
-    "hpcc/Utility",
+    "src/WsWorkunits",
+    "src/Utility",
 
     "dojo/text!../templates/GraphPageWidget.html",
 

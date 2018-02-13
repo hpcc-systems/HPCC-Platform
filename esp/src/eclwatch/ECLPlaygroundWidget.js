@@ -33,9 +33,9 @@ define([
     "hpcc/GraphWidget",
     "hpcc/JSGraphWidget",
     "hpcc/ECLPlaygroundResultsWidget",
-    "hpcc/ESPWorkunit",
-    "hpcc/ESPQuery",
-    "hpcc/Utility",
+    "src/ESPWorkunit",
+    "src/ESPQuery",
+    "src/Utility",
     
     "dojo/text!../templates/ECLPlaygroundWidget.html",
 

@@ -39,11 +39,11 @@ define([
     "dgrid/selector",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/WsDFUXref",
+    "src/WsDFUXref",
     "hpcc/DelayLoadWidget",
-    "hpcc/ESPUtil",
-    "hpcc/WsPackageMaps",
-    "hpcc/Utility",
+    "src/ESPUtil",
+    "src/WsPackageMaps",
+    "src/Utility",
     "hpcc/FilterDropDownWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/ECLSourceWidget"

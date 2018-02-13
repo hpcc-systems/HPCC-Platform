@@ -35,14 +35,14 @@ define([
     "dgrid/selector",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/ESPBase",
-    "hpcc/ESPUtil",
-    "hpcc/ESPWorkunit",
+    "src/ESPBase",
+    "src/ESPUtil",
+    "src/ESPWorkunit",
     "hpcc/DelayLoadWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/FilterDropDownWidget",
     "hpcc/ECLSourceWidget",
-    "hpcc/WsTopology",
+    "src/WsTopology",
 
     "dojo/text!../templates/LogWidget.html",
 
@@ -111,7 +111,7 @@ define([
         },
 
         _doDownload: function (zip) {
-            var base = new ESPBase();
+            var base = new ESPBase.default();
             var name = "//" + this.params.getNetaddress() + this.params.getLogDirectory() + "/" + this.logTargetSelect.get("value");
             var type = "tpcomp_log";
             window.open(base.getBaseURL("WsTopology") + "/SystemLog?Name=" + name + "&Type=" + type + "&Zip=" + zip, "_blank");

@@ -28,7 +28,7 @@ define([
     "hpcc/DelayLoadWidget",
     "hpcc/PackageSourceWidget",
     "hpcc/PackageMapPartsWidget",
-    "hpcc/WsPackageMaps",
+    "src/WsPackageMaps",
 
     "dojo/text!../templates/PackageMapDetailsWidget.html",
 

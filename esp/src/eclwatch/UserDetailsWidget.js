@@ -32,7 +32,7 @@ define([
     "dgrid/extensions/DijitRegistry",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/ws_access",
+    "src/ws_access",
     "hpcc/DelayLoadWidget",
 
     "dojo/text!../templates/UserDetailsWidget.html",

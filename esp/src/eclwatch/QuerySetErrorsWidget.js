@@ -24,8 +24,8 @@ define([
     "dgrid/selector",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/ESPQuery",
-    "hpcc/ESPUtil"
+    "src/ESPQuery",
+    "src/ESPUtil"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
                 selector,
                 GridDetailsWidget, ESPQuery, ESPUtil) {

@@ -27,13 +27,13 @@ define([
     "dgrid/selector",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/ESPWorkunit",
-    "hpcc/ESPQuery",
-    "hpcc/ESPLogicalFile",
+    "src/ESPWorkunit",
+    "src/ESPQuery",
+    "src/ESPLogicalFile",
     "hpcc/DelayLoadWidget",
     "hpcc/TimingTreeMapWidget",
-    "hpcc/ESPUtil",
-    "hpcc/Utility",
+    "src/ESPUtil",
+    "src/Utility",
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, has,
                 Button,

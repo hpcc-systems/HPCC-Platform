@@ -39,12 +39,12 @@ define([
     "src/Clippy",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/ESPWorkunit",
-    "hpcc/ESPRequest",
+    "src/ESPWorkunit",
+    "src/ESPRequest",
     "hpcc/TargetSelectWidget",
     "hpcc/DelayLoadWidget",
     "hpcc/InfoGridWidget",
-    "hpcc/WsWorkunits",
+    "src/WsWorkunits",
 
     "dojo/text!../templates/WUDetailsWidget.html",
 

@@ -21,8 +21,8 @@ define([
     "dijit/registry",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/ESPWorkunit",
-    "hpcc/ESPQuery",
+    "src/ESPWorkunit",
+    "src/ESPQuery",
     "hpcc/ResultWidget",
     "hpcc/FullResultWidget",
     "hpcc/LFDetailsWidget",

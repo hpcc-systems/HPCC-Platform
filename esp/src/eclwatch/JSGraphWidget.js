@@ -25,9 +25,9 @@ define([
     "@hpcc-js/graph",
     "@hpcc-js/layout",
     
-    "hpcc/WsWorkunits",
+    "src/WsWorkunits",
     "hpcc/GraphWidget",
-    "hpcc/ESPGraph",
+    "src/ESPGraph",
 
     "css!font-awesome/css/font-awesome.css"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Evented,
@@ -124,10 +124,10 @@ define([
         KeyState_Menu: 4,
 
         constructor: function (domNode) {
-            this.graphData = new ESPGraph();
+            this.graphData = new ESPGraph.Graph();
             this.graphWidget = new hpccGraph.Graph()
                 .allowDragging(false)
-                .zoomToolbar(false)
+                .zoomToolbar(true)
             ;
             var context = this;
             this.graphWidget.vertex_click = function (item, event) {
@@ -525,7 +525,7 @@ define([
     return declare("JSGraphWidget", [GraphWidget], {
         baseClass: "JSGraphWidget",
         constructor: function () {
-            this.graphData = new ESPGraph();
+            this.graphData = new ESPGraph.Graph();
         },
 
         hasOptions: function(key, val) {

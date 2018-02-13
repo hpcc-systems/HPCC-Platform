@@ -28,13 +28,13 @@ define([
 
     "dijit/registry",
 
-    "hpcc/WsTopology",
-    "hpcc/WsWorkunits",
-    "hpcc/FileSpray",
-    "hpcc/ws_access",
-    "hpcc/WsESDLConfig",
-    "hpcc/WsPackageMaps",
-    "hpcc/Utility"
+    "src/WsTopology",
+    "src/WsWorkunits",
+    "src/FileSpray",
+    "src/ws_access",
+    "src/WsESDLConfig",
+    "src/WsPackageMaps",
+    "src/Utility"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, xhr, Deferred, ItemFileReadStore, all, Memory, on,
     registry,

@@ -22,7 +22,7 @@ define([
 
     "dijit/layout/ContentPane",
 
-    "hpcc/Utility"
+    "src/Utility"
 ], function (declare, Deferred, lang, dom, domStyle,
     ContentPane,
     Utility) {

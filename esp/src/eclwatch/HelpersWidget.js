@@ -31,9 +31,9 @@ define([
     "dgrid/selector",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/ESPUtil",
-    "hpcc/ESPRequest",
-    "hpcc/ESPWorkunit",
+    "src/ESPUtil",
+    "src/ESPRequest",
+    "src/ESPWorkunit",
     "hpcc/DelayLoadWidget"
 
 ],  function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, Observable, domConstruct, on,

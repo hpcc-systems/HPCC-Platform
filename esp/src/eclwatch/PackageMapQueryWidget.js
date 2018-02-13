@@ -41,8 +41,8 @@ define([
     "hpcc/DelayLoadWidget",
     "hpcc/PackageMapDetailsWidget",
     "hpcc/PackageMapValidateWidget",
-    "hpcc/WsPackageMaps",
-    "hpcc/ESPPackageProcess",
+    "src/WsPackageMaps",
+    "src/ESPPackageProcess",
     "hpcc/SFDetailsWidget",
 
     "dojo/text!../templates/PackageMapQueryWidget.html",

@@ -21,9 +21,9 @@ define([
     "dojo/_base/array",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/ESPWorkunit",
+    "src/ESPWorkunit",
     "hpcc/DelayLoadWidget",
-    "hpcc/ESPUtil"
+    "src/ESPUtil"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil,
                 GridDetailsWidget, ESPWorkunit, DelayLoadWidget, ESPUtil) {

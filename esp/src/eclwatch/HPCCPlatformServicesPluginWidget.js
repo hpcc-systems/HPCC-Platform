@@ -22,7 +22,7 @@ define([
 
     "hpcc/_TabContainerWidget",
     "hpcc/DelayLoadWidget",
-    "hpcc/WsTopology",
+    "src/WsTopology",
 
     "dojo/text!../templates/HPCCPlatformServicesPluginWidget.html",
 

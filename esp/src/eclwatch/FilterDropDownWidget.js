@@ -29,7 +29,7 @@ define([
     "dijit/form/CheckBox",
 
     "hpcc/_Widget",
-    "hpcc/Utility",
+    "src/Utility",
 
     "dojo/text!../templates/FilterDropDownWidget.html",
 

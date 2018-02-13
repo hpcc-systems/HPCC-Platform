@@ -26,8 +26,8 @@ define([
     "dgrid/editor",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/ws_access",
-    "hpcc/ESPUtil",
+    "src/ws_access",
+    "src/ESPUtil",
     "hpcc/ShowInheritedPermissionsWidget"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil,

@@ -30,7 +30,7 @@ define([
     "dojox/treemap/TreeMap",
 
     "hpcc/_Widget",
-    "hpcc/ESPWorkunit",
+    "src/ESPWorkunit",
 
     "dojo/text!../templates/TimingTreeMapWidget.html"
 ],

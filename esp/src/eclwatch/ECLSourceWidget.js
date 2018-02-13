@@ -29,7 +29,7 @@ define([
     "src/CodeMirror",
 
     "hpcc/_Widget",
-    "hpcc/ESPWorkunit",
+    "src/ESPWorkunit",
 
     "dojo/text!../templates/ECLSourceWidget.html",
 

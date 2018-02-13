@@ -31,8 +31,8 @@ define([
     "dijit/form/CheckBox",
 
     "hpcc/_Widget",
-    "hpcc/Utility",
-    "hpcc/ws_account",
+    "src/Utility",
+    "src/ws_account",
 
     "dojo/text!../templates/LockDialogWidget.html",
 

@@ -36,13 +36,13 @@ define([
     "dgrid/selector",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/ESPUtil",
-    "hpcc/ESPDFUWorkunit",
-    "hpcc/FileSpray",
+    "src/ESPUtil",
+    "src/ESPDFUWorkunit",
+    "src/FileSpray",
     "hpcc/DelayLoadWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/FilterDropDownWidget",
-    "hpcc/Utility",
+    "src/Utility",
 
     "dojo/text!../templates/GetDFUWorkunitsWidget.html",
 
