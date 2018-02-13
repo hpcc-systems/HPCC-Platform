@@ -18,11 +18,10 @@
 import $.setup;
 prefix := setup.Files(false, false).FilePrefix;
 //noroxie 
-//skip nodfu       
+//skip type=roxie nodfu
 
 // testing compressed->compressed, expanded->compressed, and compressed->expanded copies
 // requires dfuserver
-// NOTE: add nodfu=1 in regression.ini or local.ini to avoid test
 
 
 import Std.File AS FileServices;
