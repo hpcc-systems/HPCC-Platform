@@ -1159,6 +1159,14 @@ EsdlBindingImpl::EsdlBindingImpl(IPropertyTree* cfg, const char *binding,  const
     }
 }
 
+EsdlBindingImpl::~EsdlBindingImpl()
+{
+    if(m_pBindingSubscription != nullptr)
+        m_pBindingSubscription->unsubscribe();
+    if(m_pDefinitionSubscription != nullptr)
+        m_pDefinitionSubscription->unsubscribe();
+}
+
 void EsdlBindingImpl::saveDESDLState()
 {
     try
