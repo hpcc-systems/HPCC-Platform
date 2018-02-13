@@ -16,7 +16,7 @@
 ############################################################################## */
 
 //nohthor
-//skip type-thorlcr TBD
+//skip type=thorlcr TBD
 
 r := {unsigned f1, unsigned f2, unsigned f3, unsigned f4 };
 
