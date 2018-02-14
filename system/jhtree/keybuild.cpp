@@ -336,12 +336,13 @@ private:
     CWriteNode *activeNode;
     CBlobWriteNode *activeBlobNode;
     unsigned __int64 duplicateCount;
+    bool enforceOrder = true;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyedSize, unsigned __int64 startSequence)
-        : CKeyBuilderBase(_out, flags, rawSize, nodeSize, keyedSize, startSequence)
+    CKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyedSize, unsigned __int64 startSequence, bool _enforceOrder)
+        : CKeyBuilderBase(_out, flags, rawSize, nodeSize, keyedSize, startSequence), enforceOrder(_enforceOrder)
     {
         doCrc = true;
         activeNode = NULL;
@@ -404,7 +405,7 @@ public:
             activeNode = new CWriteNode(nextPos, keyHdr, true);
             nextPos += keyHdr->getNodeSize();
         }
-        else
+        else if (enforceOrder) // NB: order is indeterminate when build a TLK for a LOCAL index. duplicateCount is not calculated in this case.
         {
             int cmp = memcmp(keyData,activeNode->getLastKeyValue(),keyedSize);
             if (cmp<0)
@@ -491,9 +492,9 @@ protected:
     }
 };
 
-extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence)
+extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence, bool enforceOrder)
 {
-    return new CKeyBuilder(_out, flags, rawSize, nodeSize, keyFieldSize, startSequence);
+    return new CKeyBuilder(_out, flags, rawSize, nodeSize, keyFieldSize, startSequence, enforceOrder);
 }
 
 
