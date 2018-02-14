@@ -437,9 +437,11 @@ ESPrequest [nil_remove] WUQueryRequest
     [depr_ver("1.57")] string ApplicationKey;
     [depr_ver("1.57")] string ApplicationData;
     [min_ver("1.57")] ESParray<ESPstruct ApplicationValue> ApplicationValues;
+    [min_ver("1.72")] string BeforeWU;
+    [min_ver("1.72")] string AfterWU;
 
-    string After;
-    string Before;
+    [depr_ver("1.02")] string After; //Not used since 1.02
+    [depr_ver("1.02")] string Before; //Not used since 1.02
     int Count;
     [min_ver("1.03")] int64 PageSize(0);
     [min_ver("1.03")] int64 PageStartFrom(0);
@@ -499,6 +501,8 @@ ESPrequest [nil_remove] WULightWeightQueryRequest
     string JobName;
     string StartDate;
     string EndDate;
+    [min_ver("1.72")] string BeforeWU;
+    [min_ver("1.72")] string AfterWU;
     string State;
 
     ESParray<ESPstruct ApplicationValue> ApplicationValues;
@@ -2119,7 +2123,7 @@ ESPResponse [exceptions_inline] WUDetailsMetaResponse
 // ----------------------------------------------------------------------------------
 ESPservice [
     auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
-    version("1.71"), default_client_version("1.71"),
+    version("1.72"), default_client_version("1.72"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);

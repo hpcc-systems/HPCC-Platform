@@ -114,7 +114,7 @@ inline const char* readModifyTime(IPropertyTree& pt, StringBuffer& time, bool fo
     return time.str();
 }
 
-inline bool serializeWUSrow(IPropertyTree &pt,MemoryBuffer &mb, bool isonline)
+inline bool serializeWUSrow(IPropertyTree &pt, MemoryBuffer &mb, size32_t maxBufferLength, bool isonline)
 {
     mb.setEndian(__LITTLE_ENDIAN);
     fixedAppend(mb,24,pt.queryName());
@@ -152,7 +152,8 @@ inline bool serializeWUSrow(IPropertyTree &pt,MemoryBuffer &mb, bool isonline)
     mb.append(online);
     byte prot = pt.getPropBool("@protected")?1:0;
     mb.append(prot);
-    if (mb.length()>WORKUNIT_SERVICES_BUFFER_MAX) {
+    if (mb.length() > maxBufferLength)
+    {
         mb.clear().append(WUS_STATUS_OVERFLOWED);
         return false;
     }
