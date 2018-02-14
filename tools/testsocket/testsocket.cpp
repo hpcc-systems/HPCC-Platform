@@ -47,7 +47,7 @@ bool rawOnly = false;
 bool rawSend = false;
 bool remoteStreamForceResend = false;
 bool remoteStreamSendCursor = false;
-
+int verboseDbgLevel = 0;
 
 StringBuffer sendFileName;
 StringAttr queryNameOverride;
@@ -407,12 +407,14 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
                 requestTree->setProp("format", outputFmtStr);
                 StringBuffer requestStr;
                 toJSON(requestTree, requestStr);
-#ifdef _DEBUG
-                fputs("\nNext request:", stdout);
-                fputs(requestStr, stdout);
-                fputs("\n", stdout);
-                fflush(stdout);
-#endif
+
+                if (verboseDbgLevel > 0)
+                {
+                    fputs("\nNext request:", stdout);
+                    fputs(requestStr, stdout);
+                    fputs("\n", stdout);
+                    fflush(stdout);
+                }
 
                 sendlen = requestStr.length();
                 _WINREV(sendlen);
@@ -651,7 +653,11 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
         if (!rawSend && !useHTTP)
             socket->write(&sendlen, sizeof(sendlen));
 
-        fprintf(stdout, "about to write %u <%s>\n", len, query);
+        if (verboseDbgLevel > 0)
+        {
+            fprintf(stdout, "about to write %u <%s>\n", len, query);
+            fflush(stdout);
+        }
 
         socket->write(query, len);
 
@@ -787,6 +793,7 @@ void usage(int exitCode)
     printf("  -tf       add full timing statistics to trace\n");
     printf("  -time     add timing to trace\n");
     printf("  -u<max>   run queries on separate threads\n");
+    printf("  -v        debug output\n");
     printf("  -cascade  cascade query (to all roxie nodes)\n");
     printf("  -lock     locked cascade query (to all roxie nodes)\n");
     printf("  -x        raw send\n");
@@ -949,6 +956,11 @@ int main(int argc, char **argv)
         else if (stricmp(argv[arg], "-ss") == 0)
         {
             showStatus = false;
+            ++arg;
+        }
+        else if (stricmp(argv[arg], "-v") == 0)
+        {
+            verboseDbgLevel++;
             ++arg;
         }
         else if (memicmp(argv[arg], "-u", 2) == 0)
