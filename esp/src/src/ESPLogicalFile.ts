@@ -239,7 +239,7 @@ var LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
         var context = this;
         WsDfu.DFUInfo({
             request: {
-                FileName: this.Name,
+                Name: this.Name,
                 Cluster: this.Cluster,
                 UpdateDescription: true,
                 FileDesc: description
