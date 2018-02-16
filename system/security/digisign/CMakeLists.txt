@@ -52,9 +52,9 @@ target_link_libraries (
         jlib
     )
 
-if (USE_ZLIB)
+if (USE_OPENSSL)
       target_link_libraries (
           digisign
-          ${ZLIB_LIBRARIES}
+          ${OPENSSL_LIBRARIES}
     )
 endif()

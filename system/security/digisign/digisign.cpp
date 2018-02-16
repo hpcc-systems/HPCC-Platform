@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 #include "jliball.hpp"
-#ifdef _USE_ZLIB
+#ifdef _USE_OPENSSL
 #include <openssl/pem.h>
 #include <openssl/err.h>
 #endif
@@ -24,6 +24,12 @@
 static CriticalSection digiSignCrit;
 static CriticalSection digiVerifyCrit;
 
+#define EVP_CLEANUP(key,ctx) EVP_PKEY_free(key);       \
+                             EVP_MD_CTX_destroy(ctx);
+
+#define EVP_THROW(str) char buff[120];                            \
+                       ERR_error_string(ERR_get_error(), buff);   \
+                       throw MakeStringException(-1, str, buff);
 
 
 class _CDigitalSignatureManager : implements IDigitalSignatureManager
@@ -33,6 +39,7 @@ private:
     StringBuffer publicKeyBuff;
     StringAttr   privateKeyFile;
     StringBuffer privateKeyBuff;
+    StringBuffer passphraseBuff;
     bool         signingConfigured;
     bool         verifyingConfigured;
 
@@ -41,14 +48,16 @@ public:
     {
         signingConfigured = false;
         verifyingConfigured = false;
-#ifdef _USE_ZLIB
+#ifdef _USE_OPENSSL
         //query private key file location from environment.conf
-        const char * cert=0, * privKey=0;
-        bool rc = queryHPCCPKIKeyFiles(&cert, &privKey, nullptr);
-        if (cert && *cert)
-            publicKeyFile.set(*cert);
-        if (privKey && *privKey)
-            privateKeyFile.set(*privKey);
+        const char * cert=0, * privKey=0, * passPhrase=0;
+        bool rc = queryHPCCPKIKeyFiles(&cert, &privKey, &passPhrase);
+        if (!isEmptyString(cert))
+            publicKeyFile.set(cert);
+        if (!isEmptyString(privKey))
+            privateKeyFile.set(privKey);
+        if (!isEmptyString(passPhrase))
+            passphraseBuff.set(passPhrase);
         signingConfigured = !publicKeyFile.isEmpty();
         verifyingConfigured = !privateKeyFile.isEmpty();
 #else
@@ -83,23 +92,19 @@ public:
         if (privateKeyBuff.isEmpty())
             throw MakeStringException(-1, "digiSign:Cannot load private key file");
 
-#ifdef _USE_ZLIB
+#ifdef _USE_OPENSSL
         //create an RSA object from private key
         BIO * keybio = BIO_new_mem_buf((void*) privateKeyBuff.str(), -1);
         if (keybio == nullptr)
         {
-            char buff[120];
-            ERR_error_string(ERR_get_error(), buff);
-            throw MakeStringException(-1, "digiSign:BIO_new_mem_buf: %s", buff);
+            EVP_THROW("digiSign:BIO_new_mem_buf: %s");
         }
 
-        RSA * rsa = PEM_read_bio_RSAPrivateKey(keybio, nullptr, nullptr, nullptr);
+        RSA * rsa = PEM_read_bio_RSAPrivateKey(keybio, nullptr, nullptr, (void*)passphraseBuff.str());
         if (rsa == nullptr)
         {
             BIO_free_all(keybio);
-            char buff[120];
-            ERR_error_string(ERR_get_error(), buff);
-            throw MakeStringException(-1, "digiSign:PEM_read_bio_RSAPrivateKey: %s", buff);
+            EVP_THROW("digiSign:PEM_read_bio_RSAPrivateKey: %s");
         }
         BIO_free_all(keybio);
 
@@ -107,9 +112,7 @@ public:
         EVP_MD_CTX * RSASignCtx = EVP_MD_CTX_create(); //allocate, initializes and return a digest context
         if (nullptr == RSASignCtx)
         {
-            char buff[120];
-            ERR_error_string(ERR_get_error(), buff);
-            throw MakeStringException(-1, "digiSign:EVP_MD_CTX_create returned NULL: %s", buff);
+            EVP_THROW("digiSign:EVP_MD_CTX_create returned NULL: %s");
         }
         EVP_PKEY * priKey = EVP_PKEY_new();
         EVP_PKEY_assign_RSA(priKey, rsa);
@@ -117,60 +120,44 @@ public:
         //initialize context for SHA-256 hashing function
         if (EVP_DigestSignInit(RSASignCtx, nullptr, EVP_sha256(), nullptr, priKey) <= 0)
         {
-            EVP_PKEY_free(priKey);
-            EVP_MD_CTX_destroy(RSASignCtx);
-            char buff[120];
-            ERR_error_string(ERR_get_error(), buff);
-            throw MakeStringException(-1, "digiSign:EVP_DigestSignInit: %s", buff);
+            EVP_CLEANUP(priKey, RSASignCtx);
+            EVP_THROW("digiSign:EVP_DigestSignInit: %s");
         }
 
         //add string to the context
         if (EVP_DigestSignUpdate(RSASignCtx, (size_t*)text, strlen(text)) <= 0)
         {
-            EVP_PKEY_free(priKey);
-            EVP_MD_CTX_destroy(RSASignCtx);
-            char buff[120];
-            ERR_error_string(ERR_get_error(), buff);
-            throw MakeStringException(-1, "digiSign:EVP_DigestSignUpdate: %s", buff);
+            EVP_CLEANUP(priKey, RSASignCtx);
+            EVP_THROW("digiSign:EVP_DigestSignUpdate: %s");
         }
 
         //compute length of signature
         size_t encMsgLen;
         if (EVP_DigestSignFinal(RSASignCtx, nullptr, &encMsgLen) <= 0)
         {
-            EVP_PKEY_free(priKey);
-            EVP_MD_CTX_destroy(RSASignCtx);
-            char buff[120];
-            ERR_error_string(ERR_get_error(), buff);
-            throw MakeStringException(-1, "digiSign:EVP_DigestSignFinal1: %s", buff);
+            EVP_CLEANUP(priKey, RSASignCtx);
+            EVP_THROW("digiSign:EVP_DigestSignFinal1: %s");
         }
 
         if (encMsgLen == 0)
         {
-            EVP_PKEY_free(priKey);
-            EVP_MD_CTX_destroy(RSASignCtx);
-            char buff[120];
-            ERR_error_string(ERR_get_error(), buff);
-            throw MakeStringException(-1, "digiSign:EVP_DigestSignFinal length returned 0: %s", buff);
+            EVP_CLEANUP(priKey, RSASignCtx);
+            EVP_THROW("digiSign:EVP_DigestSignFinal length returned 0: %s");
         }
 
         //compute signature (signed digest)
         unsigned char * encMsg = (unsigned char*) malloc(encMsgLen);
         if (encMsg == nullptr)
         {
-            EVP_PKEY_free(priKey);
-            EVP_MD_CTX_destroy(RSASignCtx);
+            EVP_CLEANUP(priKey, RSASignCtx);
             throw MakeStringException(-1, "digiSign:malloc(%ld) returned NULL",encMsgLen);
         }
 
         if (EVP_DigestSignFinal(RSASignCtx, encMsg, &encMsgLen) <= 0)
         {
             free(encMsg);
-            EVP_PKEY_free(priKey);
-            EVP_MD_CTX_destroy(RSASignCtx);
-            char buff[120];
-            ERR_error_string(ERR_get_error(), buff);
-            throw MakeStringException(-1, "digiSign:EVP_DigestSignFinal2: %s", buff);
+            EVP_CLEANUP(priKey, RSASignCtx);
+            EVP_THROW("digiSign:EVP_DigestSignFinal2: %s");
         }
 
         //convert to base64
@@ -178,8 +165,7 @@ public:
 
         //cleanup
         free(encMsg);
-        EVP_PKEY_free(priKey);
-        EVP_MD_CTX_destroy(RSASignCtx);
+        EVP_CLEANUP(priKey, RSASignCtx);
         return true;//success
 #else
         throw MakeStringException(-1, "digiSign:Platform built without ZLIB");
@@ -201,13 +187,11 @@ public:
         if (publicKeyBuff.isEmpty())
             throw MakeStringException(-1, "digiSign:Cannot load public key file");
 
-#ifdef _USE_ZLIB
+#ifdef _USE_OPENSSL
         BIO * keybio = BIO_new_mem_buf((void*) publicKeyBuff.str(), -1);
         if (keybio == nullptr)
         {
-            char buff[120];
-            ERR_error_string(ERR_get_error(), buff);
-            throw MakeStringException(-1, "digiVerify:BIO_new_mem_buf: %s", buff);
+            EVP_THROW("digiVerify:BIO_new_mem_buf: %s");
         }
         RSA * rsa = PEM_read_bio_RSA_PUBKEY(keybio, nullptr, nullptr, nullptr);
 
@@ -218,19 +202,14 @@ public:
         {
             EVP_PKEY_free(pubKey);
             BIO_free_all(keybio);
-            char buff[120];
-            ERR_error_string(ERR_get_error(), buff);
-            throw MakeStringException(-1, "digiVerify:EVP_MD_CTX_create: %s", buff);
+            EVP_THROW("digiVerify:EVP_MD_CTX_create: %s");
         }
 
         if (EVP_DigestVerifyInit(RSAVerifyCtx, nullptr, EVP_sha256(), nullptr, pubKey) <= 0)
         {
-            EVP_PKEY_free(pubKey);
-            EVP_MD_CTX_destroy(RSAVerifyCtx);//cleans up digest context ctx
+            EVP_CLEANUP(pubKey, RSAVerifyCtx);//cleans allocated key and digest context
             BIO_free_all(keybio);
-            char buff[120];
-            ERR_error_string(ERR_get_error(), buff);
-            throw MakeStringException(-1, "digiVerify:EVP_DigestVerifyInit: %s", buff);
+            EVP_THROW("digiVerify:EVP_DigestVerifyInit: %s");
         }
         BIO_free_all(keybio);
 
@@ -239,16 +218,12 @@ public:
         JBASE64_Decode(b64Signature.str(), decodedSig);
         if (EVP_DigestVerifyUpdate(RSAVerifyCtx, text, strlen(text)) <= 0)
         {
-            EVP_PKEY_free(pubKey);
-            EVP_MD_CTX_destroy(RSAVerifyCtx);//cleans up digest context ctx
-            char buff[120];
-            ERR_error_string(ERR_get_error(), buff);
-            throw MakeStringException(-1, "digiVerify:EVP_DigestVerifyUpdate: %s", buff);
+            EVP_CLEANUP(pubKey, RSAVerifyCtx);//cleans allocated key and digest context
+            EVP_THROW("digiVerify:EVP_DigestVerifyUpdate: %s");
         }
 
         int match = EVP_DigestVerifyFinal(RSAVerifyCtx, (unsigned char *)decodedSig.str(), decodedSig.length());
-        EVP_PKEY_free(pubKey);
-        EVP_MD_CTX_destroy(RSAVerifyCtx);//cleans up digest context ctx
+        EVP_CLEANUP(pubKey, RSAVerifyCtx);//cleans allocated key and digest context
         return match == 1;
 #else
         throw MakeStringException(-1, "digiSign:Platform built without ZLIB");
