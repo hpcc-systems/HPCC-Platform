@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ public:
         signingConfigured = !publicKeyFile.isEmpty();
         verifyingConfigured = !privateKeyFile.isEmpty();
 #else
-        WARNLOG("CDigitalSignatureManager: Platform built without ZLIB!");
+        WARNLOG("CDigitalSignatureManager: Platform built without OPENSSL!");
 #endif
     }
 
@@ -168,7 +168,7 @@ public:
         EVP_CLEANUP(priKey, RSASignCtx);
         return true;//success
 #else
-        throw MakeStringException(-1, "digiSign:Platform built without ZLIB");
+        throw MakeStringException(-1, "digiSign:Platform built without OPENSSL");
         return false;
 #endif
     }
@@ -226,7 +226,7 @@ public:
         EVP_CLEANUP(pubKey, RSAVerifyCtx);//cleans allocated key and digest context
         return match == 1;
 #else
-        throw MakeStringException(-1, "digiSign:Platform built without ZLIB");
+        throw MakeStringException(-1, "digiSign:Platform built without OPENSSL");
         return false;
 #endif
     }
