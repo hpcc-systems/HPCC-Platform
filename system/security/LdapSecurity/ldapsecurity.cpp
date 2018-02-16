@@ -663,7 +663,7 @@ bool CLdapSecManager::authenticate(ISecUser* user)
         return true;
     }
 
-    if ((user->credentials().getSessionToken() != 0) || user->credentials().getSignature())//Already authenticated it token or signature exist
+    if ((user->credentials().getSessionToken() != 0) || !isEmptyString(user->credentials().getSignature()))//Already authenticated it token or signature exist
     {
         user->setAuthenticateStatus(AS_AUTHENTICATED);
         if(m_permissionsCache->isCacheEnabled() && !m_usercache_off)
