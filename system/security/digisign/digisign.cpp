@@ -27,9 +27,11 @@ static CriticalSection digiVerifyCrit;
 #define EVP_CLEANUP(key,ctx) EVP_PKEY_free(key);       \
                              EVP_MD_CTX_destroy(ctx);
 
-#define EVP_THROW(str) char buff[120];                            \
-                       ERR_error_string(ERR_get_error(), buff);   \
-                       throw MakeStringException(-1, str, buff);
+#define EVP_THROW(str) {                                            \
+                         char buff[120];                            \
+                         ERR_error_string(ERR_get_error(), buff);   \
+                         throw MakeStringException(-1, str, buff);  \
+                       }
 
 
 class _CDigitalSignatureManager : implements IDigitalSignatureManager
