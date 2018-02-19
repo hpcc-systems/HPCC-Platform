@@ -168,7 +168,8 @@ public:
         // MCK - this was:
         // readTimeout(buf, size, size, size_read, 0, false);
         // but that is essentially a non-blocking read() and we want a blocking read() ...
-        readTimeout(buf, 0, size, size_read, WAIT_FOREVER, false);
+        // read() is always expecting size bytes so min_size should be size
+        readTimeout(buf, size, size, size_read, WAIT_FOREVER, false);
     }
 
     virtual size32_t get_max_send_size()
