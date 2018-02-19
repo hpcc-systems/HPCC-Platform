@@ -1206,7 +1206,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             {
                 Owned<IKeyIndexSet> partKeySet = createKeyIndexSet();
                 ForEachItemIn(i, partKeyIndexes)
-                    partKeySet->addIndex(&partKeyIndexes.item(i));
+                    partKeySet->addIndex(LINK(&partKeyIndexes.item(i)));
                 currentPart = &partKeyIndexes.item(0);
                 partManager.setown(createKeyMerger(partKeySet, owner.fixedRecordSize, 0, nullptr));
             }
