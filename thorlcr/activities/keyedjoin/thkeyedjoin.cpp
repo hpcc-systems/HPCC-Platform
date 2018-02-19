@@ -102,7 +102,7 @@ public:
             if (container.queryLocalData() && !localKey)
                 throw MakeActivityException(this, 0, "Keyed Join cannot be LOCAL unless supplied index is local");
 
-            checkFormatCrc(this, indexFile, helper->getIndexFormatCrc(), true);
+            checkFormatCrc(this, indexFile, helper->getIndexFormatCrc(), helper->queryProjectedIndexRecordSize(), helper->queryIndexRecordSize(), true);
             Owned<IFileDescriptor> indexFileDesc = indexFile->getFileDescriptor();
             IDistributedSuperFile *superIndex = indexFile->querySuperFile();
             unsigned superIndexWidth = 0;

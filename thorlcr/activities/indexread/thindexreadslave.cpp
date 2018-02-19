@@ -63,6 +63,7 @@ protected:
     Owned<IKeyManager> keyMergerManager;
     Owned<IKeyIndexSet> keyIndexSet;
     bool keyMergerInUse = false;
+    IConstPointerArrayOf<ITranslator> translators;
 
     class TransformCallback : implements IThorIndexCallback , public CSimpleInterface
     {
@@ -223,29 +224,58 @@ public:
         _statsArr.append(0);
         statsArr = _statsArr.getArray();
         lastSeeks = lastScans = 0;
-        ForEachItemIn(p, partDescs)
+        if (parts)
         {
-            IPartDescriptor &part = partDescs.item(p);
-            RemoteFilename rfn;
-            part.getFilename(0, rfn);
-            StringBuffer filePath;
-            rfn.getPath(filePath);
-
-            Owned<IDelayedFile> lfile = queryThor().queryFileCache().lookup(*this, logicalFilename, part);
-            Owned<IKeyManager> klManager;
-
-            unsigned crc=0;
-            part.getCrc(crc);
-
-            Owned<IKeyIndex> keyIndex = createKeyIndex(filePath, crc, *lfile, false, false);
-            klManager.setown(createLocalKeyManager(helper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndex, nullptr));
-            if ((localKey && partDescs.ordinality()>1) || seekGEOffset)
+            RecordTranslationMode translationMode = getTranslationMode(*this);
+            IOutputMetaData *projectedFormat = helper->queryProjectedDiskRecordSize();
+            unsigned expectedFormatCrc = helper->getFormatCrc();
+            ForEachItemIn(p, partDescs)
             {
-                if (!keyIndexSet)
-                    keyIndexSet.setown(createKeyIndexSet());
-                keyIndexSet->addIndex(keyIndex.getClear());
+                IPartDescriptor &part = partDescs.item(p);
+                RemoteFilename rfn;
+                part.getFilename(0, rfn);
+                StringBuffer filePath;
+                rfn.getPath(filePath);
+
+                Owned<IDelayedFile> lfile = queryThor().queryFileCache().lookup(*this, logicalFilename, part);
+                Owned<IKeyManager> klManager;
+
+                unsigned crc=0;
+                part.getCrc(crc);
+
+                Owned<IKeyIndex> keyIndex = createKeyIndex(filePath, crc, *lfile, false, false);
+                klManager.setown(createLocalKeyManager(helper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndex, nullptr));
+                if ((localKey && partDescs.ordinality()>1) || seekGEOffset)
+                {
+                    // use key merger
+                    if (!keyIndexSet)
+                    {
+                        keyIndexSet.setown(createKeyIndexSet());
+                        Owned<const ITranslator> translator = getLayoutTranslation(helper->getFileName(), part, translationMode, helper->queryDiskRecordSize(), projectedFormat, expectedFormatCrc);
+                        translators.append(translator.getClear());
+                    }
+                    keyIndexSet->addIndex(keyIndex.getClear());
+                }
+                else
+                {
+                    Owned<const ITranslator> translator = getLayoutTranslation(helper->getFileName(), part, translationMode, helper->queryDiskRecordSize(), projectedFormat, expectedFormatCrc);
+                    if (translator)
+                        klManager->setLayoutTranslator(&translator->queryTranslator());
+                    translators.append(translator.getClear());
+
+                }
+                keyManagers.append(*klManager.getClear());
             }
-            keyManagers.append(*klManager.getClear());
+            if (!keyIndexSet)
+            {
+                getLayoutTranslations(translators, helper->getFileName(), partDescs, translationMode, helper->queryDiskRecordSize(), projectedFormat, expectedFormatCrc);
+                ForEachItemIn(k, keyManagers)
+                {
+                    const ITranslator *translator = translators.item(k);
+                    if (translator)
+                        keyManagers.item(k).setLayoutTranslator(&translator->queryTranslator());
+                }
+            }
         }
     }
     // IThorDataLink
@@ -493,7 +523,12 @@ public:
                 steppingMeta.init(rawMeta, hasPostFilter);
         }
         if (keyIndexSet)
+        {
             keyMergerManager.setown(createKeyMerger(helper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndexSet, seekGEOffset, nullptr));
+            ITranslator const *translator = translators.item(0);
+            if (translator)
+                keyMergerManager->setLayoutTranslator(&translator->queryTranslator());
+        }
     }
 
 // IThorDataLink

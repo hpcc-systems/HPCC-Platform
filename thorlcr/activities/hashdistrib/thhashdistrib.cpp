@@ -134,7 +134,7 @@ public:
         if (!isFileKey(file))
             throw MakeActivityException(this, 0, "Attempting to read flat file as an index: %s", indexFileName.get());
 
-        checkFormatCrc(this, file, helper->getFormatCrc(), true);
+        checkFormatCrc(this, file, helper->getFormatCrc(), nullptr, nullptr, true);
         Owned<IFileDescriptor> fileDesc = file->getFileDescriptor();
         Owned<IPartDescriptor> tlkDesc = fileDesc->getPart(fileDesc->numParts()-1);
         if (!tlkDesc->queryProperties().hasProp("@kind") || 0 != stricmp("topLevelKey", tlkDesc->queryProperties().queryProp("@kind")))

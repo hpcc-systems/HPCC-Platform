@@ -119,6 +119,7 @@ target_link_libraries ( activityslaves_lcr
          jlib
          thorsort_lcr 
          nbcd 
+         hql
          eclrtl 
          deftype 
          thorhelper 

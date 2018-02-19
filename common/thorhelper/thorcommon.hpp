@@ -25,6 +25,7 @@
 #include "jdebug.hpp"
 #include "jfile.hpp"
 #include "eclhelper.hpp"
+#include "rtldynfield.hpp"
 #include "thorhelper.hpp"
 #include "thorxmlwrite.hpp"
 
@@ -146,12 +147,15 @@ inline unsigned getCompMethod(const StringBuffer compStr)
 
 interface IExtRowStream: extends IRowStream
 {
-    virtual offset_t getOffset() = 0;
+    virtual offset_t getOffset() const = 0;
+    virtual offset_t getLastRowOffset() const = 0;
+    virtual unsigned __int64 queryProgress() const = 0;
     virtual void stop(CRC32 *crcout=NULL) = 0;
-    virtual const void *prefetchRow(size32_t *sz=NULL) = 0;
+    virtual const byte *prefetchRow() = 0;
     virtual void prefetchDone() = 0;
     virtual void reinit(offset_t offset,offset_t len,unsigned __int64 maxrows) = 0;
     virtual unsigned __int64 getStatistic(StatisticKind kind) = 0;
+    virtual void setFilters(IConstArrayOf<IFieldFilter> &filters) = 0;
 };
 
 interface IExtRowWriter: extends IRowWriter
@@ -184,9 +188,15 @@ inline EmptyRowSemantics extractESRFromRWFlags(unsigned rwFlags)
         return ers_forbidden;
 }
 
+interface ITranslator : extends IInterface
+{
+    virtual IOutputMetaData &queryActualFormat() const = 0;
+    virtual const IDynamicTransform &queryTranslator() const = 0;
+    virtual const IKeyTranslator *queryKeyedTranslator() const = 0;
+};
 interface IExpander;
-extern THORHELPER_API IExtRowStream *createRowStream(IFile *file, IRowInterfaces *rowif, unsigned flags=DEFAULT_RWFLAGS, IExpander *eexp=NULL);
-extern THORHELPER_API IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowif, offset_t offset=0, offset_t len=(offset_t)-1, unsigned __int64 maxrows=(unsigned __int64)-1, unsigned flags=DEFAULT_RWFLAGS, IExpander *eexp=NULL);
+extern THORHELPER_API IExtRowStream *createRowStream(IFile *file, IRowInterfaces *rowif, unsigned flags=DEFAULT_RWFLAGS, IExpander *eexp=nullptr, ITranslator *translatorContainer=nullptr);
+extern THORHELPER_API IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowif, offset_t offset=0, offset_t len=(offset_t)-1, unsigned __int64 maxrows=(unsigned __int64)-1, unsigned flags=DEFAULT_RWFLAGS, IExpander *eexp=nullptr, ITranslator *translatorContainer=nullptr);
 interface ICompressor;
 extern THORHELPER_API IExtRowWriter *createRowWriter(IFile *file, IRowInterfaces *rowIf, unsigned flags=DEFAULT_RWFLAGS, ICompressor *compressor=NULL, size32_t compressorBlkSz=0);
 extern THORHELPER_API IExtRowWriter *createRowWriter(IFileIO *fileIO, IRowInterfaces *rowIf, unsigned flags=DEFAULT_RWFLAGS, size32_t compressorBlkSz=0);
@@ -620,5 +630,15 @@ extern THORHELPER_API void setAutoAffinity(unsigned curProcess, unsigned process
 extern THORHELPER_API void bindMemoryToLocalNodes();
 
 extern THORHELPER_API IOutputMetaData *getDaliLayoutInfo(IPropertyTree const &props);
+
+/* Returns a dynamic translator (as 1st parameter) given a generated expected format, the published format and the desired projectedFormat,
+ * providing translation mode and crc's allow translation. Returns true if translator created.
+ * NB: translator and keyedTranslator are expected to be empty before calling.
+*/
+extern THORHELPER_API bool getTranslators(Owned<const IDynamicTransform> &translator, const char *tracing, IOutputMetaData *expectedFormat, IOutputMetaData *publishedFormat, IOutputMetaData *projectedFormat, RecordTranslationMode mode, unsigned expectedCrc, unsigned publishedCrc);
+// Same as above, but will also return a key field translator in 2nd parameter. Returns true if translator created.
+extern THORHELPER_API bool getTranslators(Owned<const IDynamicTransform> &translator, Owned<const IKeyTranslator> &keyedTranslator, const char *tracing, IOutputMetaData *expectedFormat, IOutputMetaData *publishedFormat, IOutputMetaData *projectedFormat, RecordTranslationMode mode, unsigned expectedCrc, unsigned publishedCrc);
+// Returns a ITranslator that gives access to a dynamic translator, keyed translator and the format used
+extern THORHELPER_API ITranslator *getTranslators(const char *tracing, IOutputMetaData *expectedFormat, IOutputMetaData *publishedFormat, IOutputMetaData *projectedFormat, RecordTranslationMode mode, unsigned expectedCrc, unsigned publishedCrc);
 
 #endif // THORHELPER_HPP

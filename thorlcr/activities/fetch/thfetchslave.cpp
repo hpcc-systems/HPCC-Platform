@@ -25,6 +25,7 @@
 #include "jsort.hpp"
 #include "jdebug.hpp"
 #include "jhtree.hpp"
+#include "rtlcommon.hpp"
 #include "thsortu.hpp"
 #include "thactivityutil.ipp"
 #include "thormisc.hpp"
@@ -292,6 +293,9 @@ protected:
     bool indexRowExtractNeeded = false;
     mptag_t mptag = TAG_NULL;
 
+    IPointerArrayOf<ISourceRowPrefetcher> prefetchers;
+    IConstPointerArrayOf<ITranslator> translators;
+
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
@@ -328,6 +332,22 @@ public:
             mptag = container.queryJobChannel().deserializeMPTag(data);
 
         files = parts.ordinality();
+        if (files)
+        {
+            unsigned expectedFormatCrc = fetchBaseHelper->getDiskFormatCrc();
+            IOutputMetaData *projectedFormat = fetchBaseHelper->queryProjectedDiskRecordSize();
+            RecordTranslationMode translationMode = getTranslationMode(*this);
+            getLayoutTranslations(translators, fetchBaseHelper->getFileName(), parts, translationMode, fetchBaseHelper->queryDiskRecordSize(), projectedFormat, expectedFormatCrc);
+            ForEachItemIn(p, parts)
+            {
+                const ITranslator *translator = translators.item(p);
+                if (translator)
+                {
+                    Owned<ISourceRowPrefetcher> prefetcher = translator->queryActualFormat().createDiskPrefetcher();
+                    prefetchers.append(prefetcher.getClear());
+                }
+            }
+        }
 
         unsigned encryptedKeyLen;
         void *encryptedKey;
@@ -519,9 +539,26 @@ public:
     {
         Owned<IFileIO> partIO = fetchStream->getPartIO(filePartIndex);
         Owned<ISerialStream> stream = createFileSerialStream(partIO, localFpos);
-        CThorStreamDeserializerSource ds(stream);
         RtlDynamicRowBuilder fetchedRowBuilder(fetchDiskRowIf->queryRowAllocator());
-        size32_t fetchedLen = fetchDiskRowIf->queryRowDeserializer()->deserialize(fetchedRowBuilder, ds);
+        const ITranslator *translator = translators.item(filePartIndex);
+        size32_t fetchedLen;
+        if (translator)
+        {
+            CThorContiguousRowBuffer prefetchBuffer;
+            ISourceRowPrefetcher *prefetcher = prefetchers.item(filePartIndex);
+            dbgassertex(prefetcher);
+            prefetchBuffer.setStream(stream);
+            prefetcher->readAhead(prefetchBuffer);
+            const byte * row = prefetchBuffer.queryRow();
+            size32_t sz = prefetchBuffer.queryRowSize();
+            fetchedLen = translator->queryTranslator().translate(fetchedRowBuilder, row);
+            prefetchBuffer.finishedRow();
+        }
+        else
+        {
+            CThorStreamDeserializerSource ds(stream);
+            fetchedLen = fetchDiskRowIf->queryRowDeserializer()->deserialize(fetchedRowBuilder, ds);
+        }
         OwnedConstThorRow diskFetchRow = fetchedRowBuilder.finalizeRowClear(fetchedLen);
         return ((IHThorFetchArg *)fetchBaseHelper)->transform(rowBuilder, diskFetchRow, keyRow, fpos);
     }

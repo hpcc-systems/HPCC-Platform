@@ -21,6 +21,7 @@
 #include "thexception.hpp"
 #include "thmfilemanager.hpp"
 #include "eclhelper.hpp"
+#include "rtldynfield.hpp"
 #include "jlzw.hpp"
 
 #include "thmem.hpp"
@@ -63,7 +64,7 @@ public:
             }
         }
         if (0 == (TDRnocrccheck & helper->getFlags()))
-            checkFormatCrc(this, file, helper->getFormatCrc(), false);
+            checkFormatCrc(this, file, helper->getFormatCrc(), helper->queryProjectedDiskRecordSize(), helper->queryDiskRecordSize(), false);
     }
 };
 

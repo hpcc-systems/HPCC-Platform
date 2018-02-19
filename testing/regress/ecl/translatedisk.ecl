@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-//nothor
 //version multiPart=false
 //version multiPart=true
 
@@ -63,5 +62,5 @@ DG_FlatFile_add3 := DATASET(Files.DG_FileOut+'FLAT',{Files.DG_OutRec,STRING newf
 fkj :=JOIN(Files.DG_FlatFile, DG_FlatFile_add3, left.DG_firstname = right.DG_firstname 
          AND left.DG_lastname=right.DG_lastname 
          AND left.DG_Prange=right.DG_Prange     
-      , TRANSFORM(RECORDOF(DG_FlatFile_add3), SELF := RIGHT), KEYED(Files.DG_IndexFile));
+      , TRANSFORM(RECORDOF(DG_FlatFile_add3)-filepos, SELF := RIGHT), KEYED(Files.DG_IndexFile));
 output(fkj);

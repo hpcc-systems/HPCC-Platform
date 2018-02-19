@@ -35,8 +35,6 @@ version := #IFDEFINED(root.version, 1);
 import $.setup;
 Files := setup.Files(multiPart, useLocal, false);
 
-//nothorlcr
-
 #IF (version=1)
 DG_FetchIndex1Alt1 := INDEX(Files.DG_FetchFile,{Lname,Fname,__filepos},Files.DG_FetchIndex1Name);
 DG_FetchIndex1Alt2 := INDEX(Files.DG_FetchFile,{Lname,Fname,__filepos},Files.DG_FetchIndex1Name);

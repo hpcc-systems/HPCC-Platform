@@ -260,6 +260,7 @@ output(personBooks,, sq.PersonBookName,overwrite);
 output(houseOut,,sq.HouseName,overwrite);
 output(personOut,,sq.PersonName,overwrite);
 output(bookOut,,sq.BookName,overwrite);
+output(group(sort(sq.BookDs, author), author), , sq.BookNameAuthorGrouped, OVERWRITE, __GROUPED__);
 
 output(simplePersonBooks,, sq.SimplePersonBookName,overwrite);
 buildindex(

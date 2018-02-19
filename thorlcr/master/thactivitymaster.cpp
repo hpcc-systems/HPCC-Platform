@@ -19,6 +19,8 @@
 
 #include "jprop.hpp"
 #include "jstring.hpp"
+#include "eclhelper_dyn.hpp"
+#include "hqlexpr.hpp"
 
 #include "commonext.hpp"
 
@@ -621,7 +623,8 @@ void checkSuperFileOwnership(IDistributedFile &file)
     }
 }
 
-void checkFormatCrc(CActivityBase *activity, IDistributedFile *file, unsigned helperCrc, bool index)
+void checkFormatCrc(CActivityBase *activity, IDistributedFile *file, unsigned helperCrc,
+                               IOutputMetaData *projected, IOutputMetaData *expected, bool index)
 {
     IDistributedFile *f = file;
     IDistributedSuperFile *super = f->querySuperFile();
@@ -632,27 +635,31 @@ void checkFormatCrc(CActivityBase *activity, IDistributedFile *file, unsigned he
         verifyex(iter->first());
         f = &iter->query();
     }
+    Owned<IOutputMetaData> actualFormat;
+    Owned<const IDynamicTransform> translator;    // Translates rows from actual to projected
+    Owned<const IKeyTranslator> keyedTranslator;  // translate filter conditions from expected to actual
+    unsigned prevFormatCrc = 0;
     StringBuffer kindStr(activityKindStr(activity->queryContainer().getKind()));
+    RecordTranslationMode mode = getTranslationMode(*activity);
     for (;;)
     {
-        unsigned dfsCrc;
-        if (f->getFormatCrc(dfsCrc) && helperCrc != dfsCrc)
+        unsigned dfsCrc = 0;
+        f->getFormatCrc(dfsCrc);
+        if (!dfsCrc || dfsCrc==helperCrc)
+            translator.clear();
+        else
         {
-            StringBuffer fileStr;
-            if (super) fileStr.append("Superfile: ").append(file->queryLogicalName()).append(", subfile: ");
-            else fileStr.append("File: ");
-            fileStr.append(f->queryLogicalName());
-            Owned<IThorException> e = MakeActivityException(activity, TE_FormatCrcMismatch, "%s: Layout does not match published layout. %s", kindStr.str(), fileStr.str());
-            if (index && !f->queryAttributes().hasProp("_record_layout")) // Cannot verify if _true_ crc mismatch if soft layout missing anymore
-                LOG(MCwarning, thorJob, e);
-            else
+            if (dfsCrc != prevFormatCrc)  // Check if same translation as last subfile
             {
-                if (!activity->queryContainer().queryJob().getWorkUnitValueInt("skipFileFormatCrcCheck", 0))
-                    throw LINK(e);
-                e->setAction(tea_warning);
-                activity->fireException(e);
+                IPropertyTree &props = f->queryAttributes();
+                actualFormat.setown(getDaliLayoutInfo(props));
+                const char *subname = f->queryLogicalName();
+                translator.clear();
+                keyedTranslator.clear();
+                getTranslators(translator, keyedTranslator, subname, expected, actualFormat, projected, mode, helperCrc, dfsCrc);
             }
         }
+        prevFormatCrc = dfsCrc;
         if (!super||!iter->next())
             break;
         f = &iter->query();

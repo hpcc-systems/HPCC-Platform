@@ -86,6 +86,13 @@ unsigned4       personid;
             end;
 
 
+EXPORT TransBookRelatedIdRec :=
+            record
+unsigned4       personid;
+BookIdRec;
+            end;
+
+
 // Nested definitions with additional ids...
 
 EXPORT PersonBookIdRec :=
@@ -156,12 +163,12 @@ unsigned8           filepos{virtual(fileposition)};
 
 // Dataset definitions:
 
-
 EXPORT HousePersonBookName := NamePrefix + 'HousePersonBook';
 EXPORT PersonBookName := NamePrefix + 'PersonBook';
 EXPORT HouseName := NamePrefix + 'House';
 EXPORT PersonName := NamePrefix + 'Person';
 EXPORT BookName := NamePrefix + 'Book';
+EXPORT BookNameAuthorGrouped := BookName + 'AuthorGrouped';
 EXPORT SimplePersonBookName := NamePrefix + 'SimplePersonBook';
 
 EXPORT HousePersonBookIndexName := NamePrefix + 'HousePersonBookIndex';
@@ -176,6 +183,9 @@ EXPORT PersonBookDs := dataset(PersonBookName, PersonBookRelatedIdRec, thor);
 EXPORT HouseDs := dataset(HouseName, HouseIdExRec, thor);
 EXPORT PersonDs := dataset(PersonName, PersonRelatedIdRec, thor);
 EXPORT BookDs := dataset(BookName, BookRelatedIdRec, thor);
+
+EXPORT BookAuthorGroupedDs := dataset(BookNameAuthorGrouped, BookRelatedIdRec, thor, __GROUPED__);
+EXPORT TransBookAuthorGroupedDs := dataset(BookNameAuthorGrouped, TransBookRelatedIdRec, thor, __GROUPED__);
 
 EXPORT HousePersonBookExDs := dataset(HousePersonBookName, HousePersonBookIdExRec, thor);
 EXPORT PersonBookExDs := dataset(PersonBookName, PersonBookRelatedIdExRec, thor);

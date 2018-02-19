@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -16,10 +16,8 @@
 ############################################################################## */
 
 //class=file
-//class=index
 //version multiPart=false
 //version multiPart=true
-//version multiPart=true,useLocal=true
 //version multiPart=true,useTranslation=true
 
 import ^ as root;
@@ -30,14 +28,14 @@ useTranslation := #IFDEFINED(root.useTranslation, false);
 //--- end of version configuration ---
 
 #option ('layoutTranslationEnabled', useTranslation);
-#onwarning (5402, ignore);
 
 import $.setup;
-Files := setup.Files(multiPart, useLocal, useTranslation);
+sq := setup.sq(multiPart);
 
-sequential(
+#IF (useTranslation)
+ds := sq.TransBookAuthorGroupedDs(KEYED(rating100>=50) AND price<=10);
+#ELSE
+ds := sq.BookAuthorGroupedDs(KEYED(rating100>=50) AND price<=10);
+#END
+OUTPUT(TABLE(ds, { author, totalrating := SUM(GROUP, rating100), totalprice := SUM(GROUP, price), cnt := COUNT(GROUP) }));
 
-output(max(Files.DG_FetchIndex, Fname));
-output(min(Files.DG_FetchIndex, Fname));
-output(count(Files.DG_FetchIndex))
-);
