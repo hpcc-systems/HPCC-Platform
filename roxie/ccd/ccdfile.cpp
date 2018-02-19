@@ -1396,7 +1396,7 @@ ILazyFileIO *createPhysicalFile(const char *id, IPartDescriptor *pdesc, IPartDes
     if (remotePDesc)
         appendRemoteLocations(remotePDesc, remoteLocations, NULL, NULL, false);    // Then any remote on remote dali
 
-    return queryFileCache().lookupFile(id, fileType, pdesc, numParts, replicationLevel[channel], remoteLocations, startCopy);
+    return queryFileCache().lookupFile(id, fileType, pdesc, numParts, getReplicationLevel(channel), remoteLocations, startCopy);
 }
 
 //====================================================================================================

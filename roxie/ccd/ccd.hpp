@@ -56,11 +56,6 @@ void addEndpoint(unsigned channel, const IpAddress &slaveIp, unsigned port);
 void openMulticastSocket();
 void joinMulticastChannel(unsigned channel);
 
-extern unsigned channels[MAX_CLUSTER_SIZE];     // list of all channel numbers for this node
-extern unsigned channelCount;                   // number of channels this node is doing
-extern unsigned subChannels[MAX_CLUSTER_SIZE];  // maps channel numbers to subChannels for this node
-extern unsigned numSlaves[MAX_CLUSTER_SIZE];    // number of slaves listening on this channel
-extern unsigned replicationLevel[MAX_CLUSTER_SIZE];  // Which copy of the data this channel uses on this slave
 
 extern unsigned myNodeIndex;
 #define OUTOFBAND_SEQUENCE    0x8000        // indicates an out-of-band reply
@@ -159,108 +154,22 @@ public:
     unsigned tick;
 #endif
 
-    inline RoxiePacketHeader(const RemoteActivityId &_remoteId, ruid_t _uid, unsigned _channel, unsigned _overflowSequence)
-    {
-        packetlength = sizeof(RoxiePacketHeader);
-#ifdef TIME_PACKETS
-        tick = 0;
-#endif
-        init(_remoteId, _uid, _channel, _overflowSequence);
-    }
+    RoxiePacketHeader(const RemoteActivityId &_remoteId, ruid_t _uid, unsigned _channel, unsigned _overflowSequence);
+    RoxiePacketHeader(const RoxiePacketHeader &source, unsigned _activityId);
 
-    RoxiePacketHeader(const RoxiePacketHeader &source, unsigned _activityId)
-    {
-        // Used to create the header to send a callback to originating server or an IBYTI to a buddy
-        activityId = _activityId;
-        uid = source.uid;
-        queryHash = source.queryHash;
-        serverIdx = source.serverIdx;
-        channel = source.channel;
-        overflowSequence = source.overflowSequence;
-        continueSequence = source.continueSequence;
-        if (_activityId >= ROXIE_ACTIVITY_SPECIAL_FIRST && _activityId <= ROXIE_ACTIVITY_SPECIAL_LAST)
-            overflowSequence |= OUTOFBAND_SEQUENCE; // Need to make sure it is not treated as dup of actual reply in the udp layer
-        retries = getSubChannelMask(channel) | (source.retries & ~ROXIE_RETRIES_MASK);
-#ifdef TIME_PACKETS
-        tick = source.tick;
-#endif
-        packetlength = sizeof(RoxiePacketHeader);
-    }
-
-    static unsigned getSubChannelMask(unsigned channel)
-    {
-        unsigned subChannel = subChannels[channel] - 1;
-        return SUBCHANNEL_MASK << (SUBCHANNEL_BITS * subChannel);
-    }
+    static unsigned getSubChannelMask(unsigned channel);
+    unsigned priorityHash() const;
+    bool matchPacket(const RoxiePacketHeader &oh) const;
+    void init(const RemoteActivityId &_remoteId, ruid_t _uid, unsigned _channel, unsigned _overflowSequence);
+    StringBuffer &toString(StringBuffer &ret) const;
+    bool allChannelsFailed();
+    bool retry();
+    void setException();
+    unsigned thisChannelRetries();
 
     inline unsigned getSequenceId() const
     {
         return (((unsigned) overflowSequence) << 16) | (unsigned) continueSequence;
-    }
-
-    inline unsigned priorityHash() const
-    {
-        // Used to determine which slave to act as primary and which as secondary for a given packet (thus spreading the load)
-        // It's important that we do NOT include channel (since that would result in different values for the different slaves responding to a broadcast)
-        // We also don't include continueSequence since we'd prefer continuations to go the same way as original
-        unsigned hash = hashc((const unsigned char *) &serverIdx, sizeof(serverIdx), 0);
-        hash = hashc((const unsigned char *) &uid, sizeof(uid), hash);
-        hash += overflowSequence; // MORE - is this better than hashing?
-        if (traceLevel > 9)
-        {
-            StringBuffer s;
-            DBGLOG("Calculating hash: %s hash was %d", toString(s).str(), hash);
-        }
-        return hash;
-    }
-
-    inline bool matchPacket(const RoxiePacketHeader &oh) const
-    {
-        // used when matching up a kill packet against a pending one...
-        // DO NOT compare activityId - they are not supposed to match, since 0 in activityid identifies ibyti!
-        return
-            oh.uid==uid &&
-            (oh.overflowSequence & ~OUTOFBAND_SEQUENCE) == (overflowSequence & ~OUTOFBAND_SEQUENCE) &&
-            oh.continueSequence == continueSequence &&
-            oh.serverIdx==serverIdx &&
-            oh.channel==channel;
-    }
-
-    void init(const RemoteActivityId &_remoteId, ruid_t _uid, unsigned _channel, unsigned _overflowSequence)
-    {
-        retries = 0;
-        activityId = _remoteId.activityId;
-        queryHash = _remoteId.queryHash;
-        uid = _uid;
-        serverIdx = myNodeIndex;
-        channel = _channel;
-        overflowSequence = _overflowSequence;
-        continueSequence = 0;
-    }
-
-    StringBuffer &toString(StringBuffer &ret) const;
-
-    bool allChannelsFailed()
-    {
-        unsigned mask = (1 << (numSlaves[channel] * SUBCHANNEL_BITS)) - 1;
-        return (retries & mask) == mask;
-    }
-
-    bool retry()
-    {
-        bool worthRetrying = false;
-        unsigned mask = SUBCHANNEL_MASK;
-        for (unsigned subChannel = 0; subChannel < numSlaves[channel]; subChannel++)
-        {
-            unsigned subRetries = (retries & mask) >> (subChannel * SUBCHANNEL_BITS);
-            if (subRetries != SUBCHANNEL_MASK)
-                subRetries++;
-            if (subRetries != SUBCHANNEL_MASK)
-                worthRetrying = true;
-            retries = (retries & ~mask) | (subRetries << (subChannel * SUBCHANNEL_BITS));
-            mask <<= SUBCHANNEL_BITS;
-        }
-        return worthRetrying;
     }
 
     inline void noteAlive(unsigned mask)
@@ -271,19 +180,6 @@ public:
     inline void noteException(unsigned mask)
     {
         retries = (retries | mask);
-    }
-
-    inline void setException()
-    {
-        unsigned subChannel = subChannels[channel] - 1;
-        retries |= SUBCHANNEL_MASK << (SUBCHANNEL_BITS * subChannel);
-    }
-
-    unsigned thisChannelRetries()
-    {
-        unsigned shift = SUBCHANNEL_BITS * (subChannels[channel] - 1);
-        unsigned mask = SUBCHANNEL_MASK << shift;
-        return (retries & mask) >> shift;
     }
 };
 

@@ -35,12 +35,12 @@
 #endif
 
 CriticalSection queueCrit;
-unsigned channels[MAX_CLUSTER_SIZE];
-unsigned channelCount;
-unsigned subChannels[MAX_CLUSTER_SIZE];
-unsigned numSlaves[MAX_CLUSTER_SIZE];
-unsigned replicationLevel[MAX_CLUSTER_SIZE];
-unsigned liveSubChannels[MAX_CLUSTER_SIZE];  // technically probably should be atomic, but any races are benign enough that not worth it.
+static unsigned channels[MAX_CLUSTER_SIZE];     // list of all channel numbers for this node
+static unsigned channelCount;                   // number of channels this node is doing
+static unsigned subChannels[MAX_CLUSTER_SIZE];  // maps channel numbers to subChannels for this node
+static unsigned numSlaves[MAX_CLUSTER_SIZE];    // number of slaves listening on this channel
+static unsigned replicationLevel[MAX_CLUSTER_SIZE];  // Which copy of the data this channel uses on this slave
+static unsigned liveSubChannels[MAX_CLUSTER_SIZE];   // Which subchannels are believed live for a given channel - technically probably should be atomic, but any races are benign enough that not worth it.
 
 static std::atomic<bool> suspendedChannels[MAX_CLUSTER_SIZE];
 
@@ -48,6 +48,201 @@ using roxiemem::OwnedRoxieRow;
 using roxiemem::OwnedConstRoxieRow;
 using roxiemem::IRowManager;
 using roxiemem::DataBuffer;
+
+//============================================================================================
+
+RoxiePacketHeader::RoxiePacketHeader(const RemoteActivityId &_remoteId, ruid_t _uid, unsigned _channel, unsigned _overflowSequence)
+{
+    packetlength = sizeof(RoxiePacketHeader);
+#ifdef TIME_PACKETS
+    tick = 0;
+#endif
+    init(_remoteId, _uid, _channel, _overflowSequence);
+}
+
+RoxiePacketHeader::RoxiePacketHeader(const RoxiePacketHeader &source, unsigned _activityId)
+{
+    // Used to create the header to send a callback to originating server or an IBYTI to a buddy
+    activityId = _activityId;
+    uid = source.uid;
+    queryHash = source.queryHash;
+    serverIdx = source.serverIdx;
+    channel = source.channel;
+    overflowSequence = source.overflowSequence;
+    continueSequence = source.continueSequence;
+    if (_activityId >= ROXIE_ACTIVITY_SPECIAL_FIRST && _activityId <= ROXIE_ACTIVITY_SPECIAL_LAST)
+        overflowSequence |= OUTOFBAND_SEQUENCE; // Need to make sure it is not treated as dup of actual reply in the udp layer
+    retries = getSubChannelMask(channel) | (source.retries & ~ROXIE_RETRIES_MASK);
+#ifdef TIME_PACKETS
+    tick = source.tick;
+#endif
+    packetlength = sizeof(RoxiePacketHeader);
+}
+
+unsigned RoxiePacketHeader::getSubChannelMask(unsigned channel)
+{
+    unsigned subChannel = subChannels[channel] - 1;
+    return SUBCHANNEL_MASK << (SUBCHANNEL_BITS * subChannel);
+}
+
+unsigned RoxiePacketHeader::priorityHash() const
+{
+    // Used to determine which slave to act as primary and which as secondary for a given packet (thus spreading the load)
+    // It's important that we do NOT include channel (since that would result in different values for the different slaves responding to a broadcast)
+    // We also don't include continueSequence since we'd prefer continuations to go the same way as original
+    unsigned hash = hashc((const unsigned char *) &serverIdx, sizeof(serverIdx), 0);
+    hash = hashc((const unsigned char *) &uid, sizeof(uid), hash);
+    hash += overflowSequence; // MORE - is this better than hashing?
+    if (traceLevel > 9)
+    {
+        StringBuffer s;
+        DBGLOG("Calculating hash: %s hash was %d", toString(s).str(), hash);
+    }
+    return hash;
+}
+
+bool RoxiePacketHeader::matchPacket(const RoxiePacketHeader &oh) const
+{
+    // used when matching up a kill packet against a pending one...
+    // DO NOT compare activityId - they are not supposed to match, since 0 in activityid identifies ibyti!
+    return
+        oh.uid==uid &&
+        (oh.overflowSequence & ~OUTOFBAND_SEQUENCE) == (overflowSequence & ~OUTOFBAND_SEQUENCE) &&
+        oh.continueSequence == continueSequence &&
+        oh.serverIdx==serverIdx &&
+        oh.channel==channel;
+}
+
+void RoxiePacketHeader::init(const RemoteActivityId &_remoteId, ruid_t _uid, unsigned _channel, unsigned _overflowSequence)
+{
+    retries = 0;
+    activityId = _remoteId.activityId;
+    queryHash = _remoteId.queryHash;
+    uid = _uid;
+    serverIdx = myNodeIndex;
+    channel = _channel;
+    overflowSequence = _overflowSequence;
+    continueSequence = 0;
+}
+
+StringBuffer &RoxiePacketHeader::toString(StringBuffer &ret) const
+{
+    const IpAddress &serverIP = getNodeAddress(serverIdx);
+    ret.appendf("uid=" RUIDF " activityId=", uid);
+    switch(activityId & ~ROXIE_PRIORITY_MASK)
+    {
+    case ROXIE_UNLOAD: ret.append("ROXIE_UNLOAD"); break;
+    case ROXIE_PING: ret.append("ROXIE_PING"); break;
+    case ROXIE_TRACEINFO: ret.append("ROXIE_TRACEINFO"); break;
+    case ROXIE_DEBUGREQUEST: ret.append("ROXIE_DEBUGREQUEST"); break;
+    case ROXIE_DEBUGCALLBACK: ret.append("ROXIE_DEBUGCALLBACK"); break;
+    case ROXIE_FILECALLBACK: ret.append("ROXIE_FILECALLBACK"); break;
+    case ROXIE_ALIVE: ret.append("ROXIE_ALIVE"); break;
+    case ROXIE_KEYEDLIMIT_EXCEEDED: ret.append("ROXIE_KEYEDLIMIT_EXCEEDED"); break;
+    case ROXIE_LIMIT_EXCEEDED: ret.append("ROXIE_LIMIT_EXCEEDED"); break;
+    case ROXIE_EXCEPTION: ret.append("ROXIE_EXCEPTION"); break;
+    default:
+        ret.appendf("%u", (activityId & ~(ROXIE_ACTIVITY_FETCH | ROXIE_PRIORITY_MASK)));
+        if (activityId & ROXIE_ACTIVITY_FETCH)
+            ret.appendf(" (fetch part)");
+        break;
+    }
+    ret.append(" pri=");
+    switch(activityId & ROXIE_PRIORITY_MASK)
+    {
+        case ROXIE_SLA_PRIORITY: ret.append("SLA"); break;
+        case ROXIE_HIGH_PRIORITY: ret.append("HIGH"); break;
+        case ROXIE_LOW_PRIORITY: ret.append("LOW"); break;
+        default: ret.append("???"); break;
+    }
+    ret.appendf(" queryHash=%" I64F "x ch=%u seq=%d cont=%d server=", queryHash, channel, overflowSequence, continueSequence);
+    serverIP.getIpText(ret);
+    if (retries)
+    {
+        if (retries==QUERY_ABORTED)
+            ret.append(" retries=QUERY_ABORTED");
+        else
+        {
+            if (retries & ROXIE_RETRIES_MASK)
+                ret.appendf(" retries=%04x", retries);
+            if (retries & ROXIE_FASTLANE)
+                ret.appendf(" FASTLANE");
+            if (retries & ROXIE_BROADCAST)
+                ret.appendf(" BROADCAST");
+        }
+    }
+    return ret;
+}
+
+bool RoxiePacketHeader::allChannelsFailed()
+{
+    unsigned mask = (1 << (numSlaves[channel] * SUBCHANNEL_BITS)) - 1;
+    return (retries & mask) == mask;
+}
+
+bool RoxiePacketHeader::retry()
+{
+    bool worthRetrying = false;
+    unsigned mask = SUBCHANNEL_MASK;
+    for (unsigned subChannel = 0; subChannel < numSlaves[channel]; subChannel++)
+    {
+        unsigned subRetries = (retries & mask) >> (subChannel * SUBCHANNEL_BITS);
+        if (subRetries != SUBCHANNEL_MASK)
+            subRetries++;
+        if (subRetries != SUBCHANNEL_MASK)
+            worthRetrying = true;
+        retries = (retries & ~mask) | (subRetries << (subChannel * SUBCHANNEL_BITS));
+        mask <<= SUBCHANNEL_BITS;
+    }
+    return worthRetrying;
+}
+
+void RoxiePacketHeader::setException()
+{
+    unsigned subChannel = subChannels[channel] - 1;
+    retries |= SUBCHANNEL_MASK << (SUBCHANNEL_BITS * subChannel);
+}
+
+unsigned RoxiePacketHeader::thisChannelRetries()
+{
+    unsigned shift = SUBCHANNEL_BITS * (subChannels[channel] - 1);
+    unsigned mask = SUBCHANNEL_MASK << shift;
+    return (retries & mask) >> shift;
+}
+
+//============================================================================================
+
+void addSlaveChannel(unsigned channel, unsigned level)
+{
+    StringBuffer xpath;
+    xpath.appendf("RoxieSlaveProcess[@channel=\"%d\"]", channel);
+    if (ccdChannels->hasProp(xpath.str()))
+        throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - channel %d repeated", channel);
+    IPropertyTree *ci = ccdChannels->addPropTree("RoxieSlaveProcess");
+    ci->setPropInt("@channel", channel);
+    ci->setPropInt("@subChannel", numSlaves[channel]);
+}
+
+void addChannel(unsigned nodeNumber, unsigned channel, unsigned level)
+{
+    numSlaves[channel]++;
+    if (nodeNumber == myNodeIndex && channel > 0)
+    {
+        assertex(channel <= numChannels);
+        assertex(!replicationLevel[channel]);
+        replicationLevel[channel] = level;
+        addSlaveChannel(channel, level);
+    }
+    if (!localSlave)
+    {
+        addEndpoint(channel, getNodeAddress(nodeNumber), ccdMulticastPort);
+    }
+}
+
+unsigned getReplicationLevel(unsigned channel)
+{
+    return replicationLevel[channel];
+}
 
 //============================================================================================
 
@@ -170,55 +365,6 @@ size32_t channelWrite(unsigned channel, void const* buf, size32_t size)
 // #define TEST_SLAVE_FAILURE
 
 //============================================================================================
-
-StringBuffer &RoxiePacketHeader::toString(StringBuffer &ret) const
-{
-    const IpAddress &serverIP = getNodeAddress(serverIdx);
-    ret.appendf("uid=" RUIDF " activityId=", uid);
-    switch(activityId & ~ROXIE_PRIORITY_MASK)
-    {
-    case ROXIE_UNLOAD: ret.append("ROXIE_UNLOAD"); break;
-    case ROXIE_PING: ret.append("ROXIE_PING"); break;
-    case ROXIE_TRACEINFO: ret.append("ROXIE_TRACEINFO"); break;
-    case ROXIE_DEBUGREQUEST: ret.append("ROXIE_DEBUGREQUEST"); break;
-    case ROXIE_DEBUGCALLBACK: ret.append("ROXIE_DEBUGCALLBACK"); break;
-    case ROXIE_FILECALLBACK: ret.append("ROXIE_FILECALLBACK"); break;
-    case ROXIE_ALIVE: ret.append("ROXIE_ALIVE"); break;
-    case ROXIE_KEYEDLIMIT_EXCEEDED: ret.append("ROXIE_KEYEDLIMIT_EXCEEDED"); break;
-    case ROXIE_LIMIT_EXCEEDED: ret.append("ROXIE_LIMIT_EXCEEDED"); break;
-    case ROXIE_EXCEPTION: ret.append("ROXIE_EXCEPTION"); break;
-    default: 
-        ret.appendf("%u", (activityId & ~(ROXIE_ACTIVITY_FETCH | ROXIE_PRIORITY_MASK)));
-        if (activityId & ROXIE_ACTIVITY_FETCH)
-            ret.appendf(" (fetch part)");
-        break;
-    }
-    ret.append(" pri=");
-    switch(activityId & ROXIE_PRIORITY_MASK)
-    {
-        case ROXIE_SLA_PRIORITY: ret.append("SLA"); break;
-        case ROXIE_HIGH_PRIORITY: ret.append("HIGH"); break;
-        case ROXIE_LOW_PRIORITY: ret.append("LOW"); break;
-        default: ret.append("???"); break;
-    }
-    ret.appendf(" queryHash=%" I64F "x ch=%u seq=%d cont=%d server=", queryHash, channel, overflowSequence, continueSequence);
-    serverIP.getIpText(ret);
-    if (retries) 
-    {
-        if (retries==QUERY_ABORTED)
-            ret.append(" retries=QUERY_ABORTED");
-        else
-        {
-            if (retries & ROXIE_RETRIES_MASK)
-                ret.appendf(" retries=%04x", retries);
-            if (retries & ROXIE_FASTLANE)
-                ret.appendf(" FASTLANE");
-            if (retries & ROXIE_BROADCAST)
-                ret.appendf(" BROADCAST");
-        }
-    }
-    return ret;
-}
 
 class CRoxieQueryPacket : implements IRoxieQueryPacket, public CInterface
 {

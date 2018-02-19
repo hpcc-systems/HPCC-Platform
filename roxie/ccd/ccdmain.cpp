@@ -310,33 +310,6 @@ bool ipMatch(IpAddress &ip)
     return ip.isLocal();
 }
 
-void addSlaveChannel(unsigned channel, unsigned level)
-{
-    StringBuffer xpath;
-    xpath.appendf("RoxieSlaveProcess[@channel=\"%d\"]", channel);
-    if (ccdChannels->hasProp(xpath.str()))
-        throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - channel %d repeated", channel);
-    IPropertyTree *ci = ccdChannels->addPropTree("RoxieSlaveProcess");
-    ci->setPropInt("@channel", channel);
-    ci->setPropInt("@subChannel", numSlaves[channel]);
-}
-
-void addChannel(unsigned nodeNumber, unsigned channel, unsigned level)
-{
-    numSlaves[channel]++;
-    if (nodeNumber == myNodeIndex && channel > 0)
-    {
-        assertex(channel <= numChannels);
-        assertex(!replicationLevel[channel]);
-        replicationLevel[channel] = level;
-        addSlaveChannel(channel, level);
-    }
-    if (!localSlave)
-    {
-        addEndpoint(channel, getNodeAddress(nodeNumber), ccdMulticastPort);
-    }
-}
-
 extern void doUNIMPLEMENTED(unsigned line, const char *file)
 {
     throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "UNIMPLEMENTED at %s:%d", sanitizeSourceFile(file), line);
