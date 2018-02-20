@@ -4319,7 +4319,7 @@ public:
                     {
                         const char* val = vals.queryCharValue(i);
                         StringBuffer uid;
-                        getUidFromDN(val, uid);
+                        getUidFromDN(ld, val, uid);
                         if(uid.length() > 0)
                             users.append(uid.str());
                     }
@@ -4734,7 +4734,7 @@ private:
 
     }
     
-    virtual void getUidFromDN(const char* dn, StringBuffer& uid)
+    virtual void getUidFromDN(LDAP* ld, const char* dn, StringBuffer& uid)
     {
         if(dn == NULL || *dn == '\0')
         {
@@ -4766,10 +4766,6 @@ private:
         TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
 
         char *uid_fieldname = "sAMAccountName";
-
-        Owned<ILdapConnection> lconn = m_connections->getConnection();
-        LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
-
         char        *attrs[] = {uid_fieldname, NULL};
         CLDAPMessage searchResult;
         int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,    &searchResult.msg );
