@@ -59,8 +59,8 @@ public:
 private:
     SQLQueryType sqlType;
     IArrayOf<ISQLExpression> selectList;
-    IArrayOf<ISQLExpression> groupbyList;
-    IArrayOf<ISQLExpression> orderbyList;
+    IArrayOf<SQLFieldValueExpression> groupbyList;
+    IArrayOf<SQLFieldValueExpression> orderbyList;
     IArrayOf<SQLTable>       tableList;
 
     int limit;
@@ -96,7 +96,7 @@ private:
     void processAllColumns(HpccFiles *  availableFiles);
     void verifyColumn(SQLFieldValueExpression * col );
     void verifyColAndDisambiguateName();
-    void verifyAndDisambiguateNameFromList(IArrayOf<ISQLExpression> * explist);
+    void verifyAndDisambiguateNameFromList(IArrayOf<SQLFieldValueExpression> * explist);
     void assignParameterIndexes();
     int parameterizedCount;
 
@@ -223,15 +223,13 @@ public:
 
     void getOrderByString(char delimiter, StringBuffer & str)
     {
-        int orderbycount = orderbyList.length();
-        for (int i = 0; i < orderbycount; i++)
+        ForEachItemIn(orderbyindex, orderbyList)
         {
-            ISQLExpression* ordercol = &orderbyList.item(i);
-            SQLFieldValueExpression* colexp = dynamic_cast<SQLFieldValueExpression*>(ordercol);
-            str.append(colexp->isAscending() ? "" : "-");
-            str.append(colexp->getNameOrAlias());
-            if (i != orderbycount - 1)
+            SQLFieldValueExpression * colexp =  &orderbyList.item(orderbyindex);
+            if (orderbyindex != 0)
                 str.append(delimiter);
+
+            str.append(colexp->getName());
         }
     }
 
@@ -242,14 +240,13 @@ public:
 
     void getGroupByString(char delimiter, StringBuffer & str)
     {
-        int groupbycount = groupbyList.length();
-        for (int i = 0; i < groupbycount; i++)
+        ForEachItemIn(groupbyindex, groupbyList)
         {
-            ISQLExpression * ordercol =  &groupbyList.item(i);
-            SQLFieldValueExpression * colexp = dynamic_cast<SQLFieldValueExpression *>(ordercol);
-            str.append(colexp->getName());
-            if (i != groupbycount - 1)
+            SQLFieldValueExpression * colexp =  &groupbyList.item(groupbyindex);
+            if (groupbyindex != 0)
                 str.append(delimiter);
+
+            str.append(colexp->getName());
         }
     }
 

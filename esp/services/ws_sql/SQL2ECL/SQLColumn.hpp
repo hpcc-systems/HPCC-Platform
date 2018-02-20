@@ -121,7 +121,6 @@ private:
     StringBuffer columnName;
     StringBuffer tableName;
     int index;
-    int columnChars;
     int decimalDigits;
     StringBuffer columnType;
     bool keyedField;
@@ -134,16 +133,14 @@ public:
         return new HPCCColumnMetaData(name);
     }
 
-    HPCCColumnMetaData()
+    HPCCColumnMetaData() : keyedField(false), decimalDigits(0), index(-1)
     {
         columnName.clear();
-        keyedField = false;
     }
 
-    HPCCColumnMetaData(const char * colname)
+    HPCCColumnMetaData(const char * colname) : keyedField(false), decimalDigits(0), index(-1)
     {
         columnName.set(colname);
-        keyedField = false;
     }
 
     virtual ~HPCCColumnMetaData()

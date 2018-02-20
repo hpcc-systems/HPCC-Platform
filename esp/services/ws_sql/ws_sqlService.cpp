@@ -365,7 +365,7 @@ void myDisplayRecognitionError (pANTLR3_BASE_RECOGNIZER recognizer,pANTLR3_UINT8
     pANTLR3_COMMON_TREE     theCommonTree;
 
     ex      =       recognizer->state->exception;
-    ttext   =       NULL;
+    ttext   =       nullptr;
 
     errorMessage.append("Error while parsing");
     if (ex)
@@ -379,14 +379,14 @@ void myDisplayRecognitionError (pANTLR3_BASE_RECOGNIZER recognizer,pANTLR3_UINT8
                 parser      = (pANTLR3_PARSER) (recognizer->super);
                 is          = parser->tstream->istream;
                 theToken    = (pANTLR3_COMMON_TOKEN)(ex->token);
-                ttext       = theToken->toString(theToken);
 
-                if  (theToken != NULL)
+                if  (theToken)
                 {
+                    ttext = theToken->toString(theToken);
                     if (theToken->type == ANTLR3_TOKEN_EOF)
                         errorMessage.append(", at <EOF>");
                     else
-                        errorMessage.appendf("\n    Near %s\n    ", ttext == NULL ? (pANTLR3_UINT8)"<no text for the token>" : ttext->chars);
+                        errorMessage.appendf("\n    Near %s\n    ", ttext == nullptr ? (pANTLR3_UINT8)"<no text for the token>" : ttext->chars);
                 }
                 break;
             }
@@ -395,14 +395,14 @@ void myDisplayRecognitionError (pANTLR3_BASE_RECOGNIZER recognizer,pANTLR3_UINT8
                 tparser     = (pANTLR3_TREE_PARSER) (recognizer->super);
                 is          = tparser->ctnstream->tnstream->istream;
                 theBaseTree = (pANTLR3_BASE_TREE)(ex->token);
-                ttext       = theBaseTree->toStringTree(theBaseTree);
 
-                if  (theBaseTree != NULL)
+                if  (theBaseTree)
                 {
+                    ttext = theBaseTree->toStringTree(theBaseTree);
                     theCommonTree   = (pANTLR3_COMMON_TREE)     theBaseTree->super;
 
-                    if  (theCommonTree != NULL)
-                        theToken   = (pANTLR3_COMMON_TOKEN)    theBaseTree->getToken(theBaseTree);
+                    if  (theCommonTree != nullptr)
+                        theToken = (pANTLR3_COMMON_TOKEN)    theBaseTree->getToken(theBaseTree);
 
                     errorMessage.appendf( ", at offset %d", theBaseTree->getCharPositionInLine(theBaseTree));
                     errorMessage.appendf( ", near %s", ttext->chars);
@@ -425,7 +425,7 @@ void myDisplayRecognitionError (pANTLR3_BASE_RECOGNIZER recognizer,pANTLR3_UINT8
                 // correct stream. Then we can see that the token we are looking at
                 // is just something that should not be there and throw this exception.
                 //
-                if  (tokenNames == NULL)
+                if  (tokenNames == nullptr)
                 {
                     errorMessage.appendf( " : Extraneous input...");
                 }
@@ -445,7 +445,7 @@ void myDisplayRecognitionError (pANTLR3_BASE_RECOGNIZER recognizer,pANTLR3_UINT8
                 // token. Perhaps a missing ';' at line end or a missing ',' in an
                 // expression list, and such like.
                 //
-                if  (tokenNames == NULL)
+                if  (tokenNames == nullptr)
                 {
                     errorMessage.appendf( " : Missing token (%d)...\n", ex->expecting);
                 }
@@ -1088,7 +1088,7 @@ void CwssqlEx::createWUXMLParams(StringBuffer & xmlparams, const IArrayOf <ISQLE
         ISQLExpression * exp = &parameterlist->item(expindex);
         if (exp->getExpType() == Value_ExpressionType)
         {
-            SQLValueExpression * currentvalplaceholder = dynamic_cast<SQLValueExpression *>(exp);
+            SQLValueExpression * currentvalplaceholder = static_cast<SQLValueExpression *>(exp);
             currentvalplaceholder->trimTextQuotes();
             xmlparams.appendf("<%s>", currentvalplaceholder->getPlaceHolderName());
             encodeXML(currentvalplaceholder->getValue(), xmlparams);

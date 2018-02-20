@@ -75,7 +75,7 @@ void ECLEngine::generateIndexSetupAndFetch(HPCCFilePtr file, SQLTable * table, i
 
     if (indexname.length()>0)
     {
-        HPCCFilePtr indexfile = dynamic_cast<HPCCFile *>(selectsqlobj->queryHPCCFileCache()->getHpccFileByName(indexname));
+        HPCCFilePtr indexfile = selectsqlobj->queryHPCCFileCache()->getHpccFileByName(indexname);
         if (indexfile && file)
         {
             StringBuffer idxsetupstr;
@@ -205,7 +205,7 @@ void ECLEngine::generateSelectECL(HPCCSQLTreeWalker * selectsqlobj, StringBuffer
         SQLTable table = tables->item(tableidx);
         const char * tname = table.getName();
 
-        HPCCFilePtr file = dynamic_cast<HPCCFile *>(selectsqlobj->queryHPCCFileCache()->getHpccFileByName(tname));
+        HPCCFilePtr file = selectsqlobj->queryHPCCFileCache()->getHpccFileByName(tname);
         if (file)
         {
             translator->setProp(tname, "LEFT");
@@ -500,7 +500,7 @@ void ECLEngine::generateSelectStruct(HPCCSQLTreeWalker * selectsqlobj, IProperti
         }
         else if (col->getExpType() == Function_ExpressionType)
         {
-            SQLFunctionExpression * funcexp = dynamic_cast<SQLFunctionExpression *>(col);
+            SQLFunctionExpression * funcexp = static_cast<SQLFunctionExpression *>(col);
             IArrayOf<ISQLExpression> * funccols = funcexp->getParams();
 
             ECLFunctionDefCfg func = ECLFunctions::getEclFuntionDef(funcexp->getName());
@@ -634,13 +634,13 @@ bool containsPayload(const HPCCFile * indexfiletotest, const HPCCSQLTreeWalker *
             ISQLExpression * exp = &selectlist->item(j);
             if (exp->getExpType() == FieldValue_ExpressionType)
             {
-                SQLFieldValueExpression * currentselectcol = dynamic_cast<SQLFieldValueExpression *>(exp);
+                SQLFieldValueExpression * currentselectcol = static_cast<SQLFieldValueExpression *>(exp);
                 if (!indexfiletotest->containsField(currentselectcol->queryField(), true))
                     return false;
             }
             else if (exp->getExpType() == Function_ExpressionType)
             {
-                SQLFunctionExpression * currentfunccol = dynamic_cast<SQLFunctionExpression *>(exp);
+                SQLFunctionExpression * currentfunccol = static_cast<SQLFunctionExpression *>(exp);
 
                 IArrayOf<ISQLExpression> * funcparams = currentfunccol->getParams();
                 ForEachItemIn(paramidx, *funcparams)
@@ -648,7 +648,7 @@ bool containsPayload(const HPCCFile * indexfiletotest, const HPCCSQLTreeWalker *
                     ISQLExpression * param = &(funcparams->item(paramidx));
                     if (param->getExpType() == FieldValue_ExpressionType)
                     {
-                        SQLFieldValueExpression * currentselectcol = dynamic_cast<SQLFieldValueExpression *>(param);
+                        SQLFieldValueExpression * currentselectcol = static_cast<SQLFieldValueExpression *>(param);
                         if (!indexfiletotest->containsField(currentselectcol->queryField(), true))
                             return false;
                     }
@@ -801,7 +801,7 @@ void ECLEngine::findAppropriateIndex(StringArray * relindexes, HPCCSQLTreeWalker
         if (!selectsqlobj->queryHPCCFileCache()->isHpccFileCached(indexname))
             selectsqlobj->queryHPCCFileCache()->cacheHpccFileByName(indexname);
 
-        HPCCFilePtr indexfile = dynamic_cast<HPCCFile *>(selectsqlobj->queryHPCCFileCache()->getHpccFileByName(indexname));
+        HPCCFilePtr indexfile = selectsqlobj->queryHPCCFileCache()->getHpccFileByName(indexname);
 
         if (indexfile)
         {
@@ -815,13 +815,13 @@ void ECLEngine::findAppropriateIndex(StringArray * relindexes, HPCCSQLTreeWalker
                     ISQLExpression * exp = &expectedretcolumns->item(j);
                     if (exp->getExpType() == FieldValue_ExpressionType)
                     {
-                        SQLFieldValueExpression * fieldexp = dynamic_cast<SQLFieldValueExpression *>(exp);
+                        SQLFieldValueExpression * fieldexp = static_cast<SQLFieldValueExpression *>(exp);
                         if (indexfile->containsField(fieldexp->queryField(), true))
                             commonparamscount++;
                     }
                     else if (exp->getExpType() == Function_ExpressionType)
                     {
-                        SQLFunctionExpression * currentfunccol = dynamic_cast<SQLFunctionExpression *>(exp);
+                        SQLFunctionExpression * currentfunccol = static_cast<SQLFunctionExpression *>(exp);
 
                         IArrayOf<ISQLExpression> * funcparams = currentfunccol->getParams();
                         ForEachItemIn(paramidx, *funcparams)
@@ -829,7 +829,7 @@ void ECLEngine::findAppropriateIndex(StringArray * relindexes, HPCCSQLTreeWalker
                             ISQLExpression * param = &(funcparams->item(paramidx));
                             if (param->getExpType() == FieldValue_ExpressionType)
                             {
-                                SQLFieldValueExpression * currentselectcol = dynamic_cast<SQLFieldValueExpression *>(param);
+                                SQLFieldValueExpression * currentselectcol = static_cast<SQLFieldValueExpression *>(param);
                                 if (indexfile->containsField(currentselectcol->queryField(), true))
                                     commonparamscount++;
                             }

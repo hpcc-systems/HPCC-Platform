@@ -205,7 +205,7 @@ SQLFieldValueExpression::~SQLFieldValueExpression()
 
 /***********************SQLUnaryExpression START**************************************************************************/
 
-SQLUnaryExpression::SQLUnaryExpression()
+SQLUnaryExpression::SQLUnaryExpression() : operand1(nullptr), op(-1)
 {}
 
 SQLUnaryExpression::~SQLUnaryExpression()
@@ -218,23 +218,23 @@ SQLUnaryExpression::~SQLUnaryExpression()
 
 void SQLUnaryExpression::getExpressionFromColumnName(const char * colname, StringBuffer & str)
 {
-        switch (op)
-        {
-            case ISNOTNULL:
-                str.append(" TRUE ");
-                break;
-            case ISNULL:
-                str.append(" FALSE ");
-                break;
-            case NOT_SYM:
-            case NEGATION:
-                str.append(" NOT ");
-                operand1->getExpressionFromColumnName(colname, str);
-                break;
-            default:
-                break;
+    switch (op)
+    {
+        case ISNOTNULL:
+            str.append(" TRUE ");
+            break;
+        case ISNULL:
+            str.append(" FALSE ");
+            break;
+        case NOT_SYM:
+        case NEGATION:
+            str.append(" NOT ");
+            operand1->getExpressionFromColumnName(colname, str);
+            break;
+        default:
+            break;
         }
-    }
+}
 
 SQLUnaryExpression::SQLUnaryExpression(ISQLExpression* operand1, int opname)
 {
@@ -455,17 +455,17 @@ bool SQLBinaryExpression::containsEqualityCondition(ISQLExpression* operand, IPr
         case Unary_ExpressionType:
         {
             SQLUnaryExpression * unary = dynamic_cast<SQLUnaryExpression *>(operand);
-            return unary->containsEqualityCondition(map, first, second);
+            return unary ? unary->containsEqualityCondition(map, first, second) : false;
         }
         case Binary_ExpressionType:
         {
             SQLBinaryExpression * binary = dynamic_cast<SQLBinaryExpression *>(operand);
-            return binary->isEqualityCondition(map, first, second);
+            return binary ? binary->isEqualityCondition(map, first, second) : false;
         }
         case Parenthesis_ExpressionType:
         {
             SQLParenthesisExpression * paren = dynamic_cast<SQLParenthesisExpression *>(operand);
-            return containsEqualityCondition(paren, map, first, second);
+            return paren ? containsEqualityCondition(paren, map, first, second) : false;
         }
         default:
             return false;
@@ -498,26 +498,28 @@ bool SQLBinaryExpression::isEqualityCondition(IProperties * map, const char * fi
     if (operand1->getExpType() == FieldValue_ExpressionType)
     {
         SQLFieldValueExpression * op1field = dynamic_cast<SQLFieldValueExpression *>(operand1);
-        map->getProp(op1field->getParentTableName(), operand1Translate);
+        if (op1field)
+            map->getProp(op1field->getParentTableName(), operand1Translate);
     }
 
     if (operand2->getExpType() == FieldValue_ExpressionType)
     {
         SQLFieldValueExpression * op2field = dynamic_cast<SQLFieldValueExpression *>(operand2);
-        map->getProp(op2field->getParentTableName(), operand2Translate);
+        if (op2field)
+            map->getProp(op2field->getParentTableName(), operand2Translate);
     }
 
     if (operand1Translate.length()<=0 || operand2Translate.length() <= 0)
         return false;
 
     return (
-                strcmp(operand1Translate.str(), operand2Translate.str()) != 0 &&
-                (
-                        (strcmp(operand1Translate.str(), first)==0 || strcmp(operand2Translate.str(), first)==0)
-                        &&
-                        (strcmp(operand1Translate.str(), second)==0 || strcmp(operand2Translate.str(), second)==0)
-                )
-            );
+               strcmp(operand1Translate.str(), operand2Translate.str()) != 0 &&
+               (
+                   (strcmp(operand1Translate.str(), first)==0 || strcmp(operand2Translate.str(), first)==0)
+                   &&
+                   (strcmp(operand1Translate.str(), second)==0 || strcmp(operand2Translate.str(), second)==0)
+               )
+           );
 }
 void SQLBinaryExpression::toECLStringTranslateSource(
             StringBuffer & eclStr,
@@ -533,7 +535,7 @@ void SQLBinaryExpression::toECLStringTranslateSource(
     operand1->toECLStringTranslateSource(translation1, map, ignoreMisTranslations, forHaving, false, false);
     operand2->toECLStringTranslateSource(translation2, map, ignoreMisTranslations, forHaving, false, false);
 
-    if (translation1.length()>0 && translation2.length()>0)
+    if (translation1.length() != 0 && translation2.length() != 0)
     {
         if ( op == LIKE_SYM || op == NOT_LIKE)
         {
@@ -550,14 +552,12 @@ void SQLBinaryExpression::toECLStringTranslateSource(
             eclStr.append(getOpStr());
             eclStr.append(translation2);
         }
-
-    }
-    else if (translation1.length() == 0 && translation2.length() == 0)
-    {
-        return;
     }
     else if (ignoreMisTranslations)
     {
+        if (translation1.length() == 0 && translation2.length() == 0)
+             return;
+
         /*
         * If operand1 or operand2 could not be translated using the translation map,
         * and ignoreMisTranslations = true, we're going to attempt to return an valid
@@ -574,7 +574,7 @@ void SQLBinaryExpression::toECLStringTranslateSource(
         {
             StringBuffer convert( op == OR_SYM ? "FALSE" : "TRUE");
 
-            if (translation1.length()>0)
+            if (translation1.length() != 0)
             {
                 WARNLOG("Operand 1 of binary expression could not be translated.");
                 eclStr.append(translation1);
@@ -702,7 +702,7 @@ int SQLParameterPlaceHolderExpression::setParameterizedNames(int currentindex)
     return ++currentindex;
 }
 
-SQLParameterPlaceHolderExpression::SQLParameterPlaceHolderExpression()
+SQLParameterPlaceHolderExpression::SQLParameterPlaceHolderExpression() : index(-1)
 {
 }
 

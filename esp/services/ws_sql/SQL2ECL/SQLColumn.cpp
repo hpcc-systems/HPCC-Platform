@@ -17,7 +17,7 @@ limitations under the License.
 
 #include "SQLColumn.hpp"
 
-SQLColumn::SQLColumn() {}
+SQLColumn::SQLColumn() : position(-1), ascending(true) {}
 SQLColumn::SQLColumn(const char * parentname, const char * columnname, const char * alias, int position)
 {
     this->parenttable.clear();
@@ -34,6 +34,12 @@ SQLColumn::SQLColumn(const char * parentname, const char * columnname, const cha
     this->position = position;
 
     setAscending(true);
+    StringBuffer columnName;
+    StringBuffer tableName;
+    int index;
+    int decimalDigits;
+    StringBuffer columnType;
+    bool keyedField;
 }
 
 

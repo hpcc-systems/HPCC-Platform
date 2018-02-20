@@ -32,12 +32,6 @@ void trimSingleQuotes(StringBuffer & quotedString)
     }
 }
 
-HPCCSQLTreeWalker::HPCCSQLTreeWalker()
-{
-    sqlType = SQLTypeUnknown;
-    parameterizeStaticValues = true;
-}
-
 void HPCCSQLTreeWalker::limitTreeWalker(pANTLR3_BASE_TREE limitAST)
 {
     char *  limit = NULL;
@@ -182,7 +176,6 @@ void HPCCSQLTreeWalker::fromTreeWalker(pANTLR3_BASE_TREE fromsqlAST)
 ISQLExpression * HPCCSQLTreeWalker::expressionTreeWalker(pANTLR3_BASE_TREE exprAST, pANTLR3_BASE_TREE parent)
 {
     Owned<ISQLExpression>  tmpexp;
-    ANTLR3_UINT32 exptype = exprAST->getType(exprAST);
 
     if ( exprAST != NULL )
     {
@@ -190,6 +183,7 @@ ISQLExpression * HPCCSQLTreeWalker::expressionTreeWalker(pANTLR3_BASE_TREE exprA
         Owned<ISQLExpression>  rightexp;
 
         bool checkForAlias = false;
+        ANTLR3_UINT32 exptype = exprAST->getType(exprAST);
         switch (exptype)
         {
             case TOKEN_LISTEXP:
@@ -236,7 +230,7 @@ ISQLExpression * HPCCSQLTreeWalker::expressionTreeWalker(pANTLR3_BASE_TREE exprA
                         ForEachItemIn(tableidx, tableList)
                         {
                             const char * tablename = tableList.item(tableidx).getName();
-                            HPCCFilePtr file = dynamic_cast<HPCCFilePtr>(tmpHPCCFileCache->getHpccFileByName(tablename));
+                            HPCCFilePtr file = tmpHPCCFileCache->getHpccFileByName(tablename);
                             if (file)
                             {
                                 IArrayOf<HPCCColumnMetaData> * cols = file->getColumns();
@@ -896,8 +890,9 @@ void HPCCSQLTreeWalker::callStatementTreeWalker(pANTLR3_BASE_TREE callsqlAST)
                             //The first set of single quotes are stripped here.
                             if (tokenType == TEXT_STRING)
                             {
-                                SQLValueExpression * valexp = dynamic_cast<SQLValueExpression *>(exp.get());
-                                valexp->trimTextQuotes();
+                                SQLValueExpression * valexp = static_cast<SQLValueExpression *>(exp.get());
+                                if (valexp)
+                                    valexp->trimTextQuotes();
                             }
                             paramList.append(*exp.getLink());
                         }
@@ -1000,10 +995,20 @@ void HPCCSQLTreeWalker::selectStatementTreeWalker(pANTLR3_BASE_TREE selectsqlAST
                     {
                         Owned<ISQLExpression> exp = expressionTreeWalker((pANTLR3_BASE_TREE)(ithchild->getChild(ithchild, i)),NULL);
 
-                        if (exp.get())
-                            groupbyList.append(*exp.getLink());
+                        if (!exp)
+                            throw MakeStringException(-1, "Error in order by list.");
+
+                        if (exp->getExpType() == FieldValue_ExpressionType)
+                        {
+                            SQLFieldValueExpression * fielvalexp = static_cast<SQLFieldValueExpression *>(exp.getLink());
+                            groupbyList.append(*fielvalexp);
+                        }
                         else
-                            throw MakeStringException(-1, "Error in group by list");
+                        {
+                            StringBuffer fieldvalue;
+                            exp->toString(fieldvalue, true);
+                            throw MakeStringException(-1, "Encountered invalid entry '%s' in 'GROUP BY' clause", fieldvalue.str());
+                        }
                     }
                     break;
                 }
@@ -1017,10 +1022,20 @@ void HPCCSQLTreeWalker::selectStatementTreeWalker(pANTLR3_BASE_TREE selectsqlAST
                     {
                         Owned<ISQLExpression> exp = expressionTreeWalker((pANTLR3_BASE_TREE)(ithchild->getChild(ithchild, i)),NULL);
 
-                        if (exp.get())
-                            orderbyList.append(*exp.getLink());
-                        else
+                        if (!exp)
                             throw MakeStringException(-1, "Error in order by list.");
+
+                        if (exp->getExpType() == FieldValue_ExpressionType)
+                        {
+                            SQLFieldValueExpression * fielvalexp = static_cast<SQLFieldValueExpression *>(exp.getLink());
+                            orderbyList.append(*fielvalexp);
+                        }
+                        else
+                        {
+                            StringBuffer fieldvalue;
+                            exp->toString(fieldvalue, true);
+                            throw MakeStringException(-1, "Encountered invalid entry '%s' in 'ORDER BY' clause", fieldvalue.str());
+                        }
                     }
                     break;
                 }
@@ -1092,15 +1107,18 @@ void HPCCSQLTreeWalker::assignParameterIndexes()
     parameterizedCount = paramIndex - 1;
 }
 
-HPCCSQLTreeWalker::HPCCSQLTreeWalker(pANTLR3_BASE_TREE ast, IEspContext &context, bool attemptParameterization)
+HPCCSQLTreeWalker::HPCCSQLTreeWalker() :  sqlType(SQLTypeUnknown), parameterizeStaticValues(true), limit(-1)
+                                         ,offset(-1), selectDistinct(false)
+                                         ,overwrite(true), sourceDataType(""), parameterizedCount(-1)
+{
+    normalizedSQL.clear();
+}
+
+HPCCSQLTreeWalker::HPCCSQLTreeWalker(pANTLR3_BASE_TREE ast, IEspContext &context, bool attemptParameterization) :
+                            limit(-1), offset(-1), selectDistinct(false), overwrite(true), sourceDataType("FLAT")
 {
     parameterizeStaticValues = attemptParameterization;
     normalizedSQL.clear();
-    setLimit(-1);
-    setOffset(-1);
-    selectDistinct = false;
-    overwrite = true;
-    sourceDataType.set("FLAT");
 
     StringBuffer username;
     StringBuffer password;
@@ -1166,7 +1184,7 @@ void HPCCSQLTreeWalker::expandWildCardColumn()
                 {
                     SQLTable tab = (SQLTable)tableList.item(tableidx);
 
-                    HPCCFilePtr file = dynamic_cast<HPCCFilePtr>(tmpHPCCFileCache->getHpccFileByName(tab.getName()));
+                    HPCCFilePtr file = tmpHPCCFileCache->getHpccFileByName(tab.getName());
                     if (file)
                     {
                         IArrayOf<HPCCColumnMetaData> * cols = file->getColumns();
@@ -1190,7 +1208,7 @@ void HPCCSQLTreeWalker::expandWildCardColumn()
             else
             {
                 const char * tablename = ((SQLFieldsExpression * )currexp)->getTable();
-                HPCCFilePtr file =  dynamic_cast<HPCCFilePtr>(tmpHPCCFileCache->getHpccFileByName(tablename));
+                HPCCFilePtr file = tmpHPCCFileCache->getHpccFileByName(tablename);
                 if (file)
                 {
                     IArrayOf<HPCCColumnMetaData> * cols = file->getColumns();
@@ -1211,6 +1229,7 @@ void HPCCSQLTreeWalker::expandWildCardColumn()
             }
             break; //only one select all ??
         }
+
         if (replaced && currexp)
             currexp->Release();
     }
@@ -1237,7 +1256,7 @@ ISQLExpression * HPCCSQLTreeWalker::getHavingClause()
     return havingClause.get();
 }
 
-void HPCCSQLTreeWalker::verifyAndDisambiguateNameFromList(IArrayOf<ISQLExpression> * explist)
+void HPCCSQLTreeWalker::verifyAndDisambiguateNameFromList(IArrayOf<SQLFieldValueExpression> * explist)
 {
     if (explist)
     {
@@ -1245,7 +1264,7 @@ void HPCCSQLTreeWalker::verifyAndDisambiguateNameFromList(IArrayOf<ISQLExpressio
         for (int i = 0; i < bycount; i++)
         {
             bool found = false;
-            ISQLExpression * coltoverify =  &explist->item(i);
+            SQLFieldValueExpression * coltoverify =  &explist->item(i);
 
             //we're trying to verify the list (groupby or sortby) contains only coloumns which appear in the select list
             ForEachItemIn(sellistidx, selectList)
@@ -1308,7 +1327,7 @@ void HPCCSQLTreeWalker::verifyColumn(SQLFieldValueExpression * col)
 
         if (selcolname && *selcolname)
         {
-            HPCCFilePtr file = dynamic_cast<HPCCFilePtr>(tmpHPCCFileCache->getHpccFileByName(selcolparent));
+            HPCCFilePtr file = tmpHPCCFileCache->getHpccFileByName(selcolparent);
             if (file)
             {
                 if (selcolname && *selcolname)
