@@ -2240,13 +2240,16 @@ public:
         if(ldap_count_entries(ld, searchResult) < 1)
         {
             searchResult.ldapMsgFree();
-            rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getGroupBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,   &searchResult.msg );
+            ldap_search_ext_s(ld, (char*)m_ldapconfig->getGroupBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,   &searchResult.msg );
             if(ldap_count_entries(ld, searchResult) < 1)
             {
                 searchResult.ldapMsgFree();
-                rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getSysUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg );
-                DBGLOG("CLdapClient::lookupAccount No entries found");
-                return false;
+                ldap_search_ext_s(ld, (char*)m_ldapconfig->getSysUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg );
+                if(ldap_count_entries(ld, searchResult) < 1)
+                {
+                    DBGLOG("CLdapClient::lookupAccount No entries found");
+                    return false;
+                }
             }
         }
 
@@ -3365,6 +3368,12 @@ public:
 
     virtual bool getResources(SecResourceType rtype, const char * basedn, const char* prefix, IArrayOf<ISecResource>& resources)
     {
+        Owned<ILdapConnection> lconn = m_connections->getConnection();
+        return getResources( ((CLdapConnection*)lconn.get())->getLd(), rtype, basedn, prefix, resources);
+    }
+
+    virtual bool getResources(LDAP* ld, SecResourceType rtype, const char * basedn, const char* prefix, IArrayOf<ISecResource>& resources)
+    {
         char        *attribute;
         LDAPMessage *message;
 
@@ -3373,10 +3382,6 @@ public:
         StringBuffer filter("objectClass=*");
 
         TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
-
-        Owned<ILdapConnection> lconn = m_connections->getConnection();
-        LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
-
         const char* fldname;
         LdapServerType servertype = m_ldapconfig->getServerType();
         if(servertype == ACTIVE_DIRECTORY && (rtype == RT_DEFAULT || rtype == RT_MODULE || rtype == RT_SERVICE))
@@ -3431,7 +3436,7 @@ public:
                     if(prefix != NULL && *prefix != '\0')
                         nextprefix.append(prefix);
                     nextprefix.append(curname.str()).append("::");
-                    getResources(rtype, nextbasedn.str(), nextprefix.str(), resources);
+                    getResources(ld, rtype, nextbasedn.str(), nextprefix.str(), resources);
                 }
             }
         }
@@ -3511,7 +3516,7 @@ public:
                 if(prefix != NULL && *prefix != '\0')
                     nextprefix.append(prefix);
                 nextprefix.append(curname.str()).append("::");
-                getResources(rtype, nextbasedn.str(), nextprefix.str(), resources);
+                getResources(ld, rtype, nextbasedn.str(), nextprefix.str(), resources);
             }
         }
 
