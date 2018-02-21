@@ -17,7 +17,7 @@ EXPORT TestEndsWith := MODULE
     //Check action on a string containing a single word - with various whitespace.
     EXPORT Test08 := ASSERT(Uni.EndsWith(' x ','  x ','') = FALSE);
     EXPORT Test09 := ASSERT(Uni.EndsWith(' x','x  ','') = TRUE);
-    EXPORT Test10 := ASSERT(Uni.EndsWith('x ','x ','') = FALSE);
+    EXPORT Test10 := ASSERT(Uni.EndsWith('x ','x ','') = TRUE);
     EXPORT Test11 := ASSERT(Uni.EndsWith('  x','x','') = TRUE);
     //Functionality Test.
     EXPORT Test12 := ASSERT(Uni.EndsWith('x','xx','') = FALSE);
@@ -35,8 +35,9 @@ EXPORT TestEndsWith := MODULE
     EXPORT Test23 := ASSERT(Uni.EndsWith('I couldn\'t hear you!','couldn\'t hear you!','') = TRUE);
     //Check action on a string containing different variations/combinations of numbers and other characters.
     EXPORT Test24 := ASSERT(Uni.EndsWith('123abc 23.6 abc123','23.6 abc123','') = TRUE);
-    //Test other space characters (< 0x20).
+    //Test other space characters (< 0x20) - implicit trim semantics have changed in 7.0.
     EXPORT Test26 := ASSERT(Uni.EndsWith('\nt\t','t','') = FALSE);
+    EXPORT Test26a := ASSERT(Uni.EndsWith('\nt\t','t\t','') = TRUE);
     //Check action on a string containing latin diacritical marks.
     EXPORT Test27 := ASSERT(Uni.EndsWith(U'À à',U'à','') = TRUE);
     EXPORT Test28 := ASSERT(Uni.EndsWith(U'ȭ š',U'š','') = TRUE);
@@ -64,35 +65,26 @@ EXPORT TestEndsWith := MODULE
     EXPORT Test39 := ASSERT(Uni.EndsWith(U'Ç̌',U'Ç̌','') = TRUE);
     EXPORT Test40 := ASSERT(Uni.EndsWith(U'Ç̌',U'Ç̌','NFC') = TRUE);
     DATA r1 := x'43002703';
-    UNICODE t1 := TRANSFER(r1, UNICODE);
+    SHARED UNICODE t1a := TRANSFER(r1, UNICODE);
     DATA r2 := x'c700';
-    UNICODE t2 := TRANSFER(r2, UNICODE);
-    EXPORT Test41 := ASSERT(Uni.EndsWith(t1,t2,'NFC') = TRUE);
-    DATA r1 := x'43002703';
-    UNICODE t1 := TRANSFER(r1, UNICODE);
-    DATA r2 := x'c700';
-    UNICODE t2 := TRANSFER(r2, UNICODE);
-    EXPORT Test42 := ASSERT(Uni.EndsWith(t1,t2,'NFD') = TRUE);
-    DATA r1 := x'43002703';
-    UNICODE t1 := TRANSFER(r1, UNICODE);
-    DATA r2 := x'c700';
-    UNICODE t2 := TRANSFER(r2, UNICODE);
-    EXPORT Test43 := ASSERT(Uni.EndsWith(t1,t2,'NFKC') = TRUE);
-    DATA r1 := x'43002703';
-    UNICODE t1 := TRANSFER(r1, UNICODE);
-    DATA r2 := x'c700';
-    UNICODE t2 := TRANSFER(r2, UNICODE);
-    EXPORT Test44 := ASSERT(Uni.EndsWith(t1,t2,'NFKD') = TRUE);
+    SHARED UNICODE t2a := TRANSFER(r2, UNICODE);
+    EXPORT Test41 := ASSERT(Uni.EndsWith(t1a,t2a,'NFC') = TRUE);
+    EXPORT Test42 := ASSERT(Uni.EndsWith(t1a,t2a,'NFD') = TRUE);
+    EXPORT Test43 := ASSERT(Uni.EndsWith(t1a,t2a,'NFKC') = TRUE);
+    EXPORT Test44 := ASSERT(Uni.EndsWith(t1a,t2a,'NFKD') = TRUE);
     DATA r1 := x'43000C032703';
-    UNICODE t1 := TRANSFER(r1, UNICODE);
+    SHARED UNICODE t1b := TRANSFER(r1, UNICODE);
     DATA r2 := x'0C032703';
-    UNICODE t2 := TRANSFER(r2, UNICODE);
-    EXPORT Test45 := ASSERT(Uni.EndsWith(t1,t2,'NFC') = FALSE);
-    DATA r1 := x'43000C032703';
-    UNICODE t1 := TRANSFER(r1, UNICODE);
-    DATA r2 := x'0C032703';
-    UNICODE t2 := TRANSFER(r2, UNICODE);
-    EXPORT Test46 := ASSERT(Uni.EndsWith(t1,t2,'NFD') = TRUE);
+    SHARED UNICODE t2b := TRANSFER(r2, UNICODE);
+    EXPORT Test45 := ASSERT(Uni.EndsWith(t1b,t2b,'NFC') = FALSE);
+    EXPORT Test46 := ASSERT(Uni.EndsWith(t1b,t2b,'NFD') = TRUE);
+    //Test various combinations of space padding.
+    DATA r1 := x'4300270320002000';
+    SHARED UNICODE t1c := TRANSFER(r1, UNICODE);
+    DATA r2 := x'c70020002000';
+    SHARED UNICODE t2c := TRANSFER(r2, UNICODE);
+    EXPORT Test47 := ASSERT(Uni.EndsWith(t1c,t2c,'NFC') = TRUE);
+    EXPORT Test48 := ASSERT(Uni.EndsWith(t1a,t2c,'NFC') = TRUE);
+    EXPORT Test49 := ASSERT(Uni.EndsWith(t1c,t2a,'NFC') = TRUE);
   END;
-
 END;

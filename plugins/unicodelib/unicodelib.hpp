@@ -107,6 +107,7 @@ UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleTranslate(unsigned & tgtLen, 
 UNICODELIB_API bool UNICODELIB_CALL ulUnicodeLocaleStartsWith(unsigned srcLen, UChar const * src, unsigned prefLen, UChar const * pref, unsigned formLen, char const * form);
 UNICODELIB_API bool UNICODELIB_CALL ulUnicodeLocaleEndsWith(unsigned srcLen, UChar const * src, unsigned suffLen, UChar const * suff, unsigned formLen, char const * form);
 UNICODELIB_API void UNICODELIB_CALL ulUnicodeVersion(unsigned & tgtLen, char * & tgt);
+UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleRemoveSuffix(unsigned & tgtLen, UChar * & tgt, unsigned srcLen, UChar const * src, unsigned suffLen, UChar const * suff, unsigned formLen, char const * form);
 }
 
 #endif

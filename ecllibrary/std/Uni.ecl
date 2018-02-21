@@ -468,4 +468,17 @@ EXPORT BOOLEAN EndsWith(unicode src, unicode suff, string form) :=
 
 EXPORT STRING Version() := lib_unicodelib.UnicodeLib.UnicodeVersion();
 
+/**
+ * Removes the suffix from the search string, if present, and returns the result. Trailing spaces are
+ * stripped from both strings before matching.
+ *
+ * @param src           The string being searched in.
+ * @param suffix        The suffix to search for.
+ * @param form          The type of Normalization to be employed.
+ * @return              The string excluding the suffix, if endsWith is true
+ */
+
+EXPORT RemoveSuffix(unicode src, unicode suff, string form) :=
+    lib_unicodelib.UnicodeLib.UnicodeLocaleRemoveSuffix(src, suff, form);
+
 END;

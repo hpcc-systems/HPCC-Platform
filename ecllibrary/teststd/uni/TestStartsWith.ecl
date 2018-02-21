@@ -49,7 +49,8 @@ EXPORT TestStartsWith := MODULE
     EXPORT Test30 := ASSERT(Uni.StartsWith(U'我是電腦',U'我是','') = TRUE);
     //Check action on a string containing Modern Greek characters.
     //Translation: "Do you come here often?"
-    EXPORT Test31 := ASSERT(Uni.StartsWith(U'Έρχεσαι συχνά εδώ; ',U' Έρχεσαι συ','') = TRUE);
+    EXPORT Test31a := ASSERT(Uni.StartsWith(U'Έρχεσαι συχνά εδώ; ',U' Έρχεσαι συ','') = FALSE);
+    EXPORT Test31b := ASSERT(Uni.StartsWith(U'Έρχεσαι συχνά εδώ; ',U'Έρχεσαι συ','') = TRUE);
     //Testcases 32 and 33 test for bidirectional capabilities with scripts in arabic and hebrew.
     //Check action on arabic lettering with accent marks. Bidirectional.
     //Translation: "Good morning"
