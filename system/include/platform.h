@@ -497,6 +497,7 @@ typedef unsigned __int64 __uint64;
 typedef __uint64 offset_t;
 typedef unsigned char byte;
 typedef __int64 cycle_t;
+typedef unsigned __int64 timestamp_type;
 
 // BUILD_TAG not needed here anymore - defined in build_tag.h
 //#define BUILD_TAG "build_0000" // Will get substituted during pre-build

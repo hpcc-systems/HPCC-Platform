@@ -37,6 +37,8 @@
 #define GATHER_HIDDEN_SELECTORS
 
 #define XPATH_CONTENTS_TEXT     "<>"
+#define INTERNAL_LOCAL_MODULE_NAME "_local_directory_"
+
 
 //This should be defined, but HOLe does not cope with variable length stored strings.  Need to wait until HOLe is integrated into thor.
 //#define STORED_CAN_CHANGE_LENGTH
@@ -844,6 +846,15 @@ interface IHasUnlinkedOwnerReference : public IInterface
 
 typedef SafeOwnerReference<IHqlScope, IHasUnlinkedOwnerReference> ForwardScopeItem;
 
+class FileParseMeta : public CInterface
+{
+public:
+    IPropertyTree * dependencies = nullptr;
+    HqlExprCopyArray dependents;
+    Owned<IPropertyTree> meta;
+};
+
+interface IEclCachedDefinitionCollection;
 class HQL_API HqlParseContext
 {
 public:
@@ -877,14 +888,19 @@ public:
     void noteBeginAttribute(IHqlScope * scope, IFileContents * contents, IIdAtom * name);
     void noteBeginModule(IHqlScope * scope, IFileContents * contents);
     void noteBeginQuery(IHqlScope * scope, IFileContents * contents);
-    void noteEndAttribute(bool success);
+    void noteBeginMacro(IHqlScope * scope, IIdAtom * name);
+    void noteEndAttribute(bool success, bool canCache, bool isMacro, IHqlExpression * definition);
     void noteEndModule(bool success);
     void noteEndQuery(bool success);
     void noteFinishedParse(IHqlScope * scope);
+    void noteEndMacro();
     void notePrivateSymbols(IHqlScope * scope);
     IPropertyTree * queryEnsureArchiveModule(const char * name, IHqlScope * scope);
 
+    void noteExternalLookup(IHqlScope * parentScope, IHqlExpression * expr);
+
     void setGatherMeta(const MetaOptions & options);
+    void setCacheLocation(const char * path);
 
     inline IPropertyTree * getClearMetaTree() { return metaTree.getClear(); }
     inline IPropertyTree * queryArchive() const { return archive; }
@@ -892,12 +908,18 @@ public:
     inline bool isAborting() const { return aborting; }
     inline void setAborting() { aborting = true; }
     inline void setFastSyntax() { expandCallsWhenBound = false; }
+    inline IPropertyTree * queryNestedDependTree() const { return nestedDependTree; }
+
+    void beginMetaScope() { metaStack.append(*new FileParseMeta); }
+    void beginMetaScope(FileParseMeta & active) { metaStack.append(OLINK(active)); }
+    void endMetaScope() { metaStack.pop(); }
+    inline FileParseMeta & curMeta() { return metaStack.tos(); }
 
 public:
     Linked<IPropertyTree> archive;
     Linked<IEclRepository> eclRepository;
     Owned<IPropertyTree> nestedDependTree;
-    Owned<IPropertyTree> globalDependTree;
+    Owned<IPropertyTree> globalDependTree; // A list of all dependencies for the query.  Used to locate manifests.
     Owned<IPropertyTree> metaTree;
     IErrorArray orphanedWarnings;
     HqlExprArray defaultFunctionCache;
@@ -910,19 +932,21 @@ public:
     bool aborting;
     bool checkDirty = false;
     Linked<ICodegenContextCallback> codegenCtx;
+    CIArrayOf<FileParseMeta> metaStack;
+    IEclCachedDefinitionCollection * cache = nullptr;
+    __uint64 optionHash = 0;
 
 private:
-    void setDefinitionText(IPropertyTree * target, const char * prop, IFileContents * contents);
+    void createDependencyEntry(IHqlScope * scope, IIdAtom * name);
     bool checkBeginMeta();
     bool checkEndMeta();
-    void finishMeta(bool isSeparateFile, bool success);
+    void finishMeta(bool isSeparateFile, bool success, bool generateMeta, bool canCache, bool isMacro, IHqlExpression * definition);
     IPropertyTree * beginMetaSource(IFileContents * contents);
 
     MetaOptions metaOptions;
 
     struct {
         bool gatherNow;
-        IArrayOf<IPropertyTree> nesting;
     } metaState;
 };
 
@@ -940,7 +964,6 @@ public:
     {
         errs.set(other.errs); 
         functionCache = other.functionCache; 
-        curAttrTree.set(other.curAttrTree);
     }
     HqlLookupContext(HqlParseContext & _parseCtx, IErrorReceiver * _errs)
     : parseCtx(_parseCtx), errs(_errs)
@@ -948,15 +971,17 @@ public:
         functionCache = &parseCtx.defaultFunctionCache;
     }
 
-    void createDependencyEntry(IHqlScope * scope, IIdAtom * name);
     void noteBeginAttribute(IHqlScope * scope, IFileContents * contents, IIdAtom * name);
     void noteBeginModule(IHqlScope * scope, IFileContents * contents);
     void noteBeginQuery(IHqlScope * scope, IFileContents * contents);
-    inline void noteEndAttribute(bool success) { parseCtx.noteEndAttribute(success); }
+    void noteBeginMacro(IHqlScope * scope, IIdAtom * name) { parseCtx.noteBeginMacro(scope, name); }
+    inline void noteEndAttribute(bool success, bool canCache, bool isMacro, IHqlExpression * simplifiedDefinition) { parseCtx.noteEndAttribute(success, canCache, isMacro, simplifiedDefinition); }
     inline void noteEndModule(bool success) { parseCtx.noteEndModule(success); }
     inline void noteEndQuery(bool success) { parseCtx.noteEndQuery(success); }
+    inline void noteEndMacro() { parseCtx.noteEndMacro(); }
+
     inline void noteFinishedParse(IHqlScope * scope) { parseCtx.noteFinishedParse(scope); }
-    void noteExternalLookup(IHqlScope * parentScope, IHqlExpression * expr);
+    inline void noteExternalLookup(IHqlScope * parentScope, IHqlExpression * expr) { parseCtx.noteExternalLookup(parentScope, expr); }
     inline void notePrivateSymbols(IHqlScope * scope) { parseCtx.notePrivateSymbols(scope); }
 
     inline IEclRepository * queryRepository() const { return parseCtx.eclRepository; }
@@ -978,8 +1003,6 @@ private:
 public:
     Linked<IErrorReceiver> errs;
     HqlExprArray * functionCache;
-    Owned<IPropertyTree> curAttrTree;
-    HqlExprCopyArray dependents;
 };
 
 class HqlDummyLookupContext : public HqlLookupContext
@@ -1000,6 +1023,7 @@ enum
     LSFrequired     = 0x0004,
     LSFimport       = 0x0008,
     LSFfromderived  = 0x0010,
+    LSFnoreport     = 0x0020,   // Do not include looking up this symbol in the list of dependencies.
 };
 inline unsigned makeLookupFlags(bool sharedOK, bool ignoreBase, bool required)
 {
@@ -1880,8 +1904,8 @@ extern HQL_API ITypeInfo * getPromotedECLCompareType(ITypeInfo * lType, ITypeInf
 extern HQL_API void extendAdd(SharedHqlExpr & value, IHqlExpression * expr);
 inline bool isOmitted(IHqlExpression * actual) { return !actual || actual->getOperator() == no_omitted; }
 
-extern HQL_API IFileContents * createFileContentsFromText(unsigned len, const char * text, ISourcePath * sourcePath, bool isSigned, IHqlExpression * gpgSignature);
-extern HQL_API IFileContents * createFileContentsFromText(const char * text, ISourcePath * sourcePath, bool isSigned, IHqlExpression * gpgSignature);
+extern HQL_API IFileContents * createFileContentsFromText(unsigned len, const char * text, ISourcePath * sourcePath, bool isSigned, IHqlExpression * gpgSignature, timestamp_type ts);
+extern HQL_API IFileContents * createFileContentsFromText(const char * text, ISourcePath * sourcePath, bool isSigned, IHqlExpression * gpgSignature, timestamp_type ts);
 extern HQL_API IFileContents * createFileContentsFromFile(const char * filename, ISourcePath * sourcePath, bool isSigned, IHqlExpression * gpgSignature);
 extern HQL_API IFileContents * createFileContentsSubset(IFileContents * contents, size32_t offset, size32_t len);
 extern HQL_API IFileContents * createFileContents(IFile* file, ISourcePath* sourcePath, bool isSigned, IHqlExpression * gpgSignature);

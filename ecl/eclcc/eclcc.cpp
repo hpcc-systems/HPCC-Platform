@@ -50,6 +50,7 @@
 #include "hqltrans.ipp"
 #include "hqlutil.hpp"
 #include "hqlstmt.hpp"
+#include "hqlcache.hpp"
 
 #include "build-config.h"
 #include "rmtfile.hpp"
@@ -341,6 +342,7 @@ protected:
     StringAttr optWUID;
     StringArray clusters;
     mutable int prevClusterSize = -1;  // i.e. not cached
+    StringAttr optExpandPath;
     FILE * batchLog = nullptr;
 
     StringAttr optManifestFilename;
@@ -403,6 +405,7 @@ protected:
     bool optFastSyntax = false;
     bool optCheckIncludePaths = true;
     bool optXml = false;
+    bool optTraceCache = false;
     mutable bool daliConnected = false;
     mutable bool disconnectReported = false;
     int argc;
@@ -1143,9 +1146,64 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     if (instance.inputFile)
         setActiveSource(instance.inputFile->queryFilename());
 
+    Owned<IEclCachedDefinitionCollection> cache;
+    __uint64 optionHash = 0;
+    if (optMetaLocation)
+    {
+        //Update the hash to include information about which options affect how symbols are processed.  It should only include options that
+        //affect how the code is parsed, not how it is generated.
+        //Include path
+        optionHash = rtlHash64VStr(eclLibraryPath, optionHash);
+        if (!optNoBundles)
+            optionHash = rtlHash64VStr(eclBundlePath, optionHash);
+        if (!optNoStdInc)
+            optionHash = rtlHash64VStr(stdIncludeLibraryPath, optionHash);
+        optionHash = rtlHash64VStr(includeLibraryPath, optionHash);
+
+        //Any explicit -D definitions
+        ForEachItemIn(i, definitions)
+            optionHash = rtlHash64VStr(definitions.item(i), optionHash);
+
+        optionHash = rtlHash64Data(sizeof(optLegacyImport), &optLegacyImport, optionHash);
+        optionHash = rtlHash64Data(sizeof(optLegacyWhen), &optLegacyWhen, optionHash);
+
+        //And create a cache instances
+        cache.setown(createEclFileCachedDefinitionCollection(instance.dataServer, optMetaLocation));
+    }
+
+    if (instance.archive)
+    {
+        instance.archive->setPropBool("@legacyImport", instance.legacyImport);
+        instance.archive->setPropBool("@legacyWhen", instance.legacyWhen);
+        if (withinRepository)
+        {
+            instance.archive->setProp("Query", "");
+            instance.archive->setProp("Query/@attributePath", queryAttributePath);
+        }
+    }
+
+    if (withinRepository && instance.archive && cache)
+    {
+        Owned<IEclCachedDefinition> main = cache->getDefinition(queryAttributePath);
+        if (main->isUpToDate(optionHash))
+        {
+            if (main->hasKnownDependents())
+            {
+                DBGLOG("Create archive from cache for %s", queryAttributePath);
+                updateArchiveFromCache(instance.archive, cache, queryAttributePath);
+                return;
+            }
+            DBGLOG("Cannot create archive from cache for %s because it is a macro", queryAttributePath);
+        }
+        else
+            DBGLOG("Cannot create archive from cache for %s because it is not up to date", queryAttributePath);
+    }
+
     {
         //Minimize the scope of the parse context to reduce lifetime of cached items.
         HqlParseContext parseCtx(instance.dataServer, &instance, instance.archive);
+        parseCtx.cache = cache;
+        parseCtx.optionHash = optionHash;
         if (optFastSyntax)
             parseCtx.setFastSyntax();
         unsigned maxErrorsDebugOption = instance.wu->getDebugValueInt("maxErrors", 0);
@@ -1168,21 +1226,18 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             options.includeExternalUses = instance.wu->getDebugValueBool("metaIncludeExternalUse", true);
             options.includeLocations = instance.wu->getDebugValueBool("metaIncludeLocations", true);
             options.includeJavadoc = instance.wu->getDebugValueBool("metaIncludeJavadoc", true);
-            options.cacheLocation.set(optMetaLocation);
             parseCtx.setGatherMeta(options);
         }
 
+        if (optMetaLocation)
+            parseCtx.setCacheLocation(optMetaLocation);
+
         setLegacyEclSemantics(instance.legacyImport, instance.legacyWhen);
-        if (instance.archive)
-        {
-            instance.archive->setPropBool("@legacyImport", instance.legacyImport);
-            instance.archive->setPropBool("@legacyWhen", instance.legacyWhen);
-        }
 
         parseCtx.ignoreUnknownImport = instance.ignoreUnknownImport;
         parseCtx.ignoreSignatures = instance.ignoreSignatures;
         bool exportDependencies = instance.wu->getDebugValueBool("exportDependencies",false);
-        if (exportDependencies)
+        if (exportDependencies || optMetaLocation)
             parseCtx.nestedDependTree.setown(createPTree("Dependencies", ipt_fast));
 
         addTimeStamp(instance.wu, SSTcompilestage, "compile:parse", StWhenStarted);
@@ -1192,12 +1247,6 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
 
             if (withinRepository)
             {
-                if (instance.archive)
-                {
-                    instance.archive->setProp("Query", "");
-                    instance.archive->setProp("Query/@attributePath", queryAttributePath);
-                }
-
                 instance.query.setown(getResolveAttributeFullPath(queryAttributePath, LSFpublic, ctx));
                 if (!instance.query && !syntaxChecking && (errorProcessor.errCount() == prevErrs))
                 {
@@ -1385,7 +1434,8 @@ void EclCC::processDefinitions(EclRepositoryArray & repositories)
         }
 
         //Create a repository with just that attribute.
-        Owned<IFileContents> contents = createFileContentsFromText(value, NULL, false, NULL);
+        timestamp_type ts = 1; // Use a non zero timestamp so the value can be cached.  Changes are spotted through the optionHash
+        Owned<IFileContents> contents = createFileContentsFromText(value, NULL, false, NULL, ts);
         repositories.append(*createSingleDefinitionEclRepository(module, attr, contents));
     }
 }
@@ -1394,6 +1444,12 @@ void EclCC::processDefinitions(EclRepositoryArray & repositories)
 void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML)
 {
     instance.srcArchive.setown(createPTreeFromXMLString(archiveXML, ipt_caseInsensitive));
+
+    if (optExpandPath)
+    {
+        expandArchive(optExpandPath, instance.srcArchive, true);
+        return;
+    }
 
     IPropertyTree * archiveTree = instance.srcArchive;
     Owned<IPropertyTreeIterator> iter = archiveTree->getElements("Option");
@@ -1462,7 +1518,7 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
     {
         const char * sourceFilename = archiveTree->queryProp("Query/@originalFilename");
         Owned<ISourcePath> sourcePath = createSourcePath(sourceFilename);
-        contents.setown(createFileContentsFromText(queryText, sourcePath, false, NULL));
+        contents.setown(createFileContentsFromText(queryText, sourcePath, false, NULL, 0));
         if (queryAttributePath && queryText && *queryText)
         {
             Owned<IEclSourceCollection> inputFileCollection = createSingleDefinitionEclCollection(queryAttributePath, contents);
@@ -1483,7 +1539,7 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
         queryAttributePath = fullPath.str();
 
         //Create a repository with just that attribute, and place it before the archive in the resolution order.
-        Owned<IFileContents> contents = createFileContentsFromText(queryText, NULL, false, NULL);
+        Owned<IFileContents> contents = createFileContentsFromText(queryText, NULL, false, NULL, 0);
         repositories.append(*createSingleDefinitionEclRepository(syntaxCheckModule, syntaxCheckAttribute, contents));
     }
 
@@ -1582,7 +1638,7 @@ void EclCC::processFile(EclCompileInstance & instance)
             {
                 //Associate the contents of the directory with an internal module called _local_directory_
                 //(If it was root it might override existing root symbols).  $ is the only public way to get at the symbol
-                const char * moduleName = "_local_directory_";
+                const char * moduleName = INTERNAL_LOCAL_MODULE_NAME;
                 IIdAtom * moduleNameId = createIdAtom(moduleName);
 
                 StringBuffer thisDirectory;
@@ -2385,6 +2441,9 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(optArchive, "-E"))
         {
         }
+        else if (iter.matchOption(optExpandPath, "--expand"))
+        {
+        }
         else if (iter.matchFlag(tempArg, "-f"))
         {
             debugOptions.append(tempArg);
@@ -2486,7 +2545,6 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         }
         else if (iter.matchOption(optMetaLocation, "--metacache"))
         {
-            optIncludeMeta = true;
         }
         else if (iter.matchFlag(optGenerateMeta, "-M"))
         {
@@ -2574,6 +2632,9 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
             if (!setTargetPlatformOption(tempArg.get(), optTargetClusterType))
                 return 1;
         }
+        else if (iter.matchFlag(optTraceCache, "--tracecache"))
+        {
+        }
         else if (iter.matchFlag(logVerbose, "-v") || iter.matchFlag(logVerbose, "--verbose"))
         {
             Owned<ILogMsgFilter> filter = getDefaultLogMsgFilter();
@@ -2640,14 +2701,6 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
     optReleaseAllMemory = optDebugMemLeak || optLeakCheck;
     loadManifestOptions();
 
-    if (inputFileNames.ordinality() == 0 && !optKeywords)
-    {
-        if (optGenerateHeader || optShowPaths || (!optBatchMode && optQueryRepositoryReference))
-            return 0;
-        ERRLOG("No input filenames supplied");
-        return 1;
-    }
-
     if (optDebugMemLeak)
     {
         StringBuffer title;
@@ -2655,6 +2708,15 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         initLeakCheck(title);
     }
 
+    setTraceCache(optTraceCache);
+
+    if (inputFileNames.ordinality() == 0 && !optKeywords)
+    {
+        if (optGenerateHeader || optShowPaths || (!optBatchMode && optQueryRepositoryReference))
+            return 0;
+        ERRLOG("No input filenames supplied");
+        return 1;
+    }
     return 0;
 }
 

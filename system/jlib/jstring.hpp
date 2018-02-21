@@ -70,6 +70,7 @@ public:
     StringBuffer &  appendN(size32_t count, char fill);
     StringBuffer &  appendf(const char *format, ...) __attribute__((format(printf, 2, 3)));
     StringBuffer &  appendLower(unsigned len, const char * value);
+    StringBuffer &  appendLower(const char * value) { return appendLower(strlen(value), value); }
 
     StringBuffer &  setf(const char* format, ...) __attribute__((format(printf,2,3)));
     StringBuffer &  limited_valist_appendf(unsigned szLimit, const char *format, va_list args) __attribute__((format(printf,3,0)));
