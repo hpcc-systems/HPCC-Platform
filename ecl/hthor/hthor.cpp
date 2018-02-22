@@ -8968,8 +8968,8 @@ const void *CHThorDiskGroupAggregateActivity::nextRow()
                     const byte * next = prefetchBuffer.queryRow();
                     size32_t sizeRead = prefetchBuffer.queryRowSize();
 
-                        //helper.processRows(sizeRead, next, this);
-                    helper.processRow(next, this);
+                    if (segMonitorsMatch(next))
+                        helper.processRow(next, this);
 
                     prefetchBuffer.finishedRow();
                     localOffset += sizeRead;
