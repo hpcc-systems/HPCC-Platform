@@ -323,10 +323,38 @@ public:
 
     virtual size32_t avail_read()            // called after wait_read to see how much data available
     {
+        // NOTE: this routine may not provide an accurate count of available bytes to read ...
         int pending = SSL_pending(m_ssl);
         if(pending > 0)
             return pending;
-        return m_socket->avail_read();
+        // check if there still might be data to read
+        // (often used as a check for if socket was closed by peer)
+        size32_t avr = m_socket->avail_read();
+        if (avr > 0)
+        {
+            // SSL_has_pending() could be useful here, but
+            // it requires SSL version 1.1.0+
+            byte c[2];
+            pending = SSL_peek(m_ssl, c, 1);
+            // 0 almost always means socket was closed
+            // NOTE: this used to return avr bytes from above, but that
+            // could have included extra TLS protocol bytes that SSL_read
+            // does not count.
+            // Returning a max of 1 now may lead to some ineffiencies ...
+            if (pending >= 0)
+                return pending;
+            // ideally should handle SSL_ERROR_WANT_READ/WRITE error here,
+            // but avail_read() above would probably return 0 in this case
+            if (m_loglevel >= SSLogNormal)
+            {
+                int ret = SSL_get_error(m_ssl, pending);
+                char errbuf[512];
+                ERR_error_string_n(ERR_get_error(), errbuf, 512);
+                errbuf[511] = '\0';
+                DBGLOG("SSL_peek returned an error - %s", errbuf);
+            }
+        }
+        return 0;
     }
 
     virtual size32_t write_multiple(unsigned num,const void **buf, size32_t *size)
@@ -690,6 +718,8 @@ int CSecureSocket::wait_read(unsigned timeoutms)
     int pending = SSL_pending(m_ssl);
     if(pending > 0)
         return pending;
+    // TODO: wait_read() might return data is avail but SSL_read() could still
+    //       block until a complete TLS record arrives ...
     return m_socket->wait_read(timeoutms);
 }
 
@@ -742,6 +772,9 @@ void CSecureSocket::readTimeout(void* buf, size32_t min_size, size32_t max_size,
             timeleft = socketTimeRemaining(useSeconds, start, timeout);
         }
 
+        // TODO: wait_read() might return data is available, but if it is
+        //       not a complete TLS record then SSL_read() below may still block
+        //       until complete TLS record arrives
         rc = SSL_read(m_ssl, (char*)buf + size_read, max_size - size_read);
         if(rc > 0)
         {
@@ -750,6 +783,7 @@ void CSecureSocket::readTimeout(void* buf, size32_t min_size, size32_t max_size,
         else
         {
             int err = SSL_get_error(m_ssl, rc);
+            // TODO: should we handle SSL_ERROR_ZERO_RETURN as a graceful close separately ?
             // Ignoring SSL_ERROR_SYSCALL because IE prompting user acceptance of the certificate 
             // causes this error, but is harmless.
             if((err != SSL_ERROR_NONE) && (err != SSL_ERROR_SYSCALL))
