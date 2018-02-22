@@ -1,0 +1,3029 @@
+testCase(ScopeFilter={
+    'MaxDepth': '999',
+    'Scopes': None,
+    'Ids': None,
+    'ScopeTypes': None,
+    'PropertyFilters': None
+}, NestedFilter={
+    'Depth': None,
+    'ScopeTypes': None
+}, PropertiesToReturn={
+    'AllStatistics': '1',
+    'AllAttributes': '1',
+    'AllHints': '1',
+    'MinVersion': None,
+    'Measure': None,
+    'Properties': None,
+    'ExtraProperties': None
+}, ScopeOptions={
+    'IncludeMatchedScopesInResults': '1',
+    'IncludeScope': '1',
+    'IncludeId': '1',
+    'IncludeScopeType': '1'
+}, PropertyOptions={
+    'IncludeName': '1',
+    'IncludeRawValue': '1',
+    'IncludeFormatted': '1',
+    'IncludeMeasure': '1',
+    'IncludeCreator': '1',
+    'IncludeCreatorType': '1'
+})
+{
+    'Exceptions': None,
+    'MaxVersion': '{masked number}',
+    'WUID': '{masked WUID - matches request}',
+    'Scopes': {
+        'Scope': [
+            {
+                'ScopeName': None,
+                'Id': None,
+                'ScopeType': 'global',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenCreated',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'esp'
+                        },
+                        {
+                            'Name': 'WhenCompiled',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        },
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'WhenFinished',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumRowsProcessed',
+                            'RawValue': '373',
+                            'Formatted': '373',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumIndexSeeks',
+                            'RawValue': '170',
+                            'Formatted': '170',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumIndexScans',
+                            'RawValue': '166',
+                            'Formatted': '166',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumIndexWildSeeks',
+                            'RawValue': '38',
+                            'Formatted': '38',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumLeafCacheHits',
+                            'RawValue': '90',
+                            'Formatted': '90',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumNodeCacheHits',
+                            'RawValue': '40',
+                            'Formatted': '40',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumNodeCacheAdds',
+                            'RawValue': '2',
+                            'Formatted': '2',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumIndexAccepted',
+                            'RawValue': '158',
+                            'Formatted': '158',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumIndexRowsRead',
+                            'RawValue': '146',
+                            'Formatted': '146',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeFirstExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeSortElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumAllocations',
+                            'RawValue': '297',
+                            'Formatted': '297',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'SizePeakMemory',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'sz',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1',
+                'Id': 'graph1',
+                'ScopeType': 'graph',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'WhenFinished',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1',
+                'Id': 'sg1',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg1:e2_0',
+                'Id': 'e2_0',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'NumRowsProcessed',
+                            'RawValue': '3',
+                            'Formatted': '3',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStarts',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStops',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumSlaves',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1:e3_0',
+                'Id': 'e3_0',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'NumRowsProcessed',
+                            'RawValue': '3',
+                            'Formatted': '3',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStarts',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStops',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumSlaves',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1:e18_0',
+                'Id': 'e18_0',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'NumRowsProcessed',
+                            'RawValue': '3',
+                            'Formatted': '3',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStarts',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStops',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumSlaves',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1:a2',
+                'Id': 'a2',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeFirstExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1:a3',
+                'Id': 'a3',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeFirstExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumAllocations',
+                            'RawValue': '3',
+                            'Formatted': '3',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg1:a18',
+                'Id': 'a18',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeFirstExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumAllocations',
+                            'RawValue': '36',
+                            'Formatted': '36',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg5',
+                'Id': 'sg5',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg5:e6_0',
+                'Id': 'e6_0',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'NumRowsProcessed',
+                            'RawValue': '55',
+                            'Formatted': '55',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStarts',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStops',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumSlaves',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumRowsProcessed',
+                            'RawValue': '55',
+                            'Formatted': '55',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStarts',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStops',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumSlaves',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg5:e7_0',
+                'Id': 'e7_0',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'NumRowsProcessed',
+                            'RawValue': '55',
+                            'Formatted': '55',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStarts',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStops',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumSlaves',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumRowsProcessed',
+                            'RawValue': '55',
+                            'Formatted': '55',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStarts',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStops',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumSlaves',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg5:e8_0',
+                'Id': 'e8_0',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'NumRowsProcessed',
+                            'RawValue': '18',
+                            'Formatted': '18',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStarts',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStops',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumSlaves',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumRowsProcessed',
+                            'RawValue': '18',
+                            'Formatted': '18',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStarts',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStops',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumSlaves',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg5:e9_0',
+                'Id': 'e9_0',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'NumRowsProcessed',
+                            'RawValue': '6',
+                            'Formatted': '6',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStarts',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStops',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumSlaves',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg5:e9_1',
+                'Id': 'e9_1',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'NumRowsProcessed',
+                            'RawValue': '6',
+                            'Formatted': '6',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStarts',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStops',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumSlaves',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg5:e10_0',
+                'Id': 'e10_0',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'NumRowsProcessed',
+                            'RawValue': '6',
+                            'Formatted': '6',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStarts',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStops',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumSlaves',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumRowsProcessed',
+                            'RawValue': '6',
+                            'Formatted': '6',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStarts',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStops',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumSlaves',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg5:a6',
+                'Id': 'a6',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumIndexSeeks',
+                            'RawValue': '26',
+                            'Formatted': '26',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumIndexScans',
+                            'RawValue': '126',
+                            'Formatted': '126',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumIndexWildSeeks',
+                            'RawValue': '6',
+                            'Formatted': '6',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumLeafCacheHits',
+                            'RawValue': '14',
+                            'Formatted': '14',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumNodeCacheHits',
+                            'RawValue': '4',
+                            'Formatted': '4',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumNodeCacheAdds',
+                            'RawValue': '2',
+                            'Formatted': '2',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumIndexAccepted',
+                            'RawValue': '122',
+                            'Formatted': '122',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumIndexRowsRead',
+                            'RawValue': '110',
+                            'Formatted': '110',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeFirstExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg5:a7',
+                'Id': 'a7',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeFirstExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeSortElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg5:a8',
+                'Id': 'a8',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeFirstExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg5:a9',
+                'Id': 'a9',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeFirstExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg5:a10',
+                'Id': 'a10',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeFirstExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumAllocations',
+                            'RawValue': '6',
+                            'Formatted': '6',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg5:a11',
+                'Id': 'a11',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeFirstExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg5:a12',
+                'Id': 'a12',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeFirstExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg13',
+                'Id': 'sg13',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'graph1:sg13:e14_0',
+                'Id': 'e14_0',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'NumRowsProcessed',
+                            'RawValue': '18',
+                            'Formatted': '18',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStarts',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStops',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumSlaves',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumRowsProcessed',
+                            'RawValue': '18',
+                            'Formatted': '18',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStarts',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStops',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumSlaves',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg13:e15_0',
+                'Id': 'e15_0',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'NumRowsProcessed',
+                            'RawValue': '18',
+                            'Formatted': '18',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStarts',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStops',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumSlaves',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumRowsProcessed',
+                            'RawValue': '18',
+                            'Formatted': '18',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStarts',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStops',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumSlaves',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg13:e16_0',
+                'Id': 'e16_0',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'NumRowsProcessed',
+                            'RawValue': '6',
+                            'Formatted': '6',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStarts',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStops',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumSlaves',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumRowsProcessed',
+                            'RawValue': '6',
+                            'Formatted': '6',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStarts',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumStops',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumSlaves',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg13:a14',
+                'Id': 'a14',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeFirstExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg13:a15',
+                'Id': 'a15',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeFirstExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumAllocations',
+                            'RawValue': '36',
+                            'Formatted': '36',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg13:a16',
+                'Id': 'a16',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumIndexSeeks',
+                            'RawValue': '144',
+                            'Formatted': '144',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumIndexScans',
+                            'RawValue': '40',
+                            'Formatted': '40',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumIndexWildSeeks',
+                            'RawValue': '32',
+                            'Formatted': '32',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumLeafCacheHits',
+                            'RawValue': '76',
+                            'Formatted': '76',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumNodeCacheHits',
+                            'RawValue': '36',
+                            'Formatted': '36',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumIndexAccepted',
+                            'RawValue': '36',
+                            'Formatted': '36',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumIndexRowsRead',
+                            'RawValue': '36',
+                            'Formatted': '36',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumAllocations',
+                            'RawValue': '144',
+                            'Formatted': '144',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'graph1:sg13:a17',
+                'Id': 'a17',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenFirstRow',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeFirstExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'TimeLocalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        },
+                        {
+                            'Name': 'NumAllocations',
+                            'RawValue': '72',
+                            'Formatted': '72',
+                            'Measure': 'cnt',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1',
+                'Id': 'graph1',
+                'ScopeType': 'graph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'w1:graph1:e11_16',
+                'Id': 'e11_16',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Source',
+                            'RawValue': '5',
+                            'Formatted': '5',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Target',
+                            'RawValue': '13',
+                            'Formatted': '13',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'IsDependency',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:e12_14',
+                'Id': 'e12_14',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Source',
+                            'RawValue': '5',
+                            'Formatted': '5',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Target',
+                            'RawValue': '13',
+                            'Formatted': '13',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:e17_3',
+                'Id': 'e17_3',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'Child',
+                            'Formatted': 'Child',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Source',
+                            'RawValue': '13',
+                            'Formatted': '13',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Target',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1',
+                'Id': 'sg1',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:e2_0',
+                'Id': 'e2_0',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Source',
+                            'RawValue': '2',
+                            'Formatted': '2',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Target',
+                            'RawValue': '3',
+                            'Formatted': '3',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:e3_0',
+                'Id': 'e3_0',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Source',
+                            'RawValue': '3',
+                            'Formatted': '3',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Target',
+                            'RawValue': '18',
+                            'Formatted': '18',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:a2',
+                'Id': 'a2',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'Inline Dataset',
+                            'Formatted': 'Inline Dataset',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Definition',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclName',
+                            'RawValue': 'in',
+                            'Formatted': 'in',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '133',
+                            'Formatted': '133',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:a3',
+                'Id': 'a3',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'Project',
+                            'Formatted': 'Project',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Definition',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclName',
+                            'RawValue': 'p1',
+                            'Formatted': 'p1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '7',
+                            'Formatted': '7',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:a3:c4',
+                'Id': 'c4',
+                'ScopeType': 'child',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:a3:c4:sg5',
+                'Id': 'sg5',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:a3:c4:sg5:e6_0',
+                'Id': 'e6_0',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Source',
+                            'RawValue': '6',
+                            'Formatted': '6',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Target',
+                            'RawValue': '7',
+                            'Formatted': '7',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:a3:c4:sg5:e7_0',
+                'Id': 'e7_0',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Source',
+                            'RawValue': '7',
+                            'Formatted': '7',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Target',
+                            'RawValue': '8',
+                            'Formatted': '8',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:a3:c4:sg5:e8_0',
+                'Id': 'e8_0',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Source',
+                            'RawValue': '8',
+                            'Formatted': '8',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Target',
+                            'RawValue': '9',
+                            'Formatted': '9',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:a3:c4:sg5:e9_0',
+                'Id': 'e9_0',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Source',
+                            'RawValue': '9',
+                            'Formatted': '9',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Target',
+                            'RawValue': '10',
+                            'Formatted': '10',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:a3:c4:sg5:e9_1',
+                'Id': 'e9_1',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Source',
+                            'RawValue': '9',
+                            'Formatted': '9',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Target',
+                            'RawValue': '12',
+                            'Formatted': '12',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '1',
+                            'Formatted': '1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:a3:c4:sg5:e10_0',
+                'Id': 'e10_0',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Source',
+                            'RawValue': '10',
+                            'Formatted': '10',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Target',
+                            'RawValue': '11',
+                            'Formatted': '11',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:a3:c4:sg5:a6',
+                'Id': 'a6',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Label',
+                            'RawValue': "Index Read\n'...::DG_FetchIndex1'",
+                            'Formatted': "Index Read\n'...::DG_FetchIndex1'",
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Definition',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '77',
+                            'Formatted': '77',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:a3:c4:sg5:a7',
+                'Id': 'a7',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'Sort',
+                            'Formatted': 'Sort',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Definition',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '3',
+                            'Formatted': '3',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:a3:c4:sg5:a8',
+                'Id': 'a8',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'Dedup',
+                            'Formatted': 'Dedup',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Definition',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '4',
+                            'Formatted': '4',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:a3:c4:sg5:a9',
+                'Id': 'a9',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'Split',
+                            'Formatted': 'Split',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Definition',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '6',
+                            'Formatted': '6',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:a3:c4:sg5:a10',
+                'Id': 'a10',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'Count',
+                            'Formatted': 'Count',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '125',
+                            'Formatted': '125',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:a3:c4:sg5:a11',
+                'Id': 'a11',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'Local Result',
+                            'Formatted': 'Local Result',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '94',
+                            'Formatted': '94',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:a3:c4:sg5:a12',
+                'Id': 'a12',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'Disk Write\nSpill File',
+                            'Formatted': 'Disk Write\nSpill File',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '2',
+                            'Formatted': '2',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:a3:c4:sg13',
+                'Id': 'sg13',
+                'ScopeType': 'subgraph',
+                'Properties': None
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:a3:c4:sg13:e14_0',
+                'Id': 'e14_0',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Source',
+                            'RawValue': '14',
+                            'Formatted': '14',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Target',
+                            'RawValue': '15',
+                            'Formatted': '15',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:a3:c4:sg13:e15_0',
+                'Id': 'e15_0',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Source',
+                            'RawValue': '15',
+                            'Formatted': '15',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Target',
+                            'RawValue': '16',
+                            'Formatted': '16',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:a3:c4:sg13:e16_0',
+                'Id': 'e16_0',
+                'ScopeType': 'edge',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Source',
+                            'RawValue': '16',
+                            'Formatted': '16',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Target',
+                            'RawValue': '17',
+                            'Formatted': '17',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'SourceIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'TargetIndex',
+                            'RawValue': '0',
+                            'Formatted': '0',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:a3:c4:sg13:a14',
+                'Id': 'a14',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'Read\nSpill',
+                            'Formatted': 'Read\nSpill',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '71',
+                            'Formatted': '71',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:a3:c4:sg13:a15',
+                'Id': 'a15',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'Project',
+                            'Formatted': 'Project',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Definition',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclName',
+                            'RawValue': 'deduped',
+                            'Formatted': 'deduped',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '7',
+                            'Formatted': '7',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:a3:c4:sg13:a16',
+                'Id': 'a16',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Label',
+                            'RawValue': "Keyed Join\n'~regress::multi::DG_FetchIndex1'",
+                            'Formatted': "Keyed Join\n'~regress::multi::DG_FetchIndex1'",
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Definition',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'EclName',
+                            'RawValue': 'joinedchildren',
+                            'Formatted': 'joinedchildren',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '159',
+                            'Formatted': '159',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:a3:c4:sg13:a17',
+                'Id': 'a17',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'Local Result',
+                            'Formatted': 'Local Result',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '94',
+                            'Formatted': '94',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'w1:graph1:sg1:a18',
+                'Id': 'a18',
+                'ScopeType': 'activity',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'Label',
+                            'RawValue': 'Output\nResult #1',
+                            'Formatted': 'Output\nResult #1',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Definition',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        },
+                        {
+                            'Name': 'Kind',
+                            'RawValue': '16',
+                            'Formatted': '16',
+                            'Measure': None,
+                            'Creator': '{masked}',
+                            'CreatorType': None
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'compile',
+                'Id': 'compile',
+                'ScopeType': 'compile',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        },
+                        {
+                            'Name': 'SizePeakMemory',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'sz',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'compile:write c++',
+                'Id': 'write c++',
+                'ScopeType': 'compile',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'compile:compile c++',
+                'Id': 'compile c++',
+                'ScopeType': 'compile',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'compile:generate',
+                'Id': 'generate',
+                'ScopeType': 'compile',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'compile:parse',
+                'Id': 'parse',
+                'ScopeType': 'compile',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'WhenStarted',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ts',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        },
+                        {
+                            'Name': 'TimeElapsed',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'eclcc'
+                        }
+                    ]
+                }
+            },
+            {
+                'ScopeName': 'Process',
+                'Id': 'Process',
+                'ScopeType': 'section',
+                'Properties': {
+                    'Property': [
+                        {
+                            'Name': 'TimeTotalExecute',
+                            'RawValue': '{masked}',
+                            'Formatted': '{masked}',
+                            'Measure': 'ns',
+                            'Creator': '{masked}',
+                            'CreatorType': 'roxie'
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}
