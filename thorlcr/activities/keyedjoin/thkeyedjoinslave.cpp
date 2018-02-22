@@ -1231,10 +1231,11 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             currentPart = nullptr;
             candidateCount = 0;
         }
-        void configurePart(unsigned partNo, const void *row)
+        void configurePart(unsigned partNo, const void *row, bool setPartInKeyManager)
         {
             currentPart = &partKeyIndexes.item(partNo);
-            partManager->setKey(currentPart);
+            if (setPartInKeyManager)
+                partManager->setKey(currentPart);
             owner.helper->createSegmentMonitors(partManager, row);
             partManager->finishSegmentMonitors();
             partManager->reset();
@@ -1259,7 +1260,6 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 Owned<IKeyIndexSet> partKeySet = createKeyIndexSet();
                 ForEachItemIn(i, partKeyIndexes)
                     partKeySet->addIndex(LINK(&partKeyIndexes.item(i)));
-                currentPart = &partKeyIndexes.item(0);
                 partManager.setown(createKeyMerger(owner.helper->queryIndexRecordSize()->queryRecordAccessor(true), partKeySet, 0, nullptr));
                 Owned<const ITranslator> translator = getLayoutTranslation(owner.helper->getFileName(), owner.indexParts.item(0), translationMode, owner.helper->queryIndexRecordSize(), projectedFormat, expectedFormatCrc);
                 if (translator)
@@ -1405,7 +1405,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                         else if (!owner.keyHasTlk)
                         {
                             if (nextPart < partKeyIndexes.ordinality())
-                                configurePart(nextPart++, indexReadFieldsRow.getSelf());
+                                configurePart(nextPart++, indexReadFieldsRow.getSelf(), true);
                         }
                     }
                     else if (currentTlk)
@@ -1419,7 +1419,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                                 unsigned partNo = (unsigned)node;
                                 partNo = owner.superWidth ? owner.superWidth*nextTlk+(partNo-1) : partNo-1;
 
-                                configurePart(partNo, indexReadFieldsRow.getSelf());
+                                configurePart(partNo, indexReadFieldsRow.getSelf(), true);
                                 break;
                             }
                         }
@@ -1486,9 +1486,10 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                         }
                         else if (!owner.keyHasTlk)
                         {
-                            configurePart(0, indexReadFieldsRow.getSelf());
-                            if (!owner.localKey || 1 == partKeyIndexes.ordinality())
-                                nextPart = 1; // no next part
+                            bool localKeyMerger = owner.localKey && (partKeyIndexes.ordinality() > 1);
+                            configurePart(0, indexReadFieldsRow.getSelf(), !localKeyMerger);
+                            if (!localKeyMerger)
+                                nextPart = 1;
                         }
                         else
                         {
