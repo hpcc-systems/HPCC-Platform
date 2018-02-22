@@ -21613,6 +21613,7 @@ public:
                     manager.setown(varFileInfo->getIndexManager(isOpt, channel, translators->queryActualLayout(0), false));
                 }
                 assertex(manager != NULL);
+                postFilter.clear();
                 helper.createSegmentMonitors(this);
                 const IKeyTranslator *keyTranslator = translators->queryKeyTranslator(0);  // any part would do - in-memory requires all actuals to have same layout
                 if (keyTranslator)
