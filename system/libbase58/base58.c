@@ -9,6 +9,7 @@
 #include <arpa/inet.h>
 #else
 #include <winsock2.h>
+typedef SSIZE_T ssize_t;
 #endif
 
 #include <stdbool.h>
@@ -16,6 +17,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
+#include <memory>
 
 #include "libbase58.h"
 
@@ -38,7 +40,7 @@ bool b58tobin(void *bin, size_t *binszp, const char *b58, size_t b58sz)
     const unsigned char *b58u = (const unsigned char *)b58;
     unsigned char *binu = (unsigned char *)bin;
     size_t outisz = (binsz + 3) / 4;
-    uint32_t outi[outisz];
+    uint32_t *outi = (uint32_t*)alloca(outisz * sizeof(uint32_t));
     uint64_t t;
     uint32_t c;
     size_t i, j;
@@ -145,6 +147,12 @@ static const char b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdef
 bool b58enc(char *b58, size_t *b58sz, const void *data, size_t binsz)
 {
     const uint8_t *bin = (const uint8_t *) data;
+    if (!binsz && *b58sz) //empty not much to do
+    {
+        *b58=0;
+        *b58sz=1;
+        return true;
+    }
     int carry;
     ssize_t i, j, high, zcount = 0;
     size_t size;
@@ -153,7 +161,7 @@ bool b58enc(char *b58, size_t *b58sz, const void *data, size_t binsz)
         ++zcount;
 
     size = (binsz - zcount) * 138 / 100 + 1;
-    uint8_t buf[size];
+    uint8_t *buf = (uint8_t*)alloca(size);
     memset(buf, 0, size);
 
     for (i = zcount, high = size - 1; i < binsz; ++i, high = j)
@@ -186,7 +194,7 @@ bool b58enc(char *b58, size_t *b58sz, const void *data, size_t binsz)
 
 bool b58check_enc(char *b58c, size_t *b58c_sz, uint8_t ver, const void *data, size_t datasz)
 {
-    uint8_t buf[1 + datasz + 0x20];
+    uint8_t *buf = (uint8_t*)alloca(1 + datasz + 0x20);
     uint8_t *hash = &buf[1 + datasz];
 
     buf[0] = ver;
