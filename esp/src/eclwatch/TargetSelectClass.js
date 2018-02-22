@@ -33,10 +33,11 @@ define([
     "hpcc/FileSpray",
     "hpcc/ws_access",
     "hpcc/WsESDLConfig",
-    "hpcc/WsPackageMaps"
+    "hpcc/WsPackageMaps",
+    "hpcc/Utility"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, xhr, Deferred, ItemFileReadStore, all, Memory, on,
     registry,
-    WsTopology, WsWorkunits, FileSpray, WsAccess, WsESDLConfig, WsPackageMaps) {
+    WsTopology, WsWorkunits, FileSpray, WsAccess, WsESDLConfig, WsPackageMaps, Utility) {
 
     return {
         i18n: nlsHPCC,
@@ -567,6 +568,7 @@ define([
                 load: function (response) {
                     if (lang.exists("ListESDLDefinitionsResponse.Definitions.Definition", response)) {
                         var targetData = response.ListESDLDefinitionsResponse.Definitions.Definition;
+                        Utility.alphanumSort(targetData, "Id");
                         for (var i = 0; i < targetData.length; ++i) {
                             context.options.push({
                                 label: targetData[i].Id,
