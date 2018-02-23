@@ -2155,6 +2155,7 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
             }
 
             IHqlExpression * grouping = queryGrouping(source);
+            assertex((grouping != nullptr) == ::isGrouped(source));
             if (grouping)
                 addAttribute("metaGrouping", getExprECL(grouping, s.clear(), true).str());
 
