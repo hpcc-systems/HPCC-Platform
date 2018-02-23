@@ -1069,7 +1069,8 @@ public:
                         OwnedConstThorRow nextrow = partHandler->nextRow();
                         if (!nextrow)
                             break;
-                        helper->processRow(nextrow, this);
+                        if (segMonitorsMatch(nextrow))
+                            helper->processRow(nextrow, this);
                     }
                 }
                 gathered = true;
