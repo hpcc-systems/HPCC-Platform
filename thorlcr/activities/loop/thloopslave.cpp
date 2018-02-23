@@ -428,7 +428,10 @@ public:
     virtual void stop() override
     {
         if (nextRowFeeder)
+        {
             nextRowFeeder->stop(); // NB: This will block if this slave's loop hasn't hit eof, it will continue looping until 'finishedLooping'
+            nextRowFeeder.clear();
+        }
         PARENT::stop();
     }
 };
