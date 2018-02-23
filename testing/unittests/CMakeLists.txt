@@ -38,6 +38,7 @@ include_directories (
          ./../../system/include
          ./../../system/jlib
          ./../../system/mp
+         ./../../system/libbase58
          ./../../common/remote
          ./../../dali/base
          ./../../system/security/shared
@@ -54,6 +55,7 @@ target_link_libraries ( unittests
          remote
          dalibase
          deftype
+         libbase58
          ${CPPUNIT_LIBRARIES}
     )
 
