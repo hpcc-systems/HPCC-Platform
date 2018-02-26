@@ -324,12 +324,15 @@ namespace JsonHelpers
             {
                 if (flags & REQSF_ROOT)
                 {
-                    bool log = reqTree->getPropBool("@log", false); //not in schema
-                    if (log)
-                        appendJSONValue(out, "@log", true);
-                    int tracelevel = reqTree->getPropInt("@traceLevel", -1);
-                    if (tracelevel>=0)
-                        appendJSONValue(out, "@traceLevel", tracelevel);
+                    if (reqTree)
+                    {
+                        bool log = reqTree->getPropBool("@log", false); //not in schema
+                        if (log)
+                            appendJSONValue(out, "@log", true);
+                        int tracelevel = reqTree->getPropInt("@traceLevel", -1);
+                        if (tracelevel>=0)
+                            appendJSONValue(out, "@traceLevel", tracelevel);
+                    }
                 }
                 int flds = type->getFieldCount();
                 for (int idx=0; idx<flds; idx++)

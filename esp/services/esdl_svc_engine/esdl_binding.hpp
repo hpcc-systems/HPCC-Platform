@@ -211,7 +211,6 @@ private:
 
         virtual ~CESDLBindingSubscription()
         {
-            unsubscribe();
         }
 
         void unsubscribe()
@@ -264,7 +263,6 @@ private:
 
         virtual ~CESDLDefinitionSubscription()
         {
-            unsubscribe();
         }
 
         void unsubscribe()
@@ -326,8 +324,7 @@ public:
 
     EsdlBindingImpl();
     EsdlBindingImpl(IPropertyTree* cfg, const char *bindname=NULL, const char *procname=NULL);
-
-    virtual ~EsdlBindingImpl(){}
+    virtual ~EsdlBindingImpl();
 
     virtual int onGet(CHttpRequest* request, CHttpResponse* response);
 
