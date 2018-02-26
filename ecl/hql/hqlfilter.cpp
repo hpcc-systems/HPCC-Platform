@@ -767,7 +767,7 @@ IHqlExpression * FilterExtractor::isKeyableFilter(IHqlExpression * left, IHqlExp
             ITypeInfo * castType = left->queryType();
             ITypeInfo * uncastType = uncast->queryType();
 
-            //Keyed filters on alien datatypes do not work, and can trigger an internal error in ensuerExprType()
+            //Keyed filters on alien datatypes do not work, and can trigger an internal error in ensureExprType()
             if (uncastType->getTypeCode() == type_alien)
             {
                 reason.set(KFRtoocomplex, left);
