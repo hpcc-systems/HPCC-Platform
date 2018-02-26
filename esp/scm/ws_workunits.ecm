@@ -36,6 +36,13 @@ ESPenum ECLWUActions : string
     SetToFailed("SetToFailed"),
 };
 
+ESPenum EclDefinitionActions : string
+{
+    SyntaxCheck("SyntaxCheck"),
+    Deploy("Deploy"),
+    Publish("Publish"),
+};
+
 ESPStruct [nil_remove] ECLException
 {
     string Source;
@@ -2120,6 +2127,47 @@ ESPResponse [exceptions_inline] WUDetailsMetaResponse
     ESParray<string, ScopeType> ScopeTypes;
     ESParray<string, Measure> Measures;
 };
+
+ESPStruct [nil_remove] WUEclDefinitionActionResult
+{
+    string EclDefinition;
+    string Action;
+    string WUID;
+    string QueryID;
+    string Result;
+};
+
+ESPrequest [nil_remove] WUEclDefinitionActionRequest
+{
+    ESParray<string> EclDefinitions;
+    ESPenum EclDefinitionActions ActionType;
+    string Target;
+
+    string RemoteDali; //Publish
+    string SourceProcess; //Publish
+    string Priority; //Publish
+    string Comment; //Publish
+    string MemoryLimit; //Publish - 123M
+    bool DeletePrevious(false); //Publish
+    bool SuspendPrevious(false); //Publish
+    bool NoActivate(false); //Publish
+    bool NoReload(false); //Publish
+    bool DontCopyFiles(false); //Publish
+    bool AllowForeign(false); //Publish
+    bool UpdateDfs(false); //Publish
+    bool UpdateSuperfiles(false); //Publish
+    bool UpdateCloneFrom(false); //Publish
+    bool DontAppendCluster(false); //Publish
+    int MsToWait(-1);
+    int TimeLimit(-1); //Publish
+    int WarnTimeLimit(-1); //Publish
+};
+
+ESPresponse [exceptions_inline] WUEclDefinitionActionResponse
+{
+    ESParray<ESPstruct WUEclDefinitionActionResult> ActionResults;
+};
+
 // ----------------------------------------------------------------------------------
 ESPservice [
     auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
@@ -2208,6 +2256,7 @@ ESPservice [
     ESPmethod [cache_seconds(60), min_ver("1.61")] WUGetNumFileToCopy(WUGetNumFileToCopyRequest, WUGetNumFileToCopyResponse);
     ESPmethod [min_ver("1.71")] WUDetails(WUDetailsRequest, WUDetailsResponse);
     ESPmethod [min_ver("1.71")] WUDetailsMeta(WUDetailsMetaRequest, WUDetailsMetaResponse);
+    ESPmethod [min_ver("1.72")] WUEclDefinitionAction(WUEclDefinitionActionRequest, WUEclDefinitionActionResponse);
 };
 
 

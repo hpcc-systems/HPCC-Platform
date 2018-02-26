@@ -12946,3 +12946,39 @@ size32_t WorkUnitErrorReceiver::warnCount()
     return count;
 }
 
+bool isValidPriorityValue(const char *priority)
+{
+    if (isEmptyString(priority))
+        return false;
+    if (strieq("SLA", priority) || strieq("LOW", priority) || strieq("HIGH", priority) || strieq("NONE", priority))
+        return true;
+    return false;
+}
+
+bool isValidMemoryValue(const char *memoryUnit)
+{
+    if (isEmptyString(memoryUnit) || !isdigit(*memoryUnit))
+        return false;
+    while (isdigit(*++memoryUnit));
+
+    if (!*memoryUnit)
+        return true;
+
+    switch (toupper(*memoryUnit++))
+    {
+        case 'E':
+        case 'P':
+        case 'T':
+        case 'G':
+        case 'M':
+        case 'K':
+            if (!*memoryUnit || strieq("B", memoryUnit))
+                return true;
+            break;
+        case 'B':
+            if (!*memoryUnit)
+                return true;
+            break;
+    }
+    return false;
+}
