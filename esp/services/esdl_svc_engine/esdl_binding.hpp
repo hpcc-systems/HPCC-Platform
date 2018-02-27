@@ -28,14 +28,8 @@
 #include "thorplugin.hpp"
 #include "eclrtl.hpp"
 #include "dautils.hpp"
+#include "esdl_store.hpp"
 
-static const char* ESDL_DEFS_ROOT_PATH="/ESDL/Definitions/";
-static const char* ESDL_DEF_PATH="/ESDL/Definitions/Definition";
-static const char* ESDL_DEF_ENTRY="Definition";
-
-static const char* ESDL_BINDINGS_ROOT_PATH="/ESDL/Bindings/";
-static const char* ESDL_BINDING_PATH="/ESDL/Bindings/Binding";
-static const char* ESDL_BINDING_ENTRY="Binding";
 static const char* ESDL_METHOD_DESCRIPTION="description";
 static const char* ESDL_METHOD_HELP="help";
 
@@ -176,117 +170,9 @@ public:
 
 #define DEFAULT_ESDLBINDING_URN_BASE "urn:hpccsystems:ws"
 
-class EsdlBindingImpl : public CHttpSoapBinding
+class EsdlBindingImpl : public CHttpSoapBinding, implements IEsdlListener
 {
 private:
-    //==========================================================================================
-    // the following class implements notification handler for subscription to dali for environment
-    // updates by other clients.
-    //==========================================================================================
-    class CESDLBindingSubscription : public CInterface, implements ISDSSubscription
-    {
-    private :
-        CriticalSection daliSubscriptionCritSec;
-        SubscriptionId sub_id;
-        EsdlBindingImpl * thisBinding;
-
-    public:
-        CESDLBindingSubscription(EsdlBindingImpl * binding)
-        {
-            thisBinding = binding;
-            VStringBuffer fullBindingPath("/ESDL/Bindings/Binding[@id=\'%s.%s\']",thisBinding->m_processName.get(),thisBinding->m_bindingName.get());
-            CriticalBlock b(daliSubscriptionCritSec);
-            try
-            {
-                sub_id = querySDS().subscribe(fullBindingPath.str(), *this, true);
-            }
-            catch (IException *E)
-            {
-                DBGLOG("ESDL Binding %s.%s failed to subscribe to DALI (%s)", thisBinding->m_processName.get(),thisBinding->m_bindingName.get(), fullBindingPath.str());
-                // failure to subscribe implies dali is down... is this ok??
-                // Is this bad enough to halt the esp load process??
-                E->Release();
-            }
-        }
-
-        virtual ~CESDLBindingSubscription()
-        {
-        }
-
-        void unsubscribe()
-        {
-            CriticalBlock b(daliSubscriptionCritSec);
-            try
-            {
-                if (sub_id)
-                {
-                    querySDS().unsubscribe(sub_id);
-                    sub_id = 0;
-                }
-            }
-            catch (IException *E)
-            {
-                E->Release();
-            }
-            sub_id = 0;
-        }
-
-        IMPLEMENT_IINTERFACE;
-        void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen=0, const void *valueData=NULL);
-    };
-
-    class CESDLDefinitionSubscription : public CInterface, implements ISDSSubscription
-    {
-    private :
-        CriticalSection daliSubscriptionCritSec;
-        SubscriptionId sub_id;
-        EsdlBindingImpl * thisBinding;
-
-        public:
-        CESDLDefinitionSubscription(EsdlBindingImpl * binding)
-        {
-            thisBinding = binding;
-            //for some reason subscriptions based on xpaths with attributes don't seem to work correctly
-            //fullBindingPath.set("/ESDL/Bindings/Binding[@EspBinding=\'WsAccurint\'][@EspProcess=\'myesp\']");
-            CriticalBlock b(daliSubscriptionCritSec);
-            try
-            {
-                sub_id = querySDS().subscribe(ESDL_DEF_PATH, *this, true);
-            }
-            catch (IException *E)
-            {
-                // failure to subscribe implies dali is down... is this ok??
-                // Is this bad enough to halt the esp load process??
-                E->Release();
-            }
-        }
-
-        virtual ~CESDLDefinitionSubscription()
-        {
-        }
-
-        void unsubscribe()
-        {
-            CriticalBlock b(daliSubscriptionCritSec);
-            try
-            {
-                if (sub_id)
-                {
-                    querySDS().unsubscribe(sub_id);
-                    sub_id = 0;
-                }
-            }
-            catch (IException *E)
-            {
-                E->Release();
-            }
-            sub_id = 0;
-        }
-
-        IMPLEMENT_IINTERFACE;
-        void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen=0, const void *valueData=NULL);
-    };
-
     Owned<IPropertyTree>                    m_bndCfg;
     Owned<IPropertyTree>                    m_esdlBndCfg;
 
@@ -298,8 +184,8 @@ private:
     StringAttr                              m_processName;
     StringAttr                              m_espServiceName; //previously held the esdl service name, we are now
                                                               //supporting mismatched ESP Service name assigned to a different named ESDL service definition
-    Owned<CESDLBindingSubscription>         m_pBindingSubscription;
-    Owned<CESDLDefinitionSubscription>      m_pDefinitionSubscription;
+    Owned<IEsdlSubscription>                m_pSubscription;
+    Owned<IEsdlStore>                       m_pCentralStore;
     CriticalSection                         configurationLoadCritSec;
     StringBuffer                            m_esdlStateFilesLocation;
     MapStringTo<SecAccessFlags>             m_accessmap;
@@ -324,7 +210,13 @@ public:
 
     EsdlBindingImpl();
     EsdlBindingImpl(IPropertyTree* cfg, const char *bindname=NULL, const char *procname=NULL);
-    virtual ~EsdlBindingImpl();
+
+    virtual ~EsdlBindingImpl()
+    {
+        //Unsubscribe early to avoid a segfault due to closed dali connection
+        if(m_pSubscription)
+            m_pSubscription->unsubscribe();
+    }
 
     virtual int onGet(CHttpRequest* request, CHttpResponse* response);
 
@@ -377,15 +269,18 @@ public:
     bool usesESDLDefinition(const char * id);
     virtual bool isDynamicBinding() const override { return true; }
     virtual unsigned getCacheMethodCount(){return 0;}
+    virtual void onNotify(EsdlNotifyData* data);
 
 private:
     int onGetRoxieBuilder(CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method);
     int onRoxieRequest(CHttpRequest* request, CHttpResponse* response, const char *  method);
     void getSoapMessage(StringBuffer& out,StringBuffer& soapresp,const char * starttxt,const char * endtxt);
 
-    bool reloadBindingFromDali(const char *binding, const char *process);
-    bool reloadDefinitionsFromDali(IPropertyTree * esdlBndCng, StringBuffer & loadedname);
+    bool reloadBindingFromCentralStore(const char *binding, const char *process);
+    bool reloadDefinitionsFromCentralStore(IPropertyTree * esdlBndCng, StringBuffer & loadedname);
     void saveDESDLState();
+    IPropertyTree * fetchESDLBinding(const char *process, const char *bindingName, const char * stateFileName);
+    bool loadDefinitions(const char * espServiceName, IEsdlDefinition * esdl, IPropertyTree * config, StringBuffer & loadedServiceName, const char * stateFileName);
 };
 
 #endif //_EsdlBinding_HPP__
