@@ -2,7 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Attributes_max_count_var">
-  <title>max_count_var</title>
+  <!-- DNT-Start --><title>max_count_var</title><!-- DNT-End -->
 
   <para><indexterm>
       <primary>max_count_var</primary>
@@ -11,8 +11,8 @@
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <programlisting>[max_count_var("iesp.Constants.JD.MaxRecords")] ESParray &lt;ESPstruct MYRecord, Record&gt; Records;   </programlisting>
+  <!-- DNT-Start --><programlisting>[max_count_var("iesp.Constants.JD.MaxRecords")] ESParray &lt;ESPstruct MYRecord, Record&gt; Records;   </programlisting><!-- DNT-End -->
 
-  <para>Roxie will define the constant iesp.Constants.JD.MaxRecords and change
-  it at will without affecting ESP.</para>
+  <para>Roxie will define the constant iesp.Constants.<!-- DNT-Start -->JD<!-- DNT-End -->.MaxRecords and change
+  it at will without affecting <!-- DNT-Start -->ESP<!-- DNT-End -->.</para>
 </sect1>

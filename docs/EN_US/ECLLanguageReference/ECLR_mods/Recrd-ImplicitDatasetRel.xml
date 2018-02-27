@@ -2,13 +2,13 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Implicit_Dataset_Relationality">
-  <title>Implicit Dataset<indexterm>
+  <!-- DNT-Start --><title>Implicit Dataset<indexterm>
       <primary>Implicit Dataset</primary>
     </indexterm> Relationality<indexterm>
       <primary>Relationality</primary>
     </indexterm><indexterm>
       <primary>Implicit Dataset Relationality</primary>
-    </indexterm></title>
+    </indexterm></title><!-- DNT-End -->
 
   <para>Nested child datasets<indexterm>
       <primary>Nested child datasets</primary>
@@ -24,9 +24,9 @@
   <para>Assuming that you have the following relational structure in your
   database:</para>
 
-  <programlisting>     Household           Parent 
+  <!-- DNT-Start --><programlisting>     Household           Parent 
         Person           Child of Household 
-          Accounts       Child of Person, Grandchild of Household</programlisting>
+          Accounts       Child of Person, Grandchild of Household</programlisting><!-- DNT-End -->
 
   <para>This means that, at the primary scope level:</para>
 
@@ -39,9 +39,9 @@
   <para>b) All child datasets (or grandchildren, etc.) can be used in
   sub-queries to filter the parent, as long as the sub-query uses an aggregate
   function or operates at the level of the existence of a set of child records
-  that meet the filter criteria (see EXISTS).You can use specific fields from
+  that meet the filter criteria (see <!-- DNT-Start -->EXISTS<!-- DNT-End -->).You can use specific fields from
   within a child record at the scope level of the parent record by the use of
-  EVALUATE or subscripting ([]) to a specific child record. For example, if
+  <!-- DNT-Start -->EVALUATE<!-- DNT-End --> or subscripting ([]) to a specific child record. For example, if
   the Person dataset is the primary scope, then you may filter the set of
   related Accounts records and check to see if you've filtered out all the
   related Accounts records.</para>
@@ -52,28 +52,28 @@
 
   <para><programlisting>Household(Person(personage &gt; AVE(Person,personage))</programlisting></para>
 
-  <para>means “households containing people whose age is above the average age
-  for the household.” It does <emphasis role="underline">not</emphasis> mean
-  “households containing people whose age is above the average for all the
-  households.” This is because the primary dataset (Household) encloses the
-  child dataset (Person), making the evaluation of the AVE function operate at
+  <para>means âhouseholds containing people whose age is above the average age
+  for the household.â It does <emphasis role="underline">not</emphasis> mean
+  âhouseholds containing people whose age is above the average for all the
+  households.â This is because the primary dataset (Household) encloses the
+  child dataset (Person), making the evaluation of the <!-- DNT-Start -->AVE<!-- DNT-End --> function operate at
   the level of the persons within the household.</para>
 
-  <para>d) An attribute defined with the STORED() workflow service is
+  <para>d) An attribute defined with the <!-- DNT-Start -->STORED<!-- DNT-End -->() workflow service is
   evaluated at the global level. It is an error if it cannot be evaluated
   independently of other datasets. This can lead to some slightly strange
   behaviour:</para>
 
-  <programlisting>AveAge := AVE(Person,personage);
-MyHouses := Household(Person(personage &gt; aveAge));</programlisting>
+  <!-- DNT-Start --><programlisting>AveAge := AVE(Person,personage);
+MyHouses := Household(Person(personage &gt; aveAge));</programlisting><!-- DNT-End -->
 
-  <para>means “households containing people whose age is above the average age
-  for the household.” However,</para>
+  <para>means âhouseholds containing people whose age is above the average age
+  for the household.â However,</para>
 
-  <programlisting>AveAge := AVE(Person,personage) : STORED('AveAge');
-MyHouses := Household(Person(personage &gt; aveAge));</programlisting>
+  <!-- DNT-Start --><programlisting>AveAge := AVE(Person,personage) : STORED('AveAge');
+MyHouses := Household(Person(personage &gt; aveAge));</programlisting><!-- DNT-End -->
 
-  <para>Means “households containing people whose age is above the average for
-  all the households.” This is because the AveAge attribute is now evaluated
+  <para>Means âhouseholds containing people whose age is above the average for
+  all the households.â This is because the AveAge attribute is now evaluated
   outside the enclosing Household scope.</para>
 </sect1>

@@ -2,19 +2,19 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ldap_config">
-  <title>Configuring HPCC for Authentication</title>
+  <!-- DNT-Start --><title>Configuring HPCC for Authentication</title><!-- DNT-End -->
 
-  <para>This section details the steps to configure your HPCC platform to use
+  <para>This section details the steps to configure your <!-- DNT-Start -->HPCC<!-- DNT-End --> platform to use
   authentication. There are currently a few ways to use authentication with
-  your HPCC system: simple htpasswd authentication, LDAP, or another plugin
+  your <!-- DNT-Start -->HPCC<!-- DNT-End --> system: simple htpasswd authentication, <!-- DNT-Start -->LDAP<!-- DNT-End -->, or another plugin
   security method.</para>
 
   <para>The htpasswd authentication method is basic password authentication.
-  It only grants or denies access to a user, based upon MD5 encrypted password
+  It only grants or denies access to a user, based upon <!-- DNT-Start -->MD<!-- DNT-End -->5 encrypted password
   authentication.</para>
 
-  <para>LDAP authentication offers more features and options. LDAP can not
-  only authenticate users, but adds granularity to the authentication. LDAP
+  <para><!-- DNT-Start -->LDAP<!-- DNT-End --> authentication offers more features and options. <!-- DNT-Start -->LDAP<!-- DNT-End --> can not
+  only authenticate users, but adds granularity to the authentication. <!-- DNT-Start -->LDAP<!-- DNT-End -->
   allows you to control grouped access to features, functions, and
   files.</para>
 
@@ -34,12 +34,12 @@
           <entry><inlinegraphic fileref="../../images/caution.png" /></entry>
 
           <entry><emphasis role="bold">When implementing any form of
-          authentication, we strongly recommend that you enable your ESP
-          server to use HTTPS (SSL) and set ALL service bindings to only use
-          HTTPS. This ensures that credentials are passed over the network
-          using SSL encryption. See </emphasis><link
-          linkend="ssl4esp"><emphasis>Configuring ESP Server to use HTTPS
-          (SSL)</emphasis></link> <emphasis role="bold">for details.
+          authentication, we strongly recommend that you enable your <!-- DNT-Start -->ESP<!-- DNT-End -->
+          server to use <!-- DNT-Start -->HTTPS<!-- DNT-End --> (<!-- DNT-Start -->SSL<!-- DNT-End -->) and set <!-- DNT-Start -->ALL<!-- DNT-End --> service bindings to only use
+          <!-- DNT-Start -->HTTPS<!-- DNT-End -->. This ensures that credentials are passed over the network
+          using <!-- DNT-Start -->SSL<!-- DNT-End --> encryption. See </emphasis><link
+          linkend="ssl4esp"><emphasis>Configuring <!-- DNT-Start -->ESP<!-- DNT-End --> Server to use <!-- DNT-Start -->HTTPS<!-- DNT-End -->
+          (<!-- DNT-Start -->SSL<!-- DNT-End -->)</emphasis></link> <emphasis role="bold">for details.
           </emphasis><para><emphasis role="bold">You should not attempt this
           until you have already deployed, configured, and certified the
           environment you will use. </emphasis></para></entry>
@@ -49,21 +49,21 @@
   </informaltable>
 
   <sect2 id="Using_htpasswd_Authentication">
-    <title>Using htpasswd authentication</title>
+    <!-- DNT-Start --><title>Using htpasswd authentication</title><!-- DNT-End -->
 
     <para>htpasswd provides basic password authentication to the entire
     system. This section contains the information to install and implement
     htpasswd authentication.</para>
 
     <sect3 id="htpasswd_ConnectToConfigMgr">
-      <title>Connect to Configuration Manager</title>
+      <!-- DNT-Start --><title>Connect to Configuration Manager</title><!-- DNT-End -->
 
-      <para>In order to change the configuration for HPCC components, connect
+      <para>In order to change the configuration for <!-- DNT-Start -->HPCC<!-- DNT-End --> components, connect
       to the Configuration Manager.</para>
 
       <orderedlist numeration="arabic">
         <listitem>
-          <para>Stop all HPCC Components, if they are running.</para>
+          <para>Stop all <!-- DNT-Start -->HPCC<!-- DNT-End --> Components, if they are running.</para>
         </listitem>
 
         <listitem>
@@ -82,8 +82,8 @@
           interface.</para>
 
           <para>(using the url of
-          http://<emphasis>&lt;configmgr_IP_Address&gt;</emphasis>:8015, where
-          <emphasis>&lt;configmgr_IP_Address&gt;</emphasis> is the IP address
+          http://<emphasis>&lt;configmgr_<!-- DNT-Start -->IP<!-- DNT-End -->_Address&gt;</emphasis>:8015, where
+          <emphasis>&lt;configmgr_<!-- DNT-Start -->IP<!-- DNT-End -->_Address&gt;</emphasis> is the <!-- DNT-Start -->IP<!-- DNT-End --> address
           of the node running Configuration Manager)</para>
         </listitem>
 
@@ -93,7 +93,7 @@
         </listitem>
 
         <listitem>
-          <para>Use the drop list to select the XML configuration file.
+          <para>Use the drop list to select the <!-- DNT-Start -->XML<!-- DNT-End --> configuration file.
           <variablelist>
               <varlistentry>
                 <term>Note:</term>
@@ -120,7 +120,7 @@
     </sect3>
 
     <sect3 id="Enabling_htpasswd_AUthentication">
-      <title>Enabling htpasswd authentication in HPCC</title>
+      <!-- DNT-Start --><title>Enabling htpasswd authentication in HPCC</title><!-- DNT-End -->
 
       <orderedlist continuation="continues">
         <listitem>
@@ -193,7 +193,7 @@
               <term>Note:</term>
 
               <listitem>
-                <para>If you have more than one ESP Server, you would only use
+                <para>If you have more than one <!-- DNT-Start -->ESP<!-- DNT-End --> Server, you would only use
                 one of them for authentication.</para>
               </listitem>
             </varlistentry>
@@ -203,7 +203,7 @@
         <listitem>
           <?dbfo keep-together="always"?>
 
-          <para>Associate the Security Manager Plugin with the ESP binding(s)
+          <para>Associate the Security Manager Plugin with the <!-- DNT-Start -->ESP<!-- DNT-End --> binding(s)
           <orderedlist numeration="loweralpha">
               <listitem>
                 <para>Click on the target <emphasis role="bold">Esp</emphasis>
@@ -211,7 +211,7 @@
               </listitem>
 
               <listitem>
-                <para>Select the<emphasis role="bold"> ESP</emphasis>
+                <para>Select the<emphasis role="bold"> <!-- DNT-Start -->ESP<!-- DNT-End --></emphasis>
                 <emphasis role="bold">Service bindings</emphasis> tab</para>
               </listitem>
 
@@ -262,14 +262,14 @@
     </sect3>
 
     <sect3 id="htpasswd_UserAdminWhtpasswd">
-      <title>User administration with htpasswd</title>
+      <!-- DNT-Start --><title>User administration with htpasswd</title><!-- DNT-End -->
 
       <para>Users and passwords are kept in the htpasswd file. The htpasswd
-      file must exist on the ESP Node where you have enabled authentication.
-      HPCC only recognizes MD5 encrypted passwords.</para>
+      file must exist on the <!-- DNT-Start -->ESP<!-- DNT-End --> Node where you have enabled authentication.
+      <!-- DNT-Start -->HPCC<!-- DNT-End --> only recognizes <!-- DNT-Start -->MD<!-- DNT-End -->5 encrypted passwords.</para>
 
       <para>The default location is: <emphasis
-      role="bold">/etc/HPCCSystems/.htpasswd</emphasis> on the ESP node that
+      role="bold">/etc/HPCCSystems/.htpasswd</emphasis> on the <!-- DNT-Start -->ESP<!-- DNT-End --> node that
       has been configured to authenticate, but it is configurable from the
       Htpasswd Security Manager as outlined above (step 9).</para>
 
@@ -288,33 +288,33 @@
   </sect2>
 
   <sect2 id="Using_LDAP_Authentication" role="brk">
-    <title>Using LDAP Authentication</title>
+    <!-- DNT-Start --><title>Using LDAP Authentication</title><!-- DNT-End -->
 
-    <para>This section contains the information to install and implement LDAP
-    based authentication. LDAP Authentication provides the most options for
+    <para>This section contains the information to install and implement <!-- DNT-Start -->LDAP<!-- DNT-End -->
+    based authentication. <!-- DNT-Start -->LDAP<!-- DNT-End --> Authentication provides the most options for
     securing your system, or parts of your system. In addition to these
     configuration settings you should run the <emphasis
     role="bold">initldap</emphasis> utility to create the required default
-    HPCC Admin user on your LDAP server.</para>
+    <!-- DNT-Start -->HPCC<!-- DNT-End --> Admin user on your <!-- DNT-Start -->LDAP<!-- DNT-End --> server.</para>
 
-    <para>If you choose to use LDAP authentication you must enable LDAP
-    security in your HPCC System configuration. With LDAP security enabled on
+    <para>If you choose to use <!-- DNT-Start -->LDAP<!-- DNT-End --> authentication you must enable <!-- DNT-Start -->LDAP<!-- DNT-End -->
+    security in your <!-- DNT-Start -->HPCC<!-- DNT-End --> System configuration. With <!-- DNT-Start -->LDAP<!-- DNT-End --> security enabled on
     your system you can then choose to enable file scope security. You can
-    choose to use LDAP authentication without enabling file scope security.
-    The following sections describe how to enable LDAP authentication and file
-    scope security for your HPCC system.</para>
+    choose to use <!-- DNT-Start -->LDAP<!-- DNT-End --> authentication without enabling file scope security.
+    The following sections describe how to enable <!-- DNT-Start -->LDAP<!-- DNT-End --> authentication and file
+    scope security for your <!-- DNT-Start -->HPCC<!-- DNT-End --> system.</para>
 
-    <!--***Note: (9/2014) Adding Documentation for initLdap.*** -->
+    <!-- DNT-Start --><!--***Note: (9/2014) Adding Documentation for initLdap.*** --><!-- DNT-End -->
 
     <sect3 id="UsingLDAP_ConnectToConfigMgr">
-      <title>Connect to Configuration Manager</title>
+      <!-- DNT-Start --><title>Connect to Configuration Manager</title><!-- DNT-End -->
 
-      <para>In order to change the configuration for HPCC components, connect
+      <para>In order to change the configuration for <!-- DNT-Start -->HPCC<!-- DNT-End --> components, connect
       to the Configuration Manager.</para>
 
       <orderedlist numeration="arabic">
         <listitem>
-          <para>Stop all HPCC Components, if they are running.</para>
+          <para>Stop all <!-- DNT-Start -->HPCC<!-- DNT-End --> Components, if they are running.</para>
         </listitem>
 
         <listitem>
@@ -332,8 +332,8 @@
           <para>Connect to the Configuration Manager web interface.</para>
 
           <para>(using the url of
-          http://<emphasis>&lt;configmgr_IP_Address&gt;</emphasis>:8015, where
-          <emphasis>&lt;configmgr_IP_Address&gt;</emphasis> is the IP address
+          http://<emphasis>&lt;configmgr_<!-- DNT-Start -->IP<!-- DNT-End -->_Address&gt;</emphasis>:8015, where
+          <emphasis>&lt;configmgr_<!-- DNT-Start -->IP<!-- DNT-End -->_Address&gt;</emphasis> is the <!-- DNT-Start -->IP<!-- DNT-End --> address
           of the node running Configuration Manager)</para>
         </listitem>
 
@@ -343,7 +343,7 @@
         </listitem>
 
         <listitem>
-          <para>Use the drop list to select the XML configuration file.</para>
+          <para>Use the drop list to select the <!-- DNT-Start -->XML<!-- DNT-End --> configuration file.</para>
         </listitem>
       </orderedlist>
 
@@ -355,7 +355,7 @@
   </sect2>
 
   <sect2 id="UsingLDAP_ModifyingConfiguration">
-    <title>Modifying the configuration</title>
+    <!-- DNT-Start --><title>Modifying the configuration</title><!-- DNT-End -->
 
     <para>Follow the steps below to modify your configuration.</para>
 
@@ -417,12 +417,12 @@
         domain and type.</para>
 
         <para>If you need to add a new domain or machine type to your system
-        to be able to define an existing LDAP server, you should set these up
+        to be able to define an existing <!-- DNT-Start -->LDAP<!-- DNT-End --> server, you should set these up
         first in the other two tabs in the hardware section.</para>
       </listitem>
 
       <listitem>
-        <para>Add the IP address as appropriate for the LDAP server.</para>
+        <para>Add the <!-- DNT-Start -->IP<!-- DNT-End --> address as appropriate for the <!-- DNT-Start -->LDAP<!-- DNT-End --> server.</para>
       </listitem>
 
       <listitem>
@@ -436,10 +436,10 @@
   </sect2>
 
   <sect2 id="UsingLDAP_Adding_ldapServer_component">
-    <title>Adding the ldapServer component</title>
+    <!-- DNT-Start --><title>Adding the ldapServer component</title><!-- DNT-End -->
 
-    <para>After the LDAP Server node has been added to the Hardware
-    configuration, configure the Software LDAP server definition.</para>
+    <para>After the <!-- DNT-Start -->LDAP<!-- DNT-End --> Server node has been added to the Hardware
+    configuration, configure the Software <!-- DNT-Start -->LDAP<!-- DNT-End --> server definition.</para>
 
     <orderedlist numeration="arabic">
       <listitem>
@@ -464,7 +464,7 @@
 
                   <entry><emphasis role="bold">Note</emphasis>: The ldapServer
                   component is merely a definition that specifies an existing
-                  LDAP server. It does not install one.</entry>
+                  <!-- DNT-Start -->LDAP<!-- DNT-End --> server. It does not install one.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -476,7 +476,7 @@
 
     <orderedlist continuation="continues" numeration="arabic">
       <listitem>
-        <para>Fill in the <emphasis role="bold">LDAP Server Process</emphasis>
+        <para>Fill in the <emphasis role="bold"><!-- DNT-Start -->LDAP<!-- DNT-End --> Server Process</emphasis>
         properties:</para>
 
         <para><orderedlist numeration="loweralpha">
@@ -485,7 +485,7 @@
 
               <para>On the <emphasis role="bold">Instances</emphasis> tab,
               Right-click on the table on the right hand side, choose
-              <emphasis role="bold">Add Instances…</emphasis></para>
+              <emphasis role="bold">Add Instancesâ¦</emphasis></para>
 
               <para><graphic fileref="../../images/LDAP_008.jpg"
               vendor="configmgrSS" /></para>
@@ -515,7 +515,7 @@
               <?dbfo keep-together="always"?>
 
               <para>Fill in the <emphasis role="bold">Attributes</emphasis>
-              tab with the appropriate settings from your existing LDAP
+              tab with the appropriate settings from your existing <!-- DNT-Start -->LDAP<!-- DNT-End -->
               Server. <graphic fileref="../../images/LDAP_010.jpg"
               vendor="configmgrSS" /></para>
             </listitem>
@@ -523,7 +523,7 @@
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>Choose the LDAP server type from the serverType attribute
+              <para>Choose the <!-- DNT-Start -->LDAP<!-- DNT-End --> server type from the serverType attribute
               drop box. <graphic fileref="../../images/LDAP_004.jpg"
               vendor="configmgrSS" /></para>
 
@@ -546,8 +546,8 @@
 
         <para><emphasis role="bold">Note</emphasis>: The <emphasis
         role="bold">cacheTimeout </emphasis>value is the number of minutes
-        that permissions are cached in ESP. If you change any permissions in
-        LDAP, the new settings will not take effect until ESP and Dali refresh
+        that permissions are cached in <!-- DNT-Start -->ESP<!-- DNT-End -->. If you change any permissions in
+        <!-- DNT-Start -->LDAP<!-- DNT-End -->, the new settings will not take effect until <!-- DNT-Start -->ESP<!-- DNT-End --> and Dali refresh
         the permissions. This could take as long as the cacheTimeout. Setting
         this to 0 means no cache, but this has performance overhead so it
         should not be used in production.</para>
@@ -557,7 +557,7 @@
     <orderedlist continuation="continues" inheritnum="inherit"
                  numeration="arabic">
       <listitem override="3">
-        <para>In the Navigator pane, click on <emphasis role="bold">ESP –
+        <para>In the Navigator pane, click on <emphasis role="bold"><!-- DNT-Start -->ESP<!-- DNT-End --> â
         myesp</emphasis></para>
       </listitem>
 
@@ -598,7 +598,7 @@
             </listitem>
 
             <listitem>
-              <para>Select the ESP Service bindings tab. Verify that your LDAP
+              <para>Select the <!-- DNT-Start -->ESP<!-- DNT-End --> Service bindings tab. Verify that your <!-- DNT-Start -->LDAP<!-- DNT-End -->
               settings appear in the <emphasis
               role="bold">resourcesBasedn</emphasis> and <emphasis
               role="bold">workunitsBasedn</emphasis></para>
@@ -617,14 +617,14 @@
         security for the Dali Server.</para>
 
         <para>In the Navigator pane, click on the <emphasis role="bold">Dali
-        Server – mydali </emphasis><graphic
+        Server â mydali </emphasis><graphic
         fileref="../../images/LDAP_006.jpg" vendor="configmgrSS" /></para>
 
         <para>Fill in the values as appropriate:</para>
 
         <para><orderedlist continuation="restarts" numeration="loweralpha">
             <listitem>
-              <para>Select the <emphasis role="bold">LDAP</emphasis>
+              <para>Select the <emphasis role="bold"><!-- DNT-Start -->LDAP<!-- DNT-End --></emphasis>
               tab.</para>
             </listitem>
 
@@ -648,31 +648,31 @@
                 </listitem>
 
                 <listitem>
-                  <para>LDAP security for authentication only, without
+                  <para><!-- DNT-Start -->LDAP<!-- DNT-End --> security for authentication only, without
                   enabling file scope security.</para>
                 </listitem>
 
                 <listitem>
-                  <para>LDAP authentication and file scope security
+                  <para><!-- DNT-Start -->LDAP<!-- DNT-End --> authentication and file scope security
                   enabled.</para>
                 </listitem>
               </itemizedlist>
             </listitem>
 
             <listitem>
-              <para>Change the LDAP values as appropriate to match the
-              settings in your LDAP server component in configuration
+              <para>Change the <!-- DNT-Start -->LDAP<!-- DNT-End --> values as appropriate to match the
+              settings in your <!-- DNT-Start -->LDAP<!-- DNT-End --> server component in configuration
               manager.</para>
 
               <para>For example, change the <emphasis
               role="bold">ldapServer</emphasis> to the value you gave your
-              LDAP Server, in our example it is:
+              <!-- DNT-Start -->LDAP<!-- DNT-End --> Server, in our example it is:
               <emphasis>ldapserver.</emphasis></para>
 
               <para>Confirm the change when prompted.</para>
 
               <para>The <emphasis role="bold">filesDefaultUser</emphasis> is
-              an LDAP account used to access files when no user credentials
+              an <!-- DNT-Start -->LDAP<!-- DNT-End --> account used to access files when no user credentials
               are supplied. This is similar to a guest account, so it should
               be an account with <emphasis role="bold">very</emphasis> limited
               access, if used at all. To disable access without credentials,
@@ -693,22 +693,22 @@
         <?dbfo keep-together="always"?>
 
         <para>In the Navigator pane, click on the <emphasis role="bold">Roxie
-        Cluster – myroxie </emphasis><graphic
+        Cluster â myroxie </emphasis><graphic
         fileref="../../images/LDAP_007.jpg" vendor="configmgrSS" /></para>
 
         <para><orderedlist continuation="restarts" numeration="loweralpha">
             <listitem>
               <para>On the <emphasis role="bold">RoxieCluster</emphasis> page
               on the right hand side, select the <emphasis
-              role="bold">LDAP</emphasis> tab.</para>
+              role="bold"><!-- DNT-Start -->LDAP<!-- DNT-End --></emphasis> tab.</para>
             </listitem>
 
             <listitem>
               <para>Locate the <emphasis role="bold">ldapUser</emphasis> field
-              and verify that there is a valid HPCC user who is a member of
-              the Authenticated Users group on your LDAP server. For example,
+              and verify that there is a valid <!-- DNT-Start -->HPCC<!-- DNT-End --> user who is a member of
+              the Authenticated Users group on your <!-- DNT-Start -->LDAP<!-- DNT-End --> server. For example,
               the "<emphasis>roxie</emphasis>" user assumes that the
-              "<emphasis>roxie</emphasis>" user is a valid HPCC authenticated
+              "<emphasis>roxie</emphasis>" user is a valid <!-- DNT-Start -->HPCC<!-- DNT-End --> authenticated
               user.</para>
             </listitem>
 
@@ -748,9 +748,9 @@
   </sect2>
 
   <sect2 id="UsingLDAP_Installing_Default_AdminUser">
-    <title>Installing the Default Admin user</title>
+    <!-- DNT-Start --><title>Installing the Default Admin user</title><!-- DNT-End -->
 
-    <para>After enabling your configuration for LDAP security, you must copy
+    <para>After enabling your configuration for <!-- DNT-Start -->LDAP<!-- DNT-End --> security, you must copy
     your environment file to the /etc/HPCCSystems directory. See the section
     <link linkend="configuring-a-multi-node-system"><emphasis>Configuring a
     Multi-Node System</emphasis></link> for more info about configuring your
@@ -759,21 +759,21 @@
     security components and the default users.</para>
 
     <sect3 id="UsingLDAP_theInitldapUtility">
-      <title>The initldap Utility</title>
+      <!-- DNT-Start --><title>The initldap Utility</title><!-- DNT-End -->
 
-      <para>The initldap utility creates the HPCC Administrator's user account
-      and the HPCC OUs for a newly defined LDAP server. The initldap utility
+      <para>The initldap utility creates the <!-- DNT-Start -->HPCC<!-- DNT-End --> Administrator's user account
+      and the <!-- DNT-Start -->HPCC<!-- DNT-End --> OUs for a newly defined <!-- DNT-Start -->LDAP<!-- DNT-End --> server. The initldap utility
       extracts these settings from the LDAPServer component(s) in the
       environment.xml bound to the configured ESPs.</para>
 
       <para>You run the <emphasis role="bold">initldap</emphasis> utility once
-      you complete your configuration with LDAP components enabled and have
+      you complete your configuration with <!-- DNT-Start -->LDAP<!-- DNT-End --> components enabled and have
       distributed your environment.xml file to all nodes.</para>
 
-      <programlisting>sudo /opt/HPCCSystems/bin/initldap</programlisting>
+      <!-- DNT-Start --><programlisting>sudo /opt/HPCCSystems/bin/initldap</programlisting><!-- DNT-End -->
 
       <para>The <emphasis role="bold">initldap</emphasis> utility prompts you
-      for LDAP Administrator credentials. Enter the appropriate values when
+      for <!-- DNT-Start -->LDAP<!-- DNT-End --> Administrator credentials. Enter the appropriate values when
       prompted.</para>
 
       <para>The following example of initldap for a 389DirectoryServer
@@ -791,20 +791,20 @@ Proceed?  y/n
     </sect3>
 
     <sect3 id="UsingLDAP_Using_addScopesTool">
-      <title>Using the addScopes tool</title>
+      <!-- DNT-Start --><title>Using the addScopes tool</title><!-- DNT-End -->
 
-      <para>When a new ESP user account is created, a private
-      “hpccinternal::&lt;user&gt;” file scope is also created granting new
+      <para>When a new <!-- DNT-Start -->ESP<!-- DNT-End --> user account is created, a private
+      âhpccinternal::&lt;user&gt;â file scope is also created granting new
       users full access to that scope and restricting access to other users.
-      This file scope is used to store temporary HPCC files such as spill
+      This file scope is used to store temporary <!-- DNT-Start -->HPCC<!-- DNT-End --> files such as spill
       files and temp files.</para>
 
-      <para>If you are enabling LDAP file scope security and already have user
+      <para>If you are enabling <!-- DNT-Start -->LDAP<!-- DNT-End --> file scope security and already have user
       accounts, you should run the addScopes utility program to create the
       hpccinternal::&lt;user&gt; scope for those existing users.</para>
 
       <para>Users which already have this scope defined are ignored and so it
-      can be used on both new and legacy ESP user accounts safely.</para>
+      can be used on both new and legacy <!-- DNT-Start -->ESP<!-- DNT-End --> user accounts safely.</para>
 
       <para>The tool is located in the <emphasis
       role="bold">/opt/HPCCSystems/bin/</emphasis> folder and to run it you

@@ -2,15 +2,15 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ROWDIER">
-  <title>ROWDIFF</title>
+  <!-- DNT-Start --><title>ROWDIFF</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">ROWDIFF<indexterm>
-      <primary>ROWDIFF</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->ROWDIFF<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->ROWDIFF<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>ROWDIFF function</primary>
+      <primary><!-- DNT-Start -->ROWDIFF<!-- DNT-End --> function</primary>
     </indexterm>(</emphasis><emphasis>left, right </emphasis><emphasis
-  role="bold">[, COUNT<indexterm>
-      <primary>COUNT</primary>
+  role="bold">[, <!-- DNT-Start -->COUNT<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->COUNT<!-- DNT-End --></primary>
     </indexterm>] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -21,19 +21,19 @@
 
         <tbody>
           <row>
-            <entry><emphasis>left</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>left</emphasis><!-- DNT-End --></entry>
 
             <entry>The left record, or a nested record structure.</entry>
           </row>
 
           <row>
-            <entry><emphasis>right</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>right</emphasis><!-- DNT-End --></entry>
 
             <entry>The right record, or a nested record structure.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">COUNT</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">COUNT</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies returning a comma delimited set of
             zeros and ones (0,1) indicating which fields matched (0) and which
@@ -42,22 +42,22 @@
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>ROWDIFF returns a single value.</entry>
+            <entry><!-- DNT-Start -->ROWDIFF<!-- DNT-End --> returns a single value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">ROWDIFF </emphasis>function is valid for use
-  only within a TRANSFORM structure for a JOIN operation and is used as the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->ROWDIFF<!-- DNT-End --> </emphasis>function is valid for use
+  only within a <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> structure for a <!-- DNT-Start -->JOIN<!-- DNT-End --> operation and is used as the
   expression defining the output for a string field. Fields are matched by
   name and only like-named fields are included in the output.</para>
 
   <para>Example:</para>
 
-  <programlisting>FullName := RECORD
+  <!-- DNT-Start --><programlisting>FullName := RECORD
   STRING30 forename;
   STRING20 surname;
   IFBLOCK(SELF.surname &lt;&gt; 'Windsor')
@@ -92,8 +92,8 @@ OUTPUT(JOIN(in1, in2, LEFT.id = RIGHT.id, t1(LEFT,RIGHT)));
 //1                                          0,0,0,0,0  0,0,0
 //2  name.surname,name.middle surname,middle 0,0,1,1,0  0,1,1
 //3  age                                     0,0,0,0,1  0,0,0
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM
-  Structure</link>, <link linkend="JOIN">JOIN</link></para>
+  <para>See Also: <link linkend="TRANSFORM_Structure"><!-- DNT-Start -->TRANSFORM<!-- DNT-End -->
+  Structure</link>, <link linkend="JOIN"><!-- DNT-Start -->JOIN<!-- DNT-End --></link></para>
 </sect1>

@@ -2,28 +2,28 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Constants">
-  <title>Constants</title>
+  <!-- DNT-Start --><title>Constants</title><!-- DNT-End -->
 
   <sect2 id="Const_String">
-    <title>String</title>
+    <!-- DNT-Start --><title>String</title><!-- DNT-End -->
 
     <para>All string literals must be contained within single quotation marks
-    ( ' ' ). All ECL code is UTF-8 encoded, which means that all strings are
-    also UTF-8 encoded, whether Unicode or non-Unicode strings. Therefore, you
-    must use a UTF-8<indexterm>
-        <primary>UTF-8</primary>
-      </indexterm> editor (such as the ECL IDE <indexterm>
-        <primary>ECL IDE</primary>
+    ( ' ' ). All <!-- DNT-Start -->ECL<!-- DNT-End --> code is <!-- DNT-Start -->UTF<!-- DNT-End -->-8 encoded, which means that all strings are
+    also <!-- DNT-Start -->UTF<!-- DNT-End -->-8 encoded, whether Unicode or non-Unicode strings. Therefore, you
+    must use a <!-- DNT-Start -->UTF<!-- DNT-End -->-8<indexterm>
+        <primary><!-- DNT-Start -->UTF<!-- DNT-End -->-8</primary>
+      </indexterm> editor (such as the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> <indexterm>
+        <primary><!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --></primary>
       </indexterm> program).</para>
 
     <para>To include the single quote character (apostrophe) in a constant
     string, prepend a backslash (\). To include the backslash character (\) in
     a constant string, use two backslashes (\\) together.</para>
 
-    <programlisting>STRING20 MyString2 := 'Fred\'s Place';
+    <!-- DNT-Start --><programlisting>STRING20 MyString2 := 'Fred\'s Place';
                      //evaluated as: "Fred's Place"
 STRING20 MyString3 := 'Fred\\Ginger\'s Place';
-                    //evaluated as: "Fred\Ginger's Place"</programlisting>
+                    //evaluated as: "Fred\Ginger's Place"</programlisting><!-- DNT-End -->
 
     <para>Other available escape characters are:</para>
 
@@ -35,126 +35,126 @@ STRING20 MyString3 := 'Fred\\Ginger\'s Place';
 
           <tbody>
             <row>
-              <entry><emphasis role="code">\t</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="code">\t</emphasis><!-- DNT-End --></entry>
 
               <entry>tab</entry>
             </row>
 
             <row>
-              <entry><emphasis role="code">\n</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="code">\n</emphasis><!-- DNT-End --></entry>
 
               <entry>new line</entry>
             </row>
 
             <row>
-              <entry><emphasis role="code">\r</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="code">\r</emphasis><!-- DNT-End --></entry>
 
               <entry>carriage return</entry>
             </row>
 
             <row>
-              <entry><emphasis role="code">\nnn</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="code">\nnn</emphasis><!-- DNT-End --></entry>
 
               <entry>3 octal digits (for any other character)</entry>
             </row>
 
             <row>
-              <entry><emphasis role="code">\uhhhh</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="code">\uhhhh</emphasis><!-- DNT-End --></entry>
 
               <entry>lowercase "u" followed by 4 hexadecimal digits (for any
-              other UNICODE-only character)</entry>
+              other <!-- DNT-Start -->UNICODE<!-- DNT-End -->-only character)</entry>
             </row>
           </tbody>
         </tgroup>
       </informaltable></para>
 
-    <programlisting>MyString1 := 'abcd'; 
-MyString2 := U'abcd\353';    // becomes 'abcdë'
-</programlisting>
+    <!-- DNT-Start --><programlisting>MyString1 := 'abcd'; 
+MyString2 := U'abcd\353';    // becomes 'abcdÃ«'
+</programlisting><!-- DNT-End -->
 
     <para><emphasis role="bold">Hexadecimal<indexterm>
         <primary>Hexadecimal</primary>
       </indexterm> string constants<indexterm>
         <primary>string constants</primary>
-      </indexterm> </emphasis>must begin with a leading “x” character. Only
+      </indexterm> </emphasis>must begin with a leading âxâ character. Only
     valid hexadecimal values (0-9, A-F) may be in the character string and
     there must be an even number of characters.</para>
 
-    <programlisting>DATA2 MyHexString := x'0D0A'; // a 2-byte hexadecimal string</programlisting>
+    <!-- DNT-Start --><programlisting>DATA2 MyHexString := x'0D0A'; // a 2-byte hexadecimal string</programlisting><!-- DNT-End -->
 
     <para><emphasis role="bold">Data string<indexterm>
         <primary>Data string</primary>
       </indexterm> constants<indexterm>
         <primary>constants</primary>
-      </indexterm> </emphasis>must begin with a leading “D” character. This is
-    directly equivalent to casting the string constant to DATA.</para>
+      </indexterm> </emphasis>must begin with a leading âDâ character. This is
+    directly equivalent to casting the string constant to <!-- DNT-Start -->DATA<!-- DNT-End -->.</para>
 
-    <programlisting>MyDataString := D'abcd'; // same as: (DATA)'abcd'</programlisting>
+    <!-- DNT-Start --><programlisting>MyDataString := D'abcd'; // same as: (DATA)'abcd'</programlisting><!-- DNT-End -->
 
     <para><emphasis role="bold">Unicode string<indexterm>
         <primary>Unicode string</primary>
-      </indexterm> constants </emphasis>must begin with a leading “U”
+      </indexterm> constants </emphasis>must begin with a leading âUâ
     character. Characters between the quotes are utf8-encoded and the type of
-    the constant is UNICODE.</para>
+    the constant is <!-- DNT-Start -->UNICODE<!-- DNT-End -->.</para>
 
-    <programlisting>MyUnicodeString1 := U'abcd';        // same as: (UNICODE)'abcd'
-MyUnicodeString2 := U'abcd\353';    // becomes 'abcdë'
-MyUnicodeString3 := U'abcd\u00EB'; // becomes 'abcdë'</programlisting>
+    <!-- DNT-Start --><programlisting>MyUnicodeString1 := U'abcd';        // same as: (UNICODE)'abcd'
+MyUnicodeString2 := U'abcd\353';    // becomes 'abcdÃ«'
+MyUnicodeString3 := U'abcd\u00EB'; // becomes 'abcdÃ«'</programlisting><!-- DNT-End -->
 
-    <para><emphasis role="bold">UTF8 string<indexterm>
-        <primary>UTF8 string</primary>
-      </indexterm> constants </emphasis>must begin with leading “U8”
+    <para><emphasis role="bold"><!-- DNT-Start -->UTF<!-- DNT-End -->8 string<indexterm>
+        <primary><!-- DNT-Start -->UTF<!-- DNT-End -->8 string</primary>
+      </indexterm> constants </emphasis>must begin with leading âU8â
     characters. Characters between the quotes are utf8-encoded and the type of
-    the constant is UTF8.</para>
+    the constant is <!-- DNT-Start -->UTF<!-- DNT-End -->8.</para>
 
-    <programlisting>MyUTF8String := U8'abcd\353';</programlisting>
+    <!-- DNT-Start --><programlisting>MyUTF8String := U8'abcd\353';</programlisting><!-- DNT-End -->
 
-    <para><emphasis role="bold">VARSTRING string constants<indexterm>
-        <primary>VARSTRING string constants</primary>
-      </indexterm> </emphasis>must begin with a leading “V” character. The
+    <para><emphasis role="bold"><!-- DNT-Start -->VARSTRING<!-- DNT-End --> string constants<indexterm>
+        <primary><!-- DNT-Start -->VARSTRING<!-- DNT-End --> string constants</primary>
+      </indexterm> </emphasis>must begin with a leading âVâ character. The
     terminating null byte is implied and type of the constant is
-    VARSTRING.</para>
+    <!-- DNT-Start -->VARSTRING<!-- DNT-End -->.</para>
 
-    <programlisting>MyVarString := V'abcd'; // same as: (VARSTRING)'abcd'</programlisting>
+    <!-- DNT-Start --><programlisting>MyVarString := V'abcd'; // same as: (VARSTRING)'abcd'</programlisting><!-- DNT-End -->
 
-    <para><emphasis role="bold">QSTRING string constants<indexterm>
-        <primary>QSTRING string constants</primary>
-      </indexterm> </emphasis>must begin with a leading “Q” character. The
+    <para><emphasis role="bold"><!-- DNT-Start -->QSTRING<!-- DNT-End --> string constants<indexterm>
+        <primary><!-- DNT-Start -->QSTRING<!-- DNT-End --> string constants</primary>
+      </indexterm> </emphasis>must begin with a leading âQâ character. The
     terminating null byte is implied and type of the constant is
-    VARSTRING.</para>
+    <!-- DNT-Start -->VARSTRING<!-- DNT-End -->.</para>
 
-    <programlisting>MyQString := Q'ABCD'; // same as: (QSTRING)'ABCD'</programlisting>
+    <!-- DNT-Start --><programlisting>MyQString := Q'ABCD'; // same as: (QSTRING)'ABCD'</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="Numeric">
-    <title>Numeric</title>
+    <!-- DNT-Start --><title>Numeric</title><!-- DNT-End -->
 
-    <para>Numeric constants containing a decimal portion are treated as REAL
+    <para><!-- DNT-Start -->Numeric<!-- DNT-End --> constants containing a decimal portion are treated as <!-- DNT-Start -->REAL<!-- DNT-End -->
     values (scientific notation is allowed) and those without are treated as
-    INTEGER<indexterm>
-        <primary>INTEGER</primary>
+    <!-- DNT-Start -->INTEGER<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->INTEGER<!-- DNT-End --></primary>
       </indexterm> (see <emphasis role="bold">Value Types</emphasis>). Integer
     constants may be decimal, hexadecimal, or binary values.
     Hexadecimal<indexterm>
         <primary>Hexadecimal</primary>
-      </indexterm> values are specified with either a leading “0x” or a
-    trailing “x” character. Binary values<indexterm>
+      </indexterm> values are specified with either a leading â0xâ or a
+    trailing âxâ character. Binary values<indexterm>
         <primary>Binary values</primary>
-      </indexterm> are specified with either a leading “0b” or a trailing “b”
+      </indexterm> are specified with either a leading â0bâ or a trailing âbâ
     character.</para>
 
-    <programlisting>MyInt1  := 10;     // value of MyInt1 is the INTEGER value 10
+    <!-- DNT-Start --><programlisting>MyInt1  := 10;     // value of MyInt1 is the INTEGER value 10
 MyInt2  := 0x0A;   // value of MyInt2 is the INTEGER value 10
 MyInt3  := 0Ax;    // value of MyInt3 is the INTEGER value 10
 MyInt4  := 0b1010; // value of MyInt4 is the INTEGER value 10
 MyInt5  := 1010b;  // value of MyInt5 is the INTEGER value 10
 MyReal1 := 10.0;   // value of MyReal1 is the REAL value 10.0
 MyReal2 := 1.0e1;  // value of MyReal2 is the REAL value 10.0
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="CompileTimeConstants" role="brk">
-    <title>Compile Time Constants</title>
+    <!-- DNT-Start --><title>Compile Time Constants</title><!-- DNT-End -->
 
     <para>The following system constants <indexterm>
         <primary>constants</primary>
@@ -171,57 +171,57 @@ MyReal2 := 1.0e1;  // value of MyReal2 is the REAL value 10.0
 
           <tbody>
             <row>
-              <entry><emphasis>__ECL_VERSION__<indexterm>
+              <entry><!-- DNT-Start --><emphasis>__ECL_VERSION__<indexterm>
                   <primary>__ECL_VERSION__</primary>
-                </indexterm></emphasis></entry>
+                </indexterm></emphasis><!-- DNT-End --></entry>
 
-              <entry>A STRING containing the value of the platform version.
+              <entry>A <!-- DNT-Start -->STRING<!-- DNT-End --> containing the value of the platform version.
               For example, '6.4.0'</entry>
             </row>
 
             <row>
-              <entry><emphasis>__ECL_VERSION_MAJOR__ <indexterm>
+              <entry><!-- DNT-Start --><emphasis>__ECL_VERSION_MAJOR__ <indexterm>
                   <primary>__ECL_VERSION_MAJOR__</primary>
-                </indexterm></emphasis></entry>
+                </indexterm></emphasis><!-- DNT-End --></entry>
 
-              <entry>An INTEGER containing the value of the major portion of
+              <entry>An <!-- DNT-Start -->INTEGER<!-- DNT-End --> containing the value of the major portion of
               the platform version. For example, '6'</entry>
             </row>
 
             <row>
-              <entry><emphasis>__ECL_VERSION_MINOR__<indexterm>
+              <entry><!-- DNT-Start --><emphasis>__ECL_VERSION_MINOR__<indexterm>
                   <primary>__ECL_VERSION_MINOR__</primary>
-                </indexterm></emphasis></entry>
+                </indexterm></emphasis><!-- DNT-End --></entry>
 
-              <entry>An INTEGER containing the value of the minor portion of
+              <entry>An <!-- DNT-Start -->INTEGER<!-- DNT-End --> containing the value of the minor portion of
               the platform version. For example, '4'</entry>
             </row>
 
             <row>
-              <entry><emphasis>__ECL_LEGACY_MODE__<indexterm>
+              <entry><!-- DNT-Start --><emphasis>__ECL_LEGACY_MODE__<indexterm>
                   <primary>__ECL_LEGACY_MODE__</primary>
-                </indexterm></emphasis></entry>
+                </indexterm></emphasis><!-- DNT-End --></entry>
 
-              <entry>A BOOLEAN value indicating if it is being compiled with
-              legacy IMPORT semantics.</entry>
+              <entry>A <!-- DNT-Start -->BOOLEAN<!-- DNT-End --> value indicating if it is being compiled with
+              legacy <!-- DNT-Start -->IMPORT<!-- DNT-End --> semantics.</entry>
             </row>
 
             <row>
-              <entry><emphasis>__OS__<indexterm>
+              <entry><!-- DNT-Start --><emphasis>__OS__<indexterm>
                   <primary>__OS__</primary>
-                </indexterm></emphasis></entry>
+                </indexterm></emphasis><!-- DNT-End --></entry>
 
-              <entry>A STRING indicating the operating system to which it is
+              <entry>A <!-- DNT-Start -->STRING<!-- DNT-End --> indicating the operating system to which it is
               being compiled. (Available values are: 'windows' or
               'linux')</entry>
             </row>
 
             <row>
-              <entry><emphasis>__STAND_ALONE__<indexterm>
+              <entry><!-- DNT-Start --><emphasis>__STAND_ALONE__<indexterm>
                   <primary>__STAND_ALONE__</primary>
-                </indexterm></emphasis></entry>
+                </indexterm></emphasis><!-- DNT-End --></entry>
 
-              <entry>A BOOLEAN value indicating if it is being compiled to a
+              <entry>A <!-- DNT-Start -->BOOLEAN<!-- DNT-End --> value indicating if it is being compiled to a
               stand-alone executable.</entry>
             </row>
           </tbody>
@@ -242,7 +242,7 @@ MyReal2 := 1.0e1;  // value of MyReal2 is the REAL value 10.0
       time(&amp;timeinsecs);  
       localtime_r(&amp;timeinsecs,&amp;localt);
       char temp[15];
-      strftime(temp , 15, "%Y%m%d%H%M%S", &amp;amp;localt); // Formats the localtime to YYYYMMDDhhmmss 
+      strftime(temp , 15, "%Y%m%d%H%M%S",Â &amp;amp;localt); // Formats the localtime to YYYYMMDDhhmmss 
       strncpy(__result, temp, 14);
       ENDC++;
       RETURN fGetDimeTime();

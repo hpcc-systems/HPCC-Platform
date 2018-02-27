@@ -2,21 +2,21 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="FETCH">
-  <title>FETCH</title>
+  <!-- DNT-Start --><title>FETCH</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">FETCH<indexterm>
-      <primary>FETCH</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->FETCH<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->FETCH<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>FETCH function</primary>
+      <primary><!-- DNT-Start -->FETCH<!-- DNT-End --> function</primary>
     </indexterm>(</emphasis><emphasis>basedataset, index, position
   </emphasis><emphasis role="bold">[</emphasis><emphasis>, transform
   </emphasis><emphasis role="bold">]</emphasis><emphasis> </emphasis><emphasis
-  role="bold">[, LOCAL<indexterm>
-      <primary>LOCAL</primary>
-    </indexterm>] </emphasis><emphasis role="bold">[, UNORDERED |
-  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
-  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
-  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  role="bold">[, <!-- DNT-Start -->LOCAL<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->LOCAL<!-- DNT-End --></primary>
+    </indexterm>] </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> |
+  <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis>
   <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -27,22 +27,22 @@
 
         <tbody>
           <row>
-            <entry><emphasis>basedataset</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>basedataset</emphasis><!-- DNT-End --></entry>
 
-            <entry>The base DATASET attribute to process. Filtering is not
+            <entry>The base <!-- DNT-Start -->DATASET<!-- DNT-End --> attribute to process. Filtering is not
             allowed.</entry>
           </row>
 
           <row>
-            <entry><emphasis>index</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>index</emphasis><!-- DNT-End --></entry>
 
-            <entry>The INDEX attribute that provides keyed access into the
+            <entry>The <!-- DNT-Start -->INDEX<!-- DNT-End --> attribute that provides keyed access into the
             <emphasis>basedataset</emphasis>. This will typically have a
             filter expression.</entry>
           </row>
 
           <row>
-            <entry><emphasis>position</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>position</emphasis><!-- DNT-End --></entry>
 
             <entry>An expression that provides the means of locating the
             correct record in the <emphasis>basedataset</emphasis> (usually
@@ -51,40 +51,40 @@
           </row>
 
           <row>
-            <entry><emphasis>transform</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>transform</emphasis><!-- DNT-End --></entry>
 
-            <entry>The TRANSFORM function to call for each record fetched from
-            the <emphasis>basedataset</emphasis>. If omitted, FETCH returns a
+            <entry>The <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function to call for each record fetched from
+            the <emphasis>basedataset</emphasis>. If omitted, <!-- DNT-Start -->FETCH<!-- DNT-End --> returns a
             set containing all fields from both the
             <emphasis>basedataset</emphasis> and index, with the second of any
             duplicate named fields removed.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">LOCAL</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the operation is performed on each
             supercomputer node independently, without requiring interaction
             with all other nodes to acquire data; the operation maintains the
-            distribution of any previous DISTRIBUTE.</entry>
+            distribution of any previous <!-- DNT-Start -->DISTRIBUTE<!-- DNT-End -->.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the output record order is not
             significant.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the significance of the output record
             order.</entry>
           </row>
 
           <row>
-            <entry><emphasis>bool</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
 
             <entry>When False, specifies the output record order is not
             significant. When True, specifies the default output record
@@ -92,58 +92,58 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">STABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is
             significant.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is not
             significant.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity in
             parallel.</entry>
           </row>
 
           <row>
-            <entry><emphasis>numthreads</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity using
             <emphasis>numthreads</emphasis> threads.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Override the algorithm used for this
             activity.</entry>
           </row>
 
           <row>
-            <entry><emphasis>name</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
 
             <entry>The algorithm to use for this activity. Must be from the
-            list of supported algorithms for the SORT function's STABLE and
-            UNSTABLE options.</entry>
+            list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and
+            <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>FETCH returns a record set.</entry>
+            <entry><!-- DNT-Start -->FETCH<!-- DNT-End --> returns a record set.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">FETCH </emphasis>function processes through
+  <para>The <emphasis role="bold"><!-- DNT-Start -->FETCH<!-- DNT-End --> </emphasis>function processes through
   all records in the <emphasis>index </emphasis>in the order specified by the
   <emphasis>index, </emphasis>fetching each related record from the
   <emphasis>basedataset</emphasis> and performing the
@@ -152,24 +152,24 @@
   <para>The <emphasis>index</emphasis> will typically have a filter expression
   to specify the exact set of records to return from the
   <emphasis>basedataset</emphasis>. If the filter expression defines a single
-  record in the <emphasis>basedataset</emphasis>, FETCH will return just that
-  one record. See KEYED/WILD for a discussion of INDEX filtering.</para>
+  record in the <emphasis>basedataset</emphasis>, <!-- DNT-Start -->FETCH<!-- DNT-End --> will return just that
+  one record. See <!-- DNT-Start -->KEYED<!-- DNT-End -->/<!-- DNT-Start -->WILD<!-- DNT-End --> for a discussion of <!-- DNT-Start -->INDEX<!-- DNT-End --> filtering.</para>
 
   <sect2 id="TRANSFORM_Function_Requirements_Fetch">
-    <title>FETCH TRANSFORM Function Requirements</title>
+    <!-- DNT-Start --><title>FETCH TRANSFORM Function Requirements</title><!-- DNT-End -->
 
     <para>The <emphasis>transform</emphasis> function<indexterm>
         <primary>transform function</primary>
-      </indexterm> must take up to two parameters: a LEFT record that must be
+      </indexterm> must take up to two parameters: a <!-- DNT-Start -->LEFT<!-- DNT-End --> record that must be
     of the same format as the <emphasis>basedataset</emphasis>, and an
-    optional RIGHT record that that must be of the same format as the
+    optional <!-- DNT-Start -->RIGHT<!-- DNT-End --> record that that must be of the same format as the
     <emphasis>index</emphasis>. The optional second parameter is useful in
     those instances where the index contains information not present in the
     recordset.</para>
 
     <para>Example:</para>
 
-    <programlisting>PtblRec := RECORD
+    <!-- DNT-Start --><programlisting>PtblRec := RECORD
   STRING2  State := Person.per_st;
   STRING20 City  := Person.per_full_city;
   STRING25 Lname := Person.per_last_name;
@@ -206,13 +206,13 @@ SEQUENTIAL(PtblOut,Bld,OutFile)
 
 //NOTE the use of a filter on the index file. This is an important
 // use of standard filtering technique in conjunction with indexing
-// to achieve optimal “random” access into the base record set
-</programlisting>
+// to achieve optimal ârandomâ access into the base record set
+</programlisting><!-- DNT-End -->
 
-    <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM
-    Structure</link>, <link linkend="RECORD_Structure">RECORD
-    Structure</link>, <link linkend="BUILD">BUILDINDEX</link>, <link
-    linkend="INDEX_record_structure">INDEX</link>, <link
-    linkend="KEYED-WILD">KEYED/WILD</link></para>
+    <para>See Also: <link linkend="TRANSFORM_Structure"><!-- DNT-Start -->TRANSFORM<!-- DNT-End -->
+    Structure</link>, <link linkend="RECORD_Structure"><!-- DNT-Start -->RECORD<!-- DNT-End -->
+    Structure</link>, <link linkend="BUILD"><!-- DNT-Start -->BUILDINDEX<!-- DNT-End --></link>, <link
+    linkend="INDEX_record_structure"><!-- DNT-Start -->INDEX<!-- DNT-End --></link>, <link
+    linkend="KEYED-WILD"><!-- DNT-Start -->KEYED<!-- DNT-End -->/<!-- DNT-Start -->WILD<!-- DNT-End --></link></para>
   </sect2>
 </sect1>

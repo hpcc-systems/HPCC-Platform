@@ -2,7 +2,7 @@
 <!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="Cert_Spray_Despray">
-  <title>Spray and Despray Data</title>
+  <!-- DNT-Start --><title>Spray and Despray Data</title><!-- DNT-End -->
 
   <para>This section verifies the systems ability to Spray and Despray
   data.</para>
@@ -12,7 +12,7 @@
   nodes into a single file.</para>
 
   <sect1 id="Move_data_to_Landing_Zone">
-    <title>Certify Despray</title>
+    <!-- DNT-Start --><title>Certify Despray</title><!-- DNT-End -->
 
     <para>The next step to verify that your system is working properly is to
     test the Despray capabilities. Despray is when the system combines the
@@ -20,22 +20,22 @@
     the Landing Zone from the Data Refinery.</para>
 
     <sect2 id="DesprayFromECLWatch">
-      <title>Despray from ECL Watch</title>
+      <!-- DNT-Start --><title>Despray from ECL Watch</title><!-- DNT-End -->
 
-      <!--The following cromulent information can also be found in the DataTutorial.***-->
+      <!-- DNT-Start --><!--The following cromulent information can also be found in the DataTutorial.***--><!-- DNT-End -->
 
       <para>Despray is the opposite of spraying, is a good way to certify that
       piece is working properly.</para>
 
       <orderedlist>
         <listitem>
-          <para>To despray, go to ECL Watch in a browser window.</para>
+          <para>To despray, go to <!-- DNT-Start -->ECL<!-- DNT-End --> Watch in a browser window.</para>
 
-          <para>Open ECL Watch in your browser using the following URL:</para>
+          <para>Open <!-- DNT-Start -->ECL<!-- DNT-End --> Watch in your browser using the following <!-- DNT-Start -->URL<!-- DNT-End -->:</para>
 
           <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
-          </emphasis><emphasis role="bold">(where nnn.nnn.nnn.nnn is your ESP
-          Server’s IP Address and pppp is the port. The default port is
+          </emphasis><emphasis role="bold">(where nnn.nnn.nnn.nnn is your <!-- DNT-Start -->ESP<!-- DNT-End -->
+          Serverâs <!-- DNT-Start -->IP<!-- DNT-End --> Address and pppp is the port. The default port is
           8010)</emphasis></para>
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -51,12 +51,12 @@
                     <entry><inlinegraphic
                     fileref="../../images/tip.jpg" /></entry>
 
-                    <entry><para><emphasis role="bold">NOTE</emphasis>: To
-                    copy a URL to the clipboard, click the <inlinegraphic
+                    <entry><para><emphasis role="bold"><!-- DNT-Start -->NOTE<!-- DNT-End --></emphasis>: To
+                    copy a <!-- DNT-Start -->URL<!-- DNT-End --> to the clipboard, click the <inlinegraphic
                     fileref="../../images/CS-1421.jpg" /> icon from the row of
-                    icons along the top of the ECL Watch page.
-                    </para><para>This opens a window with the full URL. Select
-                    the entire URL and you can copy it to the clipboard to
+                    icons along the top of the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch page.
+                    </para><para>This opens a window with the full <!-- DNT-Start -->URL<!-- DNT-End -->. Select
+                    the entire <!-- DNT-Start -->URL<!-- DNT-End --> and you can copy it to the clipboard to
                     paste elsewhere. </para><para> </para></entry>
                   </row>
                 </tbody>
@@ -105,45 +105,45 @@
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Drop Zone</emphasis></entry>
+                    <entry><!-- DNT-Start --><emphasis role="bold">Drop Zone</emphasis><!-- DNT-End --></entry>
 
                     <entry>Use the drop list to select the machine to despray
                     to. The items in the list are landing zones defined in the
-                    system’s confguration. Your system may have only
+                    systemâs confguration. Your system may have only
                     one.</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">IP Address</emphasis></entry>
+                    <entry><!-- DNT-Start --><emphasis role="bold">IP Address</emphasis><!-- DNT-End --></entry>
 
                     <entry>This is prefilled based upon the selected
                     machine.</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Path</emphasis></entry>
+                    <entry><!-- DNT-Start --><emphasis role="bold">Path</emphasis><!-- DNT-End --></entry>
 
                     <entry>The complete file path of the destination.</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Split
-                    Prefix</emphasis></entry>
+                    <entry><!-- DNT-Start --><emphasis role="bold">Split
+                    Prefix</emphasis><!-- DNT-End --></entry>
 
                     <entry>Prefix</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Logical
-                    Name</emphasis></entry>
+                    <entry><!-- DNT-Start --><emphasis role="bold">Logical
+                    Name</emphasis><!-- DNT-End --></entry>
 
                     <entry>The Logical File to be sprayed (this is prefilled
                     and cannot be altered)</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Target
-                    Name</emphasis></entry>
+                    <entry><!-- DNT-Start --><emphasis role="bold">Target
+                    Name</emphasis><!-- DNT-End --></entry>
 
                     <entry>The target filename. This is prefilled with the
                     last portion of the Logical filename, but can be
@@ -151,15 +151,15 @@
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Overwrite</emphasis></entry>
+                    <entry><!-- DNT-Start --><emphasis role="bold">Overwrite</emphasis><!-- DNT-End --></entry>
 
                     <entry>Check this box to overwrite a file with the same
                     name if it exists.</entry>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">Use Single
-                    Connection</emphasis></entry>
+                    <entry><!-- DNT-Start --><emphasis role="bold">Use Single
+                    Connection</emphasis><!-- DNT-End --></entry>
 
                     <entry>Check this box to use a single network connection
                     to despray the file.</entry>
@@ -173,7 +173,7 @@
           <para>Press the <emphasis role="bold">Despray</emphasis>
           button.</para>
 
-          <para>A DFU Workunit tab for each job opens. You can see the
+          <para>A <!-- DNT-Start -->DFU<!-- DNT-End --> Workunit tab for each job opens. You can see the
           progress of each despray operation on the tab. If a job fails,
           information related to the cause of the failure also
           displays.</para>
@@ -181,7 +181,7 @@
       </orderedlist>
 
       <sect3 id="LandingZone_Expected_Results">
-        <title>EXPECTED RESULTS:</title>
+        <!-- DNT-Start --><title>EXPECTED RESULTS:</title><!-- DNT-End -->
 
         <para>Upon completion of the despray operation you will have a single
         file. You can then retrieve the file from the landing zone. This will
@@ -191,24 +191,24 @@
   </sect1>
 
   <sect1 id="CertifySpray">
-    <title>Certify Spray</title>
+    <!-- DNT-Start --><title>Certify Spray</title><!-- DNT-End -->
 
     <para>The file will be sprayed from the Landing Zone to the Data Refinery,
     this will certify that data can be moved from Landing Zone to the Data
     Refinery.</para>
 
-    <!--The following is a comment***
+    <!-- DNT-Start --><!--The following is a comment***
 
--->
+--><!-- DNT-End -->
 
     <sect2 id="Spray_the_Data_File_to_your_DR-THOR_Cluster">
-      <title>Spray a Data File to your Thor Cluster</title>
+      <!-- DNT-Start --><title>Spray a Data File to your Thor Cluster</title><!-- DNT-End -->
 
-      <para>To use a data file in our HPCC cluster, we must first “spray” it
+      <para>To use a data file in our <!-- DNT-Start -->HPCC<!-- DNT-End --> cluster, we must first âsprayâ it
       to a Thor cluster. A <emphasis>spray</emphasis> or
       <emphasis>import</emphasis> is the relocation of a data file from one
       location to a Thor cluster. The term spray was adopted due to the nature
-      of the file movement – the file is partitioned across all nodes within a
+      of the file movement â the file is partitioned across all nodes within a
       cluster.</para>
 
       <para>For this example, we will spray the full_test_distributed file
@@ -260,23 +260,23 @@
                     </row>
 
                     <row>
-                      <entry><emphasis role="bold">Group</emphasis></entry>
+                      <entry><!-- DNT-Start --><emphasis role="bold">Group</emphasis><!-- DNT-End --></entry>
 
                       <entry>Select the name of cluster to spray to. You can
                       only select a cluster in your environment.</entry>
                     </row>
 
                     <row>
-                      <entry><emphasis role="bold">Name
-                      Prefix</emphasis></entry>
+                      <entry><!-- DNT-Start --><emphasis role="bold">Name
+                      Prefix</emphasis><!-- DNT-End --></entry>
 
                       <entry>The prefix for the logical file, in this case
                       <emphasis role="bold">certification</emphasis></entry>
                     </row>
 
                     <row>
-                      <entry><emphasis role="bold">Target
-                      Name</emphasis></entry>
+                      <entry><!-- DNT-Start --><emphasis role="bold">Target
+                      Name</emphasis><!-- DNT-End --></entry>
 
                       <entry>The logical filename to create. This is
                       pre-filled with the name of the source file on the
@@ -284,8 +284,8 @@
                     </row>
 
                     <row>
-                      <entry><emphasis role="bold">Record
-                      Length</emphasis></entry>
+                      <entry><!-- DNT-Start --><emphasis role="bold">Record
+                      Length</emphasis><!-- DNT-End --></entry>
 
                       <entry>The size of each record. In this case it is
                       <emphasis role="bold">47</emphasis></entry>
@@ -297,16 +297,16 @@
                     </row>
 
                     <row>
-                      <entry><emphasis
-                      role="bold">Overwrite</emphasis></entry>
+                      <entry><!-- DNT-Start --><emphasis
+                      role="bold">Overwrite</emphasis><!-- DNT-End --></entry>
 
                       <entry>Check this box to overwrite files of the same
                       name.</entry>
                     </row>
 
                     <row>
-                      <entry><emphasis
-                      role="bold">Replicate</emphasis></entry>
+                      <entry><!-- DNT-Start --><emphasis
+                      role="bold">Replicate</emphasis><!-- DNT-End --></entry>
 
                       <entry><para>Check this box to create backup copies of
                       all file parts in the backup directory (by convention on
@@ -317,21 +317,21 @@
                     </row>
 
                     <row>
-                      <entry><emphasis role="bold">Compress</emphasis></entry>
+                      <entry><!-- DNT-Start --><emphasis role="bold">Compress</emphasis><!-- DNT-End --></entry>
 
                       <entry>Check this box to compress the files.</entry>
                     </row>
 
                     <row>
-                      <entry><emphasis role="bold">No Split</emphasis></entry>
+                      <entry><!-- DNT-Start --><emphasis role="bold">No Split</emphasis><!-- DNT-End --></entry>
 
                       <entry>Check this box to prevent splitting file parts to
                       multiple target parts.</entry>
                     </row>
 
                     <row>
-                      <entry><emphasis role="bold">Fail if no source
-                      file</emphasis></entry>
+                      <entry><!-- DNT-Start --><emphasis role="bold">Fail if no source
+                      file</emphasis><!-- DNT-End --></entry>
 
                       <entry>Check this box to allow the spray to fail if no
                       source file is found.</entry>
@@ -345,7 +345,7 @@
             <para>Press the <emphasis role="bold">Spray
             </emphasis>button.</para>
 
-            <para>A <emphasis role="bold">DFU Workunit</emphasis> tab displays
+            <para>A <emphasis role="bold"><!-- DNT-Start -->DFU<!-- DNT-End --> Workunit</emphasis> tab displays
             for each job. You can see the progress of each despray operation
             on the tab. If a job fails, information related to the cause of
             the failure also displays.</para>
@@ -354,7 +354,7 @@
     </sect2>
 
     <sect2 id="SPRAY_RESULTS" role="brk">
-      <title>EXPECTED RESULTS</title>
+      <!-- DNT-Start --><title>EXPECTED RESULTS</title><!-- DNT-End -->
 
       <orderedlist>
         <listitem>

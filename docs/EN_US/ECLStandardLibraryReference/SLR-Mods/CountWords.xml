@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="CountWords">
-  <title>CountWords</title>
+  <!-- DNT-Start --><title>CountWords</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Str.CountWords<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.Str.CountWords<indexterm>
       <primary>STD.Str.CountWords</primary>
     </indexterm><indexterm>
       <primary>Str.CountWords</primary>
     </indexterm><indexterm>
       <primary>CountWords</primary>
     </indexterm>(</emphasis> <emphasis>source, separator </emphasis><emphasis
-  role="bold">)</emphasis></para>
+  role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,33 +21,33 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>source</emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the words to count.</entry>
         </row>
 
         <row>
-          <entry><emphasis>separator</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>separator</emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the word delimiter to use.</entry>
         </row>
 
         <row>
-          <entry>Return:</entry>
+          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-          <entry>CountWords returns an integer value.</entry>
+          <entry><!-- DNT-Start -->CountWords<!-- DNT-End --> returns an integer value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">CountWords </emphasis>function returns the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->CountWords<!-- DNT-End --> </emphasis>function returns the
   number of words in the <emphasis>source</emphasis> string based on the
   specified <emphasis>separator</emphasis>.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">IMPORT Std;
+  <!-- DNT-Start --><programlisting format="linespecific">IMPORT Std;
 
 str1 := 'a word a day keeps the doctor away';
 str2 := 'a|word|a|day|keeps|the|doctor|away';
@@ -56,7 +56,7 @@ output(LENGTH(TRIM(Str1,LEFT,RIGHT)) - LENGTH(TRIM(Str1,ALL)) + 1);
                                  //finds eight words by removing spaces
 STD.STr.CountWords(str1,' ');    //finds eight words based on space delimiter
 STD.STr.CountWords(str2,'|');    //finds eight words based on bar delimiter
-</programlisting>
+</programlisting><!-- DNT-End -->
 
   <para></para>
 </sect1>

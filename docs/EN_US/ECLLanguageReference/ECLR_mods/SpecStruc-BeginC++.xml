@@ -2,21 +2,21 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="BEGINCplus_Structure">
-  <title>BEGINC++ Structure<indexterm>
+  <!-- DNT-Start --><title>BEGINC++ Structure<indexterm>
       <primary>BEGINC++ Structure</primary>
-    </indexterm></title>
+    </indexterm></title><!-- DNT-End -->
 
   <para><emphasis>resulttype funcname </emphasis><emphasis
   role="bold">(</emphasis><emphasis> parameterlist </emphasis><emphasis
-  role="bold">) := BEGINC++<indexterm>
-      <primary>BEGINC++</primary>
+  role="bold">) := <!-- DNT-Start -->BEGINC<!-- DNT-End -->++<indexterm>
+      <primary><!-- DNT-Start -->BEGINC<!-- DNT-End -->++</primary>
     </indexterm></emphasis><emphasis role="bold">
   </emphasis><emphasis></emphasis></para>
 
   <para><emphasis> code</emphasis><emphasis role="bold"> </emphasis></para>
 
-  <para><emphasis role="bold">ENDC++<indexterm>
-      <primary>ENDC++</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->ENDC<!-- DNT-End -->++<indexterm>
+      <primary><!-- DNT-Start -->ENDC<!-- DNT-End -->++</primary>
     </indexterm>;</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -27,26 +27,26 @@
 
       <tbody>
         <row>
-          <entry><emphasis>resulttype</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>resulttype</emphasis><!-- DNT-End --></entry>
 
-          <entry>The ECL return value type of the C++ function.</entry>
+          <entry>The <!-- DNT-Start -->ECL<!-- DNT-End --> return value type of the C++ function.</entry>
         </row>
 
         <row>
-          <entry><emphasis>funcname</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>funcname</emphasis><!-- DNT-End --></entry>
 
-          <entry><para>The ECL definition name of the function.</para></entry>
+          <entry><para>The <!-- DNT-Start -->ECL<!-- DNT-End --> definition name of the function.</para></entry>
         </row>
 
         <row>
-          <entry><emphasis>parameterlist</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>parameterlist</emphasis><!-- DNT-End --></entry>
 
           <entry>A comma separated list of the parameters to pass to the
           <emphasis>function</emphasis>.</entry>
         </row>
 
         <row>
-          <entry><emphasis>code</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>code</emphasis><!-- DNT-End --></entry>
 
           <entry>The C++ function source code.</entry>
         </row>
@@ -54,9 +54,9 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">BEGINC++ </emphasis>structure makes it
-  possible to add in-line C++ code to your ECL. This is useful where string or
-  bit processing would be complicated in ECL, and would be more easily done in
+  <para>The <emphasis role="bold"><!-- DNT-Start -->BEGINC<!-- DNT-End -->++ </emphasis>structure makes it
+  possible to add in-line C++ code to your <!-- DNT-Start -->ECL<!-- DNT-End -->. This is useful where string or
+  bit processing would be complicated in <!-- DNT-Start -->ECL<!-- DNT-End -->, and would be more easily done in
   C++, typically for a one-off use. For more commonly used C++ code, writing a
   plugin would be a better solution (see the <emphasis role="bold">External
   Service Implementation</emphasis> discussion).</para>
@@ -65,31 +65,31 @@
   external libraries must be made to thread safe versions of those
   libraries.</para>
 
-  <para>You can use EMBED instead of BEGINC++ to embed C++ code and specify
-  additional options (for example, DISTRIBUTED) using this form:</para>
+  <para>You can use <!-- DNT-Start -->EMBED<!-- DNT-End --> instead of <!-- DNT-Start -->BEGINC<!-- DNT-End -->++ to embed C++ code and specify
+  additional options (for example, <!-- DNT-Start -->DISTRIBUTED<!-- DNT-End -->) using this form:</para>
 
   <para><programlisting>myFunction(string name) := EMBED(C++ [: options]) 
   ... text 
 ENDEMBED</programlisting></para>
 
-  <para><emphasis role="bold">WARNING: This feature could create memory
+  <para><emphasis role="bold"><!-- DNT-Start -->WARNING<!-- DNT-End -->: This feature could create memory
   corruption and/or security issues, so great care and forethought are
-  advised—consult with Technical Support before using.</emphasis></para>
+  advisedâconsult with Technical Support before using.</emphasis></para>
 
   <sect2 id="ECL_to_Cplus_Mapping">
-    <title>ECL to C++ Mapping</title>
+    <!-- DNT-Start --><title>ECL to C++ Mapping</title><!-- DNT-End -->
 
     <para>Types are passed as follows:</para>
 
-    <programlisting>//The following typedefs are used below:
+    <!-- DNT-Start --><programlisting>//The following typedefs are used below:
 typedef unsigned size32_t;
-typedef wchar_t UChar; [ unsigned short in linux ]</programlisting>
+typedef wchar_t UChar; [ unsigned short in linux ]</programlisting><!-- DNT-End -->
 
-    <para>The following list describes the mappings from ECL to C++. For
+    <para>The following list describes the mappings from <!-- DNT-Start -->ECL<!-- DNT-End --> to C++. For
     embedded C++ the parameters are always converted to lower case, and
     capitalized in conjunctions (see below).</para>
 
-    <programlisting><emphasis role="bold">ECL                  C++ [Linux in brackets]</emphasis>
+    <!-- DNT-Start --><programlisting><emphasis role="bold">ECL                  C++ [Linux in brackets]</emphasis>
 BOOOLEAN xyz         bool xyz
 INTEGER1 xyz         signed char xyz
 INTEGER2 xyz         int16_t xyz
@@ -111,39 +111,39 @@ DATA&lt;nn&gt; xyz         void * xyz
 STRING&lt;nn&gt; xyz       char * xyz
 QSTRING&lt;nn&gt; xyz      char * xyz
 UNICODE&lt;nn&gt; xyz      UChar * xyz
-SET OF ... xyz       bool isAllXyz, size32_t lenXyz, void *  xyz</programlisting>
+SET OF ... xyz       bool isAllXyz, size32_t lenXyz, void *  xyz</programlisting><!-- DNT-End -->
 
     <para>Note that strings of unknown length are passed differently from
     those with a known length. A variable length input string is passed as a
     number of characters, not the size (i.e. qstring/unicode), followed by a
-    pointer to the data, like this (size32_t is an UNSIGNED4):</para>
+    pointer to the data, like this (size32_t is an <!-- DNT-Start -->UNSIGNED<!-- DNT-End -->4):</para>
 
-    <programlisting>STRING  ABC -&gt; size32_t lenAbc, const char * abc;
-UNICODE ABC -&gt; size32_t lenABC, const UChar * abc;</programlisting>
+    <!-- DNT-Start --><programlisting>STRING  ABC -&gt; size32_t lenAbc, const char * abc;
+UNICODE ABC -&gt; size32_t lenABC, const UChar * abc;</programlisting><!-- DNT-End -->
 
     <para>A dataset is passed as a size/pointer pair. The length gives the
     size of the following dataset in bytes. The same naming convention is
     used:</para>
 
-    <programlisting>DATASET(r)              ABC -&gt; size32_t lenAbc, const void * abc
+    <!-- DNT-Start --><programlisting>DATASET(r)              ABC -&gt; size32_t lenAbc, const void * abc
   The rows are accessed as x+0, x + length(row1), x + length(row1) + length(row2)
 
 LINKCOUNTED DATASET(r)  ABC -&gt; size32_t countAbc, const byte * * abc
   The rows are accessed as x[0], x[1], x[2]
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para>NOTE: variable length strings within a record are stored as a 4 byte
     number of characters, followed by the string data.</para>
 
     <para>Sets are passed as a set of parameters (all, size, pointer):</para>
 
-    <programlisting>SET OF UNSIGNED4 ABC -&gt; bool isAllAbc, size32_t lenAbc, const void * abc</programlisting>
+    <!-- DNT-Start --><programlisting>SET OF UNSIGNED4 ABC -&gt; bool isAllAbc, size32_t lenAbc, const void * abc</programlisting><!-- DNT-End -->
 
     <para>Return types are handled as C++ functions returning the same types
     with some exceptions. The exceptions have some extra initial parameters to
     return the results in:</para>
 
-    <programlisting><emphasis role="bold">ECL                C++ [Linux in brackets]</emphasis>
+    <!-- DNT-Start --><programlisting><emphasis role="bold">ECL                C++ [Linux in brackets]</emphasis>
 DATA xyz           size32_t &amp; __lenResult, void * &amp; __result
 STRING xyz         size32_t &amp; __lenResult, char * &amp; __result
 CONST STRING xyz   size32_t lenXyz, const char * xyz
@@ -163,23 +163,23 @@ LINKCOUNTED DATASET(r)
 
 STREAMED DATASET(r) 
                    returns a pointer to an IRowStream interface 
-                   (see the eclhelper.hpp include file for the definition)</programlisting>
+                   (see the eclhelper.hpp include file for the definition)</programlisting><!-- DNT-End -->
 
     <para>For example,</para>
 
-    <programlisting>STRING process(STRING value, INTEGER4 len)</programlisting>
+    <!-- DNT-Start --><programlisting>STRING process(STRING value, INTEGER4 len)</programlisting><!-- DNT-End -->
 
     <para>has the prototype:</para>
 
-    <programlisting>void process(size32_t &amp; __lenResult, char * &amp; __result,
-             size32_t lenValue, char * value, int len);</programlisting>
+    <!-- DNT-Start --><programlisting>void process(size32_t &amp; __lenResult, char * &amp; __result,
+             size32_t lenValue, char * value, int len);</programlisting><!-- DNT-End -->
 
     <para>A function that takes a string parameter should also have the type
-    prefixed by <emphasis role="bold">const</emphasis> in the ECL code so that
+    prefixed by <emphasis role="bold">const</emphasis> in the <!-- DNT-Start -->ECL<!-- DNT-End --> code so that
     modern compilers don't report errors when constant strings are passed to
     the function.</para>
 
-    <programlisting>BOOLEAN isUpper(const string mystring) := BEGINC++
+    <!-- DNT-Start --><programlisting>BOOLEAN isUpper(const string mystring) := BEGINC++
   size_t i=0;
   while (i &lt; lenMystring)
   {
@@ -191,11 +191,11 @@ STREAMED DATASET(r)
 ENDC++;
 isUpper('JIM');
 
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="BeginCPP_Available_Options">
-    <title>Available Options</title>
+    <!-- DNT-Start --><title>Available Options</title><!-- DNT-End -->
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -205,7 +205,7 @@ isUpper('JIM');
 
         <tbody>
           <row>
-            <entry><emphasis role="bold">#option pure</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">#option pure</emphasis><!-- DNT-End --></entry>
 
             <entry>By default, embedded C++ functions are assumed to have
             side-effects, which means the generated code won't be as efficient
@@ -215,7 +215,7 @@ isUpper('JIM');
           </row>
 
           <row>
-            <entry><emphasis role="bold">#option once</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">#option once</emphasis><!-- DNT-End --></entry>
 
             <entry>Indicates the function has no side effects and is evaluated
             at query execution time, even if the parameters are constant,
@@ -224,14 +224,14 @@ isUpper('JIM');
           </row>
 
           <row>
-            <entry><emphasis role="bold">#option action</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">#option action</emphasis><!-- DNT-End --></entry>
 
             <entry>Indicates side effects, requiring the optimizer to keep all
             calls to the function.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">#body</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">#body</emphasis><!-- DNT-End --></entry>
 
             <entry>Delimits the beginning of executable code. All
             <emphasis>code</emphasis> that precedes #body (such as #include)
@@ -244,7 +244,7 @@ isUpper('JIM');
 
     <para>Example:</para>
 
-    <programlisting>//static int add(int x,int y) {
+    <!-- DNT-Start --><programlisting>//static int add(int x,int y) {
 INTEGER4 add(INTEGER4 x, INTEGER4 y) := BEGINC++
   #option pure
   return x + y;
@@ -366,10 +366,10 @@ out2 := NORMALIZE(processed, extractResult2(LEFT), TRANSFORM(RIGHT));
 out3 := NORMALIZE(processed, extractResult3(LEFT), TRANSFORM(RIGHT));
 
 SEQUENTIAL(OUTPUT(out1),OUTPUT(out2),OUTPUT(out3));
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para>See Also: <link linkend="External_Service_Implementation">External
-    Service Implementation</link>, <link linkend="EMBED_Structure">EMBED
+    Service Implementation</link>, <link linkend="EMBED_Structure"><!-- DNT-Start -->EMBED<!-- DNT-End -->
     Structure</link></para>
   </sect2>
 </sect1>

@@ -2,34 +2,34 @@
 <!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Cross-Tab_Reports">
-  <title>Cross-Tab Reports</title>
+  <!-- DNT-Start --><title>Cross-Tab Reports</title><!-- DNT-End -->
 
   <para>Cross-Tab reports are a very useful way of discovering statistical
   information about the data that you work with. They can be easily produced
-  using the TABLE function and the aggregate functions (COUNT, SUM, MIN, MAX,
-  AVE, VARIANCE, COVARIANCE, CORRELATION). The resulting recordset contains a
-  single record for each unique value of the “group by” fields specified in
-  the TABLE function, along with the statistics you generate with the
+  using the <!-- DNT-Start -->TABLE<!-- DNT-End --> function and the aggregate functions (<!-- DNT-Start -->COUNT<!-- DNT-End -->, <!-- DNT-Start -->SUM<!-- DNT-End -->, <!-- DNT-Start -->MIN<!-- DNT-End -->, <!-- DNT-Start -->MAX<!-- DNT-End -->,
+  <!-- DNT-Start -->AVE<!-- DNT-End -->, <!-- DNT-Start -->VARIANCE<!-- DNT-End -->, <!-- DNT-Start -->COVARIANCE<!-- DNT-End -->, <!-- DNT-Start -->CORRELATION<!-- DNT-End -->). The resulting recordset contains a
+  single record for each unique value of the âgroup byâ fields specified in
+  the <!-- DNT-Start -->TABLE<!-- DNT-End --> function, along with the statistics you generate with the
   aggregate functions.</para>
 
-  <para>The TABLE function's “group by” parameters are used and duplicated as
-  the first set of fields in the RECORD structure, followed by any number of
-  aggregate function calls, all using the GROUP keyword as the replacement for
+  <para>The <!-- DNT-Start -->TABLE<!-- DNT-End --> function's âgroup byâ parameters are used and duplicated as
+  the first set of fields in the <!-- DNT-Start -->RECORD<!-- DNT-End --> structure, followed by any number of
+  aggregate function calls, all using the <!-- DNT-Start -->GROUP<!-- DNT-End --> keyword as the replacement for
   the recordset required by the first parameter of each of the aggregate
-  functions. The GROUP keyword specifies performing the aggregate operation on
+  functions. The <!-- DNT-Start -->GROUP<!-- DNT-End --> keyword specifies performing the aggregate operation on
   the group and is the key to creating a Cross-Tab report. This creates an
-  output table containing a single row for each unique value of the “group by”
+  output table containing a single row for each unique value of the âgroup byâ
   parameters.</para>
 
   <sect2 id="A_Simple_Crosstab">
-    <title>A Simple CrossTab</title>
+    <!-- DNT-Start --><title>A Simple CrossTab</title><!-- DNT-End -->
 
-    <para>The example code below (contained in the CrossTab.ECL file) produces
+    <para>The example code below (contained in the CrossTab.<!-- DNT-Start -->ECL<!-- DNT-End --> file) produces
     an output of State/CountAccts with counts from the nested child dataset
-    created by the GenData.ECL code (see the <emphasis role="bold">Creating
+    created by the GenData.<!-- DNT-Start -->ECL<!-- DNT-End --> code (see the <emphasis role="bold">Creating
     Example Data</emphasis> article):</para>
 
-    <programlisting>IMPORT $;
+    <!-- DNT-Start --><programlisting>IMPORT $;
 Person := $.DeclareData.PersonAccounts;
 
 CountAccts := COUNT(Person.Accounts);
@@ -52,12 +52,12 @@ OUTPUT(RepTable1);
    AR     1    103
    AR     2    89
    AR     3    2    */  
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para>Slight modifications allow some more sophisticated statistics to be
     produced, such as:</para>
 
-    <programlisting>MyReportFormat2 := RECORD
+    <!-- DNT-Start --><programlisting>MyReportFormat2 := RECORD
   State{cardinality(56)}  := Person.State;
   A1          := CountAccts;
   GroupCount  := COUNT(GROUP);
@@ -68,11 +68,11 @@ OUTPUT(RepTable1);
 RepTable2 := TABLE(Person,MyReportFormat2,State,CountAccts );
 
 OUTPUT(RepTable2);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para>This adds a breakdown of how many men and women there are in each
-    category, by using the optional second parameter to COUNT (available only
-    for use in RECORD structures where its first parameter is the GROUP
+    category, by using the optional second parameter to <!-- DNT-Start -->COUNT<!-- DNT-End --> (available only
+    for use in <!-- DNT-Start -->RECORD<!-- DNT-End --> structures where its first parameter is the <!-- DNT-Start -->GROUP<!-- DNT-End -->
     keyword).</para>
 
     <para>The addition of the {cardinality(56)} to the State definition is a
@@ -85,7 +85,7 @@ OUTPUT(RepTable2);
   </sect2>
 
   <sect2 id="A_More_Complex_Example">
-    <title>A More Complex Example</title>
+    <!-- DNT-Start --><title>A More Complex Example</title><!-- DNT-End -->
 
     <para>As a slightly more complex example, the following code produces a
     Cross-Tab result table with the average balance on a bankcard trade,
@@ -95,7 +95,7 @@ OUTPUT(RepTable2);
     <para>This code demonstrates using separate aggregate attributes as the
     value parameters to the aggregate function in the CrossTab.</para>
 
-    <programlisting>IsValidType(STRING1 PassedType) := PassedType IN ['O', 'R', 'I'];
+    <!-- DNT-Start --><programlisting>IsValidType(STRING1 PassedType) := PassedType IN ['O', 'R', 'I'];
 
 IsRevolv := Person.Accounts.AcctType = 'R' OR 
         (~IsValidType(Person.Accounts.AcctType) AND 
@@ -123,18 +123,18 @@ END;
 T1 := TABLE(person, R1,  state, gender);
 
 OUTPUT(T1);
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="A_Statistical_Example">
-    <title>A Statistical Example</title>
+    <!-- DNT-Start --><title>A Statistical Example</title><!-- DNT-End -->
 
-    <para>The following example demonstrates the VARIANCE, COVARIANCE and
-    CORRELATION functions to analyze grid points. It also shows the technique
-    of putting the CrossTab into a MACRO, calling the MACRO to generate the
+    <para>The following example demonstrates the <!-- DNT-Start -->VARIANCE<!-- DNT-End -->, <!-- DNT-Start -->COVARIANCE<!-- DNT-End --> and
+    <!-- DNT-Start -->CORRELATION<!-- DNT-End --> functions to analyze grid points. It also shows the technique
+    of putting the CrossTab into a <!-- DNT-Start -->MACRO<!-- DNT-End -->, calling the <!-- DNT-Start -->MACRO<!-- DNT-End --> to generate the
     specific result for a given dataset.</para>
 
-    <programlisting>pointRec := { REAL x, REAL y };
+    <!-- DNT-Start --><programlisting>pointRec := { REAL x, REAL y };
 
 analyze( ds ) := MACRO
   #uniquename(rec)
@@ -179,7 +179,7 @@ ds3 := DATASET([{1, 1.00039},
 analyze(ds1);
 analyze(ds2);
 analyze(ds3); 
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para></para>
   </sect2>

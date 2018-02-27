@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="GetExpandLogicalFileName">
-  <title>GetExpandLogicalFileName</title>
+  <!-- DNT-Start --><title>GetExpandLogicalFileName</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">ThorLib.GetExpandLogicalFileName<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">ThorLib.GetExpandLogicalFileName<indexterm>
       <primary>STD.System.ThorLib.GetExpandLogicalFileName</primary>
     </indexterm> <indexterm>
       <primary>System.ThorLib.GetExpandLogicalFileName</primary>
@@ -13,7 +13,7 @@
     </indexterm> <indexterm>
       <primary>GetExpandLogicalFileName</primary>
     </indexterm> ( </emphasis> <emphasis>filename </emphasis> <emphasis
-  role="bold">)</emphasis></para>
+  role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -23,29 +23,29 @@
 
       <tbody>
         <row>
-          <entry><emphasis>filename</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>filename</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the logical name of the
           file.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>GetExpandLogicalFileName returns a VARSTRING
+          <entry><!-- DNT-Start -->GetExpandLogicalFileName<!-- DNT-End --> returns a <!-- DNT-Start -->VARSTRING<!-- DNT-End -->
           (null-terminated) value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">GetExpandLogicalFileName </emphasis>function
+  <para>The <emphasis role="bold"><!-- DNT-Start -->GetExpandLogicalFileName<!-- DNT-End --> </emphasis>function
   returns a string containing the expanded logical filename (ncluding the
   default scope, if the filename does not contain a leading tilde), all in
-  lowercase. This is the same value as is used internally by DATASET and
-  OUTPUT.</para>
+  lowercase. This is the same value as is used internally by <!-- DNT-Start -->DATASET<!-- DNT-End --> and
+  <!-- DNT-Start -->OUTPUT<!-- DNT-End -->.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">A := ThorLib.GetExpandLogicalFileName('Fred');</programlisting>
+  <!-- DNT-Start --><programlisting format="linespecific">A := ThorLib.GetExpandLogicalFileName('Fred');</programlisting><!-- DNT-End -->
 </sect1>

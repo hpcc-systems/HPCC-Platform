@@ -2,10 +2,10 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="PIPEOUTANDMERGE">
-  <title>HDFSConnector.PipeOutAndMerge</title>
+  <!-- DNT-Start --><title>HDFSConnector.PipeOutAndMerge</title><!-- DNT-End -->
 
   <para><emphasis
-  role="bold">HDFSConnector.PipeOutAndMerge</emphasis><emphasis> (ECL_RS,
+  role="bold">HDFSConnector.PipeOutAndMerge</emphasis><emphasis> (<!-- DNT-Start -->ECL<!-- DNT-End -->_<!-- DNT-Start -->RS<!-- DNT-End -->,
   HadoopFileName, Layout, HadoopFileFormat, HDFSHost, HDFSPort, HDFSUser
   )</emphasis></para>
 
@@ -17,46 +17,46 @@
 
         <tbody>
           <row>
-            <entry><emphasis>ECL_RS</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>ECL_RS</emphasis><!-- DNT-End --></entry>
 
-            <entry>The ECL recordset to export.</entry>
+            <entry>The <!-- DNT-Start -->ECL<!-- DNT-End --> recordset to export.</entry>
           </row>
 
           <row>
-            <entry><emphasis>HadoopFileName</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>HadoopFileName</emphasis><!-- DNT-End --></entry>
 
-            <entry>The fully qualified target HDFS file name.</entry>
+            <entry>The fully qualified target <!-- DNT-Start -->HDFS<!-- DNT-End --> file name.</entry>
           </row>
 
           <row>
-            <entry><emphasis>Layout</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>Layout</emphasis><!-- DNT-End --></entry>
 
-            <entry>The structure which describes the ECL_RS recordset.</entry>
+            <entry>The structure which describes the <!-- DNT-Start -->ECL<!-- DNT-End -->_<!-- DNT-Start -->RS<!-- DNT-End --> recordset.</entry>
           </row>
 
           <row>
-            <entry><emphasis>HadoopFileFormat</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>HadoopFileFormat</emphasis><!-- DNT-End --></entry>
 
-            <entry>The Hadoop data file format : FLAT | CSV</entry>
+            <entry>The Hadoop data file format : <!-- DNT-Start -->FLAT<!-- DNT-End --> | <!-- DNT-Start -->CSV<!-- DNT-End --></entry>
           </row>
 
           <row>
-            <entry><emphasis>HDFSHost</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>HDFSHost</emphasis><!-- DNT-End --></entry>
 
-            <entry>The Hadoop DFS host name or IP address.</entry>
+            <entry>The Hadoop <!-- DNT-Start -->DFS<!-- DNT-End --> host name or <!-- DNT-Start -->IP<!-- DNT-End --> address.</entry>
           </row>
 
           <row>
-            <entry><emphasis>HDFSPort</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>HDFSPort</emphasis><!-- DNT-End --></entry>
 
             <entry>The Hadoop NameNode port number.</entry>
           </row>
 
           <row>
-            <entry><emphasis>HDFSUser</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>HDFSUser</emphasis><!-- DNT-End --></entry>
 
-            <entry>HDFS username to use to login to HDFS in order to write the
-            file. This user must have permission to write to the target HDFS
+            <entry><!-- DNT-Start -->HDFS<!-- DNT-End --> username to use to login to <!-- DNT-Start -->HDFS<!-- DNT-End --> in order to write the
+            file. This user must have permission to write to the target <!-- DNT-Start -->HDFS<!-- DNT-End -->
             location.</entry>
           </row>
         </tbody>
@@ -64,13 +64,13 @@
     </informaltable></para>
 
   <para>The <emphasis role="bold">HDFSConnector.PipeOutAndMerge
-  </emphasis>macro writes the given <emphasis>ECL_RS</emphasis> recordset to
-  the target HDFS system in file parts and merges them together to form a
-  single target file on the HDFS system.</para>
+  </emphasis>macro writes the given <emphasis><!-- DNT-Start -->ECL<!-- DNT-End -->_<!-- DNT-Start -->RS<!-- DNT-End --></emphasis> recordset to
+  the target <!-- DNT-Start -->HDFS<!-- DNT-End --> system in file parts and merges them together to form a
+  single target file on the <!-- DNT-Start -->HDFS<!-- DNT-End --> system.</para>
 
   <para>Example:</para>
 
-  <programlisting>#OPTION('pickBestEngine', 0);  
+  <!-- DNT-Start --><programlisting>#OPTION('pickBestEngine', 0);  
 IMPORT std;
 IMPORT DataConnectors;
 Layout_Flat :=RECORD
@@ -92,11 +92,11 @@ DataConnectors.HDFSConnector.PipeOutAndMerge(MyDataFile,
                                     '192.168.56.120', 
                                     54310, 
                                     'hadoopusername' );
-</programlisting>
+</programlisting><!-- DNT-End -->
 
   <?hard-pagebreak ?>
 
-  <programlisting>#OPTION('pickBestEngine', 0);  
+  <!-- DNT-Start --><programlisting>#OPTION('pickBestEngine', 0);  
 IMPORT std;
 IMPORT DataConnectors;
 Layout_CSV := RECORD
@@ -118,7 +118,7 @@ DataConnectors.HDFSConnector.PipeOutAndMerge(MyDataFile,
                                     '192.168.56.120', 
                                     54310, 
                                     'hadoopusername' );
-</programlisting>
+</programlisting><!-- DNT-End -->
 
   <para></para>
 </sect1>

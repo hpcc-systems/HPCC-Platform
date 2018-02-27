@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="VizTwoD">
-  <title><emphasis>Two-Dimensional Methods</emphasis></title>
+  <!-- DNT-Start --><title><emphasis>Two-Dimensional Methods</emphasis></title><!-- DNT-End -->
 
   <para>This section covers methods that create two-dimensional visualizations
   contained in the TwoD module. These methods provide ways to depict data in a
@@ -11,14 +11,14 @@
   <para></para>
 
   <sect1 id="VizBubble">
-    <title>Bubble</title>
+    <!-- DNT-Start --><title>Bubble</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">Visualizer.TwoD.Bubble(<indexterm>
-        <primary>Visualizer.TwoD.Bubble</primary>
+    <para><emphasis role="bold">Visualizer.TwoD.<!-- DNT-Start -->Bubble<!-- DNT-End -->(<indexterm>
+        <primary>Visualizer.TwoD.<!-- DNT-Start -->Bubble<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>TwoD.Bubble</primary>
+        <primary>TwoD.<!-- DNT-Start -->Bubble<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>Bubble</primary>
+        <primary><!-- DNT-Start -->Bubble<!-- DNT-End --></primary>
       </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
     role="bold">[</emphasis><emphasis>dataSource</emphasis><emphasis
     role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
@@ -37,46 +37,46 @@
 
         <tbody>
           <row>
-            <entry><emphasis>id</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>id</emphasis><!-- DNT-End --></entry>
 
             <entry>Unique identifier for the visualization</entry>
           </row>
 
           <row>
-            <entry><emphasis>dataSource</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>dataSource</emphasis><!-- DNT-End --></entry>
 
-            <entry>Location of the result set (WUID, Logical File, Roxie
-            query), defaults to the current WU</entry>
+            <entry>Location of the result set (<!-- DNT-Start -->WUID<!-- DNT-End -->, Logical File, Roxie
+            query), defaults to the current <!-- DNT-Start -->WU<!-- DNT-End --></entry>
           </row>
 
           <row>
-            <entry><emphasis>outputName</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>outputName</emphasis><!-- DNT-End --></entry>
 
             <entry>Result set name (ignored for Logical Files)</entry>
           </row>
 
           <row>
-            <entry><emphasis>mappings</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>mappings</emphasis><!-- DNT-End --></entry>
 
             <entry>Maps human labels &lt;--&gt; field Ids</entry>
           </row>
 
           <row>
-            <entry><emphasis>filteredBy</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>filteredBy</emphasis><!-- DNT-End --></entry>
 
             <entry>Filter condition (also useful for widget
             interactions)</entry>
           </row>
 
           <row>
-            <entry><emphasis>properties</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>properties</emphasis><!-- DNT-End --></entry>
 
             <entry>Dermatology properties. See <link
             linkend="VizDermProp">Dermatology Properties</link></entry>
           </row>
 
           <row>
-            <entry>Return:<emphasis></emphasis></entry>
+            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
 
             <entry>A "meta" output describing the visualization.</entry>
           </row>
@@ -84,7 +84,7 @@
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold">Bubble </emphasis>visualization method
+    <para>The <emphasis role="bold"><!-- DNT-Start -->Bubble<!-- DNT-End --> </emphasis>visualization method
     creates a bubble chart from two-dimensional data. A bubble chart is a
     variation of a pie chart where data points are shown as bubbles and the
     size of the bubble is represented by the second dimension of the
@@ -92,7 +92,7 @@
 
     <para>Example:</para>
 
-    <programlisting format="linespecific">IMPORT Visualizer;
+    <!-- DNT-Start --><programlisting format="linespecific">IMPORT Visualizer;
 ds := DATASET([ {'English', 5},
                 {'History', 17},
                 {'Geography', 7},
@@ -107,18 +107,18 @@ data_example := OUTPUT(ds, NAMED('Chart2D__test'));
 data_example;
 viz_bubble := Visualizer.TwoD.Bubble('bubble',, 'Chart2D__test');
 viz_bubble;
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect1>
 
   <sect1 id="VizPie">
-    <title>Pie</title>
+    <!-- DNT-Start --><title>Pie</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">Visualizer.TwoD.Pie(<indexterm>
-        <primary>Visualizer.TwoD.Pie</primary>
+    <para><emphasis role="bold">Visualizer.TwoD.<!-- DNT-Start -->Pie<!-- DNT-End -->(<indexterm>
+        <primary>Visualizer.TwoD.<!-- DNT-Start -->Pie<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>TwoD.Pie</primary>
+        <primary>TwoD.<!-- DNT-Start -->Pie<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>Pie</primary>
+        <primary><!-- DNT-Start -->Pie<!-- DNT-End --></primary>
       </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
     role="bold">[</emphasis><emphasis>dataSource</emphasis><emphasis
     role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
@@ -137,46 +137,46 @@ viz_bubble;
 
         <tbody>
           <row>
-            <entry><emphasis>id</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>id</emphasis><!-- DNT-End --></entry>
 
             <entry>Unique identifier for the visualization</entry>
           </row>
 
           <row>
-            <entry><emphasis>dataSource</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>dataSource</emphasis><!-- DNT-End --></entry>
 
-            <entry>Location of the result set (WUID, Logical File, Roxie
-            query), defaults to the current WU</entry>
+            <entry>Location of the result set (<!-- DNT-Start -->WUID<!-- DNT-End -->, Logical File, Roxie
+            query), defaults to the current <!-- DNT-Start -->WU<!-- DNT-End --></entry>
           </row>
 
           <row>
-            <entry><emphasis>outputName</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>outputName</emphasis><!-- DNT-End --></entry>
 
             <entry>Result set name (ignored for Logical Files)</entry>
           </row>
 
           <row>
-            <entry><emphasis>mappings</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>mappings</emphasis><!-- DNT-End --></entry>
 
             <entry>Maps human labels &lt;--&gt; field Ids</entry>
           </row>
 
           <row>
-            <entry><emphasis>filteredBy</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>filteredBy</emphasis><!-- DNT-End --></entry>
 
             <entry>Filter condition (also useful for widget
             interactions)</entry>
           </row>
 
           <row>
-            <entry><emphasis>properties</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>properties</emphasis><!-- DNT-End --></entry>
 
             <entry>Dermatology properties. See <link
             linkend="VizDermProp">Dermatology Properties</link></entry>
           </row>
 
           <row>
-            <entry>Return:<emphasis></emphasis></entry>
+            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
 
             <entry>A "meta" output describing the visualization.</entry>
           </row>
@@ -184,14 +184,14 @@ viz_bubble;
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold">Pie </emphasis>visualization method
+    <para>The <emphasis role="bold"><!-- DNT-Start -->Pie<!-- DNT-End --> </emphasis>visualization method
     creates a pie chart from two-dimensional data. A pie chart is a graph in
     which a circle is divided into secions representing a portion of the
     whole.</para>
 
     <para>Example:</para>
 
-    <programlisting format="linespecific">IMPORT Visualizer;
+    <!-- DNT-Start --><programlisting format="linespecific">IMPORT Visualizer;
 ds := DATASET([ {'English', 5},
                 {'History', 17},
                 {'Geography', 7},
@@ -206,18 +206,18 @@ data_example := OUTPUT(ds, NAMED('Chart2D__test'));
 data_example;
 viz_pie := Visualizer.TwoD.Pie('pie',, 'Chart2D__test');
 viz_pie;
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect1>
 
   <sect1 id="VizSummary">
-    <title>Summary</title>
+    <!-- DNT-Start --><title>Summary</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">Visualizer.TwoD.Summary(<indexterm>
-        <primary>Visualizer.TwoD.Summary</primary>
+    <para><emphasis role="bold">Visualizer.TwoD.<!-- DNT-Start -->Summary<!-- DNT-End -->(<indexterm>
+        <primary>Visualizer.TwoD.<!-- DNT-Start -->Summary<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>TwoD.Summary</primary>
+        <primary>TwoD.<!-- DNT-Start -->Summary<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>Summary</primary>
+        <primary><!-- DNT-Start -->Summary<!-- DNT-End --></primary>
       </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
     role="bold">[</emphasis><emphasis>dataSource</emphasis><emphasis
     role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
@@ -236,46 +236,46 @@ viz_pie;
 
         <tbody>
           <row>
-            <entry><emphasis>id</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>id</emphasis><!-- DNT-End --></entry>
 
             <entry>Unique identifier for the visualization</entry>
           </row>
 
           <row>
-            <entry><emphasis>dataSource</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>dataSource</emphasis><!-- DNT-End --></entry>
 
-            <entry>Location of the result set (WUID, Logical File, Roxie
-            query), defaults to the current WU</entry>
+            <entry>Location of the result set (<!-- DNT-Start -->WUID<!-- DNT-End -->, Logical File, Roxie
+            query), defaults to the current <!-- DNT-Start -->WU<!-- DNT-End --></entry>
           </row>
 
           <row>
-            <entry><emphasis>outputName</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>outputName</emphasis><!-- DNT-End --></entry>
 
             <entry>Result set name (ignored for Logical Files)</entry>
           </row>
 
           <row>
-            <entry><emphasis>mappings</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>mappings</emphasis><!-- DNT-End --></entry>
 
             <entry>Maps human labels &lt;--&gt; field Ids</entry>
           </row>
 
           <row>
-            <entry><emphasis>filteredBy</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>filteredBy</emphasis><!-- DNT-End --></entry>
 
             <entry>Filter condition (also useful for widget
             interactions)</entry>
           </row>
 
           <row>
-            <entry><emphasis>properties</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>properties</emphasis><!-- DNT-End --></entry>
 
             <entry>Dermatology properties. See <link
             linkend="VizDermProp">Dermatology Properties</link></entry>
           </row>
 
           <row>
-            <entry>Return:<emphasis></emphasis></entry>
+            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
 
             <entry>A "meta" output describing the visualization.</entry>
           </row>
@@ -283,13 +283,13 @@ viz_pie;
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold">Summary </emphasis>visualization method
+    <para>The <emphasis role="bold"><!-- DNT-Start -->Summary<!-- DNT-End --> </emphasis>visualization method
     creates a summary chart from two-dimensional data. The summary graph
     defaults to graphic showing scrolling data values.</para>
 
     <para>Example:</para>
 
-    <programlisting format="linespecific">IMPORT Visualizer;
+    <!-- DNT-Start --><programlisting format="linespecific">IMPORT Visualizer;
 ds := DATASET([ {'English', 5},
                 {'History', 17},
                 {'Geography', 7},
@@ -304,18 +304,18 @@ data_example := OUTPUT(ds, NAMED('Chart2D__test'));
 data_example;
 viz_Summary := Visualizer.TwoD.Summary('Summary',, 'Chart2D__test');
 viz_Summary;
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect1>
 
   <sect1 id="VizWordCloud">
-    <title>WordCloud</title>
+    <!-- DNT-Start --><title>WordCloud</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">Visualizer.TwoD.WordCloud(<indexterm>
-        <primary>Visualizer.TwoD.WordCloud</primary>
+    <para><emphasis role="bold">Visualizer.TwoD.<!-- DNT-Start -->WordCloud<!-- DNT-End -->(<indexterm>
+        <primary>Visualizer.TwoD.<!-- DNT-Start -->WordCloud<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>TwoD.WordCloud</primary>
+        <primary>TwoD.<!-- DNT-Start -->WordCloud<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>WordCloud</primary>
+        <primary><!-- DNT-Start -->WordCloud<!-- DNT-End --></primary>
       </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
     role="bold">[</emphasis><emphasis>dataSource</emphasis><emphasis
     role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
@@ -334,46 +334,46 @@ viz_Summary;
 
         <tbody>
           <row>
-            <entry><emphasis>id</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>id</emphasis><!-- DNT-End --></entry>
 
             <entry>Unique identifier for the visualization</entry>
           </row>
 
           <row>
-            <entry><emphasis>dataSource</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>dataSource</emphasis><!-- DNT-End --></entry>
 
-            <entry>Location of the result set (WUID, Logical File, Roxie
-            query), defaults to the current WU</entry>
+            <entry>Location of the result set (<!-- DNT-Start -->WUID<!-- DNT-End -->, Logical File, Roxie
+            query), defaults to the current <!-- DNT-Start -->WU<!-- DNT-End --></entry>
           </row>
 
           <row>
-            <entry><emphasis>outputName</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>outputName</emphasis><!-- DNT-End --></entry>
 
             <entry>Result set name (ignored for Logical Files)</entry>
           </row>
 
           <row>
-            <entry><emphasis>mappings</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>mappings</emphasis><!-- DNT-End --></entry>
 
             <entry>Maps human labels &lt;--&gt; field Ids</entry>
           </row>
 
           <row>
-            <entry><emphasis>filteredBy</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>filteredBy</emphasis><!-- DNT-End --></entry>
 
             <entry>Filter condition (also useful for widget
             interactions)</entry>
           </row>
 
           <row>
-            <entry><emphasis>properties</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>properties</emphasis><!-- DNT-End --></entry>
 
             <entry>Dermatology properties. See <link
             linkend="VizDermProp">Dermatology Properties</link></entry>
           </row>
 
           <row>
-            <entry>Return:<emphasis></emphasis></entry>
+            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
 
             <entry>A "meta" output describing the visualization.</entry>
           </row>
@@ -381,15 +381,15 @@ viz_Summary;
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold">WordCloud </emphasis>visualization method
-    creates a word cloud chart from two-dimensional data. A WordCloud is
+    <para>The <emphasis role="bold"><!-- DNT-Start -->WordCloud<!-- DNT-End --> </emphasis>visualization method
+    creates a word cloud chart from two-dimensional data. A <!-- DNT-Start -->WordCloud<!-- DNT-End --> is
     weighted word list in visual design. It is a visual representation for
     text data, typically used to depict the weight or importance of words by
     the font size or color.</para>
 
     <para>Example:</para>
 
-    <programlisting format="linespecific">IMPORT Visualizer;
+    <!-- DNT-Start --><programlisting format="linespecific">IMPORT Visualizer;
 ds := DATASET([ {'English', 5},
                 {'History', 17},
                 {'Geography', 7},
@@ -404,6 +404,6 @@ data_example := OUTPUT(ds, NAMED('Chart2D__test'));
 data_example;
 viz_WordCloud := Visualizer.TwoD.WordCloud('WordCloud',, 'Chart2D__test');
 viz_WordCloud;
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect1>
 </chapter>

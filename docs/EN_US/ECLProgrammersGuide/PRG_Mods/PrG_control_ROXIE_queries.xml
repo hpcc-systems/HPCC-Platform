@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Controlling_Roxie_Queries">
-  <title>Controlling Roxie Queries</title>
+  <!-- DNT-Start --><title>Controlling Roxie Queries</title><!-- DNT-End -->
 
-  <para>There are several ECL functions that are designed specifically to help
-  optimize queries for execution on Roxie. These include PRELOAD, ALLNODES,
-  THISNODE, LOCAL, and NOLOCAL. Understanding how all these functions work
+  <para>There are several <!-- DNT-Start -->ECL<!-- DNT-End --> functions that are designed specifically to help
+  optimize queries for execution on Roxie. These include <!-- DNT-Start -->PRELOAD<!-- DNT-End -->, <!-- DNT-Start -->ALLNODES<!-- DNT-End -->,
+  <!-- DNT-Start -->THISNODE<!-- DNT-End -->, <!-- DNT-Start -->LOCAL<!-- DNT-End -->, and <!-- DNT-Start -->NOLOCAL<!-- DNT-End -->. Understanding how all these functions work
   together can make a big difference in the performance of your Roxie
   queries.</para>
 
   <sect2 id="How_Graphs_Execute">
-    <title>How Graphs Execute</title>
+    <!-- DNT-Start --><title>How Graphs Execute</title><!-- DNT-End -->
 
     <para>Writing efficient queries for Roxie or Thor can require an
     understanding of how the different clusters operate. This brings up three
@@ -26,7 +26,7 @@
     <para>Does an operation coordinate with the same operation on other nodes,
     or does each node operate independently?</para>
 
-    <para>Here's how queries “normally” execute on each type of
+    <para>Here's how queries ânormallyâ execute on each type of
     cluster:</para>
 
     <para><informaltable colsep="0" frame="none" rowsep="0">
@@ -37,7 +37,7 @@
 
           <tbody>
             <row>
-              <entry><emphasis role="bold">Thor</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">Thor</emphasis><!-- DNT-End --></entry>
 
               <entry>Graphs execute on multiple slave nodes in
               parallel.</entry>
@@ -53,7 +53,7 @@
             <row>
               <entry></entry>
 
-              <entry>All other disk access (FETCH, keyed JOIN, etc.) are
+              <entry>All other disk access (<!-- DNT-Start -->FETCH<!-- DNT-End -->, keyed <!-- DNT-Start -->JOIN<!-- DNT-End -->, etc.) are
               effectively accessed across all nodes.</entry>
             </row>
 
@@ -61,7 +61,7 @@
               <entry></entry>
 
               <entry>Coordination with operations on other nodes is controlled
-              by the presence or absence of the LOCAL option on the
+              by the presence or absence of the <!-- DNT-Start -->LOCAL<!-- DNT-End --> option on the
               operation.</entry>
             </row>
 
@@ -73,16 +73,16 @@
             </row>
 
             <row>
-              <entry><emphasis role="bold">hthor</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">hthor</emphasis><!-- DNT-End --></entry>
 
-              <entry>Graphs execute on the single ECL Agent node.</entry>
+              <entry>Graphs execute on the single <!-- DNT-Start -->ECL<!-- DNT-End --> Agent node.</entry>
             </row>
 
             <row>
               <entry></entry>
 
               <entry>All parts of the dataset/index are accessed by directly
-              accessing the disk drive of the node with the data—no other
+              accessing the disk drive of the node with the dataâno other
               interaction with the other nodes.</entry>
             </row>
 
@@ -94,7 +94,7 @@
             </row>
 
             <row>
-              <entry><emphasis role="bold">Roxie</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">Roxie</emphasis><!-- DNT-End --></entry>
 
               <entry>Graphs execute on a single (Roxie server) node.</entry>
             </row>
@@ -103,7 +103,7 @@
               <entry></entry>
 
               <entry>All parts of the dataset/index are accessed by directly
-              accessing the disk drive of the node with the data—no other
+              accessing the disk drive of the node with the dataâno other
               interaction with the other nodes.</entry>
             </row>
 
@@ -119,27 +119,27 @@
   </sect2>
 
   <sect2 id="ALLNODES_vs_THISNODE">
-    <title>ALLNODES vs. THISNODE</title>
+    <!-- DNT-Start --><title>ALLNODES vs. THISNODE</title><!-- DNT-End -->
 
     <para>In Roxie, graphs execute on a single Roxie server node unless the
-    ALLNODES() function is used. ALLNODES() causes the portion of the query it
+    <!-- DNT-Start -->ALLNODES<!-- DNT-End -->() function is used. <!-- DNT-Start -->ALLNODES<!-- DNT-End -->() causes the portion of the query it
     encloses to execute on all agent nodes in parallel. The results are
     calculated independently on each node then merged together, without
     ordering the records. It is generally used to do some complex remote
     processing which only requires local index access, substantially reducing
     the network traffic between the nodes.</para>
 
-    <para>By default, everything within the ALLNODES() will be executed on all
-    the nodes, but sometimes the ALLNODES() query requires some input or
-    arguments that shouldn't be executed on all the nodes—for example, the
+    <para>By default, everything within the <!-- DNT-Start -->ALLNODES<!-- DNT-End -->() will be executed on all
+    the nodes, but sometimes the <!-- DNT-Start -->ALLNODES<!-- DNT-End -->() query requires some input or
+    arguments that shouldn't be executed on all the nodesâfor example, the
     previous best guess at the results, or some information controlling the
-    parallel query. The THISNODE() function can be used to surround element
+    parallel query. The <!-- DNT-Start -->THISNODE<!-- DNT-End -->() function can be used to surround element
     that are to be evaluated by the current node instead.</para>
 
     <para>A typical usage would look like this:</para>
 
-    <programlisting>bestSearchResults := ALLNODES(doRemoteSearch(THISNODE(searchWords),THISNODE(previousResults)))
-</programlisting>
+    <!-- DNT-Start --><programlisting>bestSearchResults := ALLNODES(doRemoteSearch(THISNODE(searchWords),THISNODE(previousResults)))
+</programlisting><!-- DNT-End -->
 
     <para>Where 'searchWords' and 'previousResults' are effectively calculated
     on the current node, and then passed as parameters to each instance of the
@@ -147,80 +147,80 @@
   </sect2>
 
   <sect2 id="LOCAL_vs_NOLOCAL">
-    <title>LOCAL vs. NOLOCAL</title>
+    <!-- DNT-Start --><title>LOCAL vs. NOLOCAL</title><!-- DNT-End -->
 
-    <para>The LOCAL option available on many functions (like JOIN, SORT, etc.)
-    and the LOCAL() and NOLOCAL() functions control whether the graphs running
+    <para>The <!-- DNT-Start -->LOCAL<!-- DNT-End --> option available on many functions (like <!-- DNT-Start -->JOIN<!-- DNT-End -->, <!-- DNT-Start -->SORT<!-- DNT-End -->, etc.)
+    and the <!-- DNT-Start -->LOCAL<!-- DNT-End -->() and <!-- DNT-Start -->NOLOCAL<!-- DNT-End -->() functions control whether the graphs running
     on a particular node access all parts of a file/index or only those
-    associated with the particular node (LOCAL). Often within an ALLNODES()
+    associated with the particular node (<!-- DNT-Start -->LOCAL<!-- DNT-End -->). Often within an <!-- DNT-Start -->ALLNODES<!-- DNT-End -->()
     context you only want to access local index parts from a single node
     because each node is independently processing its associated parts.
-    Specifying that an index read or a keyed JOIN is LOCAL means that only the
-    local part is used on each node. A local read of a single part INDEX will
+    Specifying that an index read or a keyed <!-- DNT-Start -->JOIN<!-- DNT-End --> is <!-- DNT-Start -->LOCAL<!-- DNT-End --> means that only the
+    local part is used on each node. A local read of a single part <!-- DNT-Start -->INDEX<!-- DNT-End --> will
     only be evaluated on the first agent node (or the farmer node if not
-    within an ALLNODES)</para>
+    within an <!-- DNT-Start -->ALLNODES<!-- DNT-End -->)</para>
 
     <para>Local evaluation can be specified in two ways:</para>
 
     <blockquote>
       <para>1) As a dataset operation:</para>
 
-      <programlisting>LOCAL(MyIndex)(myField = searchField)</programlisting>
+      <!-- DNT-Start --><programlisting>LOCAL(MyIndex)(myField = searchField)</programlisting><!-- DNT-End -->
 
       <para>2) As an option on the operation:</para>
 
-      <programlisting>JOIN(... ,LOCAL)
-FETCH(... ,LOCAL)</programlisting>
+      <!-- DNT-Start --><programlisting>JOIN(... ,LOCAL)
+FETCH(... ,LOCAL)</programlisting><!-- DNT-End -->
     </blockquote>
 
-    <para>The LOCAL(<emphasis>dataset</emphasis>) function causes every
+    <para>The <!-- DNT-Start -->LOCAL<!-- DNT-End -->(<emphasis>dataset</emphasis>) function causes every
     operation on the <emphasis>dataset</emphasis> to access the file/key
     locally. For example,</para>
 
-    <programlisting>LOCAL(JOIN(index1, index2,...))</programlisting>
+    <!-- DNT-Start --><programlisting>LOCAL(JOIN(index1, index2,...))</programlisting><!-- DNT-End -->
 
     <para>will read index1 and index2 locally. This rule is recursively
     applied until you reach one of the following:</para>
 
     <blockquote>
-      <para>Use of the NOLOCAL() function</para>
+      <para>Use of the <!-- DNT-Start -->NOLOCAL<!-- DNT-End -->() function</para>
 
-      <para>A non-local attribute—the operation stays non-local, but children
+      <para>A non-local attributeâthe operation stays non-local, but children
       are still marked as local as necessary</para>
 
-      <para>A GLOBAL() or THISNODE() or workflow operation—since they will be
+      <para>A <!-- DNT-Start -->GLOBAL<!-- DNT-End -->() or <!-- DNT-Start -->THISNODE<!-- DNT-End -->() or workflow operationâsince they will be
       evaluated in a different context</para>
 
-      <para>Use of the ALLNODES() function (as in a nested child query)</para>
+      <para>Use of the <!-- DNT-Start -->ALLNODES<!-- DNT-End -->() function (as in a nested child query)</para>
     </blockquote>
 
     <para>Note that:</para>
 
-    <para>JOIN(x, LOCAL(index1)...) is treated the same as JOIN(x, index1,
+    <para><!-- DNT-Start -->JOIN<!-- DNT-End -->(x, <!-- DNT-Start -->LOCAL<!-- DNT-End -->(index1)...) is treated the same as <!-- DNT-Start -->JOIN<!-- DNT-End -->(x, index1,
     ..., local).</para>
 
-    <para>LOCAL is also supported as an option on an INDEX, but the LOCAL()
+    <para><!-- DNT-Start -->LOCAL<!-- DNT-End --> is also supported as an option on an <!-- DNT-Start -->INDEX<!-- DNT-End -->, but the <!-- DNT-Start -->LOCAL<!-- DNT-End -->()
     function is preferred, because it generally depends on the context an
     index is used in whether or not access to it should be local or
     not.</para>
 
-    <para>A non-local attribute is supported everywhere that a LOCAL attribute
-    is allowed - to override an enclosing LOCAL() function.</para>
+    <para>A non-local attribute is supported everywhere that a <!-- DNT-Start -->LOCAL<!-- DNT-End --> attribute
+    is allowed - to override an enclosing <!-- DNT-Start -->LOCAL<!-- DNT-End -->() function.</para>
 
-    <para>The use of LOCAL to indicate that dataset/key access is local does
+    <para>The use of <!-- DNT-Start -->LOCAL<!-- DNT-End --> to indicate that dataset/key access is local does
     not conflict with its use to control coordination of an operation with
     other nodes, because there is no operation that potentially co-ordinates
     with other nodes and also accesses indexes or datasets.</para>
   </sect2>
 
   <sect2 id="NOROOT_Indexes">
-    <title>NOROOT Indexes</title>
+    <!-- DNT-Start --><title>NOROOT Indexes</title><!-- DNT-End -->
 
-    <para>The ALLNODES() function is particularly useful if there is more than
+    <para>The <!-- DNT-Start -->ALLNODES<!-- DNT-End -->() function is particularly useful if there is more than
     one index co-distributed on a particular value so that all information
     that relates to a particular key field value is associated with the same
     node. However generally indexes are globally sorted. <emphasis
-    role="bold">Adding a NOROOT option to a BUILD action or INDEX declaration
+    role="bold">Adding a <!-- DNT-Start -->NOROOT<!-- DNT-End --> option to a <!-- DNT-Start -->BUILD<!-- DNT-End --> action or <!-- DNT-Start -->INDEX<!-- DNT-End --> declaration
     indicates that the index is </emphasis><emphasis
     role="bold">not</emphasis><emphasis role="bold"> globally sorted, and
     there is no root index to indicate which part of the index will contain a

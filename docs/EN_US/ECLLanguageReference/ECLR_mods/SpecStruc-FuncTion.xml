@@ -2,24 +2,24 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="FUNCTION_Structure">
-  <title>FUNCTION Structure<indexterm>
+  <!-- DNT-Start --><title>FUNCTION Structure<indexterm>
       <primary>FUNCTION Structure</primary>
-    </indexterm></title>
+    </indexterm></title><!-- DNT-End -->
 
   <para><emphasis>[</emphasis><emphasis>resulttype</emphasis><emphasis
   role="bold">]</emphasis><emphasis> funcname </emphasis><emphasis
   role="bold">(</emphasis><emphasis> parameterlist </emphasis><emphasis
-  role="bold">) := FUNCTION<indexterm>
-      <primary>FUNCTION</primary>
+  role="bold">) := <!-- DNT-Start -->FUNCTION<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->FUNCTION<!-- DNT-End --></primary>
     </indexterm></emphasis><emphasis role="bold"> </emphasis></para>
 
   <para><emphasis role="bold"></emphasis><emphasis>code</emphasis> <emphasis
   role="bold"></emphasis></para>
 
-  <para><emphasis role="bold"> RETURN</emphasis>
+  <para><emphasis role="bold"> <!-- DNT-Start -->RETURN<!-- DNT-End --></emphasis>
   <emphasis>retval</emphasis>;</para>
 
-  <para><emphasis role="bold">END;</emphasis></para>
+  <para><emphasis role="bold"><!-- DNT-Start -->END<!-- DNT-End -->;</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -29,45 +29,45 @@
 
       <tbody>
         <row>
-          <entry><emphasis>resulttype</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>resulttype</emphasis><!-- DNT-End --></entry>
 
           <entry>The return value type of the function. If omitted, the type
           is implicit from the <emphasis>retval</emphasis> expression.</entry>
         </row>
 
         <row>
-          <entry><emphasis>funcname</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>funcname</emphasis><!-- DNT-End --></entry>
 
-          <entry><para>The ECL attribute name of the function.</para></entry>
+          <entry><para>The <!-- DNT-Start -->ECL<!-- DNT-End --> attribute name of the function.</para></entry>
         </row>
 
         <row>
-          <entry><emphasis>parameterlist</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>parameterlist</emphasis><!-- DNT-End --></entry>
 
           <entry>A comma separated list of the parameters to pass to the
           <emphasis>function</emphasis>. These are available to all attributes
-          defined in the FUNCTION's <emphasis>code</emphasis>.</entry>
+          defined in the <!-- DNT-Start -->FUNCTION<!-- DNT-End -->'s <emphasis>code</emphasis>.</entry>
         </row>
 
         <row>
-          <entry><emphasis>code</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>code</emphasis><!-- DNT-End --></entry>
 
           <entry>The local attribute definitions that comprise the function.
-          These may not be EXPORT or SHARED attributes, but may include
-          actions (like OUTPUT).</entry>
+          These may not be <!-- DNT-Start -->EXPORT<!-- DNT-End --> or <!-- DNT-Start -->SHARED<!-- DNT-End --> attributes, but may include
+          actions (like <!-- DNT-Start -->OUTPUT<!-- DNT-End -->).</entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">RETURN<indexterm>
+          <entry><!-- DNT-Start --><emphasis role="bold">RETURN<indexterm>
               <primary>RETURN</primary>
-            </indexterm></emphasis></entry>
+            </indexterm></emphasis><!-- DNT-End --></entry>
 
-          <entry>Specifies the function's return value expression—the
+          <entry>Specifies the function's return value expressionâthe
           <emphasis>retval</emphasis>.</entry>
         </row>
 
         <row>
-          <entry><emphasis>retval</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>retval</emphasis><!-- DNT-End --></entry>
 
           <entry>The value, expression, recordset, row (record), or action to
           return.</entry>
@@ -76,19 +76,19 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">FUNCTION </emphasis>structure allows you to
+  <para>The <emphasis role="bold"><!-- DNT-Start -->FUNCTION<!-- DNT-End --> </emphasis>structure allows you to
   pass parameters to a set of related attribute definitions. This makes it
   possible to pass parameters to an attribute that is defined in terms of
   other non-exported attributes without the need to parameterise all of those
   as well.</para>
 
   <para>Side-effect actions contained in the <emphasis>code</emphasis> of the
-  FUNCTION must have definition names that must be referenced by the WHEN
+  <!-- DNT-Start -->FUNCTION<!-- DNT-End --> must have definition names that must be referenced by the <!-- DNT-Start -->WHEN<!-- DNT-End -->
   function to execute.</para>
 
   <para>Example:</para>
 
-  <programlisting>EXPORT doProjectChild(parentRecord l,UNSIGNED idAdjust2) := FUNCTION
+  <!-- DNT-Start --><programlisting>EXPORT doProjectChild(parentRecord l,UNSIGNED idAdjust2) := FUNCTION
   newChildRecord copyChild(childRecord l) := TRANSFORM
      SELF.person_id := l.person_id + idAdjust2;
      SELF := l;
@@ -237,9 +237,9 @@ END;
 
 OperateOnNumbers(23,22).Multiplied;
 OperateOnNumbers(23,22).Differenced;
-OperateOnNumbers(23,22).Summed;   </programlisting>
+OperateOnNumbers(23,22).Summed;   </programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="MODULE_Structure">MODULE Structure</link>,
-  <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link
-  linkend="WHEN">WHEN</link></para>
+  <para>See Also: <link linkend="MODULE_Structure"><!-- DNT-Start -->MODULE<!-- DNT-End --> Structure</link>,
+  <link linkend="TRANSFORM_Structure"><!-- DNT-Start -->TRANSFORM<!-- DNT-End --> Structure</link>, <link
+  linkend="WHEN"><!-- DNT-Start -->WHEN<!-- DNT-End --></link></para>
 </sect1>

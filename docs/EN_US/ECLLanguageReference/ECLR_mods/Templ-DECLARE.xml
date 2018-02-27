@@ -2,10 +2,10 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_DECLARE">
-  <title>#DECLARE</title>
+  <!-- DNT-Start --><title>#DECLARE</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">#DECLARE<indexterm>
-      <primary>#DECLARE</primary>
+  <para><emphasis role="bold">#<!-- DNT-Start -->DECLARE<!-- DNT-End --><indexterm>
+      <primary>#<!-- DNT-Start -->DECLARE<!-- DNT-End --></primary>
     </indexterm>( </emphasis><emphasis>symbol </emphasis><emphasis
   role="bold">);</emphasis></para>
 
@@ -17,7 +17,7 @@
 
         <tbody>
           <row>
-            <entry><emphasis>symbol</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>symbol</emphasis><!-- DNT-End --></entry>
 
             <entry>The name of the template variable.</entry>
           </row>
@@ -25,7 +25,7 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">#DECLARE </emphasis>statement declares a
+  <para>The <emphasis role="bold">#<!-- DNT-Start -->DECLARE<!-- DNT-End --> </emphasis>statement declares a
   user-defined <emphasis>symbol</emphasis> for use in the template. The
   <emphasis>symbol</emphasis> is simply created and not initialized to any
   particular value, therefore it may be destined to contain either string or
@@ -33,9 +33,9 @@
 
   <para>Example:</para>
 
-  <programlisting>  #DECLARE(MySymbol); //declare a symbol named "MySymbol"
+  <!-- DNT-Start --><programlisting>  #DECLARE(MySymbol); //declare a symbol named "MySymbol"
   #SET(MySymbol,1); //initialize MySymbol to 1
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="_SET">#SET</link>, <link linkend="_APPEND">#APPEND</link></para>
+  <para>See Also: <link linkend="_SET">#<!-- DNT-Start -->SET<!-- DNT-End --></link>, <link linkend="_APPEND">#<!-- DNT-Start -->APPEND<!-- DNT-End --></link></para>
 </sect1>

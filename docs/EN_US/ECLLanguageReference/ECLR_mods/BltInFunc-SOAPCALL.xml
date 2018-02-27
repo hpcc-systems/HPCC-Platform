@@ -2,38 +2,38 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SOAPCALL">
-  <title>SOAPCALL<indexterm>
+  <!-- DNT-Start --><title>SOAPCALL<indexterm>
       <primary>SOAPCALL</primary>
-    </indexterm></title>
+    </indexterm></title><!-- DNT-End -->
 
   <para><emphasis>result</emphasis><emphasis role="bold"> :=
-  SOAPCALL<indexterm>
-      <primary>SOAPCALL Function</primary>
+  <!-- DNT-Start -->SOAPCALL<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->SOAPCALL<!-- DNT-End --> Function</primary>
     </indexterm>( [ </emphasis><emphasis>recset, </emphasis><emphasis
   role="bold">]</emphasis><emphasis> url, service, instructure,
   </emphasis><emphasis role="bold">[ </emphasis><emphasis>transform,
   </emphasis><emphasis role="bold">]</emphasis><emphasis role="bold">
-  DATASET<indexterm>
-      <primary>DATASET</primary>
+  <!-- DNT-Start -->DATASET<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->DATASET<!-- DNT-End --></primary>
     </indexterm>(</emphasis><emphasis>outstructure</emphasis><emphasis
   role="bold">) </emphasis><emphasis>| outstructure </emphasis><emphasis
   role="bold">[</emphasis><emphasis>, options </emphasis><emphasis
-  role="bold">]</emphasis> <emphasis role="bold">[, UNORDERED |
-  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
-  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
-  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  role="bold">]</emphasis> <emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> |
+  <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis>
   <emphasis>name </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
-  <para><emphasis role="bold">SOAPCALL( [ </emphasis><emphasis>recset,
+  <para><emphasis role="bold"><!-- DNT-Start -->SOAPCALL<!-- DNT-End -->( [ </emphasis><emphasis>recset,
   </emphasis><emphasis role="bold">]</emphasis><emphasis> url, service,
   instructure, </emphasis><emphasis role="bold">[
   </emphasis><emphasis>transform, </emphasis><emphasis
   role="bold">]</emphasis><emphasis> </emphasis><emphasis
   role="bold">[</emphasis><emphasis> options </emphasis><emphasis
-  role="bold">]</emphasis> <emphasis role="bold">[, UNORDERED |
-  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
-  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
-  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  role="bold">]</emphasis> <emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> |
+  <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis>
   <emphasis>name </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -44,14 +44,14 @@
 
         <tbody>
           <row>
-            <entry><emphasis>result</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>result</emphasis><!-- DNT-End --></entry>
 
             <entry>The attribute name for the resulting recordset or single
             record.</entry>
           </row>
 
           <row>
-            <entry><emphasis>recset</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>recset</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. The input recordset. If omitted, the single input
             record must be defined by default values for each field in the
@@ -59,7 +59,7 @@
           </row>
 
           <row>
-            <entry><emphasis>url</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>url</emphasis><!-- DNT-End --></entry>
 
             <entry>A string containing a pipe-delimited ( | ) list of URLs
             that host the service to invoke (may append repository module
@@ -68,14 +68,14 @@
             the target systems in the list. These URLs may contain standard
             form usernames and passwords, if required. The default
             username/password are those contained in the workunit. If calling
-            an ESP Web service, you can append the ver_=n.nn parameter to
-            specify the version of the service. For example: <programlisting>SOAPCALL('http://127.0.0.1:8010/Wsdfu/?ver_=1.22', 
+            an <!-- DNT-Start -->ESP<!-- DNT-End --> Web service, you can append the ver_=n.nn parameter to
+            specify the version of the service. For example: <programlisting><!-- DNT-Start -->SOAPCALL<!-- DNT-End -->('http://127.0.0.1:8010/Wsdfu/?ver_=1.22', 
          'DFUSearchData', 
-         instructure,DATASET(outsructure));</programlisting></entry>
+         instructure,<!-- DNT-Start -->DATASET<!-- DNT-End -->(outsructure));</programlisting></entry>
           </row>
 
           <row>
-            <entry><emphasis>service</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>service</emphasis><!-- DNT-End --></entry>
 
             <entry>A string expression containing the name of the service to
             invoke. This may be in the form module.attribute if the service is
@@ -83,14 +83,14 @@
           </row>
 
           <row>
-            <entry><emphasis>instructure</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>instructure</emphasis><!-- DNT-End --></entry>
 
-            <entry>A RECORD structure containing the input field definitions
-            from which the XML input to the SOAP service is constructed. The
-            name of the tags in the XML are derived from the names of the
+            <entry>A <!-- DNT-Start -->RECORD<!-- DNT-End --> structure containing the input field definitions
+            from which the <!-- DNT-Start -->XML<!-- DNT-End --> input to the <!-- DNT-Start -->SOAP<!-- DNT-End --> service is constructed. The
+            name of the tags in the <!-- DNT-Start -->XML<!-- DNT-End --> are derived from the names of the
             fields in the input record; this can be overridden by placing an
-            xpath on the field ( {xpath('tagname')} — see the XPATH Support
-            section of the RECORD Structure discussion). If the
+            xpath on the field ( {xpath('tagname')} â see the <!-- DNT-Start -->XPATH<!-- DNT-End --> Support
+            section of the <!-- DNT-Start -->RECORD<!-- DNT-End --> Structure discussion). If the
             <emphasis>recset</emphasis> parameter is not present, each field
             definition must contain a default value that will constitute the
             single input record. If the <emphasis>recset</emphasis> parameter
@@ -100,59 +100,59 @@
           </row>
 
           <row>
-            <entry><emphasis>transform</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>transform</emphasis><!-- DNT-End --></entry>
 
-            <entry>Optional. The TRANSFORM function to call to process the
+            <entry>Optional. The <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function to call to process the
             <emphasis>instructure</emphasis> data. This eliminates the need to
             define default values for all fields in the
-            <emphasis>instructure</emphasis> RECORD structure. The transform
-            function must take at least one parameter: a LEFT record of the
+            <emphasis>instructure</emphasis> <!-- DNT-Start -->RECORD<!-- DNT-End --> structure. The transform
+            function must take at least one parameter: a <!-- DNT-Start -->LEFT<!-- DNT-End --> record of the
             same format as the input <emphasis>recset</emphasis>. The
             resulting record set format must be the same as the input
             <emphasis>instructure</emphasis>.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">DATASET</emphasis>
-            (<emphasis>outstructure</emphasis>)</entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">DATASET</emphasis>
+            (<emphasis>outstructure</emphasis>)<!-- DNT-End --></entry>
 
             <entry>Specifies recordset <emphasis>result</emphasis> in the
             <emphasis>outstructure</emphasis> format.</entry>
           </row>
 
           <row>
-            <entry><emphasis>outstructure</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>outstructure</emphasis><!-- DNT-End --></entry>
 
-            <entry>A RECORD structure containing the output field definitions.
-            If not used as a parameter to the DATASET keyword, this specifies
-            a single record result. Each field definition in the RECORD
+            <entry>A <!-- DNT-Start -->RECORD<!-- DNT-End --> structure containing the output field definitions.
+            If not used as a parameter to the <!-- DNT-Start -->DATASET<!-- DNT-End --> keyword, this specifies
+            a single record result. Each field definition in the <!-- DNT-Start -->RECORD<!-- DNT-End -->
             structure must use an xpath attribute ( {xpath('tagname')} ) to
             eliminate case sensitivity issues.</entry>
           </row>
 
           <row>
-            <entry><emphasis>options</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>options</emphasis><!-- DNT-End --></entry>
 
             <entry>A comma-delimited list of optional specifications from the
             list below.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the output record order is not
             significant.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the significance of the output record
             order.</entry>
           </row>
 
           <row>
-            <entry><emphasis>bool</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
 
             <entry>When False, specifies the output record order is not
             significant. When True, specifies the default output record
@@ -160,61 +160,61 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">STABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is
             significant.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is not
             significant.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity in
             parallel.</entry>
           </row>
 
           <row>
-            <entry><emphasis>numthreads</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity using
             <emphasis>numthreads</emphasis> threads.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Override the algorithm used for this
             activity.</entry>
           </row>
 
           <row>
-            <entry><emphasis>name</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
 
             <entry>The algorithm to use for this activity. Must be from the
-            list of supported algorithms for the SORT function's STABLE and
-            UNSTABLE options.</entry>
+            list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and
+            <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>SOAPCALL returns either a set of records, a single record,
+            <entry><!-- DNT-Start -->SOAPCALL<!-- DNT-End --> returns either a set of records, a single record,
             or nothing.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para><emphasis role="bold">SOAPCALL<indexterm>
-      <primary>SOAPCALL Options</primary>
-    </indexterm> </emphasis>is a function or action that calls a SOAP (Simple
+  <para><emphasis role="bold"><!-- DNT-Start -->SOAPCALL<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->SOAPCALL<!-- DNT-End --> Options</primary>
+    </indexterm> </emphasis>is a function or action that calls a <!-- DNT-Start -->SOAP<!-- DNT-End --> (Simple
   Object Access Protocol) service.</para>
 
   <para>Valid <emphasis>options</emphasis> are:</para>
@@ -227,9 +227,9 @@
 
         <tbody>
           <row>
-            <entry><emphasis role="bold">RETRY</emphasis><indexterm>
+            <entry><!-- DNT-Start --><emphasis role="bold">RETRY</emphasis><indexterm>
                 <primary>RETRY</primary>
-              </indexterm>(<emphasis>count</emphasis>)</entry>
+              </indexterm>(<emphasis>count</emphasis>)<!-- DNT-End --></entry>
 
             <entry>Specifies re-attempting the call count number of times if
             non-fatal errors occur. If omitted, the default is three
@@ -237,9 +237,9 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">TIMEOUT</emphasis><indexterm>
+            <entry><!-- DNT-Start --><emphasis role="bold">TIMEOUT</emphasis><indexterm>
                 <primary>TIMEOUT</primary>
-              </indexterm>(<emphasis>period</emphasis>)</entry>
+              </indexterm>(<emphasis>period</emphasis>)<!-- DNT-End --></entry>
 
             <entry>Specifies the amount of time to attempt the read before
             failing. The <emphasis>period</emphasis> is a real number where
@@ -249,29 +249,29 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">TIMELIMIT</emphasis><indexterm>
+            <entry><!-- DNT-Start --><emphasis role="bold">TIMELIMIT</emphasis><indexterm>
                 <primary>TIMELIMIT</primary>
-              </indexterm>(<emphasis>period</emphasis>)</entry>
+              </indexterm>(<emphasis>period</emphasis>)<!-- DNT-End --></entry>
 
             <entry>Specifies the total amount of time allowed for the
-            SOAPCALL. The <emphasis>period</emphasis> is a real number where
+            <!-- DNT-Start -->SOAPCALL<!-- DNT-End -->. The <emphasis>period</emphasis> is a real number where
             the integer portion specifies seconds. If omitted, the default is
             zero (0) indicating no limit.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">HEADING<indexterm>
+            <entry><!-- DNT-Start --><emphasis role="bold">HEADING<indexterm>
                 <primary>HEADING</primary>
-              </indexterm></emphasis>(<emphasis>prefix,suffix</emphasis>)</entry>
+              </indexterm></emphasis>(<emphasis>prefix,suffix</emphasis>)<!-- DNT-End --></entry>
 
-            <entry>Specifies tags to wrap around the XML input fields. If
-            omitted, the default is: HEADING('','').</entry>
+            <entry>Specifies tags to wrap around the <!-- DNT-Start -->XML<!-- DNT-End --> input fields. If
+            omitted, the default is: <!-- DNT-Start -->HEADING<!-- DNT-End -->('','').</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">XPATH<indexterm>
+            <entry><!-- DNT-Start --><emphasis role="bold">XPATH<indexterm>
                 <primary>XPATH</primary>
-              </indexterm></emphasis>(<emphasis>xpath</emphasis>)</entry>
+              </indexterm></emphasis>(<emphasis>xpath</emphasis>)<!-- DNT-End --></entry>
 
             <entry>Specifies the path used to access rows in the output. If
             omitted, the default is:
@@ -279,9 +279,9 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">MERGE<indexterm>
+            <entry><!-- DNT-Start --><emphasis role="bold">MERGE<indexterm>
                 <primary>MERGE</primary>
-              </indexterm></emphasis>(<emphasis>n</emphasis>)</entry>
+              </indexterm></emphasis>(<emphasis>n</emphasis>)<!-- DNT-End --></entry>
 
             <entry>Specifies processing n records per batch (the blocking). If
             omitted, the default is 1 (values other than 1 may be incompatible
@@ -290,9 +290,9 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">PARALLEL</emphasis><indexterm>
+            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><indexterm>
                 <primary>PARALLEL</primary>
-              </indexterm>(<emphasis>n</emphasis>)</entry>
+              </indexterm>(<emphasis>n</emphasis>)<!-- DNT-End --></entry>
 
             <entry>Specifies the number of concurrent threads to have
             processing Data Delivery Engine queries, to a maximum of 50 (the
@@ -301,107 +301,107 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">ONFAIL<indexterm>
+            <entry><!-- DNT-Start --><emphasis role="bold">ONFAIL<indexterm>
                 <primary>ONFAIL</primary>
-              </indexterm></emphasis>(<emphasis>transform</emphasis>)</entry>
+              </indexterm></emphasis>(<emphasis>transform</emphasis>)<!-- DNT-End --></entry>
 
             <entry>Specifies either the transform function to call if the
-            service fails for a particular record, or the keyword SKIP. The
-            TRANSFORM function must produce a <emphasis>resultype</emphasis>
+            service fails for a particular record, or the keyword <!-- DNT-Start -->SKIP<!-- DNT-End -->. The
+            <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function must produce a <emphasis>resultype</emphasis>
             the same as the <emphasis>outstructure</emphasis> and may use
-            FAILCODE and/or FAILMESSAGE<indexterm>
-                <primary>FAILMESSAGE</primary>
+            <!-- DNT-Start -->FAILCODE<!-- DNT-End --> and/or <!-- DNT-Start -->FAILMESSAGE<!-- DNT-End --><indexterm>
+                <primary><!-- DNT-Start -->FAILMESSAGE<!-- DNT-End --></primary>
               </indexterm> to provide details of the failure.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">TRIM<indexterm>
+            <entry><!-- DNT-Start --><emphasis role="bold">TRIM<indexterm>
                 <primary>TRIM</primary>
-              </indexterm></emphasis></entry>
+              </indexterm></emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies all trailing spaces are removed from strings
             before output.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">RESPONSE
+            <entry><!-- DNT-Start --><emphasis role="bold">RESPONSE
             </emphasis>(<emphasis>NOTRIM</emphasis>) <indexterm>
                 <primary>NOTRIM</primary>
-              </indexterm></entry>
+              </indexterm><!-- DNT-End --></entry>
 
             <entry>Sets flag to prevent space stripping on the
             response.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">NAMESPACE<indexterm>
+            <entry><!-- DNT-Start --><emphasis role="bold">NAMESPACE<indexterm>
                 <primary>NAMESPACE</primary>
-              </indexterm> </emphasis>(<emphasis>namespace</emphasis>)</entry>
+              </indexterm> </emphasis>(<emphasis>namespace</emphasis>)<!-- DNT-End --></entry>
 
             <entry>Specifies the top level <emphasis>namespace</emphasis> for
-            the SOAP request.</entry>
+            the <!-- DNT-Start -->SOAP<!-- DNT-End --> request.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">LITERAL<indexterm>
+            <entry><!-- DNT-Start --><emphasis role="bold">LITERAL<indexterm>
                 <primary>LITERAL</primary>
-              </indexterm></emphasis></entry>
+              </indexterm></emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the service is not necessarily implemented in
-            ESP.</entry>
+            <!-- DNT-Start -->ESP<!-- DNT-End -->.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">SOAPACTION<indexterm>
+            <entry><!-- DNT-Start --><emphasis role="bold">SOAPACTION<indexterm>
                 <primary>SOAPACTION</primary>
-              </indexterm> </emphasis>(<emphasis>value</emphasis>)</entry>
+              </indexterm> </emphasis>(<emphasis>value</emphasis>)<!-- DNT-End --></entry>
 
             <entry>Specifies a <emphasis>value</emphasis> where that
             <emphasis>value</emphasis> is a string expression typically
-            containing a URN or URL that is required by the web
+            containing a <!-- DNT-Start -->URN<!-- DNT-End --> or <!-- DNT-Start -->URL<!-- DNT-End --> that is required by the web
             <emphasis>service</emphasis> for proper interoperability.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">LOG<indexterm>
+            <entry><!-- DNT-Start --><emphasis role="bold">LOG<indexterm>
                 <primary>LOG</primary>
-              </indexterm></emphasis></entry>
+              </indexterm></emphasis><!-- DNT-End --></entry>
 
             <entry>If specified, writes details to the log file of the engine
-            (hThor, Thor, or Roxie) to which the SOAPCALL is
+            (hThor, Thor, or Roxie) to which the <!-- DNT-Start -->SOAPCALL<!-- DNT-End --> is
             submitted.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">LOG
-            </emphasis>(<emphasis>MIN</emphasis>)</entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">LOG
+            </emphasis>(<emphasis>MIN</emphasis>)<!-- DNT-End --></entry>
 
-            <entry>Specifies to write minimal details of the SOAPCALL to a log
+            <entry>Specifies to write minimal details of the <!-- DNT-Start -->SOAPCALL<!-- DNT-End --> to a log
             file.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">LOG
-            </emphasis>(<emphasis>expression</emphasis>)</entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">LOG
+            </emphasis>(<emphasis>expression</emphasis>)<!-- DNT-End --></entry>
 
             <entry>Specifies to add the expression to the log when performing
-            a SOAPCALL.</entry>
+            a <!-- DNT-Start -->SOAPCALL<!-- DNT-End -->.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">ENCODING</emphasis><indexterm>
+            <entry><!-- DNT-Start --><emphasis role="bold">ENCODING</emphasis><indexterm>
                 <primary>ENCODING</primary>
-              </indexterm></entry>
+              </indexterm><!-- DNT-End --></entry>
 
             <entry>Specifies that the Web service being called requires a
             different message format, where type information is embedded in
-            the XML.</entry>
+            the <!-- DNT-Start -->XML<!-- DNT-End -->.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">HTTPHEADER<indexterm>
+            <entry><!-- DNT-Start --><emphasis role="bold">HTTPHEADER<indexterm>
                 <primary>HTTPHEADER</primary>
-              </indexterm></emphasis></entry>
+              </indexterm></emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies header information to be passed to the
             service.</entry>
@@ -411,18 +411,18 @@
     </informaltable></para>
 
   <sect2 id="SOAPCALL_Function">
-    <title>SOAPCALL<indexterm>
+    <!-- DNT-Start --><title>SOAPCALL<indexterm>
         <primary>SOAPCALL Function</primary>
-      </indexterm> Function</title>
+      </indexterm> Function</title><!-- DNT-End -->
 
-    <para>This form of SOAPCALL<indexterm>
-        <primary>SOAPCALL</primary>
+    <para>This form of <!-- DNT-Start -->SOAPCALL<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->SOAPCALL<!-- DNT-End --></primary>
       </indexterm>, the function, may take as input either a single record or
     a recordset, and both types of input can result in either a single record
     or a recordset.</para>
 
     <para>The <emphasis>outstructure </emphasis>output record definition may
-    contain an integer field with an XPATH of "_call_latency" to receive the
+    contain an integer field with an <!-- DNT-Start -->XPATH<!-- DNT-End --> of "_call_latency" to receive the
     time, in seconds, for the call which generated the row (from creating the
     socket to receiving the response). The latency is placed in every row the
     call returned, so if a call took 90 seconds and returned 11 rows then you
@@ -430,7 +430,7 @@
 
     <para>Example:</para>
 
-    <programlisting>OutRec1 := RECORD
+    <!-- DNT-Start --><programlisting>OutRec1 := RECORD
   STRING500 OutData{XPATH('OutData')};
   UNSIGNED4 Latency{XPATH('_call_latency')};
 END;
@@ -497,30 +497,30 @@ OUTPUT(SOAPCALL(ds, ip, svc, inRecord, t(LEFT),DATASET(outRecord), ONFAIL(SKIP))
 OUTPUT(SOAPCALL(ds, ip, svc, inRecord, t(LEFT),DATASET(outRecord), ONFAIL(SKIP),
                 HTTPHEADER('Authorization','Basic dXNlcm5hbWU6cGFzc3dvcmQ=')))
 
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="SOAPCALL_Action">
-    <title>SOAPCALL<indexterm>
+    <!-- DNT-Start --><title>SOAPCALL<indexterm>
         <primary>SOAPCALL Action</primary>
-      </indexterm> Action</title>
+      </indexterm> Action</title><!-- DNT-End -->
 
-    <para>The second form of SOAPCALL, the action, may take as input either a
+    <para>The second form of <!-- DNT-Start -->SOAPCALL<!-- DNT-End -->, the action, may take as input either a
     single record or a recordset. Neither type of input produces any returned
-    result—it simply launches the specified SOAP service, providing it input
+    resultâit simply launches the specified <!-- DNT-Start -->SOAP<!-- DNT-End --> service, providing it input
     data.</para>
 
     <para>Example:</para>
 
-    <programlisting>//1 rec in, no result
+    <!-- DNT-Start --><programlisting>//1 rec in, no result
 SOAPCALL( 'https://127.0.0.1:8022/','MyModule.SomeService',
            {STRING500 InData := 'Some Input Data'});
 
 //recordset in, no result
 SOAPCALL( InputDataset,'https://127.0.0.1:8022/','MyModule.SomeService',{STRING500 InData});
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-    <para>See Also: <link linkend="RECORD_Structure">RECORD Structure</link>,
-    <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link></para>
+    <para>See Also: <link linkend="RECORD_Structure"><!-- DNT-Start -->RECORD<!-- DNT-End --> Structure</link>,
+    <link linkend="TRANSFORM_Structure"><!-- DNT-Start -->TRANSFORM<!-- DNT-End --> Structure</link></para>
   </sect2>
 </sect1>

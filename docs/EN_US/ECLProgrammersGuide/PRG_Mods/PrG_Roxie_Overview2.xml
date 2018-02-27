@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Roxie_Overview">
-  <title><emphasis role="bold">Roxie Overview</emphasis></title>
+  <!-- DNT-Start --><title><emphasis role="bold">Roxie Overview</emphasis></title><!-- DNT-End -->
 
-  <para><emphasis>Let’s start with some definitions:</emphasis></para>
+  <para><emphasis>Letâs start with some definitions:</emphasis></para>
 
   <para><informaltable colsep="0" frame="none" rowsep="0">
       <tgroup cols="2">
@@ -14,17 +14,17 @@
 
         <tbody>
           <row>
-            <entry>Data Refinery</entry>
+            <entry><!-- DNT-Start -->Data Refinery<!-- DNT-End --></entry>
 
             <entry>A supercomputer cluster specifically designed to perform
-            massive data manipulation (ETL) processes. This is a back-office
+            massive data manipulation (<!-- DNT-Start -->ETL<!-- DNT-End -->) processes. This is a back-office
             data preparation tool and not meant for end-user production-level
             queries. See the Data Refinery Reference for complete
             documentation.</entry>
           </row>
 
           <row>
-            <entry>Rapid Data Delivery Engine</entry>
+            <entry><!-- DNT-Start -->Rapid Data Delivery Engine<!-- DNT-End --></entry>
 
             <entry>A supercomputer cluster specifically designed to service
             standard queries, providing a throughput rate of a thousand-plus
@@ -36,61 +36,61 @@
           </row>
 
           <row>
-            <entry>Data Delivery Engine</entry>
+            <entry><!-- DNT-Start -->Data Delivery Engine<!-- DNT-End --></entry>
 
             <entry>An R&amp;D platform designed for iterative, interactive
-            development and testing of Roxie queries. This is not a separate
-            supercomputer cluster, but a “piggyback” implementation of ECL
-            Agent and Thor. See the Data Delivery Engine Reference for
+            development and testing of <!-- DNT-Start -->Roxie<!-- DNT-End --> queries. This is not a separate
+            supercomputer cluster, but a âpiggybackâ implementation of <!-- DNT-Start -->ECL<!-- DNT-End -->
+            Agent and <!-- DNT-Start -->Thor<!-- DNT-End -->. See the Data Delivery Engine Reference for
             complete documentation.</entry>
           </row>
 
           <row>
-            <entry>Thor</entry>
+            <entry><!-- DNT-Start -->Thor<!-- DNT-End --></entry>
 
             <entry>The commonly used name for an instance of the Data Refinery
-            component of the HPCC platform.</entry>
+            component of the <!-- DNT-Start -->HPCC<!-- DNT-End --> platform.</entry>
           </row>
 
           <row>
-            <entry>Roxie</entry>
+            <entry><!-- DNT-Start -->Roxie<!-- DNT-End --></entry>
 
             <entry>The commonly used name for an instance of the Rapid Data
-            Delivery Engine component of the HPCC platform.</entry>
+            Delivery Engine component of the <!-- DNT-Start -->HPCC<!-- DNT-End --> platform.</entry>
           </row>
 
           <row>
-            <entry>hThor</entry>
+            <entry><!-- DNT-Start -->hThor<!-- DNT-End --></entry>
 
             <entry>The commonly used name for an instance of the Data Delivery
-            Engine component of the HPCC platform.</entry>
+            Engine component of the <!-- DNT-Start -->HPCC<!-- DNT-End --> platform.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
   <sect2 id="Thor">
-    <title>Thor</title>
+    <!-- DNT-Start --><title>Thor</title><!-- DNT-End -->
 
-    <para>Thor clusters are used to do all the “heavy lifting” data
+    <para><!-- DNT-Start -->Thor<!-- DNT-End --> clusters are used to do all the âheavy liftingâ data
     preparation work to process raw data into standard formats. Once that
     process is complete, end-users can query that standardized data to glean
     real information. However, end-users typically want to see their results
-    “immediately or sooner”—and usually more than one end-user wants their
-    result at the same time. The Thor platform only works on one query at a
+    âimmediately or soonerââand usually more than one end-user wants their
+    result at the same time. The <!-- DNT-Start -->Thor<!-- DNT-End --> platform only works on one query at a
     time, which makes it impractical for use by end-users, and that is why the
-    Roxie platform was created.</para>
+    <!-- DNT-Start -->Roxie<!-- DNT-End --> platform was created.</para>
   </sect2>
 
   <sect2 id="Roxie">
-    <title>Roxie</title>
+    <!-- DNT-Start --><title>Roxie</title><!-- DNT-End -->
 
-    <para>Roxie clusters can handle thousands of simultaneous end-users and
-    provide them all with the perception of “immediately or sooner” results.
+    <para><!-- DNT-Start -->Roxie<!-- DNT-End --> clusters can handle thousands of simultaneous end-users and
+    provide them all with the perception of âimmediately or soonerâ results.
     It does this by only allowing end-users to run standard, pre-compiled
     queries that have been developed specifically for end-user use on the
-    Roxie cluster. Typically, these queries use indexes and thus, provide
-    extremely fast performance. However, the Roxie cluster is impractical for
+    <!-- DNT-Start -->Roxie<!-- DNT-End --> cluster. Typically, these queries use indexes and thus, provide
+    extremely fast performance. However, the <!-- DNT-Start -->Roxie<!-- DNT-End --> cluster is impractical for
     use as a development tool, since all its queries must be pre-compiled and
     the data they use must have been previously deployed. Therefore, the
     iterative query development and testing process is performed using
@@ -98,45 +98,45 @@
   </sect2>
 
   <sect2 id="Doxie">
-    <title>hThor</title>
+    <!-- DNT-Start --><title>hThor</title><!-- DNT-End -->
 
-    <para>hThor is not a separate cluster on its own; it is an instance of ECL
+    <para><!-- DNT-Start -->hThor<!-- DNT-End --> is not a separate cluster on its own; it is an instance of <!-- DNT-Start -->ECL<!-- DNT-End -->
     Agent (which operates on a single server) that emulates the operation of a
-    Roxie cluster. Just as with Thor queries, hThor queries are compiled each
+    <!-- DNT-Start -->Roxie<!-- DNT-End --> cluster. Just as with <!-- DNT-Start -->Thor<!-- DNT-End --> queries, <!-- DNT-Start -->hThor<!-- DNT-End --> queries are compiled each
     time they are run. These queries access data directly from an associated
-    Thor cluster’s disk drives without interfering with any Thor operations.
+    <!-- DNT-Start -->Thor<!-- DNT-End --> clusterâs disk drives without interfering with any <!-- DNT-Start -->Thor<!-- DNT-End --> operations.
     This makes it an appropriate tool for developing queries that are destined
-    for use on a Roxie cluster.</para>
+    for use on a <!-- DNT-Start -->Roxie<!-- DNT-End --> cluster.</para>
   </sect2>
 
   <sect2 id="How_to_Structure_Roxie_Queries">
-    <title>How to Structure Roxie Queries</title>
+    <!-- DNT-Start --><title>How to Structure Roxie Queries</title><!-- DNT-End -->
 
-    <para>To begin developing queries for use on Roxie clusters you must start
+    <para>To begin developing queries for use on <!-- DNT-Start -->Roxie<!-- DNT-End --> clusters you must start
     by deciding what data to query and how to index that data so that
     end-users see their result in minimum time. The process of putting the
-    data into its most useful form and indexing it is accomplished on a Thor
+    data into its most useful form and indexing it is accomplished on a <!-- DNT-Start -->Thor<!-- DNT-End -->
     cluster. The previous articles on indexing and superfiles should guide you
     in the right direction for that.</para>
 
     <para>Once the data is ready to use, you can then write the query. Queries
-    for Roxie clusters are always contained in MACRO structures, and those
-    MACROs always contain at least one action—usually a simple OUTPUT to
+    for <!-- DNT-Start -->Roxie<!-- DNT-End --> clusters are always contained in <!-- DNT-Start -->MACRO<!-- DNT-End --> structures, and those
+    <!-- DNT-Start -->MACROs<!-- DNT-End --> always contain at least one actionâusually a simple <!-- DNT-Start -->OUTPUT<!-- DNT-End --> to
     return the result set.</para>
 
-    <para>Unlike MACROs used to generate ECL code for standard Thor processes,
-    the MACROs for Roxie queries do not receive parameters. Instead, a SOAP
-    (Simple Object Access Protocol) interface is used to “pass in” data values
-    (the <emphasis>SOAP-enabling MACROs</emphasis> article discusses the
-    specifics of this interface). The values passed through the SOAP interface
-    wind up in attributes that have been defined with the STORED workflow
-    service. Your ECL code then can use those attributes to determine the
+    <para>Unlike <!-- DNT-Start -->MACROs<!-- DNT-End --> used to generate <!-- DNT-Start -->ECL<!-- DNT-End --> code for standard <!-- DNT-Start -->Thor<!-- DNT-End --> processes,
+    the <!-- DNT-Start -->MACROs<!-- DNT-End --> for <!-- DNT-Start -->Roxie<!-- DNT-End --> queries do not receive parameters. Instead, a <!-- DNT-Start -->SOAP<!-- DNT-End -->
+    (Simple Object Access Protocol) interface is used to âpass inâ data values
+    (the <emphasis><!-- DNT-Start -->SOAP<!-- DNT-End -->-enabling <!-- DNT-Start -->MACROs<!-- DNT-End --></emphasis> article discusses the
+    specifics of this interface). The values passed through the <!-- DNT-Start -->SOAP<!-- DNT-End --> interface
+    wind up in attributes that have been defined with the <!-- DNT-Start -->STORED<!-- DNT-End --> workflow
+    service. Your <!-- DNT-Start -->ECL<!-- DNT-End --> code then can use those attributes to determine the
     passed values and return the appropriate result to the end-user.</para>
 
-    <para>Here is a simple example of the structure of a Roxie query
-    (contained in RoxieOverview1.ECL):</para>
+    <para>Here is a simple example of the structure of a <!-- DNT-Start -->Roxie<!-- DNT-End --> query
+    (contained in RoxieOverview1.<!-- DNT-Start -->ECL<!-- DNT-End -->):</para>
 
-    <programlisting>/*--SOAP--
+    <!-- DNT-Start --><programlisting>/*--SOAP--
 &lt;message name="PeopleSearchService"&gt;
   &lt;part name="LastName" type="xsd:string" required="1"/&gt;
   &lt;part name="FirstName" type="xsd:string"/&gt;
@@ -152,161 +152,161 @@ EXPORT PeopleSearchService() := MACRO
                 FETCH(Base,IDX(LastName=lname_value,
       FirstName=fname_value),RIGHT.RecPos));
   OUTPUT(CHOOSEN(Fetched,2000))
-ENDMACRO;</programlisting>
+ENDMACRO;</programlisting><!-- DNT-End -->
 
-    <para>The comment block contains XML that defines the SOAP interface for
-    the service. As a comment block, this doesn’t affect the ECL code at all,
+    <para>The comment block contains <!-- DNT-Start -->XML<!-- DNT-End --> that defines the <!-- DNT-Start -->SOAP<!-- DNT-End --> interface for
+    the service. As a comment block, this doesnât affect the <!-- DNT-Start -->ECL<!-- DNT-End --> code at all,
     but it is required.</para>
 
-    <para>Notice that the MACRO does not receive any parameters. Instead, the
-    lname_value and fname_value attributes both have the STORED workflow
-    service, and their storage names exactly match the part name in the XML.
-    The SOAP interface requires that all the part names must exactly match the
-    storage names for the STORED attributes, because the STORED option opens
-    up a storage space in the workunit where the SOAP interface can place the
+    <para>Notice that the <!-- DNT-Start -->MACRO<!-- DNT-End --> does not receive any parameters. Instead, the
+    lname_value and fname_value attributes both have the <!-- DNT-Start -->STORED<!-- DNT-End --> workflow
+    service, and their storage names exactly match the part name in the <!-- DNT-Start -->XML<!-- DNT-End -->.
+    The <!-- DNT-Start -->SOAP<!-- DNT-End --> interface requires that all the part names must exactly match the
+    storage names for the <!-- DNT-Start -->STORED<!-- DNT-End --> attributes, because the <!-- DNT-Start -->STORED<!-- DNT-End --> option opens
+    up a storage space in the workunit where the <!-- DNT-Start -->SOAP<!-- DNT-End --> interface can place the
     values to pass to the service.</para>
 
-    <para>This code uses FETCH because it is the simplest example of using an
-    INDEX in ECL. More typically, Roxie queries use half-keyed JOIN operations
-    with payload keys (the <emphasis>Complex Roxie Queries</emphasis> article
-    addresses this issue). Note that the OUTPUT contains a CHOOSEN as a simple
+    <para>This code uses <!-- DNT-Start -->FETCH<!-- DNT-End --> because it is the simplest example of using an
+    <!-- DNT-Start -->INDEX<!-- DNT-End --> in <!-- DNT-Start -->ECL<!-- DNT-End -->. More typically, <!-- DNT-Start -->Roxie<!-- DNT-End --> queries use half-keyed <!-- DNT-Start -->JOIN<!-- DNT-End --> operations
+    with payload keys (the <emphasis>Complex <!-- DNT-Start -->Roxie<!-- DNT-End --> Queries</emphasis> article
+    addresses this issue). Note that the <!-- DNT-Start -->OUTPUT<!-- DNT-End --> contains a <!-- DNT-Start -->CHOOSEN<!-- DNT-End --> as a simple
     example of how to ensure you should limit the maximum amount of data that
-    can be returned from the query to some “reasonable” amount—it doesn’t make
-    much sense to have a Roxie query that could possibly return 10 billion
-    records to an end-user’s PC (anybody actually needing that much data
-    should be working in Thor, not Roxie).</para>
+    can be returned from the query to some âreasonableâ amountâit doesnât make
+    much sense to have a <!-- DNT-Start -->Roxie<!-- DNT-End --> query that could possibly return 10 billion
+    records to an end-userâs <!-- DNT-Start -->PC<!-- DNT-End --> (anybody actually needing that much data
+    should be working in <!-- DNT-Start -->Thor<!-- DNT-End -->, not <!-- DNT-Start -->Roxie<!-- DNT-End -->).</para>
   </sect2>
 
   <sect2 id="Testing_Queries_with_Doxie">
-    <title>Testing Queries with Doxie</title>
+    <!-- DNT-Start --><title>Testing Queries with Doxie</title><!-- DNT-End -->
 
     <para>Once you have written your query you naturally need to test it.
-    That’s where Doxie comes into play. Doxie is the interactive test system
-    that you can use before deploying your queries to Roxie. The easiest way
+    Thatâs where Doxie comes into play. Doxie is the interactive test system
+    that you can use before deploying your queries to <!-- DNT-Start -->Roxie<!-- DNT-End -->. The easiest way
     to describe the process is to walk through it using this simple example
     query.</para>
 
-    <para>► In your Repository, create a module named <emphasis
+    <para>âº In your Repository, create a module named <emphasis
     role="bold">Training_ProgGuide</emphasis></para>
 
-    <para>► Insert an attribute named <emphasis
+    <para>âº Insert an attribute named <emphasis
     role="bold">PeopleSearchService</emphasis></para>
 
-    <para>► Copy all the code from the RoxieOverview.ECL file into that
+    <para>âº Copy all the code from the RoxieOverview.<!-- DNT-Start -->ECL<!-- DNT-End --> file into that
     attribute, overwriting the default starting-point text</para>
 
-    <para>► Save the attribute definition</para>
+    <para>âº Save the attribute definition</para>
 
-    <para>Now that you’ve saved this query, you’re ready to run it in
+    <para>Now that youâve saved this query, youâre ready to run it in
     Doxie.</para>
 
-    <para>You can find the IP and port for your environment’s Doxie by opening
-    the ECL Watch web page (not using QueryBuilder—open it in Internet
+    <para>You can find the <!-- DNT-Start -->IP<!-- DNT-End --> and port for your environmentâs Doxie by opening
+    the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch web page (not using QueryBuilderâopen it in Internet
     Explorer).</para>
 
-    <para>► Click on <emphasis role="underline">System Servers</emphasis>
-    (it’s in the Topology section)</para>
+    <para>âº Click on <emphasis role="underline">System Servers</emphasis>
+    (itâs in the Topology section)</para>
 
-    <para>► Find the <emphasis role="bold">ESP Servers</emphasis>
+    <para>âº Find the <emphasis role="bold"><!-- DNT-Start -->ESP<!-- DNT-End --> Servers</emphasis>
     section</para>
 
     <para>There may be several listed there, so locate the one that applies to
-    your Thor (not the one for your Roxie—we’ll get to that one later).</para>
+    your <!-- DNT-Start -->Thor<!-- DNT-End --> (not the one for your Roxieâweâll get to that one later).</para>
 
-    <para>► Note the IP listed beside it (this is frequently the same IP as
-    ECL Watch)</para>
+    <para>âº Note the <!-- DNT-Start -->IP<!-- DNT-End --> listed beside it (this is frequently the same <!-- DNT-Start -->IP<!-- DNT-End --> as
+    <!-- DNT-Start -->ECL<!-- DNT-End --> Watch)</para>
 
-    <para>► Click on the ESP server’s name link to display its list of
+    <para>âº Click on the <!-- DNT-Start -->ESP<!-- DNT-End --> serverâs name link to display its list of
     services and their ports</para>
 
-    <para>► Note the port number beside the <emphasis
+    <para>âº Note the port number beside the <emphasis
     role="bold">wsecl</emphasis> Service Type (this is usually 8002, but it
     could be set to something else)</para>
 
-    <para>Once you’ve obtained the IP and port for your Doxie, you can go
+    <para>Once youâve obtained the <!-- DNT-Start -->IP<!-- DNT-End --> and port for your Doxie, you can go
     there and run the query.</para>
 
-    <para>► Edit Internet Explorer’s address bar to point to the Doxie
-    IP:port</para>
+    <para>âº Edit Internet Explorerâs address bar to point to the Doxie
+    <!-- DNT-Start -->IP<!-- DNT-End -->:port</para>
 
-    <para>► Press the Enter key</para>
+    <para>âº Press the Enter key</para>
 
-    <para>A login dialog should appear—your login ID and password are the same
-    as the ones you use for the QueryBuilder program. After you’ve logged in,
-    you’ll see a list of modules on the left.</para>
+    <para>A login dialog should appearâyour login <!-- DNT-Start -->ID<!-- DNT-End --> and password are the same
+    as the ones you use for the QueryBuilder program. After youâve logged in,
+    youâll see a list of modules on the left.</para>
 
-    <para>► Click on the <emphasis
+    <para>âº Click on the <emphasis
     role="underline">Training_ProgGuide</emphasis> link</para>
 
-    <para>A list of all the SOAP-enabled attributes (aka Roxie Queries) that
+    <para>A list of all the <!-- DNT-Start -->SOAP<!-- DNT-End -->-enabled attributes (aka <!-- DNT-Start -->Roxie<!-- DNT-End --> Queries) that
     are in that module appears in the frame to the right. in this case,
-    there’s only the one.</para>
+    thereâs only the one.</para>
 
-    <para>► Click on the <emphasis
+    <para>âº Click on the <emphasis
     role="underline">PeopleSearchService</emphasis> link</para>
 
     <para>A web page containing two entry controls and a <emphasis
     role="bold">Submit</emphasis> button appears.</para>
 
-    <para>► Type in any last name from the set of last names that were used by
-    the code in GenData.ECL to generate the data files for this
-    <emphasis>Programmer’s Guide</emphasis></para>
+    <para>âº Type in any last name from the set of last names that were used by
+    the code in GenData.<!-- DNT-Start -->ECL<!-- DNT-End --> to generate the data files for this
+    <emphasis>Programmerâs Guide</emphasis></para>
 
-    <para>COOLING is a good example to use. Note that, since this is an
-    extremely simple example, you’ll need to type it in ALL CAPS, otherwise
-    the FETCH will fail to find any matching records (this is only due to the
-    simplicity of this ECL code and not any inherent lack in the
+    <para><!-- DNT-Start -->COOLING<!-- DNT-End --> is a good example to use. Note that, since this is an
+    extremely simple example, youâll need to type it in <!-- DNT-Start -->ALL<!-- DNT-End --> <!-- DNT-Start -->CAPS<!-- DNT-End -->, otherwise
+    the <!-- DNT-Start -->FETCH<!-- DNT-End --> will fail to find any matching records (this is only due to the
+    simplicity of this <!-- DNT-Start -->ECL<!-- DNT-End --> code and not any inherent lack in the
     system).</para>
 
-    <para>► Press the <emphasis role="bold">Submit</emphasis> button</para>
+    <para>âº Press the <emphasis role="bold">Submit</emphasis> button</para>
 
     <para>Doxie queries are re-compiled every time they run, so after a few
     seconds you should see a result set with 1,000 records in it.</para>
 
-    <para>The SOAP comment block at the top of the ECL code contains XML that
-    defines the data values that can be passed to the query. That XML is
-    processed through standard XSLT templates to format the data entry page
-    (and the result page) for this service. These standard XSLT templates can
+    <para>The <!-- DNT-Start -->SOAP<!-- DNT-End --> comment block at the top of the <!-- DNT-Start -->ECL<!-- DNT-End --> code contains <!-- DNT-Start -->XML<!-- DNT-End --> that
+    defines the data values that can be passed to the query. That <!-- DNT-Start -->XML<!-- DNT-End --> is
+    processed through standard <!-- DNT-Start -->XSLT<!-- DNT-End --> templates to format the data entry page
+    (and the result page) for this service. These standard <!-- DNT-Start -->XSLT<!-- DNT-End --> templates can
     be overridden, but they work quite well for testing and debug
     purposes.</para>
   </sect2>
 
   <sect2 id="Deploying_Queries_to_Roxie">
-    <title>Deploying Queries to Roxie</title>
+    <!-- DNT-Start --><title>Deploying Queries to Roxie</title><!-- DNT-End -->
 
-    <para>Once you’ve done enough testing on Doxie to be sure the query does
+    <para>Once youâve done enough testing on Doxie to be sure the query does
     what you expect it to do, the only step then required is to deploy it to
-    Roxie and test it there, too (just to be completely certain that
-    everything operates the way it should). Once you’ve tested it on Roxie,
+    <!-- DNT-Start -->Roxie<!-- DNT-End --> and test it there, too (just to be completely certain that
+    everything operates the way it should). Once youâve tested it on <!-- DNT-Start -->Roxie<!-- DNT-End -->,
     you can inform the users that the query is available for their use.</para>
 
-    <para>The Roxie deployment process is fully documented in the
+    <para>The <!-- DNT-Start -->Roxie<!-- DNT-End --> deployment process is fully documented in the
     <emphasis>Rapid Data Delivery Engine Reference</emphasis>. Interactive
-    deployment is done through a web page similar to ECL Watch. You can find
-    the IP and port for this page on ECL Watch’s System Servers page, listed
-    under your Roxie’s ESP Server. The service to look for is <emphasis
-    role="bold">ws_roxieconfig</emphasis>. Go to that IP and port, log in, and
+    deployment is done through a web page similar to <!-- DNT-Start -->ECL<!-- DNT-End --> Watch. You can find
+    the <!-- DNT-Start -->IP<!-- DNT-End --> and port for this page on <!-- DNT-Start -->ECL<!-- DNT-End --> Watchâs System Servers page, listed
+    under your Roxieâs <!-- DNT-Start -->ESP<!-- DNT-End --> Server. The service to look for is <emphasis
+    role="bold">ws_roxieconfig</emphasis>. Go to that <!-- DNT-Start -->IP<!-- DNT-End --> and port, log in, and
     follow the deployment process outlined in the <emphasis>Rapid Data
     Delivery Engine Reference</emphasis>.</para>
 
-    <para>Once you’ve deployed the query, you can test it the same way you
-    tested it on Doxie, by finding the IP and port for your Roxie ESP Server’s
-    <emphasis role="bold">wsecl</emphasis> service. Once you’ve gone to that
+    <para>Once youâve deployed the query, you can test it the same way you
+    tested it on Doxie, by finding the <!-- DNT-Start -->IP<!-- DNT-End --> and port for your <!-- DNT-Start -->Roxie<!-- DNT-End --> <!-- DNT-Start -->ESP<!-- DNT-End --> Serverâs
+    <emphasis role="bold">wsecl</emphasis> service. Once youâve gone to that
     web address (following the same process as listed above for Doxie) and
-    logged in, you will see Roxie’s version of the same page you just used for
-    Doxie testing. The only difference between the two are the IP and port,
-    and, of course, the execution speed of the Roxie query as opposed to the
-    Doxie version (Roxie’s response time should be MUCH faster).</para>
+    logged in, you will see Roxieâs version of the same page you just used for
+    Doxie testing. The only difference between the two are the <!-- DNT-Start -->IP<!-- DNT-End --> and port,
+    and, of course, the execution speed of the <!-- DNT-Start -->Roxie<!-- DNT-End --> query as opposed to the
+    Doxie version (Roxieâs response time should be <!-- DNT-Start -->MUCH<!-- DNT-End --> faster).</para>
   </sect2>
 
   <sect2 id="Restrictions">
-    <title>Restrictions</title>
+    <!-- DNT-Start --><title>Restrictions</title><!-- DNT-End -->
 
-    <para>Roxie queries may <emphasis role="underline">not</emphasis> contain
+    <para><!-- DNT-Start -->Roxie<!-- DNT-End --> queries may <emphasis role="underline">not</emphasis> contain
     any code that would write a file to disk, such as:</para>
 
-    <para>OUTPUT actions that write to disk files BUILD (or BUILDINDEX)
-    actions PERSISTed attributes</para>
+    <para><!-- DNT-Start -->OUTPUT<!-- DNT-End --> actions that write to disk files <!-- DNT-Start -->BUILD<!-- DNT-End --> (or <!-- DNT-Start -->BUILDINDEX<!-- DNT-End -->)
+    actions <!-- DNT-Start -->PERSISTed<!-- DNT-End --> attributes</para>
 
     <para></para>
   </sect2>

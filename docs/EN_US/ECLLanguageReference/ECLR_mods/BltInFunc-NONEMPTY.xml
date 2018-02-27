@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="NONEMPTY">
-  <title>NONEMPTY<indexterm>
+  <!-- DNT-Start --><title>NONEMPTY<indexterm>
       <primary>NONEMPTY</primary>
-    </indexterm></title>
+    </indexterm></title><!-- DNT-End -->
 
-  <para><emphasis id="term" role="bold">NONEMPTY<indexterm>
-      <primary>NONEMPTY function</primary>
+  <para><emphasis id="term" role="bold"><!-- DNT-Start -->NONEMPTY<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->NONEMPTY<!-- DNT-End --> function</primary>
     </indexterm>(</emphasis><emphasis>recordsetlist</emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -19,30 +19,30 @@
 
         <tbody>
           <row>
-            <entry><emphasis>recordsetlist</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>recordsetlist</emphasis><!-- DNT-End --></entry>
 
             <entry>A comma-delimited list of record sets.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>NONEMPTY returns a record set.</entry>
+            <entry><!-- DNT-Start -->NONEMPTY<!-- DNT-End --> returns a record set.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">NONEMPTY </emphasis>function returns the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->NONEMPTY<!-- DNT-End --> </emphasis>function returns the
   first record set from the <emphasis>recordsetlist</emphasis> that contains
-  any records. This is similar to using the EXISTS function in an IF
+  any records. This is similar to using the <!-- DNT-Start -->EXISTS<!-- DNT-End --> function in an <!-- DNT-Start -->IF<!-- DNT-End -->
   expression to return one of two possible record sets.</para>
 
   <para>Example:</para>
 
-  <programlisting>  ds := NONEMPTY(SomeData(SomeFilter),
+  <!-- DNT-Start --><programlisting>  ds := NONEMPTY(SomeData(SomeFilter),
                  SomeData(SomeOtherFilter),
-                 SomeOtherData(YetAnotherFilter));</programlisting>
+                 SomeOtherData(YetAnotherFilter));</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="EXISTS">EXISTS</link></para>
+  <para>See Also: <link linkend="EXISTS"><!-- DNT-Start -->EXISTS<!-- DNT-End --></link></para>
 </sect1>

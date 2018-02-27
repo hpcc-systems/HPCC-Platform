@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="RemoteDirectory">
-  <title>RemoteDirectory</title>
+  <!-- DNT-Start --><title>RemoteDirectory</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.File.RemoteDirectory<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.File.RemoteDirectory<indexterm>
       <primary>STD.File.RemoteDirectory</primary>
     </indexterm><indexterm>
       <primary>File.RemoteDirectory</primary>
@@ -14,7 +14,7 @@
   <emphasis role="bold">[</emphasis> <emphasis>, mask </emphasis> <emphasis
   role="bold">][</emphasis> <emphasis>, includesubs </emphasis> <emphasis
   role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
-  role="bold">)</emphasis></para>
+  role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -24,14 +24,14 @@
 
       <tbody>
         <row>
-          <entry><emphasis>machineIP</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>machineIP</emphasis><!-- DNT-End --></entry>
 
-          <entry>A null-terminated string containing the IP address of the
+          <entry>A null-terminated string containing the <!-- DNT-Start -->IP<!-- DNT-End --> address of the
           remote machine.</entry>
         </row>
 
         <row>
-          <entry><emphasis>directory</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>directory</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the path to the directory
           to read. This must be in the appropriate format for the operating
@@ -39,7 +39,7 @@
         </row>
 
         <row>
-          <entry><emphasis>mask</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>mask</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. A null-terminated string containing the filemask
           specifying which files to include in the result. If omitted,the
@@ -47,33 +47,33 @@
         </row>
 
         <row>
-          <entry><emphasis>includesubdir</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>includesubdir</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. A boolean flag indicating whether to include files
           from sub-directories under the <emphasis>directory</emphasis>. If
-          omitted, the default is FALSE.</entry>
+          omitted, the default is <!-- DNT-Start -->FALSE<!-- DNT-End -->.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>RemoteDirectory returns a dataset in the following
+          <entry><!-- DNT-Start -->RemoteDirectory<!-- DNT-End --> returns a dataset in the following
           format:</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <programlisting>EXPORT FsFilenameRecord := RECORD 
+  <!-- DNT-Start --><programlisting>EXPORT FsFilenameRecord := RECORD 
   STRING name;       //filename 
   UNSIGNED8 size;    //filesize 
   STRING19 modified; //date-time stamp 
-END;</programlisting>
+END;</programlisting><!-- DNT-End -->
 
-  <para>The <emphasis role="bold">RemoteDirectory </emphasis>function returns
+  <para>The <emphasis role="bold"><!-- DNT-Start -->RemoteDirectory<!-- DNT-End --> </emphasis>function returns
   a list of files as a dataset in the format listed above from the specified
   <emphasis>machineIP</emphasis> and <emphasis>directory</emphasis>. If
-  <emphasis>includesubdir</emphasis> is set to TRUE, then the name field
+  <emphasis>includesubdir</emphasis> is set to <!-- DNT-Start -->TRUE<!-- DNT-End -->, then the name field
   contains the relative path to the file from the specified
   <emphasis>directory</emphasis>.</para>
 
@@ -84,7 +84,7 @@ END;</programlisting>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">OUTPUT(STD.File.RemoteDirectory('edata12','\in','*.d00'));
+  <!-- DNT-Start --><programlisting format="linespecific">OUTPUT(STD.File.RemoteDirectory('edata12','\in','*.d00'));
 OUTPUT(STD.File.RemoteDirectory('10.150.254.6',
-      '/var/lib/HPCCSystems/hpcc-data/thor/','acc*',TRUE));</programlisting>
+      '/var/lib/HPCCSystems/hpcc-data/thor/','acc*',TRUE));</programlisting><!-- DNT-End -->
 </sect1>

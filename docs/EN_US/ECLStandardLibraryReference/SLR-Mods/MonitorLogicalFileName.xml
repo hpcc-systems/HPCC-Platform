@@ -2,14 +2,14 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="MonitorLogicalFileName">
-  <title>MonitorLogicalFileName</title>
+  <!-- DNT-Start --><title>MonitorLogicalFileName</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.File.MonitorLogicalFileName<indexterm>
-      <primary>STD.File.MonitorLogicalFileName</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.File.<!-- DNT-Start -->MonitorLogicalFileName<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.File.<!-- DNT-Start -->MonitorLogicalFileName<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>File.MonitorLogicalFileName</primary>
+      <primary>File.<!-- DNT-Start -->MonitorLogicalFileName<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>MonitorLogicalFileName</primary>
+      <primary><!-- DNT-Start -->MonitorLogicalFileName<!-- DNT-End --></primary>
     </indexterm>(</emphasis> <emphasis> event, </emphasis> <emphasis
   role="bold"> </emphasis> <emphasis>filename, </emphasis> <emphasis
   role="bold"> [</emphasis> <emphasis>, shotcount </emphasis> <emphasis
@@ -17,8 +17,8 @@
   role="bold">] )</emphasis> <emphasis></emphasis></para>
 
   <para><emphasis>dfuwuid </emphasis> <emphasis role="bold">:=
-  STD.File.fMonitorLogicalFileName<indexterm>
-      <primary>STD.File.fMonitorLogicalFileName</primary>
+  <!-- DNT-Start -->STD<!-- DNT-End -->.File.fMonitorLogicalFileName<indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.File.fMonitorLogicalFileName</primary>
     </indexterm><indexterm>
       <primary>File.fMonitorLogicalFileName</primary>
     </indexterm><indexterm>
@@ -37,23 +37,23 @@
 
       <tbody>
         <row>
-          <entry><emphasis>event</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>event</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the user-defined name of
           the event to fire when the <emphasis>filename</emphasis> appears.
-          This value is used as the first parameter to the EVENT
+          This value is used as the first parameter to the <!-- DNT-Start -->EVENT<!-- DNT-End -->
           function.</entry>
         </row>
 
         <row>
-          <entry><emphasis>filename</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>filename</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the name of the logical
-          file in the DFU to monitor.</entry>
+          file in the <!-- DNT-Start -->DFU<!-- DNT-End --> to monitor.</entry>
         </row>
 
         <row>
-          <entry><emphasis>shotcount</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>shotcount</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. An integer value indicating the number of times to
           generate the event before the monitoring job completes. A negative
@@ -62,40 +62,40 @@
         </row>
 
         <row>
-          <entry><emphasis>espserverIPport</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>espserverIPport</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. A null-terminated string containing the protocol,
-          IP, port, and directory, or the DNS equivalent, of the ESP server
-          program. This is usually the same IP and port as ECL Watch, with
-          “/FileSpray” appended. If omitted, the default is the value
+          <!-- DNT-Start -->IP<!-- DNT-End -->, port, and directory, or the <!-- DNT-Start -->DNS<!-- DNT-End --> equivalent, of the <!-- DNT-Start -->ESP<!-- DNT-End --> server
+          program. This is usually the same <!-- DNT-Start -->IP<!-- DNT-End --> and port as <!-- DNT-Start -->ECL<!-- DNT-End --> Watch, with
+          â/FileSprayâ appended. If omitted, the default is the value
           contained in the lib_system.ws_fs_server attribute.</entry>
         </row>
 
         <row>
-          <entry><emphasis>dfuwuid</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>dfuwuid</emphasis><!-- DNT-End --></entry>
 
           <entry>The attribute name to recieve the null-terminated string
-          containing the DFU workunit ID (DFUWUID) generated for the
+          containing the <!-- DNT-Start -->DFU<!-- DNT-End --> workunit <!-- DNT-Start -->ID<!-- DNT-End --> (<!-- DNT-Start -->DFUWUID<!-- DNT-End -->) generated for the
           monitoring job.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
           <entry>fMonitorLogicalFileName returns a null-terminated string
-          containing the DFU workunit ID (DFUWUID).</entry>
+          containing the <!-- DNT-Start -->DFU<!-- DNT-End --> workunit <!-- DNT-Start -->ID<!-- DNT-End --> (<!-- DNT-Start -->DFUWUID<!-- DNT-End -->).</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">MonitorLogicalFileName </emphasis>function
-  creates a file monitor job in the DFU Server. Once the job is received it
-  goes into a 'monitoring' mode (which can be seen in the eclwatch DFU
+  <para>The <emphasis role="bold"><!-- DNT-Start -->MonitorLogicalFileName<!-- DNT-End --> </emphasis>function
+  creates a file monitor job in the <!-- DNT-Start -->DFU<!-- DNT-End --> Server. Once the job is received it
+  goes into a 'monitoring' mode (which can be seen in the eclwatch <!-- DNT-Start -->DFU<!-- DNT-End -->
   Workunit display), which polls at a fixed interval (default 15 mins). If an
   appropriately named file arrives in this interval it will fire the
   <emphasis>event</emphasis> with the name of the triggering object as the
-  event subtype (see the EVENT function).</para>
+  event subtype (see the <!-- DNT-Start -->EVENT<!-- DNT-End --> function).</para>
 
   <para>This function does not support wildcard characters. To monitor
   physical files or directories using wildcards, use the <link
@@ -106,16 +106,16 @@
   <para>1) The <emphasis>shotcount</emphasis> number of events have been
   generated.</para>
 
-  <para>2) The user aborts the DFU workunit.</para>
+  <para>2) The user aborts the <!-- DNT-Start -->DFU<!-- DNT-End --> workunit.</para>
 
-  <para>The STD.File.AbortDfuWorkunit and STD.File.WaitDfuWorkunit functions
-  can be used to abort or wait for the DFU job by passing them the returned
+  <para>The <!-- DNT-Start -->STD<!-- DNT-End -->.File.AbortDfuWorkunit and <!-- DNT-Start -->STD<!-- DNT-End -->.File.WaitDfuWorkunit functions
+  can be used to abort or wait for the <!-- DNT-Start -->DFU<!-- DNT-End --> job by passing them the returned
   <emphasis>dfuwuid</emphasis>.</para>
 
   <para><emphasis role="bold">Note the following caveats and
   restrictions:</emphasis></para>
 
-  <para>1) If a matching file already exists when the DFU Monitoring job is
+  <para>1) If a matching file already exists when the <!-- DNT-Start -->DFU<!-- DNT-End --> Monitoring job is
   started, that file will <emphasis role="underline">not</emphasis> generate
   an event. It will only generate an event once the file has been deleted and
   recreated.</para>
@@ -128,7 +128,7 @@
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">EventName := 'MyFileEvent';
+  <!-- DNT-Start --><programlisting format="linespecific">EventName := 'MyFileEvent';
 FileName  := 'test::myfile';
 IF (STD.File.FileExists(FileName),
          STD.File.DeleteLogicalFile(FileName));
@@ -141,5 +141,5 @@ rec := RECORD
 END;
 afile := DATASET([{ 'A', '0'}], rec);
 OUTPUT(afile,,FileName);
-</programlisting>
+</programlisting><!-- DNT-End -->
 </sect1>

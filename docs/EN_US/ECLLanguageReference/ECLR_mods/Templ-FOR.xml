@@ -2,10 +2,10 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_FOR">
-  <title>#FOR</title>
+  <!-- DNT-Start --><title>#FOR</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">#FOR<indexterm>
-      <primary>#FOR</primary>
+  <para><emphasis role="bold">#<!-- DNT-Start -->FOR<!-- DNT-End --><indexterm>
+      <primary>#<!-- DNT-Start -->FOR<!-- DNT-End --></primary>
     </indexterm>( </emphasis><emphasis> tag </emphasis><emphasis role="bold">[
   ( </emphasis><emphasis>filter </emphasis><emphasis role="bold">)
   ]</emphasis><emphasis> </emphasis><emphasis
@@ -15,7 +15,7 @@
   <para><emphasis>statements</emphasis><emphasis
   role="bold"></emphasis></para>
 
-  <para><emphasis role="bold">#END</emphasis></para>
+  <para><emphasis role="bold">#<!-- DNT-Start -->END<!-- DNT-End --></emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -25,42 +25,42 @@
 
         <tbody>
           <row>
-            <entry><emphasis>tag</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>tag</emphasis><!-- DNT-End --></entry>
 
-            <entry>An XML tag.</entry>
+            <entry>An <!-- DNT-Start -->XML<!-- DNT-End --> tag.</entry>
           </row>
 
           <row>
-            <entry><emphasis>filter</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>filter</emphasis><!-- DNT-End --></entry>
 
             <entry>A logical expression indicating which specific tag
             instances to process.</entry>
           </row>
 
           <row>
-            <entry><emphasis>statements</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>statements</emphasis><!-- DNT-End --></entry>
 
             <entry>The Template statements to execute.</entry>
           </row>
 
           <row>
-            <entry><emphasis>#END</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>#END</emphasis><!-- DNT-End --></entry>
 
-            <entry>The #FOR structure terminator.</entry>
+            <entry>The #<!-- DNT-Start -->FOR<!-- DNT-End --> structure terminator.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">#FOR </emphasis>structure loops through the
-  XML, searching for each instance of the <emphasis>tag</emphasis> that meets
+  <para>The <emphasis role="bold">#<!-- DNT-Start -->FOR<!-- DNT-End --> </emphasis>structure loops through the
+  <!-- DNT-Start -->XML<!-- DNT-End -->, searching for each instance of the <emphasis>tag</emphasis> that meets
   the <emphasis>filter</emphasis> expression and executes the
   <emphasis>statements </emphasis>on the data contained within that
   <emphasis>tag</emphasis>.</para>
 
   <para>Example:</para>
 
-  <programlisting>  // This script processes XML and generates ECL COUNT statements
+  <!-- DNT-Start --><programlisting>  // This script processes XML and generates ECL COUNT statements
   // which run against the datasets and filters specified in the XML.
   XMLstuff :=
    '&lt;section&gt;'+
@@ -92,8 +92,8 @@
   //   COUNT(person(person.firstname = 'RICHARD'));
   //   COUNT(person(person.firstname = 'JOHN'));
   //   COUNT(person(person.firstname = 'HENRY'));
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="_LOOP-_BREAK">#LOOP</link>, <link
-  linkend="_DECLARE">#DECLARE</link></para>
+  <para>See Also: <link linkend="_LOOP-_BREAK">#<!-- DNT-Start -->LOOP<!-- DNT-End --></link>, <link
+  linkend="_DECLARE">#<!-- DNT-Start -->DECLARE<!-- DNT-End --></link></para>
 </sect1>

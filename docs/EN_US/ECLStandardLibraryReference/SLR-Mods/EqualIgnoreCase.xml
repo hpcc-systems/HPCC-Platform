@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="EqualIgnoreCase">
-  <title>EqualIgnoreCase</title>
+  <!-- DNT-Start --><title>EqualIgnoreCase</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Str.EqualIgnoreCase<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.Str.EqualIgnoreCase<indexterm>
       <primary>STD.Str.EqualIgnoreCase</primary>
     </indexterm><indexterm>
       <primary>Str.EqualIgnoreCase</primary>
     </indexterm><indexterm>
       <primary>EqualIgnoreCase</primary>
     </indexterm>(</emphasis> <emphasis>source1,source2</emphasis> <emphasis
-  role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
+  role="bold">)</emphasis> <emphasis role="bold"></emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,37 +21,37 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source1</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>source1</emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the data to compare.</entry>
         </row>
 
         <row>
-          <entry><emphasis>source2</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>source2</emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the data to compare.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>EqualIgnoreCase returns a BOOLEAN value.</entry>
+          <entry><!-- DNT-Start -->EqualIgnoreCase<!-- DNT-End --> returns a <!-- DNT-Start -->BOOLEAN<!-- DNT-End --> value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">EqualIgnoreCase </emphasis>function
-  return TRUE if the <emphasis>source1</emphasis> and
+  <para>The <emphasis role="bold"><!-- DNT-Start -->EqualIgnoreCase<!-- DNT-End --> </emphasis>function
+  return <!-- DNT-Start -->TRUE<!-- DNT-End --> if the <emphasis>source1</emphasis> and
   <emphasis>source2</emphasis> strings contain the same data, ignoring any
   differences in the case of the letters. </para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">A := STD.Str.EqualIgnoreCase('ABCDE','abcde');
- //A contains TRUE -- they “match”
+  <!-- DNT-Start --><programlisting format="linespecific">A := STD.Str.EqualIgnoreCase('ABCDE','abcde');
+ //A contains TRUE -- they âmatchâ
 
 B := STD.Str.CompareIgnoreCase('ABCDE','edcba');
- //B contains FALSE -- they do not “match”
-</programlisting>
+ //B contains FALSE -- they do not âmatchâ
+</programlisting><!-- DNT-End -->
 </sect1>

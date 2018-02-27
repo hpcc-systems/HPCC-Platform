@@ -13,10 +13,10 @@
   </bookinfo>
 
   <chapter>
-    <title>ESDL Language Reference</title>
+    <!-- DNT-Start --><title>ESDL Language Reference</title><!-- DNT-End -->
 
     <sect1 id="ESP_Struct">
-      <title>ESP<emphasis role="bold">struct</emphasis></title>
+      <!-- DNT-Start --><title>ESP<emphasis role="bold">struct</emphasis></title><!-- DNT-End -->
 
       <para>ESPstruct is a set of elements grouped together under one name.
       These elements, known as <emphasis>members</emphasis>, can have
@@ -25,7 +25,7 @@
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting>
+      <!-- DNT-Start --><programlisting>
 ESPstruct NameBlock
 
 {
@@ -34,17 +34,17 @@ ESPstruct NameBlock
     string LastName;
     int Age;
 };
-   </programlisting>
+   </programlisting><!-- DNT-End -->
     </sect1>
 
     <sect1 id="ESPrequest">
-      <title><emphasis role="bold">ESPrequest</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">ESPrequest</emphasis></title><!-- DNT-End -->
 
       <para>The request structure for a method.</para>
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting>
+      <!-- DNT-Start --><programlisting>
 ESPrequest  MyQueryRequest
 
 {
@@ -55,17 +55,17 @@ ESPrequest  MyQueryRequest
  
     bool Descending(false);
 };
-   </programlisting>
+   </programlisting><!-- DNT-End -->
     </sect1>
 
     <sect1 id="ESPresponse">
-      <title><emphasis role="bold">ESPresponse</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">ESPresponse</emphasis></title><!-- DNT-End -->
 
       <para>The response structure for a method.</para>
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting> 
+      <!-- DNT-Start --><programlisting> 
 ESPresponse  MyQueryResponse
  
 {
@@ -75,18 +75,18 @@ ESPresponse  MyQueryResponse
  
  
 };
-   </programlisting>
+   </programlisting><!-- DNT-End -->
     </sect1>
 
     <sect1 id="ESParray">
-      <title><emphasis role="bold">ESParray</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">ESParray</emphasis></title><!-- DNT-End -->
 
       <para>A structure for unbounded arrays. Arrays support inheritance and
       can be nested.</para>
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting>
+      <!-- DNT-Start --><programlisting>
 ESPstruct NameBlock
   
 {
@@ -98,61 +98,61 @@ ESPstruct NameBlock
 };
  
 ESParray&lt;ESPstruct NameBlock&gt; Names;
-   </programlisting>
+   </programlisting><!-- DNT-End -->
     </sect1>
 
     <sect1 id="ESPenum">
-      <title><emphasis role="bold">ESPenum</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">ESPenum</emphasis></title><!-- DNT-End -->
 
       <para>A structure containing an enumerated value.</para>
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting>
+      <!-- DNT-Start --><programlisting>
 ESPenum EyeColors : string
   
 {
-  Brn("Brown"),
-  Blu("Blue"),
-  Grn("Green"),
+Â  Brn("Brown"),
+Â  Blu("Blue"),
+Â  Grn("Green"),
 };
  
 
 ESPstruct Person
 
 {
-  string FirstName;
-  string MiddleName;
+Â  string FirstName;
+Â  string MiddleName;
   string LastName;
 
-  ESPenum EyeColors EyeColor;
+Â  ESPenum EyeColors EyeColor;
 };
-   </programlisting>
+   </programlisting><!-- DNT-End -->
     </sect1>
 
     <sect1 id="ESPinclude">
-      <title><emphasis role="bold">ESPinclude</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">ESPinclude</emphasis></title><!-- DNT-End -->
 
       <para>ESPinclude allows you to include an external ESDLfile. This is
       similar to the #include ststement.</para>
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting>
+      <!-- DNT-Start --><programlisting>
 ESPinclude(ws_topology);
-  </programlisting>
+  </programlisting><!-- DNT-End -->
     </sect1>
 
     <sect1 id="ESPservice">
-      <title><emphasis role="bold">ESPservice</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">ESPservice</emphasis></title><!-- DNT-End -->
 
       <para>This defines a Web service. Once defined, you can add a service to
-      an ESP server’s configuration to expose its methods and ESDL interfaces.
+      an <!-- DNT-Start -->ESP<!-- DNT-End --> serverâs configuration to expose its methods and <!-- DNT-Start -->ESDL<!-- DNT-End --> interfaces.
       An ESPservice should contain one or more method definitions.</para>
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting>
+      <!-- DNT-Start --><programlisting>
 ESPservice MyService
 
 {
@@ -163,11 +163,11 @@ ESPservice MyService
 };
 
 
-   </programlisting>
+   </programlisting><!-- DNT-End -->
     </sect1>
 
     <sect1 id="ESPmethod">
-      <title><emphasis role="bold">ESPmethod</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">ESPmethod</emphasis></title><!-- DNT-End -->
 
       <para>This defines a method definition you can reference in an
       ESPservice structure. The method definition should contain references to
@@ -175,7 +175,7 @@ ESPservice MyService
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting>
+      <!-- DNT-Start --><programlisting>
 ESPservice MyService
 
 {
@@ -183,92 +183,92 @@ ESPservice MyService
   ESPmethod MyMethod2(MyMethod2Request, MyMethod2Response);
 };
 
-   </programlisting>
+   </programlisting><!-- DNT-End -->
     </sect1>
   </chapter>
 
   <chapter>
-    <title>ESDL Datatypes</title>
+    <!-- DNT-Start --><title>ESDL Datatypes</title><!-- DNT-End -->
 
     <sect1 id="boolean_bool">
-      <title><emphasis role="bold">boolean</emphasis><emphasis
-      role="bold">bool</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">boolean</emphasis><emphasis
+      role="bold">bool</emphasis></title><!-- DNT-End -->
 
       <para>A boolean or logical data type having one of two possible values:
       true (1) or false (0).</para>
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting>boolean includeFlag; </programlisting>
+      <!-- DNT-Start --><programlisting>boolean includeFlag; </programlisting><!-- DNT-End -->
     </sect1>
 
     <sect1 id="ESDL_Data_string">
-      <title><emphasis role="bold">string</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">string</emphasis></title><!-- DNT-End -->
 
       <para>A data type consisting of sequence of alphanumeric
       characters.</para>
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting>string FirstName;
-</programlisting>
+      <!-- DNT-Start --><programlisting>string FirstName;
+</programlisting><!-- DNT-End -->
     </sect1>
 
     <sect1 id="ESDL_Data_int">
-      <title><emphasis role="bold">int</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">int</emphasis></title><!-- DNT-End -->
 
       <para>An integer value.</para>
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting>int Age;   </programlisting>
+      <!-- DNT-Start --><programlisting>int Age;   </programlisting><!-- DNT-End -->
     </sect1>
 
     <sect1 id="ESDL_Data_int64">
-      <title><emphasis role="bold">int64</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">int64</emphasis></title><!-- DNT-End -->
 
       <para>A 64-bit integer value</para>
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting>int64 Iterations;
-</programlisting>
+      <!-- DNT-Start --><programlisting>int64 Iterations;
+</programlisting><!-- DNT-End -->
     </sect1>
 
     <sect1 id="ESDL_Data_float">
-      <title><emphasis role="bold">float</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">float</emphasis></title><!-- DNT-End -->
 
       <para>A 4-byte floating point or real number.</para>
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting>float Temperature;
-</programlisting>
+      <!-- DNT-Start --><programlisting>float Temperature;
+</programlisting><!-- DNT-End -->
     </sect1>
 
     <sect1 id="ESDL_Data_double">
-      <title><emphasis role="bold">double</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">double</emphasis></title><!-- DNT-End -->
 
       <para>An 8-byte floating point or real number.</para>
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting>float Temperature;   </programlisting>
+      <!-- DNT-Start --><programlisting>float Temperature;   </programlisting><!-- DNT-End -->
     </sect1>
 
     <sect1 id="ESDL_Data_binary">
-      <title><emphasis role="bold">binary</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">binary</emphasis></title><!-- DNT-End -->
 
-      <para>A data type containing binary data, similar to a BLOB .</para>
+      <para>A data type containing binary data, similar to a <!-- DNT-Start -->BLOB<!-- DNT-End --> .</para>
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting>binary RetinaScanSample;   </programlisting>
+      <!-- DNT-Start --><programlisting>binary RetinaScanSample;   </programlisting><!-- DNT-End -->
     </sect1>
 
     <sect1 id="ESDL_Data_ECLTypeMapping">
-      <title><emphasis role="bold">ESDL, XSD, and ECL Type
-      Mapping</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">ESDL, XSD, and ECL Type
+      Mapping</emphasis></title><!-- DNT-End -->
 
       <para><informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="3">
@@ -280,15 +280,15 @@ ESPservice MyService
 
             <tbody>
               <row>
-                <entry><emphasis role="bold">ESDL</emphasis></entry>
+                <entry><!-- DNT-Start --><emphasis role="bold">ESDL</emphasis><!-- DNT-End --></entry>
 
-                <entry><emphasis role="bold">XSD</emphasis></entry>
+                <entry><emphasis role="bold"><!-- DNT-Start -->XSD<!-- DNT-End --></emphasis></entry>
 
-                <entry><emphasis role="bold">ECL</emphasis></entry>
+                <entry><emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End --></emphasis></entry>
               </row>
 
               <row>
-                <entry>Bool boolean</entry>
+                <entry><!-- DNT-Start -->Bool boolean<!-- DNT-End --></entry>
 
                 <entry>bool</entry>
 
@@ -296,7 +296,7 @@ ESPservice MyService
               </row>
 
               <row>
-                <entry>Binary</entry>
+                <entry><!-- DNT-Start -->Binary<!-- DNT-End --></entry>
 
                 <entry>Base64Binary</entry>
 
@@ -304,39 +304,39 @@ ESPservice MyService
               </row>
 
               <row>
-                <entry>Float</entry>
+                <entry><!-- DNT-Start -->Float<!-- DNT-End --></entry>
 
                 <entry>float</entry>
 
-                <entry>REAL4</entry>
+                <entry><!-- DNT-Start -->REAL<!-- DNT-End -->4</entry>
               </row>
 
               <row>
-                <entry>Double</entry>
+                <entry><!-- DNT-Start -->Double<!-- DNT-End --></entry>
 
                 <entry>double</entry>
 
-                <entry>REAL8</entry>
+                <entry><!-- DNT-Start -->REAL<!-- DNT-End -->8</entry>
               </row>
 
               <row>
-                <entry>Int</entry>
+                <entry><!-- DNT-Start -->Int<!-- DNT-End --></entry>
 
                 <entry>int</entry>
 
-                <entry>INTEGER</entry>
+                <entry><!-- DNT-Start -->INTEGER<!-- DNT-End --></entry>
               </row>
 
               <row>
-                <entry>Int64</entry>
+                <entry><!-- DNT-Start -->Int64<!-- DNT-End --></entry>
 
                 <entry>long</entry>
 
-                <entry>INTEGER8</entry>
+                <entry><!-- DNT-Start -->INTEGER<!-- DNT-End -->8</entry>
               </row>
 
               <row>
-                <entry>String</entry>
+                <entry><!-- DNT-Start -->String<!-- DNT-End --></entry>
 
                 <entry>string</entry>
 
@@ -349,87 +349,87 @@ ESPservice MyService
   </chapter>
 
   <chapter>
-    <title>ESDL Attributes</title>
+    <!-- DNT-Start --><title>ESDL Attributes</title><!-- DNT-End -->
 
-    <para>You can use ESDL attributes to extend and override the default
-    behavior of an ESDL definition. For example, adding a max_len(n) to a
+    <para>You can use <!-- DNT-Start -->ESDL<!-- DNT-End --> attributes to extend and override the default
+    behavior of an <!-- DNT-Start -->ESDL<!-- DNT-End --> definition. For example, adding a max_len(n) to a
     string defines the string will only need to store a certain number of
     characters.</para>
 
     <para>Many attributes are treated as hints that may have more effect on
     some implementations than others. For example, max_len(n) will affect
-    generated ECL code, but is ignored when generating C++.</para>
+    generated <!-- DNT-Start -->ECL<!-- DNT-End --> code, but is ignored when generating C++.</para>
 
     <sect1 id="ESDL_Attributes_max_len">
-      <title><emphasis role="bold">max_len (</emphasis><emphasis
-      role="bold">n</emphasis><emphasis role="bold">)</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">max_len (</emphasis><emphasis
+      role="bold">n</emphasis><emphasis role="bold">)</emphasis></title><!-- DNT-End -->
 
       <para>The <emphasis>max_len</emphasis> attribute specifies the field
-      length for ECL string field.</para>
+      length for <!-- DNT-Start -->ECL<!-- DNT-End --> string field.</para>
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting>[max_len(20)] string City;   </programlisting>
+      <!-- DNT-Start --><programlisting>[max_len(20)] string City;   </programlisting><!-- DNT-End -->
 
-      <para>It means that in ECL, City field is a fixed length of 20 chars.
+      <para>It means that in <!-- DNT-Start -->ECL<!-- DNT-End -->, City field is a fixed length of 20 chars.
       For integer type, the max_len means the maximum size in bytes for the
       integer (8*max_len bits integer).</para>
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting>[max_len(3)] int Age;   </programlisting>
+      <!-- DNT-Start --><programlisting>[max_len(3)] int Age;   </programlisting><!-- DNT-End -->
 
-      <para>This generates ECL code:</para>
+      <para>This generates <!-- DNT-Start -->ECL<!-- DNT-End --> code:</para>
 
-      <programlisting>integer3 Age{xpath('Age')};   </programlisting>
+      <!-- DNT-Start --><programlisting>integer3 Age{xpath('Age')};   </programlisting><!-- DNT-End -->
 
-      <para>This attribute works for ESPenum type, too. The ECL type is also
+      <para>This attribute works for ESPenum type, too. The <!-- DNT-Start -->ECL<!-- DNT-End --> type is also
       string.</para>
 
-      <programlisting>[max_len(2)] ESPenum StateCode State;   </programlisting>
+      <!-- DNT-Start --><programlisting>[max_len(2)] ESPenum StateCode State;   </programlisting><!-- DNT-End -->
 
       <para>Here the StateCode is 2-char state code enumeration.</para>
 
       <para>This attribute can also be used for ESPstruct, ESPrequest,
       ESPresponse:</para>
 
-      <programlisting>ESPstruct [max_len(1867)] BpsReportIdentitySlim : Identity  
+      <!-- DNT-Start --><programlisting>ESPstruct [max_len(1867)] BpsReportIdentitySlimÂ : Identity  
 {
    ...
-};   </programlisting>
+};   </programlisting><!-- DNT-End -->
 
-      <para>This generates ECL code:</para>
+      <para>This generates <!-- DNT-Start -->ECL<!-- DNT-End --> code:</para>
 
-      <programlisting>export t_MyQuery := record (share.t_Name), MAXLENGTH(1867)
+      <!-- DNT-Start --><programlisting>export t_MyQuery := record (share.t_Name), MAXLENGTH(1867)
 {
-}; </programlisting>
+}; </programlisting><!-- DNT-End -->
 
-      <para>The ECL option <emphasis>MAXLENGTH</emphasis> helps ECL engine
+      <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> option <emphasis><!-- DNT-Start -->MAXLENGTH<!-- DNT-End --></emphasis> helps <!-- DNT-Start -->ECL<!-- DNT-End --> engine
       better manage memory.</para>
 
-      <para>This does not affect the type in the XSD/WSDL. ESP ignores this
+      <para>This does not affect the type in the <!-- DNT-Start -->XSD<!-- DNT-End -->/<!-- DNT-Start -->WSDL<!-- DNT-End -->. <!-- DNT-Start -->ESP<!-- DNT-End --> ignores this
       attribute when generating the schema. The type for a string is
       xsd:string which has no length limit. Therefore, the schema stays the
       same if the field length changes in the Roxie query.</para>
     </sect1>
 
     <sect1 id="ESDL_Attributes_ecl_max_len">
-      <title>ecl_max_len (<emphasis role="bold">n</emphasis><emphasis
-      role="bold">)</emphasis></title>
+      <!-- DNT-Start --><title>ecl_max_len (<emphasis role="bold">n</emphasis><emphasis
+      role="bold">)</emphasis></title><!-- DNT-End -->
 
-      <para>This <emphasis>ecl_max_len</emphasis> attribute tells the ECL
-      generator to use ECL <emphasis>maxlength </emphasis>instead of the
+      <para>This <emphasis>ecl_max_len</emphasis> attribute tells the <!-- DNT-Start -->ECL<!-- DNT-End -->
+      generator to use <!-- DNT-Start -->ECL<!-- DNT-End --> <emphasis>maxlength </emphasis>instead of the
       regular field length.</para>
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting>[ecl_max_len(50)] string CompanyName;
-[max_len(6)] string Gender;   </programlisting>
+      <!-- DNT-Start --><programlisting>[ecl_max_len(50)] string CompanyName;
+[max_len(6)] string Gender;   </programlisting><!-- DNT-End -->
 
-      <para>The generated ECL code is:</para>
+      <para>The generated <!-- DNT-Start -->ECL<!-- DNT-End --> code is:</para>
 
-      <programlisting>string CompanyName { xpath("CompanyName"),maxlength(50) };
-string6 Gender { xpath("Gender") };   </programlisting>
+      <!-- DNT-Start --><programlisting>string CompanyName { xpath("CompanyName"),maxlength(50) };
+string6 Gender { xpath("Gender") };   </programlisting><!-- DNT-End -->
 
       <para><emphasis role="bold">Note</emphasis>: when both
       <emphasis>max_len</emphasis> and <emphasis>ecl_max_len</emphasis> are
@@ -438,30 +438,30 @@ string6 Gender { xpath("Gender") };   </programlisting>
     </sect1>
 
     <sect1 id="ESDL_Attributes_ecl_name">
-      <title>ecl_name ("<emphasis role="bold">name</emphasis><emphasis
-      role="bold">")</emphasis></title>
+      <!-- DNT-Start --><title>ecl_name ("<emphasis role="bold">name</emphasis><emphasis
+      role="bold">")</emphasis></title><!-- DNT-End -->
 
       <para>The <emphasis>ecl_name</emphasis> attribute specifies the field
-      name in generated ECL code. By default, the field name in ECL is the
-      same as the name defined in ECM. However, in some cases, the name could
-      causes issues in ECL. For example keywords in ECL cannot be used as a
+      name in generated <!-- DNT-Start -->ECL<!-- DNT-End --> code. By default, the field name in <!-- DNT-Start -->ECL<!-- DNT-End --> is the
+      same as the name defined in <!-- DNT-Start -->ECM<!-- DNT-End -->. However, in some cases, the name could
+      causes issues in <!-- DNT-Start -->ECL<!-- DNT-End -->. For example keywords in <!-- DNT-Start -->ECL<!-- DNT-End --> cannot be used as a
       field name.</para>
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting>[ecl_name("_export")] string Export;
-[ecl_name("_type")] string Type;   </programlisting>
+      <!-- DNT-Start --><programlisting>[ecl_name("_export")] string Export;
+[ecl_name("_type")] string Type;   </programlisting><!-- DNT-End -->
 
-      <para>Here, both <emphasis role="bold">EXPORT</emphasis> and <emphasis
-      role="bold">TYPE</emphasis> are ECL keywords and cannot be used as ECL
+      <para>Here, both <emphasis role="bold"><!-- DNT-Start -->EXPORT<!-- DNT-End --></emphasis> and <emphasis
+      role="bold"><!-- DNT-Start -->TYPE<!-- DNT-End --></emphasis> are <!-- DNT-Start -->ECL<!-- DNT-End --> keywords and cannot be used as <!-- DNT-Start -->ECL<!-- DNT-End -->
       field names. We use <emphasis>ecl_name</emphasis> to tell the esdl2ecl
       process to generate acceptable names.</para>
     </sect1>
 
     <sect1 id="ESDL_Attributes_counter-count_val">
-      <title>counter and count_val</title>
+      <!-- DNT-Start --><title>counter and count_val</title><!-- DNT-End -->
 
-      <para>These two attributes are used to help ESP calculate the record
+      <para>These two attributes are used to help <!-- DNT-Start -->ESP<!-- DNT-End --> calculate the record
       count of the response.</para>
 
       <para><emphasis>counter</emphasis> counts the number of children of the
@@ -477,40 +477,40 @@ string6 Gender { xpath("Gender") };   </programlisting>
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting>[counter] ESParray&lt;MyRecord, Record&gt; Records;
-[count_val] int TotalFound;   </programlisting>
+      <!-- DNT-Start --><programlisting>[counter] ESParray&lt;MyRecord, Record&gt; Records;
+[count_val] int TotalFound;   </programlisting><!-- DNT-End -->
     </sect1>
 
     <sect1 id="ESDL_Attributes_max_count_var">
-      <title><emphasis role="bold">max_count_var</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">max_count_var</emphasis></title><!-- DNT-End -->
 
       <para>The max_count_var attribute is used to specify the expected max
       items in a dataset (ESParray).</para>
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting>[max_count_var("iesp.Constants.JD.MaxRecords")] ESParray &lt;ESPstruct MYRecord, Record&gt; Records;   </programlisting>
+      <!-- DNT-Start --><programlisting>[max_count_var("iesp.Constants.JD.MaxRecords")] ESParray &lt;ESPstruct MYRecord, Record&gt; Records;   </programlisting><!-- DNT-End -->
 
-      <para>Roxie will define the constant iesp.Constants.JD.MaxRecords and
-      change it at will without affecting ESP.</para>
+      <para>Roxie will define the constant iesp.Constants.<!-- DNT-Start -->JD<!-- DNT-End -->.MaxRecords and
+      change it at will without affecting <!-- DNT-Start -->ESP<!-- DNT-End -->.</para>
     </sect1>
 
     <sect1 id="ESDL_Attributes_ecl_null">
-      <title>ecl_null (<emphasis role="bold">n</emphasis><emphasis
+      <!-- DNT-Start --><title>ecl_null (<emphasis role="bold">n</emphasis><emphasis
       role="bold"> || </emphasis><emphasis
-      role="bold">string</emphasis><emphasis role="bold">)</emphasis></title>
+      role="bold">string</emphasis><emphasis role="bold">)</emphasis></title><!-- DNT-End -->
 
-      <para>The <emphasis>ecl_null </emphasis>attribute tells ESP to remove
+      <para>The <emphasis>ecl_null </emphasis>attribute tells <!-- DNT-Start -->ESP<!-- DNT-End --> to remove
       the field altogether if the field's value is <emphasis>n</emphasis> or
       <emphasis>string</emphasis>. This provides a means to remove a field
       completely when there is no data for it.</para>
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting>[ecl_null(0)] int Age;
-[ecl_null('false')] bool IsMatch;   </programlisting>
+      <!-- DNT-Start --><programlisting>[ecl_null(0)] int Age;
+[ecl_null('false')] bool IsMatch;   </programlisting><!-- DNT-End -->
 
-      <para>Age 0 means we don’t have data for this person. So if Age is 0,
+      <para>Age 0 means we donât have data for this person. So if Age is 0,
       tag &lt;Age&gt; will not be returned.</para>
 
       <para>Without this attribute, <emphasis
@@ -521,8 +521,8 @@ string6 Gender { xpath("Gender") };   </programlisting>
     </sect1>
 
     <sect1 id="ESDL_Attributes_leading_zero">
-      <title>leading_zero(<emphasis role="bold">n</emphasis><emphasis
-      role="bold">)</emphasis></title>
+      <!-- DNT-Start --><title>leading_zero(<emphasis role="bold">n</emphasis><emphasis
+      role="bold">)</emphasis></title><!-- DNT-End -->
 
       <para>The <emphasis>leading_zero</emphasis> attribute adds zero(s) to
       the field value to so that the total length is
@@ -530,36 +530,36 @@ string6 Gender { xpath("Gender") };   </programlisting>
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting>ESPstruct Date
+      <!-- DNT-Start --><programlisting>ESPstruct Date
 {
    [leading_zero(4)] Year;
    [leading_zero(2)] Month;
    [leading_zero(2)] Day;
-};  </programlisting>
+};  </programlisting><!-- DNT-End -->
 
       <para>So the Date will always have a 4-digit Year and a 2-digit Month
       and a 2-digit Day.</para>
     </sect1>
 
     <sect1 id="ESDL_Attributes_ecl_hide">
-      <title><emphasis role="bold">ecl_hide</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">ecl_hide</emphasis></title><!-- DNT-End -->
 
       <para>The <emphasis>ecl_hide</emphasis> attribute hides the field from
-      ECL (that is, the field is removed when generating the ECL code). This
+      <!-- DNT-Start -->ECL<!-- DNT-End --> (that is, the field is removed when generating the <!-- DNT-Start -->ECL<!-- DNT-End --> code). This
       is used for some special cases.</para>
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting>ESPstruct Relative
+      <!-- DNT-Start --><programlisting>ESPstruct Relative
 {
    [ecl_hide] ESParray&lt;ESPstruct Relative, Relative&gt; Relatives;
    "
-};   </programlisting>
+};   </programlisting><!-- DNT-End -->
 
       <para>In this case, the Relative structure is defined in a recursive
-      manner, and ECL does not support such a construct. Therefore, we use
+      manner, and <!-- DNT-Start -->ECL<!-- DNT-End --> does not support such a construct. Therefore, we use
       <emphasis>ecl_hide</emphasis> to avoid the recursive definition in
-      ECL.</para>
+      <!-- DNT-Start -->ECL<!-- DNT-End -->.</para>
 
       <para>Sometimes a field is hidden from ecl for other reasons.</para>
 
@@ -569,33 +569,33 @@ string6 Gender { xpath("Gender") };   </programlisting>
     </sect1>
 
     <sect1 id="ESDL_Attributes_ecl_type">
-      <title>ecl_type ("<emphasis role="bold">type</emphasis><emphasis
-      role="bold">")</emphasis></title>
+      <!-- DNT-Start --><title>ecl_type ("<emphasis role="bold">type</emphasis><emphasis
+      role="bold">")</emphasis></title><!-- DNT-End -->
 
       <para>The <emphasis>ecl_type</emphasis> attribute defines the field type
-      in ECL.</para>
+      in <!-- DNT-Start -->ECL<!-- DNT-End -->.</para>
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting> [ecl_type("Decimal10_2")] double RetailPrice;   </programlisting>
+      <!-- DNT-Start --><programlisting> [ecl_type("Decimal10_2")] double RetailPrice;   </programlisting><!-- DNT-End -->
 
-      <para>ESDL does not have a monetary type, so we use
+      <para><!-- DNT-Start -->ESDL<!-- DNT-End --> does not have a monetary type, so we use
       <emphasis>ecl_type</emphasis> to define it.</para>
     </sect1>
 
     <sect1 id="ESDL_Attributes_get_data_from">
-      <title>get_data_from ("<emphasis role="bold">field</emphasis><emphasis
-      role="bold">")</emphasis></title>
+      <!-- DNT-Start --><title>get_data_from ("<emphasis role="bold">field</emphasis><emphasis
+      role="bold">")</emphasis></title><!-- DNT-End -->
 
       <para>For code reuse and simplification, when complex versioning changes
       have been made.</para>
     </sect1>
 
     <sect1 id="ESDL_Attributes_ecl_keep">
-      <title>ecl_keep</title>
+      <!-- DNT-Start --><title>ecl_keep</title><!-- DNT-End -->
 
       <para>The <emphasis>ecl_keep</emphasis> attribute keeps the field in the
-      generated ECL even though this field would have been hidden without this
+      generated <!-- DNT-Start -->ECL<!-- DNT-End --> even though this field would have been hidden without this
       attribute.</para>
 
       <para>For instance, a field with <emphasis>get_data_from </emphasis>will
@@ -605,7 +605,7 @@ string6 Gender { xpath("Gender") };   </programlisting>
     </sect1>
 
     <sect1 id="ESDL_Attributes_min_ver">
-      <title><emphasis role="bold">min_ver</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">min_ver</emphasis></title><!-- DNT-End -->
 
       <para>The min_ver attribute allows you to define the minimum (earliest)
       version where a field is visible. Requests using a prior version will
@@ -613,11 +613,11 @@ string6 Gender { xpath("Gender") };   </programlisting>
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting> [min_ver("1.03")] bool IsValid;   </programlisting>
+      <!-- DNT-Start --><programlisting> [min_ver("1.03")] bool IsValid;   </programlisting><!-- DNT-End -->
     </sect1>
 
     <sect1 id="ESDL_Attributes_max_ver">
-      <title><emphasis role="bold">max_ver</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">max_ver</emphasis></title><!-- DNT-End -->
 
       <para>The max_ver attribute allows you to define the maximum (latest)
       version where a field is visible. Requests using a later version will
@@ -625,20 +625,20 @@ string6 Gender { xpath("Gender") };   </programlisting>
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting> [max_ver("1.04")] bool IsValid;   </programlisting>
+      <!-- DNT-Start --><programlisting> [max_ver("1.04")] bool IsValid;   </programlisting><!-- DNT-End -->
     </sect1>
 
     <sect1 id="ESDL_Attributes_depr_ver">
-      <title><emphasis role="bold">depr_ver</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">depr_ver</emphasis></title><!-- DNT-End -->
 
-      <para>The depr_ver attribute allows you to declare a field’s end of life
+      <para>The depr_ver attribute allows you to declare a fieldâs end of life
       version. The field is deprecated at the specified version number.
       Requests using that version or any subsequent version will not have
       access to the field.</para>
 
       <para><emphasis role="bold">Example:</emphasis></para>
 
-      <programlisting> [depr_ver("1.04")] bool IsValid;   </programlisting>
+      <!-- DNT-Start --><programlisting> [depr_ver("1.04")] bool IsValid;   </programlisting><!-- DNT-End -->
     </sect1>
   </chapter>
 </book>

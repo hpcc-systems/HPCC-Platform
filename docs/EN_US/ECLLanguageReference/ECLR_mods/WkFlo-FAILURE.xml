@@ -2,14 +2,14 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="FAILURE">
-  <title>FAILURE</title>
+  <!-- DNT-Start --><title>FAILURE</title><!-- DNT-End -->
 
   <para><emphasis>attribute </emphasis>:= <emphasis>expression
-  </emphasis><emphasis role="bold">: FAILURE<indexterm>
-      <primary>FAILURE</primary>
+  </emphasis><emphasis role="bold">: <!-- DNT-Start -->FAILURE<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->FAILURE<!-- DNT-End --></primary>
     </indexterm>(</emphasis><emphasis>handler</emphasis><emphasis
   role="bold">) <indexterm>
-      <primary>FAILURE workflow service</primary>
+      <primary><!-- DNT-Start -->FAILURE<!-- DNT-End --> workflow service</primary>
     </indexterm></emphasis>;</para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -20,19 +20,19 @@
 
         <tbody>
           <row>
-            <entry><emphasis>attribute</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>attribute</emphasis><!-- DNT-End --></entry>
 
             <entry>The name of the Attribute.</entry>
           </row>
 
           <row>
-            <entry><emphasis>expression</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
 
             <entry>The definition of the attribute.</entry>
           </row>
 
           <row>
-            <entry><emphasis>handler</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>handler</emphasis><!-- DNT-End --></entry>
 
             <entry>The action to run if the expression fails.</entry>
           </row>
@@ -40,22 +40,22 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">FAILURE </emphasis>service executes the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->FAILURE<!-- DNT-End --> </emphasis>service executes the
   <emphasis>handler</emphasis> Attribute when the
-  <emphasis>expression</emphasis> fails. FAILURE notionally executes in
+  <emphasis>expression</emphasis> fails. <!-- DNT-Start -->FAILURE<!-- DNT-End --> notionally executes in
   parallel with the failed return of the result. This service implicitly
   causes the <emphasis>attribute</emphasis> to be evaluated at global scope
   instead of the enclosing scope. Only available if workflow services are
-  turned on (see #OPTION(workflow)).</para>
+  turned on (see #<!-- DNT-Start -->OPTION<!-- DNT-End -->(workflow)).</para>
 
   <para>Example:</para>
 
-  <programlisting>  sPeople  := SORT(Person,Person.per_first_name);
+  <!-- DNT-Start --><programlisting>  sPeople  := SORT(Person,Person.per_first_name);
   nUniques := COUNT(DEDUP(sPeople,Person.per_first_name AND
                     Person.address))
            : FAILURE(Email.simpleSend(SystemsPersonel,
                     SystemsPersonel.email,'ouch.htm'));
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="SUCCESS">SUCCESS</link>, <link linkend="RECOVERY">RECOVERY</link></para>
+  <para>See Also: <link linkend="SUCCESS"><!-- DNT-Start -->SUCCESS<!-- DNT-End --></link>, <link linkend="RECOVERY"><!-- DNT-Start -->RECOVERY<!-- DNT-End --></link></para>
 </sect1>

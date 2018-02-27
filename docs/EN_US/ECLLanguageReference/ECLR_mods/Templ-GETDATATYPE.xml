@@ -2,10 +2,10 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_GETDATATYPE">
-  <title>#GETDATATYPE</title>
+  <!-- DNT-Start --><title>#GETDATATYPE</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">#GETDATATYPE<indexterm>
-      <primary>#GETDATATYPE</primary>
+  <para><emphasis role="bold">#<!-- DNT-Start -->GETDATATYPE<!-- DNT-End --><indexterm>
+      <primary>#<!-- DNT-Start -->GETDATATYPE<!-- DNT-End --></primary>
     </indexterm>( </emphasis><emphasis>field </emphasis><emphasis
   role="bold">);</emphasis></para>
 
@@ -17,7 +17,7 @@
 
         <tbody>
           <row>
-            <entry><emphasis>field</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>field</emphasis><!-- DNT-End --></entry>
 
             <entry>A previously defined user-defined symbol containing the
             name of a field in a dataset..</entry>
@@ -26,20 +26,20 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">#GETDATATYPE </emphasis>function returns the
+  <para>The <emphasis role="bold">#<!-- DNT-Start -->GETDATATYPE<!-- DNT-End --> </emphasis>function returns the
   value type of the <emphasis>field</emphasis>. The <emphasis>field</emphasis>
   argument must be a scalar value or a field from a dataset (rather than a
   field from a record definition.)</para>
 
   <para>Example:</para>
 
-  <programlisting>  person := DATASET([{D'6789ABCDE6789ABCDE'}],{DATA9 per_cid});
+  <!-- DNT-Start --><programlisting>  person := DATASET([{D'6789ABCDE6789ABCDE'}],{DATA9 per_cid});
   #DECLARE(fieldtype);
   #DECLARE(field);
   #SET(field, 'person.per_cid');
   #SET(fieldtype, #GETDATATYPE(%field%));
   res := %'fieldtype'%;
-  res; // Output: res = 'data9'</programlisting>
+  res; // Output: res = 'data9'</programlisting><!-- DNT-End -->
 
   <para>See Also: <link linkend="Value_Types_Chapter">Value
   Types</link></para>

@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="TRIM">
-  <title>TRIM</title>
+  <!-- DNT-Start --><title>TRIM</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">TRIM<indexterm>
-      <primary>TRIM</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->TRIM<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->TRIM<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>TRIM Function</primary>
+      <primary><!-- DNT-Start -->TRIM<!-- DNT-End --> Function</primary>
     </indexterm>(</emphasis><emphasis>string_value </emphasis><emphasis
   role="bold">[ </emphasis><emphasis>,flag</emphasis><emphasis role="bold"> ]
   )</emphasis></para>
@@ -20,37 +20,37 @@
 
         <tbody>
           <row>
-            <entry><emphasis>string_value</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>string_value</emphasis><!-- DNT-End --></entry>
 
             <entry>The string from which to remove spaces.</entry>
           </row>
 
           <row>
-            <entry><emphasis>flag</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>flag</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specify which spaces to remove. Valid flag values
-            are: RIGHT (remove trailing spaces—this is the default), LEFT
-            (remove leading spaces), LEFT, RIGHT (remove leading and trailing
-            spaces), and ALL (remove all spaces, even those within the
+            are: <!-- DNT-Start -->RIGHT<!-- DNT-End --> (remove trailing spacesâthis is the default), <!-- DNT-Start -->LEFT<!-- DNT-End -->
+            (remove leading spaces), <!-- DNT-Start -->LEFT<!-- DNT-End -->, <!-- DNT-Start -->RIGHT<!-- DNT-End --> (remove leading and trailing
+            spaces), and <!-- DNT-Start -->ALL<!-- DNT-End --> (remove all spaces, even those within the
             string_value).</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>TRIM returns a single value.</entry>
+            <entry><!-- DNT-Start -->TRIM<!-- DNT-End --> returns a single value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">TRIM </emphasis>function returns the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->TRIM<!-- DNT-End --> </emphasis>function returns the
   <emphasis>string_value </emphasis>with all trailing and/or leading spaces
   removed.</para>
 
   <para>Example:</para>
 
-  <programlisting>  STRING20 SomeStringValue := 'ABC';
+  <!-- DNT-Start --><programlisting>  STRING20 SomeStringValue := 'ABC';
   //contains 17 trailing spaces
   
   VARSTRING MyVal := TRIM(SomeStringValue);
@@ -61,7 +61,7 @@
   
   VARSTRING MyVal := TRIM(SomeStringValue,LEFT,RIGHT);
   // MyVal is "ABC DEF" with no trailing spaces
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="STRING">STRING</link>, <link linkend="VARSTRING">VARSTRING</link></para>
+  <para>See Also: <link linkend="STRING"><!-- DNT-Start -->STRING<!-- DNT-End --></link>, <link linkend="VARSTRING"><!-- DNT-Start -->VARSTRING<!-- DNT-End --></link></para>
 </sect1>

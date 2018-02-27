@@ -2,21 +2,21 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SubstituteIncluded">
-  <title>SubstituteIncluded</title>
+  <!-- DNT-Start --><title>SubstituteIncluded</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Str.SubstituteIncluded<indexterm>
-      <primary>STD.Str.SubstituteIncluded</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->SubstituteIncluded<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->SubstituteIncluded<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Str.SubstituteIncluded</primary>
+      <primary>Str.<!-- DNT-Start -->SubstituteIncluded<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>SubstituteIncluded</primary>
+      <primary><!-- DNT-Start -->SubstituteIncluded<!-- DNT-End --></primary>
     </indexterm>(</emphasis> <emphasis>source, target, replacement</emphasis>
   <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
-  <para><emphasis role="bold">STD.Uni.SubstituteIncluded<indexterm>
-      <primary>STD.Uni.SubstituteIncluded</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->SubstituteIncluded<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->SubstituteIncluded<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Uni.SubstituteIncluded</primary>
+      <primary>Uni.<!-- DNT-Start -->SubstituteIncluded<!-- DNT-End --></primary>
     </indexterm>(</emphasis> <emphasis>source, target, replacement</emphasis>
   <emphasis role="bold">)</emphasis></para>
 
@@ -28,35 +28,35 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>source</emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the data to search.</entry>
         </row>
 
         <row>
-          <entry><emphasis>target </emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>target </emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the characters to search for.</entry>
         </row>
 
         <row>
-          <entry><emphasis>replacement </emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>replacement </emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the replacement character as its first
           character.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>SubstituteIncluded returns a STRING or UNICODE value, as
+          <entry><!-- DNT-Start -->SubstituteIncluded<!-- DNT-End --> returns a <!-- DNT-Start -->STRING<!-- DNT-End --> or <!-- DNT-Start -->UNICODE<!-- DNT-End --> value, as
           appropriate.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">SubstituteIncluded </emphasis>functions
+  <para>The <emphasis role="bold"><!-- DNT-Start -->SubstituteIncluded<!-- DNT-End --> </emphasis>functions
   return the <emphasis>source</emphasis> string with the
   <emphasis>replacement</emphasis> character substituted for all characters
   that exist in both the <emphasis>source</emphasis> and the <emphasis>target
@@ -66,10 +66,10 @@
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">IMPORT STD;
+  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 A := STD.Uni.SubstituteIncluded(u'abcde', u'cd', u'x');
    //A contains u'abxxe';
 B := STD.Str.SubstituteIncluded('abcabc','ac','yz');
    //B contains 'ybyyby'
-</programlisting>
+</programlisting><!-- DNT-End -->
 </sect1>

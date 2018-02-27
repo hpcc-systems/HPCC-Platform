@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="DfuPlusExec">
-  <title>DfuPlusExec</title>
+  <!-- DNT-Start --><title>DfuPlusExec</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.File.DfuPlusExec<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.File.DfuPlusExec<indexterm>
       <primary>STD.File.DfuPlusExec</primary>
     </indexterm><indexterm>
       <primary>File.DfuPlusExec</primary>
     </indexterm><indexterm>
       <primary>DfuPlusExec</primary>
     </indexterm>(</emphasis> <emphasis> commandline</emphasis> <emphasis
-  role="bold">] )</emphasis></para>
+  role="bold">] )</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,7 +21,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>commandline</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>commandline</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the DFUPlus.exe command
           line to execute. The valid arguments are documented in the Client
@@ -32,14 +32,14 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">DfuPlusExec</emphasis> action executes the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->DfuPlusExec<!-- DNT-End --></emphasis> action executes the
   specified <emphasis>commandline</emphasis> just as the DfuPLus.exe program
   would do. This simply allows you to have all the functionality of the
-  DfuPLus.exe program available within your ECL code.</para>
+  DfuPLus.exe program available within your <!-- DNT-Start -->ECL<!-- DNT-End --> code.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">IMPORT STD;
+  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 
 serv := 'server=http://10.150.50.12:8010 ';
 user := 'username=rlor ';
@@ -54,5 +54,5 @@ srcname := 'srcname=RTTEMP::timezones.txt ';
 
 cmd := serv + user + pswd + over + repl + action + dstip + dstfile + srcname;
 STD.File.DfuPlusExec(cmd);
-</programlisting>
+</programlisting><!-- DNT-End -->
 </sect1>

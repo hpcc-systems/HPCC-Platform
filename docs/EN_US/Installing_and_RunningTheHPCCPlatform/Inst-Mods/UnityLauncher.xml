@@ -2,9 +2,9 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Unity_Launcher">
-  <title>Unity Launcher Icon</title>
+  <!-- DNT-Start --><title>Unity Launcher Icon</title><!-- DNT-End -->
 
-  <para>The HPCC platform supports an Ubuntu Unity Launcher icon.</para>
+  <para>The <!-- DNT-Start -->HPCC<!-- DNT-End --> platform supports an Ubuntu Unity Launcher icon.</para>
 
   <para>This allows you to start, stop, restart, or query the status of an
   installed single node system from an icon on the Unity Launcher of a desktop
@@ -17,21 +17,21 @@
         <listitem>
           <para>This is only useful on a single-node system at this time.
           Future versions may operate in a different manner and support
-          multi-node HPCC systems<superscript>®</superscript>.</para>
+          multi-node <!-- DNT-Start -->HPCC<!-- DNT-End --> systems<superscript>®</superscript>.</para>
         </listitem>
       </varlistentry>
     </variablelist></para>
 
   <sect2 id="UnityLauncher_AddIcon">
-    <title><emphasis role="bold">To add the icon:</emphasis></title>
+    <!-- DNT-Start --><title><emphasis role="bold">To add the icon:</emphasis></title><!-- DNT-End -->
 
     <orderedlist numeration="arabic">
       <listitem>
-        <para>Use the search on Dash Home to find the HPCC
+        <para>Use the search on Dash Home to find the <!-- DNT-Start -->HPCC<!-- DNT-End -->
         Systems<superscript>®</superscript> application icon.</para>
 
         <figure>
-          <title>HPCC Application Icon</title>
+          <!-- DNT-Start --><title>HPCC Application Icon</title><!-- DNT-End -->
 
           <mediaobject>
             <imageobject>
@@ -75,7 +75,7 @@
   </sect2>
 
   <sect2 id="UnityLauncher_UseIcon">
-    <title><emphasis role="bold">To use the icon:</emphasis></title>
+    <!-- DNT-Start --><title><emphasis role="bold">To use the icon:</emphasis></title><!-- DNT-End -->
 
     <orderedlist numeration="arabic">
       <listitem>
@@ -99,7 +99,7 @@
         <para>The result displays in a Terminal window.</para>
 
         <figure>
-          <title>Results</title>
+          <!-- DNT-Start --><title>Results</title><!-- DNT-End -->
 
           <mediaobject>
             <imageobject>

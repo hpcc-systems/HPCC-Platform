@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="HASH">
-  <title>HASH</title>
+  <!-- DNT-Start --><title>HASH</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">HASH<indexterm>
-      <primary>HASH</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->HASH<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->HASH<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>HASH function</primary>
+      <primary><!-- DNT-Start -->HASH<!-- DNT-End --> function</primary>
     </indexterm>(</emphasis><emphasis>expressionlist</emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -19,30 +19,30 @@
 
         <tbody>
           <row>
-            <entry><emphasis>expressionlist</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>expressionlist</emphasis><!-- DNT-End --></entry>
 
             <entry>A comma-delimited list of values.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>HASH returns a single value.</entry>
+            <entry><!-- DNT-Start -->HASH<!-- DNT-End --> returns a single value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">HASH</emphasis> function returns a 32-bit
+  <para>The <emphasis role="bold"><!-- DNT-Start -->HASH<!-- DNT-End --></emphasis> function returns a 32-bit
   hash value derived from all the values in the
   <emphasis>expressionlist</emphasis>. Trailing spaces are trimmed from string
-  (or UNICODE) fields before the value is calculated (casting to DATA prevents
+  (or <!-- DNT-Start -->UNICODE<!-- DNT-End -->) fields before the value is calculated (casting to <!-- DNT-Start -->DATA<!-- DNT-End --> prevents
   this).</para>
 
   <para>Example:</para>
 
-  <programlisting>MySet := DISTRIBUTE(Person,HASH(Person.per_ssn));
-    //people with the same SSN go to same Data Refinery node</programlisting>
+  <!-- DNT-Start --><programlisting>MySet := DISTRIBUTE(Person,HASH(Person.per_ssn));
+    //people with the same SSN go to same Data Refinery node</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="DISTRIBUTE">DISTRIBUTE</link>, <link linkend="HASH32">HASH32</link>, <link linkend="HASH64">HASH64</link>, <link linkend="HASHCRC">HASHCRC</link>, <link linkend="HASHMD5">HASHMD5</link></para>
+  <para>See Also: <link linkend="DISTRIBUTE"><!-- DNT-Start -->DISTRIBUTE<!-- DNT-End --></link>, <link linkend="HASH32"><!-- DNT-Start -->HASH<!-- DNT-End -->32</link>, <link linkend="HASH64"><!-- DNT-Start -->HASH<!-- DNT-End -->64</link>, <link linkend="HASHCRC"><!-- DNT-Start -->HASHCRC<!-- DNT-End --></link>, <link linkend="HASHMD5"><!-- DNT-Start -->HASHMD<!-- DNT-End -->5</link></para>
 </sect1>

@@ -2,26 +2,26 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ToUpperCase">
-  <title>ToUpperCase</title>
+  <!-- DNT-Start --><title>ToUpperCase</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Str.ToUpperCase<indexterm>
-      <primary>STD.Str.ToUpperCase</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->ToUpperCase<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->ToUpperCase<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Str.ToUpperCase</primary>
+      <primary>Str.<!-- DNT-Start -->ToUpperCase<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>ToUpperCase</primary>
+      <primary><!-- DNT-Start -->ToUpperCase<!-- DNT-End --></primary>
     </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
   role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
-  <para><emphasis role="bold">STD.Uni.ToUpperCase<indexterm>
-      <primary>STD.Uni.ToUpperCase</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->ToUpperCase<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->ToUpperCase<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Uni.ToUpperCase</primary>
+      <primary>Uni.<!-- DNT-Start -->ToUpperCase<!-- DNT-End --></primary>
     </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
   role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
-  <para><emphasis role="bold">STD.Uni.LocaleToUpperCase<indexterm>
-      <primary>STD.Uni.LocaleToUpperCase</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.LocaleToUpperCase<indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.LocaleToUpperCase</primary>
     </indexterm><indexterm>
       <primary>Uni.LocaleToUpperCase</primary>
     </indexterm><indexterm>
@@ -37,13 +37,13 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>source</emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the data to change case.</entry>
         </row>
 
         <row>
-          <entry><emphasis>locale</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>locale</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the language and country
           code to use to determine correct sort order and other
@@ -51,21 +51,21 @@
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>ToUpperCase returns a STRING value.</entry>
+          <entry><!-- DNT-Start -->ToUpperCase<!-- DNT-End --> returns a <!-- DNT-Start -->STRING<!-- DNT-End --> value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">ToUpperCase </emphasis>functions return the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->ToUpperCase<!-- DNT-End --> </emphasis>functions return the
   <emphasis>source</emphasis> string with all lower case characters converted
   to upper case.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">A := STD.Str.ToUpperCase('abcde');
- //A contains ‘ABCDE’
-</programlisting>
+  <!-- DNT-Start --><programlisting format="linespecific">A := STD.Str.ToUpperCase('abcde');
+ //A contains âABCDEâ
+</programlisting><!-- DNT-End -->
 </sect1>

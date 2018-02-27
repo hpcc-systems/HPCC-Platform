@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ExcludeLastWord">
-  <title>ExcludeLastWord</title>
+  <!-- DNT-Start --><title>ExcludeLastWord</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Str.ExcludeLastWord<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.Str.ExcludeLastWord<indexterm>
       <primary>STD.Str.ExcludeLastWord</primary>
     </indexterm><indexterm>
       <primary>Str.ExcludeLastWord</primary>
     </indexterm><indexterm>
       <primary>ExcludeLastWord</primary>
     </indexterm>(</emphasis> <emphasis>text</emphasis> <emphasis
-  role="bold">)</emphasis></para>
+  role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,28 +21,28 @@
 
       <tbody>
         <row>
-          <entry><emphasis>text</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>text</emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing words separated by whitespace. </entry>
         </row>
 
         <row>
-          <entry>Return:</entry>
+          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-          <entry>ExcludeLastWord returns a STRING value.</entry>
+          <entry><!-- DNT-Start -->ExcludeLastWord<!-- DNT-End --> returns a <!-- DNT-Start -->STRING<!-- DNT-End --> value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">ExcludeLastWord</emphasis> function returns
+  <para>The <emphasis role="bold"><!-- DNT-Start -->ExcludeLastWord<!-- DNT-End --></emphasis> function returns
   the <emphasis>text</emphasis> string with the last word removed. Words are
   separated by one or more whitespace characters. Whitespace after
   the last word is also removed.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">A := STD.Str.ExcludeLastWord('The quick brown fox');
+  <!-- DNT-Start --><programlisting format="linespecific">A := STD.Str.ExcludeLastWord('The quick brown fox');
  //A contains 'The quick brown'
-</programlisting>
+</programlisting><!-- DNT-End -->
 </sect1>

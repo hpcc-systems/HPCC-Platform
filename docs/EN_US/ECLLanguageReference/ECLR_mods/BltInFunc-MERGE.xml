@@ -2,33 +2,33 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="MERGE">
-  <title>MERGE</title>
+  <!-- DNT-Start --><title>MERGE</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">MERGE<indexterm>
-      <primary>MERGE</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->MERGE<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->MERGE<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>MERGE function</primary>
+      <primary><!-- DNT-Start -->MERGE<!-- DNT-End --> function</primary>
     </indexterm>(</emphasis><emphasis>recordsetlist </emphasis><emphasis
   role="bold"> </emphasis><emphasis>,</emphasis><emphasis role="bold">
-  </emphasis><emphasis role="bold">SORTED<indexterm>
-      <primary>SORTED</primary>
+  </emphasis><emphasis role="bold"><!-- DNT-Start -->SORTED<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->SORTED<!-- DNT-End --></primary>
     </indexterm>( </emphasis><emphasis>fieldlist</emphasis><emphasis
   role="bold"> ) [</emphasis><emphasis>, </emphasis><emphasis
-  role="bold">DEDUP<indexterm>
-      <primary>DEDUP</primary>
+  role="bold"><!-- DNT-Start -->DEDUP<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->DEDUP<!-- DNT-End --></primary>
     </indexterm> ] [</emphasis><emphasis>, </emphasis><emphasis
-  role="bold">LOCAL<indexterm>
-      <primary>LOCAL</primary>
-    </indexterm> ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+  role="bold"><!-- DNT-Start -->LOCAL<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->LOCAL<!-- DNT-End --></primary>
+    </indexterm> ] </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><emphasis role="bold"></emphasis><emphasis
-  role="bold">MERGE(</emphasis><emphasis>recordsetset ,
+  role="bold"><!-- DNT-Start -->MERGE<!-- DNT-End -->(</emphasis><emphasis>recordsetset ,
   fieldlist</emphasis><emphasis role="bold">
   </emphasis><emphasis>,</emphasis><emphasis role="bold"> </emphasis><emphasis
-  role="bold">SORTED( </emphasis><emphasis>fieldlist</emphasis><emphasis
+  role="bold"><!-- DNT-Start -->SORTED<!-- DNT-End -->( </emphasis><emphasis>fieldlist</emphasis><emphasis
   role="bold"> ) [</emphasis><emphasis>, </emphasis><emphasis
-  role="bold">DEDUP ] [</emphasis><emphasis>, </emphasis><emphasis
-  role="bold">LOCAL ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+  role="bold"><!-- DNT-Start -->DEDUP<!-- DNT-End --> ] [</emphasis><emphasis>, </emphasis><emphasis
+  role="bold"><!-- DNT-Start -->LOCAL<!-- DNT-End --> ] </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -38,28 +38,28 @@
 
       <tbody>
         <row>
-          <entry><emphasis>recordsetlist</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>recordsetlist</emphasis><!-- DNT-End --></entry>
 
           <entry>A comma-delimited list of the datasets or indexes to merge,
           which must all be in exactly the same format and sort order.</entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">SORTED</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">SORTED</emphasis><!-- DNT-End --></entry>
 
           <entry>Specifies the sort order of the
           <emphasis>recordsetlist</emphasis>.</entry>
         </row>
 
         <row>
-          <entry><emphasis>fieldlist</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>fieldlist</emphasis><!-- DNT-End --></entry>
 
           <entry>A comma-delimited list of the fields that define the sort
           order.</entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">DEDUP</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">DEDUP</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. Specifies the result contains only records with
           unique values in the fields that specify the sort order
@@ -67,88 +67,88 @@
         </row>
 
         <row>
-          <entry><emphasis role="bold">LOCAL</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">LOCAL</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. Specifies the operation is performed on each
           supercomputer node independently, without requiring interaction with
           all other nodes to acquire data; the operation maintains the
-          distribution of any previous DISTRIBUTE.</entry>
+          distribution of any previous <!-- DNT-Start -->DISTRIBUTE<!-- DNT-End -->.</entry>
         </row>
 
         <row>
-          <entry><emphasis>recordsetset</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>recordsetset</emphasis><!-- DNT-End --></entry>
 
-          <entry>A SET ( [ds1,ds2,ds3] ) of the datasets or indexes to merge,
+          <entry>A <!-- DNT-Start -->SET<!-- DNT-End --> ( [ds1,ds2,ds3] ) of the datasets or indexes to merge,
           which must all be in exactly the same format.</entry>
         </row>
           <row>
-            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the output record order is not significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the significance of the output record order.</entry>
           </row>
           <row>
-            <entry><emphasis>bool</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
 
             <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">STABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is not significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity in parallel.</entry>
           </row>
           <row>
-            <entry><emphasis>numthreads</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Override the algorithm used for this activity.</entry>
           </row>
           <row>
-            <entry><emphasis>name</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
           </row>
 
         <row>
-          <entry>Return:</entry>
+          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-          <entry>MERGE returns a record set.</entry>
+          <entry><!-- DNT-Start -->MERGE<!-- DNT-End --> returns a record set.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">MERGE </emphasis>function returns a single
+  <para>The <emphasis role="bold"><!-- DNT-Start -->MERGE<!-- DNT-End --> </emphasis>function returns a single
   dataset or index containing all the records from the datasets or indexes
   named in the <emphasis>recordsetlist </emphasis>or
   <emphasis>recordsetset</emphasis>. This is particularly useful for
   incremental data updates as it allows you to merge a smaller set of new
   records into an existing large dataset or index without having to re-process
   all the source data again. The <emphasis>recordsetset</emphasis> form makes
-  merging a variable number of datasets possible when used inside a GRAPH
+  merging a variable number of datasets possible when used inside a <!-- DNT-Start -->GRAPH<!-- DNT-End -->
   function.</para>
 
   <para>Example:</para>
 
-  <programlisting>ds1 := SORTED(DATASET([{1,'A'},{1,'B'},{1,'C'},{1,'D'},{1,'E'},
+  <!-- DNT-Start --><programlisting>ds1 := SORTED(DATASET([{1,'A'},{1,'B'},{1,'C'},{1,'D'},{1,'E'},
                        {1,'F'},{1,'G'},{1,'H'},{1,'I'},{1,'J'}],
                       {INTEGER1 number,STRING1 Letter}),
               letter,number);
@@ -160,5 +160,5 @@ ds2 := SORTED(DATASET([{2,'A'},{2,'B'},{2,'C'},{2,'D'},{2,'E'},
 ds3 := MERGE(ds1,ds2,SORTED(letter,number));
 SetDS := [ds1,ds2];
 ds4 := MERGE(SetDS,letter,number);
-</programlisting>
+</programlisting><!-- DNT-End -->
 </sect1>

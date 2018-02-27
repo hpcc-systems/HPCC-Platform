@@ -2,15 +2,15 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="REGEXFINDSET">
-  <title>REGEXFINDSET</title>
+  <!-- DNT-Start --><title>REGEXFINDSET</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">REGEXFINDSET<indexterm>
-      <primary>REGEXFINDSET</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->REGEXFINDSET<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->REGEXFINDSET<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>REGEXFINDSET function</primary>
+      <primary><!-- DNT-Start -->REGEXFINDSET<!-- DNT-End --> function</primary>
     </indexterm>(</emphasis><emphasis>regex, text </emphasis><emphasis
-  role="bold"> [, NOCASE<indexterm>
-      <primary>NOCASE</primary>
+  role="bold"> [, <!-- DNT-Start -->NOCASE<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->NOCASE<!-- DNT-End --></primary>
     </indexterm>])</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -21,33 +21,33 @@
 
         <tbody>
           <row>
-            <entry><emphasis>regex</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>regex</emphasis><!-- DNT-End --></entry>
 
             <entry>A standard Perl regular expression.</entry>
           </row>
 
           <row>
-            <entry><emphasis>text</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>text</emphasis><!-- DNT-End --></entry>
 
             <entry>The text to parse.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">NOCASE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">NOCASE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies a case insensitive search.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>REGEXFINDSET returns a set of strings.</entry>
+            <entry><!-- DNT-Start -->REGEXFINDSET<!-- DNT-End --> returns a set of strings.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">REGEXFINDSET </emphasis>function uses the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->REGEXFINDSET<!-- DNT-End --> </emphasis>function uses the
   <emphasis>regex<indexterm>
       <primary>regex</primary>
     </indexterm></emphasis> to parse through the <emphasis>text</emphasis> and
@@ -58,30 +58,30 @@
   non-unicode <emphasis>text</emphasis>, see boost docs at <ulink
   url="http://www.boost.org/doc/libs/1_58_0/libs/regex/doc/html/index.html">http://www.boost.org/doc/libs/1_58_0/libs/regex/doc/html/index.html</ulink>.
   Note that the version of Boost library may vary depending on your distro.
-  For unicode <emphasis>text</emphasis>, see the ICU docs, the sections
-  ‘Regular Expression Metacharacters' and ‘Regular Expression Operators' at
+  For unicode <emphasis>text</emphasis>, see the <!-- DNT-Start -->ICU<!-- DNT-End --> docs, the sections
+  âRegular Expression Metacharacters' and âRegular Expression Operators' at
   <emphasis
   role="underline">http://userguide.icu-project.org/strings/regexp</emphasis>
-  and the links from there, in particular the section ‘UnicodeSet patterns' at
+  and the links from there, in particular the section âUnicodeSet patterns' at
   <emphasis
   role="underline">http://userguide.icu-project.org/strings/unicodeset</emphasis>.
   We use version 2.6 which should support all listed features.</para>
 
   <para>Example:</para>
 
-  <programlisting>sampleStr := 
+  <!-- DNT-Start --><programlisting>sampleStr := 
   'To: jane@example.com From: john@example.com This is the winter of our discontent.';
 eMails:=REGEXFINDSET('\\w+@[a-zA-Z_]+?\\.[a-zA-Z]{2,3}' , sampleStr);
 OUTPUT(eMails);
 
 UNICODE sampleStr2:= 
-  U'To: janë@example.com From john@example.com This is the winter of our discontent.';
+  U'To: janÃ«@example.com From john@example.com This is the winter of our discontent.';
 eMails2:= REGEXFINDSET(U'\\w+@[a-zA-Z_]+?\\.[a-zA-Z]{2,3}', sampleStr2);
 OUTPUT(eMails2);
 
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="PARSE">PARSE</link>, <link
-  linkend="REGEXREPLACE">REGEXFIND</link>, <link
-  linkend="REGEXREPLACE">REGEXREPLACE</link></para>
+  <para>See Also: <link linkend="PARSE"><!-- DNT-Start -->PARSE<!-- DNT-End --></link>, <link
+  linkend="REGEXREPLACE"><!-- DNT-Start -->REGEXFIND<!-- DNT-End --></link>, <link
+  linkend="REGEXREPLACE"><!-- DNT-Start -->REGEXREPLACE<!-- DNT-End --></link></para>
 </sect1>

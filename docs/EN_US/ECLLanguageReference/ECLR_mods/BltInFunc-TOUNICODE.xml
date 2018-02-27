@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="TOUNICODE">
-  <title>TOUNICODE</title>
+  <!-- DNT-Start --><title>TOUNICODE</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">TOUNICODE<indexterm>
-      <primary>TOUNICODE</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->TOUNICODE<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->TOUNICODE<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>TOUNICODE Function</primary>
+      <primary><!-- DNT-Start -->TOUNICODE<!-- DNT-End --> Function</primary>
     </indexterm>(</emphasis><emphasis> string, encoding </emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -19,36 +19,36 @@
 
         <tbody>
           <row>
-            <entry><emphasis>string</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>string</emphasis><!-- DNT-End --></entry>
 
-            <entry>The DATA string to translate.</entry>
+            <entry>The <!-- DNT-Start -->DATA<!-- DNT-End --> string to translate.</entry>
           </row>
 
           <row>
-            <entry><emphasis>encoding</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>encoding</emphasis><!-- DNT-End --></entry>
 
-            <entry>The encoding codepage (supported by IBM's ICU) to use for
+            <entry>The encoding codepage (supported by <!-- DNT-Start -->IBM<!-- DNT-End -->'s <!-- DNT-Start -->ICU<!-- DNT-End -->) to use for
             the translation.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>TOUNICODE returns a single UNICODE value.</entry>
+            <entry><!-- DNT-Start -->TOUNICODE<!-- DNT-End --> returns a single <!-- DNT-Start -->UNICODE<!-- DNT-End --> value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">TOUNICODE </emphasis>function returns the
-  <emphasis>string </emphasis>translated from the DATA value to the specified
+  <para>The <emphasis role="bold"><!-- DNT-Start -->TOUNICODE<!-- DNT-End --> </emphasis>function returns the
+  <emphasis>string </emphasis>translated from the <!-- DNT-Start -->DATA<!-- DNT-End --> value to the specified
   unicode <emphasis>encoding</emphasis>.</para>
 
   <para>Example:</para>
 
-  <programlisting>DATA5 x := FROMUNICODE(u'ABCDE','UTF-8');
+  <!-- DNT-Start --><programlisting>DATA5 x := FROMUNICODE(u'ABCDE','UTF-8');
   //results in 4142434445
-y := TOUNICODE(x,'US-ASCII');</programlisting>
+y := TOUNICODE(x,'US-ASCII');</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="FROMUNICODE">FROMUNICODE</link>, <link linkend="UNICODEORDER">UNICODEORDER</link></para>
+  <para>See Also: <link linkend="FROMUNICODE"><!-- DNT-Start -->FROMUNICODE<!-- DNT-End --></link>, <link linkend="UNICODEORDER"><!-- DNT-Start -->UNICODEORDER<!-- DNT-End --></link></para>
 </sect1>

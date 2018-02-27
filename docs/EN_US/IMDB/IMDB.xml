@@ -2,10 +2,10 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book lang="en_US" xml:base="../">
-  <title>Six Degrees of Kevin Bacon</title>
+  <!-- DNT-Start --><title>Six Degrees of Kevin Bacon</title><!-- DNT-End -->
 
   <bookinfo>
-    <title>Six Degrees of Kevin Bacon: ECL Programming Example</title>
+    <!-- DNT-Start --><title>Six Degrees of Kevin Bacon: ECL Programming Example</title><!-- DNT-End -->
 
     <mediaobject>
       <imageobject>
@@ -29,7 +29,7 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para>HPCC Systems<superscript>®</superscript> is a registered trademark
+      <para><!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript> is a registered trademark
       of LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
@@ -61,25 +61,25 @@
   </bookinfo>
 
   <chapter id="Working_with_Data">
-    <title>Working with Data</title>
+    <!-- DNT-Start --><title>Working with Data</title><!-- DNT-End -->
 
     <sect1 id="Working_with_data_Intro" role="nobrk">
-      <title>Introduction</title>
+      <!-- DNT-Start --><title>Introduction</title><!-- DNT-End -->
 
       <para>This exercise shows the methodology to extract useful information
       from data. Finding interesting links and relationships from large or
       massive datasets is a typical use of the HPCCSystems High Performance
-      Computing Cluster (HPCC) platform.</para>
+      Computing Cluster (<!-- DNT-Start -->HPCC<!-- DNT-End -->) platform.</para>
 
       <para>In this example, we will download the data files from the Internet
-      Movie Database (IMDB) and see one technique to extract links and find
+      Movie Database (<!-- DNT-Start -->IMDB<!-- DNT-End -->) and see one technique to extract links and find
       relationships.</para>
 
       <para>Since the concept of actors and movies is conceptually simple;
       everyone should understand the data and relationships intuitively.
       However, the data is comprehensive enough to provide a solid example and
       inspiration for new users to gain skills to attack their own real-world
-      problems with an HPCC.</para>
+      problems with an <!-- DNT-Start -->HPCC<!-- DNT-End -->.</para>
 
       <para>In this example, we will:</para>
 
@@ -120,11 +120,11 @@
               <row>
                 <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
 
-                <entry>While this example will run on a single-node HPCC, you
+                <entry>While this example will run on a single-node <!-- DNT-Start -->HPCC<!-- DNT-End -->, you
                 will see a dramatic difference in performance on a multi-node
-                system. The true power of an HPCC is its ability to work on
+                system. The true power of an <!-- DNT-Start -->HPCC<!-- DNT-End --> is its ability to work on
                 different portions of the data file in parallel. This is known
-                as Massively Parallel Processing (MPP).</entry>
+                as Massively Parallel Processing (<!-- DNT-Start -->MPP<!-- DNT-End -->).</entry>
               </row>
             </tbody>
           </tgroup>
@@ -132,12 +132,12 @@
     </sect1>
 
     <sect1 id="Processing_the_data">
-      <title>Processing the Data</title>
+      <!-- DNT-Start --><title>Processing the Data</title><!-- DNT-End -->
 
       <sect2 id="Get_a_data_file">
-        <title><emphasis>We get a data file</emphasis></title>
+        <!-- DNT-Start --><title><emphasis>We get a data file</emphasis></title><!-- DNT-End -->
 
-        <para>The Internet Movie Database (IMDB) database is a freely
+        <para>The Internet Movie Database (<!-- DNT-Start -->IMDB<!-- DNT-End -->) database is a freely
         downloadable set of data files about Movies.</para>
 
         <para>It can be downloaded in many formats, including text file
@@ -145,8 +145,8 @@
         Actresses, Directors, Producers, and other aspects of motions
         pictures.</para>
 
-        <para>It is manageable in size (~400MB) and is sufficient in size to
-        exercise an HPCC platform but not too big to download<emphasis
+        <para>It is manageable in size (~400<!-- DNT-Start -->MB<!-- DNT-End -->) and is sufficient in size to
+        exercise an <!-- DNT-Start -->HPCC<!-- DNT-End --> platform but not too big to download<emphasis
         role="bold">.</emphasis></para>
 
         <para>The plain text data files are available from the following ftp
@@ -176,7 +176,7 @@
         bandwidth.</para>
 
         <para>We will focus initially on two of the larger data sets in the
-        IMDB database</para>
+        <!-- DNT-Start -->IMDB<!-- DNT-End --> database</para>
 
         <blockquote>
           <itemizedlist mark="bullet">
@@ -209,11 +209,11 @@
       </sect2>
 
       <sect2 id="Analyze_the_data">
-        <title><emphasis>Analyze the data file to understand its format and
-        its contents</emphasis></title>
+        <!-- DNT-Start --><title><emphasis>Analyze the data file to understand its format and
+        its contents</emphasis></title><!-- DNT-End -->
 
         <para>Here is the sample of the data in the Actors.list file from
-        IMDB</para>
+        <!-- DNT-Start -->IMDB<!-- DNT-End --></para>
 
         <para><programlisting>Koolout' Starks, Johnny Nothing Like the Holidays (2008) [Alexis' Thug] &lt;35&gt;
 Subtle Seduction (2008) [Officer Ward]
@@ -236,20 +236,20 @@ Blankline</programlisting></para>
       </sect2>
 
       <sect2 id="Load_the_Incoming_Data" role="brk">
-        <title><emphasis>Load the Incoming Data File to your Landing
-        Zone</emphasis></title>
+        <!-- DNT-Start --><title><emphasis>Load the Incoming Data File to your Landing
+        Zone</emphasis></title><!-- DNT-End -->
 
         <para>In this step, you will copy the data files to a location from
-        which it can be sprayed to your HPCC cluster. A Landing Zone is a
-        storage location attached to your HPCC. It has a utility running to
+        which it can be sprayed to your <!-- DNT-Start -->HPCC<!-- DNT-End --> cluster. A Landing Zone is a
+        storage location attached to your <!-- DNT-Start -->HPCC<!-- DNT-End -->. It has a utility running to
         facilitate file spraying to a cluster.</para>
 
-        <para>For smaller data files, maximum of 2GB, you can use the
-        upload/download file utility in ECL Watch. The sample data files are
+        <para>For smaller data files, maximum of 2<!-- DNT-Start -->GB<!-- DNT-End -->, you can use the
+        upload/download file utility in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch. The sample data files are
         ~400 mb.</para>
 
         <para>Next you will distribute (or Spray) the dataset to all the nodes
-        in the HPCC cluster. The power of the HPCC comes from its ability to
+        in the <!-- DNT-Start -->HPCC<!-- DNT-End --> cluster. The power of the <!-- DNT-Start -->HPCC<!-- DNT-End --> comes from its ability to
         assign multiple processors to work on different portions of the data
         file in parallel.</para>
 
@@ -265,9 +265,9 @@ Blankline</programlisting></para>
           </listitem>
 
           <listitem>
-            <para>In your browser, go to the <emphasis role="bold">ECL
-            Watch</emphasis> URL. For example, http://nnn.nnn.nnn.nnn:8010,
-            where nnn.nnn.nnn.nnn is your ESP Server's IP address.</para>
+            <para>In your browser, go to the <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End -->
+            Watch</emphasis> <!-- DNT-Start -->URL<!-- DNT-End -->. For example, http://nnn.nnn.nnn.nnn:8010,
+            where nnn.nnn.nnn.nnn is your <!-- DNT-Start -->ESP<!-- DNT-End --> Server's <!-- DNT-Start -->IP<!-- DNT-End --> address.</para>
 
             <para><informaltable colsep="1" frame="all" rowsep="1">
                 <?dbfo keep-together="always"?>
@@ -282,8 +282,8 @@ Blankline</programlisting></para>
                       <entry><inlinegraphic
                       fileref="images/caution.png" /></entry>
 
-                      <entry>Your IP address could be different from the ones
-                      provided in the example images. Please use the IP
+                      <entry>Your <!-- DNT-Start -->IP<!-- DNT-End --> address could be different from the ones
+                      provided in the example images. Please use the <!-- DNT-Start -->IP<!-- DNT-End -->
                       address provided by <emphasis
                       role="bold">your</emphasis> installation.</entry>
                     </row>
@@ -295,7 +295,7 @@ Blankline</programlisting></para>
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>From ECL Watch page, click on the <emphasis
+            <para>From <!-- DNT-Start -->ECL<!-- DNT-End --> Watch page, click on the <emphasis
             role="bold">Files </emphasis>icon, then on the <emphasis
             role="bold">Landing Zones</emphasis> link.</para>
 
@@ -328,7 +328,7 @@ Blankline</programlisting></para>
             </emphasis></para>
 
             <figure>
-              <title>Dropzones and Files</title>
+              <!-- DNT-Start --><title>Dropzones and Files</title><!-- DNT-End -->
 
               <mediaobject>
                 <imageobject>
@@ -346,7 +346,7 @@ Blankline</programlisting></para>
             <para>You can monitor priogress as it uploads.</para>
 
             <figure>
-              <title>Upload Progress</title>
+              <!-- DNT-Start --><title>Upload Progress</title><!-- DNT-End -->
 
               <mediaobject>
                 <imageobject>
@@ -360,10 +360,10 @@ Blankline</programlisting></para>
       </sect2>
 
       <sect2 id="Spray_the_Data_to_THOR">
-        <title>Spray the Data File to your <emphasis>Data Refinery (Thor)
-        Cluster</emphasis></title>
+        <!-- DNT-Start --><title>Spray the Data File to your <emphasis>Data Refinery (Thor)
+        Cluster</emphasis></title><!-- DNT-End -->
 
-        <para>To use the data file in our HPCC system, we must "spray" it to
+        <para>To use the data file in our <!-- DNT-Start -->HPCC<!-- DNT-End --> system, we must "spray" it to
         all the nodes. A <emphasis>spray</emphasis> or
         <emphasis>import</emphasis> is the relocation of a data file from one
         location (such as a Landing Zone) to multiple file parts on nodes in a
@@ -371,7 +371,7 @@ Blankline</programlisting></para>
 
         <para>The distributed or sprayed file is given a
         <emphasis>logical-file-name</emphasis> as follows<emphasis
-        role="bold">: ~thor::in::IMDB::actors.list </emphasis> The system
+        role="bold">: ~thor::in::<!-- DNT-Start -->IMDB<!-- DNT-End -->::actors.list </emphasis> The system
         maintains a list of logical files and the corresponding physical file
         locations of the file parts.</para>
 
@@ -379,10 +379,10 @@ Blankline</programlisting></para>
 
         <itemizedlist mark="bullet">
           <listitem>
-            <para>Open ECL Watch using the following URL:</para>
+            <para>Open <!-- DNT-Start -->ECL<!-- DNT-End --> Watch using the following <!-- DNT-Start -->URL<!-- DNT-End -->:</para>
 
             <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp(where
-            nnn.nnn.nnn.nnn is your ESP Server's IP Address and pppp is the
+            nnn.nnn.nnn.nnn is your <!-- DNT-Start -->ESP<!-- DNT-End --> Server's <!-- DNT-Start -->IP<!-- DNT-End --> Address and pppp is the
             port. The default port is 8010)</emphasis></para>
           </listitem>
 
@@ -417,15 +417,15 @@ Blankline</programlisting></para>
             <para>Select mythor in the <emphasis role="bold">Group</emphasis>
             drop-list.</para>
 
-            <para>The IP Address is automatically filled and the Local Path is
+            <para>The <!-- DNT-Start -->IP<!-- DNT-End --> Address is automatically filled and the Local Path is
             partially filled with the default folder on your landing zone.
-            Note: The VM and Community Edition typically only has one landing
+            Note: The <!-- DNT-Start -->VM<!-- DNT-End --> and Community Edition typically only has one landing
             zone defined.</para>
           </listitem>
 
           <listitem>
             <para>Complete the Target Scope <emphasis
-            role="bold">~thor::in::IMDB</emphasis></para>
+            role="bold">~thor::in::<!-- DNT-Start -->IMDB<!-- DNT-End --></emphasis></para>
           </listitem>
 
           <listitem>
@@ -470,7 +470,7 @@ Blankline</programlisting></para>
             role="bold"> </emphasis>button.</para>
 
             <para>A tab opens for each file. On these tabs, you can monitor
-            the progress of each DFU Spray.</para>
+            the progress of each <!-- DNT-Start -->DFU<!-- DNT-End --> Spray.</para>
 
             <para><figure>
                 <title>View Progress</title>
@@ -486,7 +486,7 @@ Blankline</programlisting></para>
 
           <listitem>
             <para>After both sprays are complete, we can query the logical
-            files on the HPCC to see the files we sprayed.</para>
+            files on the <!-- DNT-Start -->HPCC<!-- DNT-End --> to see the files we sprayed.</para>
           </listitem>
 
           <listitem>
@@ -510,17 +510,17 @@ Blankline</programlisting></para>
       </sect2>
 
       <sect2 id="Working_with_the_Data">
-        <title>Working With the Data</title>
+        <!-- DNT-Start --><title>Working With the Data</title><!-- DNT-End -->
 
-        <para>In this portion of the example, we will write ECL code to make
+        <para>In this portion of the example, we will write <!-- DNT-Start -->ECL<!-- DNT-End --> code to make
         sure we can read the sprayed data file .We will define and execute
         simple queries on it so we can evaluate it and determine any necessary
         pre-processing.</para>
 
         <itemizedlist mark="bullet">
           <listitem>
-            <para>Start the ECL IDE (Start &gt;&gt; All Programs &gt;&gt; HPCC
-            Systems &gt;&gt; ECL IDE )</para>
+            <para>Start the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> (Start &gt;&gt; All Programs &gt;&gt; <!-- DNT-Start -->HPCC<!-- DNT-End -->
+            Systems &gt;&gt; <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> )</para>
           </listitem>
 
           <listitem>
@@ -528,21 +528,21 @@ Blankline</programlisting></para>
           </listitem>
 
           <listitem>
-            <para>Expand the <emphasis role="bold">examples</emphasis> ECL
+            <para>Expand the <emphasis role="bold">examples</emphasis> <!-- DNT-Start -->ECL<!-- DNT-End -->
             folder in the Repository toolbox.</para>
           </listitem>
 
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Expand the <emphasis role="bold">IMDB </emphasis>folder
+            <para>Expand the <emphasis role="bold"><!-- DNT-Start -->IMDB<!-- DNT-End --> </emphasis>folder
             inside.</para>
 
-            <para>All the ECL files needed to complete this tutorial are
-            located in the IMDB folder.</para>
+            <para>All the <!-- DNT-Start -->ECL<!-- DNT-End --> files needed to complete this tutorial are
+            located in the <!-- DNT-Start -->IMDB<!-- DNT-End --> folder.</para>
 
             <figure>
-              <title>IMDB ECL Files</title>
+              <!-- DNT-Start --><title>IMDB ECL Files</title><!-- DNT-End -->
 
               <mediaobject>
                 <imageobject>
@@ -553,7 +553,7 @@ Blankline</programlisting></para>
           </listitem>
 
           <listitem>
-            <para>Open the CleanActor ECL file and examine the code.</para>
+            <para>Open the CleanActor <!-- DNT-Start -->ECL<!-- DNT-End --> file and examine the code.</para>
 
             <para>This code reads and processes the raw text file. The
             comments below describe the processing:</para>
@@ -572,7 +572,7 @@ END;
         </itemizedlist>
 
         <sect3 id="Examine_The_Data" role="brk">
-          <title>Examine the Data</title>
+          <!-- DNT-Start --><title>Examine the Data</title><!-- DNT-End -->
 
           <para>In this section, we will look at the data and determine if
           there is any pre-processing we want to perform. This is the step in
@@ -584,10 +584,10 @@ END;
               <term>Note:</term>
 
               <listitem>
-                <para>The IMDB.FileActors.ecl file specifies the size of the
+                <para>The <!-- DNT-Start -->IMDB<!-- DNT-End -->.FileActors.ecl file specifies the size of the
                 header in the files (actors.list and actresses.list.) The
-                HEADING() value in the example code was accurate at the time
-                we downloaded the IMDB data, but could change at any time. We
+                <!-- DNT-Start -->HEADING<!-- DNT-End -->() value in the example code was accurate at the time
+                we downloaded the <!-- DNT-Start -->IMDB<!-- DNT-End --> data, but could change at any time. We
                 suggest opening in a text editor and checking the line number
                 where the header ends and actual data begins (as shown
                 below).</para>
@@ -596,7 +596,7 @@ END;
           </variablelist>
 
           <figure>
-            <title>actors.list in text editor</title>
+            <!-- DNT-Start --><title>actors.list in text editor</title><!-- DNT-End -->
 
             <mediaobject>
               <imageobject>
@@ -609,7 +609,7 @@ END;
 
           <itemizedlist mark="bullet">
             <listitem>
-              <para>Open a new Builder window (CTRL+N) and write the following
+              <para>Open a new Builder window (<!-- DNT-Start -->CTRL<!-- DNT-End -->+N) and write the following
               code:</para>
 
               <para><programlisting>IMPORT IMDB;
@@ -699,15 +699,15 @@ OUTPUT(IMDB.FileActors);
       </sect2>
 
       <sect2 id="Processing_the_Data_E-T-L">
-        <title><emphasis role="bold">Processing the Data : Extract,
-        </emphasis><emphasis>Transform, and Load</emphasis></title>
+        <!-- DNT-Start --><title><emphasis role="bold">Processing the Data : Extract,
+        </emphasis><emphasis>Transform, and Load</emphasis></title><!-- DNT-End -->
 
         <para><emphasis>In this section, we will write code to transform the
         original actor data as follows:</emphasis></para>
 
         <itemizedlist mark="bullet">
           <listitem>
-            <para>From the raw actors data, we will do an ETL operation
+            <para>From the raw actors data, we will do an <!-- DNT-Start -->ETL<!-- DNT-End --> operation
             (Extract, Transform, Load) to build an <emphasis
             role="bold">actor_movie </emphasis>relation set.</para>
           </listitem>
@@ -743,19 +743,19 @@ OUTPUT(IMDB.FileActors);
 
         <para><itemizedlist mark="bullet">
             <listitem>
-              <para>In the ECL IDE , go to the Repository panel and expand the
-              IMDB folder.</para>
+              <para>In the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> , go to the Repository panel and expand the
+              <!-- DNT-Start -->IMDB<!-- DNT-End --> folder.</para>
             </listitem>
 
             <listitem>
-              <para>Open the ECL File ActorsInMovies.</para>
+              <para>Open the <!-- DNT-Start -->ECL<!-- DNT-End --> File ActorsInMovies.</para>
 
-              <para>The code in this ECL file looks like this:</para>
+              <para>The code in this <!-- DNT-Start -->ECL<!-- DNT-End --> file looks like this:</para>
             </listitem>
           </itemizedlist></para>
 
         <para><programlisting>/* ******************************************************************************
-## Copyright 2011 HPCC Systems®.  All rights reserved.
+## Copyright 2011 HPCC SystemsÂ®.  All rights reserved.
 ******************************************************************************* */
 
 /**
@@ -797,10 +797,10 @@ export ActorsInMovies := IMDB_Names : persist('~temp::IMDB::ActorsInMovies');;
     </sect1>
 
     <sect1 id="Getting_Useful_Info_from_Data">
-      <title>Getting Useful Information from Data</title>
+      <!-- DNT-Start --><title>Getting Useful Information from Data</title><!-- DNT-End -->
 
       <sect2 id="Links_and_Degrees_of_Separation">
-        <title><emphasis>Links and Degrees of Separation</emphasis></title>
+        <!-- DNT-Start --><title><emphasis>Links and Degrees of Separation</emphasis></title><!-- DNT-End -->
 
         <para>Now that we have our data in a useful format, have a relation
         defined, and the file is in place, we can write code to use the new
@@ -813,11 +813,11 @@ export ActorsInMovies := IMDB_Names : persist('~temp::IMDB::ActorsInMovies');;
 
         <itemizedlist mark="bullet">
           <listitem>
-            <para>Open the KevinBaconNumberSets ECL file.</para>
+            <para>Open the KevinBaconNumberSets <!-- DNT-Start -->ECL<!-- DNT-End --> file.</para>
           </listitem>
         </itemizedlist>
 
-        <para>This ECL code counts the number of actors with <emphasis>"bacon
+        <para>This <!-- DNT-Start -->ECL<!-- DNT-End --> code counts the number of actors with <emphasis>"bacon
         numbers"</emphasis> starting from 1 thru 7, that is up to 7 Levels of
         separation. We will use this later to do searches by building an
         index.</para>
@@ -1057,85 +1057,85 @@ IMDB.KevinBaconNumberSets.doCounts;</programlisting></para>
             <tgroup cols="2">
               <tbody>
                 <row>
-                  <entry>KB Movies</entry>
+                  <entry><!-- DNT-Start -->KB Movies<!-- DNT-End --></entry>
 
                   <entry>71</entry>
                 </row>
 
                 <row>
-                  <entry>KB Co Stars</entry>
+                  <entry><!-- DNT-Start -->KB Co Stars<!-- DNT-End --></entry>
 
                   <entry>3520</entry>
                 </row>
 
                 <row>
-                  <entry>KB Co Star Movies</entry>
+                  <entry><!-- DNT-Start -->KB Co Star Movies<!-- DNT-End --></entry>
 
                   <entry>33504</entry>
                 </row>
 
                 <row>
-                  <entry>KB Co 2 Stars</entry>
+                  <entry><!-- DNT-Start -->KB Co 2 Stars<!-- DNT-End --></entry>
 
                   <entry>430145</entry>
                 </row>
 
                 <row>
-                  <entry>KB Co 2 Star Movies</entry>
+                  <entry><!-- DNT-Start -->KB Co 2 Star Movies<!-- DNT-End --></entry>
 
                   <entry>251867</entry>
                 </row>
 
                 <row>
-                  <entry>KB Co 3 Stars</entry>
+                  <entry><!-- DNT-Start -->KB Co 3 Stars<!-- DNT-End --></entry>
 
                   <entry>896009</entry>
                 </row>
 
                 <row>
-                  <entry>KB Co 3 Star Movies</entry>
+                  <entry><!-- DNT-Start -->KB Co 3 Star Movies<!-- DNT-End --></entry>
 
                   <entry>51650</entry>
                 </row>
 
                 <row>
-                  <entry>KB Co 4 Stars</entry>
+                  <entry><!-- DNT-Start -->KB Co 4 Stars<!-- DNT-End --></entry>
 
                   <entry>102729</entry>
                 </row>
 
                 <row>
-                  <entry>KB Co 4 Star Movies</entry>
+                  <entry><!-- DNT-Start -->KB Co 4 Star Movies<!-- DNT-End --></entry>
 
                   <entry>2634</entry>
                 </row>
 
                 <row>
-                  <entry>KB Co 5 Stars</entry>
+                  <entry><!-- DNT-Start -->KB Co 5 Stars<!-- DNT-End --></entry>
 
                   <entry>6080</entry>
                 </row>
 
                 <row>
-                  <entry>KB Co 5 Star Movies</entry>
+                  <entry><!-- DNT-Start -->KB Co 5 Star Movies<!-- DNT-End --></entry>
 
                   <entry>190</entry>
                 </row>
 
                 <row>
-                  <entry>KB Co 6 Stars</entry>
+                  <entry><!-- DNT-Start -->KB Co 6 Stars<!-- DNT-End --></entry>
 
                   <entry>450</entry>
                 </row>
 
                 <row>
-                  <entry>KB Co 6 Star Movies</entry>
+                  <entry><!-- DNT-Start -->KB Co 6 Star Movies<!-- DNT-End --></entry>
 
                   <entry>14</entry>
                 </row>
 
                 <row>
-                  <entry>KB Co 7 Stars</entry>
+                  <entry><!-- DNT-Start -->KB Co 7 Stars<!-- DNT-End --></entry>
 
                   <entry>22</entry>
                 </row>
@@ -1147,16 +1147,16 @@ IMDB.KevinBaconNumberSets.doCounts;</programlisting></para>
   </chapter>
 
   <chapter id="Next_Steps">
-    <title>Next Steps</title>
+    <!-- DNT-Start --><title>Next Steps</title><!-- DNT-End -->
 
     <para>Now that you have successfully processed the data and established
     links, what's next?</para>
 
-    <para>Two more ECL files are included in the IMDB folder that you can use
+    <para>Two more <!-- DNT-Start -->ECL<!-- DNT-End --> files are included in the <!-- DNT-Start -->IMDB<!-- DNT-End --> folder that you can use
     in conjunction with the examples you have already worked through in this
     tutorial:</para>
 
-    <para>• KeysKevinBacon -- Builds an index of actors/actresses and the
+    <para>â¢ KeysKevinBacon -- Builds an index of actors/actresses and the
     movies they have starred in.</para>
 
     <para>You must build this index before you can run queries to find the
@@ -1170,7 +1170,7 @@ IMDB.KevinBaconNumberSets.doCounts;</programlisting></para>
 IMDB.KeysKevinBacon.BuildAll;</programlisting></para>
 
     <para>Press the <emphasis role="bold">Submit</emphasis> button to run the
-    ECL code and build the index.</para>
+    <!-- DNT-Start -->ECL<!-- DNT-End --> code and build the index.</para>
 
     <para>SearchKevinBaconLinks -- Searches the index you built to give you
     the degree of separation between an actor and Kevin Bacon.</para>
@@ -1186,7 +1186,7 @@ IMDB.SearchKevinBaconLinks('Everingham, Andi');</programlisting></para>
     cluster, then press the <emphasis role="bold">Submit</emphasis> button to
     run the query.</para>
 
-    <para>When it has completed, click on the Workunit ID tab.</para>
+    <para>When it has completed, click on the Workunit <!-- DNT-Start -->ID<!-- DNT-End --> tab.</para>
 
     <para>Two results are shown.</para>
 

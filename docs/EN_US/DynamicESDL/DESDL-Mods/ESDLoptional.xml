@@ -2,22 +2,22 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Attributes_optional">
-  <title>optional</title>
+  <!-- DNT-Start --><title>optional</title><!-- DNT-End -->
 
   <para><indexterm>
-      <primary>optional</primary>
-    </indexterm>The optional attribute allows you to specify that a field is
-  optional and is hidden or not depending on the absence or presence of a URL
+      <primary><!-- DNT-Start -->optional<!-- DNT-End --></primary>
+    </indexterm>The <!-- DNT-Start -->optional<!-- DNT-End --> attribute allows you to specify that a field is
+  <!-- DNT-Start -->optional<!-- DNT-End --> and is hidden or not depending on the absence or presence of a <!-- DNT-Start -->URL<!-- DNT-End -->
   decoration.</para>
 
-  <para>When a field has an optional attribute, the field is visible only when
-  the option appears on the URL. But when the option starts with an
+  <para>When a field has an <!-- DNT-Start -->optional<!-- DNT-End --> attribute, the field is visible only when
+  the option appears on the <!-- DNT-Start -->URL<!-- DNT-End -->. But when the option starts with an
   exclamation point (!), then the field is hidden only if the option is in the
-  URL.</para>
+  <!-- DNT-Start -->URL<!-- DNT-End -->.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <programlisting>ESPrequest RoxieEchoPersonInfoRequest
+  <!-- DNT-Start --><programlisting>ESPrequest RoxieEchoPersonInfoRequest
 {
      ESPstruct NameInfo Name;
                             string First;
@@ -25,23 +25,23 @@
                             string Last;
      [optional("dev")]      string NickName;
      [optional("!_NonUS_")] string SSN;
-};</programlisting>
+};</programlisting><!-- DNT-End -->
 
   <para>Assuming the service is running on a server with the hostname of
   example.com and the service binding is set to 8003:</para>
 
-  <para>If the URL is <programlisting>http://example.com:8003/ </programlisting></para>
+  <para>If the <!-- DNT-Start -->URL<!-- DNT-End --> is <programlisting>http://example.com:8003/ </programlisting></para>
 
-  <para>then SSN is visible and NickName is hidden;</para>
+  <para>then <!-- DNT-Start -->SSN<!-- DNT-End --> is visible and NickName is hidden;</para>
 
-  <para>If the URL is <programlisting>http://example.com:8003/?dev </programlisting></para>
+  <para>If the <!-- DNT-Start -->URL<!-- DNT-End --> is <programlisting>http://example.com:8003/?dev </programlisting></para>
 
-  <para>then SSN and NickName are both visible</para>
+  <para>then <!-- DNT-Start -->SSN<!-- DNT-End --> and NickName are both visible</para>
 
-  <para>If the URL is <programlisting>http://example.com:8003/?dev&amp;_NonUS_ </programlisting></para>
+  <para>If the <!-- DNT-Start -->URL<!-- DNT-End --> is <programlisting>http://example.com:8003/?dev&amp;_NonUS_ </programlisting></para>
 
-  <para>then NickName is visible and SSN is hidden.</para>
+  <para>then NickName is visible and <!-- DNT-Start -->SSN<!-- DNT-End --> is hidden.</para>
 
-  <para>If the URL is <programlisting>http://example.com:8003/?_NonUS_</programlisting>
-  then both NickName and SSN are hidden.</para>
+  <para>If the <!-- DNT-Start -->URL<!-- DNT-End --> is <programlisting>http://example.com:8003/?_NonUS_</programlisting>
+  then both NickName and <!-- DNT-Start -->SSN<!-- DNT-End --> are hidden.</para>
 </sect1>

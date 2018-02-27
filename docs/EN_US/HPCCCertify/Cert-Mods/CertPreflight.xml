@@ -2,21 +2,21 @@
 <!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="Cert_Prelight">
-  <title>Preflight</title>
+  <!-- DNT-Start --><title>Preflight</title><!-- DNT-End -->
 
   <para>The first step in certifying that the platform is installed and
   configured properly is to run a preflight check on the components. This
   ensures that all machines are operating and have the proper executables
   running. This also confirms there is adequate disk space, available memory,
-  and acceptable available CPU % values.</para>
+  and acceptable available <!-- DNT-Start -->CPU<!-- DNT-End --> % values.</para>
 
   <itemizedlist mark="bullet">
     <listitem>
-      <para>Open ECL Watch in your browser using the following URL:</para>
+      <para>Open <!-- DNT-Start -->ECL<!-- DNT-End --> Watch in your browser using the following <!-- DNT-Start -->URL<!-- DNT-End -->:</para>
 
       <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
-      </emphasis><emphasis role="bold">(where nnn.nnn.nnn.nnn is your ESP
-      Server’s IP Address and pppp is the port. The default port is
+      </emphasis><emphasis role="bold">(where nnn.nnn.nnn.nnn is your <!-- DNT-Start -->ESP<!-- DNT-End -->
+      Serverâs <!-- DNT-Start -->IP<!-- DNT-End --> Address and pppp is the port. The default port is
       8010)</emphasis></para>
 
       <informaltable colsep="1" frame="all" rowsep="1">
@@ -32,9 +32,9 @@
               <entry><inlinegraphic
               fileref="../../images/caution.png" /></entry>
 
-              <entry><emphasis role="bold">Note:</emphasis> That your IP
+              <entry><emphasis role="bold">Note:</emphasis> That your <!-- DNT-Start -->IP<!-- DNT-End -->
               address could be different from the ones provided in these
-              figures. Please use the IP address provided by your
+              figures. Please use the <!-- DNT-Start -->IP<!-- DNT-End --> address provided by your
               installation.</entry>
             </row>
           </tbody>
@@ -44,7 +44,7 @@
   </itemizedlist>
 
   <sect1 id="Preflight_system_servers">
-    <title>Preflight System Servers</title>
+    <!-- DNT-Start --><title>Preflight System Servers</title><!-- DNT-End -->
 
     <orderedlist>
       <listitem>
@@ -99,7 +99,7 @@
     </orderedlist>
 
     <sect2 id="Systems_Expected_results">
-      <title>EXPECTED RESULTS:</title>
+      <!-- DNT-Start --><title>EXPECTED RESULTS:</title><!-- DNT-End -->
 
       <para>After pressing Submit, a screen similar to the following
       displays.</para>
@@ -127,7 +127,7 @@
       orange, indicating they are not ready.</para>
 
       <figure>
-        <title>Failed Component</title>
+        <!-- DNT-Start --><title>Failed Component</title><!-- DNT-End -->
 
         <mediaobject>
           <imageobject>
@@ -140,11 +140,11 @@
   </sect1>
 
   <sect1 id="Preflight_Target_Clusters">
-    <title>Preflight Target Clusters</title>
+    <!-- DNT-Start --><title>Preflight Target Clusters</title><!-- DNT-End -->
 
     <para>Use the Target Clusters link to preflight all your clusters at once.
-    To preflight clusters individually, see the following <emphasis>Preflight
-    Thor</emphasis> or <emphasis>Preflight Roxie</emphasis> sections.</para>
+    To preflight clusters individually, see the following <emphasis><!-- DNT-Start -->Preflight<!-- DNT-End -->
+    Thor</emphasis> or <emphasis><!-- DNT-Start -->Preflight<!-- DNT-End --> Roxie</emphasis> sections.</para>
 
     <orderedlist>
       <listitem>
@@ -202,7 +202,7 @@
     </orderedlist>
 
     <sect2 id="Expected_Results_TargetClusters">
-      <title>EXPECTED RESULTS:</title>
+      <!-- DNT-Start --><title>EXPECTED RESULTS:</title><!-- DNT-End -->
 
       <para>After pressing <emphasis role="bold">Submit</emphasis>, a screen
       similar to the following should display.<figure>
@@ -222,7 +222,7 @@
       attention.</para>
 
       <figure>
-        <title>Failed Component</title>
+        <!-- DNT-Start --><title>Failed Component</title><!-- DNT-End -->
 
         <mediaobject>
           <imageobject>
@@ -238,7 +238,7 @@
   </sect1>
 
   <sect1 id="Preflight_Data_Refinery">
-    <title>Preflight Thor</title>
+    <!-- DNT-Start --><title>Preflight Thor</title><!-- DNT-End -->
 
     <orderedlist>
       <listitem>
@@ -296,7 +296,7 @@
     </orderedlist>
 
     <sect2 id="Expected_Results_Data_Refinery">
-      <title>EXPECTED RESULTS:</title>
+      <!-- DNT-Start --><title>EXPECTED RESULTS:</title><!-- DNT-End -->
 
       <para>After pressing Submit, a screen similar to the following should
       display.</para>
@@ -340,7 +340,7 @@
       attention.</para>
 
       <figure>
-        <title>Failed Component</title>
+        <!-- DNT-Start --><title>Failed Component</title><!-- DNT-End -->
 
         <mediaobject>
           <imageobject>
@@ -352,7 +352,7 @@
   </sect1>
 
   <sect1 id="Preflight_Roxie">
-    <title>Preflight the Roxie Cluster</title>
+    <!-- DNT-Start --><title>Preflight the Roxie Cluster</title><!-- DNT-End -->
 
     <orderedlist>
       <listitem>
@@ -391,7 +391,7 @@
     </orderedlist>
 
     <sect2 id="Expected_results_roxie">
-      <title>EXPECTED RESULTS</title>
+      <!-- DNT-Start --><title>EXPECTED RESULTS</title><!-- DNT-End -->
 
       <para>After pressing Submit, a screen similar to the following should
       display.</para>

@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book xml:base="../">
   <bookinfo>
-    <title>ECL Language Reference</title>
+    <!-- DNT-Start --><title>ECL Language Reference</title><!-- DNT-End -->
 
     <mediaobject>
       <imageobject>
@@ -17,7 +17,7 @@
 
     <legalnotice>
       <para>We welcome your comments and feedback about this document via
-      email to &lt;docfeedback@hpccsystems.com&gt; subject to the HPCC
+      email to &lt;docfeedback@hpccsystems.com&gt; subject to the <!-- DNT-Start -->HPCC<!-- DNT-End -->
       Contribution Agreement at: hpccsystems.com/contribution. Please include
       <emphasis role="bold">Documentation Feedback</emphasis> in the subject
       line and reference the document name, page numbers, and current Revision
@@ -33,9 +33,9 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para>This document is licensed under the Creative Commons License CC
-      BY-ND 3.0 applicable to the jurisdiction of the principal location of
-      the user, as available; otherwise, the CC BY-ND 3.0 Unported (<ulink
+      <para>This document is licensed under the Creative Commons License <!-- DNT-Start -->CC<!-- DNT-End -->
+      <!-- DNT-Start -->BY<!-- DNT-End -->-<!-- DNT-Start -->ND<!-- DNT-End --> 3.0 applicable to the jurisdiction of the principal location of
+      the user, as available; otherwise, the <!-- DNT-Start -->CC<!-- DNT-End --> <!-- DNT-Start -->BY<!-- DNT-End -->-<!-- DNT-Start -->ND<!-- DNT-End --> 3.0 Unported (<ulink
       url="https://creativecommons.org/licenses/by-nd/3.0/">https://creativecommons.org/licenses/by-nd/3.0/</ulink>).</para>
 
       <para></para>
@@ -59,7 +59,7 @@
   </bookinfo>
 
   <chapter id="ECLR_Intro">
-    <title><emphasis role="bold">Introduction</emphasis></title>
+    <!-- DNT-Start --><title><emphasis role="bold">Introduction</emphasis></title><!-- DNT-End -->
 
     <xi:include href="ECLLanguageReference/ECLR_mods/DocumentStructure.xml"
                 xpointer="element(/1)"
@@ -71,7 +71,7 @@
   </chapter>
 
   <chapter id="ECL_Basics">
-    <title><emphasis role="bold">ECL Basics</emphasis></title>
+    <!-- DNT-Start --><title><emphasis role="bold">ECL Basics</emphasis></title><!-- DNT-End -->
 
     <xi:include href="ECLLanguageReference/ECLR_mods/Basics-Overview.xml"
                 xpointer="element(/1)"
@@ -111,7 +111,7 @@
   </chapter>
 
   <chapter id="Expressions_and_Operators_Chapter">
-    <title><emphasis role="bold">Expressions and Operators</emphasis></title>
+    <!-- DNT-Start --><title><emphasis role="bold">Expressions and Operators</emphasis></title><!-- DNT-End -->
 
     <xi:include href="ECLLanguageReference/ECLR_mods/ExpressionsandOperatos.xml"
                 xpointer="element(/1)"
@@ -143,7 +143,7 @@
   </chapter>
 
   <chapter id="Value_Types_Chapter">
-    <title><emphasis role="bold">Value Types</emphasis></title>
+    <!-- DNT-Start --><title><emphasis role="bold">Value Types</emphasis></title><!-- DNT-End -->
 
     <para>Value types<indexterm>
         <primary>Value Types</primary>
@@ -219,8 +219,8 @@
   </chapter>
 
   <chapter id="Record_Structures_and_Files">
-    <title><emphasis role="bold">Record Structures and
-    Files</emphasis></title>
+    <!-- DNT-Start --><title><emphasis role="bold">Record Structures and
+    Files</emphasis></title><!-- DNT-End -->
 
     <xi:include href="ECLLanguageReference/ECLR_mods/RecordStructure.xml"
                 xpointer="element(/1)"
@@ -248,7 +248,7 @@
   </chapter>
 
   <chapter id="Alien_Data_Types">
-    <title><emphasis role="bold">Alien Data Types</emphasis></title>
+    <!-- DNT-Start --><title><emphasis role="bold">Alien Data Types</emphasis></title><!-- DNT-End -->
 
     <xi:include href="ECLLanguageReference/ECLR_mods/AlienData-TypeStruct.xml"
                 xpointer="element(/1)"
@@ -260,7 +260,7 @@
   </chapter>
 
   <chapter id="Parsing_Support_Chapter">
-    <title><emphasis role="bold">Parsing Support</emphasis></title>
+    <!-- DNT-Start --><title><emphasis role="bold">Parsing Support</emphasis></title><!-- DNT-End -->
 
     <xi:include href="ECLLanguageReference/ECLR_mods/ParSppt.xml"
                 xpointer="element(/1)"
@@ -280,7 +280,7 @@
   </chapter>
 
   <chapter id="Reserved_Keywords">
-    <title><emphasis role="bold">Reserved Keywords</emphasis></title>
+    <!-- DNT-Start --><title><emphasis role="bold">Reserved Keywords</emphasis></title><!-- DNT-End -->
 
     <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-ALL.xml"
                 xpointer="element(/1)"
@@ -336,7 +336,7 @@
   </chapter>
 
   <chapter id="Special_Structures">
-    <title><emphasis role="bold">Special Structures</emphasis></title>
+    <!-- DNT-Start --><title><emphasis role="bold">Special Structures</emphasis></title><!-- DNT-End -->
 
     <xi:include href="ECLLanguageReference/ECLR_mods/SpecStruc-BeginC++.xml"
                 xpointer="element(/1)"
@@ -372,8 +372,8 @@
   </chapter>
 
   <chapter id="Built-in_Functions_and_Actions">
-    <title><emphasis role="bold">Built-in Functions and
-    Actions</emphasis></title>
+    <!-- DNT-Start --><title><emphasis role="bold">Built-in Functions and
+    Actions</emphasis></title><!-- DNT-End -->
 
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ABS.xml"
                 xpointer="element(/1)"
@@ -969,7 +969,7 @@
   </chapter>
 
   <chapter id="Workflow_Services">
-    <title><emphasis role="bold">Workflow Services</emphasis></title>
+    <!-- DNT-Start --><title><emphasis role="bold">Workflow Services</emphasis></title><!-- DNT-End -->
 
     <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-OverView.xml"
                 xpointer="element(/1)"
@@ -1025,7 +1025,7 @@
   </chapter>
 
   <chapter id="Templates">
-    <title><emphasis role="bold">Template Language</emphasis></title>
+    <!-- DNT-Start --><title><emphasis role="bold">Template Language</emphasis></title><!-- DNT-End -->
 
     <xi:include href="ECLLanguageReference/ECLR_mods/Templ-OVERVIEW.xml"
                 xpointer="element(/1)"
@@ -1125,7 +1125,7 @@
   </chapter>
 
   <chapter id="External_Services">
-    <title><emphasis role="bold">External Services</emphasis></title>
+    <!-- DNT-Start --><title><emphasis role="bold">External Services</emphasis></title><!-- DNT-End -->
 
     <xi:include href="ECLLanguageReference/ECLR_mods/ExtrSvcs-SERVICEStructure.xml"
                 xpointer="element(/1)"

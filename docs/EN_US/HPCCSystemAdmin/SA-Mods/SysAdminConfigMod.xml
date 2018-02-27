@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book xml:base="../">
   <chapter id="Usin-HPCC-ConfigMgr">
-    <title>Using Configuration Manager</title>
+    <!-- DNT-Start --><title>Using Configuration Manager</title><!-- DNT-End -->
 
     <para id="cfgmgr_introP0">Configuration Manager is the utility with which
     we configure the HPCC platform. The HPCC platform's configuration is
@@ -43,21 +43,21 @@
     detailed in <emphasis>Using Configuration Manager</emphasis>.</para>
 
     <para>The following sections will provide the details for configuring an
-    HPCC environment using the Configuration Manager.</para>
+    <!-- DNT-Start -->HPCC<!-- DNT-End --> environment using the Configuration Manager.</para>
 
     <sect1 id="configuring-a-multi-node-system">
-      <title>Running the Configuration Manager</title>
+      <!-- DNT-Start --><title>Running the Configuration Manager</title><!-- DNT-End -->
 
-      <para>This section will guide you through configuring an HPCC
+      <para>This section will guide you through configuring an <!-- DNT-Start -->HPCC<!-- DNT-End -->
       environment using the Configuration Manager.</para>
 
-      <para>The HPCC package should already be installed on ALL nodes.</para>
+      <para>The <!-- DNT-Start -->HPCC<!-- DNT-End --> package should already be installed on <!-- DNT-Start -->ALL<!-- DNT-End --> nodes.</para>
 
       <para>You can use any tool or shell script you choose.</para>
 
       <orderedlist>
         <listitem>
-          <para>SSH to a node in your environment and login as a user with
+          <para><!-- DNT-Start -->SSH<!-- DNT-End --> to a node in your environment and login as a user with
           sudo privileges. We would suggest that it would be the first node,
           and that it is a support node, however that is up to your
           discretion.</para>
@@ -69,7 +69,7 @@
           you use the same node to start the Configuration Manager every time,
           but this is also entirely up to you).</para>
 
-          <programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
+          <!-- DNT-Start --><programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting><!-- DNT-End -->
 
           <para><graphic
           fileref="../../images/gs_img_configmgrStart.jpg" /></para>
@@ -79,13 +79,13 @@
           <para>Using a Web browser, go to the Configuration Manager's
           interface:</para>
 
-          <programlisting>http://&lt;<emphasis>ip of installed system</emphasis>&gt;:8015</programlisting>
+          <!-- DNT-Start --><programlisting>http://&lt;<emphasis>ip of installed system</emphasis>&gt;:8015</programlisting><!-- DNT-End -->
 
           <para>The Configuration Manager startup wizard displays.</para>
         </listitem>
       </orderedlist>
 
-      <para>There are different ways to configure your HPCC system. You can
+      <para>There are different ways to configure your <!-- DNT-Start -->HPCC<!-- DNT-End --> system. You can
       use the <emphasis role="bold">Generate environment wizard</emphasis> and
       use that environment or experienced users can then use the <emphasis
       role="bold">Advanced View</emphasis> for more specific customization.
@@ -94,7 +94,7 @@
       then go in and add only the components you would want.</para>
 
       <sect2 id="Env_Wizard">
-        <title>Environment Wizard</title>
+        <!-- DNT-Start --><title>Environment Wizard</title><!-- DNT-End -->
 
         <orderedlist>
           <listitem>
@@ -110,10 +110,10 @@
           <listitem>
             <para>Provide a name for the environment file.</para>
 
-            <para>This will then be the name of the configuration XML file.
+            <para>This will then be the name of the configuration <!-- DNT-Start -->XML<!-- DNT-End --> file.
             For example, we will name our environment
             <emphasis>NewEnvironment</emphasis> and this will produce a
-            configuration XML file named
+            configuration <!-- DNT-Start -->XML<!-- DNT-End --> file named
             <emphasis>NewEnvironment.xml</emphasis> that we will
             use.<emphasis> </emphasis></para>
           </listitem>
@@ -121,20 +121,20 @@
           <listitem>
             <para>Press the Next button.</para>
 
-            <para>Next you will need to define the IP addresses that your HPCC
+            <para>Next you will need to define the <!-- DNT-Start -->IP<!-- DNT-End --> addresses that your <!-- DNT-Start -->HPCC<!-- DNT-End -->
             system will be using.</para>
           </listitem>
 
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Enter the IP addresses or hostname(s).</para>
+            <para>Enter the <!-- DNT-Start -->IP<!-- DNT-End --> addresses or hostname(s).</para>
 
-            <para>IP Addresses can be specified individually using semi-colon
+            <para><!-- DNT-Start -->IP<!-- DNT-End --> Addresses can be specified individually using semi-colon
             delimiters. You can also specify a range of IPs using a hyphen
             (for example, nnn.nnn.nnn.x-y). In the image below, we specified
-            the IP addresses 10.239.219.1 through 10.239.219.100 using the
-            range syntax, and also a single IP 10.239.219.111.</para>
+            the <!-- DNT-Start -->IP<!-- DNT-End --> addresses 10.239.219.1 through 10.239.219.100 using the
+            range syntax, and also a single <!-- DNT-Start -->IP<!-- DNT-End --> 10.239.219.111.</para>
 
             <para><graphic fileref="../../images/GS_ConfigMgrWiz002.jpg"
             vendor="configmgrSS" /></para>
@@ -247,7 +247,7 @@
                 <entry><inlinegraphic
                 fileref="../../images/OSSgr3.png" /></entry>
 
-                <entry>Keep in mind, that your HPCC configuration may be
+                <entry>Keep in mind, that your <!-- DNT-Start -->HPCC<!-- DNT-End --> configuration may be
                 different depending on your needs. For example, you may not
                 need a Roxie or you may need several smaller Roxie clusters.
                 In addition, in a production [Thor] system, you would ensure
@@ -261,15 +261,15 @@
         </informaltable>
 
         <sect3 id="Distrib_Conf" role="brk">
-          <title>Distribute the Configuration</title>
+          <!-- DNT-Start --><title>Distribute the Configuration</title><!-- DNT-End -->
 
           <orderedlist>
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>Stop the HPCC system.</para>
+              <para>Stop the <!-- DNT-Start -->HPCC<!-- DNT-End --> system.</para>
 
-              <para>If it is running stop the HPCC system (on every node),
+              <para>If it is running stop the <!-- DNT-Start -->HPCC<!-- DNT-End --> system (on every node),
               using a command such as this:</para>
 
               <para><programlisting>sudo /etc/init.d/hpcc-init stop</programlisting></para>
@@ -281,7 +281,7 @@
                   <listitem>
                     <para>You may have a multi-node system and a custom script
                     such as the one illustrated in Appendix of the <emphasis
-                    role="bluebold">Installing and Running the HPCC
+                    role="bluebold">Installing and Running the <!-- DNT-Start -->HPCC<!-- DNT-End -->
                     Platform</emphasis> document to start and stop your
                     system. If that is the case please use the appropriate
                     command for stopping your system on every node.</para>
@@ -300,7 +300,7 @@
                         <entry><inlinegraphic
                         fileref="../../images/caution.png" /></entry>
 
-                        <entry>Be sure HPCC is stopped before attempting to
+                        <entry>Be sure <!-- DNT-Start -->HPCC<!-- DNT-End --> is stopped before attempting to
                         copy the environment.xml file.</entry>
                       </row>
                     </tbody>
@@ -311,8 +311,8 @@
             <listitem>
               <para>Back up the original environment.xml file.</para>
 
-              <programlisting># For example
-sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/source/environment-date.xml </programlisting>
+              <!-- DNT-Start --><programlisting># For example
+sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/source/environment-date.xml </programlisting><!-- DNT-End -->
 
               <variablelist>
                 <varlistentry>
@@ -341,8 +341,8 @@ sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/source/environ
               /etc/HPCCSystems and rename the file to
               <emphasis>environment.xml</emphasis></para>
 
-              <programlisting># for example
-sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
+              <!-- DNT-Start --><programlisting># for example
+sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting><!-- DNT-End -->
 
               <para></para>
             </listitem>
@@ -353,16 +353,16 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               <emphasis role="bold">/etc/HPCCSystems/</emphasis> on to
               <emphasis>every</emphasis> node.</para>
 
-              <para>You may want to use a script to push out the XML file to
+              <para>You may want to use a script to push out the <!-- DNT-Start -->XML<!-- DNT-End --> file to
               all nodes. See the <emphasis>Example Scripts</emphasis> section
               in the Appendix of the <emphasis role="bluebold">Installing and
-              Running the HPCC Platform</emphasis> document. You can use the
+              Running the <!-- DNT-Start -->HPCC<!-- DNT-End --> Platform</emphasis> document. You can use the
               scripts as a model to create your own script to copy the
               environment.xml file out to all your nodes.</para>
             </listitem>
 
             <listitem>
-              <para>Restart the HPCC platform on all nodes.</para>
+              <para>Restart the <!-- DNT-Start -->HPCC<!-- DNT-End --> platform on all nodes.</para>
             </listitem>
           </orderedlist>
         </sect3>
@@ -371,29 +371,29 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
   </chapter>
 
   <chapter id="Advance-SysAdmin-Topic-Chapter">
-    <title>Advanced Systems Administrator Topics</title>
+    <!-- DNT-Start --><title>Advanced Systems Administrator Topics</title><!-- DNT-End -->
 
-    <para>This chapter contains information about certain advanced HPCC
+    <para>This chapter contains information about certain advanced <!-- DNT-Start -->HPCC<!-- DNT-End -->
     Systems<superscript>®</superscript> Administrators topics.</para>
 
     <sect1 id="Admin-System-Topic">
-      <title>Admin System Topics</title>
+      <!-- DNT-Start --><title>Admin System Topics</title><!-- DNT-End -->
 
       <para>This is a System Administrative topic designed to provide some
-      insight as to an aspect of System Administration for you HPCC
+      insight as to an aspect of System Administration for you <!-- DNT-Start -->HPCC<!-- DNT-End -->
       System.</para>
     </sect1>
 
     <sect1 id="System_sizings">
-      <title>System Sizings</title>
+      <!-- DNT-Start --><title>System Sizings</title><!-- DNT-End -->
 
       <para>This section provides some guidance in determining the sizing
-      requirements for an initial installation of HPCC. The following are some
+      requirements for an initial installation of <!-- DNT-Start -->HPCC<!-- DNT-End -->. The following are some
       suggested configuration guides that can be helpful when planning your
       system.</para>
 
       <sect2 id="SysAdmin_MinSuggestedHW" role="nobrk">
-        <title>Minimum Suggested Hardware</title>
+        <!-- DNT-Start --><title>Minimum Suggested Hardware</title><!-- DNT-End -->
 
         <para>HPCC was designed to run on common commodity hardware, and could
         function on even lesser hardware. The following list is the suggested
@@ -409,7 +409,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
               <tbody>
                 <row>
-                  <entry><emphasis role="bold">Thor slave</emphasis></entry>
+                  <entry><!-- DNT-Start --><emphasis role="bold">Thor slave</emphasis><!-- DNT-End --></entry>
 
                   <entry>Processor</entry>
 
@@ -419,30 +419,30 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                 <row>
                   <entry></entry>
 
-                  <entry>RAM</entry>
+                  <entry><!-- DNT-Start -->RAM<!-- DNT-End --></entry>
 
-                  <entry>8GB per daemon</entry>
+                  <entry>8<!-- DNT-Start -->GB<!-- DNT-End --> per daemon</entry>
                 </row>
 
                 <row>
                   <entry></entry>
 
-                  <entry>Storage</entry>
+                  <entry><!-- DNT-Start -->Storage<!-- DNT-End --></entry>
 
-                  <entry>RAID - 200MB/sec Sequential Read/Write per
+                  <entry><!-- DNT-Start -->RAID<!-- DNT-End --> - 200<!-- DNT-Start -->MB<!-- DNT-End -->/sec Sequential Read/Write per
                   node</entry>
                 </row>
 
                 <row>
                   <entry></entry>
 
-                  <entry>Network</entry>
+                  <entry><!-- DNT-Start -->Network<!-- DNT-End --></entry>
 
                   <entry>1 Gb/sec bandwidth</entry>
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Roxie</emphasis></entry>
+                  <entry><!-- DNT-Start --><emphasis role="bold">Roxie</emphasis><!-- DNT-End --></entry>
 
                   <entry>Processor</entry>
 
@@ -452,29 +452,29 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                 <row>
                   <entry></entry>
 
-                  <entry>RAM</entry>
+                  <entry><!-- DNT-Start -->RAM<!-- DNT-End --></entry>
 
-                  <entry>12GB per Roxie</entry>
+                  <entry>12<!-- DNT-Start -->GB<!-- DNT-End --> per Roxie</entry>
                 </row>
 
                 <row>
                   <entry></entry>
 
-                  <entry>Storage</entry>
+                  <entry><!-- DNT-Start -->Storage<!-- DNT-End --></entry>
 
-                  <entry>400 IOPS &amp; 2 Volumes per (RAID optional)</entry>
+                  <entry>400 <!-- DNT-Start -->IOPS<!-- DNT-End --> &amp; 2 Volumes per (<!-- DNT-Start -->RAID<!-- DNT-End --> optional)</entry>
                 </row>
 
                 <row>
                   <entry></entry>
 
-                  <entry>Network</entry>
+                  <entry><!-- DNT-Start -->Network<!-- DNT-End --></entry>
 
                   <entry>1 Gb/sec bandwidth</entry>
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Dali</emphasis></entry>
+                  <entry><!-- DNT-Start --><emphasis role="bold">Dali</emphasis><!-- DNT-End --></entry>
 
                   <entry>Processor</entry>
 
@@ -484,21 +484,21 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                 <row>
                   <entry></entry>
 
-                  <entry>RAM</entry>
+                  <entry><!-- DNT-Start -->RAM<!-- DNT-End --></entry>
 
-                  <entry>24GB per Dali</entry>
+                  <entry>24<!-- DNT-Start -->GB<!-- DNT-End --> per Dali</entry>
                 </row>
 
                 <row>
                   <entry></entry>
 
-                  <entry>Storage</entry>
+                  <entry><!-- DNT-Start -->Storage<!-- DNT-End --></entry>
 
-                  <entry>RAID 1, 5, 6, 10 Volume 200GB</entry>
+                  <entry><!-- DNT-Start -->RAID<!-- DNT-End --> 1, 5, 6, 10 Volume 200<!-- DNT-Start -->GB<!-- DNT-End --></entry>
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Other</emphasis></entry>
+                  <entry><!-- DNT-Start --><emphasis role="bold">Other</emphasis><!-- DNT-End --></entry>
 
                   <entry>Processor</entry>
 
@@ -508,23 +508,23 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                 <row>
                   <entry></entry>
 
-                  <entry>RAM</entry>
+                  <entry><!-- DNT-Start -->RAM<!-- DNT-End --></entry>
 
-                  <entry>12GB</entry>
+                  <entry>12<!-- DNT-Start -->GB<!-- DNT-End --></entry>
                 </row>
 
                 <row>
                   <entry></entry>
 
-                  <entry>Storage</entry>
+                  <entry><!-- DNT-Start -->Storage<!-- DNT-End --></entry>
 
-                  <entry>RAID 1, 5, 6, 10 Volume 200GB</entry>
+                  <entry><!-- DNT-Start -->RAID<!-- DNT-End --> 1, 5, 6, 10 Volume 200<!-- DNT-Start -->GB<!-- DNT-End --></entry>
                 </row>
 
                 <row>
                   <entry></entry>
 
-                  <entry>Network</entry>
+                  <entry><!-- DNT-Start -->Network<!-- DNT-End --></entry>
 
                   <entry>1 Gb/sec bandwidth</entry>
                 </row>
@@ -535,7 +535,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
     </sect1>
 
     <sect1 id="Sample_Sizings">
-      <title>Sample Sizings</title>
+      <!-- DNT-Start --><title>Sample Sizings</title><!-- DNT-End -->
 
       <para>This section illustrates sample system sizings for various work
       environments. Unlike system requirements, the following samples are
@@ -543,25 +543,25 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       conditions.</para>
 
       <sect2 id="Sample-Size-HighDataVolume">
-        <title>Sample Sizing for High Data volume (Typical)</title>
+        <!-- DNT-Start --><title>Sample Sizing for High Data volume (Typical)</title><!-- DNT-End -->
 
-        <para>The most typical scenario for HPCC is utilizing it with a high
+        <para>The most typical scenario for <!-- DNT-Start -->HPCC<!-- DNT-End --> is utilizing it with a high
         volume of data. This suggested sample sizing would be appropriate for
         a site with large volumes of data. A good policy is to set the Thor
-        size to 4 times the source data on your HPCC. Typically, Roxie would
+        size to 4 times the source data on your <!-- DNT-Start -->HPCC<!-- DNT-End -->. Typically, Roxie would
         be about ¼ the size of Thor. This is because the data is compressed
         and the system does not hold any transient data in Roxie. Remember
         that you do not want the number of Roxie nodes to exceed the number of
         Thor nodes.</para>
 
         <sect3 id="SysAdm_SmplSiz_HiDataThor">
-          <title>High Data Thor sizing considerations</title>
+          <!-- DNT-Start --><title>High Data Thor sizing considerations</title><!-- DNT-End -->
 
-          <para>Each Thor node can hold about 2.5 TB of data (MAX), so plan
+          <para>Each Thor node can hold about 2.5 <!-- DNT-Start -->TB<!-- DNT-End --> of data (<!-- DNT-Start -->MAX<!-- DNT-End -->), so plan
           for the number of Thor nodes accordingly for your data.</para>
 
-          <para>If possible, SAS drives for both Thor and Roxie as they almost
-          equal to SATA drives now. If not for both, get SAS drives at least
+          <para>If possible, <!-- DNT-Start -->SAS<!-- DNT-End --> drives for both Thor and Roxie as they almost
+          equal to <!-- DNT-Start -->SATA<!-- DNT-End --> drives now. If not for both, get <!-- DNT-Start -->SAS<!-- DNT-End --> drives at least
           for your Roxie cluster.</para>
 
           <para>Thor replicates data and is typically configured for two
@@ -569,7 +569,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 id="SysAdm_BestPrac_HiDataRoxie">
-          <title>High Data Roxie sizing considerations</title>
+          <!-- DNT-Start --><title>High Data Roxie sizing considerations</title><!-- DNT-End -->
 
           <para>Roxie keeps most of its data in memory, so you should allocate
           plenty of memory for Roxie. Calculate the approximate size of your
@@ -587,13 +587,13 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       </sect2>
 
       <sect2 id="SysAdm_BestPrac_HevyProc_LowData">
-        <title>Sample Sizing for Heavy Processing on Low Data Volume</title>
+        <!-- DNT-Start --><title>Sample Sizing for Heavy Processing on Low Data Volume</title><!-- DNT-End -->
 
         <para>The following section provides some sample sizing for heavy
         processing with approximately the amount of data indicated.</para>
 
         <sect3 id="SysAdm_BestPrac_750GB">
-          <title>750 GB of Raw Data</title>
+          <!-- DNT-Start --><title>750 GB of Raw Data</title><!-- DNT-End -->
 
           <para>Thor = 3 (slaves) + 2 (management) = 5 Nodes</para>
 
@@ -606,7 +606,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 id="SysAdm_BestPrac_1250GB">
-          <title>1250 GB of Raw Data</title>
+          <!-- DNT-Start --><title>1250 GB of Raw Data</title><!-- DNT-End -->
 
           <para>Thor = 6 (slaves) + 2 (management) = 8 Nodes</para>
 
@@ -619,7 +619,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 id="SysAdm_BestPrac_2000GB">
-          <title>2000 GB of Raw Data</title>
+          <!-- DNT-Start --><title>2000 GB of Raw Data</title><!-- DNT-End -->
 
           <para>Thor = 8 (slaves) + 3 (management) = 11 Nodes</para>
 
@@ -632,7 +632,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 id="SysAdm_BestPrac_3500GB">
-          <title>3500 GB of Raw Data</title>
+          <!-- DNT-Start --><title>3500 GB of Raw Data</title><!-- DNT-End -->
 
           <para>Thor = 12 (slaves) + 5 (management) = 17 Nodes</para>
 

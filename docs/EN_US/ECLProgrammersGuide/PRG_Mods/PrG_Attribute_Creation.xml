@@ -2,29 +2,29 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Attribute_Creation" role="nobrk">
-  <title>Attribute Creation</title>
+  <!-- DNT-Start --><title>Attribute Creation</title><!-- DNT-End -->
 
   <sect2 id="Similarities_and_Differences">
-    <title>Similarities and Differences</title>
+    <!-- DNT-Start --><title>Similarities and Differences</title><!-- DNT-End -->
 
     <para>The similarities come from the fundamental requirement of solving
     any data processing problem: First, understand the problem.</para>
 
-    <para>After that, in many programming environments, you use a “top-down”
+    <para>After that, in many programming environments, you use a âtop-downâ
     approach to map out the most direct line of logic to get your input
     transformed into the desired output. This is where the process diverges in
-    ECL, because the tool itself requires a different way of thinking about
-    forming the solution, and the direct route is not always the fastest. ECL
-    requires a “bottom-up” approach to problem solving.</para>
+    <!-- DNT-Start -->ECL<!-- DNT-End -->, because the tool itself requires a different way of thinking about
+    forming the solution, and the direct route is not always the fastest. <!-- DNT-Start -->ECL<!-- DNT-End -->
+    requires a âbottom-upâ approach to problem solving.</para>
   </sect2>
 
   <sect2 id="Atomic_Programming">
-    <title>“Atomic” Programming</title>
+    <!-- DNT-Start --><title>âAtomicâ Programming</title><!-- DNT-End -->
 
-    <para>In ECL, once you understand what the end result needs to be, you
+    <para>In <!-- DNT-Start -->ECL<!-- DNT-End -->, once you understand what the end result needs to be, you
     ignore the direct line from problem input to end result and instead start
-    by breaking the issue into as many pieces as possible—the smaller the
-    better. By creating “atomic” bits of ECL code, you've done all the known
+    by breaking the issue into as many pieces as possibleâthe smaller the
+    better. By creating âatomicâ bits of <!-- DNT-Start -->ECL<!-- DNT-End --> code, you've done all the known
     and easy bits of the problem. This usually gets you 80% of the way to the
     solution without having to do anything terribly difficult.</para>
 
@@ -37,13 +37,13 @@
   </sect2>
 
   <sect2 id="Growing_Solutions">
-    <title>Growing Solutions</title>
+    <!-- DNT-Start --><title>Growing Solutions</title><!-- DNT-End -->
 
-    <para>The basic Attribute building blocks in ECL are the Set, Boolean,
+    <para>The basic Attribute building blocks in <!-- DNT-Start -->ECL<!-- DNT-End --> are the Set, Boolean,
     Recordset, and Value Attribute types. Each of these can be made as
-    “atomic” as needed so that they may be used in combination to produce
-    “molecules” of more complex logic that may then be further combined to
-    produce a complete “organism” that produces the final result.</para>
+    âatomicâ as needed so that they may be used in combination to produce
+    âmoleculesâ of more complex logic that may then be further combined to
+    produce a complete âorganismâ that produces the final result.</para>
 
     <para>For example, assume you have a problem that requires you to produce
     a set of records wherein a particular field in your output must contain
@@ -51,66 +51,66 @@
     languages, the pseudo-code to produce that output would look something
     like this:</para>
 
-    <programlisting>Start at top of MyFile
+    <!-- DNT-Start --><programlisting>Start at top of MyFile
 Loop through MyFile records
  If MyField = 1 or MyField = 3 or MyField = 4 or MyField = 7 
   Include record in output set
  Else
   Throw out record and go back to top of loop
 end if and loop
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-    <para>While in ECL, the actual code would be:</para>
+    <para>While in <!-- DNT-Start -->ECL<!-- DNT-End -->, the actual code would be:</para>
 
-    <programlisting>SetValidValues := [1,3,4,7];                    //Set Definition
+    <!-- DNT-Start --><programlisting>SetValidValues := [1,3,4,7];                    //Set Definition
 IsValidRec := MyFile.MyField IN SetValidValues; //Boolean
 ValRecsMyFile := MyFile(IsValidRec);            //filtered Recordset 
 OUTPUT(ValRecsMyFile);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para>The thought process behind writing this code is:</para>
 
-    <para>“I know I have a set of constant values in the spec, so I can start
+    <para>âI know I have a set of constant values in the spec, so I can start
     by creating a Set attribute of the valid values...</para>
 
-    <para>“And now that I have a Set defined, I can use that Set to create a
+    <para>âAnd now that I have a Set defined, I can use that Set to create a
     Boolean Attribute to test whether the field I'm interested in contains one
     of the valid values...</para>
 
-    <para>“And now that I have a Boolean defined, I can use that Boolean as
-    the filter condition to produce the Recordset I need to output.”</para>
+    <para>âAnd now that I have a Boolean defined, I can use that Boolean as
+    the filter condition to produce the Recordset I need to output.â</para>
 
-    <para>The process starts with creating the Set Attribute “atom,” then
-    using it to build the Boolean “molecule,” then using the Boolean to grow
-    the “organism”—the final solution.</para>
+    <para>The process starts with creating the Set Attribute âatom,â then
+    using it to build the Boolean âmolecule,â then using the Boolean to grow
+    the âorganismââthe final solution.</para>
   </sect2>
 
   <sect2 id="Ugly_ECL_is_Possible_Too">
-    <title>“Ugly” ECL is Possible, Too</title>
+    <!-- DNT-Start --><title>âUglyâ ECL is Possible, Too</title><!-- DNT-End -->
 
-    <para>Of course, that particular set of ECL could have been written like
+    <para>Of course, that particular set of <!-- DNT-Start -->ECL<!-- DNT-End --> could have been written like
     this (following a more top down thinking process):</para>
 
-    <programlisting>OUTPUT(MyFile(MyField IN [1,3,4,7]));</programlisting>
+    <!-- DNT-Start --><programlisting>OUTPUT(MyFile(MyField IN [1,3,4,7]));</programlisting><!-- DNT-End -->
 
     <para>The end result, in this case, would be the same.</para>
 
     <para>However, the overall usefulness of this code is drastically reduced
-    because, in the first form, all the “atomic” bits are available for re-use
+    because, in the first form, all the âatomicâ bits are available for re-use
     elsewhere when similar problems come along. In this second form, they are
     not. And in all programming styles, code re-use is considered to be a good
     thing.</para>
   </sect2>
 
   <sect2 id="Easy_Optimization">
-    <title>Easy Optimization</title>
+    <!-- DNT-Start --><title>Easy Optimization</title><!-- DNT-End -->
 
-    <para>Most importantly, by breaking your ECL code into its smallest
-    possible components, you allow ECL’s optimizing compiler to do the best
+    <para>Most importantly, by breaking your <!-- DNT-Start -->ECL<!-- DNT-End --> code into its smallest
+    possible components, you allow ECLâs optimizing compiler to do the best
     job possible of determining how to accomplish your desired result. This
-    leads to another dichotomy between ECL and other programming languages:
-    usually, the less code you write, the more “elegant” the solution; but in
-    ECL, the <emphasis role="underline">more</emphasis> code you write, the
+    leads to another dichotomy between <!-- DNT-Start -->ECL<!-- DNT-End --> and other programming languages:
+    usually, the less code you write, the more âelegantâ the solution; but in
+    <!-- DNT-Start -->ECL<!-- DNT-End -->, the <emphasis role="underline">more</emphasis> code you write, the
     better and more elegant the solution is generated for you. Remember, your
     Attributes are just <emphasis role="bold">definitions</emphasis> telling
     the compiler <emphasis role="underline">what</emphasis> to do, not

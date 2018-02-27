@@ -2,21 +2,21 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="EditDistance">
-  <title>EditDistance</title>
+  <!-- DNT-Start --><title>EditDistance</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Str.EditDistance<indexterm>
-      <primary>STD.Str.EditDistance</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->EditDistance<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->EditDistance<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Str.EditDistance</primary>
+      <primary>Str.<!-- DNT-Start -->EditDistance<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>EditDistance</primary>
+      <primary><!-- DNT-Start -->EditDistance<!-- DNT-End --></primary>
     </indexterm>(</emphasis> <emphasis>string1, string2</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
-  <para><emphasis role="bold">STD.Uni.EditDistance<indexterm>
-      <primary>STD.Uni.EditDistance</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->EditDistance<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->EditDistance<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Uni.EditDistance</primary>
+      <primary>Uni.<!-- DNT-Start -->EditDistance<!-- DNT-End --></primary>
     </indexterm>(</emphasis> <emphasis>string1, string2, locale</emphasis>
   <emphasis role="bold">)</emphasis></para>
 
@@ -28,19 +28,19 @@
 
       <tbody>
         <row>
-          <entry><emphasis>string1</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>string1</emphasis><!-- DNT-End --></entry>
 
           <entry>The first of a pair of strings to compare.</entry>
         </row>
 
         <row>
-          <entry><emphasis>string2</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>string2</emphasis><!-- DNT-End --></entry>
 
           <entry>The second of a pair of strings to compare.</entry>
         </row>
 
         <row>
-          <entry><emphasis>locale</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>locale</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the language and country
           code to use to determine correct sort order and other
@@ -48,15 +48,15 @@
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>EditDistance returns an UNSIGNED4 value.</entry>
+          <entry><!-- DNT-Start -->EditDistance<!-- DNT-End --> returns an <!-- DNT-Start -->UNSIGNED<!-- DNT-End -->4 value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">EditDistance </emphasis>function returns a
+  <para>The <emphasis role="bold"><!-- DNT-Start -->EditDistance<!-- DNT-End --> </emphasis>function returns a
   standard Levenshtein distance algorithm score for the edit distance between
   <emphasis>string1</emphasis> and <emphasis>string2</emphasis>. This score
   i\reflects the minimum number of operations needed to transform
@@ -64,9 +64,9 @@
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">STD.Str.EditDistance('CAT','CAT');  //returns 0
+  <!-- DNT-Start --><programlisting format="linespecific">STD.Str.EditDistance('CAT','CAT');  //returns 0
 STD.Str.EditDistance('CAT','BAT');  //returns 1
 STD.Str.EditDistance('BAT','BAIT'); //returns 1
 STD.Str.EditDistance('CAT','BAIT'); //returns 2
-</programlisting>
+</programlisting><!-- DNT-End -->
 </sect1>

@@ -2,7 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Attributes_nil_remove">
-  <title><emphasis role="bold">nil_remove</emphasis></title>
+  <!-- DNT-Start --><title><emphasis role="bold">nil_remove</emphasis></title><!-- DNT-End -->
 
   <para>The nil_remove attribute (valid for an ESPrequest, ESPStruct, or
   ESPresponse) specifies to remove any empty tags. This is useful to save
@@ -10,7 +10,7 @@
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <programlisting>ESPresponse [nil_remove] MyQueryResponse
+  <!-- DNT-Start --><programlisting>ESPresponse [nil_remove] MyQueryResponse
  
 {
     string FirstName;
@@ -18,5 +18,5 @@
     string LastName;
  
 };
-</programlisting>
+</programlisting><!-- DNT-End -->
 </sect1>

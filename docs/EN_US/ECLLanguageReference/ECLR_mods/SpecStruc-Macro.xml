@@ -2,22 +2,22 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="MACRO_Structure">
-  <title>MACRO Structure<indexterm>
+  <!-- DNT-Start --><title>MACRO Structure<indexterm>
       <primary>MACRO Structure</primary>
-    </indexterm></title>
+    </indexterm></title><!-- DNT-End -->
 
   <para><emphasis>[</emphasis><emphasis>resulttype</emphasis><emphasis
   role="bold">]</emphasis><emphasis> macroname </emphasis><emphasis
   role="bold">(</emphasis><emphasis> parameterlist </emphasis><emphasis
-  role="bold">) := MACRO</emphasis><emphasis role="bold"><indexterm>
-      <primary>MACRO</primary>
+  role="bold">) := <!-- DNT-Start -->MACRO<!-- DNT-End --></emphasis><emphasis role="bold"><indexterm>
+      <primary><!-- DNT-Start -->MACRO<!-- DNT-End --></primary>
     </indexterm> </emphasis><emphasis></emphasis></para>
 
   <para><emphasis> tokenstream</emphasis>;<emphasis
   role="bold"></emphasis></para>
 
-  <para><emphasis role="bold">ENDMACRO<indexterm>
-      <primary>ENDMACRO</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->ENDMACRO<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->ENDMACRO<!-- DNT-End --></primary>
     </indexterm>;</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -28,23 +28,23 @@
 
       <tbody>
         <row>
-          <entry><emphasis>resulttype</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>resulttype</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. The result type of the macro. The only valid type
-          is DATASET. If omitted and the <emphasis>tokenstream</emphasis>
+          is <!-- DNT-Start -->DATASET<!-- DNT-End -->. If omitted and the <emphasis>tokenstream</emphasis>
           contains no Attribute definitions, then the macro is treated as
-          returning a value (typically INTEGER or STRING).</entry>
+          returning a value (typically <!-- DNT-Start -->INTEGER<!-- DNT-End --> or <!-- DNT-Start -->STRING<!-- DNT-End -->).</entry>
         </row>
 
         <row>
-          <entry><emphasis>macroname</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>macroname</emphasis><!-- DNT-End --></entry>
 
-          <entry><para>The name of the function the MACRO structure
+          <entry><para>The name of the function the <!-- DNT-Start -->MACRO<!-- DNT-End --> structure
           defines.</para></entry>
         </row>
 
         <row>
-          <entry><emphasis>parameterlist</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>parameterlist</emphasis><!-- DNT-End --></entry>
 
           <entry>A comma separated list of names (tokens) of the parameters
           that will be passed to the macro. These names are used in the
@@ -55,7 +55,7 @@
         </row>
 
         <row>
-          <entry><emphasis>tokenstream</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>tokenstream</emphasis><!-- DNT-End --></entry>
 
           <entry>The Attribute definitions or Actions that the macro will
           perform.</entry>
@@ -64,17 +64,17 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">MACRO </emphasis>structure makes it possible
+  <para>The <emphasis role="bold"><!-- DNT-Start -->MACRO<!-- DNT-End --> </emphasis>structure makes it possible
   to create a function without knowing the value types of the parameters that
   will eventually be passed to it. The most common use would be performing
   functions upon arbitrary datasets.</para>
 
   <para>A macro behaves as if you had typed the
   <emphasis>tokenstream</emphasis> into the exact position you use it, using
-  lexical substitution—the tokens defined in the
+  lexical substitutionâthe tokens defined in the
   <emphasis>parameterlist</emphasis> are substituted everywhere they appear in
   the <emphasis>tokenstream </emphasis>by the text passed to the macro. This
-  makes it entirely possible to write a valid MACRO definition that could be
+  makes it entirely possible to write a valid <!-- DNT-Start -->MACRO<!-- DNT-End --> definition that could be
   called with a set of parameters that result in obscure compile time
   errors.</para>
 
@@ -90,7 +90,7 @@
 
   <para>Example:</para>
 
-  <programlisting>// This is a DATASET Value macro that results in a crosstab
+  <!-- DNT-Start --><programlisting>// This is a DATASET Value macro that results in a crosstab
 DATASET CrossTab(File,X,Y) := MACRO
         TABLE(File,{X, Y, COUNT(GROUP)},X,Y)
 ENDMACRO;
@@ -104,7 +104,7 @@ OUTPUT(CrossTab(Person,person.per_st,Person.per_sex))
 // The following macro takes a LeftFile and looks up a field of it in
 // the RightFile and then sets a field in the LeftFile indicating if 
 // the lookup worked.
-IsThere(OutFile ,RecType,LeftFile,RightFile,LinkId ,SetField ) := MACRO
+IsThere(OutFileÂ ,RecType,LeftFile,RightFile,LinkIdÂ ,SetFieldÂ ) := MACRO
     RecType Trans(RecType L, RecType R) := TRANSFORM
         SELF.SetField := IF(NOT R.LinkId,0,1);
         SELF := L;
@@ -157,10 +157,10 @@ MAC_join(attrname, leftDS, rightDS, linkflags) := MACRO
 ENDMACRO;
 MAC_join(J1,People,Property,'LEFT.ID=RIGHT.PeopleID,LEFT  OUTER')
 //expands out to:
-// J1 := JOIN(People,Property,LEFT.ID=RIGHT.PeopleID,LEFT OUTER);</programlisting>
+// J1 := JOIN(People,Property,LEFT.ID=RIGHT.PeopleID,LEFT OUTER);</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM
-  Structure</link>, <link linkend="RECORD_Structure">RECORD Structure</link>,
-  <link linkend="_UNIQUENAME">#UNIQUENAME</link>, <link
-  linkend="_EXPAND">#EXPAND</link></para>
+  <para>See Also: <link linkend="TRANSFORM_Structure"><!-- DNT-Start -->TRANSFORM<!-- DNT-End -->
+  Structure</link>, <link linkend="RECORD_Structure"><!-- DNT-Start -->RECORD<!-- DNT-End --> Structure</link>,
+  <link linkend="_UNIQUENAME">#<!-- DNT-Start -->UNIQUENAME<!-- DNT-End --></link>, <link
+  linkend="_EXPAND">#<!-- DNT-Start -->EXPAND<!-- DNT-End --></link></para>
 </sect1>

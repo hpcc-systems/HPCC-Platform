@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SendEmail">
-  <title>SendEmail</title>
+  <!-- DNT-Start --><title>SendEmail</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.System.Email.SendEmail<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.System.Email.SendEmail<indexterm>
       <primary>STD.System.Email.SendEmail</primary>
     </indexterm> <indexterm>
       <primary>System.Email.SendEmail</primary>
@@ -13,7 +13,7 @@
     </indexterm> <indexterm>
       <primary>SendEmail</primary>
     </indexterm>( </emphasis> <emphasis>sendto, subject, body, server, port,
-  sender</emphasis> <emphasis role="bold"> )</emphasis></para>
+  sender</emphasis> <emphasis role="bold"> )</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -23,32 +23,32 @@
 
       <tbody>
         <row>
-          <entry><emphasis>sendto</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>sendto</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing a comma-delimited list of
           the addresses of the intended recipients. The validity of the
-          addresses is not checked, so it is the programmer’s responsibility
+          addresses is not checked, so it is the programmerâs responsibility
           to ensure they are all valid.</entry>
         </row>
 
         <row>
-          <entry><emphasis>subject</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>subject</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the subject line.</entry>
         </row>
 
         <row>
-          <entry><emphasis>body</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>body</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the text of the email to
-          send. This must be character encoding “ISO-8859-1 (latin1)” (the ECL
+          send. This must be character encoding â<!-- DNT-Start -->ISO<!-- DNT-End -->-8859-1 (latin1)â (the <!-- DNT-Start -->ECL<!-- DNT-End -->
           default character set). Text in any other character set must be sent
-          as an attachment (see the STD.System.Email.SendEmailAttachText()
+          as an attachment (see the <!-- DNT-Start -->STD<!-- DNT-End -->.System.Email.SendEmailAttachText()
           function).</entry>
         </row>
 
         <row>
-          <entry><emphasis>server</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>server</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. A null-terminated string containing the name of the
           mail server. If omitted, defaults to the value in the SMTPserver
@@ -56,15 +56,15 @@
         </row>
 
         <row>
-          <entry><emphasis>port</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>port</emphasis><!-- DNT-End --></entry>
 
-          <entry>Optional. An UNSIGNED4 integer value containing the port
+          <entry>Optional. An <!-- DNT-Start -->UNSIGNED<!-- DNT-End -->4 integer value containing the port
           number. If omitted, defaults to the value in the SMTPport
           environment variable.</entry>
         </row>
 
         <row>
-          <entry><emphasis>sender</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>sender</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. A null-terminated string containing the address of
           the sender. If omitted, defaults to the value in the
@@ -74,10 +74,10 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">SendEmail </emphasis>function sends an email
+  <para>The <emphasis role="bold"><!-- DNT-Start -->SendEmail<!-- DNT-End --> </emphasis>function sends an email
   message.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">STD.System.Email.SendEmail( 'me@mydomain.com', 'testing 1,2,3', 'this is a test message');</programlisting>
+  <!-- DNT-Start --><programlisting format="linespecific">STD.System.Email.SendEmail( 'me@mydomain.com', 'testing 1,2,3', 'this is a test message');</programlisting><!-- DNT-End -->
 </sect1>

@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="LogString">
-  <title>LogString</title>
+  <!-- DNT-Start --><title>LogString</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.System.Job.LogString<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.System.Job.LogString<indexterm>
       <primary>STD.System.Job.LogString</primary>
     </indexterm> <indexterm>
       <primary>System.Job.LogString</primary>
@@ -13,7 +13,7 @@
     </indexterm> <indexterm>
       <primary>LogString</primary>
     </indexterm>( </emphasis> <emphasis>message </emphasis> <emphasis
-  role="bold">)</emphasis></para>
+  role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -23,29 +23,29 @@
 
       <tbody>
         <row>
-          <entry><emphasis>message </emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>message </emphasis><!-- DNT-End --></entry>
 
           <entry>A string expression containing the text to place in the log
           file.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>LogString returns an INTEGER value.</entry>
+          <entry><!-- DNT-Start -->LogString<!-- DNT-End --> returns an <!-- DNT-Start -->INTEGER<!-- DNT-End --> value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">LogString </emphasis>function outputs
-  “USER:” followed by the <emphasis>message</emphasis> text to the eclagent or
+  <para>The <emphasis role="bold"><!-- DNT-Start -->LogString<!-- DNT-End --> </emphasis>function outputs
+  â<!-- DNT-Start -->USER<!-- DNT-End -->:â followed by the <emphasis>message</emphasis> text to the eclagent or
   Roxie log file and returns the length of the text written to the
   file.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">A := STD.System.Job.LogString('The text message to log');
+  <!-- DNT-Start --><programlisting format="linespecific">A := STD.System.Job.LogString('The text message to log');
  //places USER:The text message to log
- //in the log file   </programlisting>
+ //in the log file   </programlisting><!-- DNT-End -->
 </sect1>

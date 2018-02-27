@@ -2,14 +2,14 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="DaysBetween">
-  <title>DaysBetween</title>
+  <!-- DNT-Start --><title>DaysBetween</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Date.DaysBetween<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.Date.DaysBetween<indexterm>
       <primary>STD.Date.DaysBetween</primary>
     </indexterm><indexterm>
       <primary>DaysBetween</primary>
     </indexterm>(</emphasis> <emphasis role="bold">fromDate,
-  toDate)</emphasis></para>
+  toDate)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -19,37 +19,37 @@
 
       <tbody>
         <row>
-          <entry><emphasis>fromDate</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>fromDate</emphasis><!-- DNT-End --></entry>
 
           <entry>The first date value in Date_t format.</entry>
         </row>
 
         <row>
-          <entry><emphasis>toDate</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>toDate</emphasis><!-- DNT-End --></entry>
 
           <entry>The last date value in Date_t format.</entry>
         </row>
 
         <row>
-          <entry>Return:</entry>
+          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-          <entry>DaysBetween returns an INTEGER value of the number of days
+          <entry><!-- DNT-Start -->DaysBetween<!-- DNT-End --> returns an <!-- DNT-Start -->INTEGER<!-- DNT-End --> value of the number of days
           between the two dates.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">DaysBetween</emphasis> function calculates
+  <para>The <emphasis role="bold"><!-- DNT-Start -->DaysBetween<!-- DNT-End --></emphasis> function calculates
   the number of whole days between two dates.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">IMPORT STD;
+  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 StartDate := 19631122;
 numDays := STD.Date.DaysBetween(startDate,STD.Date.Today());
       // numDays contains the number of days between the startDate and today's date
-</programlisting>
+</programlisting><!-- DNT-End -->
 
   <para></para>
 </sect1>

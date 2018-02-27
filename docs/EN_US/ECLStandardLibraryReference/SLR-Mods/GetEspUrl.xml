@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="GetEspUrl">
-  <title><emphasis role="bold">GetEspUrl</emphasis></title>
+  <!-- DNT-Start --><title><emphasis role="bold">GetEspUrl</emphasis></title><!-- DNT-End -->
 
-  <para><emphasis>result</emphasis> <emphasis role="bold"> :=
+  <!-- DNT-Start --><para><emphasis>result</emphasis> <emphasis role="bold"> :=
   STD.File.GetEspUrl <indexterm>
       <primary>STD.File.GetEspUrl</primary>
     </indexterm><indexterm>
@@ -12,7 +12,7 @@
     </indexterm> <indexterm>
       <primary>GetEspUrl</primary>
     </indexterm>( [</emphasis> <emphasis>username, userPW </emphasis>
-  <emphasis role="bold">]);</emphasis></para>
+  <emphasis role="bold">]);</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -22,28 +22,28 @@
 
       <tbody>
         <row>
-          <entry><emphasis>username</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>username</emphasis><!-- DNT-End --></entry>
 
-          <entry>Optional. A STRING containing a username to use for
-          authenticated access to the ESP process. If omitted, it indicates
+          <entry>Optional. A <!-- DNT-Start -->STRING<!-- DNT-End --> containing a username to use for
+          authenticated access to the <!-- DNT-Start -->ESP<!-- DNT-End --> process. If omitted, it indicates
           that no user authentication is required. </entry>
         </row>
 
         <row>
-          <entry><emphasis>userPW</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>userPW</emphasis><!-- DNT-End --></entry>
 
-          <entry>Optional. A STRING containing the password to use with the
+          <entry>Optional. A <!-- DNT-Start -->STRING<!-- DNT-End --> containing the password to use with the
           user cited in the <emphasis>username</emphasis> argument. If
           <emphasis>username</emphasis> is empty then this is ignored</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>GetEspUrl returns a STRING containing the full URL (including
-          HTTP scheme and port) to an ESP server process. If more than one ESP
+          <entry>GetEspUrl returns a <!-- DNT-Start -->STRING<!-- DNT-End --> containing the full <!-- DNT-Start -->URL<!-- DNT-End --> (including
+          <!-- DNT-Start -->HTTP<!-- DNT-End --> scheme and port) to an <!-- DNT-Start -->ESP<!-- DNT-End --> server process. If more than one <!-- DNT-Start -->ESP<!-- DNT-End -->
           process is defined then the first found process is returned. Returns
-          an empty string if an ESP server process cannot be found in the
+          an empty string if an <!-- DNT-Start -->ESP<!-- DNT-End --> server process cannot be found in the
           environment.</entry>
         </row>
       </tbody>
@@ -51,10 +51,10 @@
   </informaltable>
 
   <para>The <emphasis role="bold">GetEspUrl </emphasis>function returns the
-  full URL to an ESP server process. </para>
+  full <!-- DNT-Start -->URL<!-- DNT-End --> to an <!-- DNT-Start -->ESP<!-- DNT-End --> server process. </para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">EspAddress := STD.File.GetEspUrl
-</programlisting>
+  <!-- DNT-Start --><programlisting format="linespecific">EspAddress := STD.File.GetEspUrl
+</programlisting><!-- DNT-End -->
 </sect1>

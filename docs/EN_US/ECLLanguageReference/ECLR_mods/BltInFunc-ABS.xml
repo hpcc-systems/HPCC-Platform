@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ABS">
-  <title>ABS</title>
+  <!-- DNT-Start --><title>ABS</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">ABS<indexterm>
-      <primary>ABS</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->ABS<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->ABS<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>ABS function</primary>
+      <primary><!-- DNT-Start -->ABS<!-- DNT-End --> function</primary>
     </indexterm>(</emphasis><emphasis>expression</emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -19,29 +19,29 @@
 
         <tbody>
           <row>
-            <entry><emphasis>expression</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
 
-            <entry>The value (REAL or INTEGER) for which to return the
+            <entry>The value (<!-- DNT-Start -->REAL<!-- DNT-End --> or <!-- DNT-Start -->INTEGER<!-- DNT-End -->) for which to return the
             absolute value.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>ABS returns a single value of the same type as the
+            <entry><!-- DNT-Start -->ABS<!-- DNT-End --> returns a single value of the same type as the
             expression.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">ABS </emphasis>function returns the absolute
+  <para>The <emphasis role="bold"><!-- DNT-Start -->ABS<!-- DNT-End --> </emphasis>function returns the absolute
   value of the <emphasis>expression</emphasis> (always a non-negative
   number).</para>
 
   <para>Example:</para>
 
-  <programlisting>AbsVal1 := ABS(1); // returns 1
+  <!-- DNT-Start --><programlisting>AbsVal1 := ABS(1); // returns 1
 AbsVal2 := ABS(-1); // returns 1
-</programlisting>
+</programlisting><!-- DNT-End -->
 </sect1>

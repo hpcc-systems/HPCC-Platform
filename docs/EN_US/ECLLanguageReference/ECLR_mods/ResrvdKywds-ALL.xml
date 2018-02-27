@@ -2,28 +2,28 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ALL" role="nobrk">
-  <title>ALL<indexterm>
+  <!-- DNT-Start --><title>ALL<indexterm>
       <primary>ALL</primary>
-    </indexterm></title>
+    </indexterm></title><!-- DNT-End -->
 
-  <para><emphasis role="bold">ALL</emphasis></para>
+  <para><emphasis role="bold"><!-- DNT-Start -->ALL<!-- DNT-End --></emphasis></para>
 
-  <para>The <emphasis role="bold">ALL </emphasis>keyword<indexterm>
-      <primary>ALL keyword</primary>
+  <para>The <emphasis role="bold"><!-- DNT-Start -->ALL<!-- DNT-End --> </emphasis>keyword<indexterm>
+      <primary><!-- DNT-Start -->ALL<!-- DNT-End --> keyword</primary>
     </indexterm> specifies the set of all possible values when used as the
-  default value for a passed SET parameter or as a substitute for a SET in
-  operations that expect a defined SET of values.</para>
+  default value for a passed <!-- DNT-Start -->SET<!-- DNT-End --> parameter or as a substitute for a <!-- DNT-Start -->SET<!-- DNT-End --> in
+  operations that expect a defined <!-- DNT-Start -->SET<!-- DNT-End --> of values.</para>
 
   <para>Example:</para>
 
-  <programlisting>MyFunc(STRING1 val, SET OF STRING1 S=ALL) := val IN S;
+  <!-- DNT-Start --><programlisting>MyFunc(STRING1 val, SET OF STRING1 S=ALL) := val IN S;
       //check for presence in passed set, if passed
  
 SET OF INTEGER4 MySet := IF(SomeCondition=TRUE,
       [88888,99999,66666,33333,55555],ALL);
-MyRecs := MyFile(Zip IN MySet);</programlisting>
+MyRecs := MyFile(Zip IN MySet);</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="SET_OF">SET OF</link>, <link
+  <para>See Also: <link linkend="SET_OF"><!-- DNT-Start -->SET<!-- DNT-End --> <!-- DNT-Start -->OF<!-- DNT-End --></link>, <link
   linkend="Function_Attributes__Parameter_Passing">Attribute Functions
   (Parameter Passing</link>)</para>
 </sect1>

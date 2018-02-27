@@ -2,15 +2,15 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESPenum">
-  <title>ESPenum</title>
+  <!-- DNT-Start --><title>ESPenum</title><!-- DNT-End -->
 
   <para><indexterm>
-      <primary>ESPenum</primary>
+      <primary><!-- DNT-Start -->ESPenum<!-- DNT-End --></primary>
     </indexterm>A structure containing an enumerated value.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <programlisting>
+  <!-- DNT-Start --><programlisting>
 ESPenum EyeColors : string
   
 {
@@ -29,5 +29,5 @@ ESPstruct Person
 
   ESPenum EyeColors EyeColor("Brown"); //provides a default value
 };
-   </programlisting>
+   </programlisting><!-- DNT-End -->
 </sect1>

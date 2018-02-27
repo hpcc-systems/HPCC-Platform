@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="TAN">
-  <title>TAN</title>
+  <!-- DNT-Start --><title>TAN</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">TAN<indexterm>
-      <primary>TAN</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->TAN<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->TAN<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>TAN Function</primary>
+      <primary><!-- DNT-Start -->TAN<!-- DNT-End --> Function</primary>
     </indexterm>(</emphasis><emphasis>angle</emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -19,38 +19,38 @@
 
         <tbody>
           <row>
-            <entry><emphasis>angle</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>angle</emphasis><!-- DNT-End --></entry>
 
-            <entry>The REAL radian value for which to find the
+            <entry>The <!-- DNT-Start -->REAL<!-- DNT-End --> radian value for which to find the
             tangent.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>TAN returns a single REAL value.</entry>
+            <entry><!-- DNT-Start -->TAN<!-- DNT-End --> returns a single <!-- DNT-Start -->REAL<!-- DNT-End --> value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">TAN </emphasis>function returns the tangent
+  <para>The <emphasis role="bold"><!-- DNT-Start -->TAN<!-- DNT-End --> </emphasis>function returns the tangent
   of the <emphasis>angle</emphasis>.</para>
 
   <para>Example:</para>
 
-  <programlisting>Rad2Deg := 57.295779513082; //number of degrees in a radian
+  <!-- DNT-Start --><programlisting>Rad2Deg := 57.295779513082; //number of degrees in a radian
 
 Deg2Rad := 0.0174532925199; //number of radians in a degree
 
 Angle45 := 45 * Deg2Rad;    //translate 45 degrees into radians
 
 Tangent45 := TAN(Angle45);  //get tangent of the 45 degree angle
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="ACOS">ACOS</link>, <link
-  linkend="COS">COS</link>, <link linkend="ASIN">ASIN</link>, <link
-  linkend="SIN">SIN</link>, <link linkend="ATAN">ATAN</link>, <link
-  linkend="COSH">COSH</link>, <link linkend="SINH">SINH</link>, <link
-  linkend="TANH">TANH</link></para>
+  <para>See Also: <link linkend="ACOS"><!-- DNT-Start -->ACOS<!-- DNT-End --></link>, <link
+  linkend="COS"><!-- DNT-Start -->COS<!-- DNT-End --></link>, <link linkend="ASIN"><!-- DNT-Start -->ASIN<!-- DNT-End --></link>, <link
+  linkend="SIN"><!-- DNT-Start -->SIN<!-- DNT-End --></link>, <link linkend="ATAN"><!-- DNT-Start -->ATAN<!-- DNT-End --></link>, <link
+  linkend="COSH"><!-- DNT-Start -->COSH<!-- DNT-End --></link>, <link linkend="SINH"><!-- DNT-Start -->SINH<!-- DNT-End --></link>, <link
+  linkend="TANH"><!-- DNT-Start -->TANH<!-- DNT-End --></link></para>
 </sect1>

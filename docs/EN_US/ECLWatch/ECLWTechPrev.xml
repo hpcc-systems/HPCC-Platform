@@ -2,10 +2,10 @@
 <!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book xml:base="../">
-  <title>ECL Watch Technical Preview</title>
+  <!-- DNT-Start --><title>ECL Watch Technical Preview</title><!-- DNT-End -->
 
   <bookinfo>
-    <title>ECL Watch Technical Preview</title>
+    <!-- DNT-Start --><title>ECL Watch Technical Preview</title><!-- DNT-End -->
 
     <mediaobject>
       <imageobject>
@@ -51,19 +51,19 @@
   </bookinfo>
 
   <chapter>
-    <title>Technical Preview</title>
+    <!-- DNT-Start --><title>Technical Preview</title><!-- DNT-End -->
 
     <sect1 role="nobrk">
-      <title>Introduction</title>
+      <!-- DNT-Start --><title>Introduction</title><!-- DNT-End -->
 
-      <para>ECL Watch provides an interface to the HPCC system and allows you
+      <para><!-- DNT-Start -->ECL<!-- DNT-End --> Watch provides an interface to the <!-- DNT-Start -->HPCC<!-- DNT-End --> system and allows you
       to view information and interrogate nodes to confirm all expected
       processes are running. This provides a simple Web-based view into the
       system and a means to perform Workunit and data files
       maintenance.</para>
 
-      <para>This document briefly describes new ECL Watch functionality which
-      will be available in HPCC 4.x.</para>
+      <para>This document briefly describes new <!-- DNT-Start -->ECL<!-- DNT-End --> Watch functionality which
+      will be available in <!-- DNT-Start -->HPCC<!-- DNT-End --> 4.x.</para>
 
       <para><figure>
           <title>Tech Preview Link</title>
@@ -75,15 +75,15 @@
           </mediaobject>
         </figure></para>
 
-      <para>On the ECL Watch page, there are links in the Navigator panel
+      <para>On the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch page, there are links in the Navigator panel
       under the <emphasis role="bold">Tech Preview</emphasis> heading. The
-      links below the header open the respective pages for the new ECL Watch.
+      links below the header open the respective pages for the new <!-- DNT-Start -->ECL<!-- DNT-End --> Watch.
       There are pages available through the Tech Preview that allow you to
-      access ECL Workunits, DFU Workunits, and Logical Files.</para>
+      access <!-- DNT-Start -->ECL<!-- DNT-End --> Workunits, <!-- DNT-Start -->DFU<!-- DNT-End --> Workunits, and Logical Files.</para>
 
       <para>For the preview period, these pages are only available through the
       Tech Preview link. These redesigned pages with the improved
-      functionality will later replace ECL Watch.</para>
+      functionality will later replace <!-- DNT-Start -->ECL<!-- DNT-End --> Watch.</para>
     </sect1>
 
     <xi:include href="ECLWatch/ECLWa_mods/ECLWatchSrc.xml"

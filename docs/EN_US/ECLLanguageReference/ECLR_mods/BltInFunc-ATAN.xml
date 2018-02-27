@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ATAN">
-  <title>ATAN</title>
+  <!-- DNT-Start --><title>ATAN</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">ATAN<indexterm>
-      <primary>ATAN</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->ATAN<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->ATAN<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>ATAN function</primary>
+      <primary><!-- DNT-Start -->ATAN<!-- DNT-End --> function</primary>
     </indexterm>(</emphasis><emphasis>tangent</emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -19,27 +19,27 @@
 
         <tbody>
           <row>
-            <entry><emphasis>tangent</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>tangent</emphasis><!-- DNT-End --></entry>
 
-            <entry>The REAL tangent value for which to find the
+            <entry>The <!-- DNT-Start -->REAL<!-- DNT-End --> tangent value for which to find the
             arctangent.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>ATAN returns a single REAL value.</entry>
+            <entry><!-- DNT-Start -->ATAN<!-- DNT-End --> returns a single <!-- DNT-Start -->REAL<!-- DNT-End --> value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">ATAN </emphasis>function returns the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->ATAN<!-- DNT-End --> </emphasis>function returns the
   arctangent (inverse) of the <emphasis>tangent</emphasis>, in radians.</para>
 
   <para>Example:</para>
 
-  <programlisting>ArcTangent := ATAN(TangentAngle); </programlisting>
+  <!-- DNT-Start --><programlisting>ArcTangent := ATAN(TangentAngle); </programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="ATAN2">ATAN2</link>, <link linkend="ACOS">ACOS</link>, <link linkend="COS">COS</link>, <link linkend="ASIN">ASIN</link>, <link linkend="SIN">SIN</link>, <link linkend="TAN">TAN</link>, <link linkend="COSH">COSH</link>, <link linkend="SINH">SINH</link>, <link linkend="TANH">TANH</link></para>
+  <para>See Also: <link linkend="ATAN2"><!-- DNT-Start -->ATAN<!-- DNT-End -->2</link>, <link linkend="ACOS"><!-- DNT-Start -->ACOS<!-- DNT-End --></link>, <link linkend="COS"><!-- DNT-Start -->COS<!-- DNT-End --></link>, <link linkend="ASIN"><!-- DNT-Start -->ASIN<!-- DNT-End --></link>, <link linkend="SIN"><!-- DNT-Start -->SIN<!-- DNT-End --></link>, <link linkend="TAN"><!-- DNT-Start -->TAN<!-- DNT-End --></link>, <link linkend="COSH"><!-- DNT-Start -->COSH<!-- DNT-End --></link>, <link linkend="SINH"><!-- DNT-Start -->SINH<!-- DNT-End --></link>, <link linkend="TANH"><!-- DNT-Start -->TANH<!-- DNT-End --></link></para>
 </sect1>

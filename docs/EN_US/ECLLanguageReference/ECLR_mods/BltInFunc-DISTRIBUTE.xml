@@ -2,28 +2,28 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="DISTRIBUTE">
-  <title>DISTRIBUTE<indexterm>
+  <!-- DNT-Start --><title>DISTRIBUTE<indexterm>
       <primary>DISTRIBUTE</primary>
-    </indexterm></title>
+    </indexterm></title><!-- DNT-End -->
 
-  <para><emphasis role="bold">DISTRIBUTE<indexterm>
-      <primary>DISTRIBUTE function</primary>
-    </indexterm>(</emphasis><emphasis>recordset </emphasis> <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+  <para><emphasis role="bold"><!-- DNT-Start -->DISTRIBUTE<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->DISTRIBUTE<!-- DNT-End --> function</primary>
+    </indexterm>(</emphasis><emphasis>recordset </emphasis> <emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
-  <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset,
+  <para><emphasis role="bold"><!-- DNT-Start -->DISTRIBUTE<!-- DNT-End -->(</emphasis><emphasis>recordset,
   expression </emphasis><emphasis role="bold"> [<emphasis>,</emphasis>
-  MERGE(</emphasis><emphasis> sorts </emphasis><emphasis role="bold">) ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+  <!-- DNT-Start -->MERGE<!-- DNT-End -->(</emphasis><emphasis> sorts </emphasis><emphasis role="bold">) ] </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
-  <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset, index
+  <para><emphasis role="bold"><!-- DNT-Start -->DISTRIBUTE<!-- DNT-End -->(</emphasis><emphasis>recordset, index
   </emphasis><emphasis role="bold">[</emphasis><emphasis>, joincondition
-  </emphasis><emphasis role="bold">] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+  </emphasis><emphasis role="bold">] </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
-  <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset,
-  </emphasis><emphasis role="bold"> SKEW<indexterm>
-      <primary>SKEW</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->DISTRIBUTE<!-- DNT-End -->(</emphasis><emphasis>recordset,
+  </emphasis><emphasis role="bold"> <!-- DNT-Start -->SKEW<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->SKEW<!-- DNT-End --></primary>
     </indexterm>(</emphasis><emphasis> maxskew </emphasis><emphasis
   role="bold">[</emphasis><emphasis>, skewlimit</emphasis><emphasis
-  role="bold"> ] ) </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+  role="bold"> ] ) </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -33,164 +33,164 @@
 
         <tbody>
           <row>
-            <entry><emphasis>recordset</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>recordset</emphasis><!-- DNT-End --></entry>
 
             <entry>The set of records to distribute.</entry>
           </row>
 
           <row>
-            <entry><emphasis>expression</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
 
             <entry>An integer expression that specifies how to distribute the
-            recordset, usually using one the HASH functions for
+            recordset, usually using one the <!-- DNT-Start -->HASH<!-- DNT-End --> functions for
             efficiency.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">MERGE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">MERGE</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the data is redistributed maintaining the local
             sort order on each node.</entry>
           </row>
 
           <row>
-            <entry><emphasis>sorts</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>sorts</emphasis><!-- DNT-End --></entry>
 
             <entry>The sort expressions by which the data has been locally
             sorted.</entry>
           </row>
 
           <row>
-            <entry><emphasis>index</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>index</emphasis><!-- DNT-End --></entry>
 
-            <entry>The name of an INDEX attribute definition, which provides
+            <entry>The name of an <!-- DNT-Start -->INDEX<!-- DNT-End --> attribute definition, which provides
             the appropriate distribution.</entry>
           </row>
 
           <row>
-            <entry><emphasis>joincondition</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>joincondition</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. A logical expression that specifies how to link
-            the records in the recordset and the index. The keywords LEFT and
-            RIGHT may be used as dataset qualifiers for fields in the
+            the records in the recordset and the index. The keywords <!-- DNT-Start -->LEFT<!-- DNT-End --> and
+            <!-- DNT-Start -->RIGHT<!-- DNT-End --> may be used as dataset qualifiers for fields in the
             recordset and index.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">SKEW</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">SKEW</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the allowable data skew values.</entry>
           </row>
 
           <row>
-            <entry><emphasis>maxskew</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>maxskew</emphasis><!-- DNT-End --></entry>
 
             <entry>A floating point number in the range of zero (0.0) to one
             (1.0) specifying the minimum skew to allow (0.1=10%).</entry>
           </row>
 
           <row>
-            <entry><emphasis>skewlimit</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>skewlimit</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. A floating point number in the range of zero
             (0.0) to one (1.0) specifying the maximum skew to allow
             (0.1=10%).</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the output record order is not significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the significance of the output record order.</entry>
           </row>
           <row>
-            <entry><emphasis>bool</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
 
             <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">STABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is not significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity in parallel.</entry>
           </row>
           <row>
-            <entry><emphasis>numthreads</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Override the algorithm used for this activity.</entry>
           </row>
           <row>
-            <entry><emphasis>name</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>DISTRIBUTE returns a set of records.</entry>
+            <entry><!-- DNT-Start -->DISTRIBUTE<!-- DNT-End --> returns a set of records.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">DISTRIBUTE</emphasis> function
+  <para>The <emphasis role="bold"><!-- DNT-Start -->DISTRIBUTE<!-- DNT-End --></emphasis> function
   re-distributes records from the <emphasis>recordset</emphasis> across all
   the nodes of the cluster.</para>
 
   <sect2 id="Random_DISTRIBUTE">
-    <title>“Random” DISTRIBUTE</title>
+    <!-- DNT-Start --><title>âRandomâ DISTRIBUTE</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset
+    <para><emphasis role="bold"><!-- DNT-Start -->DISTRIBUTE<!-- DNT-End -->(</emphasis><emphasis>recordset
     </emphasis><emphasis role="bold">)</emphasis></para>
 
     <para>This form redistributes the <emphasis>recordset</emphasis>
-    “randomly” so there is no data skew across nodes, but without the
-    disadvantages the RANDOM() function could introduce. This is functionally
+    ârandomlyâ so there is no data skew across nodes, but without the
+    disadvantages the <!-- DNT-Start -->RANDOM<!-- DNT-End -->() function could introduce. This is functionally
     equivalent to distributing by a hash of the entire record.</para>
   </sect2>
 
   <sect2 id="Expression_DISTRIBUTE">
-    <title>Expression DISTRIBUTE</title>
+    <!-- DNT-Start --><title>Expression DISTRIBUTE</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset,
+    <para><emphasis role="bold"><!-- DNT-Start -->DISTRIBUTE<!-- DNT-End -->(</emphasis><emphasis>recordset,
     expression </emphasis><emphasis role="bold">)</emphasis></para>
 
     <para>This form redistributes the <emphasis>recordset</emphasis> based on
-    the specified <emphasis>expression, </emphasis>typically one of the HASH
+    the specified <emphasis>expression, </emphasis>typically one of the <!-- DNT-Start -->HASH<!-- DNT-End -->
     functions. Only the bottom 32-bits of the <emphasis>expression</emphasis>
-    value are used, so either HASH or HASH32 are the optimal choices. Records
+    value are used, so either <!-- DNT-Start -->HASH<!-- DNT-End --> or <!-- DNT-Start -->HASH<!-- DNT-End -->32 are the optimal choices. Records
     for which the <emphasis>expression</emphasis> evaluates the same will end
-    up on the same node. DISTRIBUTE implicitly performs a modulus operation if
+    up on the same node. <!-- DNT-Start -->DISTRIBUTE<!-- DNT-End --> implicitly performs a modulus operation if
     an <emphasis>expression</emphasis> value is not in the range of the number
     of nodes available.</para>
 
-    <para>If the MERGE option is specified, the <emphasis>recordset</emphasis>
+    <para>If the <!-- DNT-Start -->MERGE<!-- DNT-End --> option is specified, the <emphasis>recordset</emphasis>
     must have been locally sorted by the <emphasis>sorts</emphasis>
     expressions. This avoids resorting.</para>
   </sect2>
 
   <sect2 id="Index-based_DISTRIBUTE">
-    <title>Index-based DISTRIBUTE</title>
+    <!-- DNT-Start --><title>Index-based DISTRIBUTE</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset,
+    <para><emphasis role="bold"><!-- DNT-Start -->DISTRIBUTE<!-- DNT-End -->(</emphasis><emphasis>recordset,
     index </emphasis><emphasis role="bold">[</emphasis><emphasis>,
     joincondition </emphasis><emphasis role="bold">] )</emphasis></para>
 
@@ -203,26 +203,26 @@
   </sect2>
 
   <sect2 id="Skew-based_DISTRIBUTE">
-    <title>Skew-based DISTRIBUTE</title>
+    <!-- DNT-Start --><title>Skew-based DISTRIBUTE</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset,
-    </emphasis><emphasis role="bold">SKEW(</emphasis><emphasis> maxskew
+    <para><emphasis role="bold"><!-- DNT-Start -->DISTRIBUTE<!-- DNT-End -->(</emphasis><emphasis>recordset,
+    </emphasis><emphasis role="bold"><!-- DNT-Start -->SKEW<!-- DNT-End -->(</emphasis><emphasis> maxskew
     </emphasis><emphasis role="bold">[</emphasis><emphasis>,
     skewlimit</emphasis><emphasis role="bold"> ] ) )</emphasis></para>
 
     <para>This form redistributes the <emphasis>recordset,</emphasis> but only
     if necessary. The purpose of this form is to replace the use of
-    DISTRIBUTE(<emphasis>recordset</emphasis>,RANDOM()) to simply obtain a
+    <!-- DNT-Start -->DISTRIBUTE<!-- DNT-End -->(<emphasis>recordset</emphasis>,<!-- DNT-Start -->RANDOM<!-- DNT-End -->()) to simply obtain a
     relatively even distribution of data across the nodes. This form will
     always try to minimize the amount of data redistributed between the
     nodes.</para>
 
     <para>The skew of a dataset is calculated as:</para>
 
-    <para>MAX(ABS(AvgPartSize-PartSize[node])/AvgPartSize)</para>
+    <para><!-- DNT-Start -->MAX<!-- DNT-End -->(<!-- DNT-Start -->ABS<!-- DNT-End -->(AvgPartSize-PartSize[node])/AvgPartSize)</para>
 
     <para>If the <emphasis>recordset</emphasis> is skewed less than
-    <emphasis>maxskew </emphasis>then the DISTRIBUTE is a no-op. If
+    <emphasis>maxskew </emphasis>then the <!-- DNT-Start -->DISTRIBUTE<!-- DNT-End --> is a no-op. If
     <emphasis>skewlimit</emphasis> is specified and the skew on any node
     exceeds this, the job fails with an error message (specifying the first
     node number exceeding the limit), otherwise the data is redistributed to
@@ -231,7 +231,7 @@
 
     <para>Example:</para>
 
-    <programlisting>MySet1 := DISTRIBUTE(Person); //”random” distribution - no skew
+    <!-- DNT-Start --><programlisting>MySet1 := DISTRIBUTE(Person); //ârandomâ distribution - no skew
 MySet2 := DISTRIBUTE(Person,HASH32(Person.per_ssn));
  //all people with the same SSN end up on the same node
  //INDEX example:
@@ -256,10 +256,10 @@ Jds_dist1 := DISTRIBUTE(Jds,SKEW(0.1));
 Jds_dist2 := DISTRIBUTE(Jds,SKEW(0.1,0.5));
  //ensures skew is less than 10%
  //and fails if skew exceeds 50% on any node
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-    <para>See Also: <link linkend="HASH32">HASH32</link>, <link
-    linkend="DISTRIBUTED">DISTRIBUTED</link>, <link
-    linkend="INDEX_record_structure">INDEX</link></para>
+    <para>See Also: <link linkend="HASH32"><!-- DNT-Start -->HASH<!-- DNT-End -->32</link>, <link
+    linkend="DISTRIBUTED"><!-- DNT-Start -->DISTRIBUTED<!-- DNT-End --></link>, <link
+    linkend="INDEX_record_structure"><!-- DNT-Start -->INDEX<!-- DNT-End --></link></para>
   </sect2>
 </sect1>

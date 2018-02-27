@@ -2,15 +2,15 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="WORKUNIT">
-  <title>WORKUNIT</title>
+  <!-- DNT-Start --><title>WORKUNIT</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">WORKUNIT<indexterm>
-      <primary>WORKUNIT</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->WORKUNIT<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->WORKUNIT<!-- DNT-End --></primary>
     </indexterm></emphasis></para>
 
   <para><emphasis role="bold"></emphasis><emphasis
-  role="bold">WORKUNIT<indexterm>
-      <primary>WORKUNIT Function</primary>
+  role="bold"><!-- DNT-Start -->WORKUNIT<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->WORKUNIT<!-- DNT-End --> Function</primary>
     </indexterm>( </emphasis><emphasis>named </emphasis><emphasis
   role="bold">[</emphasis><emphasis>, type </emphasis><emphasis role="bold">]
   )</emphasis></para>
@@ -23,40 +23,40 @@
 
         <tbody>
           <row>
-            <entry><emphasis>named</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>named</emphasis><!-- DNT-End --></entry>
 
-            <entry>A string constant containing the NAMED option scalar value
+            <entry>A string constant containing the <!-- DNT-Start -->NAMED<!-- DNT-End --> option scalar value
             to return.</entry>
           </row>
 
           <row>
-            <entry><emphasis>type</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>type</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. The value type of the named scalar value result
             to return.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>WORKUNIT returns a single value.</entry>
+            <entry><!-- DNT-Start -->WORKUNIT<!-- DNT-End --> returns a single value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">WORKUNIT </emphasis>function returns values
+  <para>The <emphasis role="bold"><!-- DNT-Start -->WORKUNIT<!-- DNT-End --> </emphasis>function returns values
   stored in the workunit. Given no parameters, it returns the unique workunit
-  identifier (WUID)<indexterm>
-      <primary>WUID</primary>
+  identifier (<!-- DNT-Start -->WUID<!-- DNT-End -->)<indexterm>
+      <primary><!-- DNT-Start -->WUID<!-- DNT-End --></primary>
     </indexterm> for the currently executing workunit, otherwise it returns
-  the NAMED option result from the OUTPUT or DISTRIBUTION action<indexterm>
-      <primary>DISTRIBUTION action</primary>
+  the <!-- DNT-Start -->NAMED<!-- DNT-End --> option result from the <!-- DNT-Start -->OUTPUT<!-- DNT-End --> or <!-- DNT-Start -->DISTRIBUTION<!-- DNT-End --> action<indexterm>
+      <primary><!-- DNT-Start -->DISTRIBUTION<!-- DNT-End --> action</primary>
     </indexterm>.</para>
 
   <para>Example:</para>
 
-  <programlisting>  wuid := WORKUNIT //get WUID
+  <!-- DNT-Start --><programlisting>  wuid := WORKUNIT //get WUID
   
   namesRecord := RECORD
   STRING20 surname;
@@ -74,7 +74,7 @@
           NAMED('Stats'));
   x := DATASET(ROW(TRANSFORM({STRING line},
   SELF.line := WORKUNIT('Stats', STRING))));
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="_WORKUNIT">#WORKUNIT</link>, <link linkend="OUTPUT">OUTPUT</link>, <link linkend="DISTRIBUTION">DISTRIBUTION</link></para>
+  <para>See Also: <link linkend="_WORKUNIT">#<!-- DNT-Start -->WORKUNIT<!-- DNT-End --></link>, <link linkend="OUTPUT"><!-- DNT-Start -->OUTPUT<!-- DNT-End --></link>, <link linkend="DISTRIBUTION"><!-- DNT-Start -->DISTRIBUTION<!-- DNT-End --></link></para>
 </sect1>

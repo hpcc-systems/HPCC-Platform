@@ -2,40 +2,40 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="LIMIT">
-  <title>LIMIT</title>
+  <!-- DNT-Start --><title>LIMIT</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">LIMIT<indexterm>
-      <primary>LIMIT</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->LIMIT<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->LIMIT<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>LIMIT function</primary>
+      <primary><!-- DNT-Start -->LIMIT<!-- DNT-End --> function</primary>
     </indexterm>(</emphasis><emphasis>recset, maxrecs</emphasis><emphasis
   role="bold"> [</emphasis><emphasis>, failclause </emphasis><emphasis
   role="bold">] [</emphasis><emphasis>, </emphasis><emphasis
-  role="bold">KEYED<indexterm>
-      <primary>KEYED</primary>
+  role="bold"><!-- DNT-Start -->KEYED<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->KEYED<!-- DNT-End --></primary>
     </indexterm></emphasis><emphasis> </emphasis><emphasis
   role="bold">[</emphasis><emphasis>, </emphasis><emphasis
-  role="bold">COUNT<indexterm>
-      <primary>COUNT</primary>
+  role="bold"><!-- DNT-Start -->COUNT<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->COUNT<!-- DNT-End --></primary>
     </indexterm></emphasis><emphasis> </emphasis><emphasis role="bold">] ]
-  [</emphasis><emphasis>, </emphasis><emphasis role="bold">SKIP<indexterm>
-      <primary>SKIP</primary>
-    </indexterm></emphasis> <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+  [</emphasis><emphasis>, </emphasis><emphasis role="bold"><!-- DNT-Start -->SKIP<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->SKIP<!-- DNT-End --></primary>
+    </indexterm></emphasis> <emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
-  <para><emphasis role="bold">LIMIT(</emphasis><emphasis>recset,
+  <para><emphasis role="bold"><!-- DNT-Start -->LIMIT<!-- DNT-End -->(</emphasis><emphasis>recset,
   maxrecs</emphasis><emphasis role="bold"> [</emphasis><emphasis>,
-  </emphasis><emphasis role="bold">ONFAIL<indexterm>
-      <primary>ONFAIL</primary>
+  </emphasis><emphasis role="bold"><!-- DNT-Start -->ONFAIL<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->ONFAIL<!-- DNT-End --></primary>
     </indexterm>(</emphasis><emphasis>transform</emphasis><emphasis
   role="bold">)</emphasis><emphasis> </emphasis><emphasis role="bold">]
-  [</emphasis><emphasis>, </emphasis><emphasis role="bold">KEYED<indexterm>
-      <primary>KEYED</primary>
+  [</emphasis><emphasis>, </emphasis><emphasis role="bold"><!-- DNT-Start -->KEYED<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->KEYED<!-- DNT-End --></primary>
     </indexterm></emphasis><emphasis> </emphasis><emphasis
   role="bold">[</emphasis><emphasis>, </emphasis><emphasis
-  role="bold">COUNT<indexterm>
-      <primary>COUNT</primary>
+  role="bold"><!-- DNT-Start -->COUNT<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->COUNT<!-- DNT-End --></primary>
     </indexterm></emphasis><emphasis> </emphasis><emphasis role="bold">] ]
-  [, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]</emphasis></para>
+  [, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -45,41 +45,41 @@
 
       <tbody>
         <row>
-          <entry><emphasis>recset</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>recset</emphasis><!-- DNT-End --></entry>
 
-          <entry>The set of records to limit. This may be an INDEX or any
+          <entry>The set of records to limit. This may be an <!-- DNT-Start -->INDEX<!-- DNT-End --> or any
           expression that produces a recordset result.</entry>
         </row>
 
         <row>
-          <entry><emphasis>maxrecs</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>maxrecs</emphasis><!-- DNT-End --></entry>
 
           <entry>The maximum number of records allowed on a single
           supercomputer node.</entry>
         </row>
 
         <row>
-          <entry><emphasis>failclause</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>failclause</emphasis><!-- DNT-End --></entry>
 
-          <entry>Optional. A standard FAIL workflow service call.</entry>
+          <entry>Optional. A standard <!-- DNT-Start -->FAIL<!-- DNT-End --> workflow service call.</entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">KEYED</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">KEYED</emphasis><!-- DNT-End --></entry>
 
-          <entry>Optional. Specifies limiting the keyed portion of an INDEX
+          <entry>Optional. Specifies limiting the keyed portion of an <!-- DNT-Start -->INDEX<!-- DNT-End -->
           read.</entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">COUNT</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">COUNT</emphasis><!-- DNT-End --></entry>
 
-          <entry>Optional. Specifies the KEYED limit is pre-checked using
+          <entry>Optional. Specifies the <!-- DNT-Start -->KEYED<!-- DNT-End --> limit is pre-checked using
           keyspan.</entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">SKIP</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">SKIP</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. Specifies that when the limit is exceeded it is
           simply eliminated from any result instead of failing the
@@ -87,80 +87,80 @@
         </row>
 
         <row>
-          <entry><emphasis role="bold">ONFAIL</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">ONFAIL</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. Specifies outputting a single record produced by
           the transform instead of failing the workunit.</entry>
         </row>
 
         <row>
-          <entry><emphasis>transform</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>transform</emphasis><!-- DNT-End --></entry>
 
-          <entry>The TRANSFORM function to call to produce the single output
+          <entry>The <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function to call to produce the single output
           record.</entry>
         </row>
           <row>
-            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the output record order is not significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the significance of the output record order.</entry>
           </row>
           <row>
-            <entry><emphasis>bool</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
 
             <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">STABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is not significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity in parallel.</entry>
           </row>
           <row>
-            <entry><emphasis>numthreads</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Override the algorithm used for this activity.</entry>
           </row>
           <row>
-            <entry><emphasis>name</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
           </row>
         
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">LIMIT </emphasis>function causes the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->LIMIT<!-- DNT-End --> </emphasis>function causes the
   attribute to fail with an exception if the <emphasis>recset
   </emphasis>contains more records than <emphasis>maxrecs</emphasis> on any
-  single node of the supercomputer (unless the SKIP option is used for an
-  index read or the ONFAIL option is present). If the <emphasis>failclause
+  single node of the supercomputer (unless the <!-- DNT-Start -->SKIP<!-- DNT-End --> option is used for an
+  index read or the <!-- DNT-Start -->ONFAIL<!-- DNT-End --> option is present). If the <emphasis>failclause
   </emphasis>is present, it specifies the exception number and message. This
   is typically used to control "runaway" queries in the Rapid Data Delivery
   Engine supercomputer.</para>
 
   <para>Example:</para>
 
-  <programlisting>RecStruct := RECORD
+  <!-- DNT-Start --><programlisting>RecStruct := RECORD
   INTEGER1 Number;
   STRING1  Letter;
 END;
@@ -178,8 +178,8 @@ Y := LIMIT(SomeFile,10,
         SELF := ROW({0,''},RecStruct))));
 //no exception, just no record
 Z := LIMIT(SomeFile,10,SKIP);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="FAIL">FAIL</link>, <link
-  linkend="TRANSFORM_Structure">TRANSFORM</link></para>
+  <para>See Also: <link linkend="FAIL"><!-- DNT-Start -->FAIL<!-- DNT-End --></link>, <link
+  linkend="TRANSFORM_Structure"><!-- DNT-Start -->TRANSFORM<!-- DNT-End --></link></para>
 </sect1>

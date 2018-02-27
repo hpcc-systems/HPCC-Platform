@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Sleep">
-  <title>Sleep</title>
+  <!-- DNT-Start --><title>Sleep</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.System.Debug.Sleep<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.System.Debug.Sleep<indexterm>
       <primary>STD.System.Debug.Sleep</primary>
     </indexterm> <indexterm>
       <primary>System.Debug.Sleep</primary>
@@ -13,7 +13,7 @@
     </indexterm> <indexterm>
       <primary>Sleep</primary>
     </indexterm>(</emphasis> <emphasis> duration </emphasis> <emphasis
-  role="bold">)</emphasis></para>
+  role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -23,27 +23,27 @@
 
       <tbody>
         <row>
-          <entry><emphasis>duration</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>duration</emphasis><!-- DNT-End --></entry>
 
           <entry>An integer value specifying the length of the sleep period,
           in milliseconds.</entry>
         </row>
 
         <row>
-          <entry>Return:</entry>
+          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-          <entry>Sleep does not return a value.</entry>
+          <entry><!-- DNT-Start -->Sleep<!-- DNT-End --> does not return a value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">Sleep </emphasis>function pauses processing
+  <para>The <emphasis role="bold"><!-- DNT-Start -->Sleep<!-- DNT-End --> </emphasis>function pauses processing
   for <emphasis>duration</emphasis> milliseconds.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">IMPORT STD;
+  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 STD.System.Debug.Sleep(1000);    //pause for one second before continuing
-</programlisting>
+</programlisting><!-- DNT-End -->
 </sect1>

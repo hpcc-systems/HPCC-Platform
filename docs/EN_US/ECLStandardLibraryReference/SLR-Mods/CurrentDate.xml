@@ -2,15 +2,15 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="CurrentDate">
-  <title>CurrentDate</title>
+  <!-- DNT-Start --><title>CurrentDate</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Date.CurrentDate
+  <!-- DNT-Start --><para><emphasis role="bold">STD.Date.CurrentDate
   ([</emphasis><emphasis>in_local_time</emphasis><emphasis
   role="bold">])</emphasis><indexterm>
       <primary>STD.Date.CurrentDate</primary>
     </indexterm><indexterm>
       <primary>CurrentDate</primary>
-    </indexterm></para>
+    </indexterm></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -20,15 +20,15 @@
 
       <tbody>
         <row>
-          <entry><emphasis>in_local_time</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>in_local_time</emphasis><!-- DNT-End --></entry>
 
-          <entry>TRUE if the returned value should be local to the cluster
-          computing the date, FALSE for UTC. Optional, defaults to
-          FALSE.</entry>
+          <entry><!-- DNT-Start -->TRUE<!-- DNT-End --> if the returned value should be local to the cluster
+          computing the date, <!-- DNT-Start -->FALSE<!-- DNT-End --> for <!-- DNT-Start -->UTC<!-- DNT-End -->. Optional, defaults to
+          <!-- DNT-Start -->FALSE<!-- DNT-End -->.</entry>
         </row>
 
         <row>
-          <entry>Return:</entry>
+          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
           <entry>Today returns a Date_t representing the current date.
           </entry>
@@ -37,17 +37,17 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">CurrentDate</emphasis> function returns the
-  current date. If the in_local_time parameter is TRUE the returned value is
-  local to the cluster computing the date, if FALSE then the UTC value is
+  <para>The <emphasis role="bold"><!-- DNT-Start -->CurrentDate<!-- DNT-End --></emphasis> function returns the
+  current date. If the in_local_time parameter is <!-- DNT-Start -->TRUE<!-- DNT-End --> the returned value is
+  local to the cluster computing the date, if <!-- DNT-Start -->FALSE<!-- DNT-End --> then the <!-- DNT-Start -->UTC<!-- DNT-End --> value is
   returned.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">IMPORT STD;
+  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 d1 := STD.Date.CurrentDate(True); 
      //d1 contains the current local date 
-</programlisting>
+</programlisting><!-- DNT-End -->
 
   <para></para>
 </sect1>

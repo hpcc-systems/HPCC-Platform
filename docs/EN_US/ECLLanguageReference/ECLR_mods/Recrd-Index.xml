@@ -2,48 +2,48 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="INDEX_record_structure">
-  <title>INDEX</title>
+  <!-- DNT-Start --><title>INDEX</title><!-- DNT-End -->
 
-  <para><emphasis> attr</emphasis><emphasis role="bold"> := INDEX<indexterm>
-      <primary>INDEX</primary>
+  <para><emphasis> attr</emphasis><emphasis role="bold"> := <!-- DNT-Start -->INDEX<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->INDEX<!-- DNT-End --></primary>
     </indexterm>([</emphasis><emphasis> baserecset, </emphasis><emphasis
   role="bold">]</emphasis><emphasis> keys, indexfile </emphasis><emphasis
-  role="bold">[,SORTED<indexterm>
-      <primary>SORTED</primary>
-    </indexterm>] [,OPT<indexterm>
-      <primary>OPT</primary>
-    </indexterm>] [,COMPRESSED<indexterm>
-      <primary>COMPRESSED</primary>
-    </indexterm>( LZW<indexterm>
-      <primary>LZW</primary>
-    </indexterm> | ROW<indexterm>
-      <primary>ROW</primary>
-    </indexterm> | FIRST<indexterm>
-      <primary>FIRST</primary>
-    </indexterm>) ]</emphasis><emphasis role="bold"> [,DISTRIBUTED<indexterm>
-      <primary>DISTRIBUTED</primary>
-    </indexterm>] [,FILEPOSITION( [
+  role="bold">[,<!-- DNT-Start -->SORTED<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->SORTED<!-- DNT-End --></primary>
+    </indexterm>] [,<!-- DNT-Start -->OPT<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->OPT<!-- DNT-End --></primary>
+    </indexterm>] [,<!-- DNT-Start -->COMPRESSED<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->COMPRESSED<!-- DNT-End --></primary>
+    </indexterm>( <!-- DNT-Start -->LZW<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->LZW<!-- DNT-End --></primary>
+    </indexterm> | <!-- DNT-Start -->ROW<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->ROW<!-- DNT-End --></primary>
+    </indexterm> | <!-- DNT-Start -->FIRST<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->FIRST<!-- DNT-End --></primary>
+    </indexterm>) ]</emphasis><emphasis role="bold"> [,<!-- DNT-Start -->DISTRIBUTED<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->DISTRIBUTED<!-- DNT-End --></primary>
+    </indexterm>] [,<!-- DNT-Start -->FILEPOSITION<!-- DNT-End -->( [
   </emphasis><emphasis>flag</emphasis><emphasis role="bold">] ) ] [,
-  MAXLENGTH<indexterm>
-      <primary>MAXLENGTH</primary>
+  <!-- DNT-Start -->MAXLENGTH<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->MAXLENGTH<!-- DNT-End --></primary>
     </indexterm>[</emphasis>(<emphasis>**value</emphasis>**)<emphasis
   role="bold">] ] );</emphasis></para>
 
   <para><emphasis> attr</emphasis><emphasis role="bold"> :=
-  INDEX([</emphasis><emphasis> baserecset, </emphasis><emphasis
+  <!-- DNT-Start -->INDEX<!-- DNT-End -->([</emphasis><emphasis> baserecset, </emphasis><emphasis
   role="bold">]</emphasis><emphasis> keys, payload, indexfile
-  </emphasis><emphasis role="bold">[,SORTED] [,OPT] [,COMPRESSED( LZW | ROW |
-  FIRST) ] [,DISTRIBUTED] [,FILEPOSITION( [
+  </emphasis><emphasis role="bold">[,<!-- DNT-Start -->SORTED<!-- DNT-End -->] [,<!-- DNT-Start -->OPT<!-- DNT-End -->] [,<!-- DNT-Start -->COMPRESSED<!-- DNT-End -->( <!-- DNT-Start -->LZW<!-- DNT-End --> | <!-- DNT-Start -->ROW<!-- DNT-End --> |
+  <!-- DNT-Start -->FIRST<!-- DNT-End -->) ] [,<!-- DNT-Start -->DISTRIBUTED<!-- DNT-End -->] [,<!-- DNT-Start -->FILEPOSITION<!-- DNT-End -->( [
   </emphasis><emphasis>flag</emphasis><emphasis role="bold">] ) ] [,
-  MAXLENGTH<indexterm>
-      <primary>MAXLENGTH</primary>
+  <!-- DNT-Start -->MAXLENGTH<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->MAXLENGTH<!-- DNT-End --></primary>
     </indexterm>[</emphasis>(<emphasis>value</emphasis>)<emphasis
   role="bold">] ]</emphasis>);</para>
 
   <para><emphasis> attr</emphasis><emphasis role="bold"> :=
-  INDEX(</emphasis><emphasis>index,newindexfile</emphasis><emphasis
-  role="bold"> [, MAXLENGTH<indexterm>
-      <primary>MAXLENGTH</primary>
+  <!-- DNT-Start -->INDEX<!-- DNT-End -->(</emphasis><emphasis>index,newindexfile</emphasis><emphasis
+  role="bold"> [, <!-- DNT-Start -->MAXLENGTH<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->MAXLENGTH<!-- DNT-End --></primary>
     </indexterm>[</emphasis>(<emphasis>value</emphasis>)<emphasis
   role="bold">] ]); </emphasis></para>
 
@@ -55,14 +55,14 @@
 
       <tbody>
         <row>
-          <entry><emphasis>attr</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>attr</emphasis><!-- DNT-End --></entry>
 
-          <entry>The name of the INDEX for later use in other
+          <entry>The name of the <!-- DNT-Start -->INDEX<!-- DNT-End --> for later use in other
           attributes.</entry>
         </row>
 
         <row>
-          <entry><emphasis>baserecset</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>baserecset</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. The set of data records for which the index file
           has been created. If omitted, all fields in the
@@ -71,13 +71,13 @@
         </row>
 
         <row>
-          <entry><emphasis>keys</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>keys</emphasis><!-- DNT-End --></entry>
 
-          <entry>The RECORD structure of the fields in the
+          <entry>The <!-- DNT-Start -->RECORD<!-- DNT-End --> structure of the fields in the
           <emphasis>indexfile</emphasis> that contains key and file position
           information for referencing into the
           <emphasis>baserecset</emphasis>. Field names and types must match
-          the <emphasis>baserecset</emphasis> fields (REAL and DECIMAL type
+          the <emphasis>baserecset</emphasis> fields (<!-- DNT-Start -->REAL<!-- DNT-End --> and <!-- DNT-Start -->DECIMAL<!-- DNT-End --> type
           fields are not supported). This may also contain additional fields
           not present in the <emphasis>baserecset</emphasis> (computed
           fields). If omitted, all fields in the
@@ -85,24 +85,24 @@
         </row>
 
         <row>
-          <entry><emphasis>payload</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>payload</emphasis><!-- DNT-End --></entry>
 
-          <entry>The RECORD structure of the <emphasis>indexfile</emphasis>
+          <entry>The <!-- DNT-Start -->RECORD<!-- DNT-End --> structure of the <emphasis>indexfile</emphasis>
           that contains additional fields not used as keys. If the name of the
           <emphasis>baserecset</emphasis> is in the structure, it specifies
-          “all other fields not already named in the <emphasis>keys</emphasis>
-          parameter.” This may contain fields not present in the
+          âall other fields not already named in the <emphasis>keys</emphasis>
+          parameter.â This may contain fields not present in the
           <emphasis>baserecordset</emphasis> (computed fields). The
           <emphasis>payload</emphasis> fields do not take up space in the
-          non-leaf nodes of the index and cannot be referenced in a KEYED()
-          filter clause. Any field with the {BLOB} modifier (to allow more
+          non-leaf nodes of the index and cannot be referenced in a <!-- DNT-Start -->KEYED<!-- DNT-End -->()
+          filter clause. Any field with the {<!-- DNT-Start -->BLOB<!-- DNT-End -->} modifier (to allow more
           than 32K of data per index entry) is stored within the
           <emphasis>indexfile</emphasis>, but not with the rest of the record;
-          accessing the BLOB data requires an additional seek.</entry>
+          accessing the <!-- DNT-Start -->BLOB<!-- DNT-End --> data requires an additional seek.</entry>
         </row>
 
         <row>
-          <entry><emphasis>indexfile</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>indexfile</emphasis><!-- DNT-End --></entry>
 
           <entry>A string constant containing the logical filename of the
           index. See the <emphasis>Scope &amp; Logical Filenames</emphasis>
@@ -110,7 +110,7 @@
         </row>
 
         <row>
-          <entry><emphasis role="bold">SORTED</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">SORTED</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. Specifies that when the index is accessed the
           records come out in the order of the <emphasis>keys</emphasis>. If
@@ -118,72 +118,72 @@
         </row>
 
         <row>
-          <entry><emphasis role="bold">OPT</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">OPT</emphasis><!-- DNT-End --></entry>
 
           <entry><para>Optional. Specifies that using the index when the
-          <emphasis>indexfile</emphasis> doesn’t exist results in an empty
+          <emphasis>indexfile</emphasis> doesnât exist results in an empty
           recordset instead of an error condition.</para></entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">COMPRESSED</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">COMPRESSED</emphasis><!-- DNT-End --></entry>
 
           <entry><para>Optional. Specifies the type of compression used. If
-          omitted, the default is <emphasis role="bold">LZW</emphasis>, a
+          omitted, the default is <emphasis role="bold"><!-- DNT-Start -->LZW<!-- DNT-End --></emphasis>, a
           variant of the Lempel-Ziv-Welch algorithm. Specifying <emphasis
-          role="bold">ROW</emphasis> compresses index entries based on
+          role="bold"><!-- DNT-Start -->ROW<!-- DNT-End --></emphasis> compresses index entries based on
           differences between contiguous rows (for use with fixed-length
           records, only), and is recommended for use in circumstances where
           speedier decompression time is more important than the amount of
-          compression achieved. <emphasis role="bold">FIRST</emphasis>
+          compression achieved. <emphasis role="bold"><!-- DNT-Start -->FIRST<!-- DNT-End --></emphasis>
           compresses common leading elements of the key (recommended only for
           timing comparison use).</para></entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">DISTRIBUTED</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">DISTRIBUTED</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. Specifies that the index was created with the
-          DISTRIBUTED option on the BUILD action<indexterm>
-              <primary>BUILD action</primary>
-            </indexterm> or the BUILD action simply referenced the INDEX
+          <!-- DNT-Start -->DISTRIBUTED<!-- DNT-End --> option on the <!-- DNT-Start -->BUILD<!-- DNT-End --> action<indexterm>
+              <primary><!-- DNT-Start -->BUILD<!-- DNT-End --> action</primary>
+            </indexterm> or the <!-- DNT-Start -->BUILD<!-- DNT-End --> action simply referenced the <!-- DNT-Start -->INDEX<!-- DNT-End -->
           declaration<indexterm>
-              <primary>INDEX declaration</primary>
-            </indexterm> with the DISTRIBUTED option. The INDEX is therefore
-          accessed locally on each node (similar to the LOCAL
+              <primary><!-- DNT-Start -->INDEX<!-- DNT-End --> declaration</primary>
+            </indexterm> with the <!-- DNT-Start -->DISTRIBUTED<!-- DNT-End --> option. The <!-- DNT-Start -->INDEX<!-- DNT-End --> is therefore
+          accessed locally on each node (similar to the <!-- DNT-Start -->LOCAL<!-- DNT-End -->
           function<indexterm>
-              <primary>LOCAL function</primary>
+              <primary><!-- DNT-Start -->LOCAL<!-- DNT-End --> function</primary>
             </indexterm>, which is preferred), is not globally sorted, and
           there is no root index to indicate which part of the index will
           contain a particular entry. This may be useful in Roxie queries in
-          conjunction with ALLNODES use.</entry>
+          conjunction with <!-- DNT-Start -->ALLNODES<!-- DNT-End --> use.</entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">FILEPOSITION</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">FILEPOSITION</emphasis><!-- DNT-End --></entry>
 
-          <entry>Optional. If <emphasis>flag</emphasis> is FALSE, prevents the
+          <entry>Optional. If <emphasis>flag</emphasis> is <!-- DNT-Start -->FALSE<!-- DNT-End -->, prevents the
           normal behavior of implicit fileposition field being created and
           will not treat a trailing integer field any differently from the
           rest of the payload.</entry>
         </row>
 
         <row>
-          <entry><emphasis>flag</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>flag</emphasis><!-- DNT-End --></entry>
 
-          <entry>Optional. TRUE or FALSE, indicating whether or not to create
+          <entry>Optional. <!-- DNT-Start -->TRUE<!-- DNT-End --> or <!-- DNT-Start -->FALSE<!-- DNT-End -->, indicating whether or not to create
           the implicit fileposition field.</entry>
         </row>
 
         <row>
-          <entry><emphasis>index</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>index</emphasis><!-- DNT-End --></entry>
 
-          <entry><para>The name of a previously defined INDEX attribute to
+          <entry><para>The name of a previously defined <!-- DNT-Start -->INDEX<!-- DNT-End --> attribute to
           duplicate.</para></entry>
         </row>
 
         <row>
-          <entry><emphasis>newindexfile</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>newindexfile</emphasis><!-- DNT-End --></entry>
 
           <entry><para>A string constant containing the logical filename of
           the new index. See the <emphasis>Scope &amp; Logical
@@ -192,7 +192,7 @@
         </row>
 
         <row>
-          <entry><emphasis role="bold">MAXLENGTH</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">MAXLENGTH</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. This option is used to create indexes that are
           backward compatible for platform versions prior to 3.0. Specifies
@@ -203,25 +203,25 @@
         </row>
 
         <row>
-          <entry><emphasis>value</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>value</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. An integer value indicating the maximum length. If
           omitted, the maximum size is calculated from the record structure.
-          Variable-length records that do not specify MAXLENGTH may be
+          Variable-length records that do not specify <!-- DNT-Start -->MAXLENGTH<!-- DNT-End --> may be
           slightly inefficient</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para><emphasis role="bold">INDEX </emphasis>declares a previously created
-  index for use. INDEX is related to BUILD (or BUILDINDEX) in the same manner
-  that DATASET is to OUTPUT—BUILD creates an index file that INDEX then
-  defines for use in ECL code. Index files are compressed. A single index
+  <para><emphasis role="bold"><!-- DNT-Start -->INDEX<!-- DNT-End --> </emphasis>declares a previously created
+  index for use. <!-- DNT-Start -->INDEX<!-- DNT-End --> is related to <!-- DNT-Start -->BUILD<!-- DNT-End --> (or <!-- DNT-Start -->BUILDINDEX<!-- DNT-End -->) in the same manner
+  that <!-- DNT-Start -->DATASET<!-- DNT-End --> is to <!-- DNT-Start -->OUTPUTâ<!-- DNT-End --><!-- DNT-Start -->BUILD<!-- DNT-End --> creates an index file that <!-- DNT-Start -->INDEX<!-- DNT-End --> then
+  defines for use in <!-- DNT-Start -->ECL<!-- DNT-End --> code. Index files are compressed. A single index
   record must be defined as less than 32K and result in a less than 8K page
   after compression.</para>
 
-  <para>The Binary-tree metakey portion of the INDEX is a separate 32K file
+  <para>The Binary-tree metakey portion of the <!-- DNT-Start -->INDEX<!-- DNT-End --> is a separate 32K file
   part on the first node of the Thor cluster on which it was built, but
   deployed to every node of a Roxie cluster. There are as many leaf-node file
   parts as there are nodes to the Thor cluster on which it was built. The
@@ -230,44 +230,44 @@
   was built and the size of the cluster on which it is used.</para>
 
   <para>These data types are supported in the keyed portion of an
-  INDEX:<itemizedlist>
+  <!-- DNT-Start -->INDEX<!-- DNT-End -->:<itemizedlist>
       <listitem>
-        <para>BOOLEAN </para>
+        <para><!-- DNT-Start -->BOOLEAN<!-- DNT-End --> </para>
       </listitem>
 
       <listitem>
-        <para>INTEGER</para>
+        <para><!-- DNT-Start -->INTEGER<!-- DNT-End --></para>
       </listitem>
 
       <listitem>
-        <para>UNSIGNED</para>
+        <para><!-- DNT-Start -->UNSIGNED<!-- DNT-End --></para>
       </listitem>
 
       <listitem>
-        <para>STRING</para>
+        <para><!-- DNT-Start -->STRING<!-- DNT-End --></para>
       </listitem>
 
       <listitem>
-        <para>DATA</para>
+        <para><!-- DNT-Start -->DATA<!-- DNT-End --></para>
       </listitem>
 
       <listitem>
-        <para>QSTRING</para>
+        <para><!-- DNT-Start -->QSTRING<!-- DNT-End --></para>
 
-        <para>All STRINGs must be fixed length.</para>
+        <para>All <!-- DNT-Start -->STRINGs<!-- DNT-End --> must be fixed length.</para>
       </listitem>
     </itemizedlist></para>
 
   <sect2 id="Keyed_Access_INDEX">
-    <title>Keyed Access INDEX</title>
+    <!-- DNT-Start --><title>Keyed Access INDEX</title><!-- DNT-End -->
 
     <para>This form defines an index file to allow keyed access to the
-    <emphasis>baserecset</emphasis>. The index is used primarily by the FETCH
-    and JOIN (with the KEYED option) operations.</para>
+    <emphasis>baserecset</emphasis>. The index is used primarily by the <!-- DNT-Start -->FETCH<!-- DNT-End -->
+    and <!-- DNT-Start -->JOIN<!-- DNT-End --> (with the <!-- DNT-Start -->KEYED<!-- DNT-End --> option) operations.</para>
 
     <para>Example:</para>
 
-    <programlisting>PtblRec := RECORD
+    <!-- DNT-Start --><programlisting>PtblRec := RECORD
   STRING2 State := Person.per_st;
   STRING20 City := Person.per_full_city;
   STRING25 Lname := Person.per_last_name;
@@ -283,53 +283,53 @@ Ptbl := DATASET('RTTEMP::TestFetch',
 AlphaInStateCity := INDEX(Ptbl,
                    {state,city,lname,fname,RecPtr},
                    'RTTEMPkey::TestFetch');
-Bld := BUILDINDEX(AlphaInStateCity);</programlisting>
+Bld := BUILDINDEX(AlphaInStateCity);</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="Payload_INDEX">
-    <title>Payload INDEX</title>
+    <!-- DNT-Start --><title>Payload INDEX</title><!-- DNT-End -->
 
     <para>This form defines an index file containing extra payload fields in
-    addition to the keys. The payload may contain fields with the {BLOB}
-    modifier to allow more than 32K of data per index entry. These BLOB fields
+    addition to the keys. The payload may contain fields with the {<!-- DNT-Start -->BLOB<!-- DNT-End -->}
+    modifier to allow more than 32K of data per index entry. These <!-- DNT-Start -->BLOB<!-- DNT-End --> fields
     are stored within the <emphasis>indexfile</emphasis>, but not with the
-    rest of the record; accessing the BLOB data requires an additional
+    rest of the record; accessing the <!-- DNT-Start -->BLOB<!-- DNT-End --> data requires an additional
     seek.</para>
 
-    <para>This form is used primarily by “half-key” JOIN operations to
+    <para>This form is used primarily by âhalf-keyâ <!-- DNT-Start -->JOIN<!-- DNT-End --> operations to
     eliminate the need to directly access the <emphasis>baserecset</emphasis>,
-    thus increasing performance over the “full-keyed” version of the same
-    operation (done with the KEYED option on the JOIN). By default, payload
-    fields are not sorted during the BUILD action<indexterm>
-        <primary>BUILD action</primary>
+    thus increasing performance over the âfull-keyedâ version of the same
+    operation (done with the <!-- DNT-Start -->KEYED<!-- DNT-End --> option on the <!-- DNT-Start -->JOIN<!-- DNT-End -->). By default, payload
+    fields are not sorted during the <!-- DNT-Start -->BUILD<!-- DNT-End --> action<indexterm>
+        <primary><!-- DNT-Start -->BUILD<!-- DNT-End --> action</primary>
       </indexterm> to minimize space on the leaf nodes of the key. This
     sorting behavior can be controlled by using
-    <emphasis>sortIndexPayload</emphasis> in a #OPTION statement.</para>
+    <emphasis>sortIndexPayload</emphasis> in a #<!-- DNT-Start -->OPTION<!-- DNT-End --> statement.</para>
 
     <para>Example:</para>
 
-    <programlisting>Vehicles := DATASET('vehicles',
+    <!-- DNT-Start --><programlisting>Vehicles := DATASET('vehicles',
           {STRING2 st,STRING20 city,STRING20 lname,
           UNSIGNED8 fpos{virtual(fileposition)}},FLAT);
 
 VehicleKey := INDEX(Vehicles,{st,city},{lname,fpos},'vkey::st.city'); 
-BUILDINDEX(VehicleKey);</programlisting>
+BUILDINDEX(VehicleKey);</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="Duplicate_INDEX">
-    <title>Duplicate INDEX</title>
+    <!-- DNT-Start --><title>Duplicate INDEX</title><!-- DNT-End -->
 
     <para>This form defines a <emphasis>newindexfile </emphasis>that is
     identical to the previously defined <emphasis>index</emphasis>.</para>
 
     <para>Example:</para>
 
-    <programlisting>NewVehicleKey := INDEX(VehicleKey,'NEW::vkey::st.city');
-          //define NewVehicleKey like VehicleKey</programlisting>
+    <!-- DNT-Start --><programlisting>NewVehicleKey := INDEX(VehicleKey,'NEW::vkey::st.city');
+          //define NewVehicleKey like VehicleKey</programlisting><!-- DNT-End -->
 
-    <para>See Also: <link linkend="DATASET">DATASET</link>, <link
-    linkend="BUILD">BUILDINDEX</link>, <link linkend="JOIN">JOIN</link>, <link
-    linkend="FETCH">FETCH</link>, <link
-    linkend="KEYED-WILD">KEYED/WILD</link></para>
+    <para>See Also: <link linkend="DATASET"><!-- DNT-Start -->DATASET<!-- DNT-End --></link>, <link
+    linkend="BUILD"><!-- DNT-Start -->BUILDINDEX<!-- DNT-End --></link>, <link linkend="JOIN"><!-- DNT-Start -->JOIN<!-- DNT-End --></link>, <link
+    linkend="FETCH"><!-- DNT-Start -->FETCH<!-- DNT-End --></link>, <link
+    linkend="KEYED-WILD"><!-- DNT-Start -->KEYED<!-- DNT-End -->/<!-- DNT-Start -->WILD<!-- DNT-End --></link></para>
   </sect2>
 </sect1>

@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SplitWords">
-  <title>SplitWords</title>
+  <!-- DNT-Start --><title>SplitWords</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Str.SplitWords<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.Str.SplitWords<indexterm>
       <primary>STD.Str.SplitWords</primary>
     </indexterm><indexterm>
       <primary>Str.SplitWords</primary>
@@ -12,7 +12,7 @@
       <primary>SplitWords</primary>
     </indexterm>(</emphasis> <emphasis>source, separator </emphasis><emphasis
   role="bold">[ </emphasis><emphasis>, allowblank</emphasis><emphasis
-  role="bold"> ] )</emphasis></para>
+  role="bold"> ] )</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -22,40 +22,40 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>source</emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the words to extract.</entry>
         </row>
 
         <row>
-          <entry><emphasis>separator</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>separator</emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the word delimiter to use.</entry>
         </row>
 
         <row>
-          <entry><emphasis>allowblank</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>allowblank</emphasis><!-- DNT-End --></entry>
 
-          <entry>Optional. If TRUE, specifies allowing blank items in the
-          result. If omitted, the default is FALSE.</entry>
+          <entry>Optional. If <!-- DNT-Start -->TRUE<!-- DNT-End -->, specifies allowing blank items in the
+          result. If omitted, the default is <!-- DNT-Start -->FALSE<!-- DNT-End -->.</entry>
         </row>
 
         <row>
-          <entry>Return:</entry>
+          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-          <entry>SplitWords returns a SET OF STRING values.</entry>
+          <entry><!-- DNT-Start -->SplitWords<!-- DNT-End --> returns a <!-- DNT-Start -->SET<!-- DNT-End --> <!-- DNT-Start -->OF<!-- DNT-End --> <!-- DNT-Start -->STRING<!-- DNT-End --> values.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">SplitWords</emphasis> function returns the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->SplitWords<!-- DNT-End --></emphasis> function returns the
   list of words in the <emphasis>source</emphasis> string split out by the
   specified <emphasis>separator</emphasis>.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">IMPORT Std;
+  <!-- DNT-Start --><programlisting format="linespecific">IMPORT Std;
 
 str1 := 'a word a day keeps the doctor away';
 str2 := 'a|word|a|day|keeps|the|doctor|away';
@@ -65,7 +65,7 @@ STD.STr.SplitWords(str1,' ');
 
 STD.STr.SplitWords(str2,'|');
     //returns ['a', 'word', 'a', 'day', 'keeps', 'the', 'doctor', 'away']
-</programlisting>
+</programlisting><!-- DNT-End -->
 
   <para></para>
 </sect1>

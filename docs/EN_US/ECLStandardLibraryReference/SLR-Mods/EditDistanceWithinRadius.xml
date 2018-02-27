@@ -2,21 +2,21 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="EditDistanceWithinRadius">
-  <title>EditDistanceWithinRadius</title>
+  <!-- DNT-Start --><title>EditDistanceWithinRadius</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Str.EditDistanceWithinRadius<indexterm>
-      <primary>STD.Str.EditDistanceWithinRadius</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->EditDistanceWithinRadius<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->EditDistanceWithinRadius<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Str.EditDistanceWithinRadius</primary>
+      <primary>Str.<!-- DNT-Start -->EditDistanceWithinRadius<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>EditDistanceWithinRadius</primary>
+      <primary><!-- DNT-Start -->EditDistanceWithinRadius<!-- DNT-End --></primary>
     </indexterm>(</emphasis> <emphasis>string1, string2, radius</emphasis>
   <emphasis role="bold">)</emphasis></para>
 
-  <para><emphasis role="bold">STD.Uni.EditDistanceWithinRadius<indexterm>
-      <primary>STD.Uni.EditDistanceWithinRadius</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->EditDistanceWithinRadius<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->EditDistanceWithinRadius<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Uni.EditDistanceWithinRadius</primary>
+      <primary>Uni.<!-- DNT-Start -->EditDistanceWithinRadius<!-- DNT-End --></primary>
     </indexterm>(</emphasis> <emphasis>string1, string2, radius,
   locale</emphasis> <emphasis role="bold">)</emphasis></para>
 
@@ -28,26 +28,26 @@
 
       <tbody>
         <row>
-          <entry><emphasis>string1</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>string1</emphasis><!-- DNT-End --></entry>
 
           <entry>The first of a pair of strings to compare.</entry>
         </row>
 
         <row>
-          <entry><emphasis>string2</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>string2</emphasis><!-- DNT-End --></entry>
 
           <entry>The second of a pair of strings to compare.</entry>
         </row>
 
         <row>
-          <entry><emphasis>radius</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>radius</emphasis><!-- DNT-End --></entry>
 
           <entry>An integer specifying the maximum acceptable edit
           distance.</entry>
         </row>
 
         <row>
-          <entry><emphasis>locale</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>locale</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the language and country
           code to use to determine correct sort order and other
@@ -55,25 +55,25 @@
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>EditDistanceWithinRadius returns a BOOLEAN value.</entry>
+          <entry><!-- DNT-Start -->EditDistanceWithinRadius<!-- DNT-End --> returns a <!-- DNT-Start -->BOOLEAN<!-- DNT-End --> value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">EditDistanceWithinRadius </emphasis>function
-  returns TRUE if the edit distance between <emphasis>string1</emphasis> and
+  <para>The <emphasis role="bold"><!-- DNT-Start -->EditDistanceWithinRadius<!-- DNT-End --> </emphasis>function
+  returns <!-- DNT-Start -->TRUE<!-- DNT-End --> if the edit distance between <emphasis>string1</emphasis> and
   <emphasis>string2</emphasis> is within the <emphasis>radius</emphasis>. The
   two strings are trimmed before comparison.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">IMPORT STD;
+  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 STD.Str.EditDistance('CAT','BAIT');               //returns 2
 
 STD.Str.EditDistanceWithinRadius('CAT','BAIT',1); //returns FALSE
 STD.Str.EditDistanceWithinRadius('CAT','BAIT',2); //returns TRUE
-</programlisting>
+</programlisting><!-- DNT-End -->
 </sect1>

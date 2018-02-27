@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="WorkunitFilesWritten">
-  <title>WorkunitFilesWritten</title>
+  <!-- DNT-Start --><title>WorkunitFilesWritten</title><!-- DNT-End -->
 
-  <para><emphasis
+  <!-- DNT-Start --><para><emphasis
   role="bold">STD.System.Workunit.WorkunitFilesWritten    <indexterm>
       <primary>STD.System.Workunit.WorkunitFilesWritten</primary>
     </indexterm>
@@ -18,7 +18,7 @@
       <primary>WorkunitFilesWritten</primary>
     </indexterm>
 (</emphasis> <emphasis>
-  wuid </emphasis> <emphasis role="bold">)</emphasis></para>
+  wuid </emphasis> <emphasis role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -28,38 +28,38 @@
 
       <tbody>
         <row>
-          <entry><emphasis>wuid</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>wuid</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the WorkUnit
           IDentifier.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>WorkunitFilesWritten returns a DATASET value.</entry>
+          <entry><!-- DNT-Start -->WorkunitFilesWritten<!-- DNT-End --> returns a <!-- DNT-Start -->DATASET<!-- DNT-End --> value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">WorkunitFilesWritten </emphasis>function
-  returns a DATASET with this format:</para>
+  <para>The <emphasis role="bold"><!-- DNT-Start -->WorkunitFilesWritten<!-- DNT-End --> </emphasis>function
+  returns a <!-- DNT-Start -->DATASET<!-- DNT-End --> with this format:</para>
 
-  <programlisting>EXPORT WsFileRead := RECORD
+  <!-- DNT-Start --><programlisting>EXPORT WsFileRead := RECORD
   STRING name{MAXLENGTH(256)};
   STRING10 graph;
   STRING cluster{MAXLENGTH(64)};
   UNSIGNED4 kind;
-END;</programlisting>
+END;</programlisting><!-- DNT-End -->
 
   <para>Each record in the returned dataset specifies a file written by the
   workunit.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitFilesWritten('W20070308-164946'));
+  <!-- DNT-Start --><programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitFilesWritten('W20070308-164946'));
 /* produces results that look like this
 'rttest::testfetch','graph1','thor','0'
-*/</programlisting>
+*/</programlisting><!-- DNT-End -->
 </sect1>

@@ -2,15 +2,15 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Data_string">
-  <title>string</title>
+  <!-- DNT-Start --><title>string</title><!-- DNT-End -->
 
   <para><indexterm>
-      <primary>string</primary>
+      <primary><!-- DNT-Start -->string<!-- DNT-End --></primary>
     </indexterm>A data type consisting of sequence of alphanumeric
   characters.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <programlisting>string FirstName;
-  </programlisting>
+  <!-- DNT-Start --><programlisting>string FirstName;
+  </programlisting><!-- DNT-End -->
 </sect1>

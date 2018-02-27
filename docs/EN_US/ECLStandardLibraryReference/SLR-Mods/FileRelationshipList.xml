@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="FileRelationshipList">
-  <title>FileRelationshipList</title>
+  <!-- DNT-Start --><title>FileRelationshipList</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.File.FileRelationshipList<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.File.FileRelationshipList<indexterm>
       <primary>STD.File.FileRelationshipList</primary>
     </indexterm><indexterm>
       <primary>File.FileRelationshipList</primary>
@@ -17,7 +17,7 @@
   </emphasis> <emphasis role="bold">]</emphasis> <emphasis role="bold">
   [</emphasis> <emphasis>,</emphasis> <emphasis role="bold"> </emphasis>
   <emphasis>relationship </emphasis> <emphasis
-  role="bold">]);</emphasis></para>
+  role="bold">]);</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -27,31 +27,31 @@
 
       <tbody>
         <row>
-          <entry><emphasis>primary</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>primary</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the logical filename of
           the primary file.</entry>
         </row>
 
         <row>
-          <entry><emphasis>secondary</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>secondary</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the logical filename of
           the secondary file.</entry>
         </row>
 
         <row>
-          <entry><emphasis>primaryfields</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>primaryfields</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the name of the primary
           key field for the <emphasis>primary</emphasis> file. The value
-          “__fileposition__” indicates the <emphasis>secondary</emphasis> is
-          an INDEX that must use FETCH to access non-keyed fields. If omitted,
+          â<!-- DNT-Start -->__fileposition__<!-- DNT-End -->â indicates the <emphasis>secondary</emphasis> is
+          an <!-- DNT-Start -->INDEX<!-- DNT-End --> that must use <!-- DNT-Start -->FETCH<!-- DNT-End --> to access non-keyed fields. If omitted,
           the default is an empty string.</entry>
         </row>
 
         <row>
-          <entry><emphasis>secondaryfields</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>secondaryfields</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the name of the foreign
           key field relating to the <emphasis>primary</emphasis> file. If
@@ -59,30 +59,30 @@
         </row>
 
         <row>
-          <entry><emphasis>relationship</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>relationship</emphasis><!-- DNT-End --></entry>
 
-          <entry>A null-terminated string containing either “link” or “view”
+          <entry>A null-terminated string containing either âlinkâ or âviewâ
           indicating the type of relationship between the
           <emphasis>primary</emphasis> and <emphasis>secondary</emphasis>
-          files. If omitted, the default is “link.”</entry>
+          files. If omitted, the default is âlink.â</entry>
         </row>
 
         <row>
-          <entry>Return:</entry>
+          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-          <entry>FileRelationshipList returns a dataset in the
+          <entry><!-- DNT-Start -->FileRelationshipList<!-- DNT-End --> returns a dataset in the
           FsFileRelationshipRecord format.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">FileRelationshipList</emphasis> function
+  <para>The <emphasis role="bold"><!-- DNT-Start -->FileRelationshipList<!-- DNT-End --></emphasis> function
   returns a list file relationships between the <emphasis>primary</emphasis>
   and <emphasis>secondary</emphasis> files. The return records are structured
   in the FsFileRelationshipRecord format:</para>
 
-  <programlisting>EXPORT FsFileRelationshipRecord := RECORD 
+  <!-- DNT-Start --><programlisting>EXPORT FsFileRelationshipRecord := RECORD 
   STRING primaryfile {MAXLENGTH(1023)}; 
   STRING secondaryfile {MAXLENGTH(1023)};  
   STRING primaryflds {MAXLENGTH(1023)}; 
@@ -91,12 +91,12 @@
   STRING cardinality {MAXLENGTH(16)}; 
   BOOLEAN payload; 
   STRING description {MAXLENGTH(1023)}; 
-END;</programlisting>
+END;</programlisting><!-- DNT-End -->
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">OUTPUT(STD.File.FileRelationshipList('names', 'inquiries'));
-</programlisting>
+  <!-- DNT-Start --><programlisting format="linespecific">OUTPUT(STD.File.FileRelationshipList('names', 'inquiries'));
+</programlisting><!-- DNT-End -->
 
   <para>See Also: <link
   linkend="AddFileRelationship">AddFileRelationship</link></para>

@@ -2,7 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book lang="en_US" xml:base="../">
-  <title>HPCC Preflight and Certification</title>
+  <!-- DNT-Start --><title>HPCC Preflight and Certification</title><!-- DNT-End -->
 
   <bookinfo>
     <mediaobject>
@@ -27,7 +27,7 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license. </para>
 
-      <para>HPCC Systems<superscript>®</superscript> is a registered trademark
+      <para><!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript> is a registered trademark
       of LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
@@ -61,12 +61,12 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
   </bookinfo>
 
   <chapter id="certification_approach">
-    <title>Introduction : Certification Approach</title>
+    <!-- DNT-Start --><title>Introduction : Certification Approach</title><!-- DNT-End -->
 
-    <para>This document provides steps you can use to certify your HPCC
+    <para>This document provides steps you can use to certify your <!-- DNT-Start -->HPCC<!-- DNT-End -->
     environment.</para>
 
-    <para>Use this procedure when you create a new HPCC system or after you
+    <para>Use this procedure when you create a new <!-- DNT-Start -->HPCC<!-- DNT-End --> system or after you
     make any changes or upgrades to the system. This will ensure that your
     system is functioning properly.</para>
 
@@ -92,7 +92,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
       </informaltable></para>
 
     <sect1 id="Scope">
-      <title>Scope</title>
+      <!-- DNT-Start --><title>Scope</title><!-- DNT-End -->
 
       <para>These procedures certify the following functional areas:</para>
 
@@ -167,17 +167,17 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
     </sect1>
 
     <sect1 id="Before_you_begin">
-      <title>Before You Begin</title>
+      <!-- DNT-Start --><title>Before You Begin</title><!-- DNT-End -->
 
       <orderedlist numeration="arabic">
         <listitem>
           <para>Make sure the <emphasis>_Certification</emphasis> folder is in
-          your repository. This is typically installed with the IDE.</para>
+          your repository. This is typically installed with the <!-- DNT-Start -->IDE<!-- DNT-End -->.</para>
         </listitem>
 
         <listitem>
           <para>Remove any items that might be left from previous
-          certifications. Search and remove any old Workunits, DFU Workunits,
+          certifications. Search and remove any old Workunits, <!-- DNT-Start -->DFU<!-- DNT-End --> Workunits,
           data files, and published queries.</para>
         </listitem>
 

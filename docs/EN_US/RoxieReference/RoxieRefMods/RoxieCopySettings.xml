@@ -2,9 +2,9 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect2>
-  <title><emphasis role="bold">Queries and Data</emphasis></title>
+  <!-- DNT-Start --><title><emphasis role="bold">Queries and Data</emphasis></title><!-- DNT-End -->
 
-  <para>Data files and index files referenced by a Roxie query’s ECL code are
+  <para>Data files and index files referenced by a Roxie queryâs <!-- DNT-Start -->ECL<!-- DNT-End --> code are
   made available in one of four ways, depending on the configuration of the
   Roxie cluster.</para>
 
@@ -19,14 +19,14 @@
 
         <tbody>
           <row>
-            <entry><emphasis role="bold">copyResources</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">copyResources</emphasis><!-- DNT-End --></entry>
 
             <entry>Copies necessary data and key files from the current
             location when the query is published.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">useRemoteResources</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">useRemoteResources</emphasis><!-- DNT-End --></entry>
 
             <entry>Instructs Roxie to look for data and key files in the
             current location after the query is published.</entry>
@@ -46,11 +46,11 @@
 
         <tbody>
           <row>
-            <entry>copyResources</entry>
+            <entry><!-- DNT-Start -->copyResources<!-- DNT-End --></entry>
 
             <entry>T</entry>
 
-            <entry>T</entry>
+            <entry><!-- DNT-Start -->T<!-- DNT-End --></entry>
 
             <entry>F</entry>
 
@@ -58,11 +58,11 @@
           </row>
 
           <row>
-            <entry>useRemoteResources</entry>
+            <entry><!-- DNT-Start -->useRemoteResources<!-- DNT-End --></entry>
 
             <entry>T</entry>
 
-            <entry>F</entry>
+            <entry><!-- DNT-Start -->F<!-- DNT-End --></entry>
 
             <entry>T</entry>
 
@@ -72,23 +72,23 @@
           <row>
             <entry></entry>
 
-            <entry align="left">Directs the Roxie cluster to use the remote
+            <entry align="left"><!-- DNT-Start -->Directs the Roxie cluster to use the remote
             instance of the data until it can copy the data locally. This
             allows a query to be available immediately while the data is
-            copied.</entry>
+            copied.<!-- DNT-End --></entry>
 
             <entry align="left">Directs the Roxie cluster to copy the data
             locally. The query cannot be executed until the data is copied.
             This ensures optimum performance after the data is copied.</entry>
 
-            <entry align="left">Directs the Roxie cluster to load the data
+            <entry align="left"><!-- DNT-Start -->Directs the Roxie cluster to load the data
             from a remote location. The query can be executed immediately, but
             performance is limited by network bandwidth. This allows queries
             to run without using any Roxie disk space, but reduces its
-            throughput capabilities.</entry>
+            throughput capabilities.<!-- DNT-End --></entry>
 
             <entry align="left">Will use data and indexes already loaded
-            (placed on the Roxie cluster using DFU ) but will not copy or read
+            (placed on the Roxie cluster using <!-- DNT-Start -->DFU<!-- DNT-End --> ) but will not copy or read
             remote data.</entry>
           </row>
         </tbody>
@@ -97,21 +97,21 @@
 
   <para>When <emphasis role="bold">copyResources</emphasis> is enabled, data
   files are copied from source locations to Roxie agent nodes. Index files are
-  also copied, with an extra file part that is a “key-of-keys” or a
+  also copied, with an extra file part that is a âkey-of-keysâ or a
   metakey.</para>
 
   <para>A copy of the metakey is always stored on each Roxie server and in
   most cases is loaded into memory at startup to increase performance.</para>
 
   <sect3 id="RoxiePreferredCluster">
-    <title>Preferred Clusters</title>
+    <!-- DNT-Start --><title>Preferred Clusters</title><!-- DNT-End -->
 
     <para><emphasis role="bold">Preferred Clusters</emphasis> allows you to
     set priorities for clusters from which you want Roxie to copy files. If
     not otherwise specified Roxie copies from clusters in its own environment
-    first. To enable the Preferred Clusters feature, you can use the HPCC
+    first. To enable the Preferred Clusters feature, you can use the <!-- DNT-Start -->HPCC<!-- DNT-End -->
     Systems Configuration Manager. (for additional information about
-    Configuring your HPCC System see <emphasis>Installing and Running the HPCC
+    Configuring your <!-- DNT-Start -->HPCC<!-- DNT-End --> System see <emphasis>Installing and Running the <!-- DNT-Start -->HPCC<!-- DNT-End -->
     Platform</emphasis>)<figure>
         <title>Roxie Preferred Clusters</title>
 
@@ -123,7 +123,7 @@
       </figure></para>
 
     <para>The Preferred Clusters tab can be found on the RoxieCluster page
-    within the HPCC Configuration Manager.</para>
+    within the <!-- DNT-Start -->HPCC<!-- DNT-End --> Configuration Manager.</para>
 
     <para>On the Preferred Clusters tab, you can add the name and the priority
     of your Roxie clusters. The highest priority number is the preferred
@@ -138,9 +138,9 @@
   </sect3>
 
   <sect3 id="VipsRoxieAlias" role="brk">
-    <title>VIPs and Roxie Alias</title>
+    <!-- DNT-Start --><title>VIPs and Roxie Alias</title><!-- DNT-End -->
 
-    <para>Roxie clusters accessed through a VIP (Virtual IP) usually use
+    <para>Roxie clusters accessed through a <!-- DNT-Start -->VIP<!-- DNT-End --> (Virtual <!-- DNT-Start -->IP<!-- DNT-End -->) usually use
     separate target names to represent the same set of queries. Each Roxie can
     also run more than one target at the same time.</para>
 
@@ -148,9 +148,9 @@
     targets representing the same set of queries can be used. Allowing targets
     that represent the same set of queries to have a shared alias allows
     callers to select the right set of queries when calling through a
-    VIP.</para>
+    <!-- DNT-Start -->VIP<!-- DNT-End -->.</para>
 
-    <para>This setting can be found in the Topology section within the HPCC
+    <para>This setting can be found in the Topology section within the <!-- DNT-Start -->HPCC<!-- DNT-End -->
     Configuration Manager.</para>
 
     <para><figure>
@@ -171,7 +171,7 @@
     aliases.</para>
 
     <figure>
-      <title>Roxie Aliases in a Production Environment</title>
+      <!-- DNT-Start --><title>Roxie Aliases in a Production Environment</title><!-- DNT-End -->
 
       <mediaobject>
         <imageobject>
@@ -186,22 +186,22 @@
   </sect3>
 
   <sect3 role="brk">
-    <title><emphasis role="bold">Command Line support</emphasis></title>
+    <!-- DNT-Start --><title><emphasis role="bold">Command Line support</emphasis></title><!-- DNT-End -->
 
     <para>The ecl command line tool offers a means of copying queries from one
     Roxie to another. Typically, this means data and index files would be
-    copied or accessed remotely following Roxie’s configuration
+    copied or accessed remotely following Roxieâs configuration
     settings.</para>
 
     <para>The ecl command line tool provides an option to instruct Roxie to
     not copy files at the time of the query copy. This allows you to quickly
     copy a query without copying files.</para>
 
-    <programlisting>
+    <!-- DNT-Start --><programlisting>
 ecl queries copy --no-files
-     </programlisting>
+     </programlisting><!-- DNT-End -->
 
-    <para>This specifies to NOT copy files referenced by the query being
+    <para>This specifies to <!-- DNT-Start -->NOT<!-- DNT-End --> copy files referenced by the query being
     copied. The query cannot run until data is made available.</para>
   </sect3>
 </sect2>

@@ -8,12 +8,12 @@
   creation and deployment of custom security manager plugins.</para>
 
   <sect1 id="how-to-create-a-security-manager-plugin">
-    <title>Plugin Development</title>
+    <!-- DNT-Start --><title>Plugin Development</title><!-- DNT-End -->
 
     <para>A custom Security Manager Plugin consists of a <emphasis
     role="bold">library</emphasis> (.so or .dll) file which provides
     implementation(s) of the iSecManager interface, a <emphasis
-    role="bold">configuration definition</emphasis> (articulated as an XSD
+    role="bold">configuration definition</emphasis> (articulated as an <!-- DNT-Start -->XSD<!-- DNT-End -->
     schema), and a component declaration (buildset.xml file).</para>
 
     <para><emphasis role="bold">Library requirements</emphasis> <itemizedlist>
@@ -27,28 +27,28 @@
 
           <para>Example of a standard factory method name :</para>
 
-          <programlisting>extern "C"
+          <!-- DNT-Start --><programlisting>extern "C"
 { 
     ISecManager * createInstance(const char *serviceName,
                                  IPropertyTree &amp;secMgrCfg,
                                  IPropertyTree &amp;bndCfg);
-} </programlisting>
+} </programlisting><!-- DNT-End -->
 
           <para>The framework expects to have access to the "createInstance()"
           method, if the developer chooses to provide other factory methods,
           it can override the default name in configuration, but must have the
           expected signature:</para>
 
-          <programlisting>ISecManager methodname(const char *, IPropertyTree &amp;, IPropertyTree &amp;)</programlisting>
+          <!-- DNT-Start --><programlisting>ISecManager methodname(const char *, IPropertyTree &amp;, IPropertyTree &amp;)</programlisting><!-- DNT-End -->
         </listitem>
       </itemizedlist></para>
 
     <para><emphasis role="bold">Buildset definition</emphasis> - The plugin
-    declares itself as an HPCC Security Manager Plugin component, and declares
+    declares itself as an <!-- DNT-Start -->HPCC<!-- DNT-End --> Security Manager Plugin component, and declares
     the location of the plugin files and the configuration definition
     schema.</para>
 
-    <para><emphasis role="bold">EXAMPLE:</emphasis></para>
+    <para><emphasis role="bold"><!-- DNT-Start -->EXAMPLE<!-- DNT-End -->:</emphasis></para>
 
     <para><programlisting>&lt;Environment&gt;
    &lt;Programs&gt;
@@ -66,9 +66,9 @@
 
     <para><emphasis role="bold">Configuration Definition</emphasis> - The
     plugin must provide a definition of the configuration elements and the
-    structure it expects to receive at the time it is instantiated. The XSD
-    file is consumed by the HPCC Configuration manager component and is
-    rendered as a GUI form. The configuration definition is defined as an
+    structure it expects to receive at the time it is instantiated. The <!-- DNT-Start -->XSD<!-- DNT-End -->
+    file is consumed by the <!-- DNT-Start -->HPCC<!-- DNT-End --> Configuration manager component and is
+    rendered as a <!-- DNT-Start -->GUI<!-- DNT-End --> form. The configuration definition is defined as an
     element of the component name (as declared in the buildset) followed by
     attributes and/or complex elements.</para>
 
@@ -100,9 +100,9 @@
       </listitem>
     </itemizedlist>
 
-    <para><emphasis role="bold">EXAMPLE:</emphasis></para>
+    <para><emphasis role="bold"><!-- DNT-Start -->EXAMPLE<!-- DNT-End -->:</emphasis></para>
 
-    <programlisting>&lt;xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified"&gt;
+    <!-- DNT-Start --><programlisting>&lt;xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified"&gt;
   &lt;xs:element name="MySecurityPluginType"&gt;
      &lt;xs:complexType&gt;
         &lt;xs:attribute name="type" type="SecurityManager" 
@@ -155,7 +155,7 @@
          &lt;/xs:attribute&gt;
      &lt;/xs:complexType&gt;
   &lt;/xs:element&gt;
-&lt;/xs:schema&gt;</programlisting>
+&lt;/xs:schema&gt;</programlisting><!-- DNT-End -->
 
     <?hard-pagebreak ?>
 
@@ -164,24 +164,24 @@
     "do_not(automatically)_generate" list. While this is an optional file,
     more often than not it is actually needed.</para>
 
-    <para><emphasis role="bold">EXAMPLE:</emphasis></para>
+    <para><emphasis role="bold"><!-- DNT-Start -->EXAMPLE<!-- DNT-End -->:</emphasis></para>
 
-    <para><programlisting> do_not_generate=mysecuritypluginname</programlisting></para>
+    <para><programlisting>Â do_not_generate=mysecuritypluginname</programlisting></para>
 
     <para><emphasis role="bold">Configuration transformation rules</emphasis>
     - (optional) specified as an xsl template, this set of rules can be
-    applied to the configuration XML. Refer to XSL templates in the HPCC
+    applied to the configuration <!-- DNT-Start -->XML<!-- DNT-End -->. Refer to <!-- DNT-Start -->XSL<!-- DNT-End --> templates in the <!-- DNT-Start -->HPCC<!-- DNT-End -->
     source tree.</para>
 
     <sect2 id="concrete-example">
-      <title>Concrete Example</title>
+      <!-- DNT-Start --><title>Concrete Example</title><!-- DNT-End -->
 
-      <para>The HPCC Platform includes a security manager plugin
+      <para>The <!-- DNT-Start -->HPCC<!-- DNT-End --> Platform includes a security manager plugin
       implementation (HTPasswd) and can be used as a guidance for the plugin
       development process:</para>
 
       <para><ulink
-      url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/system/security/plugins/htpasswdSecurity">https://github.com/hpcc-systems/HPCC-Platform/tree/master/system/security/plugins/htpasswdSecurity</ulink></para>
+      url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/system/security/plugins/htpasswdSecurity">https://github.com/hpcc-systems/<!-- DNT-Start -->HPCC<!-- DNT-End -->-Platform/tree/master/system/security/plugins/htpasswdSecurity</ulink></para>
     </sect2>
   </sect1>
 </chapter>

@@ -2,26 +2,26 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="EMBED_Structure">
-  <title>EMBED Structure<indexterm>
+  <!-- DNT-Start --><title>EMBED Structure<indexterm>
       <primary>EMBED Structure</primary>
-    </indexterm></title>
+    </indexterm></title><!-- DNT-End -->
 
   <para><emphasis>resulttype funcname</emphasis> <emphasis
   role="bold">(</emphasis> <emphasis>parameterlist</emphasis> <emphasis
-  role="bold">) := EMBED(<indexterm>
-      <primary>EMBED</primary>
+  role="bold">) := <!-- DNT-Start -->EMBED<!-- DNT-End -->(<indexterm>
+      <primary><!-- DNT-Start -->EMBED<!-- DNT-End --></primary>
     </indexterm></emphasis> <emphasis>language</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
   <para><emphasis>code</emphasis></para>
 
-  <para><emphasis role="bold">ENDEMBED<indexterm>
-      <primary>ENDEMBED</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->ENDEMBED<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->ENDEMBED<!-- DNT-End --></primary>
     </indexterm>;</emphasis></para>
 
   <para><emphasis>resulttype funcname</emphasis> <emphasis
   role="bold">(</emphasis> <emphasis>parameterlist</emphasis> <emphasis
-  role="bold">) := EMBED(</emphasis> <emphasis>language, code</emphasis>
+  role="bold">) := <!-- DNT-Start -->EMBED<!-- DNT-End -->(</emphasis> <emphasis>language, code</emphasis>
   <emphasis role="bold">);</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -32,26 +32,26 @@
 
       <tbody>
         <row>
-          <entry><emphasis>resulttype</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>resulttype</emphasis><!-- DNT-End --></entry>
 
-          <entry>The ECL return value type of the function.</entry>
+          <entry>The <!-- DNT-Start -->ECL<!-- DNT-End --> return value type of the function.</entry>
         </row>
 
         <row>
-          <entry><emphasis>funcname</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>funcname</emphasis><!-- DNT-End --></entry>
 
-          <entry><para>The ECL definition name of the function.</para></entry>
+          <entry><para>The <!-- DNT-Start -->ECL<!-- DNT-End --> definition name of the function.</para></entry>
         </row>
 
         <row>
-          <entry><emphasis>parameterlist</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>parameterlist</emphasis><!-- DNT-End --></entry>
 
           <entry>A comma separated list of the parameters to pass to the
           <emphasis>function</emphasis>.</entry>
         </row>
 
         <row>
-          <entry><emphasis>language</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>language</emphasis><!-- DNT-End --></entry>
 
           <entry>The name of the programming language being embedded. A
           language support module for that language must have been installed
@@ -62,7 +62,7 @@
         </row>
 
         <row>
-          <entry><emphasis>code</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>code</emphasis><!-- DNT-End --></entry>
 
           <entry>The source code to embed.</entry>
         </row>
@@ -70,43 +70,43 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">EMBED</emphasis> structure makes it possible
-  to add in-line <emphasis>language</emphasis> code to your ECL. This is
-  similar to the BEGINC++ structure, but available for any
+  <para>The <emphasis role="bold"><!-- DNT-Start -->EMBED<!-- DNT-End --></emphasis> structure makes it possible
+  to add in-line <emphasis>language</emphasis> code to your <!-- DNT-Start -->ECL<!-- DNT-End -->. This is
+  similar to the <!-- DNT-Start -->BEGINC<!-- DNT-End -->++ structure, but available for any
   <emphasis>language</emphasis> with a pluggable language support module
   installed, such as R, Javascript, and Python. Others may follow or people
   can write their own using the supplied ones as templates/examples/starting
   points. This may be used to write Javascript, R, or Python code, but is not
-  usable with Java code (use the IMPORT function for Java code).</para>
+  usable with Java code (use the <!-- DNT-Start -->IMPORT<!-- DNT-End --> function for Java code).</para>
 
   <para>The parameter types that can be passed and returned will vary by
   <emphasis>language</emphasis>, but in general the simple scalar types
-  (INTEGER, REAL, STRING, UNICODE, BOOLEAN, and DATA) and SETs of those scalar
+  (<!-- DNT-Start -->INTEGER<!-- DNT-End -->, <!-- DNT-Start -->REAL<!-- DNT-End -->, <!-- DNT-Start -->STRING<!-- DNT-End -->, <!-- DNT-Start -->UNICODE<!-- DNT-End -->, <!-- DNT-Start -->BOOLEAN<!-- DNT-End -->, and <!-- DNT-Start -->DATA<!-- DNT-End -->) and SETs of those scalar
   types are supported, so long as there is an appropriate data type in the
   <emphasis>language</emphasis> to map them to.</para>
 
-  <para>The first form of EMBED is the structure that must terminate with
-  ENDEMBED. This may contain any code in the supported
+  <para>The first form of <!-- DNT-Start -->EMBED<!-- DNT-End --> is the structure that must terminate with
+  <!-- DNT-Start -->ENDEMBED<!-- DNT-End -->. This may contain any code in the supported
   <emphasis>language</emphasis>.</para>
 
-  <para>The second form of EMBED is a self-contained function. The
+  <para>The second form of <!-- DNT-Start -->EMBED<!-- DNT-End --> is a self-contained function. The
   <emphasis>code</emphasis> parameter contains all the code to execute, making
   this useful only for very simple expressions.</para>
 
-  <para>You can use EMBED instead of BEGINC++ to embed C++ code and specify
-  additional options (for example, DISTRIBUTED) using this form:</para>
+  <para>You can use <!-- DNT-Start -->EMBED<!-- DNT-End --> instead of <!-- DNT-Start -->BEGINC<!-- DNT-End -->++ to embed C++ code and specify
+  additional options (for example, <!-- DNT-Start -->DISTRIBUTED<!-- DNT-End -->) using this form:</para>
 
   <para><programlisting>myFunction(string name) := EMBED(C++ [: options]) 
   ... text 
 ENDEMBED</programlisting></para>
 
-  <para><emphasis role="bold">WARNING: This feature could create memory
+  <para><emphasis role="bold"><!-- DNT-Start -->WARNING<!-- DNT-End -->: This feature could create memory
   corruption and/or security issues, so great care and forethought are
-  advised—consult with Technical Support before using.</emphasis></para>
+  advisedâconsult with Technical Support before using.</emphasis></para>
 
   <para>Example:</para>
 
-  <programlisting>//First form: a structure
+  <!-- DNT-Start --><programlisting>//First form: a structure
 IMPORT Python;  //make Python language available
 
 INTEGER addone(INTEGER p) := EMBED(Python)
@@ -118,9 +118,9 @@ else:
 ENDEMBED;
 
 //Second form: a function
-INTEGER addtwo(INTEGER p) := EMBED(Python, 'p+2');  </programlisting>
+INTEGER addtwo(INTEGER p) := EMBED(Python, 'p+2');  </programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="BEGINCplus_Structure">BEGINC++
-  Structure</link>, <link linkend="IMPORT">IMPORT</link>, <link
-  linkend="IMPORT_function">IMPORT function</link></para>
+  <para>See Also: <link linkend="BEGINCplus_Structure"><!-- DNT-Start -->BEGINC<!-- DNT-End -->++
+  Structure</link>, <link linkend="IMPORT"><!-- DNT-Start -->IMPORT<!-- DNT-End --></link>, <link
+  linkend="IMPORT_function"><!-- DNT-Start -->IMPORT<!-- DNT-End --> function</link></para>
 </sect1>

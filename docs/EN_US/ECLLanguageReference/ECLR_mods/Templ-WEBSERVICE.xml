@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_WEBSERVICE">
-  <title>#WEBSERVICE</title>
+  <!-- DNT-Start --><title>#WEBSERVICE</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">#WEBSERVICE<indexterm>
-      <primary>#WEBSERVICE</primary>
+  <para><emphasis role="bold">#<!-- DNT-Start -->WEBSERVICE<!-- DNT-End --><indexterm>
+      <primary>#<!-- DNT-Start -->WEBSERVICE<!-- DNT-End --></primary>
     </indexterm>( </emphasis><emphasis role="bold">[</emphasis><emphasis
-  role="bold">FIELDS</emphasis>(<emphasis>fieldlist</emphasis>),<emphasis
+  role="bold"><!-- DNT-Start -->FIELDS<!-- DNT-End --></emphasis>(<emphasis>fieldlist</emphasis>),<emphasis
   role="bold">][</emphasis><emphasis
-  role="bold">HELP</emphasis>(<emphasis>helptext</emphasis>),<emphasis
+  role="bold"><!-- DNT-Start -->HELP<!-- DNT-End --></emphasis>(<emphasis>helptext</emphasis>),<emphasis
   role="bold">][</emphasis><emphasis
-  role="bold">DESCRIPTION</emphasis>(<emphasis>descriptiontext</emphasis>),<emphasis
+  role="bold"><!-- DNT-Start -->DESCRIPTION<!-- DNT-End --></emphasis>(<emphasis>descriptiontext</emphasis>),<emphasis
   role="bold">]</emphasis> <emphasis role="bold">);</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -22,17 +22,17 @@
 
         <tbody>
           <row>
-            <entry><emphasis role="bold">FIELDS</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">FIELDS</emphasis><!-- DNT-End --></entry>
 
-            <entry>The FIELDS parameter specifies field sequence<indexterm>
+            <entry>The <!-- DNT-Start -->FIELDS<!-- DNT-End --> parameter specifies field sequence<indexterm>
                 <primary>field sequence</primary>
               </indexterm> in WsECL Web forms. This is an exclusive list. If
-            the FIELDS attribute is present, only the fields in the fieldslist
+            the <!-- DNT-Start -->FIELDS<!-- DNT-End --> attribute is present, only the fields in the fieldslist
             are displayed on the Web form in WsECL.</entry>
           </row>
 
           <row>
-            <entry><emphasis>fieldlist</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>fieldlist</emphasis><!-- DNT-End --></entry>
 
             <entry>A comma-separated list of field names in the order in which
             they should appear on the form. Use an asterisk (*) to include
@@ -40,27 +40,27 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">HELP</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">HELP</emphasis><!-- DNT-End --></entry>
 
-            <entry>The HELP Parameter specifies to add help text to the WsECL
+            <entry>The <!-- DNT-Start -->HELP<!-- DNT-End --> Parameter specifies to add help text to the WsECL
             Web form.</entry>
           </row>
 
           <row>
-            <entry><emphasis>helptext</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>helptext</emphasis><!-- DNT-End --></entry>
 
             <entry>The help text to display.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">DESCRIPTION</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">DESCRIPTION</emphasis><!-- DNT-End --></entry>
 
-            <entry>The DESCRIPTION Parameter specifies to add descriptive text
+            <entry>The <!-- DNT-Start -->DESCRIPTION<!-- DNT-End --> Parameter specifies to add descriptive text
             to the WsECL Web form.</entry>
           </row>
 
           <row>
-            <entry><emphasis>descriptiontext</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>descriptiontext</emphasis><!-- DNT-End --></entry>
 
             <entry>The description text to display.</entry>
           </row>
@@ -68,12 +68,12 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">#WEBSERVICE</emphasis>statement sets options
+  <para>The <emphasis role="bold">#<!-- DNT-Start -->WEBSERVICE<!-- DNT-End --></emphasis>statement sets options
   for the input parameters on a WsECL Web form for a published query.</para>
 
   <para>Example:</para>
 
-  <programlisting>#WEBSERVICE(FIELDS('Field1','AddThem','Field2'),
+  <!-- DNT-Start --><programlisting>#WEBSERVICE(FIELDS('Field1','AddThem','Field2'),
             HELP('Enter Integer Values'),
             DESCRIPTION('If AddThem is TRUE, this adds the two integers')); 
 Field1 := 1 : Stored('Field1');
@@ -83,7 +83,7 @@ HiddenValue := 12 :STORED ('HiddenValue'); //not in fieldlist, won't display on 
 IF(AddThem,OUTPUT(Field1+Field2),OUTPUT('Not Added'));
 
 #WEBSERVICE(FIELDS('field1','field2','*'));//includes unspecified fields on the WsECL form
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="STORED_workflow_service">STORED</link></para>
+  <para>See Also: <link linkend="STORED_workflow_service"><!-- DNT-Start -->STORED<!-- DNT-End --></link></para>
 </sect1>

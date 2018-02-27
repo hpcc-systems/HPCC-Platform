@@ -2,10 +2,10 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_EXPORTXML">
-  <title>#EXPORTXML</title>
+  <!-- DNT-Start --><title>#EXPORTXML</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">#EXPORTXML<indexterm>
-      <primary>#EXPORTXML</primary>
+  <para><emphasis role="bold">#<!-- DNT-Start -->EXPORTXML<!-- DNT-End --><indexterm>
+      <primary>#<!-- DNT-Start -->EXPORTXML<!-- DNT-End --></primary>
     </indexterm>( </emphasis><emphasis>symbol, data</emphasis> <emphasis
   role="bold">);</emphasis></para>
 
@@ -17,29 +17,29 @@
 
         <tbody>
           <row>
-            <entry><emphasis>symbol</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>symbol</emphasis><!-- DNT-End --></entry>
 
             <entry>The name of a template variable that has not been
             previously declared.</entry>
           </row>
 
           <row>
-            <entry><emphasis>data</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>data</emphasis><!-- DNT-End --></entry>
 
-            <entry>The name of a field, RECORD structure, or dataset.</entry>
+            <entry>The name of a field, <!-- DNT-Start -->RECORD<!-- DNT-End --> structure, or dataset.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">#EXPORTXML </emphasis>statement produces the
-  same XML as #EXPORT from the specified <emphasis>data</emphasis> and places
-  it in the <emphasis>symbol</emphasis>, then does a LOADXML(<emphasis>symbol,
-  </emphasis>‘label') on the data.</para>
+  <para>The <emphasis role="bold">#<!-- DNT-Start -->EXPORTXML<!-- DNT-End --> </emphasis>statement produces the
+  same <!-- DNT-Start -->XML<!-- DNT-End --> as #<!-- DNT-Start -->EXPORT<!-- DNT-End --> from the specified <emphasis>data</emphasis> and places
+  it in the <emphasis>symbol</emphasis>, then does a <!-- DNT-Start -->LOADXML<!-- DNT-End -->(<emphasis>symbol,
+  </emphasis>âlabel') on the data.</para>
 
   <para>Example:</para>
 
-  <programlisting>  NamesRecord := RECORD
+  <!-- DNT-Start --><programlisting>  NamesRecord := RECORD
     STRING10 first;
     STRING20 last;
   END;
@@ -119,8 +119,8 @@
   
   displayIsAString(ds.namerec);
   displayIsAString(r.dg_firstname);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="LOADXML">LOADXML</link>, <link
-  linkend="_EXPORT">#EXPORT</link></para>
+  <para>See Also: <link linkend="LOADXML"><!-- DNT-Start -->LOADXML<!-- DNT-End --></link>, <link
+  linkend="_EXPORT">#<!-- DNT-Start -->EXPORT<!-- DNT-End --></link></para>
 </sect1>

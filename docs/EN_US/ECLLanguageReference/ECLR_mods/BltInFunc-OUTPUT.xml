@@ -2,137 +2,137 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="OUTPUT">
-  <title>OUTPUT</title>
+  <!-- DNT-Start --><title>OUTPUT</title><!-- DNT-End -->
 
   <para><emphasis><emphasis role="bold">[</emphasis>attr</emphasis>
-  :=<emphasis role="bold"> ] OUTPUT<indexterm>
-      <primary>OUTPUT action</primary>
+  :=<emphasis role="bold"> ] <!-- DNT-Start -->OUTPUT<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->OUTPUT<!-- DNT-End --> action</primary>
     </indexterm><indexterm>
-      <primary>OUTPUT</primary>
+      <primary><!-- DNT-Start -->OUTPUT<!-- DNT-End --></primary>
     </indexterm>(</emphasis><emphasis>recordset</emphasis><emphasis
   role="bold"> [, [</emphasis><emphasis> format </emphasis><emphasis
   role="bold">] [</emphasis><emphasis>,file </emphasis><emphasis
   role="bold">[</emphasis><emphasis>thorfileoptions </emphasis><emphasis
   role="bold"> ] ] </emphasis><emphasis
   role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold">
-  NOXPATH<indexterm>
-      <primary>NOXPATH</primary>
-    </indexterm> ] </emphasis><emphasis role="bold">[, UNORDERED |
-  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
-  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
-  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <!-- DNT-Start -->NOXPATH<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->NOXPATH<!-- DNT-End --></primary>
+    </indexterm> ] </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> |
+  <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis>
   <emphasis>name </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
   :=<emphasis role="bold"> ]
-  OUTPUT(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">,
+  <!-- DNT-Start -->OUTPUT<!-- DNT-End -->(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">,
   [</emphasis><emphasis> format </emphasis><emphasis
   role="bold">]</emphasis><emphasis> ,file
-  </emphasis><emphasis>,</emphasis><emphasis role="bold"> CSV<indexterm>
-      <primary>CSV</primary>
+  </emphasis><emphasis>,</emphasis><emphasis role="bold"> <!-- DNT-Start -->CSV<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->CSV<!-- DNT-End --></primary>
     </indexterm> [ (</emphasis><emphasis>csvoptions</emphasis><emphasis
   role="bold">) ] </emphasis><emphasis
   role="bold">[</emphasis><emphasis>csvfileoptions </emphasis><emphasis
   role="bold"> ] </emphasis><emphasis
-  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
-  ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
-  <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
-  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
-  role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
+  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> <!-- DNT-Start -->NOXPATH<!-- DNT-End -->
+  ] </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis>
+  <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ]
+  [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name
   </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
   :=<emphasis role="bold"> ]
-  OUTPUT(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">,
+  <!-- DNT-Start -->OUTPUT<!-- DNT-End -->(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">,
   [</emphasis><emphasis> format </emphasis><emphasis
   role="bold">]</emphasis><emphasis> , file </emphasis><emphasis role="bold">
-  </emphasis><emphasis>,</emphasis><emphasis role="bold"> XML<indexterm>
-      <primary>XML</primary>
+  </emphasis><emphasis>,</emphasis><emphasis role="bold"> <!-- DNT-Start -->XML<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->XML<!-- DNT-End --></primary>
     </indexterm> [ (</emphasis><emphasis>xmloptions</emphasis><emphasis
   role="bold">) ]</emphasis><emphasis role="bold"> </emphasis><emphasis
   role="bold">[</emphasis><emphasis>xmlfileoptions </emphasis><emphasis
   role="bold"> ] </emphasis><emphasis
-  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
-  ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
-  <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
-  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
-  role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
+  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> <!-- DNT-Start -->NOXPATH<!-- DNT-End -->
+  ] </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis>
+  <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ]
+  [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name
   </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
   :=<emphasis role="bold"> ]
-  OUTPUT(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">,
+  <!-- DNT-Start -->OUTPUT<!-- DNT-End -->(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">,
   [</emphasis><emphasis> format </emphasis><emphasis
   role="bold">]</emphasis><emphasis> , file </emphasis><emphasis role="bold">
-  </emphasis><emphasis>,</emphasis><emphasis role="bold"> JSON<indexterm>
-      <primary>JSON</primary>
+  </emphasis><emphasis>,</emphasis><emphasis role="bold"> <!-- DNT-Start -->JSON<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->JSON<!-- DNT-End --></primary>
     </indexterm> [ (</emphasis><emphasis>jsonoptions</emphasis><emphasis
   role="bold">) ]</emphasis><emphasis role="bold"> </emphasis><emphasis
   role="bold">[</emphasis><emphasis>jsonfileoptions </emphasis><emphasis
   role="bold"> ] </emphasis><emphasis
-  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
-  ] <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool
-  </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [
+  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> <!-- DNT-Start -->NOXPATH<!-- DNT-End -->
+  ] <emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool
+  </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [
   (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [,
-  ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]
+  <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]
   );</emphasis></emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
   :=<emphasis role="bold"> ]
-  OUTPUT(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">,
+  <!-- DNT-Start -->OUTPUT<!-- DNT-End -->(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">,
   [</emphasis><emphasis> format </emphasis><emphasis role="bold">]
-  </emphasis><emphasis> ,</emphasis><emphasis role="bold">PIPE<indexterm>
-      <primary>PIPE</primary>
+  </emphasis><emphasis> ,</emphasis><emphasis role="bold"><!-- DNT-Start -->PIPE<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->PIPE<!-- DNT-End --></primary>
     </indexterm>(</emphasis><emphasis> pipeoptions </emphasis><emphasis
-  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
-  ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
-  <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
-  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
-  role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
+  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> <!-- DNT-Start -->NOXPATH<!-- DNT-End -->
+  ] </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis>
+  <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ]
+  [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name
   </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
   :=<emphasis role="bold"> ]
-  OUTPUT(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">
+  <!-- DNT-Start -->OUTPUT<!-- DNT-End -->(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">
   [,</emphasis><emphasis> format </emphasis><emphasis role="bold">]
-  </emphasis><emphasis>, </emphasis><emphasis role="bold">NAMED<indexterm>
-      <primary>NAMED</primary>
+  </emphasis><emphasis>, </emphasis><emphasis role="bold"><!-- DNT-Start -->NAMED<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->NAMED<!-- DNT-End --></primary>
     </indexterm>(</emphasis><emphasis> name </emphasis><emphasis role="bold">)
-  [,EXTEND<indexterm>
-      <primary>EXTEND</primary>
+  [,<!-- DNT-Start -->EXTEND<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->EXTEND<!-- DNT-End --></primary>
     </indexterm>] [</emphasis><emphasis>,</emphasis><emphasis
-  role="bold">ALL<indexterm>
-      <primary>ALL</primary>
+  role="bold"><!-- DNT-Start -->ALL<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->ALL<!-- DNT-End --></primary>
     </indexterm>] </emphasis><emphasis
-  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
-  ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
-  <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
-  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
-  role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
+  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> <!-- DNT-Start -->NOXPATH<!-- DNT-End -->
+  ] </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis>
+  <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ]
+  [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name
   </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
-  :=<emphasis role="bold"> ] OUTPUT(</emphasis><emphasis> expression
+  :=<emphasis role="bold"> ] <!-- DNT-Start -->OUTPUT<!-- DNT-End -->(</emphasis><emphasis> expression
   </emphasis><emphasis role="bold">[</emphasis><emphasis>,</emphasis><emphasis
-  role="bold"> NAMED(</emphasis><emphasis> name </emphasis><emphasis
+  role="bold"> <!-- DNT-Start -->NAMED<!-- DNT-End -->(</emphasis><emphasis> name </emphasis><emphasis
   role="bold">) ] </emphasis><emphasis
-  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
-  ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
-  <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
-  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
-  role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
+  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> <!-- DNT-Start -->NOXPATH<!-- DNT-End -->
+  ] </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis>
+  <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ]
+  [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name
   </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
-  :=<emphasis role="bold"> ] OUTPUT(</emphasis><emphasis> recordset
-  ,</emphasis><emphasis role="bold"> THOR<indexterm>
-      <primary>THOR</primary>
+  :=<emphasis role="bold"> ] <!-- DNT-Start -->OUTPUT<!-- DNT-End -->(</emphasis><emphasis> recordset
+  ,</emphasis><emphasis role="bold"> <!-- DNT-Start -->THOR<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->THOR<!-- DNT-End --></primary>
     </indexterm> </emphasis><emphasis
-  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
-  ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
-  <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
-  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
-  role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
+  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> <!-- DNT-Start -->NOXPATH<!-- DNT-End -->
+  ] </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis>
+  <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ]
+  [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name
   </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -143,7 +143,7 @@
 
         <tbody>
           <row>
-            <entry><emphasis>attr</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>attr</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. The action name, which turns the action into a
             definition, therefore not executed until the
@@ -151,7 +151,7 @@
           </row>
 
           <row>
-            <entry><emphasis>recordset</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>recordset</emphasis><!-- DNT-End --></entry>
 
             <entry>The set of records to process. This may be the name of a
             dataset or a record set derived from some filter condition, or any
@@ -159,62 +159,62 @@
           </row>
 
           <row>
-            <entry><emphasis>format</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>format</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. The format of the output records. If omitted, all
             fields in the <emphasis>recordset</emphasis> are output. If not
             omitted, this must be either the name of a previously defined
-            RECORD structure definition or an "on-the-fly" record layout
+            <!-- DNT-Start -->RECORD<!-- DNT-End --> structure definition or an "on-the-fly" record layout
             enclosed within curly braces ({}), and must meet the same
-            requirements as a RECORD structure for the TABLE function (the
+            requirements as a <!-- DNT-Start -->RECORD<!-- DNT-End --> structure for the <!-- DNT-Start -->TABLE<!-- DNT-End --> function (the
             "vertical slice" form) by defining the type, name, and source of
             the data for each field.</entry>
           </row>
 
           <row>
-            <entry><emphasis>file</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>file</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. The logical name of the file to write the records
             to. See the Scope &amp; Logical Filenames section of the Language
             Reference for more on logical filenames. If omitted, the formatted
             data stream only returns to the command issuer (command line or
-            IDE) and is not written to a disk file.</entry>
+            <!-- DNT-Start -->IDE<!-- DNT-End -->) and is not written to a disk file.</entry>
           </row>
 
           <row>
-            <entry><emphasis>thorfileoptions</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>thorfileoptions</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. A comma-delimited list of options valid for a
-            THOR/FLAT file (see the section below for details).</entry>
+            <!-- DNT-Start -->THOR<!-- DNT-End -->/<!-- DNT-Start -->FLAT<!-- DNT-End --> file (see the section below for details).</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">NOXPATH</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">NOXPATH</emphasis><!-- DNT-End --></entry>
 
-            <entry>Specifies any XPATHs defined in the
-            <emphasis>format</emphasis> or the RECORD structure of the
+            <entry>Specifies any <!-- DNT-Start -->XPATHs<!-- DNT-End --> defined in the
+            <emphasis>format</emphasis> or the <!-- DNT-Start -->RECORD<!-- DNT-End --> structure of the
             <emphasis>recordset</emphasis> are ignored and field names are
-            used instead. This allows control of whether XPATHs are used for
-            output, so that XPATHs that were meant only for xml or json input
+            used instead. This allows control of whether <!-- DNT-Start -->XPATHs<!-- DNT-End --> are used for
+            output, so that <!-- DNT-Start -->XPATHs<!-- DNT-End --> that were meant only for xml or json input
             can be ignored for output.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the output record order is not
             significant.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the significance of the output record
             order.</entry>
           </row>
 
           <row>
-            <entry><emphasis>bool</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
 
             <entry>When False, specifies the output record order is not
             significant. When True, specifies the default output record
@@ -222,115 +222,115 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">STABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is
             significant.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is not
             significant.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity in
             parallel.</entry>
           </row>
 
           <row>
-            <entry><emphasis>numthreads</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity using
             <emphasis>numthreads</emphasis> threads.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Override the algorithm used for this
             activity.</entry>
           </row>
 
           <row>
-            <entry><emphasis>name</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
 
             <entry>The algorithm to use for this activity. Must be from the
-            list of supported algorithms for the SORT function's STABLE and
-            UNSTABLE options.</entry>
+            list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and
+            <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">CSV</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">CSV</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the file is a field-delimited (usually comma
-            separated values) ASCII file.</entry>
+            separated values) <!-- DNT-Start -->ASCII<!-- DNT-End --> file.</entry>
           </row>
 
           <row>
-            <entry><emphasis>csvoptions</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>csvoptions</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. A comma-delimited list of options defining how
             the file is delimited.</entry>
           </row>
 
           <row>
-            <entry><emphasis>csvfileoptions</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>csvfileoptions</emphasis><!-- DNT-End --></entry>
 
-            <entry>Optional. A comma-delimited list of options valid for a CSV
+            <entry>Optional. A comma-delimited list of options valid for a <!-- DNT-Start -->CSV<!-- DNT-End -->
             file (see the section below for details).</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">XML</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">XML</emphasis><!-- DNT-End --></entry>
 
-            <entry>Specifies the file is output as XML data with the name of
-            each field in the format becoming the XML tag for that field's
+            <entry>Specifies the file is output as <!-- DNT-Start -->XML<!-- DNT-End --> data with the name of
+            each field in the format becoming the <!-- DNT-Start -->XML<!-- DNT-End --> tag for that field's
             data.</entry>
           </row>
 
           <row>
-            <entry><emphasis>xmloptions</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>xmloptions</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. A comma separated list of options that define how
-            the output XML file is delimited.</entry>
+            the output <!-- DNT-Start -->XML<!-- DNT-End --> file is delimited.</entry>
           </row>
 
           <row>
-            <entry><emphasis>xmlfileoptions</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>xmlfileoptions</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. A comma-delimited list of options valid for an
-            XML file (see the section below for details).</entry>
+            <!-- DNT-Start -->XML<!-- DNT-End --> file (see the section below for details).</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">JSON</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">JSON</emphasis><!-- DNT-End --></entry>
 
-            <entry>Specifies the file is output as JSON data with the name of
-            each field in the format becoming the JSON tag for that field's
+            <entry>Specifies the file is output as <!-- DNT-Start -->JSON<!-- DNT-End --> data with the name of
+            each field in the format becoming the <!-- DNT-Start -->JSON<!-- DNT-End --> tag for that field's
             data.</entry>
           </row>
 
           <row>
-            <entry><emphasis>jsonoptions</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>jsonoptions</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. A comma separated list of options that define how
-            the output JSON file is delimited.</entry>
+            the output <!-- DNT-Start -->JSON<!-- DNT-End --> file is delimited.</entry>
           </row>
 
           <row>
-            <entry><emphasis>jsonfileoptions</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>jsonfileoptions</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. A comma-delimited list of options valid for an
-            JSON file (see the section below for details).</entry>
+            <!-- DNT-Start -->JSON<!-- DNT-End --> file (see the section below for details).</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">PIPE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">PIPE</emphasis><!-- DNT-End --></entry>
 
             <entry>Indicates the specified command executes with the
             <emphasis>recordset</emphasis> provided as standard input to the
@@ -338,22 +338,22 @@
           </row>
 
           <row>
-            <entry><emphasis>pipeoptions</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>pipeoptions</emphasis><!-- DNT-End --></entry>
 
             <entry>The name of a program to execute, which takes the
             <emphasis>file</emphasis> as its input stream, along with the
-            options valid for an output PIPE.</entry>
+            options valid for an output <!-- DNT-Start -->PIPE<!-- DNT-End -->.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">NAMED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">NAMED</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the result name that appears in the workunit. Not
             valid if the file parameter is present. </entry>
           </row>
 
           <row>
-            <entry><emphasis>name</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
 
             <entry>A string constant containing the result label. This must be
             a compile-time constant and meet the attribute naming
@@ -363,53 +363,53 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">EXTEND</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">EXTEND</emphasis><!-- DNT-End --></entry>
 
-            <entry>Optional. Specifies appending to the existing NAMED result
+            <entry>Optional. Specifies appending to the existing <!-- DNT-Start -->NAMED<!-- DNT-End --> result
             <emphasis>name</emphasis> in the workunit. Using this feature
-            requires that all NAMED OUTPUTs to the same name have the EXTEND
+            requires that all <!-- DNT-Start -->NAMED<!-- DNT-End --> <!-- DNT-Start -->OUTPUTs<!-- DNT-End --> to the same name have the <!-- DNT-Start -->EXTEND<!-- DNT-End -->
             option present, including the first instance.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">ALL</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ALL</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies all records in the
-            <emphasis>recordset</emphasis> are output to the ECL IDE.</entry>
+            <emphasis>recordset</emphasis> are output to the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->.</entry>
           </row>
 
           <row>
-            <entry><emphasis>expression</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
 
-            <entry>Any valid ECL expression that results in a single scalar
+            <entry>Any valid <!-- DNT-Start -->ECL<!-- DNT-End --> expression that results in a single scalar
             value.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">THOR</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">THOR</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the resulting recordset is stored as a file on
             disk, "owned" by the workunit, instead of storing it directly
-            within the workunit. The name of the file in the DFU is
-            scope::RESULT::workunitid.</entry>
+            within the workunit. The name of the file in the <!-- DNT-Start -->DFU<!-- DNT-End --> is
+            scope::<!-- DNT-Start -->RESULT<!-- DNT-End -->::workunitid.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">OUTPUT </emphasis>action produces a
+  <para>The <emphasis role="bold"><!-- DNT-Start -->OUTPUT<!-- DNT-End --> </emphasis>action produces a
   recordset result from the supercomputer, based on which form and options you
   choose. If no <emphasis>file</emphasis> to write to is specified, the result
   is stored in the workunit and returned to the calling program as a data
   stream.</para>
 
   <sect2 id="OUTPUT_Field_Names">
-    <title>OUTPUT Field Names</title>
+    <!-- DNT-Start --><title>OUTPUT Field Names</title><!-- DNT-End -->
 
-    <para>Field names in an "on the fly" record format {…} must be unique or a
+    <para>Field names in an "on the fly" record format {â¦} must be unique or a
     syntax error results. For example:</para>
 
-    <programlisting>          OUTPUT(person(), {module1.attr1, module2.attr1});</programlisting>
+    <!-- DNT-Start --><programlisting>          OUTPUT(person(), {module1.attr1, module2.attr1});</programlisting><!-- DNT-End -->
 
     <para>will result in a syntax error. Output Field Names are assumed from
     the definition names.</para>
@@ -417,41 +417,41 @@
     <para>To get around this situation, you can specify a unique name for the
     output field in the on-the-fly record format, like this:</para>
 
-    <programlisting>          OUTPUT(person(), {module1.attr1, name := module2.attr1});</programlisting>
+    <!-- DNT-Start --><programlisting>          OUTPUT(person(), {module1.attr1, name := module2.attr1});</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="OUTPUT_Thor-Flat_Files">
-    <title>OUTPUT Thor/Flat Files<indexterm>
+    <!-- DNT-Start --><title>OUTPUT Thor/Flat Files<indexterm>
         <primary>Flat Files</primary>
       </indexterm><indexterm>
         <primary>OUTPUT Thor/Flat Files</primary>
-      </indexterm></title>
+      </indexterm></title><!-- DNT-End -->
 
     <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
-    :=<emphasis role="bold"> ] OUTPUT<indexterm>
-        <primary>OUTPUT</primary>
+    :=<emphasis role="bold"> ] <!-- DNT-Start -->OUTPUT<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->OUTPUT<!-- DNT-End --></primary>
       </indexterm>(</emphasis><emphasis>recordset</emphasis><emphasis
     role="bold"> [, [</emphasis><emphasis> format </emphasis><emphasis
     role="bold">] [</emphasis><emphasis>,file </emphasis><emphasis
-    role="bold">[, CLUSTER<indexterm>
-        <primary>CLUSTER</primary>
+    role="bold">[, <!-- DNT-Start -->CLUSTER<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->CLUSTER<!-- DNT-End --></primary>
       </indexterm>(</emphasis><emphasis> target </emphasis><emphasis
-    role="bold">) ]</emphasis><emphasis role="bold"> [,ENCRYPT<indexterm>
-        <primary>ENCRYPT</primary>
+    role="bold">) ]</emphasis><emphasis role="bold"> [,<!-- DNT-Start -->ENCRYPT<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->ENCRYPT<!-- DNT-End --></primary>
       </indexterm>(</emphasis><emphasis> key </emphasis><emphasis
     role="bold">) ] </emphasis></para>
 
     <para><emphasis role="bold"> [</emphasis><emphasis>,</emphasis><emphasis
-    role="bold">COMPRESSED<indexterm>
-        <primary>COMPRESSED</primary>
+    role="bold"><!-- DNT-Start -->COMPRESSED<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->COMPRESSED<!-- DNT-End --></primary>
       </indexterm>] [</emphasis><emphasis>,</emphasis><emphasis
-    role="bold">OVERWRITE<indexterm>
-        <primary>OVERWRITE</primary>
-      </indexterm>]<emphasis role="bold">[, UPDATE<indexterm>
-        <primary>UPDATE</primary>
+    role="bold"><!-- DNT-Start -->OVERWRITE<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->OVERWRITE<!-- DNT-End --></primary>
+      </indexterm>]<emphasis role="bold">[, <!-- DNT-Start -->UPDATE<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->UPDATE<!-- DNT-End --></primary>
       </indexterm>]</emphasis></emphasis><emphasis role="bold">
-    [</emphasis><emphasis>,</emphasis><emphasis role="bold">EXPIRE<indexterm>
-        <primary>EXPIRE</primary>
+    [</emphasis><emphasis>,</emphasis><emphasis role="bold"><!-- DNT-Start -->EXPIRE<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->EXPIRE<!-- DNT-End --></primary>
       </indexterm>( [</emphasis><emphasis> days </emphasis><emphasis
     role="bold">] ) ] ] ] )</emphasis></para>
 
@@ -463,7 +463,7 @@
 
           <tbody>
             <row>
-              <entry><emphasis role="bold">CLUSTER</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">CLUSTER</emphasis><!-- DNT-End --></entry>
 
               <entry>Optional. Specifies writing the file to the specified
               list of target clusters. If omitted, the file is written to the
@@ -474,11 +474,11 @@
             </row>
 
             <row>
-              <entry><emphasis>target</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>target</emphasis><!-- DNT-End --></entry>
 
               <entry>A comma-delimited list of string constants containing the
               names of the clusters to write the file to. The names must be
-              listed as they appear on the ECL Watch Activity page or returned
+              listed as they appear on the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch Activity page or returned
               by the Std.System.Thorlib.Group() function, optionally with
               square brackets containing a comma-delimited list of
               node-numbers (1-based) and/or ranges (specified with a dash, as
@@ -487,42 +487,42 @@
             </row>
 
             <row>
-              <entry><emphasis role="bold">ENCRYPT</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">ENCRYPT</emphasis><!-- DNT-End --></entry>
 
               <entry>Optional. Specifies writing the file to disk using both
-              256-bit AES encryption and LZW compression.</entry>
+              256-bit <!-- DNT-Start -->AES<!-- DNT-End --> encryption and <!-- DNT-Start -->LZW<!-- DNT-End --> compression.</entry>
             </row>
 
             <row>
-              <entry><emphasis>key</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>key</emphasis><!-- DNT-End --></entry>
 
               <entry>A string constant containing the encryption key to use to
               encrypt the data.</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">COMPRESSED</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">COMPRESSED</emphasis><!-- DNT-End --></entry>
 
-              <entry>Optional. Specifies writing the file using LZW
+              <entry>Optional. Specifies writing the file using <!-- DNT-Start -->LZW<!-- DNT-End -->
               compression.</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">OVERWRITE</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">OVERWRITE</emphasis><!-- DNT-End --></entry>
 
               <entry>Optional. Specifies overwriting the file if it already
               exists.</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">UPDATE</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">UPDATE</emphasis><!-- DNT-End --></entry>
 
               <entry>Specifies that the file should be rewritten only if the
               code or input data has changed.</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">EXPIRE</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">EXPIRE</emphasis><!-- DNT-End --></entry>
 
               <entry>Optional. Specifies the file is a temporary file that may
               be automatically deleted after the specified number of days
@@ -530,10 +530,10 @@
             </row>
 
             <row>
-              <entry><emphasis>days</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>days</emphasis><!-- DNT-End --></entry>
 
               <entry>Optional. The number of days from last file read after
-              which the file may be automatically deleted. If EXPIRE is
+              which the file may be automatically deleted. If <!-- DNT-Start -->EXPIRE<!-- DNT-End --> is
               specified without number of days, it defaults to use the
               ExpiryDefault setting in Sasha.</entry>
             </row>
@@ -546,12 +546,12 @@
     the <emphasis>format</emphasis> is omitted, all fields in the
     <emphasis>recordset</emphasis> are output. If the
     <emphasis>file</emphasis> is omitted, then the result is sent back to the
-    requesting program (usually the ECL IDE or the program that sent the SOAP
+    requesting program (usually the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> or the program that sent the <!-- DNT-Start -->SOAP<!-- DNT-End -->
     query to a Roxie).</para>
 
     <para>Example:</para>
 
-    <programlisting>OutputFormat1 := RECORD
+    <!-- DNT-Start --><programlisting>OutputFormat1 := RECORD
   People.firstname;
   People.lastname;
 END;
@@ -573,43 +573,43 @@ OUTPUT(People,{firstname,lastname});
 OUTPUT(People(Attr1=FALSE));
   // writes all Peeople fields from records where Attr1 is
   // false to the command issuer
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="OUTPUT_CSV_Files">
-    <title>OUTPUT CSV Files<indexterm>
+    <!-- DNT-Start --><title>OUTPUT CSV Files<indexterm>
         <primary>CSV Files</primary>
       </indexterm><indexterm>
         <primary>OUTPUT - CSV Files</primary>
-      </indexterm></title>
+      </indexterm></title><!-- DNT-End -->
 
     <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
-    :=<emphasis role="bold"> ] OUTPUT<indexterm>
-        <primary>OUTPUT</primary>
+    :=<emphasis role="bold"> ] <!-- DNT-Start -->OUTPUT<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->OUTPUT<!-- DNT-End --></primary>
       </indexterm>(</emphasis><emphasis>recordset</emphasis><emphasis
     role="bold">, [</emphasis><emphasis> format </emphasis><emphasis
     role="bold">]</emphasis><emphasis> ,file
-    </emphasis><emphasis>,</emphasis><emphasis role="bold"> CSV<indexterm>
-        <primary>CSV</primary>
+    </emphasis><emphasis>,</emphasis><emphasis role="bold"> <!-- DNT-Start -->CSV<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->CSV<!-- DNT-End --></primary>
       </indexterm>[ (</emphasis><emphasis>csvoptions</emphasis><emphasis
     role="bold">) ]</emphasis><emphasis role="bold"> </emphasis><emphasis
-    role="bold">[, CLUSTER<indexterm>
-        <primary>CLUSTER</primary>
+    role="bold">[, <!-- DNT-Start -->CLUSTER<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->CLUSTER<!-- DNT-End --></primary>
       </indexterm>(</emphasis><emphasis> target </emphasis><emphasis
-    role="bold">)] <emphasis role="bold">[,ENCRYPT<indexterm>
-        <primary>ENCRYPT</primary>
+    role="bold">)] <emphasis role="bold">[,<!-- DNT-Start -->ENCRYPT<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->ENCRYPT<!-- DNT-End --></primary>
       </indexterm>(</emphasis><emphasis>key</emphasis><emphasis role="bold">)
-    ]</emphasis> [,COMPRESSED]</emphasis></para>
+    ]</emphasis> [,<!-- DNT-Start -->COMPRESSED<!-- DNT-End -->]</emphasis></para>
 
     <para><emphasis role="bold">[</emphasis><emphasis>,</emphasis><emphasis
-    role="bold"> OVERWRITE<indexterm>
-        <primary>OVERWRITE</primary>
+    role="bold"> <!-- DNT-Start -->OVERWRITE<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->OVERWRITE<!-- DNT-End --></primary>
       </indexterm> ]</emphasis><emphasis role="bold"><emphasis role="bold">[,
-    UPDATE<indexterm>
-        <primary>UPDATE</primary>
+    <!-- DNT-Start -->UPDATE<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->UPDATE<!-- DNT-End --></primary>
       </indexterm>]</emphasis> [</emphasis><emphasis>,</emphasis><emphasis
-    role="bold"> EXPIRE<indexterm>
-        <primary>EXPIRE</primary>
+    role="bold"> <!-- DNT-Start -->EXPIRE<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->EXPIRE<!-- DNT-End --></primary>
       </indexterm>( [ </emphasis><emphasis>days </emphasis><emphasis
     role="bold">] ) ] )</emphasis></para>
 
@@ -621,7 +621,7 @@ OUTPUT(People(Attr1=FALSE));
 
           <tbody>
             <row>
-              <entry><emphasis role="bold">CLUSTER</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">CLUSTER</emphasis><!-- DNT-End --></entry>
 
               <entry>Optional. Specifies writing the file to the specified
               list of target clusters. If omitted, the file is written to the
@@ -632,11 +632,11 @@ OUTPUT(People(Attr1=FALSE));
             </row>
 
             <row>
-              <entry><emphasis>target</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>target</emphasis><!-- DNT-End --></entry>
 
               <entry>A comma-delimited list of string constants containing the
               names of the clusters to write the file to. The names must be
-              listed as they appear on the ECL Watch Activity page or returned
+              listed as they appear on the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch Activity page or returned
               by the Std.System.Thorlib.Group() function, optionally with
               square brackets containing a comma-delimited list of
               node-numbers (1-based) and/or ranges (specified with a dash, as
@@ -645,42 +645,42 @@ OUTPUT(People(Attr1=FALSE));
             </row>
 
             <row>
-              <entry><emphasis role="bold">ENCRYPT</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">ENCRYPT</emphasis><!-- DNT-End --></entry>
 
               <entry>Optional. Specifies writing the file to disk using both
-              256-bit AES encryption and LZW compression.</entry>
+              256-bit <!-- DNT-Start -->AES<!-- DNT-End --> encryption and <!-- DNT-Start -->LZW<!-- DNT-End --> compression.</entry>
             </row>
 
             <row>
-              <entry><emphasis>key</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>key</emphasis><!-- DNT-End --></entry>
 
               <entry>A string constant containing the encryption key to use to
               encrypt the data.</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">COMPRESSED</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">COMPRESSED</emphasis><!-- DNT-End --></entry>
 
-              <entry>Optional. Specifies writing the file using LZW
+              <entry>Optional. Specifies writing the file using <!-- DNT-Start -->LZW<!-- DNT-End -->
               compression.</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">OVERWRITE</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">OVERWRITE</emphasis><!-- DNT-End --></entry>
 
               <entry>Optional. Specifies overwriting the file if it already
               exists.</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">UPDATE</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">UPDATE</emphasis><!-- DNT-End --></entry>
 
               <entry>Specifies that the file should be rewritten only if the
               code or input data has changed.</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">EXPIRE</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">EXPIRE</emphasis><!-- DNT-End --></entry>
 
               <entry>Optional. Specifies the file is a temporary file that may
               be automatically deleted after the specified number of
@@ -688,7 +688,7 @@ OUTPUT(People(Attr1=FALSE));
             </row>
 
             <row>
-              <entry><emphasis>days</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>days</emphasis><!-- DNT-End --></entry>
 
               <entry>Optional. The number of days after which the file may be
               automatically deleted. If omitted, the default is seven
@@ -700,41 +700,41 @@ OUTPUT(People(Attr1=FALSE));
 
     <para>This form writes the <emphasis>recordset</emphasis> to the specified
     <emphasis>file</emphasis> in the specified <emphasis>format</emphasis> as
-    a comma separated values ASCII file. The valid set of
+    a comma separated values <!-- DNT-Start -->ASCII<!-- DNT-End --> file. The valid set of
     <emphasis>csvoptions</emphasis> are:</para>
 
-    <para><emphasis role="bold">HEADING<indexterm>
-        <primary>HEADING</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->HEADING<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->HEADING<!-- DNT-End --></primary>
       </indexterm>( [</emphasis> <emphasis>headertext</emphasis> <emphasis
     role="bold">[</emphasis> <emphasis>, footertext</emphasis> <emphasis
-    role="bold">] ] [, SINGLE<indexterm>
-        <primary>SINGLE</primary>
-      </indexterm> ][, FORMAT<indexterm>
-        <primary>FORMAT</primary>
+    role="bold">] ] [, <!-- DNT-Start -->SINGLE<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->SINGLE<!-- DNT-End --></primary>
+      </indexterm> ][, <!-- DNT-Start -->FORMAT<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->FORMAT<!-- DNT-End --></primary>
       </indexterm></emphasis><emphasis>(stringfunction)</emphasis><emphasis
     role="bold"> ] )</emphasis></para>
 
-    <para><emphasis role="bold">SEPARATOR<indexterm>
-        <primary>SEPARATOR</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->SEPARATOR<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->SEPARATOR<!-- DNT-End --></primary>
       </indexterm>(</emphasis> <emphasis>delimiters</emphasis> <emphasis
     role="bold">)</emphasis></para>
 
-    <para><emphasis role="bold">TERMINATOR<indexterm>
-        <primary>TERMINATOR</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->TERMINATOR<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->TERMINATOR<!-- DNT-End --></primary>
       </indexterm>(</emphasis> <emphasis>delimiters</emphasis> <emphasis
     role="bold">)</emphasis></para>
 
-    <para><emphasis role="bold">QUOTE<indexterm>
-        <primary>QUOTE</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->QUOTE<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->QUOTE<!-- DNT-End --></primary>
       </indexterm>( [</emphasis> <emphasis>delimiters</emphasis> <emphasis
     role="bold">] )</emphasis></para>
 
-    <para><emphasis role="bold">ASCII<indexterm>
-        <primary>ASCII</primary>
-      </indexterm> | EBCDIC<indexterm>
-        <primary>EBCDIC</primary>
-      </indexterm> | UNICODE<indexterm>
-        <primary>UNICODE</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->ASCII<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->ASCII<!-- DNT-End --></primary>
+      </indexterm> | <!-- DNT-Start -->EBCDIC<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->EBCDIC<!-- DNT-End --></primary>
+      </indexterm> | <!-- DNT-Start -->UNICODE<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->UNICODE<!-- DNT-End --></primary>
       </indexterm></emphasis></para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
@@ -745,20 +745,20 @@ OUTPUT(People(Attr1=FALSE));
 
         <tbody>
           <row>
-            <entry><emphasis role="bold">HEADING</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">HEADING</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies file headers and footers.</entry>
           </row>
 
           <row>
-            <entry><emphasis>headertext</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>headertext</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. The text of the header record to place in the
             file. If omitted, the field names are used.</entry>
           </row>
 
           <row>
-            <entry><emphasis>footertext</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>footertext</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. The text of the footer record to place in the
             file. If omitted, no <emphasis>footertext</emphasis> is
@@ -766,27 +766,27 @@ OUTPUT(People(Attr1=FALSE));
           </row>
 
           <row>
-            <entry><emphasis role="bold">SINGLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">SINGLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the <emphasis>headertext</emphasis> is
             written only to the beginning of part 1 and the
             <emphasis>footertext</emphasis> is written only at the end of part
-            n (producing a "standard" CSV file). If omitted, the
+            n (producing a "standard" <!-- DNT-Start -->CSV<!-- DNT-End --> file). If omitted, the
             <emphasis>headertext</emphasis> and
             <emphasis>footertext</emphasis> are placed at the beginning and
-            end of each file part (useful for producing complex XML
+            end of each file part (useful for producing complex <!-- DNT-Start -->XML<!-- DNT-End -->
             output).</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">FORMAT</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">FORMAT</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the headertext should be formatted
             using the <emphasis>stringfunction</emphasis>.</entry>
           </row>
 
           <row>
-            <entry><emphasis>stringfunction</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>stringfunction</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. The function to use to format the column headers.
             This can be any function that takes a single string parameter and
@@ -794,64 +794,64 @@ OUTPUT(People(Attr1=FALSE));
           </row>
 
           <row>
-            <entry><emphasis role="bold">SEPARATOR</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">SEPARATOR</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the field delimiters.</entry>
           </row>
 
           <row>
-            <entry><emphasis>delimiters</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>delimiters</emphasis><!-- DNT-End --></entry>
 
             <entry>A single string constant (or comma-delimited list of string
             constants) that define the character(s) used to delimit the data
-            in the CSV file.</entry>
+            in the <!-- DNT-Start -->CSV<!-- DNT-End --> file.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">TERMINATOR</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">TERMINATOR</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the record delimiters.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">QUOTE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">QUOTE</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the quotation <emphasis>delimiters</emphasis> for
-            string values that may contain SEPARATOR or TERMINATOR
+            string values that may contain <!-- DNT-Start -->SEPARATOR<!-- DNT-End --> or <!-- DNT-Start -->TERMINATOR<!-- DNT-End -->
             <emphasis>delimiters</emphasis> as part of their data.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">ASCII</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ASCII</emphasis><!-- DNT-End --></entry>
 
-            <entry>Specifies all output is in ASCII format, including any
-            EBCDIC or UNICODE fields.</entry>
+            <entry>Specifies all output is in <!-- DNT-Start -->ASCII<!-- DNT-End --> format, including any
+            <!-- DNT-Start -->EBCDIC<!-- DNT-End --> or <!-- DNT-Start -->UNICODE<!-- DNT-End --> fields.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">EBCDIC</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">EBCDIC</emphasis><!-- DNT-End --></entry>
 
-            <entry>Specifies all output is in EBCDIC format except the
-            SEPARATOR and TERMINATOR (which are expressed as ASCII
+            <entry>Specifies all output is in <!-- DNT-Start -->EBCDIC<!-- DNT-End --> format except the
+            <!-- DNT-Start -->SEPARATOR<!-- DNT-End --> and <!-- DNT-Start -->TERMINATOR<!-- DNT-End --> (which are expressed as <!-- DNT-Start -->ASCII<!-- DNT-End -->
             values).</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">UNICODE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNICODE</emphasis><!-- DNT-End --></entry>
 
-            <entry>Specifies all output is in Unicode UTF8 format</entry>
+            <entry>Specifies all output is in Unicode <!-- DNT-Start -->UTF<!-- DNT-End -->8 format</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable>
 
-    <para>If none of the ASCII, EBCDIC, or UNICODE options are specified, the
-    default output is in ASCII format with any UNICODE fields in UTF8 format.
+    <para>If none of the <!-- DNT-Start -->ASCII<!-- DNT-End -->, <!-- DNT-Start -->EBCDIC<!-- DNT-End -->, or <!-- DNT-Start -->UNICODE<!-- DNT-End --> options are specified, the
+    default output is in <!-- DNT-Start -->ASCII<!-- DNT-End --> format with any <!-- DNT-Start -->UNICODE<!-- DNT-End --> fields in <!-- DNT-Start -->UTF<!-- DNT-End -->8 format.
     The other default <emphasis>csvoptions</emphasis> are: <programlisting>           CSV(HEADING('',''), SEPARATOR(','), TERMINATOR('\n'), QUOTE())</programlisting></para>
 
     <para>Example:</para>
 
-    <programlisting>//SINGLE option writes the header only to the first file part:
+    <!-- DNT-Start --><programlisting>//SINGLE option writes the header only to the first file part:
 OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(SINGLE)));
 
 //This example writes the header and footer to every file part:
@@ -860,40 +860,40 @@ OUTPUT(XMLds,,'~thor::outdata.xml',CSV(HEADING('&lt;XML&gt;','&lt;/XML&gt;')));
 //FORMAT option writes the header using the specified formatting function:
 IMPORT STD;
 OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(FORMAT(STD.Str.ToUpperCase))));
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="OUTPUT_XML_Files">
-    <title>OUTPUT XML Files<indexterm>
+    <!-- DNT-Start --><title>OUTPUT XML Files<indexterm>
         <primary>XML Files</primary>
       </indexterm><indexterm>
         <primary>OUTPUT - XML Files</primary>
-      </indexterm></title>
+      </indexterm></title><!-- DNT-End -->
 
     <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
-    :=<emphasis role="bold"> ] OUTPUT<indexterm>
-        <primary>OUTPUT</primary>
+    :=<emphasis role="bold"> ] <!-- DNT-Start -->OUTPUT<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->OUTPUT<!-- DNT-End --></primary>
       </indexterm>(</emphasis><emphasis>recordset</emphasis><emphasis
     role="bold">, [</emphasis><emphasis> format </emphasis><emphasis
     role="bold">]</emphasis><emphasis> ,file </emphasis><emphasis role="bold">
-    </emphasis><emphasis>,</emphasis><emphasis role="bold">XML<indexterm>
-        <primary>XML</primary>
+    </emphasis><emphasis>,</emphasis><emphasis role="bold"><!-- DNT-Start -->XML<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->XML<!-- DNT-End --></primary>
       </indexterm> [ (</emphasis><emphasis>xmloptions</emphasis><emphasis
-    role="bold">) ]</emphasis><emphasis role="bold"> [,ENCRYPT<indexterm>
-        <primary>ENCRYPT</primary>
+    role="bold">) ]</emphasis><emphasis role="bold"> [,<!-- DNT-Start -->ENCRYPT<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->ENCRYPT<!-- DNT-End --></primary>
       </indexterm>(</emphasis><emphasis> key </emphasis><emphasis
-    role="bold">) ] [, CLUSTER<indexterm>
-        <primary>CLUSTER</primary>
+    role="bold">) ] [, <!-- DNT-Start -->CLUSTER<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->CLUSTER<!-- DNT-End --></primary>
       </indexterm>(</emphasis><emphasis> target </emphasis><emphasis
     role="bold">) ] [</emphasis><emphasis>,</emphasis><emphasis role="bold">
-    OVERWRITE<indexterm>
-        <primary>OVERWRITE</primary>
+    <!-- DNT-Start -->OVERWRITE<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->OVERWRITE<!-- DNT-End --></primary>
       </indexterm> ]</emphasis><emphasis role="bold"><emphasis role="bold">[,
-    UPDATE<indexterm>
-        <primary>UPDATE</primary>
+    <!-- DNT-Start -->UPDATE<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->UPDATE<!-- DNT-End --></primary>
       </indexterm>]</emphasis> [</emphasis><emphasis>,</emphasis><emphasis
-    role="bold"> EXPIRE<indexterm>
-        <primary>EXPIRE</primary>
+    role="bold"> <!-- DNT-Start -->EXPIRE<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->EXPIRE<!-- DNT-End --></primary>
       </indexterm>( [ </emphasis><emphasis>days </emphasis><emphasis
     role="bold">] ) ] )</emphasis></para>
 
@@ -905,7 +905,7 @@ OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(FORMAT(STD.Str.ToUpperCase))));
 
           <tbody>
             <row>
-              <entry><emphasis role="bold">CLUSTER</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">CLUSTER</emphasis><!-- DNT-End --></entry>
 
               <entry>Optional. Specifies writing the file to the specified
               list of target clusters. If omitted, the file is written to the
@@ -916,11 +916,11 @@ OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(FORMAT(STD.Str.ToUpperCase))));
             </row>
 
             <row>
-              <entry><emphasis>target</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>target</emphasis><!-- DNT-End --></entry>
 
               <entry>A comma-delimited list of string constants containing the
               names of the clusters to write the file to. The names must be
-              listed as they appear on the ECL Watch Activity page or returned
+              listed as they appear on the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch Activity page or returned
               by the Std.System.Thorlib.Group() function, optionally with
               square brackets containing a comma-delimited list of
               node-numbers (1-based) and/or ranges (specified with a dash, as
@@ -929,35 +929,35 @@ OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(FORMAT(STD.Str.ToUpperCase))));
             </row>
 
             <row>
-              <entry><emphasis role="bold">ENCRYPT</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">ENCRYPT</emphasis><!-- DNT-End --></entry>
 
               <entry>Optional. Specifies writing the file to disk using both
-              256-bit AES encryption and LZW compression.</entry>
+              256-bit <!-- DNT-Start -->AES<!-- DNT-End --> encryption and <!-- DNT-Start -->LZW<!-- DNT-End --> compression.</entry>
             </row>
 
             <row>
-              <entry><emphasis>key</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>key</emphasis><!-- DNT-End --></entry>
 
               <entry>A string constant containing the encryption key to use to
               encrypt the data.</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">OVERWRITE</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">OVERWRITE</emphasis><!-- DNT-End --></entry>
 
               <entry>Optional. Specifies overwriting the file if it already
               exists.</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">UPDATE</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">UPDATE</emphasis><!-- DNT-End --></entry>
 
               <entry>Specifies that the file should be rewritten only if the
               code or input data has changed.</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">EXPIRE</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">EXPIRE</emphasis><!-- DNT-End --></entry>
 
               <entry>Optional. Specifies the file is a temporary file that may
               be automatically deleted after the specified number of
@@ -965,7 +965,7 @@ OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(FORMAT(STD.Str.ToUpperCase))));
             </row>
 
             <row>
-              <entry><emphasis>days</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>days</emphasis><!-- DNT-End --></entry>
 
               <entry>Optional. The number of days after which the file may be
               automatically deleted. If omitted, the default is seven
@@ -976,28 +976,28 @@ OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(FORMAT(STD.Str.ToUpperCase))));
       </informaltable></para>
 
     <para>This form writes the <emphasis>recordset</emphasis> to the specified
-    <emphasis>file</emphasis> as XML data with the name of each field in the
-    specified <emphasis>format</emphasis> becoming the XML tag for that
+    <emphasis>file</emphasis> as <!-- DNT-Start -->XML<!-- DNT-End --> data with the name of each field in the
+    specified <emphasis>format</emphasis> becoming the <!-- DNT-Start -->XML<!-- DNT-End --> tag for that
     field's data. The valid set of <emphasis>xmloptions</emphasis> are:</para>
 
     <para><emphasis
-    role="bold">‘</emphasis><emphasis>rowtag</emphasis><emphasis
+    role="bold">â</emphasis><emphasis>rowtag</emphasis><emphasis
     role="bold">'</emphasis></para>
 
-    <para><emphasis role="bold">HEADING<indexterm>
-        <primary>HEADING</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->HEADING<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->HEADING<!-- DNT-End --></primary>
       </indexterm>( </emphasis><emphasis>headertext </emphasis><emphasis
     role="bold">[</emphasis><emphasis>, footertext </emphasis><emphasis
     role="bold">] )</emphasis></para>
 
-    <para><emphasis role="bold">TRIM<indexterm>
-        <primary>TRIM</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->TRIM<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->TRIM<!-- DNT-End --></primary>
       </indexterm></emphasis><emphasis role="bold"> </emphasis></para>
 
-    <para><emphasis role="bold">OPT<indexterm>
-        <primary>OPT</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->OPT<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->OPT<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>TRIM OPT</primary>
+        <primary><!-- DNT-Start -->TRIM<!-- DNT-End --> <!-- DNT-Start -->OPT<!-- DNT-End --></primary>
       </indexterm></emphasis></para>
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -1008,41 +1008,41 @@ OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(FORMAT(STD.Str.ToUpperCase))));
 
           <tbody>
             <row>
-              <entry><emphasis>rowtag</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>rowtag</emphasis><!-- DNT-End --></entry>
 
               <entry>The text to place in record delimiting tag.</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">HEADING</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">HEADING</emphasis><!-- DNT-End --></entry>
 
               <entry>Specifies placing header and footer records in the
               file.</entry>
             </row>
 
             <row>
-              <entry><emphasis>headertext</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>headertext</emphasis><!-- DNT-End --></entry>
 
               <entry>The text of the header record to place in the
               file.</entry>
             </row>
 
             <row>
-              <entry><emphasis>footertext</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>footertext</emphasis><!-- DNT-End --></entry>
 
               <entry>The text of the footer record to place in the
               file.</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">TRIM</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">TRIM</emphasis><!-- DNT-End --></entry>
 
               <entry>Specifies removing trailing blanks from string fields
               before output.</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">OPT</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">OPT</emphasis><!-- DNT-End --></entry>
 
               <entry>Specifies omitting tags for any empty string field from
               the output.</entry>
@@ -1054,11 +1054,11 @@ OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(FORMAT(STD.Str.ToUpperCase))));
     <para>If no <emphasis>xmloptions</emphasis> are specified, the defaults
     are:</para>
 
-    <programlisting>         XML('Row',HEADING('&lt;Dataset&gt;\n','&lt;/Dataset&gt;\n'))</programlisting>
+    <!-- DNT-Start --><programlisting>         XML('Row',HEADING('&lt;Dataset&gt;\n','&lt;/Dataset&gt;\n'))</programlisting><!-- DNT-End -->
 
     <para>Example:</para>
 
-    <programlisting>R := {STRING10 fname,STRING12 lname};
+    <!-- DNT-Start --><programlisting>R := {STRING10 fname,STRING12 lname};
 B := DATASET([{'Fred','Bell'},{'George','Blanda'},{'Sam',''}],R);
 
 OUTPUT(B,,'fred1.xml', XML); // writes B to the fred1.xml file
@@ -1085,40 +1085,40 @@ OUTPUT(B,,'fred3.xml',XML('MyRow',TRIM,OPT));
   &lt;MyRow&gt;&lt;fname&gt;George&lt;/fname&gt;&lt;lname&gt;Blanda&lt;/lname&gt;&lt;/MyRow&gt;
   &lt;MyRow&gt;&lt;fname&gt;Sam&lt;/fname&gt;&lt;/MyRow&gt;
 &lt;/Dataset&gt; */
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="OUTPUT_JSON_Files">
-    <title>OUTPUT JSON Files<indexterm>
+    <!-- DNT-Start --><title>OUTPUT JSON Files<indexterm>
         <primary>JSON Files</primary>
       </indexterm><indexterm>
         <primary>OUTPUT - JSON Files</primary>
-      </indexterm></title>
+      </indexterm></title><!-- DNT-End -->
 
     <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
-    :=<emphasis role="bold"> ] OUTPUT<indexterm>
-        <primary>OUTPUT</primary>
+    :=<emphasis role="bold"> ] <!-- DNT-Start -->OUTPUT<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->OUTPUT<!-- DNT-End --></primary>
       </indexterm>(</emphasis><emphasis>recordset</emphasis><emphasis
     role="bold">, [</emphasis><emphasis> format </emphasis><emphasis
     role="bold">]</emphasis><emphasis> ,file </emphasis><emphasis role="bold">
-    </emphasis><emphasis>,</emphasis><emphasis role="bold">JSON<indexterm>
-        <primary>JSON</primary>
+    </emphasis><emphasis>,</emphasis><emphasis role="bold"><!-- DNT-Start -->JSON<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->JSON<!-- DNT-End --></primary>
       </indexterm> [ (</emphasis><emphasis>jsonoptions</emphasis><emphasis
-    role="bold">) ]</emphasis><emphasis role="bold"> [,ENCRYPT<indexterm>
-        <primary>ENCRYPT</primary>
+    role="bold">) ]</emphasis><emphasis role="bold"> [,<!-- DNT-Start -->ENCRYPT<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->ENCRYPT<!-- DNT-End --></primary>
       </indexterm>(</emphasis><emphasis> key </emphasis><emphasis
-    role="bold">) ] [, CLUSTER<indexterm>
-        <primary>CLUSTER</primary>
+    role="bold">) ] [, <!-- DNT-Start -->CLUSTER<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->CLUSTER<!-- DNT-End --></primary>
       </indexterm>(</emphasis><emphasis> target </emphasis><emphasis
     role="bold">) ] [</emphasis><emphasis>,</emphasis><emphasis role="bold">
-    OVERWRITE<indexterm>
-        <primary>OVERWRITE</primary>
+    <!-- DNT-Start -->OVERWRITE<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->OVERWRITE<!-- DNT-End --></primary>
       </indexterm> ]</emphasis><emphasis role="bold"><emphasis role="bold">[,
-    UPDATE<indexterm>
-        <primary>UPDATE</primary>
+    <!-- DNT-Start -->UPDATE<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->UPDATE<!-- DNT-End --></primary>
       </indexterm>]</emphasis> [</emphasis><emphasis>,</emphasis><emphasis
-    role="bold"> EXPIRE<indexterm>
-        <primary>EXPIRE</primary>
+    role="bold"> <!-- DNT-Start -->EXPIRE<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->EXPIRE<!-- DNT-End --></primary>
       </indexterm>( [ </emphasis><emphasis>days </emphasis><emphasis
     role="bold">] ) ] )</emphasis></para>
 
@@ -1130,7 +1130,7 @@ OUTPUT(B,,'fred3.xml',XML('MyRow',TRIM,OPT));
 
           <tbody>
             <row>
-              <entry><emphasis role="bold">CLUSTER</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">CLUSTER</emphasis><!-- DNT-End --></entry>
 
               <entry>Optional. Specifies writing the file to the specified
               list of target clusters. If omitted, the file is written to the
@@ -1141,11 +1141,11 @@ OUTPUT(B,,'fred3.xml',XML('MyRow',TRIM,OPT));
             </row>
 
             <row>
-              <entry><emphasis>target</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>target</emphasis><!-- DNT-End --></entry>
 
               <entry>A comma-delimited list of string constants containing the
               names of the clusters to write the file to. The names must be
-              listed as they appear on the ECL Watch Activity page or returned
+              listed as they appear on the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch Activity page or returned
               by the Std.System.Thorlib.Group() function, optionally with
               square brackets containing a comma-delimited list of
               node-numbers (1-based) and/or ranges (specified with a dash, as
@@ -1154,35 +1154,35 @@ OUTPUT(B,,'fred3.xml',XML('MyRow',TRIM,OPT));
             </row>
 
             <row>
-              <entry><emphasis role="bold">ENCRYPT</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">ENCRYPT</emphasis><!-- DNT-End --></entry>
 
               <entry>Optional. Specifies writing the file to disk using both
-              256-bit AES encryption and LZW compression.</entry>
+              256-bit <!-- DNT-Start -->AES<!-- DNT-End --> encryption and <!-- DNT-Start -->LZW<!-- DNT-End --> compression.</entry>
             </row>
 
             <row>
-              <entry><emphasis>key</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>key</emphasis><!-- DNT-End --></entry>
 
               <entry>A string constant containing the encryption key to use to
               encrypt the data.</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">OVERWRITE</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">OVERWRITE</emphasis><!-- DNT-End --></entry>
 
               <entry>Optional. Specifies overwriting the file if it already
               exists.</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">UPDATE</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">UPDATE</emphasis><!-- DNT-End --></entry>
 
               <entry>Specifies that the file should be rewritten only if the
               code or input data has changed.</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">EXPIRE</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">EXPIRE</emphasis><!-- DNT-End --></entry>
 
               <entry>Optional. Specifies the file is a temporary file that may
               be automatically deleted after the specified number of
@@ -1190,7 +1190,7 @@ OUTPUT(B,,'fred3.xml',XML('MyRow',TRIM,OPT));
             </row>
 
             <row>
-              <entry><emphasis>days</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>days</emphasis><!-- DNT-End --></entry>
 
               <entry>Optional. The number of days after which the file may be
               automatically deleted. If omitted, the default is seven
@@ -1201,29 +1201,29 @@ OUTPUT(B,,'fred3.xml',XML('MyRow',TRIM,OPT));
       </informaltable></para>
 
     <para>This form writes the <emphasis>recordset</emphasis> to the specified
-    <emphasis>file</emphasis> as JSON data with the name of each field in the
-    specified <emphasis>format</emphasis> becoming the JSON tag for that
+    <emphasis>file</emphasis> as <!-- DNT-Start -->JSON<!-- DNT-End --> data with the name of each field in the
+    specified <emphasis>format</emphasis> becoming the <!-- DNT-Start -->JSON<!-- DNT-End --> tag for that
     field's data. The valid set of <emphasis>jsonoptions</emphasis>
     are:</para>
 
     <para><emphasis
-    role="bold">‘</emphasis><emphasis>rowtag</emphasis><emphasis
+    role="bold">â</emphasis><emphasis>rowtag</emphasis><emphasis
     role="bold">'</emphasis></para>
 
-    <para><emphasis role="bold">HEADING<indexterm>
-        <primary>HEADING</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->HEADING<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->HEADING<!-- DNT-End --></primary>
       </indexterm>( </emphasis><emphasis>headertext </emphasis><emphasis
     role="bold">[</emphasis><emphasis>, footertext </emphasis><emphasis
     role="bold">] )</emphasis></para>
 
-    <para><emphasis role="bold">TRIM<indexterm>
-        <primary>TRIM</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->TRIM<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->TRIM<!-- DNT-End --></primary>
       </indexterm></emphasis><emphasis role="bold"> </emphasis></para>
 
-    <para><emphasis role="bold">OPT<indexterm>
-        <primary>OPT</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->OPT<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->OPT<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>TRIM OPT</primary>
+        <primary><!-- DNT-Start -->TRIM<!-- DNT-End --> <!-- DNT-Start -->OPT<!-- DNT-End --></primary>
       </indexterm></emphasis></para>
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -1234,41 +1234,41 @@ OUTPUT(B,,'fred3.xml',XML('MyRow',TRIM,OPT));
 
           <tbody>
             <row>
-              <entry><emphasis>rowtag</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>rowtag</emphasis><!-- DNT-End --></entry>
 
               <entry>The text to place in record delimiting tag.</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">HEADING</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">HEADING</emphasis><!-- DNT-End --></entry>
 
               <entry>Specifies placing header and footer records in the
               file.</entry>
             </row>
 
             <row>
-              <entry><emphasis>headertext</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>headertext</emphasis><!-- DNT-End --></entry>
 
               <entry>The text of the header record to place in the
               file.</entry>
             </row>
 
             <row>
-              <entry><emphasis>footertext</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>footertext</emphasis><!-- DNT-End --></entry>
 
               <entry>The text of the footer record to place in the
               file.</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">TRIM</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">TRIM</emphasis><!-- DNT-End --></entry>
 
               <entry>Specifies removing trailing blanks from string fields
               before output.</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">OPT</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">OPT</emphasis><!-- DNT-End --></entry>
 
               <entry>Specifies omitting tags for any empty string field from
               the output.</entry>
@@ -1280,11 +1280,11 @@ OUTPUT(B,,'fred3.xml',XML('MyRow',TRIM,OPT));
     <para>If no <emphasis>jsonoptions</emphasis> are specified, the defaults
     are:</para>
 
-    <programlisting>         JSON('Row',HEADING('[',']'))</programlisting>
+    <!-- DNT-Start --><programlisting>         JSON('Row',HEADING('[',']'))</programlisting><!-- DNT-End -->
 
     <para>Example:</para>
 
-    <programlisting>R := {STRING10 fname,STRING12 lname};
+    <!-- DNT-Start --><programlisting>R := {STRING10 fname,STRING12 lname};
 B := DATASET([{'Fred','Bell'},{'George','Blanda'},{'Sam',''}],R);
 
 OUTPUT(B,,'fred1.json', JSON); // writes B to the fred1.json file
@@ -1302,28 +1302,28 @@ OUTPUT(B,,'fred2.json',JSON('MyResult', HEADING('[', ']')));
 {"fname": "George    ", "lname": "Blanda      "},
 {"fname": "Sam       ", "lname": "            "}
 ]]
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="OUTPUT_PIPE_Files">
-    <title>OUTPUT PIPE Files<indexterm>
+    <!-- DNT-Start --><title>OUTPUT PIPE Files<indexterm>
         <primary>OUTPUT Pipe Files</primary>
-      </indexterm></title>
+      </indexterm></title><!-- DNT-End -->
 
     <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
     :=<emphasis role="bold"> ]
-    OUTPUT(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">,
+    <!-- DNT-Start -->OUTPUT<!-- DNT-End -->(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">,
     [</emphasis><emphasis> format </emphasis><emphasis role="bold">]
-    </emphasis><emphasis> ,</emphasis><emphasis role="bold">PIPE<indexterm>
-        <primary>PIPE</primary>
+    </emphasis><emphasis> ,</emphasis><emphasis role="bold"><!-- DNT-Start -->PIPE<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->PIPE<!-- DNT-End --></primary>
       </indexterm>(</emphasis><emphasis> command </emphasis><emphasis
-    role="bold">[</emphasis>, <emphasis role="bold"> CSV<indexterm>
-        <primary>CSV</primary>
-      </indexterm> | XML<indexterm>
-        <primary>XML</primary>
+    role="bold">[</emphasis>, <emphasis role="bold"> <!-- DNT-Start -->CSV<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->CSV<!-- DNT-End --></primary>
+      </indexterm> | <!-- DNT-Start -->XML<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->XML<!-- DNT-End --></primary>
       </indexterm>])</emphasis><emphasis> </emphasis><emphasis
-    role="bold">[</emphasis>,<emphasis role="bold"> REPEAT<indexterm>
-        <primary>REPEAT</primary>
+    role="bold">[</emphasis>,<emphasis role="bold"> <!-- DNT-Start -->REPEAT<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->REPEAT<!-- DNT-End --></primary>
       </indexterm>] )</emphasis></para>
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -1334,7 +1334,7 @@ OUTPUT(B,,'fred2.json',JSON('MyResult', HEADING('[', ']')));
 
           <tbody>
             <row>
-              <entry><emphasis role="bold">PIPE</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">PIPE</emphasis><!-- DNT-End --></entry>
 
               <entry>Indicates the specified command executes with the
               recordset provided as standard input to the command. This is a
@@ -1342,28 +1342,28 @@ OUTPUT(B,,'fred2.json',JSON('MyResult', HEADING('[', ']')));
             </row>
 
             <row>
-              <entry><emphasis>command</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>command</emphasis><!-- DNT-End --></entry>
 
               <entry>The name of a program to execute, which takes the file as
               its input stream.</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">CSV</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">CSV</emphasis><!-- DNT-End --></entry>
 
-              <entry>Optional. Specifies the output data format is CSV. If
+              <entry>Optional. Specifies the output data format is <!-- DNT-Start -->CSV<!-- DNT-End -->. If
               omitted, the format is raw.</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">XML</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">XML</emphasis><!-- DNT-End --></entry>
 
-              <entry>Optional. Specifies the output data format is XML. If
+              <entry>Optional. Specifies the output data format is <!-- DNT-Start -->XML<!-- DNT-End -->. If
               omitted, the format is raw.</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">REPEAT</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">REPEAT</emphasis><!-- DNT-End --></entry>
 
               <entry>Optional. Indicates a new instance of the specified
               command executes for each row in the recordset.</entry>
@@ -1379,32 +1379,32 @@ OUTPUT(B,,'fred2.json',JSON('MyResult', HEADING('[', ']')));
 
     <para>Example:</para>
 
-    <programlisting>OUTPUT(A_People,,PIPE('MyCommandLIneProgram'),OVERWRITE);
+    <!-- DNT-Start --><programlisting>OUTPUT(A_People,,PIPE('MyCommandLIneProgram'),OVERWRITE);
    // sends the A_People to MyCommandLIneProgram as
-   // standard in</programlisting>
+   // standard in</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="Named_OUTPUT">
-    <title>Named OUTPUT<indexterm>
+    <!-- DNT-Start --><title>Named OUTPUT<indexterm>
         <primary>NAMED OUTPUT</primary>
       </indexterm><indexterm>
         <primary>OUTPUT - NAMED Files</primary>
-      </indexterm></title>
+      </indexterm></title><!-- DNT-End -->
 
     <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
-    :=<emphasis role="bold"> ] OUTPUT<indexterm>
-        <primary>OUTPUT</primary>
+    :=<emphasis role="bold"> ] <!-- DNT-Start -->OUTPUT<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->OUTPUT<!-- DNT-End --></primary>
       </indexterm>(</emphasis><emphasis>recordset</emphasis><emphasis
     role="bold"> [,</emphasis><emphasis> format </emphasis><emphasis
     role="bold">] </emphasis><emphasis>,</emphasis><emphasis
-    role="bold">NAMED<indexterm>
-        <primary>NAMED</primary>
+    role="bold"><!-- DNT-Start -->NAMED<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->NAMED<!-- DNT-End --></primary>
       </indexterm>(</emphasis><emphasis> name </emphasis><emphasis
-    role="bold">) [,EXTEND<indexterm>
-        <primary>EXTEND</primary>
+    role="bold">) [,<!-- DNT-Start -->EXTEND<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->EXTEND<!-- DNT-End --></primary>
       </indexterm>] [</emphasis><emphasis>,</emphasis><emphasis
-    role="bold">ALL<indexterm>
-        <primary>ALL</primary>
+    role="bold"><!-- DNT-Start -->ALL<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->ALL<!-- DNT-End --></primary>
       </indexterm>])</emphasis></para>
 
     <para>This form writes the <emphasis>recordset</emphasis> to the workunit
@@ -1412,14 +1412,14 @@ OUTPUT(B,,'fred2.json',JSON('MyResult', HEADING('[', ']')));
     (See <link linkend="Attribute_Name_Rules">Definition Name
     Rules</link>)</para>
 
-    <para>The EXTEND option allows multiple OUTPUT actions to the same
-    <emphasis>named</emphasis> result. The ALL option is used to override the
-    implicit CHOOSEN applied to interactive queries in the Query Builder
+    <para>The <!-- DNT-Start -->EXTEND<!-- DNT-End --> option allows multiple <!-- DNT-Start -->OUTPUT<!-- DNT-End --> actions to the same
+    <emphasis>named</emphasis> result. The <!-- DNT-Start -->ALL<!-- DNT-End --> option is used to override the
+    implicit <!-- DNT-Start -->CHOOSEN<!-- DNT-End --> applied to interactive queries in the Query Builder
     program. This specifies returning all records.</para>
 
     <para>Example:</para>
 
-    <programlisting>OUTPUT(CHOOSEN(people(firstname[1]='A'),10));
+    <!-- DNT-Start --><programlisting>OUTPUT(CHOOSEN(people(firstname[1]='A'),10));
   // writes the A People to the query builder
 OUTPUT(CHOOSEN(people(firstname[1]='A'),10),ALL);
   // writes all the A People to the query builder
@@ -1443,67 +1443,67 @@ OUTPUT(makeErrMsg(101, 'Failed again'),NAMED('ErrorResult'),EXTEND);
   
 //output and dataset handled elsewhere.
 rptErrMsg(102, 'And again');
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="OUTPUT_Scalar_Values">
-    <title>OUTPUT Scalar Values<indexterm>
+    <!-- DNT-Start --><title>OUTPUT Scalar Values<indexterm>
         <primary>OUTPUT Scalar Values</primary>
       </indexterm><indexterm>
         <primary>Scalar OUTPUT</primary>
-      </indexterm></title>
+      </indexterm></title><!-- DNT-End -->
 
     <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
-    :=<emphasis role="bold"> ] OUTPUT<indexterm>
-        <primary>OUTPUT</primary>
+    :=<emphasis role="bold"> ] <!-- DNT-Start -->OUTPUT<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->OUTPUT<!-- DNT-End --></primary>
       </indexterm>(</emphasis><emphasis> expression </emphasis><emphasis
     role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold">
-    NAMED<indexterm>
-        <primary>NAMED</primary>
+    <!-- DNT-Start -->NAMED<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->NAMED<!-- DNT-End --></primary>
       </indexterm>(</emphasis><emphasis> name </emphasis><emphasis
     role="bold">) ] )</emphasis></para>
 
     <para>This form is used to allow scalar <emphasis>expression</emphasis>
-    output, particularly within SEQUENTIAL and PARALLEL action<indexterm>
-        <primary>PARALLEL action</primary>
+    output, particularly within <!-- DNT-Start -->SEQUENTIAL<!-- DNT-End --> and <!-- DNT-Start -->PARALLEL<!-- DNT-End --> action<indexterm>
+        <primary><!-- DNT-Start -->PARALLEL<!-- DNT-End --> action</primary>
       </indexterm>s.</para>
 
     <para>Example:</para>
 
-    <programlisting>OUTPUT(10) // scalar value output
+    <!-- DNT-Start --><programlisting>OUTPUT(10) // scalar value output
 OUTPUT('Fred') // scalar value output
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="OUTPUT_Workunit_Files">
-    <title>OUTPUT Workunit Files<indexterm>
+    <!-- DNT-Start --><title>OUTPUT Workunit Files<indexterm>
         <primary>OUTPUT Workunit Files</primary>
       </indexterm><indexterm>
         <primary>Workunit OUTPUT</primary>
-      </indexterm></title>
+      </indexterm></title><!-- DNT-End -->
 
     <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
-    :=<emphasis role="bold"> ] OUTPUT(</emphasis><emphasis> recordset
-    ,</emphasis><emphasis role="bold"> THOR<indexterm>
-        <primary>THOR</primary>
+    :=<emphasis role="bold"> ] <!-- DNT-Start -->OUTPUT<!-- DNT-End -->(</emphasis><emphasis> recordset
+    ,</emphasis><emphasis role="bold"> <!-- DNT-Start -->THOR<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->THOR<!-- DNT-End --></primary>
       </indexterm> )</emphasis></para>
 
     <para>This form is used to store the resulting
     <emphasis>recordset</emphasis> as a file on disk "owned" by the workunit.
-    The name of the file in the DFU is
-    <emphasis>scope</emphasis>::RESULT::<emphasis>workunitid</emphasis>. This
+    The name of the file in the <!-- DNT-Start -->DFU<!-- DNT-End --> is
+    <emphasis>scope</emphasis>::<!-- DNT-Start -->RESULT<!-- DNT-End -->::<emphasis>workunitid</emphasis>. This
     is useful when you want to view a large result
     <emphasis>recordset</emphasis> in the Query Builder program but do not
     want that much data to take up memory in the system data store.</para>
 
     <para>Example:</para>
 
-    <programlisting>OUTPUT(Person(per_st='FL'), THOR)
+    <!-- DNT-Start --><programlisting>OUTPUT(Person(per_st='FL'), THOR)
   // output records to screen, but store the 
-  // result on disk instead of in the workunit</programlisting>
+  // result on disk instead of in the workunit</programlisting><!-- DNT-End -->
 
-    <para>See Also: <link linkend="TABLE">TABLE</link>, <link
-    linkend="DATASET">DATASET</link>, <link linkend="PIPE">PIPE</link>, <link
-    linkend="CHOOSEN">CHOOSEN</link></para>
+    <para>See Also: <link linkend="TABLE"><!-- DNT-Start -->TABLE<!-- DNT-End --></link>, <link
+    linkend="DATASET"><!-- DNT-Start -->DATASET<!-- DNT-End --></link>, <link linkend="PIPE"><!-- DNT-Start -->PIPE<!-- DNT-End --></link>, <link
+    linkend="CHOOSEN"><!-- DNT-Start -->CHOOSEN<!-- DNT-End --></link></para>
   </sect2>
 </sect1>

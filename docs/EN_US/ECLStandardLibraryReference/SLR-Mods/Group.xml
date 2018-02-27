@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Group">
-  <title>Group</title>
+  <!-- DNT-Start --><title>Group</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.System.Thorlib.Group<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.System.Thorlib.Group<indexterm>
       <primary>STD.System.ThorLib.Group</primary>
     </indexterm> <indexterm>
       <primary>System.ThorLib.Group</primary>
@@ -12,7 +12,7 @@
       <primary>ThorLib.Group</primary>
     </indexterm> <indexterm>
       <primary>Group</primary>
-    </indexterm> ( )</emphasis></para>
+    </indexterm> ( )</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -22,20 +22,20 @@
 
       <tbody>
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>Group returns a VARSTRING value.</entry>
+          <entry><!-- DNT-Start -->Group<!-- DNT-End --> returns a <!-- DNT-Start -->VARSTRING<!-- DNT-End --> value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">Group </emphasis>function returns the name
+  <para>The <emphasis role="bold"><!-- DNT-Start -->Group<!-- DNT-End --> </emphasis>function returns the name
   of the node group running the workunit. Not supported on Roxie clusters.
-  This name is used in ECL code to specify the target CLUSTER for an OUTPUT
-  action or a PERSISTed attribute.</para>
+  This name is used in <!-- DNT-Start -->ECL<!-- DNT-End --> code to specify the target <!-- DNT-Start -->CLUSTER<!-- DNT-End --> for an <!-- DNT-Start -->OUTPUT<!-- DNT-End -->
+  action or a <!-- DNT-Start -->PERSISTed<!-- DNT-End --> attribute.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">A := Thorlib.Group();</programlisting>
+  <!-- DNT-Start --><programlisting format="linespecific">A := Thorlib.Group();</programlisting><!-- DNT-End -->
 </sect1>

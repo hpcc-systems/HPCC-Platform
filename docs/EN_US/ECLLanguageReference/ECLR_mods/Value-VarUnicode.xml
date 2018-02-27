@@ -2,37 +2,37 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="VARUNICODE">
-  <title>VARUNICODE</title>
+  <!-- DNT-Start --><title>VARUNICODE</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">VARUNICODE<indexterm>
-      <primary>VARUNICODE</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->VARUNICODE<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->VARUNICODE<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>VARUNICODE value type</primary>
+      <primary><!-- DNT-Start -->VARUNICODE<!-- DNT-End --> value type</primary>
     </indexterm>[</emphasis><emphasis>locale</emphasis><emphasis
   role="bold">][</emphasis><emphasis>n</emphasis><emphasis
   role="bold">]</emphasis></para>
 
-  <para>A UTF-16 encoded unicode character string of <emphasis>n</emphasis>
+  <para>A <!-- DNT-Start -->UTF<!-- DNT-End -->-16 encoded unicode character string of <emphasis>n</emphasis>
   characters, null terminated (not space-padded). The <emphasis>n
   </emphasis>may be omitted only when used as a parameter type. The optional
   <emphasis>locale </emphasis>specifies a valid unicode locale code, as
-  specified in ISO standards 639 and 3166 (not needed if LOCALE is specified
-  on the RECORD structure containing the field definition).</para>
+  specified in <!-- DNT-Start -->ISO<!-- DNT-End --> standards 639 and 3166 (not needed if <!-- DNT-Start -->LOCALE<!-- DNT-End --> is specified
+  on the <!-- DNT-Start -->RECORD<!-- DNT-End --> structure containing the field definition).</para>
 
-  <para>Type casting VARUNICODE to UNICODE, STRING, or DATA is allowed, while
-  casting to any other type will first implicitly cast to STRING and then cast
+  <para>Type casting <!-- DNT-Start -->VARUNICODE<!-- DNT-End --> to <!-- DNT-Start -->UNICODE<!-- DNT-End -->, <!-- DNT-Start -->STRING<!-- DNT-End -->, or <!-- DNT-Start -->DATA<!-- DNT-End --> is allowed, while
+  casting to any other type will first implicitly cast to <!-- DNT-Start -->STRING<!-- DNT-End --> and then cast
   to the target value type.</para>
 
-  <para>The upper size limit for any VARUNICODE value is 4GB.</para>
+  <para>The upper size limit for any <!-- DNT-Start -->VARUNICODE<!-- DNT-End --> value is 4<!-- DNT-Start -->GB<!-- DNT-End -->.</para>
 
   <para>Example:</para>
 
-  <programlisting>VARUNICODE16 MyUNIString := U'1234567890ABCDEF';
+  <!-- DNT-Start --><programlisting>VARUNICODE16 MyUNIString := U'1234567890ABCDEF';
         // utf-16-encoded string
 VARUNICODE4 MyUnicodeString := U'abcd';
         // same as: (UNICODE)'abcd'
 VARUNICODE5 MyUnicodeString := U'abcd\353';
-        // becomes 'abcdë'
-VARUNICODE5 MyUnicodeString := U'abcdë';
-        // same as previous example</programlisting>
+        // becomes 'abcdÃ«'
+VARUNICODE5 MyUnicodeString := U'abcdÃ«';
+        // same as previous example</programlisting><!-- DNT-End -->
 </sect1>

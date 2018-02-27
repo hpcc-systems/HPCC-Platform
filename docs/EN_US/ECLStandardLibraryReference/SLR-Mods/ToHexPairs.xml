@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ToHexPairs">
-  <title>ToHexPairs</title>
+  <!-- DNT-Start --><title>ToHexPairs</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Str.ToHexPairs<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.Str.ToHexPairs<indexterm>
       <primary>STD.Str.ToHexPairs</primary>
     </indexterm><indexterm>
       <primary>Str.ToHexPairs</primary>
     </indexterm><indexterm>
       <primary>ToHexPairs</primary>
     </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
-  role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
+  role="bold">)</emphasis> <emphasis role="bold"></emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,26 +21,26 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>source</emphasis><!-- DNT-End --></entry>
 
           <entry>The data value that should be expanded as a sequence of hex
           pairs.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>ToHexPairs returns a string containing a sequence of hex
+          <entry><!-- DNT-Start -->ToHexPairs<!-- DNT-End --> returns a string containing a sequence of hex
           pairs.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">ToHexPairs </emphasis>function Converts the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->ToHexPairs<!-- DNT-End --> </emphasis>function Converts the
   data value to a sequence of hex pairs.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">A := STD.Str.ToHexPairs(D'\000\001\377\200');</programlisting>
+  <!-- DNT-Start --><programlisting format="linespecific">A := STD.Str.ToHexPairs(D'\000\001\377\200');</programlisting><!-- DNT-End -->
 </sect1>

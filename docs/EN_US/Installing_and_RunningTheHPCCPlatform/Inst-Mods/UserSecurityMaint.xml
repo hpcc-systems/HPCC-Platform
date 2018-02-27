@@ -2,24 +2,24 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="User_Security_Maint">
-  <title>User Security Maintenance</title>
+  <!-- DNT-Start --><title>User Security Maintenance</title><!-- DNT-End -->
 
-  <para>Configuring an HPCC System to use Active Directory or LDAP-based
+  <para>Configuring an <!-- DNT-Start -->HPCC<!-- DNT-End --> System to use Active Directory or <!-- DNT-Start -->LDAP<!-- DNT-End -->-based
   security allows you to set permissions to control access to Features, File
   Scopes, and Workunit Scopes.</para>
 
   <sect2 id="User_Security_Intro">
-    <title>Introduction</title>
+    <!-- DNT-Start --><title>Introduction</title><!-- DNT-End -->
 
-    <para>HPCC systems<superscript>®</superscript> maintains security in a
-    number of ways. HPCC Systems<superscript>®</superscript> can be configured
-    to manage users' security rights by pointing either at Microsoft’s Active
+    <para><!-- DNT-Start -->HPCC<!-- DNT-End --> systems<superscript>®</superscript> maintains security in a
+    number of ways. <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript> can be configured
+    to manage users' security rights by pointing either at Microsoftâs Active
     Directory on a Windows system, or a 389Directory Server on Linux
     systems.</para>
 
-    <para>Using the Permissions interface in ECL Watch, administrators can
-    control access to features in ECL IDE, ECL Watch, ECL Plus, DFU Plus, and
-    the ECL modules within the Attribute Repository. Optionally, you can also
+    <para>Using the Permissions interface in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch, administrators can
+    control access to features in <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->, <!-- DNT-Start -->ECL<!-- DNT-End --> Watch, <!-- DNT-Start -->ECL<!-- DNT-End --> Plus, <!-- DNT-Start -->DFU<!-- DNT-End --> Plus, and
+    the <!-- DNT-Start -->ECL<!-- DNT-End --> modules within the Attribute Repository. Optionally, you can also
     implement file and workunit access control by enabling that setting in the
     Dali server.</para>
 
@@ -32,44 +32,44 @@
 
           <tbody>
             <row>
-              <entry><emphasis role="bold">Esp Features for
-              SMC</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">Esp Features for
+              SMC</emphasis><!-- DNT-End --></entry>
 
               <entry>Controls access to features in ECLWatch and similar
-              features accessed from ECL IDE.</entry>
+              features accessed from <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->.</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">Esp Features for
-              WsEclAccess</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">Esp Features for
+              WsEclAccess</emphasis><!-- DNT-End --></entry>
 
-              <entry>Controls access to the WS-ECL web service</entry>
+              <entry>Controls access to the <!-- DNT-Start -->WS<!-- DNT-End -->-<!-- DNT-Start -->ECL<!-- DNT-End --> web service</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">Esp Features for
-              EclDirectAccess</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">Esp Features for
+              EclDirectAccess</emphasis><!-- DNT-End --></entry>
 
               <entry>Controls access to the ECLDirect web service</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">File Scopes</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">File Scopes</emphasis><!-- DNT-End --></entry>
 
               <entry>Controls access to data files by applying permissions to
               File scopes</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">Workunit Scopes</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">Workunit Scopes</emphasis><!-- DNT-End --></entry>
 
               <entry>Controls access to Workunits by applying permissions to
               Workunit scopes</entry>
             </row>
 
             <row>
-              <entry><emphasis role="bold">Repository
-              Modules</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis role="bold">Repository
+              Modules</emphasis><!-- DNT-End --></entry>
 
               <entry>Controls access to the Attribute Repository and Modules
               in the repository (legacy)</entry>
@@ -80,24 +80,24 @@
   </sect2>
 
   <sect2 id="Sec_Adm_w_ECLWatch">
-    <title>Security Administration using ECL Watch</title>
+    <!-- DNT-Start --><title>Security Administration using ECL Watch</title><!-- DNT-End -->
 
     <para>Administrator rights are needed to manage permissions. Once you have
-    administrator access rights, open ECL Watch in your browser using the
-    following URL:</para>
+    administrator access rights, open <!-- DNT-Start -->ECL<!-- DNT-End --> Watch in your browser using the
+    following <!-- DNT-Start -->URL<!-- DNT-End -->:</para>
 
     <itemizedlist>
       <listitem>
         <para><emphasis
         role="bold">http://nnn.nnn.nnn.nnn:pppp</emphasis><emphasis
-        role="bold"> (where nnn.nnn.nnn.nnn is your ESP Server’s IP Address
+        role="bold"> (where nnn.nnn.nnn.nnn is your <!-- DNT-Start -->ESP<!-- DNT-End --> Serverâs <!-- DNT-Start -->IP<!-- DNT-End --> Address
         and pppp is the port. The default port is 8010)<emphasis>.
         </emphasis></emphasis></para>
       </listitem>
     </itemizedlist>
 
     <para>Security administration is controlled using the <emphasis
-    role="bold">Security</emphasis> area of ECL Watch. To access the Security
+    role="bold">Security</emphasis> area of <!-- DNT-Start -->ECL<!-- DNT-End --> Watch. To access the Security
     are click on the<emphasis role="bold">Operations</emphasis> icon, then
     click the <emphasis role="bold">Security</emphasis> link from the
     navigation sub-menu.</para>
@@ -123,8 +123,8 @@
 
       <listitem>
         <para><emphasis role="bold">Permissions</emphasis>. Shows the features
-        of the HPCC System where permissions may be set. Use this area to view
-        the permissions currently set for any area of the HPCC System, or to
+        of the <!-- DNT-Start -->HPCC<!-- DNT-End --> System where permissions may be set. Use this area to view
+        the permissions currently set for any area of the <!-- DNT-Start -->HPCC<!-- DNT-End --> System, or to
         add groups and users and set/modify their permission for a specific
         feature</para>
       </listitem>
@@ -153,11 +153,11 @@
       </informaltable></para>
 
     <sect3 id="My_Account_Info" role="brk">
-      <title>Information about your account</title>
+      <!-- DNT-Start --><title>Information about your account</title><!-- DNT-End -->
 
-      <para>To find out more information about your account, in ECL Watch
+      <para>To find out more information about your account, in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch
       click on the <emphasis role="bold">Logged In As:</emphasis> link at the
-      top of the ECL Watch page.</para>
+      top of the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch page.</para>
 
       <para><graphic fileref="../../images/ECLWMyAccount.jpg"
       vendor="eclwatchSS" /> <orderedlist>
@@ -190,12 +190,12 @@
     </sect3>
 
     <sect3 id="UsingSecurity_SettingAndModifyingUserPermissions" role="brk">
-      <title>Setting and modifying user permissions</title>
+      <!-- DNT-Start --><title>Setting and modifying user permissions</title><!-- DNT-End -->
 
-      <para>In a security-enabled environment, access to ECL Watch and its
+      <para>In a security-enabled environment, access to <!-- DNT-Start -->ECL<!-- DNT-End --> Watch and its
       features is controlled using a login and password. The <emphasis
       role="bold">Users</emphasis> area enables you to control who has access
-      to ECL Watch and the features of your HPCC System to which they have
+      to <!-- DNT-Start -->ECL<!-- DNT-End --> Watch and the features of your <!-- DNT-Start -->HPCC<!-- DNT-End --> System to which they have
       access. Permissions can be set for users based on their individual needs
       and users can also be added to groups which have already been set up.
       Use the <emphasis role="bold">Users</emphasis> menu item to:</para>
@@ -225,7 +225,7 @@
     </sect3>
 
     <sect3 id="Adding_Users" role="brk">
-      <title>Adding and editing users</title>
+      <!-- DNT-Start --><title>Adding and editing users</title><!-- DNT-End -->
 
       <para>To access the user administration sections click on the<emphasis
       role="bold"> Operations</emphasis> icon, then click the <emphasis
@@ -239,7 +239,7 @@
       Full Name.</para>
 
       <sect4 id="UsingSecurity_AddANewUser">
-        <title>To add a new user to the list of authenticated users:</title>
+        <!-- DNT-Start --><title>To add a new user to the list of authenticated users:</title><!-- DNT-End -->
 
         <para>To add a new user you must have Administrator level access.
         <graphic fileref="../../images/Perm007.jpg"
@@ -256,7 +256,7 @@
           <listitem>
             <para>Enter a <emphasis role="bold">Username</emphasis>.</para>
 
-            <para>This is the login name to use ECL Watch, ECL IDE, WsECL,
+            <para>This is the login name to use <!-- DNT-Start -->ECL<!-- DNT-End --> Watch, <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->, WsECL,
             etc.</para>
           </listitem>
 
@@ -305,7 +305,7 @@
       </sect4>
 
       <sect4 id="UsingSecurity_ModifyUsersDetails">
-        <title>To modify a user's details:</title>
+        <!-- DNT-Start --><title>To modify a user's details:</title><!-- DNT-End -->
 
         <para>Click on the<emphasis role="bold"> Operations</emphasis> icon,
         then click the <emphasis role="bold">Security</emphasis> link from the
@@ -362,7 +362,7 @@
       </sect4>
 
       <sect4 id="UsingSecurity_AddAUserToAGroup">
-        <title>To add a user to a group:</title>
+        <!-- DNT-Start --><title>To add a user to a group:</title><!-- DNT-End -->
 
         <para>Click on the <emphasis role="bold">Operations</emphasis> icon,
         then click the <emphasis role="bold">Security</emphasis> link from the
@@ -419,10 +419,10 @@
       </sect4>
 
       <sect4 id="UsingSecurity_PromoteUsertoAdministrator">
-        <title>To promote a user to an Administrator</title>
+        <!-- DNT-Start --><title>To promote a user to an Administrator</title><!-- DNT-End -->
 
         <para>To modify a users credentials you must have Administrator level
-        access. To promote a user to an HPCC Administrator, add the user to
+        access. To promote a user to an <!-- DNT-Start -->HPCC<!-- DNT-End --> Administrator, add the user to
         the <emphasis role="bold">Administrators</emphasis> group.</para>
 
         <para>Click on the<emphasis role="bold"> Operations</emphasis> icon,
@@ -491,7 +491,7 @@
       </sect4>
 
       <sect4 id="UsingSecurity_DeleteUserFromGroup">
-        <title>To delete a user from a group:</title>
+        <!-- DNT-Start --><title>To delete a user from a group:</title><!-- DNT-End -->
 
         <para>To delete a user from a group you must have Administrator level
         access.</para>
@@ -551,7 +551,7 @@
       </sect4>
 
       <sect4 id="UsingSecurity_ChangeUsersPassword">
-        <title>To change a user's password:</title>
+        <!-- DNT-Start --><title>To change a user's password:</title><!-- DNT-End -->
 
         <para>Click on the<emphasis role="bold"> Operations</emphasis> icon,
         then click the <emphasis role="bold">Security</emphasis> link from the
@@ -607,7 +607,7 @@
       </sect4>
 
       <sect4 id="UsingSecurity_DeleteUserFromListofAuthenticatedUsers">
-        <title>To delete a user from the list of authenticated users:</title>
+        <!-- DNT-Start --><title>To delete a user from the list of authenticated users:</title><!-- DNT-End -->
 
         <para>Click on the<emphasis role="bold"> Operations</emphasis> icon,
         then click the <emphasis role="bold">Security</emphasis> link from the
@@ -626,7 +626,7 @@
               remove.</para>
 
               <para><emphasis role="bold">Note:</emphasis> These users will no
-              longer have access to ECL Watch.</para>
+              longer have access to <!-- DNT-Start -->ECL<!-- DNT-End --> Watch.</para>
             </listitem>
 
             <listitem>
@@ -640,18 +640,18 @@
     </sect3>
 
     <sect3 id="UsingSecurity_SettingPermissionsForIndividualUser">
-      <title>Setting permissions for an individual user</title>
+      <!-- DNT-Start --><title>Setting permissions for an individual user</title><!-- DNT-End -->
 
       <para>There may be occasions when you need to modify the permissions for
       individual users. For example, users may have individual security needs
       that are not completely covered in any group or, there may be occasions
-      when a user requires temporary access to an HPCC feature. Permissions
-      set in this area of ECL Watch only affect the user you choose. Most
+      when a user requires temporary access to an <!-- DNT-Start -->HPCC<!-- DNT-End --> feature. Permissions
+      set in this area of <!-- DNT-Start -->ECL<!-- DNT-End --> Watch only affect the user you choose. Most
       individual permissions you set here overwrite ones set in any group to
       which the user belongs, except in the case of an explicit deny.</para>
 
       <sect4>
-        <title>To set permissions for an individual user:</title>
+        <!-- DNT-Start --><title>To set permissions for an individual user:</title><!-- DNT-End -->
 
         <para>Click on the<emphasis role="bold"> Operations</emphasis> icon,
         then click the <emphasis role="bold">Security</emphasis> link from the
@@ -751,11 +751,11 @@
     </sect3>
 
     <sect3 id="UsingSecurity_SettingUpModifyingGroupPermissions">
-      <title>Setting and modifying group permissions</title>
+      <!-- DNT-Start --><title>Setting and modifying group permissions</title><!-- DNT-End -->
 
       <para>Setting up groups ensures that all users with the same permission
       needs have the same permission settings. You can give users the access
-      they require to the feature areas of HPCC that they need. There is no
+      they require to the feature areas of <!-- DNT-Start -->HPCC<!-- DNT-End --> that they need. There is no
       limit to the number of groups you can create. You can create as many
       groups as you need to control access for all your users regardless of
       their tasks.</para>
@@ -780,7 +780,7 @@
         </itemizedlist></para>
 
       <sect4 id="UsingSecurity_AddingEditingGroups">
-        <title>Adding and editing groups</title>
+        <!-- DNT-Start --><title>Adding and editing groups</title><!-- DNT-End -->
 
         <para>When adding or changing the permissions for a group, all members
         of that group are given those permission settings. So it is important
@@ -796,7 +796,7 @@
       </sect4>
 
       <sect4 id="UsingSecurity_ToAddNewGroup">
-        <title>To add a new group:</title>
+        <!-- DNT-Start --><title>To add a new group:</title><!-- DNT-End -->
 
         <para>Click on the <emphasis role="bold">Operations</emphasis> icon,
         then click the <emphasis role="bold">Security</emphasis> link from the
@@ -862,7 +862,7 @@
       </sect4>
 
       <sect4 id="UsingSecurity_ToDeleteGroup">
-        <title>To delete a group:</title>
+        <!-- DNT-Start --><title>To delete a group:</title><!-- DNT-End -->
 
         <para>Click on the <emphasis role="bold">Operations</emphasis> icon,
         then click the <emphasis role="bold">Security</emphasis> link from the
@@ -885,7 +885,7 @@
             </listitem>
 
             <listitem>
-              <para>Press the <emphasis role="bold">OK</emphasis> confirmation
+              <para>Press the <emphasis role="bold"><!-- DNT-Start -->OK<!-- DNT-End --></emphasis> confirmation
               button.</para>
 
               <para>The group no longer displays in the list.</para>
@@ -894,7 +894,7 @@
       </sect4>
 
       <sect4 id="UsingSecurity_ToAddNewMembersToGroup">
-        <title>To add new members to a group:</title>
+        <!-- DNT-Start --><title>To add new members to a group:</title><!-- DNT-End -->
 
         <para>Click on the <emphasis role="bold">Operations</emphasis> icon,
         then click the <emphasis role="bold">Security</emphasis> link from the
@@ -945,7 +945,7 @@
       </sect4>
 
       <sect4 id="UsingSecurity_ToDeleteMembersFromGroup">
-        <title>To delete members from a group:</title>
+        <!-- DNT-Start --><title>To delete members from a group:</title><!-- DNT-End -->
 
         <para>Click on the <emphasis role="bold">Operations</emphasis> icon,
         then click the <emphasis role="bold">Security</emphasis> link from the
@@ -997,7 +997,7 @@
     </sect3>
 
     <sect3 id="UsingSecurity_SettingPermissionsForGroup">
-      <title>Setting permissions for a group</title>
+      <!-- DNT-Start --><title>Setting permissions for a group</title><!-- DNT-End -->
 
       <para>By default, all users are members of the <emphasis
       role="bold">Authenticated Users </emphasis>group. The <emphasis
@@ -1007,7 +1007,7 @@
 
       <para>You can then create groups with only those access rights you wish
       to grant. This approach allows the most flexibility since a single User
-      ID can have multiple group memberships.</para>
+      <!-- DNT-Start -->ID<!-- DNT-End --> can have multiple group memberships.</para>
 
       <para>As a best practice, you should use <emphasis
       role="bold">Allow</emphasis> instead of <emphasis
@@ -1023,7 +1023,7 @@
       that user will still not have file access.</para>
 
       <sect4 id="UsingSecurity_ToSetPermissionsForGroup">
-        <title>To set permissions for a group:</title>
+        <!-- DNT-Start --><title>To set permissions for a group:</title><!-- DNT-End -->
 
         <para>Click on the <emphasis role="bold">Operations</emphasis> icon,
         then click the <emphasis role="bold">Security</emphasis> link from the
@@ -1123,9 +1123,9 @@
   </sect2>
 
   <sect2 id="Feature_Access">
-    <title>Feature level access control</title>
+    <!-- DNT-Start --><title>Feature level access control</title><!-- DNT-End -->
 
-    <para>Access to the feature permissions is available through ECL Watch. In
+    <para>Access to the feature permissions is available through <!-- DNT-Start -->ECL<!-- DNT-End --> Watch. In
     order to modify feature permissions you must have Administrator level
     access. To access the feature permissions click on the <emphasis
     role="bold">Operations</emphasis> icon, then click the <emphasis
@@ -1154,11 +1154,11 @@
   </sect2>
 
   <sect2 id="Feature_Resources" role="brk">
-    <title>Feature resources</title>
+    <!-- DNT-Start --><title>Feature resources</title><!-- DNT-End -->
 
     <para>There are several features for which you can set up access control
-    in HPCC. Access to features of the HPCC system is controlled by via the
-    <emphasis role="bold">ESP Features for SMC</emphasis> category. <graphic
+    in <!-- DNT-Start -->HPCC<!-- DNT-End -->. Access to features of the <!-- DNT-Start -->HPCC<!-- DNT-End --> system is controlled by via the
+    <emphasis role="bold"><!-- DNT-Start -->ESP<!-- DNT-End --> Features for <!-- DNT-Start -->SMC<!-- DNT-End --></emphasis> category. <graphic
     fileref="../../images/Perm006.jpg" vendor="eclwatchSS" /></para>
 
     <para>The available features are listed under the <emphasis
@@ -1168,11 +1168,11 @@
     tab opens that displays the users and groups where those feature
     permissions are applied.</para>
 
-    <para>ECL Watch feature permission settings that are not listed are not
+    <para><!-- DNT-Start -->ECL<!-- DNT-End --> Watch feature permission settings that are not listed are not
     relevant and should not be used.</para>
 
     <sect3 id="ApplyPermissionsFeatureResource">
-      <title>Apply permissions for a feature resource:</title>
+      <!-- DNT-Start --><title>Apply permissions for a feature resource:</title><!-- DNT-End -->
 
       <para>To use the feature permissions, you must apply them to a user or
       group(s). To access the feature permissions click on the <emphasis
@@ -1232,10 +1232,10 @@
     </sect3>
 
     <sect3 id="FeaturePermissions" role="brk">
-      <title>SMC Feature Permissions</title>
+      <!-- DNT-Start --><title>SMC Feature Permissions</title><!-- DNT-End -->
 
       <para>The following table describes the level of access required to be
-      able to use these HPCC ECL Watch features.</para>
+      able to use these <!-- DNT-Start -->HPCC<!-- DNT-End --> <!-- DNT-Start -->ECL<!-- DNT-End --> Watch features.</para>
 
       <para><informaltable>
           <tgroup cols="3">
@@ -1247,7 +1247,7 @@
 
             <thead>
               <row>
-                <entry>Name</entry>
+                <entry><!-- DNT-Start -->Name<!-- DNT-End --></entry>
 
                 <entry>Description</entry>
 
@@ -1257,7 +1257,7 @@
 
             <tbody>
               <row>
-                <entry>ClusterTopologyAccess</entry>
+                <entry><!-- DNT-Start -->ClusterTopologyAccess<!-- DNT-End --></entry>
 
                 <entry>Access to Cluster Topology</entry>
 
@@ -1267,15 +1267,15 @@
               <row>
                 <entry></entry>
 
-                <entry>Access to log files.</entry>
+                <entry><!-- DNT-Start -->Access to log files.<!-- DNT-End --></entry>
 
                 <entry>Full</entry>
               </row>
 
               <row>
-                <entry>DfuAccess</entry>
+                <entry><!-- DNT-Start -->DfuAccess<!-- DNT-End --></entry>
 
-                <entry>Access to DFU Logical Files</entry>
+                <entry>Access to <!-- DNT-Start -->DFU<!-- DNT-End --> Logical Files</entry>
 
                 <entry>Read</entry>
               </row>
@@ -1283,8 +1283,8 @@
               <row>
                 <entry></entry>
 
-                <entry>Delete Files, add to superfiles, and remove from
-                superfiles</entry>
+                <entry><!-- DNT-Start -->Delete Files, add to superfiles, and remove from
+                superfiles<!-- DNT-End --></entry>
 
                 <entry>Write</entry>
               </row>
@@ -1292,23 +1292,23 @@
               <row>
                 <entry></entry>
 
-                <entry>Erase file history metadata </entry>
+                <entry><!-- DNT-Start -->Erase file history metadata <!-- DNT-End --></entry>
 
                 <entry>Full</entry>
               </row>
 
               <row>
-                <entry>DfuExceptions</entry>
+                <entry><!-- DNT-Start -->DfuExceptions<!-- DNT-End --></entry>
 
-                <entry>Access to DFU Exceptions</entry>
+                <entry>Access to <!-- DNT-Start -->DFU<!-- DNT-End --> Exceptions</entry>
 
                 <entry>Read</entry>
               </row>
 
               <row>
-                <entry>DfuWorkunitsAccess</entry>
+                <entry><!-- DNT-Start -->DfuWorkunitsAccess<!-- DNT-End --></entry>
 
-                <entry>Access to View DFU Workunits</entry>
+                <entry>Access to View <!-- DNT-Start -->DFU<!-- DNT-End --> Workunits</entry>
 
                 <entry>Read</entry>
               </row>
@@ -1316,48 +1316,16 @@
               <row>
                 <entry></entry>
 
-                <entry>Access to Create, Delete, Update, Submit, and Abort DFU
-                Workunits</entry>
+                <entry><!-- DNT-Start -->Access to Create, Delete, Update, Submit, and Abort DFU
+                Workunits<!-- DNT-End --></entry>
 
                 <entry>Write</entry>
               </row>
 
               <row>
-                <entry>DfuXrefAccess</entry>
+                <entry><!-- DNT-Start -->DfuXrefAccess<!-- DNT-End --></entry>
 
-                <entry>Access to DFU XREF</entry>
-
-                <entry>Read</entry>
-              </row>
-
-              <row>
-                <entry></entry>
-
-                <entry>Clean directory</entry>
-
-                <entry>Write</entry>
-              </row>
-
-              <row>
-                <entry></entry>
-
-                <entry>Make changes and generate XREF Reports</entry>
-
-                <entry>Full</entry>
-              </row>
-
-              <row>
-                <entry>EclDirectAccess</entry>
-
-                <entry>Access to ECL direct service.</entry>
-
-                <entry>Full</entry>
-              </row>
-
-              <row>
-                <entry>ESDLConfigAccess</entry>
-
-                <entry>ESDL Config Access</entry>
+                <entry>Access to <!-- DNT-Start -->DFU<!-- DNT-End --> <!-- DNT-Start -->XREF<!-- DNT-End --></entry>
 
                 <entry>Read</entry>
               </row>
@@ -1365,8 +1333,7 @@
               <row>
                 <entry></entry>
 
-                <entry>Publish ESDL definition and ESDL binding, configure
-                ESDL binding method.</entry>
+                <entry><!-- DNT-Start -->Clean directory<!-- DNT-End --></entry>
 
                 <entry>Write</entry>
               </row>
@@ -1374,13 +1341,46 @@
               <row>
                 <entry></entry>
 
-                <entry>Delete ESDL definitions, delete ESDL bindings.</entry>
+                <entry><!-- DNT-Start -->Make changes and generate XREF Reports<!-- DNT-End --></entry>
 
                 <entry>Full</entry>
               </row>
 
               <row>
-                <entry>FileDesprayAccess</entry>
+                <entry><!-- DNT-Start -->EclDirectAccess<!-- DNT-End --></entry>
+
+                <entry>Access to <!-- DNT-Start -->ECL<!-- DNT-End --> direct service.</entry>
+
+                <entry>Full</entry>
+              </row>
+
+              <row>
+                <entry><!-- DNT-Start -->ESDLConfigAccess<!-- DNT-End --></entry>
+
+                <entry><!-- DNT-Start -->ESDL<!-- DNT-End --> Config Access</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry><!-- DNT-Start -->Publish ESDL definition and ESDL binding, configure
+                ESDL binding method.<!-- DNT-End --></entry>
+
+                <entry>Write</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry><!-- DNT-Start -->Delete ESDL definitions, delete ESDL bindings.<!-- DNT-End --></entry>
+
+                <entry>Full</entry>
+              </row>
+
+              <row>
+                <entry><!-- DNT-Start -->FileDesprayAccess<!-- DNT-End --></entry>
 
                 <entry>Allows a user to despray logical files.</entry>
 
@@ -1388,7 +1388,7 @@
               </row>
 
               <row>
-                <entry>FileIOAccess</entry>
+                <entry><!-- DNT-Start -->FileIOAccess<!-- DNT-End --></entry>
 
                 <entry>Access to read files in Drop zone</entry>
 
@@ -1398,13 +1398,13 @@
               <row>
                 <entry></entry>
 
-                <entry>Access to write to files in Drop zone</entry>
+                <entry><!-- DNT-Start -->Access to write to files in Drop zone<!-- DNT-End --></entry>
 
                 <entry>Write</entry>
               </row>
 
               <row>
-                <entry>PackageMapAccess</entry>
+                <entry><!-- DNT-Start -->PackageMapAccess<!-- DNT-End --></entry>
 
                 <entry>Access to ListPackage, ListPackages, GetPackage, GetPackageMapById, ValidatePackage,
                 GetQueryFileMapping, GetPackageMapSelectOptions, GetPartFromPackageMap</entry>
@@ -1415,8 +1415,8 @@
               <row>
                 <entry></entry>
 
-                <entry>Access to AddPackage, CopyPackageMap, ActivatePackage,
-                DeActivatePackage, AddPartToPackageMap, RemovePartFromPackageMap</entry>
+                <entry><!-- DNT-Start -->Access to AddPackage, CopyPackageMap, ActivatePackage,
+                DeActivatePackage, AddPartToPackageMap, RemovePartFromPackageMap<!-- DNT-End --></entry>
 
                 <entry>Write</entry>
               </row>
@@ -1424,13 +1424,13 @@
               <row>
                 <entry></entry>
 
-                <entry>DeletePackage</entry>
+                <entry><!-- DNT-Start -->DeletePackage<!-- DNT-End --></entry>
 
                 <entry>Full</entry>
               </row>
 
               <row>
-                <entry>FileScopeAccess</entry>
+                <entry><!-- DNT-Start -->FileScopeAccess<!-- DNT-End --></entry>
 
                 <entry>Allows access to query, set, modify, and delete File
                 Scope Permissions</entry>
@@ -1439,7 +1439,7 @@
               </row>
 
               <row>
-                <entry>FileSprayAccess</entry>
+                <entry><!-- DNT-Start -->FileSprayAccess<!-- DNT-End --></entry>
 
                 <entry>Access to Spraying and Copying</entry>
 
@@ -1449,7 +1449,7 @@
               <row>
                 <entry></entry>
 
-                <entry>Rename, spray, copy, and replicate files</entry>
+                <entry><!-- DNT-Start -->Rename, spray, copy, and replicate files<!-- DNT-End --></entry>
 
                 <entry>Write</entry>
               </row>
@@ -1457,13 +1457,13 @@
               <row>
                 <entry></entry>
 
-                <entry>Delete from Drop zone</entry>
+                <entry><!-- DNT-Start -->Delete from Drop zone<!-- DNT-End --></entry>
 
                 <entry>Full</entry>
               </row>
 
               <row>
-                <entry>MachineInfoAccess</entry>
+                <entry><!-- DNT-Start -->MachineInfoAccess<!-- DNT-End --></entry>
 
                 <entry>Access to machine/Preflight Information</entry>
 
@@ -1471,16 +1471,16 @@
               </row>
 
               <row>
-                <entry>MetricsAccess</entry>
+                <entry><!-- DNT-Start -->MetricsAccess<!-- DNT-End --></entry>
 
-                <entry>Access to SNMP Metrics Information (Roxie
+                <entry>Access to <!-- DNT-Start -->SNMP<!-- DNT-End --> Metrics Information (Roxie
                 Metrics)</entry>
 
                 <entry>Read</entry>
               </row>
 
               <row>
-                <entry>OthersWorkunitsAccess</entry>
+                <entry><!-- DNT-Start -->OthersWorkunitsAccess<!-- DNT-End --></entry>
 
                 <entry>Access to View Other User's Workunits</entry>
 
@@ -1490,7 +1490,7 @@
               <row>
                 <entry></entry>
 
-                <entry>Access to Modify or Resubmit User's Workunits</entry>
+                <entry><!-- DNT-Start -->Access to Modify or Resubmit User's Workunits<!-- DNT-End --></entry>
 
                 <entry>Write</entry>
               </row>
@@ -1498,13 +1498,13 @@
               <row>
                 <entry></entry>
 
-                <entry>Access to Delete Other User's Workunits</entry>
+                <entry><!-- DNT-Start -->Access to Delete Other User's Workunits<!-- DNT-End --></entry>
 
                 <entry>Full</entry>
               </row>
 
               <row>
-                <entry>OwnWorkunitsAccess</entry>
+                <entry><!-- DNT-Start -->OwnWorkunitsAccess<!-- DNT-End --></entry>
 
                 <entry>Access to View Own Workunit</entry>
 
@@ -1514,7 +1514,7 @@
               <row>
                 <entry></entry>
 
-                <entry>Access to Create or Modify Own Workunit</entry>
+                <entry><!-- DNT-Start -->Access to Create or Modify Own Workunit<!-- DNT-End --></entry>
 
                 <entry>Write</entry>
               </row>
@@ -1522,13 +1522,13 @@
               <row>
                 <entry></entry>
 
-                <entry>Access to Delete Own Workunits</entry>
+                <entry><!-- DNT-Start -->Access to Delete Own Workunits<!-- DNT-End --></entry>
 
                 <entry>Full</entry>
               </row>
 
               <row>
-                <entry>RoxieControlAccess</entry>
+                <entry><!-- DNT-Start -->RoxieControlAccess<!-- DNT-End --></entry>
 
                 <entry>Access to Roxie control commands</entry>
 
@@ -1536,15 +1536,15 @@
               </row>
 
               <row>
-                <entry>SmcAccess</entry>
+                <entry><!-- DNT-Start -->SmcAccess<!-- DNT-End --></entry>
 
-                <entry>Access to ECL Watch (SMC Service)</entry>
+                <entry>Access to <!-- DNT-Start -->ECL<!-- DNT-End --> Watch (<!-- DNT-Start -->SMC<!-- DNT-End --> Service)</entry>
 
                 <entry>Read</entry>
               </row>
 
               <row>
-                <entry>ThorQueueAccess</entry>
+                <entry><!-- DNT-Start -->ThorQueueAccess<!-- DNT-End --></entry>
 
                 <entry>Access to Thor Job Queue Control</entry>
 
@@ -1552,9 +1552,9 @@
               </row>
 
               <row>
-                <entry>WsEclAccess</entry>
+                <entry><!-- DNT-Start -->WsEclAccess<!-- DNT-End --></entry>
 
-                <entry>Access to WS ECL service</entry>
+                <entry>Access to <!-- DNT-Start -->WS<!-- DNT-End --> <!-- DNT-Start -->ECL<!-- DNT-End --> service</entry>
 
                 <entry>Full</entry>
               </row>
@@ -1563,12 +1563,12 @@
         </informaltable></para>
 
       <sect4 id="FeaturePermissions_Login">
-        <title>Some Feature Permissions Notes</title>
+        <!-- DNT-Start --><title>Some Feature Permissions Notes</title><!-- DNT-End -->
 
         <itemizedlist>
           <listitem>
             <para>SMCAccess is required to be able to successfully login to
-            ECL Watch.</para>
+            <!-- DNT-Start -->ECL<!-- DNT-End --> Watch.</para>
           </listitem>
 
           <listitem>
@@ -1589,7 +1589,7 @@
 
           <listitem>
             <para>DfuWorkunitsAccess permissions allow users to view and/or
-            manipulate DFU Workunits.</para>
+            manipulate <!-- DNT-Start -->DFU<!-- DNT-End --> Workunits.</para>
           </listitem>
 
           <listitem>
@@ -1602,11 +1602,11 @@
       </sect4>
 
       <sect4 id="FeaturePermissions_DFUFiles">
-        <title>DFU Xref</title>
+        <!-- DNT-Start --><title>DFU Xref</title><!-- DNT-End -->
 
-        <para>XREF is used for monitoring files on the cluster(s). Reports
+        <!-- DNT-Start --><para>XREF is used for monitoring files on the cluster(s). Reports
         generated show where housekeeping is required on the cluster(s) and
-        users require additional permission to use this feature.</para>
+        users require additional permission to use this feature.</para><!-- DNT-End -->
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <?dbfo keep-together="always"?>
@@ -1622,8 +1622,8 @@
                 fileref="../../images/tip.jpg" /></entry>
 
                 <entry><para>On a large system, we suggest limiting the number
-                of users who can Generate XREF reports by setting
-                DfuXrefAccess access to FULL for only those
+                of users who can Generate <!-- DNT-Start -->XREF<!-- DNT-End --> reports by setting
+                DfuXrefAccess access to <!-- DNT-Start -->FULL<!-- DNT-End --> for only those
                 users.</para><para> </para></entry>
               </row>
             </tbody>
@@ -1632,26 +1632,26 @@
       </sect4>
 
       <sect4 id="FeaturePermissions_UserPermissions">
-        <title>Users/Permissions</title>
+        <!-- DNT-Start --><title>Users/Permissions</title><!-- DNT-End -->
 
         <para>To be able to view the <emphasis
-        role="bold">Users/Permissions</emphasis> area in ECL Watch, a user
+        role="bold">Users/Permissions</emphasis> area in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch, a user
         must be a member of the Administrators (or similarly named) group with
-        the appropriate permissions on the LDAP or Active Directory
+        the appropriate permissions on the <!-- DNT-Start -->LDAP<!-- DNT-End --> or Active Directory
         server.</para>
       </sect4>
     </sect3>
   </sect2>
 
   <sect2 id="FeaturePermissions_FileAccessControl">
-    <title><emphasis role="bold">File Access Control</emphasis></title>
+    <!-- DNT-Start --><title><emphasis role="bold">File Access Control</emphasis></title><!-- DNT-End -->
 
-    <para>The HPCC’s LDAP <emphasis role="bold">Dali Server</emphasis>
+    <para>The <!-- DNT-Start -->HPCCâ<!-- DNT-End -->s <!-- DNT-Start -->LDAP<!-- DNT-End --> <emphasis role="bold">Dali Server</emphasis>
     technology provides the ability to set secure access permissions to data
     file folders (or file scopes). This is controlled by the use of file scope
     resources.</para>
 
-    <para>An OU called <emphasis role="bold">Files</emphasis> is automatically
+    <para>An <!-- DNT-Start -->OU<!-- DNT-End --> called <emphasis role="bold">Files</emphasis> is automatically
     created when the Dali server starts. To secure data folders, create a file
     scope for that folder and apply rights to each scope.</para>
 
@@ -1666,7 +1666,7 @@
       </figure></para>
 
     <para>For example, below <emphasis role="bold">Files</emphasis> there is a
-    unit (OU) representing the cluster, such as <emphasis
+    unit (<!-- DNT-Start -->OU<!-- DNT-End -->) representing the cluster, such as <emphasis
     role="bold">thor</emphasis> (or the name that you set up for your
     cluster). Furthering the example, below that could be a unit named
     <emphasis role="bold">collectionx</emphasis> which contains two units,
@@ -1688,14 +1688,14 @@
     role="bold">/var/lib/HPCCSystems/hpcc-data/thor/collectionx/securedata
     </emphasis></para>
 
-    <para>All HPCC components and tools respect LDAP file access security. The
+    <para>All <!-- DNT-Start -->HPCC<!-- DNT-End --> components and tools respect <!-- DNT-Start -->LDAP<!-- DNT-End --> file access security. The
     following exceptions are assumed to be system level or for administrative
     users:</para>
 
     <itemizedlist>
       <listitem>
         <para>Network file access using UNCs, Terminal Services, or
-        SSH.</para>
+        <!-- DNT-Start -->SSH<!-- DNT-End -->.</para>
       </listitem>
 
       <listitem>
@@ -1706,17 +1706,17 @@
     <para>Attempting to access a file in a folder for which access is not
     granted will result in one of the following errors:</para>
 
-    <programlisting>DFS Exception: 4 Create access denied for scope &lt;filepath&gt;</programlisting>
+    <!-- DNT-Start --><programlisting>DFS Exception: 4 Create access denied for scope &lt;filepath&gt;</programlisting><!-- DNT-End -->
 
     <para>or</para>
 
-    <programlisting>DFS Exception: 3 Lookup access denied for scope &lt;filepath&gt;</programlisting>
+    <!-- DNT-Start --><programlisting>DFS Exception: 3 Lookup access denied for scope &lt;filepath&gt;</programlisting><!-- DNT-End -->
 
     <para>(where &lt;filepath&gt; is the full logical file scope path)</para>
   </sect2>
 
   <sect2 id="Adding_File_Scopes">
-    <title>Creating file scopes</title>
+    <!-- DNT-Start --><title>Creating file scopes</title><!-- DNT-End -->
 
     <para>To apply permissions to a file scope, you must first create the file
     scope(s).</para>
@@ -1768,7 +1768,7 @@
     </orderedlist>
 
     <sect3 id="AddingFileScopes_SettingScopePermissions">
-      <title>Setting permissions for file scopes</title>
+      <!-- DNT-Start --><title>Setting permissions for file scopes</title><!-- DNT-End -->
 
       <para>You must apply permissions for file scopes to users or group(s).
       If you want to apply the scope to a new group, create the group(s) as
@@ -1837,7 +1837,7 @@
     </sect3>
 
     <sect3 id="Security_FileScopeFeatures">
-      <title>File scope features</title>
+      <!-- DNT-Start --><title>File scope features</title><!-- DNT-End -->
 
       <para>Below the List of File Scopes, there are buttons that allow you
       to:</para>
@@ -1862,7 +1862,7 @@
         <listitem>
           <para>Check File Permissions for a user or group</para>
 
-          <para>This provides a way to check a user or group’s access to a
+          <para>This provides a way to check a user or groupâs access to a
           logical file.</para>
 
           <para><graphic fileref="../../images/Perm030.jpg"
@@ -1885,7 +1885,7 @@
           permissions and removes all access control, but improves
           performance. Disabling access control is not recommended.</para>
 
-          <para>Changing this setting through ECL Watch, as described here, is
+          <para>Changing this setting through <!-- DNT-Start -->ECL<!-- DNT-End --> Watch, as described here, is
           only a temporary override. When Dali restarts this setting will
           revert to what is defined in the configuration
           environment.xml.</para>
@@ -1898,20 +1898,20 @@
   </sect2>
 
   <sect2 id="Security_WorkunitAccessControl">
-    <title>Workunit Access Control</title>
+    <!-- DNT-Start --><title>Workunit Access Control</title><!-- DNT-End -->
 
-    <para>There are 2 aspects of workunit (WU) security:</para>
+    <para>There are 2 aspects of workunit (<!-- DNT-Start -->WU<!-- DNT-End -->) security:</para>
 
     <itemizedlist>
       <listitem>
         <para>Feature Authentication for workunits allows you to set
         permissions to control whether users can view their own WUs and/or
-        other users’ WUs.</para>
+        other usersâ WUs.</para>
       </listitem>
 
       <listitem>
         <para>Workunit Scope security provides the ability to set permissions
-        for individual WU scopes. All new workunits have a scope value.</para>
+        for individual <!-- DNT-Start -->WU<!-- DNT-End --> scopes. All new workunits have a scope value.</para>
       </listitem>
     </itemizedlist>
 
@@ -1920,49 +1920,49 @@
 
     <para>In other words, if someone is granted permission to see WUs in the
     scope <emphasis>johndoe </emphasis>but is denied permission to see other
-    users’ WUs in the Feature Authentication permissions, this user would be
+    usersâ WUs in the Feature Authentication permissions, this user would be
     denied access to see the WUs in the<emphasis> johndoe</emphasis>
     scope.</para>
 
-    <para>Conversely, if the user is allowed access to see other people’s WUs
-    but is denied access to the <emphasis>johndoe </emphasis>WU<emphasis>
+    <para>Conversely, if the user is allowed access to see other peopleâs WUs
+    but is denied access to the <emphasis>johndoe </emphasis><!-- DNT-Start -->WU<!-- DNT-End --><emphasis>
     </emphasis>scope, this user will be able to see other WUs in that
     scope.</para>
 
     <para><emphasis role="bold">Note:</emphasis> If you do not have access to
-    a WU, you will never be able to view it or even know of its
+    a <!-- DNT-Start -->WU<!-- DNT-End -->, you will never be able to view it or even know of its
     existence.</para>
 
-    <para>By default, a submitted WU has a scope of the user’s ID. For
-    example, a WU JohnDoe submits has <emphasis>scope=johndoe</emphasis> in
-    the WU. This value in a WU allows ESP and its services to use LDAP to
+    <para>By default, a submitted <!-- DNT-Start -->WU<!-- DNT-End --> has a scope of the userâs <!-- DNT-Start -->ID<!-- DNT-End -->. For
+    example, a <!-- DNT-Start -->WU<!-- DNT-End --> JohnDoe submits has <emphasis>scope=johndoe</emphasis> in
+    the <!-- DNT-Start -->WU<!-- DNT-End -->. This value in a <!-- DNT-Start -->WU<!-- DNT-End --> allows <!-- DNT-Start -->ESP<!-- DNT-End --> and its services to use <!-- DNT-Start -->LDAP<!-- DNT-End --> to
     check for permissions and enforce those permissions.</para>
 
-    <para>You can override the default scope using ECL Code:</para>
+    <para>You can override the default scope using <!-- DNT-Start -->ECL<!-- DNT-End --> Code:</para>
 
-    <para><programlisting>#workunit(‘scope’,’MyScopeValue’);</programlisting></para>
+    <para><programlisting>#workunit(âscopeâ,âMyScopeValueâ);</programlisting></para>
 
     <sect3 id="Securing_Workunit_Scopes">
-      <title>Securing workunit scopes</title>
+      <!-- DNT-Start --><title>Securing workunit scopes</title><!-- DNT-End -->
 
-      <para>ESP (on startup) automatically creates an LDAP OU called <emphasis
-      role="bold">Workunits</emphasis> (unless it already exists). If this OU
-      is automatically created, the OU is made with full permissions granted
-      to all authenticated users. All WU scopes are below the
-      <emphasis>workunits</emphasis> OU either implicitly or
+      <para><!-- DNT-Start -->ESP<!-- DNT-End --> (on startup) automatically creates an <!-- DNT-Start -->LDAP<!-- DNT-End --> <!-- DNT-Start -->OU<!-- DNT-End --> called <emphasis
+      role="bold">Workunits</emphasis> (unless it already exists). If this <!-- DNT-Start -->OU<!-- DNT-End -->
+      is automatically created, the <!-- DNT-Start -->OU<!-- DNT-End --> is made with full permissions granted
+      to all authenticated users. All <!-- DNT-Start -->WU<!-- DNT-End --> scopes are below the
+      <emphasis>workunits</emphasis> <!-- DNT-Start -->OU<!-- DNT-End --> either implicitly or
       explicitly.</para>
 
-      <para>If a specific scope OU does not exist in LDAP (e.g., the scope
-      johndoe used in earlier example), then the parent OU’s permissions are
+      <para>If a specific scope <!-- DNT-Start -->OU<!-- DNT-End --> does not exist in <!-- DNT-Start -->LDAP<!-- DNT-End --> (e.g., the scope
+      johndoe used in earlier example), then the parent OUâs permissions are
       used. In other words, the scope of <emphasis>johndoe</emphasis> is
-      implicitly under the <emphasis>workunits</emphasis> OU even though it
-      might not be explicitly listed in the LDAP structure and therefore it
+      implicitly under the <emphasis>workunits</emphasis> <!-- DNT-Start -->OU<!-- DNT-End --> even though it
+      might not be explicitly listed in the <!-- DNT-Start -->LDAP<!-- DNT-End --> structure and therefore it
       would use the permissions granted for the parent, <emphasis>workunits
       .</emphasis></para>
     </sect3>
 
     <sect3 id="Workunits_Feature_Permissions">
-      <title>Workunits feature permissions</title>
+      <!-- DNT-Start --><title>Workunits feature permissions</title><!-- DNT-End -->
 
       <para>Using the <emphasis role="bold">Workunit Scopes</emphasis> feature
       in the <emphasis role="bold">Permissions</emphasis> area of ECL Watch
@@ -1972,7 +1972,7 @@
           <tgroup cols="2">
             <thead>
               <row>
-                <entry>Description</entry>
+                <entry><!-- DNT-Start -->Description<!-- DNT-End --></entry>
 
                 <entry>Access</entry>
               </row>
@@ -1980,19 +1980,19 @@
 
             <tbody>
               <row>
-                <entry>View WUs in that scope</entry>
+                <entry><!-- DNT-Start -->View WUs in that scope<!-- DNT-End --></entry>
 
                 <entry>Read</entry>
               </row>
 
               <row>
-                <entry>Create/modify a WU in that scope</entry>
+                <entry><!-- DNT-Start -->Create/modify a WU in that scope<!-- DNT-End --></entry>
 
                 <entry>Write</entry>
               </row>
 
               <row>
-                <entry>Delete a WU in that scope</entry>
+                <entry><!-- DNT-Start -->Delete a WU in that scope<!-- DNT-End --></entry>
 
                 <entry>Full</entry>
               </row>
@@ -2003,7 +2003,7 @@
   </sect2>
 
   <sect2 id="Adding_WorkUnit_Scopes">
-    <title>Adding workunit scopes</title>
+    <!-- DNT-Start --><title>Adding workunit scopes</title><!-- DNT-End -->
 
     <para>To add workunit scope permissions click on the <emphasis
     role="bold">Operations</emphasis> icon, then click the <emphasis
@@ -2053,7 +2053,7 @@
     </orderedlist>
 
     <sect3 id="UsingSecurity_SetScopePermissions">
-      <title>Set permissions to the scope.</title>
+      <!-- DNT-Start --><title>Set permissions to the scope.</title><!-- DNT-End -->
 
       <para>You apply the workunit scopes to a group. If you want to apply the
       scope to a new group, create the group(s) as required.</para>
@@ -2123,34 +2123,34 @@
   </sect2>
 
   <sect2 id="permissions_cache" role="brk">
-    <title>Permission Caching</title>
+    <!-- DNT-Start --><title>Permission Caching</title><!-- DNT-End -->
 
     <para>A helpful feature found on the Permissions tab is the
     <emphasis>Clear Permissions Cache</emphasis> button. The <emphasis>Clear
     Permissions Cache</emphasis> button clears the cached permissions from
-    Dali and ESP.</para>
+    Dali and <!-- DNT-Start -->ESP<!-- DNT-End -->.</para>
 
-    <para>When you change a permission in ECL Watch, the settings are cached
-    in the ESP server and stored in the Dali server. The information in the
+    <para>When you change a permission in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch, the settings are cached
+    in the <!-- DNT-Start -->ESP<!-- DNT-End --> server and stored in the Dali server. The information in the
     cache is updated at a configurable interval. This value can be set in the
-    Configuration Manager under the <emphasis>LDAP Server settings
+    Configuration Manager under the <emphasis><!-- DNT-Start -->LDAP<!-- DNT-End --> Server settings
     Attributes</emphasis> tab. The default cacheTimeout is 5 minutes.</para>
 
     <para><graphic fileref="../../images/Perm002.jpg"
     vendor="eclwatchSS" />The Permissions Cache can be cleared from anywhere
-    on the permissions tab in ECL Watch.</para>
+    on the permissions tab in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch.</para>
 
     <para>When you want a permission change to take effect immediately, you
     can clear the cache and force Dali to update the permission settings by
     pressing the <emphasis role="bold">Clear Permissions Cache</emphasis>
     button. This action transfers the settings when you press the button. Use
     this feature judiciously as overall system performance is affected
-    temporarily while the LDAP settings in the Dali System Data Store
+    temporarily while the <!-- DNT-Start -->LDAP<!-- DNT-End --> settings in the Dali System Data Store
     repopulate.</para>
   </sect2>
 
   <sect2 id="Advanced_Permissions" role="brk">
-    <title>Advanced Permissions</title>
+    <!-- DNT-Start --><title>Advanced Permissions</title><!-- DNT-End -->
 
     <para>On the Permissions tab is the <emphasis
     role="bold">Advanced</emphasis> (Permissions) button. The Advanced
@@ -2203,7 +2203,7 @@
     security needs to be enabled in your system configuration in order to use
     File or Workunit Scope security on your system.</para>
 
-    <!-- /*Note: Maybe include the doc or steps for configuring your system to use File or Workunit scope security */
--->
+    <!-- DNT-Start --><!-- /*Note: Maybe include the doc or steps for configuring your system to use File or Workunit scope security */
+--><!-- DNT-End -->
   </sect2>
 </sect1>

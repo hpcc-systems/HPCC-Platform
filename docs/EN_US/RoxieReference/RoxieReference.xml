@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book lang="en_US" xml:base="../">
   <bookinfo>
-    <title>Roxie: The Rapid Data Delivery Engine</title>
+    <!-- DNT-Start --><title>Roxie: The Rapid Data Delivery Engine</title><!-- DNT-End -->
 
     <mediaobject>
       <imageobject>
@@ -27,7 +27,7 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para>HPCC Systems<superscript>®</superscript> is a registered trademark
+      <para><!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript> is a registered trademark
       of LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
@@ -59,12 +59,12 @@
   </bookinfo>
 
   <chapter id="Introduction">
-    <title>Introduction</title>
+    <!-- DNT-Start --><title>Introduction</title><!-- DNT-End -->
 
     <para>The Roxie engine - also known as the Rapid Data Delivery Engine or
-    RDDE - uses a combination of technologies and techniques that produce
+    <!-- DNT-Start -->RDDE<!-- DNT-End --> - uses a combination of technologies and techniques that produce
     extremely fast throughput for queries on indexed data housed in a
-    dedicated High Performance Computing Cluster (HPCC).</para>
+    dedicated High Performance Computing Cluster (<!-- DNT-Start -->HPCC<!-- DNT-End -->).</para>
 
     <para>Roxie queries can exceed several thousand a second, compared to Thor
     queries which tend to take from a few seconds to a few minutes each (from
@@ -103,10 +103,10 @@
     queries into memory and prepares them to be ready to execute as soon as a
     query is received.</para>
 
-    <para>Queries are sent to Roxie via XML, SOAP, or JSON, and the results
+    <para>Queries are sent to Roxie via <!-- DNT-Start -->XML<!-- DNT-End -->, <!-- DNT-Start -->SOAP<!-- DNT-End -->, or <!-- DNT-Start -->JSON<!-- DNT-End -->, and the results
     are returned in the same format. A client can communicate directly with
     the Roxie cluster by opening a socket to one of the servers in the
-    cluster, or it can communicate via an ESP service such as WsECL.</para>
+    cluster, or it can communicate via an <!-- DNT-Start -->ESP<!-- DNT-End --> service such as WsECL.</para>
 
     <para>Typically, Roxie results are returned to the requester rather than
     writing a result to a file. However, Roxie can write data files, although
@@ -114,7 +114,7 @@
     workunit-based.</para>
 
     <sect1 id="Roxie_Overview">
-      <title>Roxie Overview</title>
+      <!-- DNT-Start --><title>Roxie Overview</title><!-- DNT-End -->
 
       <para>There are typically four aspects to using Roxie:</para>
 
@@ -133,38 +133,38 @@
 
         <listitem>
           <para>Providing access to those queries to client-facing interfaces
-          via SOAP or HTTP.</para>
+          via <!-- DNT-Start -->SOAP<!-- DNT-End --> or <!-- DNT-Start -->HTTP<!-- DNT-End -->.</para>
 
           <para></para>
         </listitem>
       </itemizedlist>
 
       <sect2>
-        <title>When to Use Indexes</title>
+        <!-- DNT-Start --><title>When to Use Indexes</title><!-- DNT-End -->
 
         <para>The Thor platform is designed to perform operations quickly on
         massive datasets without indexes, where the entire dataset (or almost
         all of it) is to be used. However, if only a few records are needed,
-        an index can access them more efficiently. In the ECL language, an
+        an index can access them more efficiently. In the <!-- DNT-Start -->ECL<!-- DNT-End --> language, an
         index behaves just like a dataset that happens to be able to implement
         certain functions (typically filter and count functions) much more
-        quickly than a standard flat file or CSV dataset can.</para>
+        quickly than a standard flat file or <!-- DNT-Start -->CSV<!-- DNT-End --> dataset can.</para>
       </sect2>
     </sect1>
 
     <sect1 id="Payload_INDEXes">
-      <title>Payload INDEXes</title>
+      <!-- DNT-Start --><title>Payload INDEXes</title><!-- DNT-End -->
 
       <para>In conventional database systems, an index is used together with a
       data file to locate records in that data file. You can do the same in
-      ECL by storing file positions in the index and using them in a FETCH
+      <!-- DNT-Start -->ECL<!-- DNT-End --> by storing file positions in the index and using them in a <!-- DNT-Start -->FETCH<!-- DNT-End -->
       function to retrieve the corresponding data rows from the original
       file.</para>
 
       <para>However, because you can store whatever fields you wish in an
       index, it is more common in Roxie queries to design indexes that store
       both the search fields and the information you want to look up. This
-      eliminates an extra disk read for the FETCH. Since indexes are
+      eliminates an extra disk read for the <!-- DNT-Start -->FETCH<!-- DNT-End -->. Since indexes are
       compressed, this can also save disk space if the original data file does
       not need to be stored on the Roxie cluster.</para>
 
@@ -177,14 +177,14 @@
     </sect1>
 
     <sect1 id="Roxie_Superfiles">
-      <title>Roxie Superfiles</title>
+      <!-- DNT-Start --><title>Roxie Superfiles</title><!-- DNT-End -->
 
       <para>A superfile or superkey used in Roxie may contain more than a
       single sub-file.</para>
 
       <para>However, your superfile cannot contain more than one sub-file when
-      the superfile is used for a FETCH operation or in a full-keyed
-      JOIN.</para>
+      the superfile is used for a <!-- DNT-Start -->FETCH<!-- DNT-End --> operation or in a full-keyed
+      <!-- DNT-Start -->JOIN<!-- DNT-End -->.</para>
 
       <para>Even if you only have one sub-file, you can write a query that
       uses superfiles or superkeys (even though they contain only a single
@@ -195,15 +195,15 @@
       typically is) where a data file is used by many queries, this savings
       can be a significant.</para>
 
-      <para>See the <emphasis>ECL Programmer's Guide</emphasis> for more
+      <para>See the <emphasis><!-- DNT-Start -->ECL<!-- DNT-End --> Programmer's Guide</emphasis> for more
       details.</para>
     </sect1>
 
     <sect1 id="How-Roxie-Works">
-      <title>How Roxie Works</title>
+      <!-- DNT-Start --><title>How Roxie Works</title><!-- DNT-End -->
 
       <para>Roxie clusters consist of a number of machines connected together
-      to function as a single entity. ECL source code for one or more queries
+      to function as a single entity. <!-- DNT-Start -->ECL<!-- DNT-End --> source code for one or more queries
       is compiled and published to the cluster. Once published, queries can
       process data rapidly.</para>
 
@@ -213,19 +213,19 @@
       distinct.</para>
 
       <para>The <emphasis role="bold">Server</emphasis> process accepts
-      incoming queries from a client, evaluates the ECL code of the query
+      incoming queries from a client, evaluates the <!-- DNT-Start -->ECL<!-- DNT-End --> code of the query
       given the input that is provided in the client query, and returns the
-      result to the client. When the Server evaluates an ECL function that
+      result to the client. When the Server evaluates an <!-- DNT-Start -->ECL<!-- DNT-End --> function that
       requires data from disk, it determines the slave node or nodes that may
       have the appropriate data, and sends a request to those slave nodes to
       retrieve any matching data. Results from multiple slave nodes are
-      collated and become the input for further ECL functions evaluated on the
+      collated and become the input for further <!-- DNT-Start -->ECL<!-- DNT-End --> functions evaluated on the
       Server node. Typically, requesting applications use some form of load
       balancing to distribute requests evenly to the available Servers.</para>
 
       <para>The <emphasis role="bold">Slave</emphasis> process accepts
       requests only from other Server nodes in the cluster. These requests
-      correspond to a single ECL function such as a filtered index read or a
+      correspond to a single <!-- DNT-Start -->ECL<!-- DNT-End --> function such as a filtered index read or a
       disk fetch. Results are sent back to the Server that originally
       requested them. In order to balance performance and manage hardware
       failures, slaves receive the requests over multicast, and there will
@@ -253,13 +253,13 @@
       lists.</para>
 
       <para>When a query is added to the QuerySet that a Roxie is watching,
-      Roxie will preload the query .so (or .DLL) and prepare the execution
+      Roxie will preload the query .so (or .<!-- DNT-Start -->DLL<!-- DNT-End -->) and prepare the execution
       context as far as it can, so that it is ready to execute incoming
       requests to execute that query as soon as they arrive. This may includes
-      loading the .so (or .DLL), resolving file references, and opening files
+      loading the .so (or .<!-- DNT-Start -->DLL<!-- DNT-End -->), resolving file references, and opening files
       (if there are sufficient file handles available), preloading data into
-      memory if requested, and evaluating ECL code in the query that has been
-      marked as : ONCE.</para>
+      memory if requested, and evaluating <!-- DNT-Start -->ECL<!-- DNT-End --> code in the query that has been
+      marked as : <!-- DNT-Start -->ONCE<!-- DNT-End -->.</para>
 
       <para>Depending on the configuration, Roxie may read data remotely from
       a Thor cluster where it was prepared, or if preferred, it may be copied
@@ -281,7 +281,7 @@
     </sect1>
 
     <sect1 id="Roxie-Data-Backup">
-      <title>Roxie Data Backup</title>
+      <!-- DNT-Start --><title>Roxie Data Backup</title><!-- DNT-End -->
 
       <para>Roxie data is protected by three forms of redundancy:</para>
 
@@ -320,12 +320,12 @@
     </sect1>
 
     <sect1>
-      <title>Processor Affinity</title>
+      <!-- DNT-Start --><title>Processor Affinity</title><!-- DNT-End -->
 
       <para>Roxie can perform better in some circumstances by using thread
       affinities to restrict a given query's threads to a subset of the cores
-      on the machine. This is also know as processor affinity or CPU pinning.
-      This is particularly useful on multi-socket (dual CPU) machines.</para>
+      on the machine. This is also know as processor affinity or <!-- DNT-Start -->CPU<!-- DNT-End --> pinning.
+      This is particularly useful on multi-socket (dual <!-- DNT-Start -->CPU<!-- DNT-End -->) machines.</para>
 
       <para>This can be set in Configuration Manager using the following
       options:</para>
@@ -340,7 +340,7 @@
 
             <tbody>
               <row>
-                <entry><emphasis>affinity</emphasis></entry>
+                <entry><!-- DNT-Start --><emphasis>affinity</emphasis><!-- DNT-End --></entry>
 
                 <entry>Default: 0</entry>
 
@@ -349,7 +349,7 @@
               </row>
 
               <row>
-                <entry><emphasis>coresPerQuery</emphasis></entry>
+                <entry><!-- DNT-Start --><emphasis>coresPerQuery</emphasis><!-- DNT-End --></entry>
 
                 <entry>Default: 0</entry>
 
@@ -367,15 +367,15 @@
       <para>where N is the number of cores to use.</para>
 
       <para>Use a value for coresPerQuery or bindCores that is divisible into
-      the number of cores on each CPU for best results.</para>
+      the number of cores on each <!-- DNT-Start -->CPU<!-- DNT-End --> for best results.</para>
     </sect1>
   </chapter>
 
   <chapter id="Developing_Roxie_Queries">
-    <title>Developing Roxie Queries</title>
+    <!-- DNT-Start --><title>Developing Roxie Queries</title><!-- DNT-End -->
 
     <sect1 id="Development_Path" role="nobrk">
-      <title>Development Path</title>
+      <!-- DNT-Start --><title>Development Path</title><!-- DNT-End -->
 
       <orderedlist numeration="arabic">
         <listitem>
@@ -410,15 +410,15 @@
       <para></para>
 
       <para><emphasis role="bold">Note</emphasis>: These steps are explained
-      in detail in the HPCC Data Tutorial and the Programmer's Guide.</para>
+      in detail in the <!-- DNT-Start -->HPCC<!-- DNT-End --> Data Tutorial and the Programmer's Guide.</para>
     </sect1>
 
     <sect1 id="Methods-to-Submit-Jobs-to-a-Roxie-Cluster">
-      <title>Methods to Submit Jobs to a Roxie Cluster</title>
+      <!-- DNT-Start --><title>Methods to Submit Jobs to a Roxie Cluster</title><!-- DNT-End -->
 
       <para>After a query is compiled and deployed, there are several methods
       to submit jobs that use the query. While the most common usage is via
-      custom applications using the XML or SOAP interface, the other methods
+      custom applications using the <!-- DNT-Start -->XML<!-- DNT-End --> or <!-- DNT-Start -->SOAP<!-- DNT-End --> interface, the other methods
       have valid uses, too.</para>
 
       <para>A direct socket connection can communicate directly with the Roxie
@@ -426,30 +426,30 @@
       means of certifying the Roxie cluster, its configuration, the deployment
       of the query, and the query itself.</para>
 
-      <para>SOAPCALL allows a Thor query to make calls to a Roxie query (See
-      the <emphasis>ECL Language Reference </emphasis>for details). This
+      <para><!-- DNT-Start -->SOAPCALL<!-- DNT-End --> allows a Thor query to make calls to a Roxie query (See
+      the <emphasis><!-- DNT-Start -->ECL<!-- DNT-End --> Language Reference </emphasis>for details). This
       provides the capability of combining Roxie results with other data
-      processing tasks performed during ETL.</para>
+      processing tasks performed during <!-- DNT-Start -->ETL<!-- DNT-End -->.</para>
 
-      <para>Conducting queries via an ESP service using HTTP or HTTPS allows
+      <para>Conducting queries via an <!-- DNT-Start -->ESP<!-- DNT-End --> service using <!-- DNT-Start -->HTTP<!-- DNT-End --> or <!-- DNT-Start -->HTTPS<!-- DNT-End --> allows
       access to queries directly from a browser. Web-based access allows you
-      to provide easy access to anyone you wish. Using HTTPS, you can ensure
-      data security using Secure Socket Layer (SSL) encryption. This ensures
+      to provide easy access to anyone you wish. Using <!-- DNT-Start -->HTTPS<!-- DNT-End -->, you can ensure
+      data security using Secure Socket Layer (<!-- DNT-Start -->SSL<!-- DNT-End -->) encryption. This ensures
       all data is encrypted as it travels across a network or the Internet. In
-      addition, LDAP authentication is available to restrict access to a set
+      addition, <!-- DNT-Start -->LDAP<!-- DNT-End --> authentication is available to restrict access to a set
       of users.</para>
 
-      <para>Custom applications using SOAP provides the most flexibility and
+      <para>Custom applications using <!-- DNT-Start -->SOAP<!-- DNT-End --> provides the most flexibility and
       functionality. The application development process is simplified by
       Enterprise Services Platform's automatic Web Services Definition
-      Language (WSDL) generation. Many development tools (such as, Microsoft's
-      .NET Studio or NetBeans JAVA) include a tool to generate code to create
-      proxy stubs from a WSDL document. This simplifies the development
+      Language (<!-- DNT-Start -->WSDL<!-- DNT-End -->) generation. Many development tools (such as, Microsoft's
+      .<!-- DNT-Start -->NET<!-- DNT-End --> Studio or NetBeans <!-- DNT-Start -->JAVA<!-- DNT-End -->) include a tool to generate code to create
+      proxy stubs from a <!-- DNT-Start -->WSDL<!-- DNT-End --> document. This simplifies the development
       process and ensures exposure of all necessary methods and
       properties.</para>
 
       <sect2 id="Direct-Socket-Connection-TCP-IP">
-        <title>Direct Socket Connection (TCP/IP)<?dbfo-need height="3in"?></title>
+        <!-- DNT-Start --><title>Direct Socket Connection (TCP/IP)<?dbfo-need height="3in"?></title><!-- DNT-End -->
 
         <para><graphic fileref="images/RM-04.jpg" /></para>
 
@@ -457,7 +457,7 @@
       </sect2>
 
       <sect2 id="SOAPCALL_via_ECL">
-        <title><emphasis>SOAPCALL via ECL</emphasis></title>
+        <!-- DNT-Start --><title><emphasis>SOAPCALL via ECL</emphasis></title><!-- DNT-End -->
 
         <para><graphic fileref="images/RM-05.jpg" /></para>
 
@@ -467,7 +467,7 @@
       </sect2>
 
       <sect2 id="SOAP-or-HTTP-HTTPS">
-        <title>SOAP or HTTP/HTTPS<?dbfo-need height="6in"?></title>
+        <!-- DNT-Start --><title>SOAP or HTTP/HTTPS<?dbfo-need height="6in"?></title><!-- DNT-End -->
 
         <para><graphic fileref="images/RM-06.PNG" scale="90"
         scalefit="1" /></para>
@@ -480,30 +480,30 @@
   </chapter>
 
   <chapter>
-    <title>Managing Queries</title>
+    <!-- DNT-Start --><title>Managing Queries</title><!-- DNT-End -->
 
     <para>Roxie queries are managed via Query Sets which are stored in Dali.
     Query Sets control which queries are loaded onto Roxie when it starts up
     and are manipulated by adding or removing them as required. The list of
-    queries currently held within a QuerySet can be viewed using ECL
+    queries currently held within a QuerySet can be viewed using <!-- DNT-Start -->ECL<!-- DNT-End -->
     Watch.</para>
 
     <para>Once a query has been published to the Query Set, it can now be run
     on the roxie using a web interface.</para>
 
     <sect1>
-      <title>Adding a roxie query to the Query Set</title>
+      <!-- DNT-Start --><title>Adding a roxie query to the Query Set</title><!-- DNT-End -->
 
       <para>To add a roxie query to a Query Set:</para>
 
       <orderedlist>
         <listitem>
-          <para>Use ECL IDE to write your query and then compile it setting
-          the target as the roxie cluster in your HPCC environment.</para>
+          <para>Use <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> to write your query and then compile it setting
+          the target as the roxie cluster in your <!-- DNT-Start -->HPCC<!-- DNT-End --> environment.</para>
         </listitem>
 
         <listitem>
-          <para>Go the ECL Watch tab for the compiled workunit and click the
+          <para>Go the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch tab for the compiled workunit and click the
           Publish button. A message is displayed indicating that your query
           has been published successfully.</para>
         </listitem>
@@ -511,10 +511,10 @@
     </sect1>
 
     <sect1>
-      <title>Viewing Query Sets using ECL Watch</title>
+      <!-- DNT-Start --><title>Viewing Query Sets using ECL Watch</title><!-- DNT-End -->
 
-      <para>Using ECL Watch, you can view the query for all clusters on your
-      HPCC. Click on the <emphasis role="bold">Query Sets/Browse</emphasis>
+      <para>Using <!-- DNT-Start -->ECL<!-- DNT-End --> Watch, you can view the query for all clusters on your
+      <!-- DNT-Start -->HPCC<!-- DNT-End -->. Click on the <emphasis role="bold">Query Sets/Browse</emphasis>
       menu item to see the clusters which are currently using Query Sets.
       Click on the <emphasis role="bold">myroxie</emphasis> link to view the
       list of queries currently available for roxie. Using this feature you
@@ -529,8 +529,8 @@
 
       <itemizedlist>
         <listitem>
-          <para>View details about each query including the ID, the name of
-          the query, the workunit ID, the DLL(s) it uses and whether it is
+          <para>View details about each query including the <!-- DNT-Start -->ID<!-- DNT-End -->, the name of
+          the query, the workunit <!-- DNT-Start -->ID<!-- DNT-End -->, the <!-- DNT-Start -->DLL<!-- DNT-End -->(s) it uses and whether it is
           suspended.</para>
         </listitem>
       </itemizedlist>
@@ -561,11 +561,11 @@
     </sect1>
 
     <sect1>
-      <title>Using WsECL to run a roxie query</title>
+      <!-- DNT-Start --><title>Using WsECL to run a roxie query</title><!-- DNT-End -->
 
-      <para>WsECL is the ECL Web Service interface that is provided with HPCC
-      and is available using the following URL: http://nnn.nnn.nnn.nnn:8002,
-      where nnn.nnn.nnn.nnn is the IP address of your ESP.</para>
+      <para>WsECL is the <!-- DNT-Start -->ECL<!-- DNT-End --> Web Service interface that is provided with <!-- DNT-Start -->HPCC<!-- DNT-End -->
+      and is available using the following <!-- DNT-Start -->URL<!-- DNT-End -->: http://nnn.nnn.nnn.nnn:8002,
+      where nnn.nnn.nnn.nnn is the <!-- DNT-Start -->IP<!-- DNT-End --> address of your <!-- DNT-Start -->ESP<!-- DNT-End -->.</para>
 
       <para>WsECL uses the Query Sets information to display the list of
       available runnable queries and you can use it, for example, to test that
@@ -587,9 +587,9 @@
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
   <chapter id="Deploying-Data-to-a-Cluster-using-DFU">
-    <title>Deploying Data to a Roxie Cluster using DFU</title>
+    <!-- DNT-Start --><title>Deploying Data to a Roxie Cluster using DFU</title><!-- DNT-End -->
 
-    <para>You can use the Distributed File Utility (DFU) in ECL Watch to copy,
+    <para>You can use the Distributed File Utility (<!-- DNT-Start -->DFU<!-- DNT-End -->) in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch to copy,
     or remote copy data files to a Roxie cluster. This allows you to copy
     large files to a cluster in advance of publishing a query. If data files
     are copied in advance, a query which requires those files will use the
@@ -601,13 +601,13 @@
     done automatically by the Configuration Manager Wizard.</para>
 
     <sect1 id="Copy">
-      <title>DFU Copy</title>
+      <!-- DNT-Start --><title>DFU Copy</title><!-- DNT-End -->
 
       <para><orderedlist>
           <listitem>
             <para>Open the ECLWatch web page. You can reach this page using
-            the following URL: http://nnn.nnn.nnn.nnn:8010, where
-            nnn.nnn.nnn.nnn is your node's IP address.</para>
+            the following <!-- DNT-Start -->URL<!-- DNT-End -->: http://nnn.nnn.nnn.nnn:8010, where
+            nnn.nnn.nnn.nnn is your node's <!-- DNT-Start -->IP<!-- DNT-End --> address.</para>
           </listitem>
 
           <listitem>
@@ -643,22 +643,22 @@
                     </row>
 
                     <row>
-                      <entry>Group</entry>
+                      <entry><!-- DNT-Start -->Group<!-- DNT-End --></entry>
 
                       <entry>Use the drop list to select the Roxie cluster to
                       copy to.</entry>
                     </row>
 
                     <row>
-                      <entry align="right"><emphasis
-                      role="bold">Note</emphasis>:</entry>
+                      <entry align="right"><!-- DNT-Start --><emphasis
+                      role="bold">Note</emphasis>:<!-- DNT-End --></entry>
 
                       <entry>You can only choose from clusters within the
                       current environment.</entry>
                     </row>
 
                     <row>
-                      <entry>Target Name</entry>
+                      <entry><!-- DNT-Start -->Target Name<!-- DNT-End --></entry>
 
                       <entry>The name of the logical file to create on the
                       target. This is automatically filled in based upon the
@@ -671,21 +671,21 @@
                     </row>
 
                     <row>
-                      <entry>Overwrite</entry>
+                      <entry><!-- DNT-Start -->Overwrite<!-- DNT-End --></entry>
 
                       <entry>Check this box to overwrite files of the same
                       name.</entry>
                     </row>
 
                     <row>
-                      <entry>No Split</entry>
+                      <entry><!-- DNT-Start -->No Split<!-- DNT-End --></entry>
 
                       <entry>Check this box to prevent splitting file parts to
                       multiple target parts.</entry>
                     </row>
 
                     <row>
-                      <entry>Wrap</entry>
+                      <entry><!-- DNT-Start -->Wrap<!-- DNT-End --></entry>
 
                       <entry>Check this box to keep the number of parts the
                       same and wrap if the target cluster is smaller that the
@@ -693,13 +693,13 @@
                     </row>
 
                     <row>
-                      <entry>Compress</entry>
+                      <entry><!-- DNT-Start -->Compress<!-- DNT-End --></entry>
 
                       <entry>Check this box to compress the files.</entry>
                     </row>
 
                     <row>
-                      <entry>Retain SuperFile Structure</entry>
+                      <entry><!-- DNT-Start -->Retain SuperFile Structure<!-- DNT-End --></entry>
 
                       <entry>Check this box to retain the structure of a
                       SuperFile.</entry>
@@ -720,7 +720,7 @@
     </sect1>
 
     <sect1 id="Remote_Copy">
-      <title>Remote Copy</title>
+      <!-- DNT-Start --><title>Remote Copy</title><!-- DNT-End -->
 
       <para>Remote Copy allows you to copy data to a Roxie from a Thor or
       Roxie cluster outside your environment.</para>
@@ -728,8 +728,8 @@
       <para><orderedlist>
           <listitem>
             <para>Open the ECLWatch web page. You can reach this page using
-            the following URL: http://nnn.nnn.nnn.nnn:8010, where
-            nnn.nnn.nnn.nnn is your node's IP address.</para>
+            the following <!-- DNT-Start -->URL<!-- DNT-End -->: http://nnn.nnn.nnn.nnn:8010, where
+            nnn.nnn.nnn.nnn is your node's <!-- DNT-Start -->IP<!-- DNT-End --> address.</para>
           </listitem>
 
           <listitem>
@@ -757,28 +757,28 @@
                     </row>
 
                     <row>
-                      <entry>Dali</entry>
+                      <entry><!-- DNT-Start -->Dali<!-- DNT-End --></entry>
 
-                      <entry>The IP or hostname of the Dali for the
+                      <entry>The <!-- DNT-Start -->IP<!-- DNT-End --> or hostname of the Dali for the
                       environment from which you are copying.</entry>
                     </row>
 
                     <row>
-                      <entry>User ID</entry>
+                      <entry><!-- DNT-Start -->User ID<!-- DNT-End --></entry>
 
                       <entry>The Username to use to authenticate on the Remote
                       environment</entry>
                     </row>
 
                     <row>
-                      <entry>Password</entry>
+                      <entry><!-- DNT-Start -->Password<!-- DNT-End --></entry>
 
                       <entry>The password to use to authenticate on the Remote
                       environment</entry>
                     </row>
 
                     <row>
-                      <entry>Logical Name</entry>
+                      <entry><!-- DNT-Start -->Logical Name<!-- DNT-End --></entry>
 
                       <entry>The name of the logical file to copy.</entry>
                     </row>
@@ -789,22 +789,22 @@
                     </row>
 
                     <row>
-                      <entry>Group</entry>
+                      <entry><!-- DNT-Start -->Group<!-- DNT-End --></entry>
 
                       <entry>Use the drop list to select the Roxie cluster to
                       copy to.</entry>
                     </row>
 
                     <row>
-                      <entry align="right"><emphasis
-                      role="bold">Note</emphasis>:</entry>
+                      <entry align="right"><!-- DNT-Start --><emphasis
+                      role="bold">Note</emphasis>:<!-- DNT-End --></entry>
 
                       <entry>You can only choose from clusters within the
                       current environment.</entry>
                     </row>
 
                     <row>
-                      <entry>Logical Name</entry>
+                      <entry><!-- DNT-Start -->Logical Name<!-- DNT-End --></entry>
 
                       <entry>The name of the logical file to create on the
                       target.</entry>
@@ -816,21 +816,21 @@
                     </row>
 
                     <row>
-                      <entry>Overwrite</entry>
+                      <entry><!-- DNT-Start -->Overwrite<!-- DNT-End --></entry>
 
                       <entry>Check this box to overwrite files of the same
                       name.</entry>
                     </row>
 
                     <row>
-                      <entry>No Split</entry>
+                      <entry><!-- DNT-Start -->No Split<!-- DNT-End --></entry>
 
                       <entry>Check this box to prevent splitting file parts to
                       multiple target parts.</entry>
                     </row>
 
                     <row>
-                      <entry>Wrap</entry>
+                      <entry><!-- DNT-Start -->Wrap<!-- DNT-End --></entry>
 
                       <entry>Check this box to keep the number of parts the
                       same and wrap if the target cluster is smaller that the
@@ -838,13 +838,13 @@
                     </row>
 
                     <row>
-                      <entry>Compress</entry>
+                      <entry><!-- DNT-Start -->Compress<!-- DNT-End --></entry>
 
                       <entry>Check this box to compress the files.</entry>
                     </row>
 
                     <row>
-                      <entry>Retain SuperFile Structure</entry>
+                      <entry><!-- DNT-Start -->Retain SuperFile Structure<!-- DNT-End --></entry>
 
                       <entry>Check this box to retain the structure of a
                       SuperFile.</entry>
@@ -868,7 +868,7 @@
   </chapter>
 
   <chapter id="Capacity_Planning_for_Roxie_Clusters">
-    <title>Capacity Planning for Roxie Clusters</title>
+    <!-- DNT-Start --><title>Capacity Planning for Roxie Clusters</title><!-- DNT-End -->
 
 
      <xi:include href="RoxieReference/RoxieRefMods/RoxieCapacityPlanning.xml"
@@ -879,9 +879,9 @@
   </chapter>
 
   <chapter id="PreFlight_and_Roxie_Metrics">
-    <title>PreFlight and Roxie Metrics</title>
+    <!-- DNT-Start --><title>PreFlight and Roxie Metrics</title><!-- DNT-End -->
 
-    <para>ECL Watch's Operations section provides the ability to perform
+    <para><!-- DNT-Start -->ECL<!-- DNT-End --> Watch's Operations section provides the ability to perform
     Preflight activities. These preflight utilities are used for daily health
     checks, as well as trouble avoidance and troubleshooting. It provides a
     central location to gather hardware and software information from a remote
@@ -890,14 +890,14 @@
 
     <para>This section contains information for performing preflight checks on
     a Roxie cluster. For details about other components, see the
-    <emphasis>HPCC System Administrator's Guide</emphasis>.</para>
+    <emphasis><!-- DNT-Start -->HPCC<!-- DNT-End --> System Administrator's Guide</emphasis>.</para>
 
     <xi:include href="HPCCCertify/Cert-Mods/CertPreflight.xml"
                 xpointer="xpointer(//*[@id='Preflight_Roxie'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <sect1 id="Roxie_Metrics">
-      <title>Roxie Metrics<?dbfo-need height="5in"?></title>
+      <!-- DNT-Start --><title>Roxie Metrics<?dbfo-need height="5in"?></title><!-- DNT-End -->
 
       <para><graphic fileref="images/RM-30.jpg" vendor="eclwatchSS" /></para>
 
@@ -911,91 +911,91 @@
 
             <tbody>
               <row>
-                <entry>IP Address</entry>
+                <entry><!-- DNT-Start -->IP Address<!-- DNT-End --></entry>
 
-                <entry>The IP address of the Server node</entry>
+                <entry>The <!-- DNT-Start -->IP<!-- DNT-End --> address of the Server node</entry>
               </row>
 
               <row>
-                <entry>slavesActive</entry>
+                <entry><!-- DNT-Start -->slavesActive<!-- DNT-End --></entry>
 
                 <entry>Number of slaves active for that Server</entry>
               </row>
 
               <row>
-                <entry>lastQueryTime</entry>
+                <entry><!-- DNT-Start -->lastQueryTime<!-- DNT-End --></entry>
 
                 <entry>Time stamp of most recent query executed</entry>
               </row>
 
               <row>
-                <entry>loQueryActive</entry>
+                <entry><!-- DNT-Start -->loQueryActive<!-- DNT-End --></entry>
 
                 <entry>Number of low priority queries active</entry>
               </row>
 
               <row>
-                <entry>loMin</entry>
+                <entry><!-- DNT-Start -->loMin<!-- DNT-End --></entry>
 
                 <entry>Minimum time (ms) it took to run a low priority
                 query</entry>
               </row>
 
               <row>
-                <entry>retriesNeeded</entry>
+                <entry><!-- DNT-Start -->retriesNeeded<!-- DNT-End --></entry>
 
                 <entry>Count of all reply packets that arrived to a Server as
                 a response to more than one try.</entry>
               </row>
 
               <row>
-                <entry>loMax</entry>
+                <entry><!-- DNT-Start -->loMax<!-- DNT-End --></entry>
 
                 <entry>Maximum time (ms) it took to run a low priority
                 query</entry>
               </row>
 
               <row>
-                <entry>hiQueryActive</entry>
+                <entry><!-- DNT-Start -->hiQueryActive<!-- DNT-End --></entry>
 
                 <entry>Number of high priority queries active</entry>
               </row>
 
               <row>
-                <entry>loQueryCount</entry>
+                <entry><!-- DNT-Start -->loQueryCount<!-- DNT-End --></entry>
 
                 <entry>Total number of low priority queries run</entry>
               </row>
 
               <row>
-                <entry>loQueryAverage</entry>
+                <entry><!-- DNT-Start -->loQueryAverage<!-- DNT-End --></entry>
 
                 <entry>Average time it took to run a high priority
                 query</entry>
               </row>
 
               <row>
-                <entry>hiQueryCount</entry>
+                <entry><!-- DNT-Start -->hiQueryCount<!-- DNT-End --></entry>
 
                 <entry>Total number of high priority queries run</entry>
               </row>
 
               <row>
-                <entry>hiMax</entry>
+                <entry><!-- DNT-Start -->hiMax<!-- DNT-End --></entry>
 
                 <entry>Maximum time (ms) it took to run a high priority
                 query</entry>
               </row>
 
               <row>
-                <entry>hiMin</entry>
+                <entry><!-- DNT-Start -->hiMin<!-- DNT-End --></entry>
 
                 <entry>Minimum time (ms) it took to run a high priority
                 query</entry>
               </row>
 
               <row>
-                <entry>heapBlocksAllocated</entry>
+                <entry><!-- DNT-Start -->heapBlocksAllocated<!-- DNT-End --></entry>
 
                 <entry>Number of times Roxie had to allocate memory from its
                 memory allocator</entry>

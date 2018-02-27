@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="GetLogicalFileAttribute">
-  <title>GetLogicalFileAttribute</title>
+  <!-- DNT-Start --><title>GetLogicalFileAttribute</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.File.GetLogicalFileAttribute<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.File.GetLogicalFileAttribute<indexterm>
       <primary>STD.File.GetLogicalFileAttribute</primary>
     </indexterm><indexterm>
       <primary>File.GetLogicalFileAttribute</primary>
     </indexterm><indexterm>
       <primary>GetLogicalFileAttribute</primary>
     </indexterm>(</emphasis> <emphasis> logicalfilename, attrname </emphasis>
-  <emphasis role="bold">)</emphasis></para>
+  <emphasis role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,18 +21,18 @@
 
       <tbody>
         <row>
-          <entry><emphasis>logicalfilename</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>logicalfilename</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the name of the logical
-          file as it is known by the DFU.</entry>
+          file as it is known by the <!-- DNT-Start -->DFU<!-- DNT-End -->.</entry>
         </row>
 
         <row>
-          <entry><emphasis>attrname</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>attrname</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the name of the file
           attribute to return. Possible values are recordSize, recordCount,
-          size, clusterName, directory, owner, description, ECL, partmask,
+          size, clusterName, directory, owner, description, <!-- DNT-Start -->ECL<!-- DNT-End -->, partmask,
           numparts, name, modified, format, job, checkSum, kind, csvSeparate,
           csvTerminate, headerLength, footerLength, rowTag, workunit,
           accessed, expireDays, maxRecordSize, csvQuote, blockCompressed,
@@ -41,22 +41,22 @@
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>GetLogicalFileAttribute returns returns a VARSTRING
+          <entry><!-- DNT-Start -->GetLogicalFileAttribute<!-- DNT-End --> returns returns a <!-- DNT-Start -->VARSTRING<!-- DNT-End -->
           (null-terminated) value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">GetLogicalFileAttribute </emphasis>function
+  <para>The <emphasis role="bold"><!-- DNT-Start -->GetLogicalFileAttribute<!-- DNT-End --> </emphasis>function
   returns the value of the <emphasis>attrname</emphasis> for the specified
   <emphasis>logicalfilename</emphasis>.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">IMPORT STD;
+  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 file := '~class::bmf::join::halfkeyed';
 
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'recordSize'));
@@ -91,5 +91,5 @@ OUTPUT(STD.File.GetLogicalFileAttribute(file,'blockCompressed'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'compressedSize'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'fileCrc'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'formatCrc'));
-</programlisting>
+</programlisting><!-- DNT-End -->
 </sect1>

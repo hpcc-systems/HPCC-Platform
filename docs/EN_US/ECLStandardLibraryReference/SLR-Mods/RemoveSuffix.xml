@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="RemoveSuffix">
-  <title>RemoveSuffix</title>
+  <!-- DNT-Start --><title>RemoveSuffix</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Str.RemoveSuffix<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.Str.RemoveSuffix<indexterm>
       <primary>STD.Str.RemoveSuffix</primary>
     </indexterm><indexterm>
       <primary>Str.RemoveSuffix</primary>
     </indexterm><indexterm>
       <primary>RemoveSuffix</primary>
     </indexterm>(</emphasis> <emphasis>source, suffix</emphasis> <emphasis
-  role="bold">)</emphasis></para>
+  role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,27 +21,27 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>source</emphasis><!-- DNT-End --></entry>
 
           <entry>The string to search.</entry>
         </row>
 
         <row>
-          <entry><emphasis>suffix</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>suffix</emphasis><!-- DNT-End --></entry>
 
           <entry>The ending string to remove.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>RemoveSuffix returns a string value.</entry>
+          <entry><!-- DNT-Start -->RemoveSuffix<!-- DNT-End --> returns a string value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">RemoveSuffix</emphasis> function returns 
+  <para>The <emphasis role="bold"><!-- DNT-Start -->RemoveSuffix<!-- DNT-End --></emphasis> function returns 
   the <emphasis>source</emphasis> string with the ending text in the
   <emphasis>suffix</emphasis> parameter removed. If the <emphasis>source</emphasis> string 
   does not end with the <emphasis>suffix</emphasis>, then the <emphasis>source</emphasis> string 
@@ -49,8 +49,8 @@
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">IMPORT STD;
+  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 STD.STr.RemoveSuffix('a word away','away');   //returns 'a word'
 STD.STr.RemoveSuffix('a word a way','away');  //returns 'a word a way'
-</programlisting>
+</programlisting><!-- DNT-End -->
 </sect1>

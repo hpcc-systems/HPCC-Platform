@@ -2,15 +2,15 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="FROMJSON">
-  <title>FROMJSON</title>
+  <!-- DNT-Start --><title>FROMJSON</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">FROMJSON<indexterm>
-      <primary>FROMJSON</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->FROMJSON<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->FROMJSON<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>FROMJSON function</primary>
+      <primary><!-- DNT-Start -->FROMJSON<!-- DNT-End --> function</primary>
     </indexterm>(</emphasis><emphasis> record, jsonstring
   </emphasis>,<emphasis
-  role="bold">[ONFAIL(</emphasis><emphasis>transform</emphasis> <emphasis
+  role="bold">[<!-- DNT-Start -->ONFAIL<!-- DNT-End -->(</emphasis><emphasis>transform</emphasis> <emphasis
   role="bold">)])</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -19,51 +19,51 @@
 
         <tbody>
           <row>
-            <entry><emphasis>record</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>record</emphasis><!-- DNT-End --></entry>
 
-            <entry>The RECORD structure to produce. Each field should specify
-            the XPATH to the data in the json<emphasis>string</emphasis> that
+            <entry>The <!-- DNT-Start -->RECORD<!-- DNT-End --> structure to produce. Each field should specify
+            the <!-- DNT-Start -->XPATH<!-- DNT-End --> to the data in the json<emphasis>string</emphasis> that
             it should hold. If omitted, the lower-cased field names are
             used.</entry>
           </row>
 
           <row>
-            <entry><emphasis>jsonstring</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>jsonstring</emphasis><!-- DNT-End --></entry>
 
-            <entry>A string containing the JSON to convert.</entry>
+            <entry>A string containing the <!-- DNT-Start -->JSON<!-- DNT-End --> to convert.</entry>
           </row>
 
           <row>
-            <entry>ONFAIL</entry>
+            <entry><!-- DNT-Start -->ONFAIL<!-- DNT-End --></entry>
 
             <entry>Optional. Specifies a transform to handle errors in the
-            JSON.</entry>
+            <!-- DNT-Start -->JSON<!-- DNT-End -->.</entry>
           </row>
 
           <row>
-            <entry><emphasis>transform</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>transform</emphasis><!-- DNT-End --></entry>
 
-            <entry>A TRANSFORM structure matching the record structure of the
+            <entry>A <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> structure matching the record structure of the
             first parameter.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>FROMJSON returns a single row (record).</entry>
+            <entry><!-- DNT-Start -->FROMJSON<!-- DNT-End --> returns a single row (record).</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">FROMJSON </emphasis>function returns a
+  <para>The <emphasis role="bold"><!-- DNT-Start -->FROMJSON<!-- DNT-End --> </emphasis>function returns a
   single row (record) in the <emphasis>record</emphasis> format from the
   specified json<emphasis>string</emphasis>. This may be used anywhere a
-  single row can be used (similar to the ROW function).</para>
+  single row can be used (similar to the <!-- DNT-Start -->ROW<!-- DNT-End --> function).</para>
 
   <para>Example:</para>
 
-  <programlisting>namesRec := RECORD  
+  <!-- DNT-Start --><programlisting>namesRec := RECORD  
   UNSIGNED2 EmployeeID{xpath('EmpID')};  
   STRING10 Firstname{xpath('FName')};  
   STRING10 Lastname{xpath('LName')}; 
@@ -71,11 +71,11 @@ END;
 x := '{"FName": "George" , "LName": "Jetson", "EmpID": 42}'; 
 rec := FROMJSON(namesRec,x); 
 OUTPUT(rec);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>Example with Error handling and bad JSON:</para>
+  <para>Example with Error handling and bad <!-- DNT-Start -->JSON<!-- DNT-End -->:</para>
 
-  <programlisting>namesRec := RECORD  
+  <!-- DNT-Start --><programlisting>namesRec := RECORD  
   UNSIGNED2 EmployeeID{xpath('EmpID')};  
   STRING20 Firstname{xpath('FName')};  
   STRING20 Lastname{xpath('LName')}; 
@@ -88,8 +88,8 @@ namesRec createFailure() :=
     SELF := [];
   END;
 rec := FROMJSON(namesRec,x,ONFAIL(createFailure())); 	
-OUTPUT(rec);</programlisting>
+OUTPUT(rec);</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="ROW">ROW</link>, <link
-  linkend="TOJSON">TOJSON</link></para>
+  <para>See Also: <link linkend="ROW"><!-- DNT-Start -->ROW<!-- DNT-End --></link>, <link
+  linkend="TOJSON"><!-- DNT-Start -->TOJSON<!-- DNT-End --></link></para>
 </sect1>

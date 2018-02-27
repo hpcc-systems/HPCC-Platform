@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="HASHMD5">
-  <title>HASHMD5</title>
+  <!-- DNT-Start --><title>HASHMD5</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">HASHMD5<indexterm>
-      <primary>HASHMD5</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->HASHMD<!-- DNT-End -->5<indexterm>
+      <primary><!-- DNT-Start -->HASHMD<!-- DNT-End -->5</primary>
     </indexterm><indexterm>
-      <primary>HASHMD5 function</primary>
+      <primary><!-- DNT-Start -->HASHMD<!-- DNT-End -->5 function</primary>
     </indexterm>(</emphasis><emphasis>expressionlist</emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -19,30 +19,30 @@
 
         <tbody>
           <row>
-            <entry><emphasis>expressionlist</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>expressionlist</emphasis><!-- DNT-End --></entry>
 
             <entry>A comma-delimited list of values.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>HASHMD5 returns a single DATA16 value.</entry>
+            <entry><!-- DNT-Start -->HASHMD<!-- DNT-End -->5 returns a single <!-- DNT-Start -->DATA<!-- DNT-End -->16 value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">HASHMD5</emphasis> function returns a
+  <para>The <emphasis role="bold"><!-- DNT-Start -->HASHMD<!-- DNT-End -->5</emphasis> function returns a
   128-bit hash value derived from all the values in the
-  <emphasis>expressionlist</emphasis>, based on the MD5 algorithm developed by
-  Professor Ronald L. Rivest of MIT. Unlike other hashing functions, trailing
-  spaces are NOT trimmed before the value is calculated.</para>
+  <emphasis>expressionlist</emphasis>, based on the <!-- DNT-Start -->MD<!-- DNT-End -->5 algorithm developed by
+  Professor Ronald L. Rivest of <!-- DNT-Start -->MIT<!-- DNT-End -->. Unlike other hashing functions, trailing
+  spaces are <!-- DNT-Start -->NOT<!-- DNT-End --> trimmed before the value is calculated.</para>
 
   <para>Example:</para>
 
-  <programlisting>OUTPUT(Person,{per_ssn,HASHMD5(per_ssn)});
-    //output SSN and its 128-bit hash value</programlisting>
+  <!-- DNT-Start --><programlisting>OUTPUT(Person,{per_ssn,HASHMD5(per_ssn)});
+    //output SSN and its 128-bit hash value</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="DISTRIBUTE">DISTRIBUTE</link>, <link linkend="HASH">HASH</link>, <link linkend="HASH32">HASH32</link>, <link linkend="HASH64">HASH64</link>, <link linkend="HASHCRC">HASHCRC</link></para>
+  <para>See Also: <link linkend="DISTRIBUTE"><!-- DNT-Start -->DISTRIBUTE<!-- DNT-End --></link>, <link linkend="HASH"><!-- DNT-Start -->HASH<!-- DNT-End --></link>, <link linkend="HASH32"><!-- DNT-Start -->HASH<!-- DNT-End -->32</link>, <link linkend="HASH64"><!-- DNT-Start -->HASH<!-- DNT-End -->64</link>, <link linkend="HASHCRC"><!-- DNT-Start -->HASHCRC<!-- DNT-End --></link></para>
 </sect1>

@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="XMLDECODE">
-  <title>XMLDECODE</title>
+  <!-- DNT-Start --><title>XMLDECODE</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">XMLDECODE<indexterm>
-      <primary>XMLDECODE</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->XMLDECODE<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->XMLDECODE<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>XMLDECODE Function</primary>
+      <primary><!-- DNT-Start -->XMLDECODE<!-- DNT-End --> Function</primary>
     </indexterm>(</emphasis><emphasis> unicode </emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -19,29 +19,29 @@
 
         <tbody>
           <row>
-            <entry><emphasis>unicode</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>unicode</emphasis><!-- DNT-End --></entry>
 
             <entry>The unicode text to decode.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>XMLDECODE returns a single value.</entry>
+            <entry><!-- DNT-Start -->XMLDECODE<!-- DNT-End --> returns a single value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">XMLDECODE</emphasis> function decodes
-  special characters into an XML string (for example, &amp;lt is converted to
-  &lt;) allowing you to use the CSV option on OUTPUT to produce more complex
-  XML files than are possible by using the XML option.</para>
+  <para>The <emphasis role="bold"><!-- DNT-Start -->XMLDECODE<!-- DNT-End --></emphasis> function decodes
+  special characters into an <!-- DNT-Start -->XML<!-- DNT-End --> string (for example, &amp;lt is converted to
+  &lt;) allowing you to use the <!-- DNT-Start -->CSV<!-- DNT-End --> option on <!-- DNT-Start -->OUTPUT<!-- DNT-End --> to produce more complex
+  <!-- DNT-Start -->XML<!-- DNT-End --> files than are possible by using the <!-- DNT-Start -->XML<!-- DNT-End --> option.</para>
 
   <para>Example:</para>
 
-  <programlisting>  d := XMLENCODE('&lt;xml version 1&gt;&lt;tag&gt;data&lt;/tag&gt;');
-  e := XMLDECODE(d);</programlisting>
+  <!-- DNT-Start --><programlisting>  d := XMLENCODE('&lt;xml version 1&gt;&lt;tag&gt;data&lt;/tag&gt;');
+  e := XMLDECODE(d);</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="XMLENCODE">XMLENCODE</link></para>
+  <para>See Also: <link linkend="XMLENCODE"><!-- DNT-Start -->XMLENCODE<!-- DNT-End --></link></para>
 </sect1>
