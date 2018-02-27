@@ -22,6 +22,7 @@
 #include "hqlexpr.hpp"
 
 extern HQL_API StringBuffer &regenerateECL(IHqlExpression * expr, StringBuffer &s);
+extern HQL_API StringBuffer &regenerateDefinition(IHqlExpression * expr, StringBuffer &s);
 extern HQL_API StringBuffer &toECL(IHqlExpression * expr, StringBuffer &s, bool recurse=false, bool xgmmlGraphText = false);
 extern HQL_API StringBuffer &toECLSimple(IHqlExpression * expr, StringBuffer &s);
 extern HQL_API void splitECL(IHqlExpression * expr, StringBuffer &s, StringBuffer &d);

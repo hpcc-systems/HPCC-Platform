@@ -63,6 +63,7 @@ extern HQL_API void dbglogIR(unsigned n, ...);
 
 extern HQL_API void getIRText(StringBuffer & target, unsigned options, IHqlExpression * expr);
 extern HQL_API void getIRText(StringArray & target, unsigned options, IHqlExpression * expr);
+extern HQL_API void getIRText(StringBuffer & target, unsigned options, unsigned n, ...);
 
 //These functions are not thread safe, they are only designed to be called from within a debugger
 extern HQL_API const char * getIRText(IHqlExpression * expr);

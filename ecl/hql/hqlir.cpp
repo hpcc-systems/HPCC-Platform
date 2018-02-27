@@ -2283,6 +2283,25 @@ extern HQL_API void getIRText(StringArray & target, unsigned options, IHqlExpres
     reader.play(expr);
 }
 
+extern HQL_API void getIRText(StringBuffer & target, unsigned options, unsigned n, ...)
+{
+    StringBufferIRBuilder output(target, options);
+    ExpressionIRPlayer reader(&output);
+    va_list args;
+    va_start(args, n);
+    for (unsigned i=0; i < n;i++)
+    {
+        IInterface * next = va_arg(args, IInterface *);
+        IHqlExpression * expr = dynamic_cast<IHqlExpression *>(next);
+        ITypeInfo * type = dynamic_cast<ITypeInfo *>(next);
+        if (expr)
+            reader.play(expr);
+        else if (type)
+            reader.play(type);
+    }
+    va_end(args);
+}
+
 static StringBuffer staticDebuggingStringBuffer;
 extern HQL_API const char * getIRText(IHqlExpression * expr)
 {

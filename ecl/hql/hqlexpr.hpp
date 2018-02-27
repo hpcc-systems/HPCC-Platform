@@ -889,7 +889,7 @@ public:
     void noteBeginModule(IHqlScope * scope, IFileContents * contents);
     void noteBeginQuery(IHqlScope * scope, IFileContents * contents);
     void noteBeginMacro(IHqlScope * scope, IIdAtom * name);
-    void noteEndAttribute(bool success, bool canCache, bool isMacro, IHqlExpression * definition);
+    void noteEndAttribute(bool success);
     void noteEndModule(bool success);
     void noteEndQuery(bool success);
     void noteFinishedParse(IHqlScope * scope);
@@ -908,13 +908,19 @@ public:
     inline bool isAborting() const { return aborting; }
     inline void setAborting() { aborting = true; }
     inline void setFastSyntax() { expandCallsWhenBound = false; }
+    inline bool isSyntaxChecking() const { return syntaxChecking; }
+    inline void setSyntaxChecking() { syntaxChecking = true; }
+    inline void setCheckSimpleDef() { checkSimpleDef = true; }
+    inline void setRegenerateCache() { regenerateCache = true; }
+    inline void setIgnoreCache() { ignoreCache = true; }
     inline IPropertyTree * queryNestedDependTree() const { return nestedDependTree; }
 
     void beginMetaScope() { metaStack.append(*new FileParseMeta); }
     void beginMetaScope(FileParseMeta & active) { metaStack.append(OLINK(active)); }
     void endMetaScope() { metaStack.pop(); }
+    void createCache(IHqlExpression * simplifiedDefinition, bool isMacro);
     inline FileParseMeta & curMeta() { return metaStack.tos(); }
-
+    inline bool hasCacheLocation( ) const { return !metaOptions.cacheLocation.isEmpty();}
 public:
     Linked<IPropertyTree> archive;
     Linked<IEclRepository> eclRepository;
@@ -933,17 +939,22 @@ public:
     bool aborting;
     bool checkDirty = false;
     bool timeParser = false;
+    bool syntaxChecking = false;
+    bool checkSimpleDef = false;
+    bool regenerateCache = false;
+    bool ignoreCache = false;
     Linked<ICodegenContextCallback> codegenCtx;
     CIArrayOf<FileParseMeta> metaStack;
     IEclCachedDefinitionCollection * cache = nullptr;
-    __uint64 optionHash = 0;
+    hash64_t optionHash = 0;
 
 private:
     void createDependencyEntry(IHqlScope * scope, IIdAtom * name);
     bool checkBeginMeta();
     bool checkEndMeta();
-    void finishMeta(bool isSeparateFile, bool success, bool generateMeta, bool canCache, bool isMacro, IHqlExpression * definition);
+    void finishMeta(bool isSeparateFile, bool success, bool generateMeta);
     IPropertyTree * beginMetaSource(IFileContents * contents);
+    void getCacheBaseFilename(StringBuffer & fullName, StringBuffer & baseFilename);
 
     MetaOptions metaOptions;
 
@@ -985,7 +996,7 @@ public:
     void noteBeginModule(IHqlScope * scope, IFileContents * contents);
     void noteBeginQuery(IHqlScope * scope, IFileContents * contents);
     void noteBeginMacro(IHqlScope * scope, IIdAtom * name) { parseCtx.noteBeginMacro(scope, name); }
-    inline void noteEndAttribute(bool success, bool canCache, bool isMacro, IHqlExpression * simplifiedDefinition) { parseCtx.noteEndAttribute(success, canCache, isMacro, simplifiedDefinition); }
+    inline void noteEndAttribute(bool success) { parseCtx.noteEndAttribute(success); }
     inline void noteEndModule(bool success) { parseCtx.noteEndModule(success); }
     inline void noteEndQuery(bool success) { parseCtx.noteEndQuery(success); }
     inline void noteEndMacro() { parseCtx.noteEndMacro(); }
@@ -1001,9 +1012,13 @@ public:
     inline bool isAborting() const { return parseCtx.isAborting(); }
     inline void setAborting() { parseCtx.setAborting(); }
     inline bool checkDirty() const { return parseCtx.checkDirty; }
-
+    inline bool syntaxChecking() const { return parseCtx.isSyntaxChecking(); }
+    inline bool regenerateCache() const { return parseCtx.regenerateCache; }
+    inline bool hasCacheLocation() const { return parseCtx.hasCacheLocation();}
+    inline bool checkSimpleDef() const { return parseCtx.checkSimpleDef; }
+    inline bool ignoreCache() const { return parseCtx.ignoreCache; }
+    inline void createCache(IHqlExpression * simplified, bool isMacro) { parseCtx.createCache(simplified, isMacro); }
     void reportTiming(const char * name);
-
 protected:
 
     inline IPropertyTree * queryArchive() const { return parseCtx.archive; }

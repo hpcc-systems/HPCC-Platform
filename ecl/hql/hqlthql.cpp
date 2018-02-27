@@ -79,6 +79,7 @@ public:
     void setMinimalSelectors(bool value)    { minimalSelectors = value; }
     void setMaxRecurseDepth(int depth)      { maxDatasetDepth = depth; }
     void setTryToRegenerate(bool value)         { tryToRegenerate = value; }
+    StringBuffer &doAlias(IHqlExpression * expr, StringBuffer &name, bool inType);
 
 private:
     void childrenToECL(IHqlExpression *expr, StringBuffer &s, bool inType, bool needComma, unsigned first);
@@ -91,7 +92,6 @@ private:
     StringBuffer &getTypeString(ITypeInfo * i, StringBuffer &s);
     StringBuffer &getFieldTypeString(IHqlExpression * e, StringBuffer &s);
     const char *getEclOpString(node_operator op);
-    StringBuffer &doAlias(IHqlExpression * expr, StringBuffer &name, bool inType);
     void defineCallTarget(IHqlExpression * expr, StringBuffer & name);
     bool isFunctionDefined(IHqlExpression * expr);
     IHqlExpression * querySymbolDefined(IHqlExpression * expr);
@@ -3437,6 +3437,38 @@ static StringBuffer &toECL(StringBuffer &s, HqltHql & hqlthql, HqlExprArray & qu
     return s;
 }
 
+
+static StringBuffer &toECLDefinition(StringBuffer &s, HqltHql & hqlthql, HqlExprArray & queries, bool recurse)
+{
+    int startpos = s.length();
+    try
+    {
+        ForEachItemIn(idx, queries)
+        {
+            StringBuffer name;
+            hqlthql.doAlias((IHqlExpression *) &queries.item(idx), name, false);
+        }
+
+        if (recurse)
+        {
+            StringBuffer definitions;
+            hqlthql.gatherServices(definitions);
+            hqlthql.gatherDefinitions(definitions);
+            s.insert(startpos, definitions.str());
+        }
+    }
+#ifdef _DEBUG
+    catch(int*****************){}
+#else
+    catch(...)
+    {
+        PrintLog("WARNING: toECLDefinition() threw an exception");
+        s.setLength(startpos);
+    }
+#endif
+    return s;
+}
+
 StringBuffer &toECL(IHqlExpression * expr, StringBuffer &s, bool recurse, bool xgmmlGraphText)
 {
     HqltHql hqlthql(recurse, xgmmlGraphText);
@@ -3456,6 +3488,19 @@ StringBuffer &regenerateECL(IHqlExpression * expr, StringBuffer &s)
     HqlExprArray queries;
     unwindCommaCompound(queries, expr);
     return toECL(s, hqlthql, queries, true);
+}
+
+
+StringBuffer &regenerateDefinition(IHqlExpression * expr, StringBuffer &s)
+{
+    if (!isEclAlias(expr))
+        throw makeStringExceptionV(ERR_INTERNALEXCEPTION, "Internal: regenerateDefinition requires ECL alias expression");
+    HqltHql hqlthql(true, false);
+    hqlthql.setIgnoreModuleNames(true);
+
+    HqlExprArray queries;
+    unwindCommaCompound(queries, expr);
+    return toECLDefinition(s, hqlthql, queries, true);
 }
 
 
