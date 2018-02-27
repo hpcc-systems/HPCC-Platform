@@ -477,6 +477,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   TOK_WARNING
   WHEN
   WHICH
+  WHITESPACE
   WIDTH
   WILD
   WITHIN
@@ -10936,6 +10937,7 @@ TrimFlag
     : LEFT              {   $$.setExpr(createAttribute(leftAtom)); }
     | RIGHT             {   $$.setExpr(createAttribute(rightAtom)); }
     | ALL               {   $$.setExpr(createAttribute(allAtom)); }
+    | WHITESPACE        {   $$.setExpr(createAttribute(whitespaceAtom)); }
     ;
 
 optSortList

@@ -12722,10 +12722,11 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
         }
     case no_trim:
         //TRIM(x,RIGHT) should be represented the same way as TRIM(x) - and it's more efficient
-        if ((expr->numChildren() == 2) && (expr->queryChild(1)->queryName() == rightAtom))
+        if (expr->hasAttribute(rightAtom) && !expr->hasAttribute(leftAtom))
         {
             HqlExprArray children;
-            children.append(*transform(expr->queryChild(0)));
+            transformChildren(expr, children);
+            removeAttribute(children, rightAtom);
             return expr->clone(children);
         }
         break;

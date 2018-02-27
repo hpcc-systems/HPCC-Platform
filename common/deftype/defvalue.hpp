@@ -116,7 +116,7 @@ extern DEFTYPE_API IValue * shiftLeftValues(IValue * left, IValue * right);
 extern DEFTYPE_API IValue * shiftRightValues(IValue * left, IValue * right);
 
 extern DEFTYPE_API IValue * substringValue(IValue * v, IValue *lower, IValue *higher);
-extern DEFTYPE_API IValue * trimStringValue(IValue * v, char typecode);
+extern DEFTYPE_API IValue * trimStringValue(IValue * v, char typecode, bool whitespace);
 extern DEFTYPE_API IValue * concatValues(IValue * left, IValue * right);
 extern DEFTYPE_API IValue * negateValue(IValue * v);
 extern DEFTYPE_API IValue * expValue(IValue * v);

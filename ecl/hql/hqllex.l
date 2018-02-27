@@ -982,6 +982,7 @@ WAIT                { RETURNSYM(WAIT); }
 WARNING             { RETURNSYM(TOK_WARNING); }
 WHEN                { RETURNSYM(WHEN); }
 WHICH               { RETURNSYM(WHICH); }
+WHITESPACE          { RETURNSYM(WHITESPACE); }
 WIDTH               { RETURNSYM(WIDTH); }
 WILD                { RETURNSYM(WILD); }
 WITHIN              { RETURNSYM(WITHIN); }

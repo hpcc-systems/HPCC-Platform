@@ -471,6 +471,7 @@ static const char * eclReserved14[] = { //Attribute functions (some might actual
     "use",
     "validate",
     "virtual",
+    "whitespace",
     "width",
     "wild",
     "xml",

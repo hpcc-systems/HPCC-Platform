@@ -1661,7 +1661,7 @@ void rtlConcatVUnicodeF(unsigned tlen, UChar * tgt, ...)
 #endif
 
 //------------------------------------------------------------------------------------------------
-// The followinf concat functions are all deprecated in favour of the variable number of argument
+// The following concat functions are all deprecated in favour of the variable number of argument
 // versions
 unsigned rtlConcatStrToStr(unsigned tlen, char * tgt, unsigned idx, unsigned slen, const char * src)
 {
@@ -1969,6 +1969,22 @@ unsigned rtlTrimUnicodeStrLen(size32_t l, UChar const * t)
 #endif
 }
 
+unsigned rtlTrimUnicodeStrLenWS(size32_t l, UChar const * t)
+{
+#ifdef _USE_ICU
+    if (!l)
+        return 0;
+    UCharCharacterIterator iter(t, l);
+    for(iter.last32(); iter.hasPrevious(); iter.previous32())
+        if(!u_isspace(iter.current32()))
+            break;
+    if(u_isspace(iter.current32())) return iter.getIndex(); // required as the reverse iteration above doesn't hit the first character
+    return iter.getIndex() + 1;
+#else
+    return rtlQuickTrimUnicode(l, t);
+#endif
+}
+
 unsigned rtlTrimVStrLen(const char * t)
 {
     const char * first = t;
@@ -2001,6 +2017,19 @@ inline unsigned rtlLeftTrimUnicodeStrStart(size32_t slen, UChar const * src)
     UCharCharacterIterator iter(src, slen);
     for(iter.first32(); iter.hasNext(); iter.next32())
         if(iter.current32() != ' ')
+            break;
+    return iter.getIndex();
+#else
+    return slen;
+#endif
+}
+
+inline unsigned rtlLeftTrimUnicodeStrStartWS(size32_t slen, UChar const * src)
+{
+#ifdef _USE_ICU
+    UCharCharacterIterator iter(src, slen);
+    for(iter.first32(); iter.hasNext(); iter.next32())
+        if(!u_isspace(iter.current32()))
             break;
     return iter.getIndex();
 #else
@@ -2277,6 +2306,19 @@ void rtlAssignTrimVBothV(size32_t tlen, char * tgt, const char * src)
 
 //-----------------------------------------------------------------------------
 // Functions used to trim off all blank spaces in a string.
+unsigned rtlTrimStrLenNonWhitespace(size32_t l, const char * t)
+{
+    unsigned len = 0;
+
+    while (l)
+    {
+        l--;
+        if (!isspace(t[l]))
+            len++;
+    }
+    return len;
+}
+
 unsigned rtlTrimStrLenNonBlank(size32_t l, const char * t)
 {
     unsigned len = 0;
@@ -2306,7 +2348,7 @@ unsigned rtlTrimVStrLenNonBlank(const char * t)
 void rtlTrimAll(unsigned & tlen, char * & tgt, unsigned slen, const char * src)
 {
     tlen = rtlTrimStrLenNonBlank(slen, src);
-    char * buffer = (char *)rtlMalloc(tlen + 1);
+    char * buffer = (char *)rtlMalloc(tlen);
     int ind = 0;
     for(unsigned i = 0; i < slen; i++) {
         if(src[i] != ' ') {
@@ -2314,8 +2356,39 @@ void rtlTrimAll(unsigned & tlen, char * & tgt, unsigned slen, const char * src)
             ind++;
         }
     }
-    buffer[tlen] = 0;
     tgt = buffer;
+}
+
+void rtlTrimWS(unsigned & tlen, char * & tgt, unsigned slen, const char * src, bool left, bool all, bool right)
+{
+    if (all)
+    {
+        tlen = rtlTrimStrLenNonWhitespace(slen, src);
+        char * buffer = (char *)rtlMalloc(tlen);
+        int ind = 0;
+        for(unsigned i = 0; i < slen; i++) {
+            if (!isspace(src[i]))
+            {
+                buffer[ind] = src[i];
+                ind++;
+            }
+        }
+        tgt = buffer;
+    }
+    else
+    {
+        unsigned start = 0;
+        while (right && slen)
+        {
+            if (!isspace(src[slen-1]))
+                break;
+            slen--;
+        }
+        while (left && start < slen && isspace(src[start]))
+            start++;
+        tlen = slen - start;
+        tgt = rtlDupSubString(src + start, tlen);
+    }
 }
 
 void rtlTrimUnicodeAll(unsigned & tlen, UChar * & tgt, unsigned slen, const UChar * src)
@@ -2329,9 +2402,37 @@ void rtlTrimUnicodeAll(unsigned & tlen, UChar * & tgt, unsigned slen, const UCha
     UnicodeString tgtStr;
     normalizeUnicodeString(rawStr, tgtStr); // normalized in case crazy string like [combining accent] [space] [vowel]
     tlen = tgtStr.length();
-    tgt = (UChar *)rtlMalloc((tlen+1)*2);
+    tgt = (UChar *)rtlMalloc(tlen*2);
     tgtStr.extract(0, tlen, tgt);
-    tgt[tlen] = 0x0000;
+#else
+    rtlThrowNoUnicode();
+#endif
+}
+
+void rtlTrimUnicodeWS(unsigned & tlen, UChar * & tgt, unsigned slen, const UChar * src, bool left, bool all, bool right)
+{
+#ifdef _USE_ICU
+    if (all)
+    {
+        UnicodeString rawStr;
+        UCharCharacterIterator iter(src, slen);
+        for(iter.first32(); iter.hasNext(); iter.next32())
+            if(!u_isspace(iter.current32()))
+                rawStr.append(iter.current32());
+        UnicodeString tgtStr;
+        normalizeUnicodeString(rawStr, tgtStr); // normalized in case crazy string like [combining accent] [space] [vowel]
+        tlen = tgtStr.length();
+        tgt = (UChar *)rtlMalloc(tlen*2);
+        tgtStr.extract(0, tlen, tgt);
+    }
+    else
+    {
+        if (right)
+            slen = rtlTrimUnicodeStrLenWS(slen, src);
+        unsigned start = (left && slen) ? rtlLeftTrimUnicodeStrStartWS(slen, src) : 0;
+        tlen = slen - start;
+        tgt = rtlDupSubUnicode(src + start, slen);
+    }
 #else
     rtlThrowNoUnicode();
 #endif
@@ -2340,7 +2441,7 @@ void rtlTrimUnicodeAll(unsigned & tlen, UChar * & tgt, unsigned slen, const UCha
 void rtlTrimVAll(unsigned & tlen, char * & tgt, const char * src)
 {
     tlen = rtlTrimVStrLenNonBlank(src);
-    char * buffer = (char *)rtlMalloc(tlen + 1);
+    char * buffer = (char *)rtlMalloc(tlen);
     int ind = 0;
     int i = 0;
     while(src[i] != 0) {
@@ -2350,8 +2451,12 @@ void rtlTrimVAll(unsigned & tlen, char * & tgt, const char * src)
         }
         i++;
     }
-    buffer[tlen] = 0;
     tgt = buffer;
+}
+
+void rtlTrimVWS(unsigned & tlen, char * & tgt, const char * src, bool left, bool all, bool right)
+{
+    rtlTrimWS(tlen, tgt, strlen(src), src, left, all, right);
 }
 
 void rtlTrimVUnicodeAll(unsigned & tlen, UChar * & tgt, const UChar * src)
@@ -2359,17 +2464,73 @@ void rtlTrimVUnicodeAll(unsigned & tlen, UChar * & tgt, const UChar * src)
     rtlTrimUnicodeAll(tlen, tgt, rtlUnicodeStrlen(src), src);
 }
 
+void rtlTrimVUnicodeWS(unsigned & tlen, UChar * & tgt, const UChar * src, bool left, bool all, bool right)
+{
+    rtlTrimUnicodeWS(tlen, tgt, rtlUnicodeStrlen(src), src, left, all, right);
+}
+
 ECLRTL_API void rtlTrimUtf8All(unsigned &tlen, char * &tgt, unsigned slen, const char * src)
 {
     //Go via unicode because of possibility of combining accents etc.
-    rtlDataAttr temp1(slen*sizeof(UChar));
-    rtlUtf8ToUnicode(slen, temp1.getustr(), slen, src);
+    rtlDataAttr temp1;
+    unsigned temp1len;
+    rtlUtf8ToUnicodeX(temp1len, temp1.refustr(), slen, src);
 
     unsigned trimLen;
     rtlDataAttr trimText;
-    rtlTrimUnicodeAll(trimLen, trimText.refustr(), slen, temp1.getustr());
+    rtlTrimUnicodeAll(trimLen, trimText.refustr(), temp1len, temp1.getustr());
     rtlUnicodeToUtf8X(tlen, tgt, trimLen, trimText.getustr());
 }
+
+void rtlTrimUtf8WS(unsigned & tlen, char * & tgt, unsigned slen, const char * src, bool left, bool all, bool right)
+{
+    if (all)
+    {
+        //Go via unicode because of possibility of combining accents etc.
+        rtlDataAttr temp1;
+        unsigned temp1len;
+        rtlUtf8ToUnicodeX(temp1len, temp1.refustr(), slen, src);
+
+        unsigned trimLen;
+        rtlDataAttr trimText;
+        rtlTrimUnicodeWS(trimLen, trimText.refustr(), temp1len, temp1.getustr(), left, all, right);
+        rtlUnicodeToUtf8X(tlen, tgt, trimLen, trimText.getustr());
+    }
+    else
+    {
+        const byte * start = (const byte *) src;
+        const byte * cur = start;
+
+        while (left && slen && u_isspace(readUtf8Character(UTF8_MAXSIZE, cur)))
+        {
+            slen--;
+            start = cur;
+        }
+        if (right)
+        {
+            cur = start;
+            unsigned rtrimLength = 0;
+            const byte * trimEnd = cur;
+            for (unsigned i=0; i < slen; i++)
+            {
+                unsigned next = readUtf8Character(UTF8_MAXSIZE, cur);
+                if (!u_isspace(next))
+                {
+                    rtrimLength = i+1;
+                    trimEnd = cur;
+                }
+            }
+            tlen = rtrimLength;
+            tgt = rtlDupSubString((const char *) start, trimEnd-start);
+        }
+        else
+        {
+            tlen = slen;
+            tgt = rtlDupSubString((const char *) start, rtlUtf8Size(slen, start));
+        }
+    }
+}
+
 
 void rtlAssignTrimAllV(unsigned tlen, char * tgt, unsigned slen, const char * src)
 {

@@ -455,6 +455,7 @@ IAtom * volatileAtom;
 IAtom * _volatileId_Atom;
 IAtom * warningAtom;
 IAtom * webserviceAtom;
+IAtom * whitespaceAtom;
 IAtom * wholeAtom;
 IAtom * widthAtom;
 IAtom * wipeAtom;
@@ -913,6 +914,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKESYSATOM(volatileId);
     MAKEATOM(warning);
     MAKEATOM(webservice);
+    MAKEATOM(whitespace);
     MAKEATOM(whole);
     MAKEATOM(width);
     MAKEATOM(wipe);

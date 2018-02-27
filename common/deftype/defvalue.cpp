@@ -3041,7 +3041,7 @@ IValue * substringValue(IValue * v, IValue * lower, IValue * higher)
     return ret;
 }
 
-IValue * trimStringValue(IValue * v, char typecode)
+IValue * trimStringValue(IValue * v, char typecode, bool whitespace)
 {
     ITypeInfo * type = v->queryType();
     type_t tc = type->getTypeCode();
@@ -3053,7 +3053,9 @@ IValue * trimStringValue(IValue * v, char typecode)
         if (tc == type_utf8)
         {
             char const * str = (char const *)v->queryValue();
-            switch(typecode) 
+            if (whitespace)
+                rtlTrimUtf8WS(tlen, resultstr.refstr(), len, str, typecode=='B'||typecode=='L', typecode=='A', typecode=='B'||typecode=='R');
+            else switch(typecode)
             {
             case 'A':
                 rtlTrimUtf8All(tlen, resultstr.refstr(), len, str);
@@ -3075,7 +3077,9 @@ IValue * trimStringValue(IValue * v, char typecode)
         else
         {
             UChar const * str = (UChar const *)v->queryValue();
-            switch(typecode) 
+            if (whitespace)
+                rtlTrimUnicodeWS(tlen, resultstr.refustr(), len, str, typecode=='B'||typecode=='L', typecode=='A', typecode=='B'||typecode=='R');
+            else switch(typecode)
             {
             case 'A':
                 rtlTrimUnicodeAll(tlen, resultstr.refustr(), len, str);
@@ -3106,7 +3110,9 @@ IValue * trimStringValue(IValue * v, char typecode)
         rtlDataAttr resultstr;
         unsigned len = s.length();
         char const * str = s.str();
-        switch(typecode)
+        if (whitespace)
+            rtlTrimWS(tlen, resultstr.refstr(), len, str, typecode=='B'||typecode=='L', typecode=='A', typecode=='B'||typecode=='R');
+        else switch(typecode)
         {
         case 'A':
             rtlTrimAll(tlen, resultstr.refstr(), len, str);

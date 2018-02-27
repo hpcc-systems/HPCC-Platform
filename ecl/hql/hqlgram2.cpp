@@ -11191,6 +11191,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case TOK_WARNING: msg.append("WARNING"); break;
     case WHEN: msg.append("WHEN"); break;
     case WHICH: msg.append("WHICH"); break;
+    case WHITESPACE: msg.append("WHITESPACE"); break;
     case WIDTH: msg.append("WIDTH"); break;
     case WILD: msg.append("WILD"); break;
     case WITHIN: msg.append("WITHIN"); break;

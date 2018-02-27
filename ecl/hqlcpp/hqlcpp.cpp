@@ -10068,11 +10068,14 @@ void HqlCppTranslator::doBuildAssignTrim(BuildCtx & ctx, const CHqlBoundTarget &
     IIdAtom * func;
     bool hasAll = expr->hasAttribute(allAtom);
     bool hasLeft = expr->hasAttribute(leftAtom);
-    bool hasRight = expr->hasAttribute(rightAtom);
+    bool hasRight = expr->hasAttribute(rightAtom) || !(hasAll || hasLeft);
+    bool hasWS = expr->hasAttribute(whitespaceAtom);
 
     if (str->queryType()->getTypeCode() == type_varstring)
     {
-        if(hasAll)
+        if(hasWS)
+            func = trimVWSId;
+        else if(hasAll)
             func = trimVAllId;
         else if(hasLeft && hasRight)
             func = trimVBothId;
@@ -10083,7 +10086,9 @@ void HqlCppTranslator::doBuildAssignTrim(BuildCtx & ctx, const CHqlBoundTarget &
     }
     else if(str->queryType()->getTypeCode() == type_unicode)
     {
-        if(hasAll)
+        if(hasWS)
+            func = trimUnicodeWSId;
+        else if(hasAll)
             func = trimUnicodeAllId;
         else if(hasLeft && hasRight)
             func = trimUnicodeBothId;
@@ -10094,7 +10099,9 @@ void HqlCppTranslator::doBuildAssignTrim(BuildCtx & ctx, const CHqlBoundTarget &
     }
     else if(str->queryType()->getTypeCode() == type_varunicode)
     {
-        if(hasAll)
+        if(hasWS)
+            func = trimVUnicodeWSId;
+        else if(hasAll)
             func = trimVUnicodeAllId;
         else if(hasLeft && hasRight)
             func = trimVUnicodeBothId;
@@ -10105,7 +10112,9 @@ void HqlCppTranslator::doBuildAssignTrim(BuildCtx & ctx, const CHqlBoundTarget &
     }
     else if(str->queryType()->getTypeCode() == type_utf8)
     {
-        if(hasAll)
+        if(hasWS)
+            func = trimUtf8WSId;
+        else if(hasAll)
             func = trimUtf8AllId;
         else if(hasLeft && hasRight)
             func = trimUtf8BothId;
@@ -10116,7 +10125,9 @@ void HqlCppTranslator::doBuildAssignTrim(BuildCtx & ctx, const CHqlBoundTarget &
     }
     else
     {
-        if(hasAll)
+        if(hasWS)
+            func = trimWSId;
+        else if(hasAll)
             func = trimAllId;
         else if(hasLeft && hasRight)
             func = trimBothId;
@@ -10128,6 +10139,12 @@ void HqlCppTranslator::doBuildAssignTrim(BuildCtx & ctx, const CHqlBoundTarget &
 
     HqlExprArray args;
     args.append(*LINK(str));
+    if (hasWS)
+    {
+        args.append(*LINK(queryBoolExpr(hasLeft)));
+        args.append(*LINK(queryBoolExpr(hasAll)));
+        args.append(*LINK(queryBoolExpr(hasRight)));
+    }
     OwnedHqlExpr call = bindFunctionCall(func, args);
     buildExprAssign(ctx, target, call);
 }
@@ -10145,26 +10162,36 @@ void HqlCppTranslator::doBuildExprTrim(BuildCtx & ctx, IHqlExpression * expr, CH
     
     bool hasAll = expr->hasAttribute(allAtom);
     bool hasLeft = expr->hasAttribute(leftAtom);
-    bool hasRight = expr->hasAttribute(rightAtom);
+    bool hasRight = expr->hasAttribute(rightAtom) || !(hasAll || hasLeft);
+    bool hasWS = expr->hasAttribute(whitespaceAtom);
     
     type_t btc = bound.expr->queryType()->getTypeCode();
-    if(hasAll || hasLeft) 
+    if(hasAll || hasLeft || hasWS || btc == type_varstring || btc == type_varunicode)
     {
         if (btc == type_varstring)
         {
-            if(hasAll) {
+            if(hasWS) {
+                func = trimVWSId;
+            }
+            else if(hasAll) {
                 func = trimVAllId;
             }
             else if(hasLeft && hasRight) {
                 func = trimVBothId;
             }
-            else {
+            else if (hasLeft) {
                 func = trimVLeftId;
+            }
+            else {
+                func = trimVRightId;
             }
         }
         else if (btc == type_unicode)
         {
-            if(hasAll) {
+            if(hasWS) {
+                func = trimUnicodeWSId;
+            }
+            else if(hasAll) {
                 func = trimUnicodeAllId;
             }
             else if(hasLeft && hasRight) {
@@ -10176,19 +10203,28 @@ void HqlCppTranslator::doBuildExprTrim(BuildCtx & ctx, IHqlExpression * expr, CH
         }
         else if (btc == type_varunicode)
         {
-            if(hasAll) {
+            if(hasWS) {
+                func = trimVUnicodeWSId;
+            }
+            else if(hasAll) {
                 func = trimVUnicodeAllId;
             }
             else if(hasLeft && hasRight) {
                 func = trimVUnicodeBothId;
             }
-            else {
+            else if(hasLeft) {
                 func = trimVUnicodeLeftId;
+            }
+            else {
+                func = trimVUnicodeRightId;
             }
         }
         else if (btc == type_utf8)
         {
-            if(hasAll) {
+            if(hasWS) {
+                func = trimUtf8WSId;
+            }
+            else if(hasAll) {
                 func = trimUtf8AllId;
             }
             else if(hasLeft && hasRight) {
@@ -10200,7 +10236,10 @@ void HqlCppTranslator::doBuildExprTrim(BuildCtx & ctx, IHqlExpression * expr, CH
         }
         else
         {
-            if(hasAll) {
+            if(hasWS) {
+                func = trimWSId;
+            }
+            else if(hasAll) {
                 func = trimAllId;
             }
             else if(hasLeft && hasRight) {
@@ -10212,6 +10251,12 @@ void HqlCppTranslator::doBuildExprTrim(BuildCtx & ctx, IHqlExpression * expr, CH
         }
 
         args.append(*bound.getTranslatedExpr());
+        if (hasWS)
+        {
+            args.append(*LINK(queryBoolExpr(hasLeft)));
+            args.append(*LINK(queryBoolExpr(hasAll)));
+            args.append(*LINK(queryBoolExpr(hasRight)));
+        }
         OwnedHqlExpr call = bindFunctionCall(func, args);
         buildExpr(ctx, call, tgt);
     }
