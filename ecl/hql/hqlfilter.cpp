@@ -93,6 +93,41 @@ static node_operator getModifiedOp(node_operator op, bool duplicate)
     }
 }
 
+static bool isSubString(IHqlExpression * expr)
+{
+    for(;;)
+    {
+        switch (expr->getOperator())
+        {
+        case no_substring:
+            return true;
+        case no_cast:
+        case no_implicitcast:
+            break;
+        default:
+            return false;
+        }
+        expr = expr->queryChild(0);
+    }
+}
+
+static IHqlExpression * querySubStringRange(IHqlExpression * expr)
+{
+    for(;;)
+    {
+        switch (expr->getOperator())
+        {
+        case no_substring:
+            return expr->queryChild(1);
+        case no_cast:
+        case no_implicitcast:
+            break;
+        default:
+            return nullptr;
+        }
+        expr = expr->queryChild(0);
+    }
+}
 
 void KeyFailureInfo::merge(const KeyFailureInfo & other)
 {
@@ -497,7 +532,7 @@ void FilterExtractor::expandSelects(IHqlExpression * expr, IHqlSimpleScope * exp
                 OwnedHqlExpr keySelected = createSelectExpr(LINK(keySelector), LINK(expr));
                 OwnedHqlExpr expandedSelected = createSelectExpr(LINK(expandedSelector), LINK(match));
                 IHqlExpression * record = expr->queryRecord();
-                if (record)
+                if (expr->isDatarow())
                     expandSelects(record, match->queryRecord()->querySimpleScope(), keySelected, expandedSelected);
                 else
                 {
@@ -674,8 +709,11 @@ IHqlExpression * FilterExtractor::invertTransforms(IHqlExpression * left, IHqlEx
             assertex(isKeySelect(left));
             ITypeInfo * leftType = left->queryType();
             ITypeInfo * rightType = right->queryType();
-            if (leftType == rightType || !castLosesInformation(leftType, rightType))
-                return LINK(right);
+            if (!createValueSets)
+            {
+                if (leftType == rightType || !castLosesInformation(leftType, rightType))
+                    return LINK(right);
+            }
             return ensureExprType(right, leftType);
         }
 
@@ -728,6 +766,14 @@ IHqlExpression * FilterExtractor::isKeyableFilter(IHqlExpression * left, IHqlExp
             IHqlExpression * uncast = left->queryChild(0);
             ITypeInfo * castType = left->queryType();
             ITypeInfo * uncastType = uncast->queryType();
+
+            //Keyed filters on alien datatypes do not work, and can trigger an internal error in ensureExprType()
+            if (uncastType->getTypeCode() == type_alien)
+            {
+                reason.set(KFRtoocomplex, left);
+                return nullptr;
+            }
+
             //(ty)x = y.            E.g., (int1)string2field = int1value
             //if more than one value of x[uncastType] corresponds to a single value in y[castType] then we can't sensibly create
             //the key segment monitor.  Because we will get false negatives.  If it is an inverse then duplicate (see below)
@@ -786,15 +832,15 @@ IHqlExpression * FilterExtractor::isKeyableFilter(IHqlExpression * left, IHqlExp
             if (range->getOperator() == no_rangeto)
             {
                 IValue *end = range->queryChild(0)->queryValue();
-                if (!end)
+                if (!createValueSets && !end)
                     break;
                 return isKeyableFilter(left->queryChild(0), right, duplicate, compareOp, reason, keyedKind);
             }
             else if (range->getOperator() == no_range)
             {
-                IValue *start = range->queryChild(0)->queryValue();
-                IValue *end = range->queryChild(1)->queryValue();
-                if (!start || !end || start->getIntValue() != 1)
+                if (!matchesConstantValue(range->queryChild(0), 1))
+                    break;
+                if (!createValueSets && !range->queryChild(1)->queryValue())
                     break;
                 return isKeyableFilter(left->queryChild(0), right, duplicate, compareOp, reason, keyedKind);
             }
@@ -1006,6 +1052,13 @@ IHqlExpression * FilterExtractor::getRangeLimit(ITypeInfo * fieldType, IHqlExpre
 IHqlExpression * FilterExtractor::createRangeCompare(IHqlExpression * selector, IHqlExpression * value, IHqlExpression * lengthExpr, bool compareEqual)
 {
     OwnedHqlExpr foldedValue = foldHqlExpression(value);
+    if (createValueSets)
+    {
+        OwnedHqlExpr rangeExpr = createValue(no_rangeto, makeNullType(), LINK(lengthExpr));
+        OwnedHqlExpr substr = createValue(no_substring, getStretchedType(UNKNOWN_LENGTH, selector->queryType()), LINK(selector), rangeExpr.getClear());
+        return createValue(compareEqual ? no_eq : no_ne, makeBoolType(), LINK(selector), foldedValue.getClear());
+    }
+
     ITypeInfo * fieldType = selector->queryType();
     OwnedHqlExpr lowExpr = getRangeLimit(fieldType, lengthExpr, foldedValue, -1);
     OwnedHqlExpr highExpr = getRangeLimit(fieldType, lengthExpr, foldedValue, +1);
@@ -1024,6 +1077,10 @@ bool FilterExtractor::matchSubstringFilter(KeyConditionInfo & matches, node_oper
     duplicate = false;
     OwnedHqlExpr guard;
     ITypeInfo * guardCastType = NULL;
+
+    //Do not match implicit substring filters by default - because only a single substring range is supported
+    if (createValueSets && (keyedKind == KeyedNo))
+        return false;
 
     if ((left->getOperator() == no_cast) || (left->getOperator() == no_implicitcast))
     {
@@ -1089,7 +1146,7 @@ bool FilterExtractor::matchSubstringFilter(KeyConditionInfo & matches, node_oper
         return false;
     ITypeInfo * fieldType = selector->queryType();
     unsigned fieldLength = fieldType->getStringLen();
-    if (fieldLength == UNKNOWN_LENGTH)
+    if (!createValueSets && (fieldLength == UNKNOWN_LENGTH))
         return false;
 
     OwnedHqlExpr range = foldHqlExpression(left->queryChild(1));
@@ -1129,7 +1186,9 @@ bool FilterExtractor::matchSubstringFilter(KeyConditionInfo & matches, node_oper
         newTest.setown(createBalanced(combineOp, boolType, compares));
     }
 
-    matches.appendCondition(*new KeyCondition(selector, newTest, keyedKind));
+    KeyCondition * entry = new KeyCondition(selector, newTest, keyedKind);
+    entry->subrange.set(left->queryChild(1));
+    matches.appendCondition(*entry);
     if (guard)
         matches.appendPreFilter(guard);
     return true;
@@ -1142,18 +1201,27 @@ bool FilterExtractor::extractSimpleCompareFilter(KeyConditionInfo & matches, IHq
     IHqlExpression * l = promoted->queryChild(0);
     IHqlExpression * r = promoted->queryChild(1);
     bool duplicate = false;
+
     KeyFailureInfo reasonl, reasonr;
     node_operator op = expr->getOperator();
     IHqlExpression * matchedSelector = isKeyableFilter(l, r, duplicate, op, reasonl, keyedKind);
     Owned<KeyCondition> result;
     if (matchedSelector)
     {
+        //Do not match implicit substring filters by default - because only a single substring range is supported
+        if (createValueSets && isSubString(l) && (keyedKind == KeyedNo))
+        {
+            matches.appendPostFilter(expr);
+            return false;
+        }
+
         node_operator newOp = getModifiedOp(op, duplicate);
 
         if (newOp != no_none)
         {
             OwnedHqlExpr newFilter = createValue(newOp, expr->getType(), LINK(l), LINK(r));
             result.setown(new KeyCondition(matchedSelector, newFilter, keyedKind));
+            result->subrange.set(querySubStringRange(l));
         }
     }
     else
@@ -1162,11 +1230,19 @@ bool FilterExtractor::extractSimpleCompareFilter(KeyConditionInfo & matches, IHq
         matchedSelector = isKeyableFilter(r, l, duplicate, op, reasonr, keyedKind);
         if (matchedSelector)
         {
+            //Do not match implicit substring filters by default - because only a single substring range is supported
+            if (createValueSets && isSubString(r) && (keyedKind == KeyedNo))
+            {
+                matches.appendPostFilter(expr);
+                return false;
+            }
+
             node_operator newOp = getModifiedOp(getReverseOp(op), duplicate);
             if (newOp != no_none)
             {
                 OwnedHqlExpr newFilter = createValue(newOp, expr->getType(), LINK(r), LINK(l));
                 result.setown(new KeyCondition(matchedSelector, newFilter, keyedKind));
+                result->subrange.set(querySubStringRange(r));
             }
         }
     }

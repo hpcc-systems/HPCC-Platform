@@ -1809,6 +1809,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.reportDFSinfo,"reportDFSinfo", 0),
         DebugOption(options.useGlobalCompareClass,"useGlobalCompareClass", false),
         DebugOption(options.createValueSets,"createValueSets", false),
+        DebugOption(options.implicitKeyedDiskFilter,"implicitKeyedDiskFilter", false),
     };
 
     //get options values from workunit
@@ -4776,7 +4777,7 @@ void HqlCppTranslator::ensureHasAddress(BuildCtx & ctx, CHqlBoundExpr & tgt)
     case no_variable:
         break;
     default:
-        if (!isTypePassedByAddress(expr->queryType()))
+        if (!isTypePassedByAddress(expr->queryType()) || (expr->getOperator() == no_decimalstack))
         {
             OwnedHqlExpr bound = tgt.getTranslatedExpr();
             buildTempExpr(ctx, bound, tgt);

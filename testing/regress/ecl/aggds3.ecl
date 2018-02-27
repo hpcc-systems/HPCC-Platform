@@ -20,14 +20,17 @@
 
 //version multiPart=true
 //version multiPart=false,useSequential=true
+//version keyedFilters=true
 
 import ^ as root;
 multiPart := #IFDEFINED(root.multiPart, false);
 useSequential := #IFDEFINED(root.useSequential, false);
+keyedFilters := #IFDEFINED(root.keyedFilters, false);
 
 //--- end of version configuration ---
 
 #onwarning (2168, ignore);
+#option ('implicitKeyedDiskFilter', keyedFilters);
 
 import $.setup;
 sq := setup.sq(multiPart);

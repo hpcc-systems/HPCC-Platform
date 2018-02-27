@@ -370,9 +370,9 @@ public:
             // x >= 'ab' becomes x > 'a' => clear the equal item
             // x < 'ab' becomes x <= 'a' => set the equal item
             if (newMask & CMPlt)
-                newMask &= ~CMPeq;
-            else if (newMask & CMPgt)
                 newMask |= CMPeq;
+            else if (newMask & CMPgt)
+                newMask &= ~CMPeq;
         }
         return new ValueTransition(newMask, newType, resized.toByteArray());
     }
@@ -2829,6 +2829,9 @@ protected:
         testFilter("extra:0=['XX']", { false, false, false, false, false, false });
         testFilter("extra:0=['']", { true, true, true, true, true, true });
         testFilter("name:1=['A']", { false, true, false, true, false, false });
+        //Check substring ranges are correctly truncated
+        testFilter("extra:3=['MARK','MAST']", { false, false, false, false, true, true });
+        testFilter("name:1=['AB','JA']", { true, false, true, false, true, true });
     }
 
 
