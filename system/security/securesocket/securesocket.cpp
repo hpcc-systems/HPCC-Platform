@@ -168,7 +168,8 @@ public:
         // MCK - this was:
         // readTimeout(buf, size, size, size_read, 0, false);
         // but that is essentially a non-blocking read() and we want a blocking read() ...
-        readTimeout(buf, 0, size, size_read, WAIT_FOREVER, false);
+        // read() is always expecting size bytes so min_size should be size
+        readTimeout(buf, size, size, size_read, WAIT_FOREVER, false);
     }
 
     virtual size32_t get_max_send_size()
@@ -326,7 +327,31 @@ public:
         int pending = SSL_pending(m_ssl);
         if(pending > 0)
             return pending;
-        return m_socket->avail_read();
+        // pending == 0 : check if there still might be data to read
+        // (often used as a check for if socket was closed by peer)
+        size32_t avr = m_socket->avail_read();
+        if (avr > 0)
+        {
+            // bytes may be SSL/TLS protocol and not part of msg
+            byte c[2];
+            // TODO this may block ...
+            pending = SSL_peek(m_ssl, c, 1);
+            // 0 almost always means socket was closed
+            if (pending == 0)
+                return 0;
+            if (pending > 0)
+                return SSL_pending(m_ssl);
+            // pending < 0 : TODO should handle SSL_ERROR_WANT_READ/WRITE error
+            if (m_loglevel >= SSLogNormal)
+            {
+                int ret = SSL_get_error(m_ssl, pending);
+                char errbuf[512];
+                ERR_error_string_n(ERR_get_error(), errbuf, 512);
+                errbuf[511] = '\0';
+                DBGLOG("SSL_peek (avail_read) returns error - %s", errbuf);
+            }
+        }
+        return 0;
     }
 
     virtual size32_t write_multiple(unsigned num,const void **buf, size32_t *size)
