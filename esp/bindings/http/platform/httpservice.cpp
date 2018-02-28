@@ -926,8 +926,9 @@ EspAuthState CEspHttpServer::checkUserAuth()
     if (authState != authUnknown)
         return authState;
 
-    StringBuffer authorizationHeader;
+    StringBuffer authorizationHeader, originHeader;
     m_request->getHeader("Authorization", authorizationHeader);
+    m_request->getHeader("Origin", originHeader);
 
     StringBuffer servName(authReq.ctx->queryServiceName(nullptr));
     if (servName.isEmpty())
@@ -952,7 +953,12 @@ EspAuthState CEspHttpServer::checkUserAuth()
     }
 
     //HTTP authentication failed. Send out a login page or 401.
-    bool authSession = (domainAuthType == AuthPerSessionOnly) || ((domainAuthType == AuthTypeMixed) && authorizationHeader.isEmpty());
+    //The following 3 rules are used to detect  a REST type call.
+    //   Any HTTP POST request;
+    //   Any request which has a BasicAuthentication header;
+    //   Any CORS calls (any request which has an Origin header).
+    bool authSession = (domainAuthType == AuthPerSessionOnly) || ((domainAuthType == AuthTypeMixed) &&
+        authorizationHeader.isEmpty() && originHeader.isEmpty() && !strieq(authReq.httpMethod.str(), POST_METHOD));
     return handleAuthFailed(authSession, authReq, false, nullptr);
 }
 
