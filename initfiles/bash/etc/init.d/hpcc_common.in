@@ -406,6 +406,35 @@ start_dafilesrv() {
    fi
 }
 
+function getUserLimits() {
+    local flag=$1
+    local name=$2
+    local myid=$(id -u 2>/dev/null)
+    local rc=0
+    if [[ "${myid}" = "0" ]] ; then
+        limit_user=$(su - ${user} -c "bash -c \"ulimit ${flag}\"" 2>/dev/null)
+        rc=$?
+        if [[ $rc -ne 0 || -z "${limit_user}" ]] ; then
+            limit_user=$(grep "${user}* hard* ${name}" /etc/security/limits.d/*.conf 2>/dev/null | tail -n 1 | awk '{print $4}')
+        fi
+        if [[ -z "${limit_user}" ]] ; then
+            limit_user=$(grep "${user}* hard* ${name}" /etc/security/limits.conf 2>/dev/null | tail -n 1 | awk '{print $4}')
+        fi
+        if [[ -n "${limit_user}" ]] ; then
+            echo "${limit_user}"
+            return
+        fi
+    else
+        limit_user=$(ulimit ${flag} 2>/dev/null)
+        rc=$?
+        if [[ $rc -eq 0 ]] ; then
+            echo "${limit_user}"
+            return
+        fi
+    fi
+    echo "-2"
+}
+
 startCmd() {
     noStatusCheck=$2
     printf "Starting %-21s" "$compName ..."
@@ -468,6 +497,7 @@ startCmd() {
         fi
     fi
 
+    # set/check limits are at least as high as these minimums required ...
     limits=(
       MIN_Hn_nofile="32768"
       MIN_Hc_core="unlimited"
@@ -476,21 +506,37 @@ startCmd() {
       MIN_Hl_memlock="unlimited" )
 
     local i=0
+    local rc=0
     for element in "${limits[@]}"; do
-        flag="-${element:4:2}"
-        value=${element##*"="}
+        local flag="-${element:4:2}"
+        local nam1=${element%=*}
+        local name=${nam1##*_}
+        local value=${element##*"="}
 
-        default_value=$( ulimit $flag )
-        if [[ "$value" != "unlimited" ]] && ([[ "$default_value" == "unlimited" ]] || [[ "$default_value" -gt "$value" ]]); then
-            _temp=${element%%"="*}
-            _temp="${_temp}=${default_value}"
-            limits[i]=$_temp
+        default_value=$(getUserLimits $flag $name)
+
+        new_value=$default_value
+        if [[ "$default_value" == "-2" ]] ; then
+            log "Unable to determine ${name} limit"
+            new_value=$value
+        elif [[ "$value" != "unlimited" ]] && [[ "$default_value" != "unlimited" ]] ; then
+            if [[ "$value" -gt "$default_value" ]]; then
+                new_value=$value
+            fi
+        elif [[ "$value" == "unlimited" ]] && [[ "$default_value" != "unlimited" ]] ; then
+            new_value=$value
         fi
+
         flag="-${element:5:1}"
-        ulimit $flag ${limits[i]##*"="} 1>/dev/null 2>&1
+        ulimit $flag ${new_value} 1>/dev/null 2>&1
+        rc=$?
+        if [[ $rc -eq 0 ]] ; then
+            log "Setting ${name} limit to: ${new_value}"
+        else
+            log "Unable to set ${name} limit to: ${new_value}"
+        fi
         i=$((i+1))
     done
-
 
     UMASK_ARG=""
     if [ -n "${umask}" ]; then
