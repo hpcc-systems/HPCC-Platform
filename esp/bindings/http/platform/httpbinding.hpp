@@ -229,11 +229,14 @@ public:
     //starting and the WsWorkunits lib is loading.
     void setCacheTimeout(const char *method, unsigned timeoutSeconds, bool global)
     {
+        //Disable http caching until it has been rethought - it makes the system unusable.
+#if 0
         StringBuffer key(method);
         cacheSecondsMap.setValue(key.toUpperCase().str(), timeoutSeconds);
         cacheMethods++;
         if (global)
             cacheGlobalMap.setValue(key.str(), global);
+#endif
     }
 
     int onGetConfig(IEspContext &context, CHttpRequest* request, CHttpResponse* response);
