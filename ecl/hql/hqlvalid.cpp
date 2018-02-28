@@ -68,6 +68,9 @@ bool ECLlocation::extractLocationAttr(const IHqlExpression * location)
     }
     if (location->isAttribute())
     {
+        if (location->queryName() != _location_Atom)
+            return false;
+
         IHqlExpression * sourceExpr = location->queryChild(3);
         if (sourceExpr)
             sourcePath = static_cast<ISourcePath *>(sourceExpr->queryUnknownExtra());

@@ -5761,6 +5761,11 @@ bool isLibraryScope(IHqlExpression * expr)
 
 bool HqlCppTranslator::prepareToGenerate(HqlQueryContext & query, WorkflowArray & actions, bool isEmbeddedLibrary)
 {
+    query.expr.setown(expandDelayedFunctionCalls(&queryErrorProcessor(), query.expr));
+    //Pass localOnWarnings so that multiple semantic errors are all reported
+    if (reportSemanticErrors(query.expr, *localOnWarnings))
+        return false;
+
     bool createLibrary = isLibraryScope(query.expr);
 
     if (createLibrary)
