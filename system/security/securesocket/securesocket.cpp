@@ -348,7 +348,7 @@ public:
                 char errbuf[512];
                 ERR_error_string_n(ERR_get_error(), errbuf, 512);
                 errbuf[511] = '\0';
-                DBGLOG("SSL_peek (avail_read) returns error - %s", errbuf);
+                DBGLOG("SSL_peek (avail_read) returns error %d - %s", ret, errbuf);
             }
         }
         return 0;
