@@ -59,250 +59,218 @@ public:
 
     bool subscribe(ISecAuthenticEvents & events)
     {
-        UNIMPLEMENTED;
-        return false;
+        throwUnexpected();
     }
 
     bool unsubscribe(ISecAuthenticEvents & events)
     {
-        UNIMPLEMENTED;
-        return false;
+        throwUnexpected();
     }
 
     bool authorize(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext)
     {
-        UNIMPLEMENTED;
-        return false;
+        throwUnexpected();
     }
 
     bool authorizeEx(SecResourceType rtype, ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext)
     {
-        UNIMPLEMENTED;
-        return false;
+        throwUnexpected();
     }
 
     SecAccessFlags authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext)
     {
-        UNIMPLEMENTED;
-        return SecAccess_None;
+        throwUnexpected();
     }
 
     SecAccessFlags getAccessFlagsEx(SecResourceType rtype, ISecUser & user, const char * resourcename)
     {
-        UNIMPLEMENTED;
-        return SecAccess_None;
+        throwUnexpected();
     }
 
     SecAccessFlags authorizeFileScope(ISecUser & user, const char * filescope)
     {
-        UNIMPLEMENTED;
-        return SecAccess_None;
+        throwUnexpected();
     }
 
     bool authorizeFileScope(ISecUser & user, ISecResourceList * resources)
     {
-        UNIMPLEMENTED;
-        return false;
+        throwUnexpected();
     }
 
     bool authorizeViewScope(ISecUser & user, ISecResourceList * resources)
     {
-        UNIMPLEMENTED;
-        return false;
+        throwUnexpected();
     }
 
     bool addResources(ISecUser & user, ISecResourceList * resources)
     {
-        UNIMPLEMENTED;
-        return false;
+        throwUnexpected();
     }
 
     bool addResourcesEx(SecResourceType rtype, ISecUser & user, ISecResourceList * resources, SecPermissionType ptype, const char * basedn)
     {
-        UNIMPLEMENTED;
-        return false;
+        throwUnexpected();
     }
 
     bool addResourceEx(SecResourceType rtype, ISecUser & user, const char * resourcename, SecPermissionType ptype, const char * basedn)
     {
-        UNIMPLEMENTED;
-        return false;
+        throwUnexpected();
     }
 
     bool getResources(SecResourceType rtype, const char * basedn, IResourceArray & resources)
     {
-        UNIMPLEMENTED;
-        return false;
+        throwUnexpected();
     }
 
     bool updateResources(ISecUser & user, ISecResourceList * resources)
     {
-        UNIMPLEMENTED;
-        return false;
+        throwUnexpected();
     }
 
     bool updateSettings(ISecUser & user, ISecPropertyList * resources, IEspSecureContext* secureContext)
     {
-        UNIMPLEMENTED;
-        return false;
+        throwUnexpected();
     }
 
     bool addUser(ISecUser & user)
     {
-        UNIMPLEMENTED;
-        return false;
+        throwUnexpected();
     }
 
     ISecUser * findUser(const char * username)
     {
-        UNIMPLEMENTED;
-        return NULL;
+        throwUnexpected();
     }
 
     ISecUser * lookupUser(unsigned uid)
     {
-        UNIMPLEMENTED;
-        return NULL;
+        throwUnexpected();
     }
 
     ISecUserIterator * getAllUsers()
     {
-        UNIMPLEMENTED;
-        return NULL;
+        throwUnexpected();
     }
 
     void getAllGroups(StringArray & groups, StringArray & managedBy, StringArray & descriptions )
     {
-        UNIMPLEMENTED;
+        throwUnexpected();
     }
 
     bool updateUserPassword(ISecUser & user, const char * newPassword, const char* currPassword = 0)
     {
-        UNIMPLEMENTED;
-        return false;
+        throwUnexpected();
     }
 
     bool initUser(ISecUser & user)
     {
-        UNIMPLEMENTED;
-        return false;
+        throwUnexpected();
     }
 
     void setExtraParam(const char * name, const char * value)
     {
-        UNIMPLEMENTED;
+        throwUnexpected();
     }
 
     IAuthMap * createAuthMap(IPropertyTree * authconfig)
     {
-        UNIMPLEMENTED;
-        return NULL;
+        throwUnexpected();
     }
 
     IAuthMap * createFeatureMap(IPropertyTree * authconfig)
     {
-        UNIMPLEMENTED;
-        return NULL;
+        throwUnexpected();
     }
 
     IAuthMap * createSettingMap(IPropertyTree * authconfig)
     {
-        UNIMPLEMENTED;
-        return NULL;
+        throwUnexpected();
     }
 
     void deleteResource(SecResourceType rtype, const char * name, const char * basedn)
     {
-        UNIMPLEMENTED;
+        throwUnexpected();
     }
 
     void renameResource(SecResourceType rtype, const char * oldname, const char * newname, const char * basedn)
     {
-        UNIMPLEMENTED;
+        throwUnexpected();
     }
 
     void copyResource(SecResourceType rtype, const char * oldname, const char * newname, const char * basedn)
     {
-        UNIMPLEMENTED;
+        throwUnexpected();
     }
 
     void cacheSwitch(SecResourceType rtype, bool on)
     {
-        UNIMPLEMENTED;
+        throwUnexpected();
     }
 
     bool authTypeRequired(SecResourceType rtype)
     {
-        UNIMPLEMENTED;
-        return false;
+        throwUnexpected();
     }
 
     SecAccessFlags authorizeWorkunitScope(ISecUser & user, const char * filescope)
     {
-        UNIMPLEMENTED;
-        return SecAccess_None;
+        throwUnexpected();
     }
 
     bool authorizeWorkunitScope(ISecUser & user, ISecResourceList * resources)
     {
-        UNIMPLEMENTED;
-        return false;
+        throwUnexpected();
     }
 
     const char * getDescription()
     {
-        UNIMPLEMENTED;
-        return NULL;
+        throwUnexpected();
     }
 
     unsigned getPasswordExpirationWarningDays()
     {
-        UNIMPLEMENTED;
-        return 0;
+        throwUnexpected();
     }
 
     bool createUserScopes()
     {
-        UNIMPLEMENTED;
-        return false;
+        throwUnexpected();
     }
 
     aindex_t getManagedFileScopes(IArrayOf<ISecResource>& scopes)
     {
-        UNIMPLEMENTED;
-        return 0;
+        throwUnexpected();
     }
 
     SecAccessFlags queryDefaultPermission(ISecUser& user)
     {
-        UNIMPLEMENTED;
-        return SecAccess_None;
+        throwUnexpected();
     }
 
     bool clearPermissionsCache(ISecUser & user)
     {
-        UNIMPLEMENTED;
-        return false;
+        throwUnexpected();
     }
 
     bool authenticateUser(ISecUser & user, bool *superUser)
     {
-        UNIMPLEMENTED;
-        return false;
+        throwUnexpected();
     }
 
     secManagerType querySecMgrType()
     {
-        UNIMPLEMENTED;
-        return (secManagerType)0;
+        throwUnexpected();
     }
 
     const char* querySecMgrTypeName()
     {
-        UNIMPLEMENTED;
-        return NULL;
+        throwUnexpected();
     }
 
+    bool logoutUser(ISecUser & user)
+    {
+        throwUnexpected();
+    }
 };
 
 #endif // BASESECURITY_INCL

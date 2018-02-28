@@ -1444,6 +1444,16 @@ bool CLdapSecManager::authenticateUser(ISecUser & user, bool *superUser)
         *superUser = isSuperUser(&user);
     return true;
 }
+bool CLdapSecManager::logoutUser(ISecUser & user)
+{
+    //remove user from permissions cache
+    m_permissionsCache->removeFromUserCache(user);
+    user.setAuthenticateStatus(AS_UNKNOWN);
+    user.credentials().setSessionToken(0);
+    return true;
+}
+
+
 
 //Data View related interfaces
 void CLdapSecManager::createView(const char* viewName, const char * viewDescription)

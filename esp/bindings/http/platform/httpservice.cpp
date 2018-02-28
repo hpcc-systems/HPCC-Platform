@@ -1469,11 +1469,30 @@ void CEspHttpServer::logoutSession(EspAuthRequest& authReq, unsigned sessionID, 
         Owned<IPropertyTreeIterator> it = sessionTree->getElements(path.str());
         ForEach(*it)
             toRemove.append(it->query());
+
+        IEspContext* ctx = m_request->queryContext();
+        ISecManager* secmgr = nullptr;
+        if (ctx)
+            secmgr = ctx->querySecManager();
+
         ForEachItemIn(i, toRemove)
+        {
+            if (secmgr)
+            {
+                const char * user = toRemove.item(i).queryProp("@userid");
+                if (user)
+                {
+                    //inform security manager that user is logged out
+                    Owned<ISecUser> secUser = secmgr->createUser(user);
+                    secmgr->logoutUser(*secUser);
+                }
+            }
+
             sessionTree->removeTree(&toRemove.item(i));
+        }
     }
     else
-        ESPLOG(LogMin, "Cann't find session tree: %s[@port=\"%d\"]", PathSessionApplication, authReq.authBinding->getPort());
+        ESPLOG(LogMin, "Can't find session tree: %s[@port=\"%d\"]", PathSessionApplication, authReq.authBinding->getPort());
 
     ///authReq.ctx->setAuthorized(true);
 
