@@ -1649,7 +1649,8 @@ public:
                     }
                 } while (helper->next());
             }
-             if (totalSizeSent > indexReadChunkSize)
+            reader->finishedRow();
+            if (totalSizeSent > indexReadChunkSize)
             {
                 MemoryBuffer si;
                 unsigned short siLen = 0;
