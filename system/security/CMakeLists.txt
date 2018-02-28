@@ -24,6 +24,8 @@ if (USE_ZLIB)
   HPCC_ADD_SUBDIRECTORY (zcrypt)
 endif()
 
+HPCC_ADD_SUBDIRECTORY (digisign)
+
 IF (USE_APR)
   HPCC_ADD_SUBDIRECTORY (plugins/htpasswdSecurity)
 ENDIF(USE_APR)
