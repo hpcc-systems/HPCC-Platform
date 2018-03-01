@@ -57,6 +57,15 @@ define([
             this.detailsWidget.widget._Binding.set("disabled", true);
         },
 
+        initTab: function () {
+            var currSel = this.getSelectedChild();
+            if (currSel.id === this.definitionQueryWidget.id && !this.definitionQueryWidget.initalized) {
+                this.definitionQueryWidget.init({
+                    firstLoad: true
+                });
+            }
+        },
+
         postCreate: function (args) {
             var context = this;
             this.inherited(arguments);
