@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="GetColumnMapping">
-  <title>GetColumnMapping</title>
+  <!-- DNT-Start --><title>GetColumnMapping</title><!-- DNT-End -->
 
-  <para><emphasis>result</emphasis> <emphasis role="bold"> :=
+  <!-- DNT-Start --><para><emphasis>result</emphasis> <emphasis role="bold"> :=
   STD.File.GetColumnMapping<indexterm>
       <primary>STD.File.GetColumnMapping</primary>
     </indexterm><indexterm>
@@ -12,7 +12,7 @@
     </indexterm><indexterm>
       <primary>GetColumnMapping</primary>
     </indexterm>(</emphasis> <emphasis> file </emphasis> <emphasis
-  role="bold">);</emphasis></para>
+  role="bold">);</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -22,16 +22,16 @@
 
       <tbody>
         <row>
-          <entry><emphasis>file</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>file</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the logical
           filename.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>GetColumnMapping returns a null-terminated string containing
+          <entry><!-- DNT-Start -->GetColumnMapping<!-- DNT-End --> returns a null-terminated string containing
           the comma-delimited list of field mappings for the
           <emphasis>file</emphasis>.</entry>
         </row>
@@ -39,12 +39,12 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">GetColumnMapping </emphasis>function returns
+  <para>The <emphasis role="bold"><!-- DNT-Start -->GetColumnMapping<!-- DNT-End --> </emphasis>function returns
   the field mappings for the <emphasis>file</emphasis>, in the same format
   specified for the SetColumnMapping function.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">Maps := STD.File.GetColumnMapping('Thor::in::SomeFile');
-</programlisting>
+  <!-- DNT-Start --><programlisting format="linespecific">Maps := STD.File.GetColumnMapping('Thor::in::SomeFile');
+</programlisting><!-- DNT-End -->
 </sect1>

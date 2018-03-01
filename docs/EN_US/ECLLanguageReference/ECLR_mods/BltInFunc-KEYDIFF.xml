@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="KEYDIFF">
-  <title>KEYDIFF</title>
+  <!-- DNT-Start --><title>KEYDIFF</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">[
+  <!-- DNT-Start --><para><emphasis role="bold">[
   </emphasis><emphasis>attrname</emphasis><emphasis role="bold">
   </emphasis><emphasis role="bold">:= ] KEYDIFF<indexterm>
       <primary>KEYDIFF</primary>
@@ -17,7 +17,7 @@
   EXPIRE<indexterm>
       <primary>EXPIRE</primary>
     </indexterm>( [ </emphasis><emphasis>days </emphasis><emphasis
-  role="bold">] ) ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] );</emphasis></para>
+  role="bold">] ) ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] );</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -27,7 +27,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>attrname</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>attrname</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. The action name, which turns the action into an
           attribute definition, therefore not executed until the attrname is
@@ -35,107 +35,107 @@
         </row>
 
         <row>
-          <entry><emphasis>index1</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>index1</emphasis><!-- DNT-End --></entry>
 
-          <entry>An INDEX attribute.</entry>
+          <entry>An <!-- DNT-Start -->INDEX<!-- DNT-End --> attribute.</entry>
         </row>
 
         <row>
-          <entry><emphasis>index2</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>index2</emphasis><!-- DNT-End --></entry>
 
-          <entry>An INDEX attribute whose structure is identical to
+          <entry>An <!-- DNT-Start -->INDEX<!-- DNT-End --> attribute whose structure is identical to
           index1.</entry>
         </row>
 
         <row>
-          <entry><emphasis>file</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>file</emphasis><!-- DNT-End --></entry>
 
           <entry>A string constant specifying the logical name of the file to
           write the differences to.</entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">OVERWRITE</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">OVERWRITE</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. Specifies overwriting the filename if it already
           exists.</entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">EXPIRE</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">EXPIRE</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. Specifies the file is a temporary file that may be
           automatically deleted after the specified number of days.</entry>
         </row>
 
         <row>
-          <entry><emphasis>days</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>days</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. The number of days after which the file may be
           automatically deleted. If omitted, the default is seven (7).</entry>
         </row>
 
           <row>
-            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the output record order is not significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the significance of the output record order.</entry>
           </row>
           <row>
-            <entry><emphasis>bool</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
 
             <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">STABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is not significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity in parallel.</entry>
           </row>
           <row>
-            <entry><emphasis>numthreads</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Override the algorithm used for this activity.</entry>
           </row>
           <row>
-            <entry><emphasis>name</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
           </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">KEYDIFF </emphasis>action compares
+  <para>The <emphasis role="bold"><!-- DNT-Start -->KEYDIFF<!-- DNT-End --> </emphasis>action compares
   <emphasis>index1</emphasis> to <emphasis>index2</emphasis> and writes the
   differences to the specified <emphasis>file</emphasis>. If
   <emphasis>index1</emphasis> to <emphasis>index2</emphasis> are not exactly
   the same structure, an error occurs. Once generated, the
-  <emphasis>file</emphasis> may be used by the KEYPATCH action<indexterm>
-      <primary>KEYPATCH action</primary>
+  <emphasis>file</emphasis> may be used by the <!-- DNT-Start -->KEYPATCH<!-- DNT-End --> action<indexterm>
+      <primary><!-- DNT-Start -->KEYPATCH<!-- DNT-End --> action</primary>
     </indexterm>.</para>
 
   <para>Example:</para>
 
-  <programlisting>Vehicles := DATASET('vehicles',
+  <!-- DNT-Start --><programlisting>Vehicles := DATASET('vehicles',
      {STRING2 st,
       STRING20 city,
       STRING20 lname,
@@ -150,8 +150,8 @@ i2 := INDEX(Vehicles,
   'vkey::20050101::st.city.lname');
     
 KEYDIFF(i1,i2,'KEY::DIFF::20050101::i1i2',OVERWRITE);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="KEYPATCH">KEYPATCH</link>, <link
-  linkend="INDEX_record_structure">INDEX</link></para>
+  <para>See Also: <link linkend="KEYPATCH"><!-- DNT-Start -->KEYPATCH<!-- DNT-End --></link>, <link
+  linkend="INDEX_record_structure"><!-- DNT-Start -->INDEX<!-- DNT-End --></link></para>
 </sect1>

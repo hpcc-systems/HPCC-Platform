@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="POWER">
-  <title>POWER</title>
+  <!-- DNT-Start --><title>POWER</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">POWER<indexterm>
-      <primary>POWER</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->POWER<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->POWER<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>POWER function</primary>
+      <primary><!-- DNT-Start -->POWER<!-- DNT-End --> function</primary>
     </indexterm>(</emphasis><emphasis>base,exponent</emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -19,34 +19,34 @@
 
         <tbody>
           <row>
-            <entry><emphasis>base</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>base</emphasis><!-- DNT-End --></entry>
 
             <entry>The real number to raise.</entry>
           </row>
 
           <row>
-            <entry><emphasis>exponent</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>exponent</emphasis><!-- DNT-End --></entry>
 
             <entry>The real power to raise x to.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>POWER returns a single real value.</entry>
+            <entry><!-- DNT-Start -->POWER<!-- DNT-End --> returns a single real value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">POWER </emphasis>function returns the result
+  <para>The <emphasis role="bold"><!-- DNT-Start -->POWER<!-- DNT-End --> </emphasis>function returns the result
   of the <emphasis>base </emphasis>raised to the <emphasis>exponent
   </emphasis>power.</para>
 
   <para>Example:</para>
 
-  <programlisting>MyCube := POWER(2.0,3.0); // = 8
-MySquare := POWER(3.0,2.0); // = 9</programlisting>
+  <!-- DNT-Start --><programlisting>MyCube := POWER(2.0,3.0); // = 8
+MySquare := POWER(3.0,2.0); // = 9</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="SQRT">SQRT</link>, <link linkend="EXP">EXP</link>, <link linkend="LN">LN</link></para>
+  <para>See Also: <link linkend="SQRT"><!-- DNT-Start -->SQRT<!-- DNT-End --></link>, <link linkend="EXP"><!-- DNT-Start -->EXP<!-- DNT-End --></link>, <link linkend="LN"><!-- DNT-Start -->LN<!-- DNT-End --></link></para>
 </sect1>

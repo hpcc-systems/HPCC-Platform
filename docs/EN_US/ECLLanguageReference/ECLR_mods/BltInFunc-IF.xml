@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="IF">
-  <title>IF<indexterm>
+  <!-- DNT-Start --><title>IF<indexterm>
       <primary>IF</primary>
-    </indexterm></title>
+    </indexterm></title><!-- DNT-End -->
 
-  <para><emphasis role="bold">IF<indexterm>
-      <primary>IF function</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->IF<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->IF<!-- DNT-End --> function</primary>
     </indexterm>(</emphasis><emphasis>expression, trueresult
   </emphasis><emphasis role="bold">[</emphasis><emphasis>, falseresult
   </emphasis><emphasis role="bold">])</emphasis></para>
@@ -20,20 +20,20 @@
 
         <tbody>
           <row>
-            <entry><emphasis>expression</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
 
             <entry>A conditional expression.</entry>
           </row>
 
           <row>
-            <entry><emphasis>trueresult</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>trueresult</emphasis><!-- DNT-End --></entry>
 
             <entry>The result to return when the expression is true. This may
             be any expression or action.</entry>
           </row>
 
           <row>
-            <entry><emphasis>falseresult</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>falseresult</emphasis><!-- DNT-End --></entry>
 
             <entry>The result to return when the expression is false. This may
             be any expression or action. This may be omitted only if the
@@ -41,16 +41,16 @@
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>IF returns a single value, set, recordset, or
+            <entry><!-- DNT-Start -->IF<!-- DNT-End --> returns a single value, set, recordset, or
             action.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">IF</emphasis> function evaluates the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->IF<!-- DNT-End --></emphasis> function evaluates the
   <emphasis>expression</emphasis> (which must be a conditional expression with
   a Boolean result) and returns either the <emphasis>trueresult </emphasis>or
   <emphasis>falseresult</emphasis> based on the evaluation of the
@@ -65,7 +65,7 @@
 
   <para>Example:</para>
 
-  <programlisting>MyDate := IF(ValidDate(Trades.trd_dopn),Trades.trd_dopn,0);
+  <!-- DNT-Start --><programlisting>MyDate := IF(ValidDate(Trades.trd_dopn),Trades.trd_dopn,0);
   // in this example, 0 is the false value and
   // Trades.trd_dopn is the True value returned
 
@@ -81,9 +81,9 @@ MyAddress := IF(person.gender = 'M',
   //cleanAddress182 returns a 182-byte string
   // so casting the empty string false result to a
   // STRING182 ensures a proper-length string return
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="IFF">IFF</link>, <link linkend="MAP">MAP</link>,
-  <link linkend="EVALUATE">EVALUATE</link>, <link linkend="CASE">CASE</link>,
-  <link linkend="CHOOSE">CHOOSE</link>, <link linkend="SET">SET</link></para>
+  <para>See Also: <link linkend="IFF"><!-- DNT-Start -->IFF<!-- DNT-End --></link>, <link linkend="MAP"><!-- DNT-Start -->MAP<!-- DNT-End --></link>,
+  <link linkend="EVALUATE"><!-- DNT-Start -->EVALUATE<!-- DNT-End --></link>, <link linkend="CASE"><!-- DNT-Start -->CASE<!-- DNT-End --></link>,
+  <link linkend="CHOOSE"><!-- DNT-Start -->CHOOSE<!-- DNT-End --></link>, <link linkend="SET"><!-- DNT-Start -->SET<!-- DNT-End --></link></para>
 </sect1>

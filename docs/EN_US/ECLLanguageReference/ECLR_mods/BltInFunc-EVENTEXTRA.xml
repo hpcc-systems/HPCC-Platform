@@ -2,10 +2,10 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="EVENTEXTRA">
-  <title>EVENTEXTRA</title>
+  <!-- DNT-Start --><title>EVENTEXTRA</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">EVENTEXTRA<indexterm>
-      <primary>EVENTEXTRA</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->EVENTEXTRA<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->EVENTEXTRA<!-- DNT-End --></primary>
     </indexterm>( </emphasis><emphasis>tag</emphasis><emphasis role="bold">
   )</emphasis></para>
 
@@ -17,22 +17,22 @@
 
         <tbody>
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>EVENTEXTRA returns a single string value.</entry>
+            <entry><!-- DNT-Start -->EVENTEXTRA<!-- DNT-End --> returns a single string value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">EVENTEXTRA</emphasis> function<indexterm>
-      <primary>EVENTEXTRA function</primary>
+  <para>The <emphasis role="bold"><!-- DNT-Start -->EVENTEXTRA<!-- DNT-End --></emphasis> function<indexterm>
+      <primary><!-- DNT-Start -->EVENTEXTRA<!-- DNT-End --> function</primary>
     </indexterm> returns the contents of the <emphasis>tag</emphasis> from the
-  XML text in the EVENT function's second parameter.</para>
+  <!-- DNT-Start -->XML<!-- DNT-End --> text in the <!-- DNT-Start -->EVENT<!-- DNT-End --> function's second parameter.</para>
 
   <para>Example:</para>
 
-  <programlisting>doMyService := FUNCTION
+  <!-- DNT-Start --><programlisting>doMyService := FUNCTION
   OUTPUT('Did a Service for: ' + 'EVENTNAME=' + EVENTNAME);
   NOTIFY(EVENT('MyServiceComplete',
                '&lt;Event&gt;&lt;returnTo&gt;FRED&lt;/returnTo&gt;&lt;/Event&gt;'),
@@ -47,10 +47,10 @@ NOTIFY('MyService',
        '&lt;Event&gt;&lt;returnTo&gt;'+WORKUNIT+'&lt;/returnTo&gt;&lt;/Event&gt;');
 WAIT('MyServiceComplete');
 OUTPUT('WORKUNIT DONE')
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="EVENT">EVENT</link>, <link
-  linkend="EVENTNAME">EVENTNAME</link>, <link linkend="CRON">CRON</link>,
-  <link linkend="WHEN">WHEN</link>, <link linkend="WAIT">WAIT</link>, <link
-  linkend="NOTIFY">NOTIFY</link></para>
+  <para>See Also: <link linkend="EVENT"><!-- DNT-Start -->EVENT<!-- DNT-End --></link>, <link
+  linkend="EVENTNAME"><!-- DNT-Start -->EVENTNAME<!-- DNT-End --></link>, <link linkend="CRON"><!-- DNT-Start -->CRON<!-- DNT-End --></link>,
+  <link linkend="WHEN"><!-- DNT-Start -->WHEN<!-- DNT-End --></link>, <link linkend="WAIT"><!-- DNT-Start -->WAIT<!-- DNT-End --></link>, <link
+  linkend="NOTIFY"><!-- DNT-Start -->NOTIFY<!-- DNT-End --></link></para>
 </sect1>

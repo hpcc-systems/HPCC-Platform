@@ -2,12 +2,12 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book lang="en_US" xml:base="../">
-  <title>HPCC Systems<superscript>®</superscript> Instant Cloud for
-  AWS</title>
+  <!-- DNT-Start --><title>HPCC Systems<superscript>®</superscript> Instant Cloud for
+  AWS</title><!-- DNT-End -->
 
   <bookinfo>
-    <title>HPCC Systems<superscript>®</superscript> Instant Cloud for
-    AWS</title>
+    <!-- DNT-Start --><title>HPCC Systems<superscript>®</superscript> Instant Cloud for
+    AWS</title><!-- DNT-End -->
 
     <mediaobject>
       <imageobject>
@@ -31,12 +31,12 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para>HPCC Systems is a registered trademark of LexisNexis Risk Data
+      <para><!-- DNT-Start -->HPCC<!-- DNT-End --> Systems is a registered trademark of LexisNexis Risk Data
       Management Inc.</para>
 
-      <para>Amazon Web Services, AWS, Amazon EC2, EC2, Amazon Elastic Compute
+      <para>Amazon Web Services, <!-- DNT-Start -->AWS<!-- DNT-End -->, Amazon <!-- DNT-Start -->EC<!-- DNT-End -->2, <!-- DNT-Start -->EC<!-- DNT-End -->2, Amazon Elastic Compute
       Cloud, Amazon S3, Amazon Simple Storage Service, are trademarks,
-      registered trademarks or trade dress of AWS in the U.S. and/or other
+      registered trademarks or trade dress of <!-- DNT-Start -->AWS<!-- DNT-End --> in the U.S. and/or other
       countries.</para>
 
       <para>Other products, logos, and services may be trademarks or
@@ -73,14 +73,14 @@
   </bookinfo>
 
   <chapter id="InstaCloud_Intro">
-    <title>Introduction</title>
+    <!-- DNT-Start --><title>Introduction</title><!-- DNT-End -->
 
-    <para>This guide provides details and guidance in running an HPCC
+    <para>This guide provides details and guidance in running an <!-- DNT-Start -->HPCC<!-- DNT-End -->
     Systems<superscript>®</superscript> Platform inside an Amazon Web Services
-    (AWS) Elastic Cloud (EC2) using the Instant Cloud for AWS page.</para>
+    (<!-- DNT-Start -->AWS<!-- DNT-End -->) Elastic Cloud (<!-- DNT-Start -->EC<!-- DNT-End -->2) using the Instant Cloud for <!-- DNT-Start -->AWS<!-- DNT-End --> page.</para>
 
     <para>This allows you to <emphasis role="bold">instantiate</emphasis> and
-    run HPCC Systems clusters of different sizes on the fly.</para>
+    run <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems clusters of different sizes on the fly.</para>
 
     <para>This is useful for:</para>
 
@@ -98,12 +98,12 @@
       </listitem>
 
       <listitem>
-        <para>Leveraging the HPCC Systems platform without incurring cost of
+        <para>Leveraging the <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems platform without incurring cost of
         hardware and administration</para>
       </listitem>
 
       <listitem>
-        <para>Create and use an HPCC Systems cluster immediately without
+        <para>Create and use an <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems cluster immediately without
         purchasing and installing new hardware</para>
       </listitem>
     </itemizedlist>
@@ -112,20 +112,20 @@
     for larger jobs. This flexibility allows you to match cost and processing
     power to the job at hand.</para>
 
-    <para>Instantiating temporary EC2 nodes allows you to "rent" computing
+    <para>Instantiating temporary <!-- DNT-Start -->EC<!-- DNT-End -->2 nodes allows you to "rent" computing
     capacity without long term commitments. In this manner, you pay as you go
     instead of incurring large fixed costs at the start.</para>
 
     <para><emphasis role="bold">Keep in mind that you should terminate any
     unneeded instances to avoid paying for computing time you don't need.
-    </emphasis><emphasis role="redbold">You are solely responsible for all AWS
+    </emphasis><emphasis role="redbold">You are solely responsible for all <!-- DNT-Start -->AWS<!-- DNT-End -->
     charges.</emphasis></para>
 
     <para>We are working with Amazon to improve the set up processes.
     <emphasis role="bold">In the near future, we will have a guide to show how
-    to run an HPCC Systems cluster in an Amazon Elastic Map Reduce (EMR) type
+    to run an <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems cluster in an Amazon Elastic Map Reduce (<!-- DNT-Start -->EMR<!-- DNT-End -->) type
     environment.</emphasis> We expect that method to be more robust and easier
-    to set up and operate. In addition, HPCC Systems is working on its own
+    to set up and operate. In addition, <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems is working on its own
     Enterprise Cloud offering, but it is not yet ready to be announced.</para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
@@ -148,13 +148,13 @@
     </informaltable>
 
     <sect1 id="InstaCloud_PreReqs">
-      <title>Prerequisites and Assumptions</title>
+      <!-- DNT-Start --><title>Prerequisites and Assumptions</title><!-- DNT-End -->
 
       <para>You will need:</para>
 
       <itemizedlist mark="bullet">
         <listitem>
-          <para>An Amazon Web Services account with EC2 enabled</para>
+          <para>An Amazon Web Services account with <!-- DNT-Start -->EC<!-- DNT-End -->2 enabled</para>
         </listitem>
 
         <listitem>
@@ -163,17 +163,17 @@
 
           <para><itemizedlist>
               <listitem>
-                <para><emphasis>Windows PC or </emphasis></para>
+                <para><emphasis>Windows <!-- DNT-Start -->PC<!-- DNT-End --> or </emphasis></para>
               </listitem>
 
               <listitem>
-                <para><emphasis>Linux workstation with the Eclipse IDE and the
-                ECL plugin for Eclipse (available soon)</emphasis></para>
+                <para><emphasis>Linux workstation with the Eclipse <!-- DNT-Start -->IDE<!-- DNT-End --> and the
+                <!-- DNT-Start -->ECL<!-- DNT-End --> plugin for Eclipse (available soon)</emphasis></para>
               </listitem>
 
               <listitem>
                 <para><emphasis>Mac<superscript></superscript> workstation
-                with the Eclipse IDE and the ECL plugin for Eclipse (available
+                with the Eclipse <!-- DNT-Start -->IDE<!-- DNT-End --> and the <!-- DNT-Start -->ECL<!-- DNT-End --> plugin for Eclipse (available
                 soon)</emphasis></para>
               </listitem>
             </itemizedlist></para>
@@ -188,7 +188,7 @@
 
       <itemizedlist mark="bullet">
         <listitem>
-          <para>An SSH tool, such as PuTTY</para>
+          <para>An <!-- DNT-Start -->SSH<!-- DNT-End --> tool, such as PuTTY</para>
         </listitem>
 
         <listitem>
@@ -204,7 +204,7 @@
         </listitem>
       </itemizedlist>
 
-      <!--***eclipse info needs to be added when released-->
+      <!-- DNT-Start --><!--***eclipse info needs to be added when released--><!-- DNT-End -->
 
       <para></para>
 
@@ -220,7 +220,7 @@
               <row>
                 <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
 
-                <entry>For detailed PuTTY/pcsp/PUTTYGen directions from
+                <entry>For detailed PuTTY/pcsp/<!-- DNT-Start -->PUTTYGen<!-- DNT-End --> directions from
                 Amazon, see: <para><ulink
                 url="http://docs.amazonwebservices.com/AmazonEC2/gsg/2006-06-26/putty.html">http://docs.amazonwebservices.com/AmazonEC2/gsg/2006-06-26/putty.html</ulink></para></entry>
               </row>
@@ -231,17 +231,17 @@
   </chapter>
 
   <chapter id="InstaCloudLaunch">
-    <title>Using Instant Cloud Launch</title>
+    <!-- DNT-Start --><title>Using Instant Cloud Launch</title><!-- DNT-End -->
 
     <sect1 id="InstaCloud_PreLaunch" role="nobrk">
-      <title>Before you begin</title>
+      <!-- DNT-Start --><title>Before you begin</title><!-- DNT-End -->
 
       <para>In this section, you will gather some information you need before
       beginning. This includes:</para>
 
       <itemizedlist>
         <listitem>
-          <para>Your AWS Access Key ID and Secret Access Key</para>
+          <para>Your <!-- DNT-Start -->AWS<!-- DNT-End --> Access Key <!-- DNT-Start -->ID<!-- DNT-End --> and Secret Access Key</para>
         </listitem>
 
         <listitem>
@@ -249,14 +249,14 @@
         </listitem>
       </itemizedlist>
 
-      <!--Include follows-->
+      <!-- DNT-Start --><!--Include follows--><!-- DNT-End -->
 
       <xi:include href="InstantCloud/AWS-Mods/AWSIncludes.xml"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
 
     <sect1 id="InstaCloud_Login">
-      <title>Login</title>
+      <!-- DNT-Start --><title>Login</title><!-- DNT-End -->
 
       <para><orderedlist>
           <listitem>
@@ -264,19 +264,19 @@
             url="https://aws.hpccsystems.com">https://aws.hpccsystems.com/</ulink>.</para>
 
             <para>If not logged in, you will see the <emphasis
-            role="bold">Login</emphasis> link at the top of the page. If you
+            role="bold"><!-- DNT-Start -->Login<!-- DNT-End --></emphasis> link at the top of the page. If you
             see a <emphasis role="bold">Logout</emphasis> link, you are
             already logged in.</para>
           </listitem>
 
           <listitem>
-            <para>Specify your <emphasis role="bold">Access Key ID</emphasis>
+            <para>Specify your <emphasis role="bold">Access Key <!-- DNT-Start -->ID<!-- DNT-End --></emphasis>
             and <emphasis role="bold">Secret Access Key</emphasis>. This
             information is never stored on our system.</para>
 
             <para>If you don't have it handy, you can click on the link under
-            <emphasis role="bold">Can't find your Access Key ID?</emphasis> to
-            go to that section of the AWS Management Console.<emphasis
+            <emphasis role="bold">Can't find your Access Key <!-- DNT-Start -->ID<!-- DNT-End -->?</emphasis> to
+            go to that section of the <!-- DNT-Start -->AWS<!-- DNT-End --> Management Console.<emphasis
             role="bluebold"></emphasis>.</para>
 
             <para><figure>
@@ -297,7 +297,7 @@
           </listitem>
 
           <listitem>
-            <para>Press the <emphasis role="bold">Login </emphasis>
+            <para>Press the <emphasis role="bold"><!-- DNT-Start -->Login<!-- DNT-End --> </emphasis>
             button.</para>
 
             <para>The <emphasis role="bold">View Clusters </emphasis>window
@@ -309,7 +309,7 @@
             <para>Click on the <emphasis role="bold">Launch Cluster
             </emphasis>link at the top.</para>
 
-            <para>The <emphasis role="bold">Launch a New HPCC Cluster
+            <para>The <emphasis role="bold">Launch a New <!-- DNT-Start -->HPCC<!-- DNT-End --> Cluster
             </emphasis>window displays.</para>
 
             <para></para>
@@ -318,10 +318,10 @@
     </sect1>
 
     <sect1 id="InstaCloud_LaunchNewHPCC">
-      <title>Launch a New HPCC Cluster</title>
+      <!-- DNT-Start --><title>Launch a New HPCC Cluster</title><!-- DNT-End -->
 
       <para>In this section, you will launch a set of Ubuntu 12.04 machines to
-      use for your HPCC Systems Thor platform. The Instant Cloud page uses the
+      use for your <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems Thor platform. The Instant Cloud page uses the
       input you specify to create your cluster for you.</para>
 
       <para>When you press the <emphasis role="bold">Launch Cluster
@@ -333,7 +333,7 @@
         </listitem>
 
         <listitem>
-          <para>Creates a Security Group with the access to the TCP and UDP
+          <para>Creates a Security Group with the access to the <!-- DNT-Start -->TCP<!-- DNT-End --> and <!-- DNT-Start -->UDP<!-- DNT-End -->
           ports enabled.</para>
         </listitem>
 
@@ -343,7 +343,7 @@
 
         <listitem>
           <para>Launches the number of m1.large nodes requested using the
-          provided AMI (ami-e01698d0).</para>
+          provided <!-- DNT-Start -->AMI<!-- DNT-End --> (ami-e01698d0).</para>
         </listitem>
 
         <listitem>
@@ -351,7 +351,7 @@
         </listitem>
 
         <listitem>
-          <para>Installs HPCC Systems platform packages.</para>
+          <para>Installs <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems platform packages.</para>
         </listitem>
 
         <listitem>
@@ -360,7 +360,7 @@
         </listitem>
 
         <listitem>
-          <para>Creates the internal user (HPCC).</para>
+          <para>Creates the internal user (<!-- DNT-Start -->HPCC<!-- DNT-End -->).</para>
         </listitem>
 
         <listitem>
@@ -373,7 +373,7 @@
       </itemizedlist>
 
       <sect2 id="IC_LaunchThor" role="brk">
-        <title>Launch a New Thor Cluster</title>
+        <!-- DNT-Start --><title>Launch a New Thor Cluster</title><!-- DNT-End -->
 
         <orderedlist numeration="arabic">
           <listitem>
@@ -392,7 +392,7 @@
           </listitem>
 
           <listitem>
-            <para>Optionally, specify Snapshot ID(s) to attach data to your
+            <para>Optionally, specify Snapshot <!-- DNT-Start -->ID<!-- DNT-End -->(s) to attach data to your
             landing zone.</para>
 
             <para>This would be a previously saved "snapshot" of a landing
@@ -406,7 +406,7 @@
             <para>The <emphasis role="bold">Cluster Launch Log
             </emphasis>window displays. This shows details while it is
             launching (it auto-refreshes during launch or termination). It
-            also shows your Cluster ID (a unique identifier) which can be
+            also shows your Cluster <!-- DNT-Start -->ID<!-- DNT-End --> (a unique identifier) which can be
             useful to identify the cluster when you have more than one
             running.</para>
           </listitem>
@@ -435,9 +435,9 @@
             <para>Click on the <emphasis role="bluebold">View
             Clusters</emphasis> link to see running clusters.</para>
 
-            <para>This list has links for the ECL Watch page, the Launch Log
+            <para>This list has links for the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch page, the Launch Log
             page, the Configuration file for the cluster, a list of IPs, and
-            the SSH Key.</para>
+            the <!-- DNT-Start -->SSH<!-- DNT-End --> Key.</para>
 
             <para>It also has a link that allows you to <emphasis
             role="bold">Terminate</emphasis> the cluster instantiation.</para>
@@ -456,11 +456,11 @@
       </sect2>
 
       <sect2 id="IC_TerminatingInstances" role="brk">
-        <title>Terminating your instances</title>
+        <!-- DNT-Start --><title>Terminating your instances</title><!-- DNT-End -->
 
         <para>If you need to save your data, you must to despray it first and
         save it off of your cluster before shutting down. More information
-        about Data Handling in an HPCC Systems platform are available in the
+        about Data Handling in an <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems platform are available in the
         <emphasis>Data Handling</emphasis> manual. See the <link
         linkend="InstaCloud_NextSteps">Next Steps</link> section for details
         on downloading other manuals.</para>
@@ -474,7 +474,7 @@
               page using the link at the top of a page.</para>
 
               <figure>
-                <title>Running Clusters</title>
+                <!-- DNT-Start --><title>Running Clusters</title><!-- DNT-End -->
 
                 <mediaobject>
                   <imageobject>
@@ -528,11 +528,11 @@
             </listitem>
 
             <listitem>
-              <para>Optionally, go to the AWS management console to confirm
+              <para>Optionally, go to the <!-- DNT-Start -->AWS<!-- DNT-End --> management console to confirm
               your instances have properly terminated.</para>
 
               <para><emphasis role="redbold">You are solely responsible for
-              all charges to your AWS account.</emphasis></para>
+              all charges to your <!-- DNT-Start -->AWS<!-- DNT-End --> account.</emphasis></para>
             </listitem>
           </orderedlist></para>
 
@@ -540,7 +540,7 @@
       </sect2>
 
       <sect2 id="InstaCloudOtherTasks" role="brk">
-        <title>Other Tasks</title>
+        <!-- DNT-Start --><title>Other Tasks</title><!-- DNT-End -->
 
         <para></para>
 
@@ -548,12 +548,12 @@
 --></para>
 
         <sect3 id="IC_ViewClusters">
-          <title>View Clusters</title>
+          <!-- DNT-Start --><title>View Clusters</title><!-- DNT-End -->
 
           <para>The <emphasis role="bold">View Clusters</emphasis> page
-          provides access to each cluster's Launch Date/Time, Cluster ID,
-          Number of Nodes, Zone, ECL Watch Page, Status, Launch Log, Config
-          File, IP Addresses, and SSH Key.</para>
+          provides access to each cluster's Launch Date/Time, Cluster <!-- DNT-Start -->ID<!-- DNT-End -->,
+          Number of Nodes, Zone, <!-- DNT-Start -->ECL<!-- DNT-End --> Watch Page, Status, Launch Log, Config
+          File, <!-- DNT-Start -->IP<!-- DNT-End --> Addresses, and <!-- DNT-Start -->SSH<!-- DNT-End --> Key.</para>
 
           <para>It also provides a link to terminate a cluster with a single
           click.</para>
@@ -570,10 +570,10 @@
         </sect3>
 
         <sect3 id="IC_ManageSSHKeys">
-          <title>Manage your SSH keys</title>
+          <!-- DNT-Start --><title>Manage your SSH keys</title><!-- DNT-End -->
 
-          <para>The SSH Key management page allows you to download your
-          cluster's SSH key (.PEM file) to use to authenticate an SSH session,
+          <para>The <!-- DNT-Start -->SSH<!-- DNT-End --> Key management page allows you to download your
+          cluster's <!-- DNT-Start -->SSH<!-- DNT-End --> key (.<!-- DNT-Start -->PEM<!-- DNT-End --> file) to use to authenticate an <!-- DNT-Start -->SSH<!-- DNT-End --> session,
           such as a console session using PuTTY. It also provides a means to
           delete it from the One-Click system.</para>
 
@@ -584,7 +584,7 @@
                 Clusters</emphasis> Link at the top of a page.</para>
 
                 <figure>
-                  <title>Running Clusters</title>
+                  <!-- DNT-Start --><title>Running Clusters</title><!-- DNT-End -->
 
                   <mediaobject>
                     <imageobject>
@@ -619,8 +619,8 @@
               </listitem>
 
               <listitem>
-                <para>Press the <emphasis role="bold">Delete SSH
-                Key</emphasis> button to delete the SSH key from the One-Click
+                <para>Press the <emphasis role="bold">Delete <!-- DNT-Start -->SSH<!-- DNT-End -->
+                Key</emphasis> button to delete the <!-- DNT-Start -->SSH<!-- DNT-End --> key from the One-Click
                 system.</para>
 
                 <para>Note: This does not remove the keys from your running
@@ -635,37 +635,37 @@
   </chapter>
 
   <chapter id="InstaCloud_RunningECL">
-    <title>Running ECL</title>
+    <!-- DNT-Start --><title>Running ECL</title><!-- DNT-End -->
 
     <para></para>
 
     <sect1 id="ECL-on-a-single-node-system" role="nobrk">
-      <title>Running ECL on your HPCC Systems cluster</title>
+      <!-- DNT-Start --><title>Running ECL on your HPCC Systems cluster</title><!-- DNT-End -->
 
       <para>After your platform is running, and you can now create and run
-      some ECL<footnote>
+      some <!-- DNT-Start -->ECL<!-- DNT-End --><footnote>
           <para><emphasis role="bold">E</emphasis>nterprise <emphasis
           role="bold">C</emphasis>ontrol <emphasis
-          role="bold">L</emphasis>anguage (ECL) is a declarative, data centric
+          role="bold">L</emphasis>anguage (<!-- DNT-Start -->ECL<!-- DNT-End -->) is a declarative, data centric
           programming language used to manage all aspects of the massive data
-          joins, sorts, and builds that truly differentiate HPCC (High
+          joins, sorts, and builds that truly differentiate <!-- DNT-Start -->HPCC<!-- DNT-End --> (High
           Performance Computing Cluster) from other technologies in its
           ability to provide flexible data analysis on a massive scale.</para>
         </footnote> code using either ECL IDE, the command line ECL compiler,
       or the ECLPlus tool.</para>
 
       <sect2 id="IC_InstallECLIDEandClienTools">
-        <title>Install the ECL IDE and HPCC Client Tools</title>
+        <!-- DNT-Start --><title>Install the ECL IDE and HPCC Client Tools</title><!-- DNT-End -->
 
-        <para>You only need to install the ECL IDE once. If you have already
+        <para>You only need to install the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> once. If you have already
         installed it, you can skip this section. .</para>
 
         <para><orderedlist>
             <listitem>
-              <para>In a Web browser, connect to ECL Watch using
+              <para>In a Web browser, connect to <!-- DNT-Start -->ECL<!-- DNT-End --> Watch using
               http://<emphasis
-              role="bluebold">&lt;PUBLIC_DNS&gt;:8010</emphasis> (where
-              PUBLIC_DNS is the public DNS name of your ESP server).</para>
+              role="bluebold">&lt;<!-- DNT-Start -->PUBLIC<!-- DNT-End -->_<!-- DNT-Start -->DNS<!-- DNT-End -->&gt;:8010</emphasis> (where
+              <!-- DNT-Start -->PUBLIC<!-- DNT-End -->_<!-- DNT-Start -->DNS<!-- DNT-End --> is the public <!-- DNT-Start -->DNS<!-- DNT-End --> name of your <!-- DNT-Start -->ESP<!-- DNT-End --> server).</para>
 
               <para><informaltable colsep="1" frame="all" rowsep="1">
                   <?dbfo keep-together="always"?>
@@ -680,8 +680,8 @@
                         <entry><inlinegraphic
                         fileref="images/caution.png" /></entry>
 
-                        <entry>Your IP address could be different from the
-                        ones provided in the example images. Please use the IP
+                        <entry>Your <!-- DNT-Start -->IP<!-- DNT-End --> address could be different from the
+                        ones provided in the example images. Please use the <!-- DNT-Start -->IP<!-- DNT-End -->
                         address of <emphasis role="bold">your</emphasis>
                         node.</entry>
                       </row>
@@ -693,7 +693,7 @@
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>From the ECL Watch Advanced menu, select on the <emphasis
+              <para>From the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch Advanced menu, select on the <emphasis
               role="bold">Additional Resources </emphasis>link.</para>
 
               <para><figure>
@@ -707,39 +707,39 @@
                   </mediaobject>
                 </figure></para>
 
-              <para>Follow the link to the HPCC System's portal download
+              <para>Follow the link to the <!-- DNT-Start -->HPCC<!-- DNT-End --> System's portal download
               page.</para>
             </listitem>
 
             <listitem>
-              <para>Click on the <emphasis role="bold">ECL IDE
+              <para>Click on the <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->
               </emphasis>link. (on the right hand side in the Download column,
               under the Free Community Edition heading)</para>
             </listitem>
 
             <listitem>
-              <para>Follow the instructions on the web page to install the ECL
-              IDE.</para>
+              <para>Follow the instructions on the web page to install the <!-- DNT-Start -->ECL<!-- DNT-End -->
+              <!-- DNT-Start -->IDE<!-- DNT-End -->.</para>
             </listitem>
 
             <listitem>
-              <para>Install the ECL IDE, following the prompts in the
-              installation program. Once the ECL IDE is installed
+              <para>Install the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->, following the prompts in the
+              installation program. Once the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> is installed
               successfully, you can proceed.</para>
             </listitem>
           </orderedlist></para>
       </sect2>
 
       <sect2 id="InsCloud_RunningBasicECLprogram" role="brk">
-        <title>Running a basic ECL program from the ECL IDE</title>
+        <!-- DNT-Start --><title>Running a basic ECL program from the ECL IDE</title><!-- DNT-End -->
 
-        <para><orderedlist>
+        <!-- DNT-Start --><para><orderedlist>
             <listitem>
               <para>Open the ECL IDE on your Windows workstation, from your
               start menu. (<emphasis role="bold">Start</emphasis> &gt;&gt;
               <emphasis role="bold">All Programs</emphasis> &gt;&gt; <emphasis
               role="bold">HPCCSystems</emphasis> &gt;&gt; <emphasis
-              role="bold">ECL IDE</emphasis> ).</para>
+              role="bold">ECL IDE</emphasis> ).</para><!-- DNT-End -->
 
               <informaltable colsep="1" frame="all" rowsep="1">
                 <?dbfo keep-together="always"?>
@@ -755,7 +755,7 @@
                       fileref="images/OSSgr3.png" /></entry>
 
                       <entry>You can create a shortcut on your desktop to
-                      provide quick access to the ECL IDE.</entry>
+                      provide quick access to the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->.</entry>
                     </row>
                   </tbody>
                 </tgroup>
@@ -763,13 +763,13 @@
             </listitem>
 
             <listitem>
-              <para>On the Login Window, press the <emphasis
+              <para>On the <!-- DNT-Start -->Login<!-- DNT-End --> Window, press the <emphasis
               role="bold">Preferences</emphasis> button.</para>
             </listitem>
 
             <listitem>
               <para>In the <emphasis role="bold">Server</emphasis> entry
-              control, type the Public IP of your ESP Server of your ESP
+              control, type the Public <!-- DNT-Start -->IP<!-- DNT-End --> of your <!-- DNT-Start -->ESP<!-- DNT-End --> Server of your <!-- DNT-Start -->ESP<!-- DNT-End -->
               server) then press the <emphasis role="bold">Ok</emphasis>
               button.</para>
 
@@ -785,8 +785,8 @@
             </listitem>
 
             <listitem>
-              <para>Enter the <emphasis role="bold">Login ID</emphasis> and
-              <emphasis role="bold">Password</emphasis> provided in the Login
+              <para>Enter the <emphasis role="bold"><!-- DNT-Start -->Login<!-- DNT-End --> <!-- DNT-Start -->ID<!-- DNT-End --></emphasis> and
+              <emphasis role="bold">Password</emphasis> provided in the <!-- DNT-Start -->Login<!-- DNT-End -->
               dialog.</para>
 
               <informaltable colsep="1" rowsep="1">
@@ -797,14 +797,14 @@
 
                   <tbody>
                     <row>
-                      <entry>Login ID</entry>
+                      <entry><!-- DNT-Start -->Login ID<!-- DNT-End --></entry>
 
                       <entry><emphasis
                       role="bluebold">hpccdemo</emphasis></entry>
                     </row>
 
                     <row>
-                      <entry>Password</entry>
+                      <entry><!-- DNT-Start -->Password<!-- DNT-End --></entry>
 
                       <entry><emphasis
                       role="bluebold">hpccdemo</emphasis></entry>
@@ -814,7 +814,7 @@
               </informaltable>
 
               <figure>
-                <title>Login Window</title>
+                <!-- DNT-Start --><title>Login Window</title><!-- DNT-End -->
 
                 <mediaobject>
                   <imageobject>
@@ -826,7 +826,7 @@
 
             <listitem>
               <para>Open a new <emphasis role="bold">Builder Window</emphasis>
-              (CTRL+N) and write the following code:</para>
+              (<!-- DNT-Start -->CTRL<!-- DNT-End -->+N) and write the following code:</para>
 
               <para><programlisting>OUTPUT('Hello World');
 </programlisting></para>
@@ -834,9 +834,9 @@
               <para>This could also be written as:</para>
 
               <para><programlisting>'Hello World';
-</programlisting>In the second program listing, the OUTPUT keyword is omitted.
+</programlisting>In the second program listing, the <!-- DNT-Start -->OUTPUT<!-- DNT-End --> keyword is omitted.
               This is possible because the language is declarative and the
-              OUTPUT action is implicit.</para>
+              <!-- DNT-Start -->OUTPUT<!-- DNT-End --> action is implicit.</para>
             </listitem>
 
             <listitem>
@@ -844,7 +844,7 @@
               target cluster.</para>
 
               <para><emphasis role="bold">Thor</emphasis> is the Data Refinery
-              component of your HPCC. It is a disk based massively parallel
+              component of your <!-- DNT-Start -->HPCC<!-- DNT-End -->. It is a disk based massively parallel
               computer cluster, optimized for sorting, manipulating, and
               transforming massive data.</para>
 
@@ -917,30 +917,30 @@
   </chapter>
 
   <chapter id="InstaCloud_MoreECLExamplesChap">
-    <title>More ECL Examples</title>
+    <!-- DNT-Start --><title>More ECL Examples</title><!-- DNT-End -->
 
-    <para>This section contains additional ECL examples you can use on your
-    HPCC Systems Thor platform. You can run these on a single-node system or a
+    <para>This section contains additional <!-- DNT-Start -->ECL<!-- DNT-End --> examples you can use on your
+    <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems Thor platform. You can run these on a single-node system or a
     larger multi-node cluster.</para>
 
     <sect1 id="InstaCloud_ECLAnagram1Example" role="nobrk">
-      <title>ECL Example: Anagram1</title>
+      <!-- DNT-Start --><title>ECL Example: Anagram1</title><!-- DNT-End -->
 
-      <para>This example takes a STRING and produces every possible anagram
+      <para>This example takes a <!-- DNT-Start -->STRING<!-- DNT-End --> and produces every possible anagram
       from it. This code is the basis for a second example which evaluates
       which of these are actual words using a word list data file.</para>
 
       <para><orderedlist>
           <listitem>
-            <para>Open the ECL IDE (<emphasis role="bold">Start</emphasis>
+            <para>Open the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> (<emphasis role="bold">Start</emphasis>
             &gt;&gt; <emphasis role="bold">All Programs</emphasis> &gt;&gt;
-            <emphasis role="bold">HPCC Systems</emphasis> &gt;&gt; ECL IDE )
-            and login to your HPCC.</para>
+            <emphasis role="bold"><!-- DNT-Start -->HPCC<!-- DNT-End --> Systems</emphasis> &gt;&gt; <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> )
+            and login to your <!-- DNT-Start -->HPCC<!-- DNT-End -->.</para>
           </listitem>
 
           <listitem>
             <para>Open a new <emphasis role="bold">Builder Window</emphasis>
-            (CTRL+N) and write the following code:<programlisting>STRING Word := 'FRED' :STORED('Word');
+            (<!-- DNT-Start -->CTRL<!-- DNT-End -->+N) and write the following code:<programlisting>STRING Word := 'FRED' :STORED('Word');
 R := RECORD
         STRING SoFar {MAXLENGTH(200)};
         STRING Rest {MAXLENGTH(200)};
@@ -1008,7 +1008,7 @@ OUTPUT(L);</programlisting></para>
     </sect1>
 
     <sect1 id="InstaCloud_ECLAnagram2Example">
-      <title>Anagram2</title>
+      <!-- DNT-Start --><title>Anagram2</title><!-- DNT-End -->
 
       <para>In this example, we will download an open source data file of
       dictionary words, spray<footnote>
@@ -1024,7 +1024,7 @@ OUTPUT(L);</programlisting></para>
       as a simple example.</para>
 
       <sect2>
-        <title>Download the word list</title>
+        <!-- DNT-Start --><title>Download the word list</title><!-- DNT-End -->
 
         <para>We will download the word list from <ulink
         url="http://wordlist.sourceforge.net/">http://wordlist.sourceforge.net/</ulink></para>
@@ -1032,7 +1032,7 @@ OUTPUT(L);</programlisting></para>
         <para><orderedlist>
             <listitem>
               <para>Download the <emphasis>Official 12 Dicts
-              </emphasis>Package. The files are available in tar.gz or ZIP
+              </emphasis>Package. The files are available in tar.gz or <!-- DNT-Start -->ZIP<!-- DNT-End -->
               format.</para>
             </listitem>
 
@@ -1044,29 +1044,29 @@ OUTPUT(L);</programlisting></para>
       </sect2>
 
       <sect2 id="Load_the_Incoming_Data">
-        <title>Load the Dictionary File to your Landing Zone</title>
+        <!-- DNT-Start --><title>Load the Dictionary File to your Landing Zone</title><!-- DNT-End -->
 
         <para>In this step, you will copy the data files to a location from
-        which it can be sprayed to your HPCC Thor cluster. A Landing Zone is a
-        storage location attached to your HPCC. It has a utility running to
+        which it can be sprayed to your <!-- DNT-Start -->HPCC<!-- DNT-End --> Thor cluster. A Landing Zone is a
+        storage location attached to your <!-- DNT-Start -->HPCC<!-- DNT-End -->. It has a utility running to
         facilitate file spraying to a cluster.</para>
 
-        <para>For smaller data files, maximum of 2GB, you can use the
-        upload/download file utility in ECL Watch. This data file is only ~400
+        <para>For smaller data files, maximum of 2<!-- DNT-Start -->GB<!-- DNT-End -->, you can use the
+        upload/download file utility in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch. This data file is only ~400
         kb.</para>
 
         <para>Next you will distribute (or Spray) the dataset to all the nodes
-        in the HPCC Thor cluster. The power of the HPCC comes from its ability
+        in the <!-- DNT-Start -->HPCC<!-- DNT-End --> Thor cluster. The power of the <!-- DNT-Start -->HPCC<!-- DNT-End --> comes from its ability
         to assign multiple processors to work on different portions of the
-        data file in parallel. Even though the VM Edition only has a single
+        data file in parallel. Even though the <!-- DNT-Start -->VM<!-- DNT-End --> Edition only has a single
         node, the data must be sprayed to the cluster.</para>
 
         <orderedlist>
           <listitem>
-            <para>In a Web browser, connect to ECL Watch using
+            <para>In a Web browser, connect to <!-- DNT-Start -->ECL<!-- DNT-End --> Watch using
             http://<emphasis
-            role="bluebold">&lt;PUBLIC_DNS&gt;:8010</emphasis> (where
-            PUBLIC_DNS is the public DNS name of your ESP server).</para>
+            role="bluebold">&lt;<!-- DNT-Start -->PUBLIC<!-- DNT-End -->_<!-- DNT-Start -->DNS<!-- DNT-End -->&gt;:8010</emphasis> (where
+            <!-- DNT-Start -->PUBLIC<!-- DNT-End -->_<!-- DNT-Start -->DNS<!-- DNT-End --> is the public <!-- DNT-Start -->DNS<!-- DNT-End --> name of your <!-- DNT-Start -->ESP<!-- DNT-End --> server).</para>
 
             <para><informaltable colsep="1" frame="all" rowsep="1">
                 <?dbfo keep-together="always"?>
@@ -1081,8 +1081,8 @@ OUTPUT(L);</programlisting></para>
                       <entry><inlinegraphic
                       fileref="images/caution.png" /></entry>
 
-                      <entry>Your IP address could be different from the ones
-                      provided in the example images. Please use the IP
+                      <entry>Your <!-- DNT-Start -->IP<!-- DNT-End --> address could be different from the ones
+                      provided in the example images. Please use the <!-- DNT-Start -->IP<!-- DNT-End -->
                       address provided by <emphasis
                       role="bold">your</emphasis> installation.</entry>
                     </row>
@@ -1094,7 +1094,7 @@ OUTPUT(L);</programlisting></para>
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>From ECL Watch click on the <emphasis
+            <para>From <!-- DNT-Start -->ECL<!-- DNT-End --> Watch click on the <emphasis
             role="bold">Files</emphasis> icon, then click the <emphasis
             role="bold">Landing Zones</emphasis> link from the navigation
             sub-menu.</para>
@@ -1132,10 +1132,10 @@ OUTPUT(L);</programlisting></para>
       </sect2>
 
       <sect2 id="Spray_the_Data_to_THOR" role="brk">
-        <title>Spray the Data File to your <emphasis>Thor
-        Cluster</emphasis></title>
+        <!-- DNT-Start --><title>Spray the Data File to your <emphasis>Thor
+        Cluster</emphasis></title><!-- DNT-End -->
 
-        <para>To use the data file in our HPCC Thor system, we must "spray" it
+        <para>To use the data file in our <!-- DNT-Start -->HPCC<!-- DNT-End --> Thor system, we must "spray" it
         to all the nodes. A <emphasis>spray</emphasis> or
         <emphasis>import</emphasis> is the relocation of a data file from one
         location (such as a Landing Zone) to multiple file parts on nodes in a
@@ -1149,10 +1149,10 @@ OUTPUT(L);</programlisting></para>
 
         <orderedlist>
           <listitem>
-            <para>In a Web browser, connect to ECL Watch using
+            <para>In a Web browser, connect to <!-- DNT-Start -->ECL<!-- DNT-End --> Watch using
             http://<emphasis
-            role="bluebold">&lt;PUBLIC_DNS&gt;:8010</emphasis> (where
-            PUBLIC_DNS is the public DNS name of your ESP server).</para>
+            role="bluebold">&lt;<!-- DNT-Start -->PUBLIC<!-- DNT-End -->_<!-- DNT-Start -->DNS<!-- DNT-End -->&gt;:8010</emphasis> (where
+            <!-- DNT-Start -->PUBLIC<!-- DNT-End -->_<!-- DNT-Start -->DNS<!-- DNT-End --> is the public <!-- DNT-Start -->DNS<!-- DNT-End --> name of your <!-- DNT-Start -->ESP<!-- DNT-End --> server).</para>
           </listitem>
 
           <listitem>
@@ -1185,7 +1185,7 @@ OUTPUT(L);</programlisting></para>
                 </mediaobject>
               </figure></para>
 
-            <para>The <emphasis role="bold">DFU Spray Delimited</emphasis>
+            <para>The <emphasis role="bold"><!-- DNT-Start -->DFU<!-- DNT-End --> Spray Delimited</emphasis>
             page displays.</para>
           </listitem>
 
@@ -1245,19 +1245,19 @@ OUTPUT(L);</programlisting></para>
             <para>Press the <emphasis role="bold">Spray</emphasis><emphasis
             role="bold"> </emphasis>button.</para>
 
-            <para>A tab displays the DFU Workunit where you can see the
+            <para>A tab displays the <!-- DNT-Start -->DFU<!-- DNT-End --> Workunit where you can see the
             progress of the spray.</para>
           </listitem>
         </orderedlist>
       </sect2>
 
       <sect2 id="InstaCloud_RunTheECLonThor" role="brk">
-        <title>Run the ECL program on Thor<parameter></parameter></title>
+        <!-- DNT-Start --><title>Run the ECL program on Thor<parameter></parameter></title><!-- DNT-End -->
 
         <para><orderedlist>
             <listitem>
               <para>Open a new <emphasis role="bold">Builder Window</emphasis>
-              (CTRL+N) and write the following code:<programlisting>IMPORT Std;
+              (<!-- DNT-Start -->CTRL<!-- DNT-End -->+N) and write the following code:<programlisting>IMPORT Std;
 layout_word_list := record
   string word;
 end;
@@ -1335,22 +1335,22 @@ OUTPUT(ValidWords)
   </chapter>
 
   <chapter id="InstaCloud_DataHandling_Chap">
-    <title>Data Handling</title>
+    <!-- DNT-Start --><title>Data Handling</title><!-- DNT-End -->
 
-    <para>This section explains data handling in an AWS configuration. More
-    information about Data Handling in an HPCC Systems platform are available
+    <para>This section explains data handling in an <!-- DNT-Start -->AWS<!-- DNT-End --> configuration. More
+    information about Data Handling in an <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems platform are available
     in the <emphasis>Data Handling</emphasis> manual.</para>
 
     <sect1 id="InstaCloud_UsingS3Buckets" role="nobrk">
-      <title>Using S3 buckets</title>
+      <!-- DNT-Start --><title>Using S3 buckets</title><!-- DNT-End -->
 
       <para>S3 buckets provide a means of persistent storage inside Amazon Web
-      Services. You must configure your AWS account to have an active Access
+      Services. You must configure your <!-- DNT-Start -->AWS<!-- DNT-End --> account to have an active Access
       Key pair enable and create S3 buckets. Once you have created and
       activated your access key pair and and created a unique S3 bucket, you
       will use these for all future instantiations.</para>
 
-      <!--*** include follows-->
+      <!-- DNT-Start --><!--*** include follows--><!-- DNT-End -->
 
       <xi:include href="InstantCloud/AWS-Mods/AWSIncludes.xml"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -1364,7 +1364,7 @@ OUTPUT(ValidWords)
 
         <para><orderedlist>
             <listitem>
-              <para>Open a console window and connect to the Landing Zone (LZ)
+              <para>Open a console window and connect to the Landing Zone (<!-- DNT-Start -->LZ<!-- DNT-End -->)
               node</para>
             </listitem>
 
@@ -1391,11 +1391,11 @@ s3cmd --configure
             </listitem>
 
             <listitem>
-              <para>Leave path to GPG program blank</para>
+              <para>Leave path to <!-- DNT-Start -->GPG<!-- DNT-End --> program blank</para>
             </listitem>
 
             <listitem>
-              <para>Answer the question Use HTTPS?</para>
+              <para>Answer the question Use <!-- DNT-Start -->HTTPS<!-- DNT-End -->?</para>
 
               <itemizedlist>
                 <listitem>
@@ -1426,7 +1426,7 @@ s3cmd --configure
       </sect2>
 
       <sect2 id="InstaCloud_CreatingUsingS3Buckets">
-        <title>Creating and Using S3 Buckets</title>
+        <!-- DNT-Start --><title>Creating and Using S3 Buckets</title><!-- DNT-End -->
 
         <para>To store data on S3, you must create a bucket that is unique to
         the whole s3 system. Once created, this bucket persists even when you
@@ -1435,31 +1435,31 @@ s3cmd --configure
         <para>You can despray a file from Thor to your landing zone, then copy
         to an S3 bucket to for persistent storage. Later, you can copy files
         from the S3 bucket to a landing zone and spray the file to a Thor
-        cluster. More information about Data Handling in an HPCC Systems
+        cluster. More information about Data Handling in an <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems
         platform are available in the <emphasis>Data Handling</emphasis>
         manual.</para>
 
         <sect3 id="InstaCloud_CreateABucket">
-          <title>Create a bucket</title>
+          <!-- DNT-Start --><title>Create a bucket</title><!-- DNT-End -->
 
           <para><programlisting>s3cmd mb s3://your-unique-bucket-name</programlisting></para>
         </sect3>
 
         <sect3 id="InstaCloud_ListBuckets">
-          <title>List Buckets</title>
+          <!-- DNT-Start --><title>List Buckets</title><!-- DNT-End -->
 
           <para><programlisting>s3cmd ls</programlisting></para>
         </sect3>
 
         <sect3 id="InstaCloud_UploadAFileToBucket">
-          <title>Upload a file to a bucket</title>
+          <!-- DNT-Start --><title>Upload a file to a bucket</title><!-- DNT-End -->
 
           <para><programlisting>s3cmd put myfile.csv s3://your-unique-bucket-name
 </programlisting></para>
         </sect3>
 
         <sect3 id="InstaCloud_RetrieveFileFromBucket">
-          <title>Retrieve a file from a bucket</title>
+          <!-- DNT-Start --><title>Retrieve a file from a bucket</title><!-- DNT-End -->
 
           <para><programlisting>s3cmd get s3://your-unique-bucket-name/myfile.csv myfile.csv
 </programlisting>See <ulink
@@ -1471,12 +1471,12 @@ s3cmd --configure
   </chapter>
 
   <chapter id="InstaCloud_NextSteps">
-    <title>Next Steps</title>
+    <!-- DNT-Start --><title>Next Steps</title><!-- DNT-End -->
 
     <para>To familiarize yourself with what your system can do, we recommend
     following the steps in:<itemizedlist spacing="compact">
         <listitem>
-          <para>The <emphasis role="bold">HPCC Data Tutorial</emphasis></para>
+          <para>The <emphasis role="bold"><!-- DNT-Start -->HPCC<!-- DNT-End --> Data Tutorial</emphasis></para>
         </listitem>
 
         <listitem>
@@ -1486,7 +1486,7 @@ s3cmd --configure
 
         <listitem>
           <para>Read <emphasis role="bold">Using Config Manager</emphasis> to
-          learn how to configure an HPCC platform using Advanced View.</para>
+          learn how to configure an <!-- DNT-Start -->HPCC<!-- DNT-End --> platform using Advanced View.</para>
         </listitem>
 
         <listitem>
@@ -1495,7 +1495,7 @@ s3cmd --configure
         </listitem>
       </itemizedlist></para>
 
-    <para>The HPCC Systems Portal ( <ulink
+    <para>The <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems Portal ( <ulink
     url="http://hpccsystems.com">HPCCSystems.com</ulink> ) is also a valuable
     resource for more information including:</para>
 

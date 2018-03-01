@@ -2,10 +2,10 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter>
-  <title>Direct Access to Roxie</title>
+  <!-- DNT-Start --><title>Direct Access to Roxie</title><!-- DNT-End -->
 
   <sect1 role="nobrk">
-    <title>Roxie Query Access Overview</title>
+    <!-- DNT-Start --><title>Roxie Query Access Overview</title><!-- DNT-End -->
 
     <para>WsECL provides quick and easy access to your published queries, but
     is not optimized for the rapid throughput Roxie provides. To take full
@@ -13,22 +13,22 @@
 
     <para>WsECL still plays an important role when using this technique. It
     provides an immediate means of testing, provides a web interface for
-    one-off query execution, and provides the WSDL and schema which can be
-    used for automated code generators for SOAP access. It also provides the
-    HTTP-GET and form encodes support. Finally, it also provides a JSON
+    one-off query execution, and provides the <!-- DNT-Start -->WSDL<!-- DNT-End --> and schema which can be
+    used for automated code generators for <!-- DNT-Start -->SOAP<!-- DNT-End --> access. It also provides the
+    <!-- DNT-Start -->HTTP<!-- DNT-End -->-<!-- DNT-Start -->GET<!-- DNT-End --> and form encodes support. Finally, it also provides a <!-- DNT-Start -->JSON<!-- DNT-End -->
     (Javascript Simple Object Notation) interface which is similar to Roxie's
     direct interface.</para>
 
     <para></para>
 
     <sect2>
-      <title>Web Services</title>
+      <!-- DNT-Start --><title>Web Services</title><!-- DNT-End -->
 
       <para>A Web service is a standards-based software component accessible
       over the Internet. The service can be simple or complex.</para>
 
       <para>For example, a Web service could request a number of stock quotes
-      and return them in an XML result set.</para>
+      and return them in an <!-- DNT-Start -->XML<!-- DNT-End --> result set.</para>
 
       <para>Web Services are available to any platform, object model, or
       programming language. This provides access to users over the Internet,
@@ -36,24 +36,24 @@
 
       <para>It also simplifies distributed systems development. The use of
       standards-based components protects development investment regardless of
-      future trends. Web Service Technologies are based upon HTTP.</para>
+      future trends. Web Service Technologies are based upon <!-- DNT-Start -->HTTP<!-- DNT-End -->.</para>
 
       <sect3>
-        <title><emphasis role="bold">Simple Object Access Protocol
-        (SOAP)</emphasis></title>
+        <!-- DNT-Start --><title><emphasis role="bold">Simple Object Access Protocol
+        (SOAP)</emphasis></title><!-- DNT-End -->
 
-        <para>SOAP is the most common XML-based protocol for sending requests
+        <para><!-- DNT-Start -->SOAP<!-- DNT-End --> is the most common <!-- DNT-Start -->XML<!-- DNT-End -->-based protocol for sending requests
         to and receiving responses from Web Services. Basically, it is a
         protocol for communication between applications. It is designed to
         communicate over the Internet and is platform independent and language
-        independent. Based on XML, SOAP is simple and extensible.</para>
+        independent. Based on <!-- DNT-Start -->XML<!-- DNT-End -->, <!-- DNT-Start -->SOAP<!-- DNT-End --> is simple and extensible.</para>
       </sect3>
 
       <sect3>
-        <title>JavaScript Object Notation<emphasis role="bold">
-        (JSON)</emphasis></title>
+        <!-- DNT-Start --><title>JavaScript Object Notation<emphasis role="bold">
+        (JSON)</emphasis></title><!-- DNT-End -->
 
-        <para><emphasis role="bold">JSON</emphasis> is a lightweight
+        <para><emphasis role="bold"><!-- DNT-Start -->JSON<!-- DNT-End --></emphasis> is a lightweight
         data-interchange format. It is easy for humans to read and write. It
         is easy for machines to parse and generate. It is based on a subset of
         the JavaScript Programming Language, it is completely language
@@ -65,94 +65,94 @@
   </sect1>
 
   <sect1>
-    <title>Accessing your Roxie Queries</title>
+    <!-- DNT-Start --><title>Accessing your Roxie Queries</title><!-- DNT-End -->
 
     <para>Once you have developed, compiled, and published your queries, you
     need to provide access to users.</para>
 
     <sect2>
-      <title><emphasis role="bold">ESP and WsECL</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">ESP and WsECL</emphasis></title><!-- DNT-End -->
 
-      <para>A standard installation of the HPCC platform includes an
-      Enterprise Services Platform (ESP) with the WsECL service configured
+      <para>A standard installation of the <!-- DNT-Start -->HPCC<!-- DNT-End --> platform includes an
+      Enterprise Services Platform (<!-- DNT-Start -->ESP<!-- DNT-End -->) with the WsECL service configured
       through a service binding to port 8002 (configurable).</para>
 
       <para>WsECL provides a means to access all of your compiled and
-      published queries using a Web interface or by using SOAP or JSON.</para>
+      published queries using a Web interface or by using <!-- DNT-Start -->SOAP<!-- DNT-End --> or <!-- DNT-Start -->JSON<!-- DNT-End -->.</para>
 
       <para><emphasis role="bold">Tip: </emphasis>You can provide a JobName in
-      the URL using this form:</para>
+      the <!-- DNT-Start -->URL<!-- DNT-End --> using this form:</para>
 
-      <programlisting>http://ip:port/WsEcl/submit/query/<emphasis role="bold">&lt;targetCluster&gt;</emphasis>/<emphasis
-          role="bold">&lt;query&gt;</emphasis>?_jobname=<emphasis role="bold">&lt;jobname&gt;</emphasis></programlisting>
+      <!-- DNT-Start --><programlisting>http://ip:port/WsEcl/submit/query/<emphasis role="bold">&lt;targetCluster&gt;</emphasis>/<emphasis
+          role="bold">&lt;query&gt;</emphasis>?_jobname=<emphasis role="bold">&lt;jobname&gt;</emphasis></programlisting><!-- DNT-End -->
 
       <para>This is useful for testing queries. It is also suitable for
       providing real-time access to a users. You can also use proxy mode to
-      bypass WsECL response formatting and get the roxie formatted SOAP
+      bypass WsECL response formatting and get the roxie formatted <!-- DNT-Start -->SOAP<!-- DNT-End -->
       response directly. See <link linkend="proxymode">WsECL and Proxy
       mode</link></para>
     </sect2>
 
     <sect2>
-      <title><emphasis role="bold">Access WsECL VIA SOAP</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">Access WsECL VIA SOAP</emphasis></title><!-- DNT-End -->
 
       <sect3>
-        <title><emphasis role="bold">WSDL</emphasis></title>
+        <!-- DNT-Start --><title><emphasis role="bold">WSDL</emphasis></title><!-- DNT-End -->
 
-        <para>The Simple Object Access Protocol (SOAP) sets a standard for
-        communication between processes using a common xml based format. SOAP
+        <para>The Simple Object Access Protocol (<!-- DNT-Start -->SOAP<!-- DNT-End -->) sets a standard for
+        communication between processes using a common xml based format. <!-- DNT-Start -->SOAP<!-- DNT-End -->
         libraries are readily available for many languages and development
-        platforms, including Microsoft .NET (accessible using C#, VB.NET,
-        ASP.NET, and other CLR languages), Java (e.g.,. JAX and Apache AXIS),
-        PERL, and many others.</para>
+        platforms, including Microsoft .<!-- DNT-Start -->NET<!-- DNT-End --> (accessible using C#, <!-- DNT-Start -->VB<!-- DNT-End -->.<!-- DNT-Start -->NET<!-- DNT-End -->,
+        <!-- DNT-Start -->ASP<!-- DNT-End -->.<!-- DNT-Start -->NET<!-- DNT-End -->, and other <!-- DNT-Start -->CLR<!-- DNT-End --> languages), Java (e.g.,. <!-- DNT-Start -->JAX<!-- DNT-End --> and Apache <!-- DNT-Start -->AXIS<!-- DNT-End -->),
+        <!-- DNT-Start -->PERL<!-- DNT-End -->, and many others.</para>
 
-        <para>Web Service Description Language (WSDL) is used to provide a
+        <para>Web Service Description Language (<!-- DNT-Start -->WSDL<!-- DNT-End -->) is used to provide a
         structured description of a Web service interface.</para>
 
         <para>Many of the libraries available for allowing applications to use
-        the SOAP protocol also provide tools for automatically generating
-        service specific APIs from a WSDL document.</para>
+        the <!-- DNT-Start -->SOAP<!-- DNT-End --> protocol also provide tools for automatically generating
+        service specific APIs from a <!-- DNT-Start -->WSDL<!-- DNT-End --> document.</para>
 
-        <para>The WSDL description is automatically available for any
+        <para>The <!-- DNT-Start -->WSDL<!-- DNT-End --> description is automatically available for any
         published query.</para>
 
-        <para>The following URL can be used to retrieve the WSDL description
+        <para>The following <!-- DNT-Start -->URL<!-- DNT-End --> can be used to retrieve the <!-- DNT-Start -->WSDL<!-- DNT-End --> description
         of a published query:</para>
 
         <para>http://<emphasis>nnn.nnn.nnn.nnn</emphasis>:8002/WsEcl/definitions/query/roxie/&lt;queryName&gt;/main/&lt;queryName&gt;.wsdl</para>
 
-        <para>where <emphasis>nnn.nnn.nnn.nnn</emphasis> is the IP address (or
-        DNS Name) of that ESP server with the binding to WsECL.</para>
+        <para>where <emphasis>nnn.nnn.nnn.nnn</emphasis> is the <!-- DNT-Start -->IP<!-- DNT-End --> address (or
+        <!-- DNT-Start -->DNS<!-- DNT-End --> Name) of that <!-- DNT-Start -->ESP<!-- DNT-End --> server with the binding to WsECL.</para>
 
         <para>8002 is the default port. If you have a modified the port
         setting, use the port you have selected for that purpose.</para>
 
-        <para>The syntax and functionality of the SOAP protocol itself is also
+        <para>The syntax and functionality of the <!-- DNT-Start -->SOAP<!-- DNT-End --> protocol itself is also
         beyond the scope of this document. The following list of external
         resources can help in your understanding of standards-based
         technologies used.</para>
       </sect3>
 
       <sect3>
-        <title>SOAP</title>
+        <!-- DNT-Start --><title>SOAP</title><!-- DNT-End -->
 
-        <para>http://www.w3.org/TR/soap12-part0</para>
+        <para>http://www.w3.org/<!-- DNT-Start -->TR<!-- DNT-End -->/soap12-part0</para>
 
-        <para>http://www.w3.org/TR/soap12-part1</para>
+        <para>http://www.w3.org/<!-- DNT-Start -->TR<!-- DNT-End -->/soap12-part1</para>
 
-        <para>http://www.w3.org/TR/soap12-part2</para>
+        <para>http://www.w3.org/<!-- DNT-Start -->TR<!-- DNT-End -->/soap12-part2</para>
       </sect3>
 
       <sect3>
-        <title><emphasis role="bold">Web Service Definition Language (WSDL)
-        1.1</emphasis></title>
+        <!-- DNT-Start --><title><emphasis role="bold">Web Service Definition Language (WSDL)
+        1.1</emphasis></title><!-- DNT-End -->
 
-        <para>http://www.w3.org/TR/wsdl</para>
+        <para>http://www.w3.org/<!-- DNT-Start -->TR<!-- DNT-End -->/wsdl</para>
       </sect3>
     </sect2>
 
     <sect2>
-      <title><emphasis role="bold">Direct Access VIA SOAP</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">Direct Access VIA SOAP</emphasis></title><!-- DNT-End -->
 
       <orderedlist numeration="arabic">
         <listitem>
@@ -167,8 +167,8 @@
 
           <para>http://nnn.nnn.nnn.nnn:8002/</para>
 
-          <para>where nnn.nnn.nnn.nnn is the IP address (or DNS Name) of that
-          ESP server with the binding to WsECL.</para>
+          <para>where nnn.nnn.nnn.nnn is the <!-- DNT-Start -->IP<!-- DNT-End --> address (or <!-- DNT-Start -->DNS<!-- DNT-End --> Name) of that
+          <!-- DNT-Start -->ESP<!-- DNT-End --> server with the binding to WsECL.</para>
 
           <para>8002 is the default port. If you have a modified the port
           setting, use the port you have selected for that purpose.</para>
@@ -176,23 +176,23 @@
 
         <listitem>
           <para>Begin development of the application that will consume the web
-          service by importing the WSDL from:</para>
+          service by importing the <!-- DNT-Start -->WSDL<!-- DNT-End --> from:</para>
 
           <para>http://<emphasis>nnn.nnn.nnn.nnn</emphasis>:8002/WsEcl/definitions/query/roxie/&lt;queryName&gt;/main/&lt;queryName&gt;.wsdl</para>
 
-          <para>where nnn.nnn.nnn.nnn is the IP address (or DNS Name) of that
-          ESP server with the binding to WsECL.</para>
+          <para>where nnn.nnn.nnn.nnn is the <!-- DNT-Start -->IP<!-- DNT-End --> address (or <!-- DNT-Start -->DNS<!-- DNT-End --> Name) of that
+          <!-- DNT-Start -->ESP<!-- DNT-End --> server with the binding to WsECL.</para>
 
           <para>8002 is the default port. If you have a modified the port
           setting, use the port you have selected for that purpose.</para>
         </listitem>
 
         <listitem>
-          <para>When testing is complete, change the base URL to</para>
+          <para>When testing is complete, change the base <!-- DNT-Start -->URL<!-- DNT-End --> to</para>
 
           <para>http://nnn.nnn.nnn.nnn:9876/</para>
 
-          <para>where nnn.nnn.nnn.nnn is the IP address (or DNS Name) of a
+          <para>where nnn.nnn.nnn.nnn is the <!-- DNT-Start -->IP<!-- DNT-End --> address (or <!-- DNT-Start -->DNS<!-- DNT-End --> Name) of a
           Roxie Server.</para>
 
           <para>9876 is the default port. If you have a modified the port
@@ -204,7 +204,7 @@
     </sect2>
 
     <sect2>
-      <title><emphasis role="bold">Direct Access VIA JSON</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">Direct Access VIA JSON</emphasis></title><!-- DNT-End -->
 
       <orderedlist numeration="arabic">
         <listitem>
@@ -219,8 +219,8 @@
 
           <para>http://nnn.nnn.nnn.nnn:8002/</para>
 
-          <para>where nnn.nnn.nnn.nnn is the IP address (or DNS Name) of that
-          ESP server with the binding to WsECL.</para>
+          <para>where nnn.nnn.nnn.nnn is the <!-- DNT-Start -->IP<!-- DNT-End --> address (or <!-- DNT-Start -->DNS<!-- DNT-End --> Name) of that
+          <!-- DNT-Start -->ESP<!-- DNT-End --> server with the binding to WsECL.</para>
 
           <para>8002 is the default port. If you have a modified the port
           setting, use the port you have selected for that purpose.</para>
@@ -228,12 +228,12 @@
 
         <listitem>
           <para>Begin development of the application that will consume the web
-          service using the JSON definitions available from the form in
+          service using the <!-- DNT-Start -->JSON<!-- DNT-End --> definitions available from the form in
           WsECL.</para>
         </listitem>
 
         <listitem>
-          <para>From the drop list, select JSON Test, then press the submit
+          <para>From the drop list, select <!-- DNT-Start -->JSON<!-- DNT-End --> Test, then press the submit
           button.</para>
 
           <para><graphic fileref="../../images/json1.jpg" /></para>
@@ -257,11 +257,11 @@
         </listitem>
 
         <listitem>
-          <para>Set the base URL in your application to</para>
+          <para>Set the base <!-- DNT-Start -->URL<!-- DNT-End --> in your application to</para>
 
           <para>http://nnn.nnn.nnn.nnn:9876/</para>
 
-          <para>where nnn.nnn.nnn.nnn is the IP address (or DNS Name) of a
+          <para>where nnn.nnn.nnn.nnn is the <!-- DNT-Start -->IP<!-- DNT-End --> address (or <!-- DNT-Start -->DNS<!-- DNT-End --> Name) of a
           Roxie Server.</para>
 
           <para>9876 is the default port. If you have a modified the port
@@ -273,25 +273,25 @@
       automatically distributes the load by sending queries to Roxie Servers
       in a round-robin fashion. To utilize all servers, your application
       should implement a similar load distribution scheme. Alternatively, you
-      can use a load balancer and submit the query to the Virtual IP created
+      can use a load balancer and submit the query to the Virtual <!-- DNT-Start -->IP<!-- DNT-End --> created
       by the load balancer.</para>
     </sect2>
 
     <sect2>
-      <title>Direct Access Via JSONP</title>
+      <!-- DNT-Start --><title>Direct Access Via JSONP</title><!-- DNT-End -->
 
-      <para>To get a JSONP response, add the <emphasis
+      <para>To get a <!-- DNT-Start -->JSONP<!-- DNT-End --> response, add the <emphasis
       role="bold">&amp;jsonp=&lt;myfunction&gt;</emphasis> decoration to the
-      URL. This returns a javascript wrapped json response:</para>
+      <!-- DNT-Start -->URL<!-- DNT-End -->. This returns a javascript wrapped json response:</para>
 
       <para><programlisting>myfunction("{"data_1": "hello world", "data_2": ["the","sun","is","up"]}");</programlisting></para>
     </sect2>
 
     <sect2 id="proxymode">
-      <title>WsECL and Proxy mode</title>
+      <!-- DNT-Start --><title>WsECL and Proxy mode</title><!-- DNT-End -->
 
-      <para>For direct HTTP-GET and HTTP-FORM-POST calls to Roxie, change the
-      URL to use proxy mode as shown below:<programlisting>Change:
+      <para>For direct <!-- DNT-Start -->HTTP<!-- DNT-End -->-<!-- DNT-Start -->GET<!-- DNT-End --> and <!-- DNT-Start -->HTTP<!-- DNT-End -->-<!-- DNT-Start -->FORM<!-- DNT-End -->-<!-- DNT-Start -->POST<!-- DNT-End --> calls to Roxie, change the
+      <!-- DNT-Start -->URL<!-- DNT-End --> to use proxy mode as shown below:<programlisting>Change:
 /WsEcl/<emphasis role="bold">submit</emphasis>/query/RoxieTargetName/QueryName
 to
 /WsEcl/<emphasis role="bold">proxy</emphasis>/query/RoxieTargetName/QueryName</programlisting></para>
@@ -303,7 +303,7 @@ to
       complex parameters, use dot notation to specify nested values. For
       example:</para>
 
-      <programlisting>&lt;MyQuery&gt;
+      <!-- DNT-Start --><programlisting>&lt;MyQuery&gt;
   &lt;State&gt;FL&lt;/State&gt;
   &lt;Regs&gt;
     &lt;Reg&gt;
@@ -320,9 +320,9 @@ to
       &lt;/Code&gt;
     &lt;/Reg&gt;
   &lt;/Regs&gt;
-&lt;/MyQuery&gt;</programlisting>
+&lt;/MyQuery&gt;</programlisting><!-- DNT-End -->
 
-      <para>The URL or HTTP Form would set the following
+      <para>The <!-- DNT-Start -->URL<!-- DNT-End --> or <!-- DNT-Start -->HTTP<!-- DNT-End --> Form would set the following
       parameters:<programlisting>State=FL
 Regs.Reg.0.Name=SOUTH
 Regs.Reg.0.Codes.Code.0=PBI
@@ -332,10 +332,10 @@ Regs.Reg.1.Codes.Code=MCO</programlisting></para>
     </sect2>
 
     <sect2>
-      <title>Expanded Mode in WsECL</title>
+      <!-- DNT-Start --><title>Expanded Mode in WsECL</title><!-- DNT-End -->
 
       <para>To include the schema in results, add the <emphasis
-      role="bold">expanded</emphasis> decoration to the URL as shown
+      role="bold">expanded</emphasis> decoration to the <!-- DNT-Start -->URL<!-- DNT-End --> as shown
       below:<programlisting>Change:
 /WsEcl/<emphasis role="bold">submit</emphasis>/query/RoxieTargetName/QueryName
 to
@@ -343,7 +343,7 @@ to
     </sect2>
 
     <sect2 id="RESTful_access" role="brk">
-      <title>Direct RESTful access to Roxie</title>
+      <!-- DNT-Start --><title>Direct RESTful access to Roxie</title><!-- DNT-End -->
 
       <para>You can access your Roxie queries directly using a RESTful
       interface in the following manner:</para>
@@ -351,7 +351,7 @@ to
       <para><programlisting>http://&lt;ip&gt;:9876/&lt;target&gt;/&lt;queryid&gt;?&lt;stored1&gt;=&lt;value&gt;
        &amp;&lt;storeddataset&gt;.Row.0.name=abc&amp;storeddataset.Row.0.id=123</programlisting>where,</para>
 
-      <para>ip is the IP address or hostname of your Roxie server or a VIP to
+      <para>ip is the <!-- DNT-Start -->IP<!-- DNT-End --> address or hostname of your Roxie server or a <!-- DNT-Start -->VIP<!-- DNT-End --> to
       a range of IPs for a farm of Roxie servers</para>
 
       <para><emphasis>target</emphasis> is the name of the target
@@ -360,8 +360,8 @@ to
       <para><emphasis>queryid</emphasis> is the published Query's Query
       Id.</para>
 
-      <para><emphasis>stored1</emphasis> is an input variable (using STORED in
-      ECL) and value is the <emphasis>value</emphasis> to submit</para>
+      <para><emphasis>stored1</emphasis> is an input variable (using <!-- DNT-Start -->STORED<!-- DNT-End --> in
+      <!-- DNT-Start -->ECL<!-- DNT-End -->) and value is the <emphasis>value</emphasis> to submit</para>
 
       <para><emphasis>storeddataset</emphasis> is a dataset to be passed in to
       the query</para>
@@ -374,32 +374,32 @@ to
     </sect2>
 
     <sect2>
-      <title>Roxie Results</title>
+      <!-- DNT-Start --><title>Roxie Results</title><!-- DNT-End -->
 
-      <para>By default, Roxie results from HTTP queries do not return empty
+      <para>By default, Roxie results from <!-- DNT-Start -->HTTP<!-- DNT-End --> queries do not return empty
       elements (tags). If a field's value is empty, the tag is not returned.
       However, at times an application may expect all tags to be returned, so
-      you can add a URL decoration to override the default behavior. This
+      you can add a <!-- DNT-Start -->URL<!-- DNT-End --> decoration to override the default behavior. This
       causes the empty tags to return with a value of an empty string.</para>
 
       <para><programlisting>.trim=o</programlisting></para>
 
       <para>The <emphasis role="bold">.trim=0</emphasis> option can be added
-      to SOAP, JSON, URL, or Web form queries for both WsECL and Roxie.</para>
+      to <!-- DNT-Start -->SOAP<!-- DNT-End -->, <!-- DNT-Start -->JSON<!-- DNT-End -->, <!-- DNT-Start -->URL<!-- DNT-End -->, or Web form queries for both WsECL and Roxie.</para>
 
       <para><emphasis role="bold">WsECL RESTful:</emphasis></para>
 
       <para><programlisting>http://ip:port/WsEcl/submit/query/roxie/myquery?param1=abc&amp;.trim=0</programlisting></para>
 
-      <para><emphasis role="bold">WsECL SOAP:</emphasis></para>
+      <para><emphasis role="bold">WsECL <!-- DNT-Start -->SOAP<!-- DNT-End -->:</emphasis></para>
 
       <para><programlisting>http://ip:port/WsEcl/soap/query/roxie/myquery?.trim=0</programlisting></para>
 
-      <para><emphasis role="bold">WsECL JSON:</emphasis></para>
+      <para><emphasis role="bold">WsECL <!-- DNT-Start -->JSON<!-- DNT-End -->:</emphasis></para>
 
       <para><programlisting>http://ip:port/WsEcl/json/query/roxie/myquery?.trim=0</programlisting></para>
 
-      <para><emphasis role="bold">Roxie Direct SOAP or JSON:</emphasis></para>
+      <para><emphasis role="bold">Roxie Direct <!-- DNT-Start -->SOAP<!-- DNT-End --> or <!-- DNT-Start -->JSON<!-- DNT-End -->:</emphasis></para>
 
       <para><programlisting>http://ip:port/target/myquery?.trim=0</programlisting></para>
 
@@ -410,11 +410,11 @@ to
       <para><emphasis role="bold">Form submission:</emphasis></para>
 
       <para>For a RESTful form submission to either WsECL or Roxie, add the
-      .trim=0 decoration to your URL.</para>
+      .trim=0 decoration to your <!-- DNT-Start -->URL<!-- DNT-End -->.</para>
 
       <para></para>
 
-      <para>Running any custom XSLT should automatically set the .trim=0
+      <para>Running any custom <!-- DNT-Start -->XSLT<!-- DNT-End --> should automatically set the .trim=0
       option.</para>
     </sect2>
   </sect1>

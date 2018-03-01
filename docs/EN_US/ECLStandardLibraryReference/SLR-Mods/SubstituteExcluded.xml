@@ -2,21 +2,21 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SubstituteExcluded">
-  <title>SubstituteExcluded</title>
+  <!-- DNT-Start --><title>SubstituteExcluded</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Str.SubstituteExcluded<indexterm>
-      <primary>STD.Str.SubstituteExcluded</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->SubstituteExcluded<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->SubstituteExcluded<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Str.SubstituteExcluded</primary>
+      <primary>Str.<!-- DNT-Start -->SubstituteExcluded<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>SubstituteExcluded</primary>
+      <primary><!-- DNT-Start -->SubstituteExcluded<!-- DNT-End --></primary>
     </indexterm>(</emphasis> <emphasis>source, target, replacement</emphasis>
   <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
-  <para><emphasis role="bold">STD.Uni.SubstituteExcluded<indexterm>
-      <primary>STD.Uni.SubstituteExcluded</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->SubstituteExcluded<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->SubstituteExcluded<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Uni.SubstituteExcluded</primary>
+      <primary>Uni.<!-- DNT-Start -->SubstituteExcluded<!-- DNT-End --></primary>
     </indexterm>(</emphasis> <emphasis>source, target, replacement</emphasis>
   <emphasis role="bold">)</emphasis></para>
 
@@ -28,35 +28,35 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>source</emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the data to search.</entry>
         </row>
 
         <row>
-          <entry><emphasis>target </emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>target </emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the characters to search for.</entry>
         </row>
 
         <row>
-          <entry><emphasis>replacement </emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>replacement </emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the replacement character as its first
           character.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>SubstituteExcluded returns a STRING or UNICODE value, as
+          <entry><!-- DNT-Start -->SubstituteExcluded<!-- DNT-End --> returns a <!-- DNT-Start -->STRING<!-- DNT-End --> or <!-- DNT-Start -->UNICODE<!-- DNT-End --> value, as
           appropriate.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">SubstituteExcluded </emphasis>functions
+  <para>The <emphasis role="bold"><!-- DNT-Start -->SubstituteExcluded<!-- DNT-End --> </emphasis>functions
   return the <emphasis>source</emphasis> string with the
   <emphasis>replacement</emphasis> character substituted for all characters
   except those in the <emphasis>target </emphasis>string. If the
@@ -67,8 +67,8 @@
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">IMPORT STD;
+  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 A := STD.Uni.SubstituteExcluded(u'abcdeabcdec', u'cd', u'x');
   //A contains u'xxcdxxxcdxc';
-</programlisting>
+</programlisting><!-- DNT-End -->
 </sect1>

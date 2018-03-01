@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="VerifyFile">
-  <title>VerifyFile</title>
+  <!-- DNT-Start --><title>VerifyFile</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.File.VerifyFile<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.File.VerifyFile<indexterm>
       <primary>STD.File.VerifyFile</primary>
     </indexterm><indexterm>
       <primary>File.VerifyFile</primary>
     </indexterm><indexterm>
       <primary>VerifyFile</primary>
     </indexterm>(</emphasis> <emphasis> file, usecrcs </emphasis> <emphasis
-  role="bold">)</emphasis></para>
+  role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,30 +21,30 @@
 
       <tbody>
         <row>
-          <entry><emphasis>file</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>file</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the logical name of the
           file.</entry>
         </row>
 
         <row>
-          <entry><emphasis>usecrcs</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>usecrcs</emphasis><!-- DNT-End --></entry>
 
-          <entry>A boolean TRUE/FALSE flag indicating that, when TRUE,
+          <entry>A boolean <!-- DNT-Start -->TRUE<!-- DNT-End -->/<!-- DNT-Start -->FALSE<!-- DNT-End --> flag indicating that, when <!-- DNT-Start -->TRUE<!-- DNT-End -->,
           compares physical CRCs of all the parts on disk. This may be slow on
           large files.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>VerifyFile returns returns a VARSTRING value.</entry>
+          <entry><!-- DNT-Start -->VerifyFile<!-- DNT-End --> returns returns a <!-- DNT-Start -->VARSTRING<!-- DNT-End --> value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">VerifyFile </emphasis>function checks the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->VerifyFile<!-- DNT-End --> </emphasis>function checks the
   system datastore (Dali) information for the <emphasis>file</emphasis>
   against the physical parts on disk and returns the following values:</para>
 
@@ -56,43 +56,43 @@
 
       <tbody>
         <row>
-          <entry>OK</entry>
+          <entry><!-- DNT-Start -->OK<!-- DNT-End --></entry>
 
           <entry>The file parts match the datastore information</entry>
         </row>
 
         <row>
-          <entry>Could not find file: <emphasis>filename</emphasis></entry>
+          <entry><!-- DNT-Start -->Could not find file: <emphasis>filename</emphasis><!-- DNT-End --></entry>
 
           <entry>The logical <emphasis>filename</emphasis> was not
           found</entry>
         </row>
 
         <row>
-          <entry>Could not find part file:
-          <emphasis>partname</emphasis></entry>
+          <entry><!-- DNT-Start -->Could not find part file:
+          <emphasis>partname</emphasis><!-- DNT-End --></entry>
 
           <entry>The <emphasis>partname</emphasis> was not found</entry>
         </row>
 
         <row>
-          <entry>Modified time differs for:
-          <emphasis>partname</emphasis></entry>
+          <entry><!-- DNT-Start -->Modified time differs for:
+          <emphasis>partname</emphasis><!-- DNT-End --></entry>
 
           <entry>The <emphasis>partname</emphasis> has a different
           timestamp</entry>
         </row>
 
         <row>
-          <entry>File size differs for: <emphasis>partname</emphasis></entry>
+          <entry><!-- DNT-Start -->File size differs for: <emphasis>partname</emphasis><!-- DNT-End --></entry>
 
           <entry>The <emphasis>partname</emphasis> has a file size</entry>
         </row>
 
         <row>
-          <entry>File CRC differs for: <emphasis>partname</emphasis></entry>
+          <entry><!-- DNT-Start -->File CRC differs for: <emphasis>partname</emphasis><!-- DNT-End --></entry>
 
-          <entry>The <emphasis>partname</emphasis> has a different CRC</entry>
+          <entry>The <emphasis>partname</emphasis> has a different <!-- DNT-Start -->CRC<!-- DNT-End --></entry>
         </row>
       </tbody>
     </tgroup>
@@ -100,6 +100,6 @@
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">A := STD.File.VerifyFile('Fred1', TRUE);
-</programlisting>
+  <!-- DNT-Start --><programlisting format="linespecific">A := STD.File.VerifyFile('Fred1', TRUE);
+</programlisting><!-- DNT-End -->
 </sect1>

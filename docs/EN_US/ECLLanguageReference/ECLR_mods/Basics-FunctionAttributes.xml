@@ -2,11 +2,11 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Function_Attributes__Parameter_Passing">
-  <title>Function Definitions<indexterm>
+  <!-- DNT-Start --><title>Function Definitions<indexterm>
       <primary>Functions</primary>
     </indexterm> (Parameter Passing<indexterm>
       <primary><emphasis role="bold">Parameter Passing</emphasis></primary>
-    </indexterm>)</title>
+    </indexterm>)</title><!-- DNT-End -->
 
   <para>All of the basic Definition types can also become functions by
   defining them to accept passed parameters (arguments<indexterm>
@@ -36,33 +36,33 @@
 
       <tbody>
         <row>
-          <entry><emphasis>ValueType</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>ValueType</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. Specifies the type of data being passed. If
-          omitted, the default is INTEGER (see <emphasis role="bold">Value
+          omitted, the default is <!-- DNT-Start -->INTEGER<!-- DNT-End --> (see <emphasis role="bold">Value
           Types<indexterm>
               <primary><emphasis role="bold">Value Types</emphasis></primary>
-            </indexterm></emphasis>). This also may include the CONST keyword
-          (see <emphasis role="bold">CONST<indexterm>
-              <primary>CONST</primary>
+            </indexterm></emphasis>). This also may include the <!-- DNT-Start -->CONST<!-- DNT-End --> keyword
+          (see <emphasis role="bold"><!-- DNT-Start -->CONST<!-- DNT-End --><indexterm>
+              <primary><!-- DNT-Start -->CONST<!-- DNT-End --></primary>
             </indexterm></emphasis>) to indicate that the passed value will
           always be treated as a constant.</entry>
         </row>
 
         <row>
-          <entry><emphasis>AliasName</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>AliasName</emphasis><!-- DNT-End --></entry>
 
           <entry>Names the parameter for use in the expression.</entry>
         </row>
 
         <row>
-          <entry><emphasis>DefaultValue</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>DefaultValue</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. Provides the value to use in the expression if the
           parameter is omitted. The <emphasis>DefaultValue</emphasis> may be
-          the keyword ALL if the ValueType is SET (see the <emphasis
-          role="bold">SET<indexterm>
-              <primary>SET</primary>
+          the keyword <!-- DNT-Start -->ALL<!-- DNT-End --> if the ValueType is <!-- DNT-Start -->SET<!-- DNT-End --> (see the <emphasis
+          role="bold"><!-- DNT-Start -->SET<!-- DNT-End --><indexterm>
+              <primary><!-- DNT-Start -->SET<!-- DNT-End --></primary>
             </indexterm></emphasis> keyword) to indicate all possible values
           for that type of set, or empty square brackets<indexterm>
               <primary>square brackets</primary>
@@ -71,7 +71,7 @@
         </row>
 
         <row>
-          <entry><emphasis>expression</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
 
           <entry>The function's operation for which the parameters are
           used.</entry>
@@ -81,16 +81,16 @@
   </informaltable>
 
   <sect2 id="Simple_Value_Type_Parameters">
-    <title>Simple Value Type Parameters</title>
+    <!-- DNT-Start --><title>Simple Value Type Parameters</title><!-- DNT-End -->
 
     <para>If the optional <emphasis>ValueType</emphasis> is any of the simple
-    types (BOOLEAN, INTEGER, REAL, DECIMAL, STRING, QSTRING, UNICODE, DATA,
-    VARSTRING, VARUNICODE), the <emphasis>ValueType</emphasis> may include the
-    CONST keyword (see <emphasis role="bold">CONST</emphasis>) to indicate
+    types (<!-- DNT-Start -->BOOLEAN<!-- DNT-End -->, <!-- DNT-Start -->INTEGER<!-- DNT-End -->, <!-- DNT-Start -->REAL<!-- DNT-End -->, <!-- DNT-Start -->DECIMAL<!-- DNT-End -->, <!-- DNT-Start -->STRING<!-- DNT-End -->, <!-- DNT-Start -->QSTRING<!-- DNT-End -->, <!-- DNT-Start -->UNICODE<!-- DNT-End -->, <!-- DNT-Start -->DATA<!-- DNT-End -->,
+    <!-- DNT-Start -->VARSTRING<!-- DNT-End -->, <!-- DNT-Start -->VARUNICODE<!-- DNT-End -->), the <emphasis>ValueType</emphasis> may include the
+    <!-- DNT-Start -->CONST<!-- DNT-End --> keyword (see <emphasis role="bold"><!-- DNT-Start -->CONST<!-- DNT-End --></emphasis>) to indicate
     that the passed value will always be treated as a constant (typically used
-    only in ECL prototypes of external functions).</para>
+    only in <!-- DNT-Start -->ECL<!-- DNT-End --> prototypes of external functions).</para>
 
-    <programlisting>ValueDefinition := 15;
+    <!-- DNT-Start --><programlisting>ValueDefinition := 15;
 FirstFunction(INTEGER x=5) := x + 5;
           //takes an integer parameter named "x" and "x" is used in the
           //arithmetic expression to indicate the usage of the parameter
@@ -99,84 +99,84 @@ SecondDefinition := FirstFunction(ValueDefinition);
           // The value of SecondDefinition is 20
           
 ThirdDefinition := FirstFunction();
-          // The value of ThirdDefinition is 10, omitting the parameter</programlisting>
+          // The value of ThirdDefinition is 10, omitting the parameter</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="SET_Parameters">
-    <title>SET Parameters</title>
+    <!-- DNT-Start --><title>SET Parameters</title><!-- DNT-End -->
 
-    <para>The <emphasis>DefaultValue</emphasis> for SET parameters<indexterm>
-        <primary>SET parameters</primary>
-      </indexterm> may be a default set of values, the keyword ALL to indicate
+    <para>The <emphasis>DefaultValue</emphasis> for <!-- DNT-Start -->SET<!-- DNT-End --> parameters<indexterm>
+        <primary><!-- DNT-Start -->SET<!-- DNT-End --> parameters</primary>
+      </indexterm> may be a default set of values, the keyword <!-- DNT-Start -->ALL<!-- DNT-End --> to indicate
     all possible values for that type of set, or empty square brackets ([ ])
     to indicate no possible value for that type of set (and empty set).</para>
 
-    <programlisting>SET OF INTEGER1 SetValues := [5,10,15,20];
+    <!-- DNT-Start --><programlisting>SET OF INTEGER1 SetValues := [5,10,15,20];
 
 IsInSetFunction(SET OF INTEGER1 x=SetValues,y) := y IN x;
 
 OUTPUT(IsInSetFunction([1,2,3,4],5)); //false
-OUTPUT(IsInSetFunction(,5)); // true</programlisting>
+OUTPUT(IsInSetFunction(,5)); // true</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="Passing_DATASET_Parameters">
-    <title>Passing DATASET Parameters</title>
+    <!-- DNT-Start --><title>Passing DATASET Parameters</title><!-- DNT-End -->
 
-    <para>Passing a DATASET or a derived recordset as a parameter may be
+    <para>Passing a <!-- DNT-Start -->DATASET<!-- DNT-End --> or a derived recordset as a parameter may be
     accomplished using the following syntax:</para>
 
     <para><emphasis>DefinitionName</emphasis><emphasis role="bold">(
-    DATASET<indexterm>
-        <primary>DATASET parameter</primary>
+    <!-- DNT-Start -->DATASET<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->DATASET<!-- DNT-End --> parameter</primary>
       </indexterm>(</emphasis><emphasis> recstruct </emphasis><emphasis
     role="bold">) </emphasis><emphasis>AliasName</emphasis><emphasis
     role="bold"> ) := </emphasis><emphasis>expression</emphasis><emphasis
     role="bold">;</emphasis></para>
 
-    <para>The required<emphasis> recstruct</emphasis> names the RECORD
-    structure that defines the layout of fields in the passed DATASET
+    <para>The required<emphasis> recstruct</emphasis> names the <!-- DNT-Start -->RECORD<!-- DNT-End -->
+    structure that defines the layout of fields in the passed <!-- DNT-Start -->DATASET<!-- DNT-End -->
     parameter. The <emphasis>recstruct</emphasis> may alternatively use the
-    RECORDOF function. The required<emphasis> AliasName</emphasis> names the
+    <!-- DNT-Start -->RECORDOF<!-- DNT-End --> function. The required<emphasis> AliasName</emphasis> names the
     dataset for use in the function and is used in the Definition's
     <emphasis>expression</emphasis> to indicate where in the operation the
-    passed parameter is to be used. See the <emphasis role="bold">DATASET as a
-    Value Type</emphasis> discussion in the DATASET documentation for further
+    passed parameter is to be used. See the <emphasis role="bold"><!-- DNT-Start -->DATASET<!-- DNT-End --> as a
+    Value Type</emphasis> discussion in the <!-- DNT-Start -->DATASET<!-- DNT-End --> documentation for further
     examples.</para>
 
-    <programlisting>MyRec := {STRING1 Letter};
+    <!-- DNT-Start --><programlisting>MyRec := {STRING1 Letter};
     
 SomeFile := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'}],MyRec);
 
 FilteredDS(DATASET(MyRec) ds) := ds(Letter NOT IN ['A','C','E']);
            //passed dataset referenced as "ds" in expression
 
-OUTPUT(FilteredDS(SomeFile));</programlisting>
+OUTPUT(FilteredDS(SomeFile));</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="Passing_DICTIONARY_Parameters">
-    <title>Passing DICTIONARY Parameters</title>
+    <!-- DNT-Start --><title>Passing DICTIONARY Parameters</title><!-- DNT-End -->
 
-    <para>Passing a DICTIONARY as a parameter may be accomplished using the
+    <para>Passing a <!-- DNT-Start -->DICTIONARY<!-- DNT-End --> as a parameter may be accomplished using the
     following syntax:</para>
 
     <para><emphasis>DefinitionName</emphasis><emphasis role="bold">(
-    DICTIONARY<indexterm>
-        <primary>DICTIONARY parameter</primary>
+    <!-- DNT-Start -->DICTIONARY<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->DICTIONARY<!-- DNT-End --> parameter</primary>
       </indexterm>(</emphasis><emphasis> structure </emphasis><emphasis
     role="bold">) </emphasis><emphasis>AliasName</emphasis><emphasis
     role="bold"> ) := </emphasis><emphasis>expression</emphasis><emphasis
     role="bold">;</emphasis></para>
 
-    <para>The required <emphasis>structure</emphasis> parameter is the RECORD
-    structure that defines the layout of fields in the passed DICTIONARY
+    <para>The required <emphasis>structure</emphasis> parameter is the <!-- DNT-Start -->RECORD<!-- DNT-End -->
+    structure that defines the layout of fields in the passed <!-- DNT-Start -->DICTIONARY<!-- DNT-End -->
     parameter (usually defined inline). The required<emphasis>
-    AliasName</emphasis> names the DICTIONARY for use in the function and is
+    AliasName</emphasis> names the <!-- DNT-Start -->DICTIONARY<!-- DNT-End --> for use in the function and is
     used in the Definition's <emphasis>expression</emphasis> to indicate where
     in the operation the passed parameter is to be used. See the <emphasis
-    role="bold">DICTIONARY as a Value Type</emphasis> discussion in the
-    DICTIONARY documentation.</para>
+    role="bold"><!-- DNT-Start -->DICTIONARY<!-- DNT-End --> as a Value Type</emphasis> discussion in the
+    <!-- DNT-Start -->DICTIONARY<!-- DNT-End --> documentation.</para>
 
-    <programlisting>rec := RECORD
+    <!-- DNT-Start --><programlisting>rec := RECORD
   STRING10  color;
   UNSIGNED1 code; 
   STRING10  name;
@@ -202,23 +202,23 @@ InlineDCT := DICTIONARY([{'Black' =&gt; 0 , 'Fred'},
 MyDCTfunc(DICTIONARY(DCTrec) DCT,STRING10 key) := DCT[key].name;
 
 MyDCTfunc(InlineDCT,'White');  //Jo
-MyDCTfunc(DsDCT,'Brown');      //Seth</programlisting>
+MyDCTfunc(DsDCT,'Brown');      //Seth</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="Passing_Typeless_Parameters">
-    <title>Passing Typeless Parameters</title>
+    <!-- DNT-Start --><title>Passing Typeless Parameters</title><!-- DNT-End -->
 
     <para>Passing parameters of any type may be accomplished using the keyword
-    ANY<indexterm>
-        <primary>ANY</primary>
+    <!-- DNT-Start -->ANY<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->ANY<!-- DNT-End --></primary>
       </indexterm> as the passed value type:</para>
 
     <para><emphasis>DefinitionName</emphasis> <emphasis role="bold">(
-    ANY</emphasis> <emphasis>AliasName</emphasis> <emphasis role="bold"> ) :=
+    <!-- DNT-Start -->ANY<!-- DNT-End --></emphasis> <emphasis>AliasName</emphasis> <emphasis role="bold"> ) :=
     </emphasis><emphasis>expression</emphasis><emphasis
     role="bold">;</emphasis></para>
 
-    <programlisting>a := 10;
+    <!-- DNT-Start --><programlisting>a := 10;
 b := 20;
 c := '1';
 d := '2';
@@ -237,11 +237,11 @@ MyFunc(a,c);      //returns '101'
 MyFunc(c,d);      //returns '12'
 MyFunc(s1,s2);    //returns a set: ['1','2','3','4']
 MyFunc(ds1,ds2);  //returns 4 records: '1', '2', '3', and '4'
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="Passing_Function_Parameters">
-    <title>Passing Function Parameters</title>
+    <!-- DNT-Start --><title>Passing Function Parameters</title><!-- DNT-End -->
 
     <para>Passing a Function as a parameter may be accomplished using either
     of the following syntax options as the <emphasis>ValueType</emphasis> for
@@ -261,21 +261,21 @@ MyFunc(ds1,ds2);  //returns 4 records: '1', '2', '3', and '4'
 
         <tbody>
           <row>
-            <entry><emphasis>FunctionName</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>FunctionName</emphasis><!-- DNT-End --></entry>
 
             <entry>The name of a function, the type of which may be passed as
             a parameter.</entry>
           </row>
 
           <row>
-            <entry><emphasis>parameters</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>parameters</emphasis><!-- DNT-End --></entry>
 
             <entry>The parameter definitions for the
             <emphasis>FunctionName</emphasis> parameter.</entry>
           </row>
 
           <row>
-            <entry><emphasis>PrototypeName</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>PrototypeName</emphasis><!-- DNT-End --></entry>
 
             <entry>The name of a previously defined function to use as the
             type of function that may be passed as a parameter.</entry>
@@ -286,7 +286,7 @@ MyFunc(ds1,ds2);  //returns 4 records: '1', '2', '3', and '4'
 
     <para>The following code provides examples of both methods:</para>
 
-    <programlisting>//a Function prototype:
+    <!-- DNT-Start --><programlisting>//a Function prototype:
 INTEGER actionPrototype(INTEGER v1, INTEGER v2) := 0;
 
 INTEGER aveValues(INTEGER v1, INTEGER v2) := (v1 + v2) DIV 2;
@@ -336,11 +336,11 @@ OUTPUT(doMany(1, applyValue2, applyValue4, addValues));
      // produces "6:12"
      
 OUTPUT(doMany(2, applyValue4, applyValue2,multiValues));
-     // produces "24:12" </programlisting>
+     // produces "24:12" </programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="Passing_NAMED_Parameters">
-    <title>Passing NAMED Parameters</title>
+    <!-- DNT-Start --><title>Passing NAMED Parameters</title><!-- DNT-End -->
 
     <para>Passing values to a function defined to receive multiple parameters,
     many of which have default values (and are therefore omittable), is
@@ -349,12 +349,12 @@ OUTPUT(doMany(2, applyValue4, applyValue2,multiValues));
     position in the list. This method becomes untenable when there are many
     optional parameters.</para>
 
-    <para>The easier method is to use the following NAMED parameter syntax,
+    <para>The easier method is to use the following <!-- DNT-Start -->NAMED<!-- DNT-End --> parameter syntax,
     which eliminates the need to include extraneous commas as place holders to
     put the passed values in the proper parameters:</para>
 
-    <para>Attr := FunctionName<emphasis role="bold">( [ NAMED<indexterm>
-        <primary>NAMED</primary>
+    <para>Attr := FunctionName<emphasis role="bold">( [ <!-- DNT-Start -->NAMED<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->NAMED<!-- DNT-End --></primary>
       </indexterm> ] </emphasis><emphasis>AliasName</emphasis><emphasis
     role="bold"> := </emphasis><emphasis>value </emphasis><emphasis
     role="bold">);</emphasis></para>
@@ -367,14 +367,14 @@ OUTPUT(doMany(2, applyValue4, applyValue2,multiValues));
 
         <tbody>
           <row>
-            <entry><emphasis role="bold">NAMED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">NAMED</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Required only when the <emphasis>AliasName
             </emphasis>clashes with a reserved word. </entry>
           </row>
 
           <row>
-            <entry><emphasis>AliasName</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>AliasName</emphasis><!-- DNT-End --></entry>
 
             <entry>The names of the parameter in the definition's function
             definition. This must be a valid label (See <link
@@ -383,7 +383,7 @@ OUTPUT(doMany(2, applyValue4, applyValue2,multiValues));
           </row>
 
           <row>
-            <entry><emphasis>value</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>value</emphasis><!-- DNT-End --></entry>
 
             <entry>The value to pass to the parameter.</entry>
           </row>
@@ -394,10 +394,10 @@ OUTPUT(doMany(2, applyValue4, applyValue2,multiValues));
     <para>This syntax is used in the call to the function and allows you to
     pass values to specific parameters by their
     <emphasis>AliasName</emphasis>, without regard for their position in the
-    list. All unnamed parameters passed must precede any NAMED
+    list. All unnamed parameters passed must precede any <!-- DNT-Start -->NAMED<!-- DNT-End -->
     parameters.</para>
 
-    <programlisting>outputRow(BOOLEAN showA = FALSE, BOOLEAN showB = FALSE,
+    <!-- DNT-Start --><programlisting>outputRow(BOOLEAN showA = FALSE, BOOLEAN showB = FALSE,
           BOOLEAN showC = FALSE, STRING aValue = 'abc',
           INTEGER bValue = 10, BOOLEAN cValue = TRUE) :=
   OUTPUT(IF(showA,' a='+aValue,'')+
@@ -419,6 +419,6 @@ outputRow(showB := TRUE);       //produce "b=10"
 
 outputRow(TRUE, aValue := 'Changed value');
 outputRow(,,,'Changed value2',showA := TRUE);
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect2>
 </sect1>

@@ -2,10 +2,10 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_CONSTANT">
-  <title>#CONSTANT</title>
+  <!-- DNT-Start --><title>#CONSTANT</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">#CONSTANT<indexterm>
-      <primary>#CONSTANT</primary>
+  <para><emphasis role="bold">#<!-- DNT-Start -->CONSTANT<!-- DNT-End --><indexterm>
+      <primary>#<!-- DNT-Start -->CONSTANT<!-- DNT-End --></primary>
     </indexterm>( </emphasis><emphasis>name, value </emphasis><emphasis
   role="bold">);</emphasis></para>
 
@@ -17,14 +17,14 @@
 
         <tbody>
           <row>
-            <entry><emphasis>name</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
 
             <entry>A string constant containing the name of the stored
             value.</entry>
           </row>
 
           <row>
-            <entry><emphasis>value</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>value</emphasis><!-- DNT-End --></entry>
 
             <entry>An expression for the value to assign to the stored
             name.</entry>
@@ -33,18 +33,18 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">#CONSTANT </emphasis>statement is similar to
-  #STORED in that it assigns the <emphasis>value</emphasis> to the
-  <emphasis>name</emphasis>, but #CONSTANT specifies the value is not
-  over-writable at runtime. This statement may be used outside an XML scope
-  and does not require a previous LOADXML to instantiate an XML scope.</para>
+  <para>The <emphasis role="bold">#<!-- DNT-Start -->CONSTANT<!-- DNT-End --> </emphasis>statement is similar to
+  #<!-- DNT-Start -->STORED<!-- DNT-End --> in that it assigns the <emphasis>value</emphasis> to the
+  <emphasis>name</emphasis>, but #<!-- DNT-Start -->CONSTANT<!-- DNT-End --> specifies the value is not
+  over-writable at runtime. This statement may be used outside an <!-- DNT-Start -->XML<!-- DNT-End --> scope
+  and does not require a previous <!-- DNT-Start -->LOADXML<!-- DNT-End --> to instantiate an <!-- DNT-Start -->XML<!-- DNT-End --> scope.</para>
 
   <para>Example:</para>
 
-  <programlisting>  PersonCount := 0 : STORED('myname');
+  <!-- DNT-Start --><programlisting>  PersonCount := 0 : STORED('myname');
   #CONSTANT('myname',100);
       //make stored PersonCount attribute value to 100
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="_STORED">#STORED</link></para>
+  <para>See Also: <link linkend="_STORED">#<!-- DNT-Start -->STORED<!-- DNT-End --></link></para>
 </sect1>

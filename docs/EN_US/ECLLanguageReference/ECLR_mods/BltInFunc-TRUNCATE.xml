@@ -2,10 +2,10 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="TRUNCATE">
-  <title>TRUNCATE</title>
+  <!-- DNT-Start --><title>TRUNCATE</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">TRUNCATE<indexterm>
-      <primary>TRUNCATE</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->TRUNCATE<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->TRUNCATE<!-- DNT-End --></primary>
     </indexterm>(</emphasis><emphasis>real_value</emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -17,30 +17,30 @@
 
         <tbody>
           <row>
-            <entry><emphasis>real_value</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>real_value</emphasis><!-- DNT-End --></entry>
 
             <entry>The floating-point value to truncate.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>TRUNCATE returns a single integer value.</entry>
+            <entry><!-- DNT-Start -->TRUNCATE<!-- DNT-End --> returns a single integer value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">TRUNCATE </emphasis>function<indexterm>
-      <primary>TRUNCATE Function</primary>
+  <para>The <emphasis role="bold"><!-- DNT-Start -->TRUNCATE<!-- DNT-End --> </emphasis>function<indexterm>
+      <primary><!-- DNT-Start -->TRUNCATE<!-- DNT-End --> Function</primary>
     </indexterm> returns the integer portion of the
   <emphasis>real_value</emphasis>.</para>
 
   <para>Example:</para>
 
-  <programlisting>SomeRealValue := 3.75;
+  <!-- DNT-Start --><programlisting>SomeRealValue := 3.75;
 INTEGER4 MyVal := TRUNCATE(SomeRealValue); // MyVal is 3
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="ROUND">ROUND</link>, <link linkend="ROUNDUP">ROUNDUP</link></para>
+  <para>See Also: <link linkend="ROUND"><!-- DNT-Start -->ROUND<!-- DNT-End --></link>, <link linkend="ROUNDUP"><!-- DNT-Start -->ROUNDUP<!-- DNT-End --></link></para>
 </sect1>

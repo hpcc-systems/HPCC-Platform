@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SendEmailAttachData">
-  <title>SendEmailAttachData</title>
+  <!-- DNT-Start --><title>SendEmailAttachData</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.System.Email.SendEmailAttachData<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.System.Email.SendEmailAttachData<indexterm>
       <primary>STD.System.Email.SendEmailAttachData</primary>
     </indexterm> <indexterm>
       <primary>System.Email.SendEmailAttachData</primary>
@@ -14,7 +14,7 @@
       <primary>SendEmailAttachData</primary>
     </indexterm>( </emphasis> <emphasis>sendto, subject, body, attachment,
   mimietype, filename, server, port, sender</emphasis> <emphasis role="bold">
-  )</emphasis></para>
+  )</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -24,7 +24,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>sendto</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>sendto</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing a comma-delimited list of
           the addresses of the intended recipients. The validity of the
@@ -33,38 +33,38 @@
         </row>
 
         <row>
-          <entry><emphasis>subject</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>subject</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the subject line.</entry>
         </row>
 
         <row>
-          <entry><emphasis>body</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>body</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the text of the email to
-          send. This must be character encoding "ISO-8859-1 (latin1)" (the ECL
+          send. This must be character encoding "ISO-8859-1 (latin1)" (the <!-- DNT-Start -->ECL<!-- DNT-End -->
           default character set). Text in any other character set must be sent
           as an <emphasis>attachment</emphasis>.</entry>
         </row>
 
         <row>
-          <entry><emphasis>attachment</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>attachment</emphasis><!-- DNT-End --></entry>
 
-          <entry>A DATA value containing the binary data to attach.</entry>
+          <entry>A <!-- DNT-Start -->DATA<!-- DNT-End --> value containing the binary data to attach.</entry>
         </row>
 
         <row>
-          <entry><emphasis>mimetype</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>mimetype</emphasis><!-- DNT-End --></entry>
 
-          <entry>A null-terminated string containing the MIME-type of the
+          <entry>A null-terminated string containing the <!-- DNT-Start -->MIME<!-- DNT-End -->-type of the
           <emphasis>attachment</emphasis>, which may include entrymeters (such
-          as 'text/plain; charset=ISO-8859-3'). When attaching general binary
-          data for which no specific MIME type exists, use
+          as 'text/plain; charset=<!-- DNT-Start -->ISO<!-- DNT-End -->-8859-3'). When attaching general binary
+          data for which no specific <!-- DNT-Start -->MIME<!-- DNT-End --> type exists, use
           'application/octet-stream'.</entry>
         </row>
 
         <row>
-          <entry><emphasis>filename</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>filename</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the name of the
           <emphasis>attachment</emphasis> for the mail reader to
@@ -72,7 +72,7 @@
         </row>
 
         <row>
-          <entry><emphasis>server</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>server</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. A null-terminated string containing the name of the
           mail server. If omitted, defaults to the value in the SMTPserver
@@ -80,15 +80,15 @@
         </row>
 
         <row>
-          <entry><emphasis>port</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>port</emphasis><!-- DNT-End --></entry>
 
-          <entry>Optional. An UNSIGNED4 integer value containing the port
+          <entry>Optional. An <!-- DNT-Start -->UNSIGNED<!-- DNT-End -->4 integer value containing the port
           number. If omitted, defaults to the value in the SMTPport
           environment variable.</entry>
         </row>
 
         <row>
-          <entry><emphasis>sender</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>sender</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. A null-terminated string containing the address of
           the sender. If omitted, defaults to the value in the
@@ -98,16 +98,16 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">SendEmailAttachData </emphasis>function
+  <para>The <emphasis role="bold"><!-- DNT-Start -->SendEmailAttachData<!-- DNT-End --> </emphasis>function
   sends an email message with a binary <emphasis>attachment</emphasis>.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">DATA15 attachment :=  D'test attachment';
+  <!-- DNT-Start --><programlisting format="linespecific">DATA15 attachment :=  D'test attachment';
 STD.System.Email.SendEmailAttachData( 'me@mydomain.com',
                                   'testing 1,2,3',
                                   'this is a test message',
                                    attachment,
                                   'application/octet-stream',
-                                  'attachment.txt');</programlisting>
+                                  'attachment.txt');</programlisting><!-- DNT-End -->
 </sect1>

@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="AddFileRelationship">
-  <title>AddFileRelationship</title>
+  <!-- DNT-Start --><title>AddFileRelationship</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.File.AddFileRelationship<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.File.AddFileRelationship<indexterm>
       <primary>STD.File.AddFileRelationship</primary>
     </indexterm><indexterm>
       <primary>File.AddFileRelationship</primary>
@@ -15,7 +15,7 @@
   role="bold"> [ </emphasis> <emphasis>relationship </emphasis> <emphasis
   role="bold">]</emphasis> <emphasis>, cardinality, payload </emphasis>
   <emphasis role="bold"> [</emphasis> <emphasis>, description </emphasis>
-  <emphasis role="bold">] );</emphasis></para>
+  <emphasis role="bold">] );</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -25,37 +25,37 @@
 
       <tbody>
         <row>
-          <entry><emphasis>primary</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>primary</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the logical filename of
           the primary file.</entry>
         </row>
 
         <row>
-          <entry><emphasis>secondary</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>secondary</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the logical filename of
           the secondary file.</entry>
         </row>
 
         <row>
-          <entry><emphasis>primaryfields</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>primaryfields</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the name of the primary
           key field for the <emphasis>primary</emphasis> file. The value
           "__fileposition__" indicates the <emphasis>secondary</emphasis> is
-          an INDEX that must use FETCH to access non-keyed fields.</entry>
+          an <!-- DNT-Start -->INDEX<!-- DNT-End --> that must use <!-- DNT-Start -->FETCH<!-- DNT-End --> to access non-keyed fields.</entry>
         </row>
 
         <row>
-          <entry><emphasis>secondaryfields</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>secondaryfields</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the name of the foreign
           key field relating to the <emphasis>primary</emphasis> file.</entry>
         </row>
 
         <row>
-          <entry><emphasis>relationship</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>relationship</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing either "link" or "view"
           indicating the type of relationship between the
@@ -64,7 +64,7 @@
         </row>
 
         <row>
-          <entry><emphasis>cardinality</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>cardinality</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the kind of relationship
           between the <emphasis>primary</emphasis> and
@@ -75,15 +75,15 @@
         </row>
 
         <row>
-          <entry><emphasis>payload</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>payload</emphasis><!-- DNT-End --></entry>
 
-          <entry>A BOOLEAN value indicating whether the
+          <entry>A <!-- DNT-Start -->BOOLEAN<!-- DNT-End --> value indicating whether the
           <emphasis>primary</emphasis> or <emphasis>secondary</emphasis> are
-          payload INDEXes.</entry>
+          payload <!-- DNT-Start -->INDEXes<!-- DNT-End -->.</entry>
         </row>
 
         <row>
-          <entry><emphasis>description</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>description</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the relationship
           description.</entry>
@@ -92,9 +92,9 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">AddFileRelationship</emphasis> function
-  defines the relationship between two files. These may be DATASETs or
-  INDEXes. Each record in the <emphasis>primary</emphasis> file should be
+  <para>The <emphasis role="bold"><!-- DNT-Start -->AddFileRelationship<!-- DNT-End --></emphasis> function
+  defines the relationship between two files. These may be <!-- DNT-Start -->DATASETs<!-- DNT-End --> or
+  <!-- DNT-Start -->INDEXes<!-- DNT-End -->. Each record in the <emphasis>primary</emphasis> file should be
   uniquely defined by the <emphasis>primaryfields</emphasis> (ideally),
   preferably efficiently.</para>
 
@@ -109,8 +109,8 @@
   built from which files. A "view" relationship should be added each time an
   index is built from a file, like this:</para>
 
-  <programlisting>STD.File.AddFileRelationship(DG_FlatFileName, DG_IndexFileName,
-                             '', '', 'view', '1:1', false);</programlisting>
+  <!-- DNT-Start --><programlisting>STD.File.AddFileRelationship(DG_FlatFileName, DG_IndexFileName,
+                             '', '', 'view', '1:1', false);</programlisting><!-- DNT-End -->
 
   <para>To implement the roxie browser there is no need to define the
   <emphasis>primaryfields</emphasis> or <emphasis>secondaryfields</emphasis>,
@@ -124,18 +124,18 @@
   <para>a) If the index contains all the relevant data from the original file
   you don't need to do anything.</para>
 
-  <para>b) If the index uses a fileposition field to FETCH extra data from the
+  <para>b) If the index uses a fileposition field to <!-- DNT-Start -->FETCH<!-- DNT-End --> extra data from the
   original file then add a relationship between the original file and the
-  index, using a special value of __fileposition__ to indicate the record is
-  retrieved using a FETCH.</para>
+  index, using a special value of <!-- DNT-Start -->__fileposition__<!-- DNT-End --> to indicate the record is
+  retrieved using a <!-- DNT-Start -->FETCH<!-- DNT-End -->.</para>
 
-  <programlisting>STD.File.AddFileRelationship('fetch_file', 
+  <!-- DNT-Start --><programlisting>STD.File.AddFileRelationship('fetch_file', 
                              'new_index',
                              '__fileposition__',
                              'index_filepos_field', 
                              'link',
                              '1:1', 
-                             true);</programlisting>
+                             true);</programlisting><!-- DNT-End -->
 
   <para>The original file is the primary, since the rows are uniquely
   identified by the fileposition (also true of the index), and the retrieval
@@ -147,13 +147,13 @@
   information. The index providing the extra information is the
   primary.</para>
 
-  <programlisting>STD.File.AddFileRelationship('related_index', 
+  <!-- DNT-Start --><programlisting>STD.File.AddFileRelationship('related_index', 
                              'new_index',
                              'related_key_fields',
                              'index_filepos_field', 
                              'link',
                              '1:M', 
-                             true);</programlisting>
+                             true);</programlisting><!-- DNT-End -->
 
   <para>The <emphasis>payload </emphasis>flag is there so that the roxie
   browser can distinguish this link from a more general relationship between
@@ -165,20 +165,20 @@
   <para>While going through all the attributes it may be worth examining
   whether it makes sense to add relationships for any other combinations of
   files. It won't have any immediate beneficial effect, but would once we add
-  an ER diagram to the system. A couple of examples may help illustrate the
+  an <!-- DNT-Start -->ER<!-- DNT-End --> diagram to the system. A couple of examples may help illustrate the
   syntax.</para>
 
   <para>For a typical example, datasets with a household and person file, the
   following defines a relationship linking by house hold id (hhid):</para>
 
-  <programlisting>STD.File.AddFileRelationship('HHFile','PersonFile', 'hhid','hhid', 'link', '1:M', false);</programlisting>
+  <!-- DNT-Start --><programlisting>STD.File.AddFileRelationship('HHFile','PersonFile', 'hhid','hhid', 'link', '1:M', false);</programlisting><!-- DNT-End -->
 
   <para>Here's a more hypothetical example--a file query with firstname,
   lastname related to an index with phonetic names you might have:</para>
 
-  <programlisting>STD.File.AddFileRelationship('names', 'inquiries','plastname{set(phonetic)},
+  <!-- DNT-Start --><programlisting>STD.File.AddFileRelationship('names', 'inquiries','plastname{set(phonetic)},
                              pfirstname{set(phonetic)}',
-                             'lastname{set(fail)},firstname{set(fail)}','link', '1:M', false);</programlisting>
+                             'lastname{set(fail)},firstname{set(fail)}','link', '1:M', false);</programlisting><!-- DNT-End -->
 
   <para>Note, the fail mapping indicates that you can use the phonetic mapping
   from inquiries to names, but there is no way of mapping from names to
@@ -187,6 +187,6 @@
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">Maps := STD.File.GetColumnMapping('Thor::in::SomeFile');
-</programlisting>
+  <!-- DNT-Start --><programlisting format="linespecific">Maps := STD.File.GetColumnMapping('Thor::in::SomeFile');
+</programlisting><!-- DNT-End -->
 </sect1>

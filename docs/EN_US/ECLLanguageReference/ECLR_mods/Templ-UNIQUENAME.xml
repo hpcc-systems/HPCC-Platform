@@ -2,10 +2,10 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_UNIQUENAME">
-  <title>#UNIQUENAME</title>
+  <!-- DNT-Start --><title>#UNIQUENAME</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">#UNIQUENAME<indexterm>
-      <primary>#UNIQUENAME</primary>
+  <para><emphasis role="bold">#<!-- DNT-Start -->UNIQUENAME<!-- DNT-End --><indexterm>
+      <primary>#<!-- DNT-Start -->UNIQUENAME<!-- DNT-End --></primary>
     </indexterm>( </emphasis><emphasis>namevar</emphasis><emphasis
   role="bold"> [ </emphasis><emphasis>,pattern</emphasis><emphasis
   role="bold">]);</emphasis></para>
@@ -18,7 +18,7 @@
 
         <tbody>
           <row>
-            <entry><emphasis>namevar</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>namevar</emphasis><!-- DNT-End --></entry>
 
             <entry>The label of the template variable (without the percent
             signs) to use in subsequent statements (with the percent signs)
@@ -26,33 +26,33 @@
           </row>
 
           <row>
-            <entry><emphasis>pattern</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>pattern</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. A template for unique name construction. It
             should contain a dollar sign ($) to indicate the position at which
             a unique number is generated, and may contain a pound sign (#) to
             include the namevar. This is useful for situations where
-            #UNIQUENAME is being used to generate field names and the result
-            is meant to be viewed in the ECL IDE program, since by default
-            #UNIQUENAME generates identifiers that begin with a double
-            underscore (__) and the ECL IDE treats them as hidden fields. If
+            #<!-- DNT-Start -->UNIQUENAME<!-- DNT-End --> is being used to generate field names and the result
+            is meant to be viewed in the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> program, since by default
+            #<!-- DNT-Start -->UNIQUENAME<!-- DNT-End --> generates identifiers that begin with a double
+            underscore (__) and the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> treats them as hidden fields. If
             omitted, the default pattern is __#__$__.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">#UNIQUENAME </emphasis>statement creates a
-  valid unique ECL identifier within the context of the current scope limit.
-  This is particularly useful in MACRO structures as it allows the macro to be
+  <para>The <emphasis role="bold">#<!-- DNT-Start -->UNIQUENAME<!-- DNT-End --> </emphasis>statement creates a
+  valid unique <!-- DNT-Start -->ECL<!-- DNT-End --> identifier within the context of the current scope limit.
+  This is particularly useful in <!-- DNT-Start -->MACRO<!-- DNT-End --> structures as it allows the macro to be
   used multiple times in the same scope without creating duplicate attribute
   name errors from the attribute definitions within the macro. This statement
-  may be used outside an XML scope and does not require a previous LOADXML to
-  instantiate an XML scope.</para>
+  may be used outside an <!-- DNT-Start -->XML<!-- DNT-End --> scope and does not require a previous <!-- DNT-Start -->LOADXML<!-- DNT-End --> to
+  instantiate an <!-- DNT-Start -->XML<!-- DNT-End --> scope.</para>
 
   <para>Example:</para>
 
-  <programlisting>  IMPORT Training_Compare;
+  <!-- DNT-Start --><programlisting>  IMPORT Training_Compare;
   EXPORT MAC_Compare_Result(module_name, attribute_name) := MACRO
   
   #UNIQUENAME(compare_file);
@@ -117,7 +117,7 @@
   OUTPUT(CHOOSEN(%nomatch_out%, 50));
   
   ENDMACRO;
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="MACRO_Structure">MACRO</link></para>
+  <para>See Also: <link linkend="MACRO_Structure"><!-- DNT-Start -->MACRO<!-- DNT-End --></link></para>
 </sect1>

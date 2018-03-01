@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="STRING">
-  <title>STRING</title>
+  <!-- DNT-Start --><title>STRING</title><!-- DNT-End -->
 
   <para><emphasis
   role="bold">[</emphasis><emphasis>StringType</emphasis><emphasis
-  role="bold">] STRING<indexterm>
-      <primary>STRING</primary>
+  role="bold">] <!-- DNT-Start -->STRING<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STRING<!-- DNT-End --></primary>
     </indexterm>[</emphasis><emphasis>n</emphasis><emphasis
   role="bold">]</emphasis></para>
 
@@ -16,32 +16,32 @@
   variable length to the size needed to contain the result of the cast or
   passed parameter. You may use set indexing into any string to parse out a
   substring<indexterm>
-      <primary>STRING value type</primary>
+      <primary><!-- DNT-Start -->STRING<!-- DNT-End --> value type</primary>
     </indexterm>.</para>
 
-  <para>The optional <emphasis>StringType</emphasis> may specify ASCII or
-  EBCDIC. If the <emphasis>StringType</emphasis> is missing, the data is in
-  ASCII format. Defining an EBCDIC STRING Attribute as a string constant value
-  implies an ASCII to EBCDIC conversion. However, defining an EBCDIC STRING
+  <para>The optional <emphasis>StringType</emphasis> may specify <!-- DNT-Start -->ASCII<!-- DNT-End --> or
+  <!-- DNT-Start -->EBCDIC<!-- DNT-End -->. If the <emphasis>StringType</emphasis> is missing, the data is in
+  <!-- DNT-Start -->ASCII<!-- DNT-End --> format. Defining an <!-- DNT-Start -->EBCDIC<!-- DNT-End --> <!-- DNT-Start -->STRING<!-- DNT-End --> Attribute as a string constant value
+  implies an <!-- DNT-Start -->ASCII<!-- DNT-End --> to <!-- DNT-Start -->EBCDIC<!-- DNT-End --> conversion. However, defining an <!-- DNT-Start -->EBCDIC<!-- DNT-End --> <!-- DNT-Start -->STRING<!-- DNT-End -->
   Attribute as a hexadecimal string constant value implies no conversion, as
-  the programmer is assumed to have supplied the correct hexadecimal EBCDIC
+  the programmer is assumed to have supplied the correct hexadecimal <!-- DNT-Start -->EBCDIC<!-- DNT-End -->
   value.</para>
 
-  <para>The upper size limit for any STRING value is 4GB.</para>
+  <para>The upper size limit for any <!-- DNT-Start -->STRING<!-- DNT-End --> value is 4<!-- DNT-Start -->GB<!-- DNT-End -->.</para>
 
   <para>Example:</para>
 
-  <programlisting>STRING1 MyString := IF(SomeAttribute &gt; 10,'1','0');
+  <!-- DNT-Start --><programlisting>STRING1 MyString := IF(SomeAttribute &gt; 10,'1','0');
         // declares MyString a 1-byte ASCII string
 
 EBCDIC STRING3 MyString1 := 'ABC';
         //implicit ASCII to EBCDIC conversion
  
 EBCDIC STRING3 MyString2 := x'616263';
-        //NO conversion here</programlisting>
+        //NO conversion here</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="LENGTH">LENGTH</link>, <link
-  linkend="TRIM">TRIM</link>, <link linkend="Set_Ordering_and_Indexing">Set
+  <para>See Also: <link linkend="LENGTH"><!-- DNT-Start -->LENGTH<!-- DNT-End --></link>, <link
+  linkend="TRIM"><!-- DNT-Start -->TRIM<!-- DNT-End --></link>, <link linkend="Set_Ordering_and_Indexing">Set
   Ordering and Indexing</link>, <link linkend="Const_String">Hexadecimal
   String</link></para>
 </sect1>

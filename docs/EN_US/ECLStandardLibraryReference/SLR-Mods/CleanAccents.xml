@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="CleanAccents">
-  <title>CleanAccents</title>
+  <!-- DNT-Start --><title>CleanAccents</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Uni.CleanAccents<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.Uni.CleanAccents<indexterm>
       <primary>STD.Uni.CleanAccents</primary>
     </indexterm><indexterm>
       <primary>Uni.CleanAccents</primary>
     </indexterm><indexterm>
       <primary>CleanAccents</primary>
     </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
-  role="bold">)</emphasis></para>
+  role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,29 +21,29 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>source</emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the data to clean.</entry>
         </row>
 
         <row>
-          <entry>Return:</entry>
+          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-          <entry>CleanAccents returns a UNICODE value.</entry>
+          <entry><!-- DNT-Start -->CleanAccents<!-- DNT-End --> returns a <!-- DNT-Start -->UNICODE<!-- DNT-End --> value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">CleanAccents </emphasis>function returns the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->CleanAccents<!-- DNT-End --> </emphasis>function returns the
   <emphasis>source</emphasis> string with all accented characters replaced
   with unaccented.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">UNICODE A := STD.Uni.CleanAccents(u'caf\u00E9');   //café - U+00E9 is lowercase e with acute
+  <!-- DNT-Start --><programlisting format="linespecific">UNICODE A := STD.Uni.CleanAccents(u'caf\u00E9');   //cafÃ© - U+00E9 is lowercase e with acute
                                                    //a contains 'cafe'
-</programlisting>
+</programlisting><!-- DNT-End -->
 
   <para></para>
 </sect1>

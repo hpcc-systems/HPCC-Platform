@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="VizBundleChart2dMethods">
-  <title><emphasis>Two-Dimensional Methods</emphasis></title>
+  <!-- DNT-Start --><title><emphasis>Two-Dimensional Methods</emphasis></title><!-- DNT-End -->
 
   <para>This section covers methods that create two-dimensional visualizations
   contained in the TwoD module.</para>
@@ -10,14 +10,14 @@
   <para>***more to come**</para>
 
   <sect1 id="Apply2Cells">
-    <title>Bubble</title>
+    <!-- DNT-Start --><title>Bubble</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">Visualization.TwoD.Chart2D.Bubble(<indexterm>
-        <primary>Visualization.TwoD.Bubble</primary>
+    <para><emphasis role="bold">Visualization.TwoD.Chart2D.<!-- DNT-Start -->Bubble<!-- DNT-End -->(<indexterm>
+        <primary>Visualization.TwoD.<!-- DNT-Start -->Bubble<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>TwoD.Bubble</primary>
+        <primary>TwoD.<!-- DNT-Start -->Bubble<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>Bubble</primary>
+        <primary><!-- DNT-Start -->Bubble<!-- DNT-End --></primary>
       </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
     role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
     role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
@@ -35,46 +35,46 @@
 
         <tbody>
           <row>
-            <entry><emphasis>id</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>id</emphasis><!-- DNT-End --></entry>
 
             <entry>Unique identifier for the visualization</entry>
           </row>
 
           <row>
-            <entry><emphasis>dataSource</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>dataSource</emphasis><!-- DNT-End --></entry>
 
-            <entry>Location of the result set (WUID, Logical File, Roxie Query
-            result), defaults to the current WU</entry>
+            <entry>Location of the result set (<!-- DNT-Start -->WUID<!-- DNT-End -->, Logical File, Roxie Query
+            result), defaults to the current <!-- DNT-Start -->WU<!-- DNT-End --></entry>
           </row>
 
           <row>
-            <entry><emphasis>outputName</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>outputName</emphasis><!-- DNT-End --></entry>
 
             <entry>Result set name (ignored for Logical Files)</entry>
           </row>
 
           <row>
-            <entry><emphasis>mappings</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>mappings</emphasis><!-- DNT-End --></entry>
 
-            <entry>Maps Column Name &lt;--&gt; field ID</entry>
+            <entry>Maps Column Name &lt;--&gt; field <!-- DNT-Start -->ID<!-- DNT-End --></entry>
           </row>
 
           <row>
-            <entry><emphasis>filteredBy</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>filteredBy</emphasis><!-- DNT-End --></entry>
 
             <entry>Filter condition (also useful for widget
             interactions)</entry>
           </row>
 
           <row>
-            <entry><emphasis>properties</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>properties</emphasis><!-- DNT-End --></entry>
 
             <entry>Dermatology properties. See Dermatology
             Properties***todo***</entry>
           </row>
 
           <row>
-            <entry>Return:<emphasis></emphasis></entry>
+            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
 
             <entry>A "meta" output describing the visualization. See
             Common/Meta***todo***</entry>
@@ -83,7 +83,7 @@
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold">Bubble </emphasis>visualization method
+    <para>The <emphasis role="bold"><!-- DNT-Start -->Bubble<!-- DNT-End --> </emphasis>visualization method
     creates a bubble chart from two-dimensional data. A bubble chart is a
     variation of a scatter chart where data points are replaced with bubbles
     and the size of the bubble is represented by a dimension of the
@@ -91,7 +91,7 @@
 
     <para>Example:</para>
 
-    <programlisting format="linespecific">IMPORT Visualization;
+    <!-- DNT-Start --><programlisting format="linespecific">IMPORT Visualization;
 ds := DATASET([ {'English', 5},
                 {'History', 17},
                 {'Geography', 7},
@@ -106,6 +106,6 @@ data_example := OUTPUT(ds, NAMED('Chart2D__test'));
 data_example;
 viz_bubble := Visualization.TwoD.Bubble('bubble',, 'Chart2D__test');
 viz_bubble;
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect1>
 </chapter>

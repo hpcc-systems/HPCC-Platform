@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="MAP">
-  <title>MAP</title>
+  <!-- DNT-Start --><title>MAP</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">MAP<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">MAP<indexterm>
       <primary>MAP</primary>
     </indexterm><indexterm>
       <primary>MAP function</primary>
@@ -13,7 +13,7 @@
   role="bold">, [</emphasis><emphasis> expression</emphasis><emphasis
   role="bold"> =&gt; </emphasis><emphasis>value</emphasis><emphasis
   role="bold">, ... ] [,</emphasis><emphasis> elsevalue </emphasis><emphasis
-  role="bold">] )</emphasis></para>
+  role="bold">] )</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -23,28 +23,28 @@
 
       <tbody>
         <row>
-          <entry><emphasis>expression</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
 
           <entry>A conditional expression.</entry>
         </row>
 
         <row>
-          <entry>=&gt;</entry>
+          <entry><!-- DNT-Start -->=&gt;<!-- DNT-End --></entry>
 
-          <entry>The "results in" operator--valid only in MAP, CASE, and
-          CHOOSESETS.</entry>
+          <entry>The "results in" operator--valid only in <!-- DNT-Start -->MAP<!-- DNT-End -->, <!-- DNT-Start -->CASE<!-- DNT-End -->, and
+          <!-- DNT-Start -->CHOOSESETS<!-- DNT-End -->.</entry>
         </row>
 
         <row>
-          <entry><emphasis>value</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>value</emphasis><!-- DNT-End --></entry>
 
           <entry>The value to return if the expression is true. This may be a
-          single value expression, a set of values, a DATASET, a DICTIONARY, a
+          single value expression, a set of values, a <!-- DNT-Start -->DATASET<!-- DNT-End -->, a <!-- DNT-Start -->DICTIONARY<!-- DNT-End -->, a
           record set, or an action.</entry>
         </row>
 
         <row>
-          <entry><emphasis>elsevalue</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>elsevalue</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. The value to return if all expressions are false.
           This may be a single value expression, a set of values, a record
@@ -54,19 +54,19 @@
         </row>
 
         <row>
-          <entry>Return:</entry>
+          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-          <entry>MAP returns a single <emphasis>value</emphasis>.</entry>
+          <entry><!-- DNT-Start -->MAP<!-- DNT-End --> returns a single <emphasis>value</emphasis>.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">MAP </emphasis>function evaluates the list
+  <para>The <emphasis role="bold"><!-- DNT-Start -->MAP<!-- DNT-End --> </emphasis>function evaluates the list
   of <emphasis>expressions</emphasis> and returns the
   <emphasis>value</emphasis> associated with the first true
   <emphasis>expression</emphasis>. If none of them match, the
-  <emphasis>elsevalue</emphasis> is returned. MAP may be thought of as an "IF
+  <emphasis>elsevalue</emphasis> is returned. <!-- DNT-Start -->MAP<!-- DNT-End --> may be thought of as an "IF
   ... ELSIF ... ELSIF ... ELSE" type of structure.</para>
 
   <para>All return <emphasis>value</emphasis> and
@@ -75,7 +75,7 @@
   reference the same level of dataset scoping, else an "invalid scope" error
   will occur. Therefore, all <emphasis>expressions</emphasis> must either
   reference fields in the same dataset or the existence of a set of related
-  child records (see EXISTS).</para>
+  child records (see <!-- DNT-Start -->EXISTS<!-- DNT-End -->).</para>
 
   <para>The <emphasis>expressions</emphasis> are typically evaluated in the
   order in which they appear, but if all the return
@@ -84,7 +84,7 @@
 
   <para>Example:</para>
 
-  <programlisting>Attr01 := MAP(EXISTS(Person(Person.EyeColor = 'Blue')) =&gt; 1,
+  <!-- DNT-Start --><programlisting>Attr01 := MAP(EXISTS(Person(Person.EyeColor = 'Blue')) =&gt; 1,
               EXISTS(Person(Person.Haircolor = 'Brown')) =&gt; 2,
               3);
  //If there are any blue-eyed people, Attr01 gets 1
@@ -107,12 +107,12 @@ MyTrades := MAP(rms.rms14 &gt;= 93 =&gt; trades(trd_bal &gt;= 10000),
  // this example takes the value of rms.rms14 and returns a 
  // set of trades based on that value. If the value is &lt;= 0,
  // then all trades are returned.
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="EVALUATE">EVALUATE</link>, <link
-  linkend="IF">IF</link>, <link linkend="CASE">CASE</link>, <link
-  linkend="CHOOSE">CHOOSE</link>, <link
-  linkend="CHOOSESETS">CHOOSESETS</link>, <link
-  linkend="REJECTED">REJECTED</link>, <link
-  linkend="WHICH">WHICH</link></para>
+  <para>See Also: <link linkend="EVALUATE"><!-- DNT-Start -->EVALUATE<!-- DNT-End --></link>, <link
+  linkend="IF"><!-- DNT-Start -->IF<!-- DNT-End --></link>, <link linkend="CASE"><!-- DNT-Start -->CASE<!-- DNT-End --></link>, <link
+  linkend="CHOOSE"><!-- DNT-Start -->CHOOSE<!-- DNT-End --></link>, <link
+  linkend="CHOOSESETS"><!-- DNT-Start -->CHOOSESETS<!-- DNT-End --></link>, <link
+  linkend="REJECTED"><!-- DNT-Start -->REJECTED<!-- DNT-End --></link>, <link
+  linkend="WHICH"><!-- DNT-Start -->WHICH<!-- DNT-End --></link></para>
 </sect1>

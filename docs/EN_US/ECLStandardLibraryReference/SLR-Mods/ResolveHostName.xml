@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ResolveHostName">
-  <title>ResolveHostName</title>
+  <!-- DNT-Start --><title>ResolveHostName</title><!-- DNT-End -->
 
-  <para><emphasis>result</emphasis> <emphasis role="bold"> :=
+  <!-- DNT-Start --><para><emphasis>result</emphasis> <emphasis role="bold"> :=
   STD.System.Util.ResolveHostName<indexterm>
       <primary>STD.System.Util.ResolveHostName</primary>
     </indexterm> <indexterm>
@@ -14,7 +14,7 @@
     </indexterm> <indexterm>
       <primary>ResolveHostName</primary>
     </indexterm>(</emphasis> <emphasis> host </emphasis> <emphasis
-  role="bold">);</emphasis></para>
+  role="bold">);</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -24,29 +24,29 @@
 
       <tbody>
         <row>
-          <entry><emphasis>host</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>host</emphasis><!-- DNT-End --></entry>
 
-          <entry>A null-terminated string containing the DNS name of the
+          <entry>A null-terminated string containing the <!-- DNT-Start -->DNS<!-- DNT-End --> name of the
           remote machine.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>ResolveHostName returns returns a VARSTRING (null-terminated)
+          <entry><!-- DNT-Start -->ResolveHostName<!-- DNT-End --> returns returns a <!-- DNT-Start -->VARSTRING<!-- DNT-End --> (null-terminated)
           value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">ResolveHostName </emphasis>function does a
-  DNS lookup to return the ip address for the specified
+  <para>The <emphasis role="bold"><!-- DNT-Start -->ResolveHostName<!-- DNT-End --> </emphasis>function does a
+  <!-- DNT-Start -->DNS<!-- DNT-End --> lookup to return the ip address for the specified
   <emphasis>host</emphasis> name.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">host := 'dataland_dali.br.seisint.com';
+  <!-- DNT-Start --><programlisting format="linespecific">host := 'dataland_dali.br.seisint.com';
 OUTPUT(STD.System.Util.ResolveHostName(host));
-</programlisting>
+</programlisting><!-- DNT-End -->
 </sect1>

@@ -2,21 +2,21 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Contains">
-  <title>Contains</title>
+  <!-- DNT-Start --><title>Contains</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Str.Contains<indexterm>
-      <primary>STD.Str.Contains</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->Contains<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->Contains<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Str.Contains</primary>
+      <primary>Str.<!-- DNT-Start -->Contains<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Contains</primary>
+      <primary><!-- DNT-Start -->Contains<!-- DNT-End --></primary>
     </indexterm>(</emphasis> <emphasis>source, pattern, nocase</emphasis>
   <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
-  <para><emphasis role="bold">STD.Uni.Contains<indexterm>
-      <primary>STD.Uni.Contains</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->Contains<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->Contains<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Uni.Contains</primary>
+      <primary>Uni.<!-- DNT-Start -->Contains<!-- DNT-End --></primary>
     </indexterm>(</emphasis> <emphasis>source, pattern, nocase</emphasis>
   <emphasis role="bold">)</emphasis></para>
 
@@ -28,48 +28,48 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>source</emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the data to search.</entry>
         </row>
 
         <row>
-          <entry><emphasis>pattern</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>pattern</emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the characters to compare. An empty
           string ( '' ) always returns true.</entry>
         </row>
 
         <row>
-          <entry><emphasis>nocase</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>nocase</emphasis><!-- DNT-End --></entry>
 
           <entry>A boolean true or false indicating whether to ignore the
           case.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>Contains returns a BOOLEAN value.</entry>
+          <entry><!-- DNT-Start -->Contains<!-- DNT-End --> returns a <!-- DNT-Start -->BOOLEAN<!-- DNT-End --> value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">Contains </emphasis>functions return true if
+  <para>The <emphasis role="bold"><!-- DNT-Start -->Contains<!-- DNT-End --> </emphasis>functions return true if
   all the characters in the <emphasis>pattern</emphasis> appear in the
   <emphasis>source, </emphasis>otherwise they return false.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">A := STD.Str.Contains(
+  <!-- DNT-Start --><programlisting format="linespecific">A := STD.Str.Contains(
   'the quick brown fox jumps over the lazy dog',
   'ABCdefghijklmnopqrstuvwxyz', true); //returns TRUE 
 
 B:= STD.Str.Contains(
  'the speedy ochre vixen leapt over the indolent retriever',
  'abcdefghijklmnopqrstuvwxyz', false); //returns FALSE -- 'z' is missing
-</programlisting>
+</programlisting><!-- DNT-End -->
 
   <para></para>
 </sect1>

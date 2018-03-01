@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="XMLENCODE">
-  <title>XMLENCODE</title>
+  <!-- DNT-Start --><title>XMLENCODE</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">XMLENCODE<indexterm>
-      <primary>XMLENCODE</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->XMLENCODE<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->XMLENCODE<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>XMLENCODE Function</primary>
+      <primary><!-- DNT-Start -->XMLENCODE<!-- DNT-End --> Function</primary>
     </indexterm>(</emphasis><emphasis> xml </emphasis><emphasis
   role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold">
-  ALL<indexterm>
-      <primary>ALL</primary>
+  <!-- DNT-Start -->ALL<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->ALL<!-- DNT-End --></primary>
     </indexterm> ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -22,37 +22,37 @@
 
         <tbody>
           <row>
-            <entry><emphasis>xml</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>xml</emphasis><!-- DNT-End --></entry>
 
-            <entry>The XML to encode.</entry>
+            <entry>The <!-- DNT-Start -->XML<!-- DNT-End --> to encode.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">ALL</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ALL</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies including new line characters in the
             encoding so the text can be used in attribute definitions.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>XMLENCODE returns a single value.</entry>
+            <entry><!-- DNT-Start -->XMLENCODE<!-- DNT-End --> returns a single value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">XMLENCODE</emphasis> function encodes
-  special characters in an XML string (for example, &lt; is converted to
-  &amp;lt) allowing you to use the CSV option on OUTPUT to produce more
-  complex XML files than are possible by using the XML option.</para>
+  <para>The <emphasis role="bold"><!-- DNT-Start -->XMLENCODE<!-- DNT-End --></emphasis> function encodes
+  special characters in an <!-- DNT-Start -->XML<!-- DNT-End --> string (for example, &lt; is converted to
+  &amp;lt) allowing you to use the <!-- DNT-Start -->CSV<!-- DNT-End --> option on <!-- DNT-Start -->OUTPUT<!-- DNT-End --> to produce more
+  complex <!-- DNT-Start -->XML<!-- DNT-End --> files than are possible by using the <!-- DNT-Start -->XML<!-- DNT-End --> option.</para>
 
   <para>Example:</para>
 
-  <programlisting>  d := XMLENCODE('&lt;xml version 1&gt;&lt;tag&gt;data&lt;/tag&gt;');
+  <!-- DNT-Start --><programlisting>  d := XMLENCODE('&lt;xml version 1&gt;&lt;tag&gt;data&lt;/tag&gt;');
   e := XMLDECODE(d);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="XMLDECODE">XMLDECODE</link></para>
+  <para>See Also: <link linkend="XMLDECODE"><!-- DNT-Start -->XMLDECODE<!-- DNT-End --></link></para>
 </sect1>

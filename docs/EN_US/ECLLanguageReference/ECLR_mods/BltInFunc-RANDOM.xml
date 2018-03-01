@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="RANDOM">
-  <title>RANDOM</title>
+  <!-- DNT-Start --><title>RANDOM</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">RANDOM<indexterm>
-      <primary>RANDOM</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->RANDOM<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->RANDOM<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>RANDOM function</primary>
+      <primary><!-- DNT-Start -->RANDOM<!-- DNT-End --> function</primary>
     </indexterm>()</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -18,20 +18,20 @@
 
         <tbody>
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>RANDOM returns a single value.</entry>
+            <entry><!-- DNT-Start -->RANDOM<!-- DNT-End --> returns a single value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">RANDOM </emphasis>function returns a
+  <para>The <emphasis role="bold"><!-- DNT-Start -->RANDOM<!-- DNT-End --> </emphasis>function returns a
   pseudo-random non-negative integer value between 0 and 4,294,967,295.</para>
 
   <para>Example:</para>
 
-  <programlisting>MySet := DISTRIBUTE(Person,RANDOM()); //random distribution</programlisting>
+  <!-- DNT-Start --><programlisting>MySet := DISTRIBUTE(Person,RANDOM()); //random distribution</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="DISTRIBUTE">DISTRIBUTE</link></para>
+  <para>See Also: <link linkend="DISTRIBUTE"><!-- DNT-Start -->DISTRIBUTE<!-- DNT-End --></link></para>
 </sect1>

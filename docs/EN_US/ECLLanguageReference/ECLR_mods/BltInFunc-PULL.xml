@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="PULL">
-  <title>PULL</title>
+  <!-- DNT-Start --><title>PULL</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">PULL<indexterm>
-      <primary>PULL</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->PULL<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->PULL<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>PULL function</primary>
+      <primary><!-- DNT-Start -->PULL<!-- DNT-End --> function</primary>
     </indexterm>(</emphasis><emphasis>dataset</emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -19,30 +19,30 @@
 
         <tbody>
           <row>
-            <entry><emphasis>dataset</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>dataset</emphasis><!-- DNT-End --></entry>
 
             <entry>The set of records to fully load into the Data
             Refinery.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>PULL returns a recordset.</entry>
+            <entry><!-- DNT-Start -->PULL<!-- DNT-End --> returns a recordset.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">PULL </emphasis>function is a meta-operation
+  <para>The <emphasis role="bold"><!-- DNT-Start -->PULL<!-- DNT-End --> </emphasis>function is a meta-operation
   intended only to hint that the <emphasis>dataset</emphasis> should be fully
   loaded into the Data Refinery before continuing the operation in Data
   Refinery. </para>
 
   <para>Example:</para>
 
-  <programlisting>MySet := PULL(Person);
-     //load Person into Data Refinery before continuing</programlisting>
+  <!-- DNT-Start --><programlisting>MySet := PULL(Person);
+     //load Person into Data Refinery before continuing</programlisting><!-- DNT-End -->
 
   <para>See Also:</para>
 </sect1>

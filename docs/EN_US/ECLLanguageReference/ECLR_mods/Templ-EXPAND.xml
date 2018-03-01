@@ -2,10 +2,10 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_EXPAND">
-  <title>#EXPAND</title>
+  <!-- DNT-Start --><title>#EXPAND</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">#EXPAND<indexterm>
-      <primary>#EXPAND</primary>
+  <para><emphasis role="bold">#<!-- DNT-Start -->EXPAND<!-- DNT-End --><indexterm>
+      <primary>#<!-- DNT-Start -->EXPAND<!-- DNT-End --></primary>
     </indexterm>( </emphasis><emphasis>token</emphasis> <emphasis
   role="bold">);</emphasis></para>
 
@@ -17,22 +17,22 @@
 
         <tbody>
           <row>
-            <entry><emphasis>token</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>token</emphasis><!-- DNT-End --></entry>
 
-            <entry>The name of the MACRO parameter whose passed string
+            <entry>The name of the <!-- DNT-Start -->MACRO<!-- DNT-End --> parameter whose passed string
             constant value to expand.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">#EXPAND </emphasis>statement substitutes and
+  <para>The <emphasis role="bold">#<!-- DNT-Start -->EXPAND<!-- DNT-End --> </emphasis>statement substitutes and
   parses the text of the passed <emphasis>token</emphasis>'s string within the
-  MACRO.</para>
+  <!-- DNT-Start -->MACRO<!-- DNT-End -->.</para>
 
   <para>Example:</para>
 
-  <programlisting>  MAC_join(attrname, leftDS, rightDS, linkflags) := MACRO
+  <!-- DNT-Start --><programlisting>  MAC_join(attrname, leftDS, rightDS, linkflags) := MACRO
     attrname := JOIN(leftDS,rightDS,#EXPAND(linkflags));
   ENDMACRO;
   
@@ -43,7 +43,7 @@
   MAC_join(J2,People,Property,'LEFT.ID=RIGHT.PeopleID')
   //expands out to:
   // J2 := JOIN(People,Property,LEFT.ID=RIGHT.PeopleID);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="MACRO_Structure">MACRO</link></para>
+  <para>See Also: <link linkend="MACRO_Structure"><!-- DNT-Start -->MACRO<!-- DNT-End --></link></para>
 </sect1>

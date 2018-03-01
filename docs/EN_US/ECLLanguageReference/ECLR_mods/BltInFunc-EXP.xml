@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="EXP">
-  <title>EXP<indexterm>
+  <!-- DNT-Start --><title>EXP<indexterm>
       <primary>EXP</primary>
-    </indexterm></title>
+    </indexterm></title><!-- DNT-End -->
 
-  <para><emphasis role="bold">EXP<indexterm>
-      <primary>EXP function</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->EXP<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->EXP<!-- DNT-End --> function</primary>
     </indexterm>(</emphasis><emphasis>n</emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -19,30 +19,30 @@
 
         <tbody>
           <row>
-            <entry>n</entry>
+            <entry><!-- DNT-Start -->n<!-- DNT-End --></entry>
 
             <entry>The real number to evaluate.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>EXP returns a single real value.</entry>
+            <entry><!-- DNT-Start -->EXP<!-- DNT-End --> returns a single real value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">EXP </emphasis>function returns the natural
-  exponential value of the parameter (en). This is the opposite of the LN
+  <para>The <emphasis role="bold"><!-- DNT-Start -->EXP<!-- DNT-End --> </emphasis>function returns the natural
+  exponential value of the parameter (en). This is the opposite of the <!-- DNT-Start -->LN<!-- DNT-End -->
   function<indexterm>
-      <primary>LN function</primary>
+      <primary><!-- DNT-Start -->LN<!-- DNT-End --> function</primary>
     </indexterm>.</para>
 
   <para>Example:</para>
 
-  <programlisting>MyPI := EXP(3.14159);
-Interim := ROUND(1000 * (EXP(MyPI)/(1 + EXP(MyPI))));</programlisting>
+  <!-- DNT-Start --><programlisting>MyPI := EXP(3.14159);
+Interim := ROUND(1000 * (EXP(MyPI)/(1 + EXP(MyPI))));</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="LN">LN</link>, <link linkend="SQRT">SQRT</link>, <link linkend="POWER">POWER</link></para>
+  <para>See Also: <link linkend="LN"><!-- DNT-Start -->LN<!-- DNT-End --></link>, <link linkend="SQRT"><!-- DNT-Start -->SQRT<!-- DNT-End --></link>, <link linkend="POWER"><!-- DNT-Start -->POWER<!-- DNT-End --></link></para>
 </sect1>

@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="LOADXML">
-  <title>LOADXML</title>
+  <!-- DNT-Start --><title>LOADXML</title><!-- DNT-End -->
 
-  <para><emphasis>[</emphasis><emphasis>attributename</emphasis> :=<emphasis
+  <!-- DNT-Start --><para><emphasis>[</emphasis><emphasis>attributename</emphasis> :=<emphasis
   role="bold"> ] LOADXML<indexterm>
       <primary>LOADXML</primary>
     </indexterm><indexterm>
       <primary>LOADXML function</primary>
     </indexterm>( </emphasis><emphasis> xmlstring | symbol
   </emphasis><emphasis role="bold">[</emphasis><emphasis>, branch
-  </emphasis><emphasis role="bold">])</emphasis></para>
+  </emphasis><emphasis role="bold">])</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,7 +21,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>attributename</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>attributename</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. The action name, which turns the action into an
           attribute definition, therefore not executed until the
@@ -29,38 +29,38 @@
         </row>
 
         <row>
-          <entry><emphasis>xmlstring</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>xmlstring</emphasis><!-- DNT-End --></entry>
 
-          <entry>A string expression containing the XML text to process inline
+          <entry>A string expression containing the <!-- DNT-Start -->XML<!-- DNT-End --> text to process inline
           (no carriage returns or line feeds).</entry>
         </row>
 
         <row>
-          <entry><emphasis>symbol</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>symbol</emphasis><!-- DNT-End --></entry>
 
-          <entry>The template symbol containing the XML text to process
-          (typically loaded by #EXPORT or #EXPORTXML).</entry>
+          <entry>The template symbol containing the <!-- DNT-Start -->XML<!-- DNT-End --> text to process
+          (typically loaded by #<!-- DNT-Start -->EXPORT<!-- DNT-End --> or #<!-- DNT-Start -->EXPORTXML<!-- DNT-End -->).</entry>
         </row>
 
         <row>
-          <entry><emphasis>branch</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>branch</emphasis><!-- DNT-End --></entry>
 
-          <entry>A user-defined string naming the XML text, allowing #FOR to
+          <entry>A user-defined string naming the <!-- DNT-Start -->XML<!-- DNT-End --> text, allowing #<!-- DNT-Start -->FOR<!-- DNT-End --> to
           operate.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para><emphasis role="bold">LOADXML </emphasis>opens an active XML scope for
-  Template language statements or symbols to act on. LOADXML must be the first
+  <para><emphasis role="bold"><!-- DNT-Start -->LOADXML<!-- DNT-End --> </emphasis>opens an active <!-- DNT-Start -->XML<!-- DNT-End --> scope for
+  Template language statements or symbols to act on. <!-- DNT-Start -->LOADXML<!-- DNT-End --> must be the first
   line of code to function correctly.</para>
 
-  <para>LOADXML is also used in "drilldown" MACRO code.</para>
+  <para><!-- DNT-Start -->LOADXML<!-- DNT-End --> is also used in "drilldown" <!-- DNT-Start -->MACRO<!-- DNT-End --> code.</para>
 
   <para>Example:</para>
 
-  <programlisting>LOADXML('&lt;section&gt;&lt;item type="count"&gt;&lt;set&gt;person&lt;/set&gt;&lt;/item&gt;&lt;/section&gt;')
+  <!-- DNT-Start --><programlisting>LOADXML('&lt;section&gt;&lt;item type="count"&gt;&lt;set&gt;person&lt;/set&gt;&lt;/item&gt;&lt;/section&gt;')
 //this macro receives in-line XML as its parameter
 //and demonstrates the code for multiple row drilldown
 EXPORT id(xmlRow) :=   MACRO
@@ -136,9 +136,9 @@ OUTPUT(%'{@type}'%
  #END
 #END
 OUTPUT('Done');
-</programlisting>
+</programlisting><!-- DNT-End -->
 
   <para>See Also: <link linkend="Templates">Templates</link>, <link
-  linkend="_EXPORT">#EXPORT</link>, <link
-  linkend="_EXPORTXML">#EXPORTXML</link></para>
+  linkend="_EXPORT">#<!-- DNT-Start -->EXPORT<!-- DNT-End --></link>, <link
+  linkend="_EXPORTXML">#<!-- DNT-Start -->EXPORTXML<!-- DNT-End --></link></para>
 </sect1>

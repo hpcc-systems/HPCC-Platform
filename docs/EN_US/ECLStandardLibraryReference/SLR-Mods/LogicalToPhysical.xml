@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="LogicalToPhysical">
-  <title>LogicalToPhysical</title>
+  <!-- DNT-Start --><title>LogicalToPhysical</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.System.Thorlib.LogicalToPhysical <indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.System.Thorlib.LogicalToPhysical <indexterm>
       <primary>STD.System.ThorLib.LogicalToPhysical</primary>
     </indexterm> <indexterm>
       <primary>System.ThorLib.LogicalToPhysical</primary>
@@ -15,7 +15,7 @@
     </indexterm> (</emphasis> <emphasis> filename </emphasis> <emphasis
   role="bold">[</emphasis> <emphasis>, createflag </emphasis> <emphasis
   role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
-  role="bold">)</emphasis></para>
+  role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -25,34 +25,34 @@
 
       <tbody>
         <row>
-          <entry><emphasis>filename</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>filename</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the logical name of the
           file.</entry>
         </row>
 
         <row>
-          <entry><emphasis>createflag</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>createflag</emphasis><!-- DNT-End --></entry>
 
           <entry>A boolean value indicating whether to create the
           <emphasis>filename</emphasis>. If omitted, the default is
-          FALSE.</entry>
+          <!-- DNT-Start -->FALSE<!-- DNT-End -->.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>LogicalToPhysical returns a VARSTRING value.</entry>
+          <entry><!-- DNT-Start -->LogicalToPhysical<!-- DNT-End --> returns a <!-- DNT-Start -->VARSTRING<!-- DNT-End --> value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">LogicalToPhysical </emphasis>function
+  <para>The <emphasis role="bold"><!-- DNT-Start -->LogicalToPhysical<!-- DNT-End --> </emphasis>function
   (Logical to Physical) returns the physical name of the file represented by
   the logical <emphasis>filename</emphasis>.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">A := STD.System.Thorlib.LogicalToPhysical('Fred');</programlisting>
+  <!-- DNT-Start --><programlisting format="linespecific">A := STD.System.Thorlib.LogicalToPhysical('Fred');</programlisting><!-- DNT-End -->
 </sect1>

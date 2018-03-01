@@ -2,29 +2,29 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="STORED">
-  <title>STORED</title>
+  <!-- DNT-Start --><title>STORED</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STORED<indexterm>
-      <primary>STORED</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STORED<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STORED<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>STORED function</primary>
+      <primary><!-- DNT-Start -->STORED<!-- DNT-End --> function</primary>
     </indexterm>( </emphasis><emphasis>interface </emphasis><emphasis
   role="bold">)</emphasis></para>
 
   <para><emphasis>interface<indexterm>
       <primary>interface</primary>
-    </indexterm></emphasis> The name of an INTERFACE structure
+    </indexterm></emphasis> The name of an <!-- DNT-Start -->INTERFACE<!-- DNT-End --> structure
   attribute.</para>
 
-  <para>The <emphasis role="bold">STORED </emphasis>function is a shorthand
-  method of defining attributes for use in a SOAP interface. It is equivalent
-  to defining a MODULE structure that inherits all the attributes from the
-  <emphasis>interface</emphasis> and adds the STORED workflow service to each,
-  using the attribute name as the STORED name.</para>
+  <para>The <emphasis role="bold"><!-- DNT-Start -->STORED<!-- DNT-End --> </emphasis>function is a shorthand
+  method of defining attributes for use in a <!-- DNT-Start -->SOAP<!-- DNT-End --> interface. It is equivalent
+  to defining a <!-- DNT-Start -->MODULE<!-- DNT-End --> structure that inherits all the attributes from the
+  <emphasis>interface</emphasis> and adds the <!-- DNT-Start -->STORED<!-- DNT-End --> workflow service to each,
+  using the attribute name as the <!-- DNT-Start -->STORED<!-- DNT-End --> name.</para>
 
   <para>Example:</para>
 
-  <programlisting>Iname := INTERFACE
+  <!-- DNT-Start --><programlisting>Iname := INTERFACE
 EXPORT STRING20 Name;
 EXPORT BOOLEAN KeepName := TRUE;
 END;
@@ -35,10 +35,10 @@ StoredName := STORED(Iname);
 // EXPORT STRING20 Name := '' : STORED('name');
 // EXPORT BOOLEAN KeepName := TRUE : STORED('keepname');
 // END;
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="STORED_workflow_service">STORED Workflow
-  Service</link>, <link linkend="INTERFACE_Structure">INTERFACE
-  Structure</link>, <link linkend="MODULE_Structure">MODULE
+  <para>See Also: <link linkend="STORED_workflow_service"><!-- DNT-Start -->STORED<!-- DNT-End --> Workflow
+  Service</link>, <link linkend="INTERFACE_Structure"><!-- DNT-Start -->INTERFACE<!-- DNT-End -->
+  Structure</link>, <link linkend="MODULE_Structure"><!-- DNT-Start -->MODULE<!-- DNT-End -->
   Structure</link></para>
 </sect1>

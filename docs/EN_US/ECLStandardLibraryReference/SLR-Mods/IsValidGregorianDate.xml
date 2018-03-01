@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="IsValidGregorianDate">
-  <title>IsValidGregorianDate</title>
+  <!-- DNT-Start --><title>IsValidGregorianDate</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Date.IsValidGregorianDate<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.Date.IsValidGregorianDate<indexterm>
       <primary>STD.Date.IsValidGregorianDate</primary>
     </indexterm><indexterm>
       <primary>Date.IsValidGregorianDate</primary>
     </indexterm><indexterm>
       <primary>IsValidGregorianDate</primary>
     </indexterm>(</emphasis> <emphasis>date</emphasis> <emphasis
-  role="bold">)</emphasis></para>
+  role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,33 +21,33 @@
 
       <tbody>
         <row>
-          <entry><emphasis>date</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>date</emphasis><!-- DNT-End --></entry>
 
-          <entry>A date value in the Date_t format. (An UNSIGNED4 containing a
-          date value in YYYYMMDD format.)</entry>
+          <entry>A date value in the Date_t format. (An <!-- DNT-Start -->UNSIGNED<!-- DNT-End -->4 containing a
+          date value in <!-- DNT-Start -->YYYYMMDD<!-- DNT-End --> format.)</entry>
         </row>
 
         <row>
-          <entry>Return:</entry>
+          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-          <entry>IsValidGregorianDateYear returns a BOOLEAN value.</entry>
+          <entry>IsValidGregorianDateYear returns a <!-- DNT-Start -->BOOLEAN<!-- DNT-End --> value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">IsValidGregorianDate</emphasis> function
-  returns TRUE if the date is valid in the Gregorian calendar. The year must
+  <para>The <emphasis role="bold"><!-- DNT-Start -->IsValidGregorianDate<!-- DNT-End --></emphasis> function
+  returns <!-- DNT-Start -->TRUE<!-- DNT-End --> if the date is valid in the Gregorian calendar. The year must
   be between 1601 and 30827.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">IMPORT STD;
+  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 d1 := 19991122;
 d2 := 15130230;  
 firstTest := STD.Date.IsValidGregorianDate(d1);  //  TRUE
 secondTest := STD.Date.IsValidGregorianDate(d2); //  FALSE
-</programlisting>
+</programlisting><!-- DNT-End -->
 
   <para></para>
 </sect1>

@@ -2,21 +2,21 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ROW">
-  <title>ROW</title>
+  <!-- DNT-Start --><title>ROW</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">ROW<indexterm>
-      <primary>ROW</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->ROW<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->ROW<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>ROW function</primary>
+      <primary><!-- DNT-Start -->ROW<!-- DNT-End --> function</primary>
     </indexterm>(</emphasis><emphasis> </emphasis><emphasis role="bold">{
   </emphasis><emphasis>fields </emphasis><emphasis role="bold">}
   </emphasis><emphasis>, recstruct </emphasis><emphasis
   role="bold">)</emphasis></para>
 
-  <para><emphasis role="bold">ROW(</emphasis><emphasis> row </emphasis>,
+  <para><emphasis role="bold"><!-- DNT-Start -->ROW<!-- DNT-End -->(</emphasis><emphasis> row </emphasis>,
   <emphasis>resultrec </emphasis><emphasis role="bold">)</emphasis></para>
 
-  <para><emphasis role="bold">ROW(</emphasis><emphasis> </emphasis><emphasis
+  <para><emphasis role="bold"><!-- DNT-Start -->ROW<!-- DNT-End -->(</emphasis><emphasis> </emphasis><emphasis
   role="bold">[</emphasis><emphasis> row </emphasis>, <emphasis role="bold">]
   </emphasis><emphasis>transform </emphasis><emphasis
   role="bold">)</emphasis></para>
@@ -29,7 +29,7 @@
 
         <tbody>
           <row>
-            <entry><emphasis>fields</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>fields</emphasis><!-- DNT-End --></entry>
 
             <entry>A comma-delimited list of data values for each field in the
             <emphasis>recstruct</emphasis>, contained in curly braces ( {}
@@ -37,14 +37,14 @@
           </row>
 
           <row>
-            <entry><emphasis>recstruct</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>recstruct</emphasis><!-- DNT-End --></entry>
 
-            <entry>The name of the RECORD structure defining the field
+            <entry>The name of the <!-- DNT-Start -->RECORD<!-- DNT-End --> structure defining the field
             layout.</entry>
           </row>
 
           <row>
-            <entry><emphasis>row</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>row</emphasis><!-- DNT-End --></entry>
 
             <entry>A single row of data. This may be an existing record, or
             formatted in-line data values like the fields parameter
@@ -54,48 +54,48 @@
           </row>
 
           <row>
-            <entry><emphasis>resultrec</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>resultrec</emphasis><!-- DNT-End --></entry>
 
-            <entry>A RECORD structure that defines how to construct the row of
-            data, similar to the type used by TABLE.</entry>
+            <entry>A <!-- DNT-Start -->RECORD<!-- DNT-End --> structure that defines how to construct the row of
+            data, similar to the type used by <!-- DNT-Start -->TABLE<!-- DNT-End -->.</entry>
           </row>
 
           <row>
-            <entry><emphasis>transform</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>transform</emphasis><!-- DNT-End --></entry>
 
-            <entry>A TRANSFORM function that defines how to construct the row
+            <entry>A <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function that defines how to construct the row
             of data.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>ROW returns a single record.</entry>
+            <entry><!-- DNT-Start -->ROW<!-- DNT-End --> returns a single record.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">ROW </emphasis>function creates a single
+  <para>The <emphasis role="bold"><!-- DNT-Start -->ROW<!-- DNT-End --> </emphasis>function creates a single
   data record and is valid for use in any expression where a single record is
   valid.</para>
 
   <sect2 id="ROW_Form_1">
-    <title>ROW Form 1</title>
+    <!-- DNT-Start --><title>ROW Form 1</title><!-- DNT-End -->
 
     <para>The first form constructs a record from the in-line data in the
     <emphasis>fields</emphasis>, structured as defined by the
     <emphasis>recstruct</emphasis><indexterm>
         <primary>recstruct</primary>
-      </indexterm>. This is typically used within a TRANSFORM
+      </indexterm>. This is typically used within a <!-- DNT-Start -->TRANSFORM<!-- DNT-End -->
     structure<indexterm>
-        <primary>TRANSFORM structure</primary>
+        <primary><!-- DNT-Start -->TRANSFORM<!-- DNT-End --> structure</primary>
       </indexterm> as the expression defining the output for a child dataset
     field.</para>
 
     <para>Example:</para>
 
-    <programlisting>AkaRec := {STRING20 forename,STRING20 surname};
+    <!-- DNT-Start --><programlisting>AkaRec := {STRING20 forename,STRING20 surname};
 outputRec := RECORD
   UNSIGNED id;
   DATASET(AkaRec) kids;
@@ -113,22 +113,22 @@ outputRec makeChildren(outputRec L, outputRec R) := TRANSFORM
   SELF.kids := L.kids + ROW({R.kids[1].forename,R.kids[1].surname},AkaRec);
 END;
 r := ROLLUP(fatIn, id, makeChildren(LEFT, RIGHT));
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="ROW_Form_2">
-    <title>ROW Form 2</title>
+    <!-- DNT-Start --><title>ROW Form 2</title><!-- DNT-End -->
 
     <para>The second form constructs a record from the <emphasis>row
     </emphasis>passed to it using the <emphasis>resultrec<indexterm>
         <primary>resultrec</primary>
-      </indexterm> </emphasis>the same way the TABLE function operates. This
-    is typically used within a TRANSFORM structure as the expression defining
+      </indexterm> </emphasis>the same way the <!-- DNT-Start -->TABLE<!-- DNT-End --> function operates. This
+    is typically used within a <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> structure as the expression defining
     the output for a child dataset field.</para>
 
     <para>Example:</para>
 
-    <programlisting>AkaRec := {STRING20 forename,STRING20 surname};
+    <!-- DNT-Start --><programlisting>AkaRec := {STRING20 forename,STRING20 surname};
 outputRec := RECORD
 UNSIGNED id;
 DATASET(AkaRec) children;
@@ -149,21 +149,21 @@ outputRec makeChildren(outputRec L, outputRec R) := TRANSFORM
 
 END;
 r := ROLLUP(fatIn, id, makeChildren(LEFT, RIGHT));
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="ROW_Form_3">
-    <title>ROW Form 3</title>
+    <!-- DNT-Start --><title>ROW Form 3</title><!-- DNT-End -->
 
-    <para>The third form uses a TRANSFORM function to produce its single
+    <para>The third form uses a <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function to produce its single
     record result. The <emphasis>transform</emphasis> function must take at
-    least one parameter: a LEFT record, which must be in the same format as
+    least one parameter: a <!-- DNT-Start -->LEFT<!-- DNT-End --> record, which must be in the same format as
     the input record. The format of the resulting record may be different from
     the input.</para>
 
     <para>Example:</para>
 
-    <programlisting>
+    <!-- DNT-Start --><programlisting>
 NameRec := RECORD
   STRING5 title;
   STRING20 fname;
@@ -263,11 +263,11 @@ END;
 y3 := PROJECT(x, t3(LEFT));
 
 OUTPUT(y3);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-    <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM
-    Structure</link>, <link linkend="DATASET">DATASET</link>, <link
-    linkend="RECORD_Structure">RECORD Structure</link>, <link
-    linkend="FUNCTION_Structure">FUNCTION Structure</link></para>
+    <para>See Also: <link linkend="TRANSFORM_Structure"><!-- DNT-Start -->TRANSFORM<!-- DNT-End -->
+    Structure</link>, <link linkend="DATASET"><!-- DNT-Start -->DATASET<!-- DNT-End --></link>, <link
+    linkend="RECORD_Structure"><!-- DNT-Start -->RECORD<!-- DNT-End --> Structure</link>, <link
+    linkend="FUNCTION_Structure"><!-- DNT-Start -->FUNCTION<!-- DNT-End --> Structure</link></para>
   </sect2>
 </sect1>

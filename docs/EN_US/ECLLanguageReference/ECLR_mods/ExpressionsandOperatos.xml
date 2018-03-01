@@ -2,11 +2,11 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Expressions_and_Operators" role="nobrk">
-  <title>Expressions and Operators<indexterm>
+  <!-- DNT-Start --><title>Expressions and Operators<indexterm>
       <primary>Operators</primary>
     </indexterm><indexterm>
       <primary>Expressions and Operators</primary>
-    </indexterm></title>
+    </indexterm></title><!-- DNT-End -->
 
   <para>Expressions<indexterm>
       <primary>Expressions</primary>
@@ -15,12 +15,12 @@
   order of precedence for all operators.</para>
 
   <sect2 id="Arithmetic_Operators">
-    <title>Arithmetic Operators</title>
+    <!-- DNT-Start --><title>Arithmetic Operators</title><!-- DNT-End -->
 
-    <para>Standard arithmetic operators<indexterm>
+    <!-- DNT-Start --><para>Standard arithmetic operators<indexterm>
         <primary>arithmetic operators</primary>
       </indexterm> are supported for use in expressions, listed here in their
-    evaluation precedence:</para>
+    evaluation precedence:</para><!-- DNT-End -->
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup align="left" cols="2">
@@ -30,49 +30,49 @@
 
         <tbody>
           <row>
-            <entry>Division <indexterm>
+            <entry><!-- DNT-Start -->Division <indexterm>
                 <primary>Division</primary>
-              </indexterm></entry>
+              </indexterm><!-- DNT-End --></entry>
 
             <entry>/</entry>
           </row>
 
           <row>
-            <entry>Integer Division<indexterm>
+            <entry><!-- DNT-Start -->Integer Division<indexterm>
                 <primary>Integer Division</primary>
-              </indexterm></entry>
+              </indexterm><!-- DNT-End --></entry>
 
-            <entry>DIV</entry>
+            <entry><!-- DNT-Start -->DIV<!-- DNT-End --></entry>
           </row>
 
           <row>
-            <entry>Modulus Division<indexterm>
+            <entry><!-- DNT-Start -->Modulus Division<indexterm>
                 <primary>Modulus Division</primary>
-              </indexterm></entry>
+              </indexterm><!-- DNT-End --></entry>
 
             <entry>%</entry>
           </row>
 
           <row>
-            <entry>Multiplication<indexterm>
+            <entry><!-- DNT-Start -->Multiplication<indexterm>
                 <primary>Multiplication</primary>
-              </indexterm></entry>
+              </indexterm><!-- DNT-End --></entry>
 
             <entry>*</entry>
           </row>
 
           <row>
-            <entry>Addition<indexterm>
+            <entry><!-- DNT-Start -->Addition<indexterm>
                 <primary>Addition</primary>
-              </indexterm></entry>
+              </indexterm><!-- DNT-End --></entry>
 
             <entry>+</entry>
           </row>
 
           <row>
-            <entry>Subtraction<indexterm>
+            <entry><!-- DNT-Start -->Subtraction<indexterm>
                 <primary>Subtraction</primary>
-              </indexterm></entry>
+              </indexterm><!-- DNT-End --></entry>
 
             <entry>-</entry>
           </row>
@@ -86,7 +86,7 @@
     reporting a "divide by zero" error. This avoids invalid or unexpected data
     aborting a long job. The default behaviour can be changed using</para>
 
-    <programlisting>#OPTION ('divideByZero', 'zero'); //evaluate to zero</programlisting>
+    <!-- DNT-Start --><programlisting>#OPTION ('divideByZero', 'zero'); //evaluate to zero</programlisting><!-- DNT-End -->
 
     <para>The divideByZero option can have the following values:</para>
 
@@ -98,23 +98,23 @@
 
         <tbody>
           <row>
-            <entry>'zero'</entry>
+            <entry><!-- DNT-Start -->'zero'<!-- DNT-End --></entry>
 
             <entry>Evaluate to 0 - the default behaviour.</entry>
           </row>
 
           <row>
-            <entry>'fail'</entry>
+            <entry><!-- DNT-Start -->'fail'<!-- DNT-End --></entry>
 
             <entry>Stop and report a division by zero error.</entry>
           </row>
 
           <row>
-            <entry>'nan'</entry>
+            <entry><!-- DNT-Start -->'nan'<!-- DNT-End --></entry>
 
             <entry>This is only currently supported for real numbers. Division
             by zero creates a quiet NaN, which will propagate through any real
-            expressions it is used in. You can use NOT ISVALID(x) to test if
+            expressions it is used in. You can use <!-- DNT-Start -->NOT<!-- DNT-End --> <!-- DNT-Start -->ISVALID<!-- DNT-End -->(x) to test if
             the value is a NaN. Integer and decimal division by zero continue
             to return 0.</entry>
           </row>
@@ -124,12 +124,12 @@
   </sect2>
 
   <sect2 id="Bitwise_Operators">
-    <title>Bitwise Operators</title>
+    <!-- DNT-Start --><title>Bitwise Operators</title><!-- DNT-End -->
 
-    <para>Bitwise operators<indexterm>
+    <!-- DNT-Start --><para>Bitwise operators<indexterm>
         <primary>Bitwise operators</primary>
       </indexterm> are supported for use in expressions, listed here in their
-    evaluation precedence:</para>
+    evaluation precedence:</para><!-- DNT-End -->
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup align="left" cols="2">
@@ -139,35 +139,35 @@
 
         <tbody>
           <row>
-            <entry>Bitwise AND<indexterm>
+            <entry><!-- DNT-Start -->Bitwise AND<indexterm>
                 <primary>Bitwise AND</primary>
-              </indexterm></entry>
+              </indexterm><!-- DNT-End --></entry>
 
             <entry>&amp;</entry>
           </row>
 
           <row>
-            <entry>Bitwise OR<indexterm>
+            <entry><!-- DNT-Start -->Bitwise OR<indexterm>
                 <primary>Bitwise OR</primary>
-              </indexterm></entry>
+              </indexterm><!-- DNT-End --></entry>
 
             <entry>|</entry>
           </row>
 
           <row>
-            <entry>Bitwise Exclusive OR<indexterm>
+            <entry><!-- DNT-Start -->Bitwise Exclusive OR<indexterm>
                 <primary>Bitwise Exclusive OR</primary>
-              </indexterm></entry>
+              </indexterm><!-- DNT-End --></entry>
 
             <entry>^</entry>
           </row>
 
           <row>
-            <entry>Bitwise NOT<indexterm>
+            <entry><!-- DNT-Start -->Bitwise NOT<indexterm>
                 <primary>Bitwise NOT</primary>
-              </indexterm></entry>
+              </indexterm><!-- DNT-End --></entry>
 
-            <entry>BNOT</entry>
+            <entry><!-- DNT-Start -->BNOT<!-- DNT-End --></entry>
           </row>
         </tbody>
       </tgroup>
@@ -177,11 +177,11 @@
   </sect2>
 
   <sect2 id="Bitshift_Operators">
-    <title>Bitshift Operators</title>
+    <!-- DNT-Start --><title>Bitshift Operators</title><!-- DNT-End -->
 
-    <para>Bitshift operators<indexterm>
+    <!-- DNT-Start --><para>Bitshift operators<indexterm>
         <primary>Bitshift operators</primary>
-      </indexterm> are supported for use in integer expressions:</para>
+      </indexterm> are supported for use in integer expressions:</para><!-- DNT-End -->
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup align="left" cols="2">
@@ -191,17 +191,17 @@
 
         <tbody>
           <row>
-            <entry>Bitshift Right<indexterm>
+            <entry><!-- DNT-Start -->Bitshift Right<indexterm>
                 <primary>Bitshift Right</primary>
-              </indexterm></entry>
+              </indexterm><!-- DNT-End --></entry>
 
             <entry>&gt;&gt;</entry>
           </row>
 
           <row>
-            <entry>Bitshift Left<indexterm>
+            <entry><!-- DNT-Start -->Bitshift Left<indexterm>
                 <primary>Bitshift Left</primary>
-              </indexterm></entry>
+              </indexterm><!-- DNT-End --></entry>
 
             <entry>&lt;&lt;</entry>
           </row>
@@ -213,7 +213,7 @@
   </sect2>
 
   <sect2 id="Comparison_Operators">
-    <title>Comparison Operators</title>
+    <!-- DNT-Start --><title>Comparison Operators</title><!-- DNT-End -->
 
     <para><emphasis>The following comparison operator<indexterm>
         <primary>comparison operator</primary>
@@ -229,77 +229,77 @@
 
         <tbody>
           <row>
-            <entry>Equivalence<indexterm>
+            <entry><!-- DNT-Start -->Equivalence<indexterm>
                 <primary>Equivalence</primary>
-              </indexterm> </entry>
+              </indexterm> <!-- DNT-End --></entry>
 
             <entry>=</entry>
 
-            <entry>returns TRUE or FALSE. </entry>
+            <entry>returns <!-- DNT-Start -->TRUE<!-- DNT-End --> or <!-- DNT-Start -->FALSE<!-- DNT-End -->. </entry>
           </row>
 
           <row>
-            <entry>Not Equal <indexterm>
+            <entry><!-- DNT-Start -->Not Equal <indexterm>
                 <primary>Not Equal</primary>
-              </indexterm></entry>
+              </indexterm><!-- DNT-End --></entry>
 
             <entry>&lt;&gt;</entry>
 
-            <entry>returns TRUE or FALSE</entry>
+            <entry>returns <!-- DNT-Start -->TRUE<!-- DNT-End --> or <!-- DNT-Start -->FALSE<!-- DNT-End --></entry>
           </row>
 
           <row>
-            <entry>Not Equal</entry>
+            <entry><!-- DNT-Start -->Not Equal<!-- DNT-End --></entry>
 
             <entry>!=</entry>
 
-            <entry>returns TRUE or FALSE</entry>
+            <entry>returns <!-- DNT-Start -->TRUE<!-- DNT-End --> or <!-- DNT-Start -->FALSE<!-- DNT-End --></entry>
           </row>
 
           <row>
-            <entry>Less Than<indexterm>
+            <entry><!-- DNT-Start -->Less Than<indexterm>
                 <primary>Less Than</primary>
-              </indexterm></entry>
+              </indexterm><!-- DNT-End --></entry>
 
             <entry>&lt;</entry>
 
-            <entry>returns TRUE or FALSE</entry>
+            <entry>returns <!-- DNT-Start -->TRUE<!-- DNT-End --> or <!-- DNT-Start -->FALSE<!-- DNT-End --></entry>
           </row>
 
           <row>
-            <entry>Greater Than<indexterm>
+            <entry><!-- DNT-Start -->Greater Than<indexterm>
                 <primary>Greater Than</primary>
-              </indexterm></entry>
+              </indexterm><!-- DNT-End --></entry>
 
             <entry>&gt;</entry>
 
-            <entry>returns TRUE or FALSE</entry>
+            <entry>returns <!-- DNT-Start -->TRUE<!-- DNT-End --> or <!-- DNT-Start -->FALSE<!-- DNT-End --></entry>
           </row>
 
           <row>
-            <entry>Less Than or Equal <indexterm>
+            <entry><!-- DNT-Start -->Less Than or Equal <indexterm>
                 <primary>Less or Equal</primary>
-              </indexterm></entry>
+              </indexterm><!-- DNT-End --></entry>
 
             <entry>&lt;=</entry>
 
-            <entry>returns TRUE or FALSE</entry>
+            <entry>returns <!-- DNT-Start -->TRUE<!-- DNT-End --> or <!-- DNT-Start -->FALSE<!-- DNT-End --></entry>
           </row>
 
           <row>
-            <entry>Greater Than or Equal<indexterm>
+            <entry><!-- DNT-Start -->Greater Than or Equal<indexterm>
                 <primary>Greater or Equal</primary>
-              </indexterm></entry>
+              </indexterm><!-- DNT-End --></entry>
 
             <entry>&gt;=</entry>
 
-            <entry>returns TRUE or FALSE</entry>
+            <entry>returns <!-- DNT-Start -->TRUE<!-- DNT-End --> or <!-- DNT-Start -->FALSE<!-- DNT-End --></entry>
           </row>
 
           <row>
-            <entry>Equivalence Comparison<indexterm>
+            <entry><!-- DNT-Start -->Equivalence Comparison<indexterm>
                 <primary>Equivalence Comparison</primary>
-              </indexterm></entry>
+              </indexterm><!-- DNT-End --></entry>
 
             <entry>&lt;=&gt;</entry>
 
@@ -312,7 +312,7 @@
     <para>The Greater Than or Equal operator <emphasis
     role="underline">must</emphasis> have the Greater Than (&gt;) sign first.
     For the expression a &lt;=&gt; b, the Equivalence Comparison operator
-    returns -1 if a&lt;b, 0 if a=b, and 1 if a&gt;b. When STRINGs are compared
+    returns -1 if a&lt;b, 0 if a=b, and 1 if a&gt;b. When <!-- DNT-Start -->STRINGs<!-- DNT-End --> are compared
     for equivalence, trailing spaces are ignored.</para>
   </sect2>
 </sect1>

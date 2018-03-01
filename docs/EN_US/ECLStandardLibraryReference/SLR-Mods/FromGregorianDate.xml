@@ -2,14 +2,14 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="FromGregorianDate">
-  <title><emphasis role="bold">FromGregorianDate</emphasis></title>
+  <!-- DNT-Start --><title><emphasis role="bold">FromGregorianDate</emphasis></title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Date.FromGregorianDate<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.Date.FromGregorianDate<indexterm>
       <primary>STD.Date.FromGregorianDate</primary>
     </indexterm><indexterm>
       <primary>Date.FromGregorianDate</primary>
     </indexterm>(</emphasis> <emphasis>date</emphasis> <emphasis
-  role="bold">)</emphasis></para>
+  role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -19,15 +19,15 @@
 
       <tbody>
         <row>
-          <entry><emphasis>date</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>date</emphasis><!-- DNT-End --></entry>
 
           <entry>An Date_t value.</entry>
         </row>
 
         <row>
-          <entry>Return:</entry>
+          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-          <entry>FromGregorianDate returns an UNSIGNED4 value.</entry>
+          <entry>FromGregorianDate returns an <!-- DNT-Start -->UNSIGNED<!-- DNT-End -->4 value.</entry>
         </row>
       </tbody>
     </tgroup>
@@ -35,18 +35,18 @@
 
   <para>The <emphasis role="bold">FromGregorianDate</emphasis> function returns
   a Days_t value from the <emphasis>date</emphasis> parameter
-  representing the number days since 31st December 1BC in the Gregorian
-  calendar (see The Calendar FAQ by Claus Tondering at
+  representing the number days since 31st December 1<!-- DNT-Start -->BC<!-- DNT-End --> in the Gregorian
+  calendar (see The Calendar <!-- DNT-Start -->FAQ<!-- DNT-End --> by Claus Tondering at
   http://www.tondering.dk/claus/calendar.html).</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">IMPORT STD;
+  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 UNSIGNED4  MyDate  := 20120101;  
   
 D := STD.Date.FromGregorianDate(MyDate);
     //D contains 734503
-  </programlisting>
+  </programlisting><!-- DNT-End -->
 
   <para></para>
 </sect1>

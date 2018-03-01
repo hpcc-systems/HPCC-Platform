@@ -2,40 +2,40 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SORT">
-  <title>SORT</title>
+  <!-- DNT-Start --><title>SORT</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">SORT<indexterm>
-      <primary>SORT</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->SORT<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->SORT<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>SORT function</primary>
+      <primary><!-- DNT-Start -->SORT<!-- DNT-End --> function</primary>
     </indexterm>(</emphasis><emphasis>recordset,value </emphasis><emphasis
   role="bold">[</emphasis><emphasis>, </emphasis><emphasis
-  role="bold">JOINED<indexterm>
-      <primary>JOINED</primary>
+  role="bold"><!-- DNT-Start -->JOINED<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->JOINED<!-- DNT-End --></primary>
     </indexterm>(</emphasis><emphasis> joinedset </emphasis><emphasis
   role="bold">)][</emphasis><emphasis>, </emphasis><emphasis
-  role="bold">SKEW<indexterm>
-      <primary>SKEW</primary>
+  role="bold"><!-- DNT-Start -->SKEW<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->SKEW<!-- DNT-End --></primary>
     </indexterm>(</emphasis><emphasis> limit </emphasis><emphasis
   role="bold">[</emphasis><emphasis>,target</emphasis><emphasis
   role="bold">]</emphasis><emphasis> </emphasis><emphasis
   role="bold">)]</emphasis><emphasis role="bold"> [</emphasis><emphasis>,
-  </emphasis><emphasis role="bold">THRESHOLD<indexterm>
-      <primary>THRESHOLD</primary>
+  </emphasis><emphasis role="bold"><!-- DNT-Start -->THRESHOLD<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->THRESHOLD<!-- DNT-End --></primary>
     </indexterm>( </emphasis><emphasis>size</emphasis><emphasis role="bold">
   )]</emphasis><emphasis role="bold">[</emphasis><emphasis>,
-  </emphasis><emphasis role="bold">LOCAL<indexterm>
-      <primary>LOCAL</primary>
+  </emphasis><emphasis role="bold"><!-- DNT-Start -->LOCAL<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->LOCAL<!-- DNT-End --></primary>
     </indexterm>] [</emphasis><emphasis>,</emphasis><emphasis
-  role="bold">FEW<indexterm>
-      <primary>FEW</primary>
-    </indexterm>]</emphasis><emphasis role="bold"> [, STABLE<indexterm>
-      <primary>STABLE</primary>
+  role="bold"><!-- DNT-Start -->FEW<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->FEW<!-- DNT-End --></primary>
+    </indexterm>]</emphasis><emphasis role="bold"> [, <!-- DNT-Start -->STABLE<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STABLE<!-- DNT-End --></primary>
     </indexterm> [ ( </emphasis><emphasis>algorithm</emphasis><emphasis
-  role="bold"> )] | UNSTABLE<indexterm>
-      <primary>UNSTABLE</primary>
+  role="bold"> )] | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->UNSTABLE<!-- DNT-End --></primary>
     </indexterm> [ ( </emphasis><emphasis>algorithm</emphasis><emphasis
-  role="bold"> )] ] </emphasis> <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+  role="bold"> )] ] </emphasis> <emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -45,7 +45,7 @@
 
         <tbody>
           <row>
-            <entry><emphasis>recordset</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>recordset</emphasis><!-- DNT-End --></entry>
 
             <entry>The set of records to process. This may be the name of a
             dataset or a record set derived from some filter condition, or any
@@ -53,20 +53,20 @@
           </row>
 
           <row>
-            <entry><emphasis>value</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>value</emphasis><!-- DNT-End --></entry>
 
             <entry>A comma-delimited list of expressions or key fields in the
             recordset on which to sort, with the leftmost being the most
             significant sort criteria. A leading minus sign (-) indicates a
             descending-order sort on that element. You may have multiple value
             parameters to indicate sorts within sorts. You may use the keyword
-            RECORD (or WHOLE RECORD) to indicate an ascending sort on all
-            fields, and/or you may use the keyword EXCEPT to list non-sort
+            <!-- DNT-Start -->RECORD<!-- DNT-End --> (or <!-- DNT-Start -->WHOLE<!-- DNT-End --> <!-- DNT-Start -->RECORD<!-- DNT-End -->) to indicate an ascending sort on all
+            fields, and/or you may use the keyword <!-- DNT-Start -->EXCEPT<!-- DNT-End --> to list non-sort
             fields in the recordset.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">JOINED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">JOINED</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Indicates this sort will use the same
             radix-points as already used by the <emphasis>joinedset</emphasis>
@@ -78,14 +78,14 @@
           </row>
 
           <row>
-            <entry><emphasis>joinedset</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>joinedset</emphasis><!-- DNT-End --></entry>
 
             <entry>A set of records that has been previously sorted by the
             same value parameters as the recordset.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">SKEW</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">SKEW</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Indicates that you know the data is not spread
             evenly across nodes (is skewed) and you choose to override the
@@ -94,7 +94,7 @@
           </row>
 
           <row>
-            <entry><emphasis>limit</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>limit</emphasis><!-- DNT-End --></entry>
 
             <entry>A value between zero (0) and one (1.0 = 100%) indicating
             the maximum percentage of skew to allow before the job fails (the
@@ -102,7 +102,7 @@
           </row>
 
           <row>
-            <entry><emphasis>target</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>target</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. A value between zero (0) and one (1.0 = 100%)
             indicating the desired maximum percentage of skew to allow (the
@@ -110,48 +110,48 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">THRESHOLD</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">THRESHOLD</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Indicates the minimum size for a single part of
-            the recordset before the SKEW limit is enforced.</entry>
+            the recordset before the <!-- DNT-Start -->SKEW<!-- DNT-End --> limit is enforced.</entry>
           </row>
 
           <row>
-            <entry><emphasis>size</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>size</emphasis><!-- DNT-End --></entry>
 
             <entry>An integer value indicating the minimum number of bytes for
             a single part.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">LOCAL</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the operation is performed on each node
             independently, without requiring interaction with all other nodes
             to acquire data; the operation maintains the distribution of any
-            previous DISTRIBUTE. An error occurs if the recordset has been
-            GROUPed.</entry>
+            previous <!-- DNT-Start -->DISTRIBUTE<!-- DNT-End -->. An error occurs if the recordset has been
+            <!-- DNT-Start -->GROUPed<!-- DNT-End -->.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">FEW</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">FEW</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies that few records will be sorted. This
-            prevents spilling the SORT to disk if another resource-intensive
+            prevents spilling the <!-- DNT-Start -->SORT<!-- DNT-End --> to disk if another resource-intensive
             activity is executing concurrently.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">STABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies a stable sort--duplicates output in the
             same order they were in the input. This is the default if neither
-            STABLE nor UNSTABLE sorting is specified. Ignored if not supported
+            <!-- DNT-Start -->STABLE<!-- DNT-End --> nor <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> sorting is specified. Ignored if not supported
             by the target platform.</entry>
           </row>
 
           <row>
-            <entry><emphasis>algorithm</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>algorithm</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. A string constant that specifies the sorting
             algorithm to use (see the list of valid values below). If omitted,
@@ -160,69 +160,69 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies an unstable sort--duplicates may output
             in any order. Ignored if not supported by the target
             platform.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the output record order is not significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the significance of the output record order.</entry>
           </row>
           <row>
-            <entry><emphasis>bool</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
 
             <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity in parallel.</entry>
           </row>
           <row>
-            <entry><emphasis>numthreads</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Override the algorithm used for this activity.</entry>
           </row>
           <row>
-            <entry><emphasis>name</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>SORT returns a set of records.</entry>
+            <entry><!-- DNT-Start -->SORT<!-- DNT-End --> returns a set of records.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">SORT </emphasis>function orders the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->SORT<!-- DNT-End --> </emphasis>function orders the
   <emphasis>recordset</emphasis> according to the <emphasis>values</emphasis>
-  specified, and (if LOCAL Is not specified) partitions the result such that
+  specified, and (if <!-- DNT-Start -->LOCAL<!-- DNT-End --> Is not specified) partitions the result such that
   all records with the same <emphasis>values</emphasis> are on the same node.
-  SORT is usually used to produce the record sets operated on by the DEDUP,
-  GROUP, and ROLLUP function<indexterm>
-      <primary>ROLLUP function</primary>
+  <!-- DNT-Start -->SORT<!-- DNT-End --> is usually used to produce the record sets operated on by the <!-- DNT-Start -->DEDUP<!-- DNT-End -->,
+  <!-- DNT-Start -->GROUP<!-- DNT-End -->, and <!-- DNT-Start -->ROLLUP<!-- DNT-End --> function<indexterm>
+      <primary><!-- DNT-Start -->ROLLUP<!-- DNT-End --> function</primary>
     </indexterm>s, so that those functions may operate optimally. Sorting
   final output is, of course, another common use.</para>
 
   <sect2 id="Sorting_Algorithms">
-    <title>Sorting Algorithms</title>
+    <!-- DNT-Start --><title>Sorting Algorithms</title><!-- DNT-End -->
 
     <para>There are three sort algorithms<indexterm>
         <primary>sort algorithms</primary>
@@ -244,13 +244,13 @@
 
           <tbody>
             <row>
-              <entry><emphasis role="bold">Thor<indexterm>
+              <entry><!-- DNT-Start --><emphasis role="bold">Thor<indexterm>
                   <primary>Thor</primary>
-                </indexterm></emphasis></entry>
+                </indexterm></emphasis><!-- DNT-End --></entry>
 
               <entry>Supports stable and unstable quicksort--the sort will
               spill to disk, if necessary. Parallel sorting happens
-              automatically on clusters with multiple-CPU or multi-CPU-core
+              automatically on clusters with multiple-<!-- DNT-Start -->CPU<!-- DNT-End --> or multi-<!-- DNT-Start -->CPU<!-- DNT-End -->-core
               nodes.</entry>
             </row>
 
@@ -261,21 +261,21 @@
             </row>
 
             <row>
-              <entry><emphasis role="bold">hthor<indexterm>
+              <entry><!-- DNT-Start --><emphasis role="bold">hthor<indexterm>
                   <primary>hthor</primary>
-                </indexterm></emphasis></entry>
+                </indexterm></emphasis><!-- DNT-End --></entry>
 
               <entry>Supports stable and unstable quicksort, stable and
               unstable insertionsort, and stable heapsort--the sort will spill
               to disk, if necessary. Stable heapsort is the default if both
-              STABLE and UNSTABLE are omitted or if STABLE is present without
+              <!-- DNT-Start -->STABLE<!-- DNT-End --> and <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> are omitted or if <!-- DNT-Start -->STABLE<!-- DNT-End --> is present without
               an algorithm parameter.</entry>
             </row>
 
             <row>
               <entry></entry>
 
-              <entry>Unstable quicksort is the default if UNSTABLE is present
+              <entry>Unstable quicksort is the default if <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> is present
               without an algorithm parameter.</entry>
             </row>
 
@@ -286,9 +286,9 @@
             </row>
 
             <row>
-              <entry><emphasis role="bold">Roxie<indexterm>
+              <entry><!-- DNT-Start --><emphasis role="bold">Roxie<indexterm>
                   <primary>Roxie</primary>
-                </indexterm></emphasis></entry>
+                </indexterm></emphasis><!-- DNT-End --></entry>
 
               <entry>Supports unstable quicksort, stable insertionsort, and
               stable heapsort--the sort does not spill to disk.</entry>
@@ -297,8 +297,8 @@
             <row>
               <entry></entry>
 
-              <entry>Stable heapsort is the default if both STABLE and
-              UNSTABLE are omitted or if STABLE is present without an
+              <entry>Stable heapsort is the default if both <!-- DNT-Start -->STABLE<!-- DNT-End --> and
+              <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> are omitted or if <!-- DNT-Start -->STABLE<!-- DNT-End --> is present without an
               algorithm parameter. The insertionsort implements blocking and
               heapmerging when there are more than 1024 rows.</entry>
             </row>
@@ -308,63 +308,63 @@
   </sect2>
 
   <sect2 id="Quick_Sort">
-    <title>Quick Sort</title>
+    <!-- DNT-Start --><title>Quick Sort</title><!-- DNT-End -->
 
     <para>A quick sort does nothing until it receives the last row of its
     input, and it produces no output until the sort is complete, so the time
     required to perform the sort cannot overlap with either the time to
     process its input or to produce its output. Under normal circumstances,
-    this type of sort is expected to take the least CPU time. There are rare
+    this type of sort is expected to take the least <!-- DNT-Start -->CPU<!-- DNT-End --> time. There are rare
     exceptional cases where it can perform badly (the famous "median-of-three
     killer" is an example) but you are very unlikely to hit these by
     chance.</para>
 
-    <para>On a Thor cluster where each node has multiple CPUs or CPU cores, it
+    <para>On a Thor cluster where each node has multiple CPUs or <!-- DNT-Start -->CPU<!-- DNT-End --> cores, it
     is possible to split up the quick sort problem and run sections of the
     work in parallel. This happens automatically if the hardware supports it.
-    Doing this does not improve the amount of actual CPU time used (in fact,
+    Doing this does not improve the amount of actual <!-- DNT-Start -->CPU<!-- DNT-End --> time used (in fact,
     it fractionally increases it because of the overhead of splitting the
     task) but the overall time required to perform the sort operation is
-    significantly reduced. On a cluster with dual CPU/core nodes it should
+    significantly reduced. On a cluster with dual <!-- DNT-Start -->CPU<!-- DNT-End -->/core nodes it should
     only take about half the time, only about a quarter of the time on a
     cluster with quad-processor nodes, etc.</para>
   </sect2>
 
   <sect2 id="Insertion_Sort">
-    <title>Insertion Sort</title>
+    <!-- DNT-Start --><title>Insertion Sort</title><!-- DNT-End -->
 
     <para>An insertion sort does all its work while it is receiving its input.
     Note that the algorithm used performs a binary search for insertion
     (unlike the classic insertion sort). Under normal circumstances, this sort
-    is expected to produce the worst CPU time. In the case where the input
-    source is slow but not CPU-bound (for example, a slow remote data read or
-    input from a slow SOAPCALL), the time required to perform the sort is
+    is expected to produce the worst <!-- DNT-Start -->CPU<!-- DNT-End --> time. In the case where the input
+    source is slow but not <!-- DNT-Start -->CPU<!-- DNT-End -->-bound (for example, a slow remote data read or
+    input from a slow <!-- DNT-Start -->SOAPCALL<!-- DNT-End -->), the time required to perform the sort is
     entirely overlapped with the input.</para>
   </sect2>
 
   <sect2 id="Heap_Sort">
-    <title>Heap Sort</title>
+    <!-- DNT-Start --><title>Heap Sort</title><!-- DNT-End -->
 
     <para>A heap sort does about half its work while receiving input, and the
     other half while producing output. Under normal circumstances, it is
-    expected to take more CPU time than a quick sort, but less than an
+    expected to take more <!-- DNT-Start -->CPU<!-- DNT-End --> time than a quick sort, but less than an
     insertion sort. Therefore, in queries where the input source is slow but
-    not CPU-bound, half of the time taken to perform the sort is overlapped
+    not <!-- DNT-Start -->CPU<!-- DNT-End -->-bound, half of the time taken to perform the sort is overlapped
     with the input. Similarly, in queries where the output processing is slow
-    but not CPU-bound, the other half of the time taken to perform the sort is
+    but not <!-- DNT-Start -->CPU<!-- DNT-End -->-bound, the other half of the time taken to perform the sort is
     overlapped with the output. Also, if the sort processing terminates
     without consuming all of its input, then some of the work can be avoided
     entirely (about half in the limiting case where no output is consumed),
-    saving both CPU and total time.</para>
+    saving both <!-- DNT-Start -->CPU<!-- DNT-End --> and total time.</para>
 
-    <para>In some cases, such as when a SORT is quickly followed by a CHOOSEN,
+    <para>In some cases, such as when a <!-- DNT-Start -->SORT<!-- DNT-End --> is quickly followed by a <!-- DNT-Start -->CHOOSEN<!-- DNT-End -->,
     the compiler will be able to spot that only a part of the sort's output
     will be required and replace it with a more efficient implementation. This
     will not be true in the general case.</para>
   </sect2>
 
   <sect2 id="Stable_vs_Unstable">
-    <title>Stable vs. Unstable</title>
+    <!-- DNT-Start --><title>Stable vs. Unstable</title><!-- DNT-End -->
 
     <para>A stable sort is required when the input might contain duplicates
     (that is, records that have the same values for all the sort fields) and
@@ -380,16 +380,16 @@
   </sect2>
 
   <sect2 id="Performance_Considerations">
-    <title>Performance Considerations</title>
+    <!-- DNT-Start --><title>Performance Considerations</title><!-- DNT-End -->
 
     <para>The following discussion applies principally to local sorts, since
     Thor is the only platform that performs global sorts, and Thor does not
     provide a choice of algorithms.</para>
 
     <sect3 id="CPU_time_vs_Total_time">
-      <title>CPU time vs. Total time</title>
+      <!-- DNT-Start --><title>CPU time vs. Total time</title><!-- DNT-End -->
 
-      <para>In some situations a query might take the least CPU time using a
+      <para>In some situations a query might take the least <!-- DNT-Start -->CPU<!-- DNT-End --> time using a
       quick sort, but it might take the most total time because the sort time
       cannot be overlapped with the time taken by an I/O-heavy task before or
       after it. On a system where only one subgraph or query is being run at
@@ -397,18 +397,18 @@
       extra time is simply wasted. On a system where many subgraphs or queries
       are running concurrently (such as a busy Roxie) there is a trade-off,
       because minimizing total time will minimize the latency for the
-      particular query, but minimizing CPU time will maximize the throughput
+      particular query, but minimizing <!-- DNT-Start -->CPU<!-- DNT-End --> time will maximize the throughput
       of the whole system.</para>
 
       <para>When considering the parallel quick sort, we can see that it
       should significantly reduce the latency for this query; but that if the
       other CPUs/cores were in use for other jobs (such as when dual Thors are
-      running on the same dual CPU/core machines) it will not increase (and
+      running on the same dual <!-- DNT-Start -->CPU<!-- DNT-End -->/core machines) it will not increase (and
       will slightly decrease) the throughput for the machines.</para>
     </sect3>
 
     <sect3 id="Spilling_to_disk">
-      <title>Spilling to disk</title>
+      <!-- DNT-Start --><title>Spilling to disk</title><!-- DNT-End -->
 
       <para>Normally, records are sorted in memory. When there is not enough
       memory, spilling to disk may occur. This means that blocks of records
@@ -423,30 +423,30 @@
     </sect3>
 
     <sect3 id="How_sorting_affects_JOINs">
-      <title>How sorting affects JOINs</title>
+      <!-- DNT-Start --><title>How sorting affects JOINs</title><!-- DNT-End -->
 
-      <para>A normal JOIN operation requires that both its inputs be sorted by
+      <para>A normal <!-- DNT-Start -->JOIN<!-- DNT-End --> operation requires that both its inputs be sorted by
       the fields used in the equality portion of the match condition. The
       supercomputer automatically performs these sorts "under the covers"
       unless it knows that an input is already sorted correctly. Therefore,
       some of the considerations that apply to the consideration of the
-      algorithm for a SORT can also apply to a JOIN. To take advantage of
-      these alternate sorting algorithms in a JOIN context you need to SORT
-      the input dataset(s) the way you want, then specify the NOSORT option on
-      the JOIN.</para>
+      algorithm for a <!-- DNT-Start -->SORT<!-- DNT-End --> can also apply to a <!-- DNT-Start -->JOIN<!-- DNT-End -->. To take advantage of
+      these alternate sorting algorithms in a <!-- DNT-Start -->JOIN<!-- DNT-End --> context you need to <!-- DNT-Start -->SORT<!-- DNT-End -->
+      the input dataset(s) the way you want, then specify the <!-- DNT-Start -->NOSORT<!-- DNT-End --> option on
+      the <!-- DNT-Start -->JOIN<!-- DNT-End -->.</para>
 
-      <para>Note well that no sorting is required for JOIN operations using
-      the KEYED (or half-keyed), LOOKUP, or ALL options. Under some
+      <para>Note well that no sorting is required for <!-- DNT-Start -->JOIN<!-- DNT-End --> operations using
+      the <!-- DNT-Start -->KEYED<!-- DNT-End --> (or half-keyed), <!-- DNT-Start -->LOOKUP<!-- DNT-End -->, or <!-- DNT-Start -->ALL<!-- DNT-End --> options. Under some
       circumstances (usually in Roxie queries or in those cases where the
       optimizer thinks there are few records in the right input dataset) the
-      supercomputer's optimizer will automatically perform a LOOKUP or ALL
+      supercomputer's optimizer will automatically perform a <!-- DNT-Start -->LOOKUP<!-- DNT-End --> or <!-- DNT-Start -->ALL<!-- DNT-End -->
       join instead of a regular join. This means that, if you have done your
-      own SORT and specified the NOSORT option on the JOIN, that you will be
+      own <!-- DNT-Start -->SORT<!-- DNT-End --> and specified the <!-- DNT-Start -->NOSORT<!-- DNT-End --> option on the <!-- DNT-Start -->JOIN<!-- DNT-End -->, that you will be
       defeating this possible optimization.</para>
 
       <para>Example:</para>
 
-      <programlisting>MySet1 := SORT(Person,-last_name, first_name);
+      <!-- DNT-Start --><programlisting>MySet1 := SORT(Person,-last_name, first_name);
 // descending last name, ascending first name
 
 MySet2 := SORT(Person,RECORD,EXCEPT per_sex,per_marital_status);
@@ -462,11 +462,11 @@ MySet4 := SORT(Person,last_name, first_name,UNSTABLE('heapsort'));
 
 MySet5 := SORT(Person,last_name,first_name,STABLE('insertionsort'));
 // stable insertion sort, not supported by Thor
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-      <para>See Also: <link linkend="SORTED">SORTED</link>, <link
-      linkend="RANK">RANK</link>, <link linkend="RANKED">RANKED</link>, <link
-      linkend="EXCEPT">EXCEPT</link></para>
+      <para>See Also: <link linkend="SORTED"><!-- DNT-Start -->SORTED<!-- DNT-End --></link>, <link
+      linkend="RANK"><!-- DNT-Start -->RANK<!-- DNT-End --></link>, <link linkend="RANKED"><!-- DNT-Start -->RANKED<!-- DNT-End --></link>, <link
+      linkend="EXCEPT"><!-- DNT-Start -->EXCEPT<!-- DNT-End --></link></para>
     </sect3>
   </sect2>
 </sect1>

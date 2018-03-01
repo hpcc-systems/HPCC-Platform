@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Name">
-  <title>Name</title>
+  <!-- DNT-Start --><title>Name</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.System.Job.Name<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.System.Job.Name<indexterm>
       <primary>STD.System.Job.Name</primary>
     </indexterm> <indexterm>
       <primary>System.Job.Name</primary>
@@ -13,7 +13,7 @@
     </indexterm> <indexterm>
       <primary>Name</primary>
     </indexterm>(</emphasis> <emphasis> </emphasis> <emphasis
-  role="bold">)</emphasis></para>
+  role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -23,18 +23,18 @@
 
       <tbody>
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>Name returns a VARSTRING value.</entry>
+          <entry><!-- DNT-Start -->Name<!-- DNT-End --> returns a <!-- DNT-Start -->VARSTRING<!-- DNT-End --> value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">Name </emphasis>function returns the name of
+  <para>The <emphasis role="bold"><!-- DNT-Start -->Name<!-- DNT-End --> </emphasis>function returns the name of
   the workunit.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">A := STD.System.Job.Name();</programlisting>
+  <!-- DNT-Start --><programlisting format="linespecific">A := STD.System.Job.Name();</programlisting><!-- DNT-End -->
 </sect1>

@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="WUIDonDate">
-  <title>WUIDonDate</title>
+  <!-- DNT-Start --><title>WUIDonDate</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.System.Workunit.WUIDonDate <indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.System.Workunit.WUIDonDate <indexterm>
       <primary>STD.System.Workunit.WUIDonDate</primary>
     </indexterm> <indexterm>
       <primary>System.Workunit.WUIDonDate</primary>
@@ -13,7 +13,7 @@
     </indexterm> <indexterm>
       <primary>WUIDonDate</primary>
     </indexterm> (</emphasis> <emphasis> year, month, day, hour, minute
-  </emphasis> <emphasis role="bold"> )</emphasis></para>
+  </emphasis> <emphasis role="bold"> )</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -23,52 +23,52 @@
 
       <tbody>
         <row>
-          <entry><emphasis>year</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>year</emphasis><!-- DNT-End --></entry>
 
           <entry>An unsigned integer containing the year value.</entry>
         </row>
 
         <row>
-          <entry><emphasis>month</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>month</emphasis><!-- DNT-End --></entry>
 
           <entry>An unsigned integer containing the month value.</entry>
         </row>
 
         <row>
-          <entry><emphasis>day</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>day</emphasis><!-- DNT-End --></entry>
 
           <entry>An unsigned integer containing the day value.</entry>
         </row>
 
         <row>
-          <entry><emphasis>hour</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>hour</emphasis><!-- DNT-End --></entry>
 
           <entry>An unsigned integer containing the hour value.</entry>
         </row>
 
         <row>
-          <entry><emphasis>minute</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>minute</emphasis><!-- DNT-End --></entry>
 
           <entry>An unsigned integer containing the minute value.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>WUIDonDate returns a VARSTRING value.</entry>
+          <entry><!-- DNT-Start -->WUIDonDate<!-- DNT-End --> returns a <!-- DNT-Start -->VARSTRING<!-- DNT-End --> value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">WUIDonDate </emphasis>function returns a
+  <para>The <emphasis role="bold"><!-- DNT-Start -->WUIDonDate<!-- DNT-End --> </emphasis>function returns a
   valid WorkUnit IDentifier for a workunit that meets the passed
   parameters.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">lowwuid  := STD.System.Workunit.WUIDonDate(2008,02,13,13,00);
+  <!-- DNT-Start --><programlisting format="linespecific">lowwuid  := STD.System.Workunit.WUIDonDate(2008,02,13,13,00);
 highwuid := STD.System.Workunit.WUIDonDate(2008,02,13,14,00);
 OUTPUT(STD.System.Workunit.WorkunitList(lowwuid,highwuid));
- //returns a list of workunits between 1 &amp; 2 PM on 2/13/08</programlisting>
+ //returns a list of workunits between 1 &amp; 2 PM on 2/13/08</programlisting><!-- DNT-End -->
 </sect1>

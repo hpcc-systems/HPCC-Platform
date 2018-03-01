@@ -2,21 +2,21 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Extract">
-  <title>Extract</title>
+  <!-- DNT-Start --><title>Extract</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Str.Extract<indexterm>
-      <primary>STD.Str.Extract</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->Extract<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->Extract<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Str.Extract</primary>
+      <primary>Str.<!-- DNT-Start -->Extract<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Extract</primary>
+      <primary><!-- DNT-Start -->Extract<!-- DNT-End --></primary>
     </indexterm>(</emphasis> <emphasis>source, instance</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
-  <para><emphasis role="bold">STD.Uni.Extract<indexterm>
-      <primary>STD.Uni.Extract</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->Extract<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->Extract<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Uni.Extract</primary>
+      <primary>Uni.<!-- DNT-Start -->Extract<!-- DNT-End --></primary>
     </indexterm>(</emphasis> <emphasis>source, instance</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
@@ -28,36 +28,36 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>source</emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing a comma-delimited list of data.</entry>
         </row>
 
         <row>
-          <entry><emphasis>instance </emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>instance </emphasis><!-- DNT-End --></entry>
 
           <entry>An integer specifying the ordinal position of the data item
           within the <emphasis>source</emphasis> to return.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>Extract returns either a STRING or UNICODE value, as
+          <entry><!-- DNT-Start -->Extract<!-- DNT-End --> returns either a <!-- DNT-Start -->STRING<!-- DNT-End --> or <!-- DNT-Start -->UNICODE<!-- DNT-End --> value, as
           appropriate.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">Extract </emphasis>function returns the data
+  <para>The <emphasis role="bold"><!-- DNT-Start -->Extract<!-- DNT-End --> </emphasis>function returns the data
   at the ordinal position specified by the <emphasis>instance
   </emphasis>within the comma-delimited <emphasis>source</emphasis>
   string.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">//all these examples result in 'Success'
+  <!-- DNT-Start --><programlisting format="linespecific">//all these examples result in 'Success'
    
 A := IF(STD.Str.Extract('AB,CD,,G,E',0) = '',
    'Success',
@@ -86,5 +86,5 @@ F := IF(STD.Str.Extract('AB,CD,,G,E',5) = 'E',
 G := IF(STD.Str.Extract('AB,CD,,G,E',6) = '',
    'Success',
    'Failure -7');
-</programlisting>
+</programlisting><!-- DNT-End -->
 </sect1>

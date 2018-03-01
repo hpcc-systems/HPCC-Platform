@@ -2,9 +2,9 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_boolean">
-  <title>boolean<indexterm>
+  <!-- DNT-Start --><title>boolean<indexterm>
       <primary>boolean</primary>
-    </indexterm>bool </title>
+    </indexterm>bool </title><!-- DNT-End -->
 
   <para><indexterm>
       <primary>bool</primary>
@@ -13,6 +13,6 @@
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <programlisting>boolean includeFlag; 
-bool includeMore;</programlisting>
+  <!-- DNT-Start --><programlisting>boolean includeFlag; 
+bool includeMore;</programlisting><!-- DNT-End -->
 </sect1>

@@ -4,21 +4,21 @@
 <chapter id="configure-and-deploy-security-manager-plugin">
   <title role="nbrk">Configure and Deploy the Security Manager Plugin</title>
 
-  <para>The following sections detail the process of configuring your HPCC
+  <para>The following sections detail the process of configuring your <!-- DNT-Start -->HPCC<!-- DNT-End -->
   system to use the Security Manager Plugin.</para>
 
   <sect1 id="how-to-configure-an-existing-security-manager-plugin">
-    <title>How to Configure a Security Manager Plugin</title>
+    <!-- DNT-Start --><title>How to Configure a Security Manager Plugin</title><!-- DNT-End -->
 
     <para>Once the plugin has been installed, the plugin can be configured
-    onto the HPCC platform using Configuration Manager.</para>
+    onto the <!-- DNT-Start -->HPCC<!-- DNT-End --> platform using Configuration Manager.</para>
 
     <para><orderedlist>
         <listitem>
-          <para>Stop all HPCC Components.</para>
+          <para>Stop all <!-- DNT-Start -->HPCC<!-- DNT-End --> Components.</para>
 
           <para>Verify that they are stopped. You can use a single command,
-          such as : <programlisting>  sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
+          such as : <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
         </listitem>
 
         <listitem>
@@ -26,10 +26,10 @@
           interface.</para>
 
           <para>Use the url
-          http://<emphasis>&lt;configmgr_IP_Address&gt;</emphasis>:8015</para>
+          http://<emphasis>&lt;configmgr_<!-- DNT-Start -->IP<!-- DNT-End -->_Address&gt;</emphasis>:8015</para>
 
-          <para>where <emphasis>&lt;configmgr_IP_Address&gt;</emphasis> is the
-          IP address of the node running Configuration Manager.</para>
+          <para>where <emphasis>&lt;configmgr_<!-- DNT-Start -->IP<!-- DNT-End -->_Address&gt;</emphasis> is the
+          <!-- DNT-Start -->IP<!-- DNT-End --> address of the node running Configuration Manager.</para>
         </listitem>
 
         <listitem>
@@ -38,7 +38,7 @@
         </listitem>
 
         <listitem>
-          <para>Select the appropriate XML configuration file.</para>
+          <para>Select the appropriate <!-- DNT-Start -->XML<!-- DNT-End --> configuration file.</para>
 
           <para><emphasis role="strong">Note:</emphasis> Configuration Manager
           never works on the active configuration file. After you finish
@@ -108,7 +108,7 @@
         <listitem>
           <?dbfo keep-together="always"?>
 
-          <para>Associate the Security Manager Plugin with the ESP binding(s)
+          <para>Associate the Security Manager Plugin with the <!-- DNT-Start -->ESP<!-- DNT-End --> binding(s)
           <orderedlist numeration="loweralpha">
               <listitem>
                 <para>Click on the target Esp in the Navigator Pane on the
@@ -116,7 +116,7 @@
               </listitem>
 
               <listitem>
-                <para>Select the<emphasis role="bold"> ESP</emphasis>
+                <para>Select the<emphasis role="bold"> <!-- DNT-Start -->ESP<!-- DNT-End --></emphasis>
                 (Process) <emphasis role="bold">Service bindings</emphasis>
                 tab</para>
               </listitem>
@@ -167,7 +167,7 @@
       </orderedlist></para>
 
     <sect2 id="even-more-info">
-      <title>A video tutorial</title>
+      <!-- DNT-Start --><title>A video tutorial</title><!-- DNT-End -->
 
       <para>Need further information? Check out the following video tutorial
       demonstrating how to configure a security plugin.</para>

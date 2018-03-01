@@ -2,20 +2,20 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="StartSuperFileTransaction">
-  <title>StartSuperFileTransaction</title>
+  <!-- DNT-Start --><title>StartSuperFileTransaction</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.File.StartSuperFileTransaction<indexterm>
-      <primary>STD.File.StartSuperFileTransaction</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.File.<!-- DNT-Start -->StartSuperFileTransaction<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.File.<!-- DNT-Start -->StartSuperFileTransaction<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>File.StartSuperFileTransaction</primary>
+      <primary>File.<!-- DNT-Start -->StartSuperFileTransaction<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>StartSuperFileTransaction</primary>
+      <primary><!-- DNT-Start -->StartSuperFileTransaction<!-- DNT-End --></primary>
     </indexterm>(</emphasis> <emphasis> </emphasis> <emphasis
   role="bold">)</emphasis></para>
 
   <para>Return:<emphasis> </emphasis>Null.</para>
 
-  <para>The <emphasis role="bold">StartSuperFileTransaction
+  <para>The <emphasis role="bold"><!-- DNT-Start -->StartSuperFileTransaction<!-- DNT-End -->
   </emphasis>function begins a transaction frame for superfile maintenance.
   The transaction frame is terminated by calling the
   FinishSuperFileTransaction function. Within the transaction frame, multiple
@@ -30,5 +30,5 @@
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">STD.File.StartSuperFileTransaction();</programlisting>
+  <!-- DNT-Start --><programlisting format="linespecific">STD.File.StartSuperFileTransaction();</programlisting><!-- DNT-End -->
 </sect1>

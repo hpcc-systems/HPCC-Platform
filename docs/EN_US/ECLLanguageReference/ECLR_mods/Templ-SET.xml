@@ -2,10 +2,10 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_SET">
-  <title>#SET</title>
+  <!-- DNT-Start --><title>#SET</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">#SET<indexterm>
-      <primary>#SET</primary>
+  <para><emphasis role="bold">#<!-- DNT-Start -->SET<!-- DNT-End --><indexterm>
+      <primary>#<!-- DNT-Start -->SET<!-- DNT-End --></primary>
     </indexterm>( </emphasis><emphasis>symbol, expression </emphasis><emphasis
   role="bold">);</emphasis></para>
 
@@ -17,14 +17,14 @@
 
         <tbody>
           <row>
-            <entry><emphasis>symbol</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>symbol</emphasis><!-- DNT-End --></entry>
 
             <entry>The name of a previously declared user-defined
             symbol.</entry>
           </row>
 
           <row>
-            <entry><emphasis>expression</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
 
             <entry>The expression whose value to assign to the symbol.</entry>
           </row>
@@ -32,14 +32,14 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">#SET </emphasis>statement assigns the value
+  <para>The <emphasis role="bold">#<!-- DNT-Start -->SET<!-- DNT-End --> </emphasis>statement assigns the value
   of the <emphasis>expression</emphasis> to the <emphasis>symbol</emphasis>,
   overwriting any previous value the symbol had contained.</para>
 
   <para>Example:</para>
 
-  <programlisting>  #DECLARE(MySymbol); //declare a symbol named "MySymbol"
-  #SET(MySymbol,1);   //initialize MySymbol to 1 </programlisting>
+  <!-- DNT-Start --><programlisting>  #DECLARE(MySymbol); //declare a symbol named "MySymbol"
+  #SET(MySymbol,1);   //initialize MySymbol to 1 </programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="_DECLARE">#DECLARE</link>, <link linkend="_APPEND">#APPEND</link></para>
+  <para>See Also: <link linkend="_DECLARE">#<!-- DNT-Start -->DECLARE<!-- DNT-End --></link>, <link linkend="_APPEND">#<!-- DNT-Start -->APPEND<!-- DNT-End --></link></para>
 </sect1>

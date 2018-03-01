@@ -2,13 +2,13 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ORDERED">
-  <title>ORDERED</title>
+  <!-- DNT-Start --><title>ORDERED</title><!-- DNT-End -->
 
   <para><emphasis role="bold">[</emphasis><emphasis>attributename</emphasis>
-  :=<emphasis role="bold"> ] ORDERED<indexterm>
-      <primary>ORDERED</primary>
+  :=<emphasis role="bold"> ] <!-- DNT-Start -->ORDERED<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->ORDERED<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>ORDERED action</primary>
+      <primary><!-- DNT-Start -->ORDERED<!-- DNT-End --> action</primary>
     </indexterm>(</emphasis><emphasis> actionlist </emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -20,7 +20,7 @@
 
         <tbody>
           <row>
-            <entry><emphasis>attributename</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>attributename</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. The action name, which turns the action into an
             attribute definition, therefore not executed until the
@@ -28,32 +28,32 @@
           </row>
 
           <row>
-            <entry><emphasis>actionlist</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>actionlist</emphasis><!-- DNT-End --></entry>
 
             <entry>A comma-delimited list of the actions to execute in order.
-            These may be ECL actions or external actions.</entry>
+            These may be <!-- DNT-Start -->ECL<!-- DNT-End --> actions or external actions.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">ORDERED </emphasis>action executes the items
+  <para>The <emphasis role="bold"><!-- DNT-Start -->ORDERED<!-- DNT-End --> </emphasis>action executes the items
   in the <emphasis>actionlist</emphasis> in the order in which they appear in
   the <emphasis>actionlist</emphasis>. This is useful when a subsequent action
   requires the output of a precedent action. </para>
 
-  <para>It has the ordering requirements of SEQUENTIAL. This is most useful
+  <para>It has the ordering requirements of <!-- DNT-Start -->SEQUENTIAL<!-- DNT-End -->. This is most useful
   for ordering actions which do not have anything in common, for example,
   generating files and then sending email. If there is any chance of a shared
-  value which may change meaning, you should use SEQUENTIAL.</para>
+  value which may change meaning, you should use <!-- DNT-Start -->SEQUENTIAL<!-- DNT-End -->.</para>
 
-  <para>By definition, PERSIST on an attribute means the attribute is
-  evaluated outside of any given evaluation order. Therefore, ORDERED has no
-  effect on PERSISTed attributes.</para>
+  <para>By definition, <!-- DNT-Start -->PERSIST<!-- DNT-End --> on an attribute means the attribute is
+  evaluated outside of any given evaluation order. Therefore, <!-- DNT-Start -->ORDERED<!-- DNT-End --> has no
+  effect on <!-- DNT-Start -->PERSISTed<!-- DNT-End --> attributes.</para>
 
   <para>Example:</para>
 
-  <programlisting>Act1 :=
+  <!-- DNT-Start --><programlisting>Act1 :=
         OUTPUT(A_People,OutputFormat1,'//hold01/fred.out');
 Act2 :=
         OUTPUT(Person,{Person.per_first_name,Person.per_last_name})
@@ -64,9 +64,9 @@ Act2 := OUTPUT(Person,{Person.per_last_name})));
         actions
 ORDERED(Act1,PARALLEL(Act2,Act3));
 //executes Act1 alone, and then executes Act2 and Act3 together
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="PARALLEL_function">PARALLEL</link>, <link
-  linkend="PERSIST">PERSIST</link>, <link
-  linkend="SEQUENTIAL">SEQUENTIAL</link></para>
+  <para>See Also: <link linkend="PARALLEL_function"><!-- DNT-Start -->PARALLEL<!-- DNT-End --></link>, <link
+  linkend="PERSIST"><!-- DNT-Start -->PERSIST<!-- DNT-End --></link>, <link
+  linkend="SEQUENTIAL"><!-- DNT-Start -->SEQUENTIAL<!-- DNT-End --></link></para>
 </sect1>

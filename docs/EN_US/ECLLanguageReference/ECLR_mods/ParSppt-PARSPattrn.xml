@@ -2,13 +2,13 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="PARSE_Pattern_Value_Types">
-  <title>PARSE Pattern Value Types</title>
+  <!-- DNT-Start --><title>PARSE Pattern Value Types</title><!-- DNT-End -->
 
   <para><emphasis>There are three value types specifically designed and
   required to define parsing pattern attributes:</emphasis></para>
 
-  <para><emphasis role="bold">PATTERN </emphasis><indexterm>
-      <primary>PATTERN</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->PATTERN<!-- DNT-End --> </emphasis><indexterm>
+      <primary><!-- DNT-Start -->PATTERN<!-- DNT-End --></primary>
     </indexterm><emphasis>patternid </emphasis><emphasis role="bold">:=
   </emphasis><emphasis>parsepattern</emphasis><emphasis
   role="bold">;</emphasis></para>
@@ -21,29 +21,29 @@
 
       <tbody>
         <row>
-          <entry><emphasis>patternid</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>patternid</emphasis><!-- DNT-End --></entry>
 
           <entry>The attribute name of the pattern.</entry>
         </row>
 
         <row>
-          <entry><emphasis>parsepattern</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>parsepattern</emphasis><!-- DNT-End --></entry>
 
           <entry>The pattern, very similar to regular expressions. This may
-          contain other previously defined PATTERN attributes. See <emphasis
+          contain other previously defined <!-- DNT-Start -->PATTERN<!-- DNT-End --> attributes. See <emphasis
           role="bold">ParsePattern Definitions</emphasis> below.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">PATTERN </emphasis>value type defines a
+  <para>The <emphasis role="bold"><!-- DNT-Start -->PATTERN<!-- DNT-End --> </emphasis>value type defines a
   parsing expression very similar to regular expression<indexterm>
       <primary>regular expression</primary>
     </indexterm> patterns.</para>
 
-  <para><emphasis role="bold">TOKEN </emphasis><indexterm>
-      <primary>TOKEN</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->TOKEN<!-- DNT-End --> </emphasis><indexterm>
+      <primary><!-- DNT-Start -->TOKEN<!-- DNT-End --></primary>
     </indexterm><emphasis>tokenid </emphasis><emphasis role="bold">:=
   </emphasis><emphasis>parsepattern</emphasis><emphasis
   role="bold">;</emphasis></para>
@@ -56,16 +56,16 @@
 
       <tbody>
         <row>
-          <entry><emphasis>tokenid</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>tokenid</emphasis><!-- DNT-End --></entry>
 
           <entry>The attribute name of the token.</entry>
         </row>
 
         <row>
-          <entry><emphasis>parsepattern</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>parsepattern</emphasis><!-- DNT-End --></entry>
 
           <entry>The token pattern, very similar to regular expressions. This
-          may contain PATTERN attributes but no TOKEN or RULE attributes. See
+          may contain <!-- DNT-Start -->PATTERN<!-- DNT-End --> attributes but no <!-- DNT-Start -->TOKEN<!-- DNT-End --> or <!-- DNT-Start -->RULE<!-- DNT-End --> attributes. See
           <emphasis role="bold">ParsePattern Definitions</emphasis>
           below.</entry>
         </row>
@@ -73,13 +73,13 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">TOKEN </emphasis>value type defines a
-  parsing expression very similar to a PATTERN, but once matched, the parser
+  <para>The <emphasis role="bold"><!-- DNT-Start -->TOKEN<!-- DNT-End --> </emphasis>value type defines a
+  parsing expression very similar to a <!-- DNT-Start -->PATTERN<!-- DNT-End -->, but once matched, the parser
   doesn't backtrack to find alternative matches as it would with
-  PATTERN.</para>
+  <!-- DNT-Start -->PATTERN<!-- DNT-End -->.</para>
 
-  <para><emphasis role="bold">RULE </emphasis><indexterm>
-      <primary>RULE</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->RULE<!-- DNT-End --> </emphasis><indexterm>
+      <primary><!-- DNT-Start -->RULE<!-- DNT-End --></primary>
     </indexterm><emphasis> </emphasis><emphasis role="bold">[
   (</emphasis><emphasis> recstruct </emphasis><emphasis role="bold">)
   ]</emphasis><emphasis> ruleid </emphasis><emphasis role="bold">:=
@@ -94,24 +94,24 @@
 
       <tbody>
         <row>
-          <entry><emphasis>recstruct</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>recstruct</emphasis><!-- DNT-End --></entry>
 
-          <entry>Optional. The attribute name of a RECORD structure attribute
-          (valid only when the PARSE option is used on the PARSE
+          <entry>Optional. The attribute name of a <!-- DNT-Start -->RECORD<!-- DNT-End --> structure attribute
+          (valid only when the <!-- DNT-Start -->PARSE<!-- DNT-End --> option is used on the <!-- DNT-Start -->PARSE<!-- DNT-End -->
           function).</entry>
         </row>
 
         <row>
-          <entry><emphasis>ruleid</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>ruleid</emphasis><!-- DNT-End --></entry>
 
           <entry>The attribute name of the rule.</entry>
         </row>
 
         <row>
-          <entry><emphasis>rulePattern</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>rulePattern</emphasis><!-- DNT-End --></entry>
 
           <entry>The rule pattern, very similar to regular expressions. This
-          may contain PATTERN attributes, TOKEN attributes, or RULE
+          may contain <!-- DNT-Start -->PATTERN<!-- DNT-End --> attributes, <!-- DNT-Start -->TOKEN<!-- DNT-End --> attributes, or <!-- DNT-Start -->RULE<!-- DNT-End -->
           attributes. See <emphasis role="bold">ParsePattern
           Definitions</emphasis> below.</entry>
         </row>
@@ -119,37 +119,37 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">RULE </emphasis>value type defines a parsing
-  expression containing combinations of TOKENs. If a RULE definition contains
-  a PATTERN it is implicitly converted to a TOKEN. Like PATTERN, once matched,
-  the parser backtracks to find alternative RULE matches.</para>
+  <para>The <emphasis role="bold"><!-- DNT-Start -->RULE<!-- DNT-End --> </emphasis>value type defines a parsing
+  expression containing combinations of <!-- DNT-Start -->TOKENs<!-- DNT-End -->. If a <!-- DNT-Start -->RULE<!-- DNT-End --> definition contains
+  a <!-- DNT-Start -->PATTERN<!-- DNT-End --> it is implicitly converted to a <!-- DNT-Start -->TOKEN<!-- DNT-End -->. Like <!-- DNT-Start -->PATTERN<!-- DNT-End -->, once matched,
+  the parser backtracks to find alternative <!-- DNT-Start -->RULE<!-- DNT-End --> matches.</para>
 
-  <para>If the PARSE option is present on the PARSE function (thereby
-  implementing tomita parsing for the operation), each alternative RULE
-  <emphasis>rulePattern</emphasis> may have an associated TRANSFORM function.
+  <para>If the <!-- DNT-Start -->PARSE<!-- DNT-End --> option is present on the <!-- DNT-Start -->PARSE<!-- DNT-End --> function (thereby
+  implementing tomita parsing for the operation), each alternative <!-- DNT-Start -->RULE<!-- DNT-End -->
+  <emphasis>rulePattern</emphasis> may have an associated <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function.
   The different input patterns can be referred to using $1, $2 etc. If the
   pattern has an associated <emphasis>recstruct</emphasis> then $1 is a row,
-  otherwise it is a string. Default TRANSFORM functions are created in two
+  otherwise it is a string. Default <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> functions are created in two
   circumstances:</para>
 
   <blockquote>
     <para>1. If there are no patterns, the default transform clears the row.
     For example:</para>
 
-    <programlisting>RULE(myRecord) := ; //empty expression = cleared row</programlisting>
+    <!-- DNT-Start --><programlisting>RULE(myRecord) := ; //empty expression = cleared row</programlisting><!-- DNT-End -->
 
     <para>2. If there is only a single pattern with an associated record, and
     that record matches the type of the rule being defined. For
     example:</para>
 
-    <programlisting>RULE(myRecord) e0 := '(' USE(myRecord, 'expression') ')';</programlisting>
+    <!-- DNT-Start --><programlisting>RULE(myRecord) e0 := '(' USE(myRecord, 'expression') ')';</programlisting><!-- DNT-End -->
   </blockquote>
 
   <sect2 id="ParsePattern_Definitions">
-    <title>ParsePattern Definitions</title>
+    <!-- DNT-Start --><title>ParsePattern Definitions</title><!-- DNT-End -->
 
-    <para>A <emphasis>parsepattern </emphasis>may contain any combination of
-    the following elements:</para>
+    <!-- DNT-Start --><para>A <emphasis>parsepattern </emphasis>may contain any combination of
+    the following elements:</para><!-- DNT-End -->
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -159,27 +159,27 @@
 
         <tbody>
           <row>
-            <entry><emphasis>pattern-name</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>pattern-name</emphasis><!-- DNT-End --></entry>
 
-            <entry>The name of any previously defined PATTERN
+            <entry>The name of any previously defined <!-- DNT-Start -->PATTERN<!-- DNT-End -->
             attribute.</entry>
           </row>
 
           <row>
-            <entry>(<emphasis>pattern</emphasis>)</entry>
+            <entry><!-- DNT-Start -->(<emphasis>pattern</emphasis>)<!-- DNT-End --></entry>
 
             <entry>Parentheses may be used for grouping.</entry>
           </row>
 
           <row>
-            <entry><emphasis>pattern1 pattern2</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>pattern1 pattern2</emphasis><!-- DNT-End --></entry>
 
             <entry><emphasis>Pattern1</emphasis> followed by
             <emphasis>pattern2</emphasis>.</entry>
           </row>
 
           <row>
-            <entry>'<emphasis>string</emphasis>'</entry>
+            <entry><!-- DNT-Start -->'<emphasis>string</emphasis>'<!-- DNT-End --></entry>
 
             <entry>A fixed text <emphasis>string, </emphasis>which may contain
             escaped octal string control characters (for example, CtrlZ is
@@ -187,7 +187,7 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">FIRST</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">FIRST</emphasis><!-- DNT-End --></entry>
 
             <entry>Matches the start of the string to search. This is similar
             to the regular expression ^ token, which is <emphasis
@@ -195,7 +195,7 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">LAST</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">LAST</emphasis><!-- DNT-End --></entry>
 
             <entry>Matches the end of the string to search. This is similar to
             the regular expression $ token, which is <emphasis
@@ -203,55 +203,55 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">ANY</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ANY</emphasis><!-- DNT-End --></entry>
 
             <entry>Matches any character.</entry>
           </row>
 
           <row>
-            <entry><emphasis
-            role="bold">REPEAT</emphasis>(<emphasis>pattern</emphasis>)</entry>
+            <entry><!-- DNT-Start --><emphasis
+            role="bold">REPEAT</emphasis>(<emphasis>pattern</emphasis>)<!-- DNT-End --></entry>
 
             <entry>Repeat the <emphasis>pattern</emphasis> any number of
             times. The regular expression syntax <emphasis>pattern</emphasis>*
             is supported as a shorthand for
-            REPEAT(<emphasis>pattern</emphasis>).</entry>
+            <!-- DNT-Start -->REPEAT<!-- DNT-End -->(<emphasis>pattern</emphasis>).</entry>
           </row>
 
           <row>
-            <entry><emphasis
+            <entry><!-- DNT-Start --><emphasis
             role="bold">REPEAT</emphasis>(<emphasis>pattern</emphasis>,<emphasis>
-            expression</emphasis>)</entry>
+            expression</emphasis>)<!-- DNT-End --></entry>
 
             <entry>Repeat the <emphasis>pattern expression</emphasis> times.
             The regular expression syntax
             <emphasis>pattern</emphasis>*&lt;count&gt; is supported as a
             shorthand for
-            REPEAT(<emphasis>pattern</emphasis>,<emphasis>expression</emphasis>),
+            <!-- DNT-Start -->REPEAT<!-- DNT-End -->(<emphasis>pattern</emphasis>,<emphasis>expression</emphasis>),
             but the regular expression bounded repeats syntax
             <emphasis>pattern</emphasis>{<emphasis>expression</emphasis>} is
             <emphasis role="underline">not</emphasis>.</entry>
           </row>
 
           <row>
-            <entry><emphasis
+            <entry><!-- DNT-Start --><emphasis
             role="bold">REPEAT</emphasis>(<emphasis>pattern</emphasis>,<emphasis>
-            low</emphasis>, ANY [,MIN])</entry>
+            low</emphasis>, ANY [,MIN])<!-- DNT-End --></entry>
 
             <entry>Repeat the <emphasis>pattern</emphasis>
-            <emphasis>low</emphasis> or more times (with the MIN option making
+            <emphasis>low</emphasis> or more times (with the <!-- DNT-Start -->MIN<!-- DNT-End --> option making
             it a minimal match). The regular expression syntax
             <emphasis>pattern</emphasis>+ is supported as a shorthand for
-            REPEAT(<emphasis>pattern</emphasis>,<emphasis>low</emphasis>,ANY),
+            <!-- DNT-Start -->REPEAT<!-- DNT-End -->(<emphasis>pattern</emphasis>,<emphasis>low</emphasis>,<!-- DNT-Start -->ANY<!-- DNT-End -->),
             but the regular expression bounded repeats syntax
             <emphasis>pattern</emphasis>{<emphasis>expression ,</emphasis>} is
             <emphasis role="underline">not</emphasis>.</entry>
           </row>
 
           <row>
-            <entry><emphasis
+            <entry><!-- DNT-Start --><emphasis
             role="bold">REPEAT</emphasis>(<emphasis>pattern</emphasis>,<emphasis>
-            low</emphasis>,<emphasis> high</emphasis>)</entry>
+            low</emphasis>,<emphasis> high</emphasis>)<!-- DNT-End --></entry>
 
             <entry>Repeat the <emphasis>pattern</emphasis> from <emphasis>low
             </emphasis>to <emphasis>high </emphasis>times. The regular
@@ -261,47 +261,47 @@
           </row>
 
           <row>
-            <entry><emphasis
-            role="bold">OPT</emphasis>(<emphasis>pattern</emphasis>)</entry>
+            <entry><!-- DNT-Start --><emphasis
+            role="bold">OPT</emphasis>(<emphasis>pattern</emphasis>)<!-- DNT-End --></entry>
 
             <entry>An optional <emphasis>pattern</emphasis>. The regular
             expression syntax <emphasis>pattern</emphasis>? is supported as a
-            shorthand for OPT(<emphasis>pattern</emphasis>).</entry>
+            shorthand for <!-- DNT-Start -->OPT<!-- DNT-End -->(<emphasis>pattern</emphasis>).</entry>
           </row>
 
           <row>
-            <entry><emphasis>pattern1</emphasis> <emphasis
-            role="bold">OR</emphasis> <emphasis>pattern2</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>pattern1</emphasis> <emphasis
+            role="bold">OR</emphasis> <emphasis>pattern2</emphasis><!-- DNT-End --></entry>
 
             <entry>Either <emphasis>pattern1</emphasis> or
             <emphasis>pattern2</emphasis>. The regular expression syntax
             <emphasis>pattern1</emphasis> | <emphasis>pattern2</emphasis> is
-            supported as a shorthand for OR.</entry>
+            supported as a shorthand for <!-- DNT-Start -->OR<!-- DNT-End -->.</entry>
           </row>
 
           <row>
-            <entry>[<emphasis>list-of-patterns</emphasis>]</entry>
+            <entry><!-- DNT-Start -->[<emphasis>list-of-patterns</emphasis>]<!-- DNT-End --></entry>
 
             <entry>A comma-delimited list of alternative
             <emphasis>patterns</emphasis>, useful for string sets. This is the
-            same as OR.</entry>
+            same as <!-- DNT-Start -->OR<!-- DNT-End -->.</entry>
           </row>
 
           <row>
-            <entry><emphasis>pattern1</emphasis> <emphasis role="bold">[NOT]
-            IN</emphasis> <emphasis>pattern2</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>pattern1</emphasis> <emphasis role="bold">[NOT]
+            IN</emphasis> <emphasis>pattern2</emphasis><!-- DNT-End --></entry>
 
             <entry>Does the text matched with <emphasis>pattern1</emphasis>
             also match <emphasis>pattern2</emphasis>?
-            <emphasis>Pattern1</emphasis> [NOT] =
+            <emphasis>Pattern1</emphasis> [<!-- DNT-Start -->NOT<!-- DNT-End -->] =
             <emphasis>pattern2</emphasis> and <emphasis>pattern1</emphasis> !=
-            <emphasis>pattern2 </emphasis>are the same as using IN, but may
+            <emphasis>pattern2 </emphasis>are the same as using <!-- DNT-Start -->IN<!-- DNT-End -->, but may
             make more sense in some situations.</entry>
           </row>
 
           <row>
-            <entry><emphasis>pattern1</emphasis> <emphasis role="bold">[NOT]
-            BEFORE</emphasis> <emphasis>pattern2</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>pattern1</emphasis> <emphasis role="bold">[NOT]
+            BEFORE</emphasis> <emphasis>pattern2</emphasis><!-- DNT-End --></entry>
 
             <entry>Check if the given <emphasis>pattern2</emphasis> does [not]
             follow <emphasis>pattern1</emphasis>.
@@ -310,8 +310,8 @@
           </row>
 
           <row>
-            <entry><emphasis>pattern1</emphasis> <emphasis role="bold">[NOT]
-            AFTER</emphasis> <emphasis>pattern2</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>pattern1</emphasis> <emphasis role="bold">[NOT]
+            AFTER</emphasis> <emphasis>pattern2</emphasis><!-- DNT-End --></entry>
 
             <entry>Check if the given <emphasis>pattern2</emphasis> does [not]
             precede <emphasis>pattern1</emphasis>.
@@ -320,8 +320,8 @@
           </row>
 
           <row>
-            <entry><emphasis>pattern</emphasis> <emphasis
-            role="bold">LENGTH</emphasis>(<emphasis>range</emphasis>)</entry>
+            <entry><!-- DNT-Start --><emphasis>pattern</emphasis> <emphasis
+            role="bold">LENGTH</emphasis>(<emphasis>range</emphasis>)<!-- DNT-End --></entry>
 
             <entry>Check whether the length of a <emphasis>pattern</emphasis>
             is in the <emphasis>range</emphasis>. <emphasis>Range
@@ -334,68 +334,68 @@
           </row>
 
           <row>
-            <entry><emphasis
+            <entry><!-- DNT-Start --><emphasis
             role="bold">VALIDATE</emphasis>(<emphasis>pattern</emphasis>,
-            <emphasis>isValidExpression</emphasis>)</entry>
+            <emphasis>isValidExpression</emphasis>)<!-- DNT-End --></entry>
 
             <entry>Evaluate <emphasis>isValidExpression </emphasis>to check if
             the <emphasis>pattern</emphasis> is valid or not.
-            <emphasis>isValidExpression </emphasis>should use MATCHTEXT or
-            MATCHUNICODE to refer to the text that matched the
-            <emphasis>pattern</emphasis>. For example, VALIDATE(alpha*,
-            MATCHTEXT[4]='Q') is equivalent to alpha* = ANY*3 'Q' ANY* or more
-            usefully: VALIDATE(alpha*,isSurnameService(MATCHTEXT));</entry>
+            <emphasis>isValidExpression </emphasis>should use <!-- DNT-Start -->MATCHTEXT<!-- DNT-End --> or
+            <!-- DNT-Start -->MATCHUNICODE<!-- DNT-End --> to refer to the text that matched the
+            <emphasis>pattern</emphasis>. For example, <!-- DNT-Start -->VALIDATE<!-- DNT-End -->(alpha*,
+            <!-- DNT-Start -->MATCHTEXT<!-- DNT-End -->[4]='Q') is equivalent to alpha* = <!-- DNT-Start -->ANY<!-- DNT-End -->*3 'Q' <!-- DNT-Start -->ANY<!-- DNT-End -->* or more
+            usefully: <!-- DNT-Start -->VALIDATE<!-- DNT-End -->(alpha*,isSurnameService(<!-- DNT-Start -->MATCHTEXT<!-- DNT-End -->));</entry>
           </row>
 
           <row>
-            <entry><emphasis
+            <entry><!-- DNT-Start --><emphasis
             role="bold">VALIDATE</emphasis>(<emphasis>pattern</emphasis>,
             <emphasis>isValidAsciiExpression</emphasis>,
-            <emphasis>isValidUnicodeExpression</emphasis>)</entry>
+            <emphasis>isValidUnicodeExpression</emphasis>)<!-- DNT-End --></entry>
 
             <entry>A two parameter variant. Use the first
             <emphasis>isValidAsciiExpression</emphasis> if the string being
-            searched is ASCII; use the second if it is Unicode.</entry>
+            searched is <!-- DNT-Start -->ASCII<!-- DNT-End -->; use the second if it is Unicode.</entry>
           </row>
 
           <row>
-            <entry><emphasis
-            role="bold">NOCASE</emphasis>(<emphasis>pattern</emphasis>)</entry>
+            <entry><!-- DNT-Start --><emphasis
+            role="bold">NOCASE</emphasis>(<emphasis>pattern</emphasis>)<!-- DNT-End --></entry>
 
             <entry>Matches the <emphasis>pattern</emphasis> case
-            insensitively, overriding the CASE option on the PARSE function.
-            This may be nested within a CASE pattern.</entry>
+            insensitively, overriding the <!-- DNT-Start -->CASE<!-- DNT-End --> option on the <!-- DNT-Start -->PARSE<!-- DNT-End --> function.
+            This may be nested within a <!-- DNT-Start -->CASE<!-- DNT-End --> pattern.</entry>
           </row>
 
           <row>
-            <entry><emphasis
-            role="bold">CASE</emphasis>(<emphasis>pattern</emphasis>)</entry>
+            <entry><!-- DNT-Start --><emphasis
+            role="bold">CASE</emphasis>(<emphasis>pattern</emphasis>)<!-- DNT-End --></entry>
 
             <entry>Matches the <emphasis>pattern</emphasis> case sensitively,
-            overriding the NOCASE option on the PARSE function. This may be
-            nested within a NOCASE pattern.</entry>
+            overriding the <!-- DNT-Start -->NOCASE<!-- DNT-End --> option on the <!-- DNT-Start -->PARSE<!-- DNT-End --> function. This may be
+            nested within a <!-- DNT-Start -->NOCASE<!-- DNT-End --> pattern.</entry>
           </row>
 
           <row>
-            <entry><emphasis>pattern</emphasis> <emphasis
-            role="bold">PENALTY</emphasis>(<emphasis>cost</emphasis>)</entry>
+            <entry><!-- DNT-Start --><emphasis>pattern</emphasis> <emphasis
+            role="bold">PENALTY</emphasis>(<emphasis>cost</emphasis>)<!-- DNT-End --></entry>
 
             <entry>Associate a penalty <emphasis>cost</emphasis> with this
             match of the <emphasis>pattern</emphasis>. This can be used to
             recover from grammars with unknown words. This requires use of the
-            BEST option on the PARSE operation.</entry>
+            <!-- DNT-Start -->BEST<!-- DNT-End --> option on the <!-- DNT-Start -->PARSE<!-- DNT-End --> operation.</entry>
           </row>
 
           <row>
-            <entry><emphasis
-            role="bold">TOKEN</emphasis>(<emphasis>pattern</emphasis>)</entry>
+            <entry><!-- DNT-Start --><emphasis
+            role="bold">TOKEN</emphasis>(<emphasis>pattern</emphasis>)<!-- DNT-End --></entry>
 
             <entry>Treat the <emphasis>pattern </emphasis>as a token.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">PATTERN</emphasis>('<emphasis>regular
-            expression</emphasis>')</entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">PATTERN</emphasis>('<emphasis>regular
+            expression</emphasis>')<!-- DNT-End --></entry>
 
             <entry><programlisting role="tab">Define a pattern using a <emphasis>regular expression </emphasis>built from
 the following supported syntax elements:
@@ -411,10 +411,10 @@ the following supported syntax elements:
  (?=...) (?!...)     Look ahead assertion
  (?&lt;=...) (?&lt;!...)   Look behind assertion
 
-Escape sequences can be used to define UNICODE Character ranges. 
-The encoding is UTF-16 Big Endian.  
+Escape sequences can be used to define <!-- DNT-Start -->UNICODE<!-- DNT-End --> Character ranges. 
+The encoding is <!-- DNT-Start -->UTF<!-- DNT-End -->-16 Big Endian.  
 For example:
-PATTERN AnyChar    := PATTERN(U'[\u0001-\u7fff]');
+<!-- DNT-Start -->PATTERN<!-- DNT-End --> AnyChar    := <!-- DNT-Start -->PATTERN<!-- DNT-End -->(U'[\u0001-\u7fff]');
 </programlisting><!--*** Note this and the following row entries have been monospace optimized for PDF/HTML*** --></entry>
           </row>
 
@@ -441,26 +441,26 @@ PATTERN AnyChar    := PATTERN(U'[\u0001-\u7fff]');
           </row>
 
           <row>
-            <entry><emphasis role="bold">USE</emphasis>(<emphasis>
+            <entry><!-- DNT-Start --><emphasis role="bold">USE</emphasis>(<emphasis>
             </emphasis><emphasis role="bold">[</emphasis><emphasis> recstruct
             , </emphasis><emphasis role="bold">]
-            </emphasis>'<emphasis>symbolname</emphasis>' )</entry>
+            </emphasis>'<emphasis>symbolname</emphasis>' )<!-- DNT-End --></entry>
 
             <entry>Specifies using a pattern defined later with the
-            DEFINE(<emphasis role="bold">
+            <!-- DNT-Start -->DEFINE<!-- DNT-End -->(<emphasis role="bold">
             </emphasis>'<emphasis>symbolname</emphasis>') function. This
             creates a forward reference<indexterm>
                 <primary>forward reference</primary>
-              </indexterm>, practical only on RULE patterns for tomita parsing
-            (the PARSE option is present on the PARSE function).</entry>
+              </indexterm>, practical only on <!-- DNT-Start -->RULE<!-- DNT-End --> patterns for tomita parsing
+            (the <!-- DNT-Start -->PARSE<!-- DNT-End --> option is present on the <!-- DNT-Start -->PARSE<!-- DNT-End --> function).</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">SELF </emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">SELF </emphasis><!-- DNT-End --></entry>
 
             <entry>References the pattern being defined (recursive). This is
-            practical only in RULE patterns for tomita parsing (the PARSE
-            option is present on the PARSE function).</entry>
+            practical only in <!-- DNT-Start -->RULE<!-- DNT-End --> patterns for tomita parsing (the <!-- DNT-Start -->PARSE<!-- DNT-End -->
+            option is present on the <!-- DNT-Start -->PARSE<!-- DNT-End --> function).</entry>
           </row>
         </tbody>
       </tgroup>
@@ -468,7 +468,7 @@ PATTERN AnyChar    := PATTERN(U'[\u0001-\u7fff]');
 
     <para>Examples:</para>
 
-    <programlisting>rs := RECORD
+    <!-- DNT-Start --><programlisting>rs := RECORD
 STRING100 line;
 END;
 ds := DATASET([{'the fox; and the hen'}], rs);
@@ -494,11 +494,11 @@ END;
 p1 := PARSE(ds, line, NounPhraseComponent1, ps1, BEST, MANY, NOCASE);
 p2 := PARSE(ds, line, NounPhraseComponent2, ps2, BEST, MANY, NOCASE);
 OUTPUT(p1);
-OUTPUT(p2);</programlisting>
+OUTPUT(p2);</programlisting><!-- DNT-End -->
 
-    <para>See Also: <link linkend="PARSE">PARSE</link>, <link
-    linkend="RECORD_Structure">RECORD Structure</link>, <link
-    linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link
-    linkend="DATASET">DATASET</link></para>
+    <para>See Also: <link linkend="PARSE"><!-- DNT-Start -->PARSE<!-- DNT-End --></link>, <link
+    linkend="RECORD_Structure"><!-- DNT-Start -->RECORD<!-- DNT-End --> Structure</link>, <link
+    linkend="TRANSFORM_Structure"><!-- DNT-Start -->TRANSFORM<!-- DNT-End --> Structure</link>, <link
+    linkend="DATASET"><!-- DNT-Start -->DATASET<!-- DNT-End --></link></para>
   </sect2>
 </sect1>

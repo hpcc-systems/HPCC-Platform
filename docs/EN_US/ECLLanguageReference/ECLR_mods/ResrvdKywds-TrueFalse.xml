@@ -2,26 +2,26 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="TRUE_FALSE">
-  <title>TRUE<indexterm>
+  <!-- DNT-Start --><title>TRUE<indexterm>
       <primary>TRUE</primary>
     </indexterm> and FALSE<indexterm>
       <primary>FALSE</primary>
-    </indexterm></title>
+    </indexterm></title><!-- DNT-End -->
 
-  <para><emphasis role="bold">TRUE</emphasis></para>
+  <para><emphasis role="bold"><!-- DNT-Start -->TRUE<!-- DNT-End --></emphasis></para>
 
-  <para><emphasis role="bold">FALSE</emphasis></para>
+  <para><emphasis role="bold"><!-- DNT-Start -->FALSE<!-- DNT-End --></emphasis></para>
 
-  <para>The <emphasis role="bold">TRUE<indexterm>
-      <primary>TRUE keyword</primary>
-    </indexterm> </emphasis>and <emphasis role="bold">FALSE<indexterm>
-      <primary>FALSE keyword</primary>
+  <para>The <emphasis role="bold"><!-- DNT-Start -->TRUE<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->TRUE<!-- DNT-End --> keyword</primary>
+    </indexterm> </emphasis>and <emphasis role="bold"><!-- DNT-Start -->FALSE<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->FALSE<!-- DNT-End --> keyword</primary>
     </indexterm> </emphasis>keywords are Boolean constants.</para>
 
   <para>Example:</para>
 
-  <programlisting>BooleanTrue := TRUE;
-Booleanfalse := FALSE;</programlisting>
+  <!-- DNT-Start --><programlisting>BooleanTrue := TRUE;
+Booleanfalse := FALSE;</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="BOOLEAN">BOOLEAN</link></para>
+  <para>See Also: <link linkend="BOOLEAN"><!-- DNT-Start -->BOOLEAN<!-- DNT-End --></link></para>
 </sect1>

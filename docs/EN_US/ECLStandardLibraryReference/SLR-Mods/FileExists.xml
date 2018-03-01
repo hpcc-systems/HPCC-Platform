@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="FileExists">
-  <title>FileExists</title>
+  <!-- DNT-Start --><title>FileExists</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.File.FileExists<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.File.FileExists<indexterm>
       <primary>STD.File.FileExists</primary>
     </indexterm><indexterm>
       <primary>File.FileExists</primary>
@@ -12,7 +12,7 @@
       <primary>FileExists</primary>
     </indexterm>(</emphasis> <emphasis> filename </emphasis> <emphasis
   role="bold">[, </emphasis> <emphasis>physicalcheck</emphasis> <emphasis
-  role="bold">] )</emphasis></para>
+  role="bold">] )</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -22,37 +22,37 @@
 
       <tbody>
         <row>
-          <entry><emphasis>filename</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>filename</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the logical name of the
           file.</entry>
         </row>
 
         <row>
-          <entry><emphasis>physicalcheck</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>physicalcheck</emphasis><!-- DNT-End --></entry>
 
-          <entry>Optional. A boolean TRUE/FALSE to indicate whether to check
+          <entry>Optional. A boolean <!-- DNT-Start -->TRUE<!-- DNT-End -->/<!-- DNT-Start -->FALSE<!-- DNT-End --> to indicate whether to check
           for the physical existence the <emphasis>filename</emphasis> on
-          disk. If omitted, the default is FALSE.</entry>
+          disk. If omitted, the default is <!-- DNT-Start -->FALSE<!-- DNT-End -->.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>FileExists returns a BOOLEAN value.</entry>
+          <entry><!-- DNT-Start -->FileExists<!-- DNT-End --> returns a <!-- DNT-Start -->BOOLEAN<!-- DNT-End --> value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">FileExists </emphasis>function returns TRUE
+  <para>The <emphasis role="bold"><!-- DNT-Start -->FileExists<!-- DNT-End --> </emphasis>function returns <!-- DNT-Start -->TRUE<!-- DNT-End -->
   if the specified <emphasis>filename</emphasis> is present in the Distributed
-  File Utility (DFU). If <emphasis>physicalcheck</emphasis> is set to TRUE,
+  File Utility (<!-- DNT-Start -->DFU<!-- DNT-End -->). If <emphasis>physicalcheck</emphasis> is set to <!-- DNT-Start -->TRUE<!-- DNT-End -->,
   then the file's physical presence on disk is also checked.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">A := STD.File.FileExists('~CLASS::RT::IN::People');</programlisting>
+  <!-- DNT-Start --><programlisting format="linespecific">A := STD.File.FileExists('~CLASS::RT::IN::People');</programlisting><!-- DNT-End -->
 
   <para></para>
 

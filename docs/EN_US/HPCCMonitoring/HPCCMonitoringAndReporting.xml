@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book lang="en_US" xml:base="../">
   <bookinfo>
-    <title>HPCC Monitoring and Reporting (Technical Preview)</title>
+    <!-- DNT-Start --><title>HPCC Monitoring and Reporting (Technical Preview)</title><!-- DNT-End -->
 
     <mediaobject>
       <imageobject>
@@ -27,7 +27,7 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para>HPCC Systems<superscript>®</superscript> is a registered trademark
+      <para><!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript> is a registered trademark
       of LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
@@ -62,14 +62,14 @@
   </bookinfo>
 
   <chapter id="GangliaIntroduction">
-    <title>Introduction</title>
+    <!-- DNT-Start --><title>Introduction</title><!-- DNT-End -->
 
-    <para>The HPCC Systems<superscript>®</superscript> platform supports
+    <para>The <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript> platform supports
     graphical monitoring and reporting components.</para>
 
-    <para><emphasis role="bold">Ganglia:</emphasis></para>
+    <para><emphasis role="bold"><!-- DNT-Start -->Ganglia<!-- DNT-End -->:</emphasis></para>
 
-    <para>The HPCC monitoring component leverages Ganglia, an open source,
+    <para>The <!-- DNT-Start -->HPCC<!-- DNT-End --> monitoring component leverages <!-- DNT-Start -->Ganglia<!-- DNT-End -->, an open source,
     scalable, distributed monitoring system to display system information in a
     graphical manner.</para>
 
@@ -104,14 +104,14 @@
         </listitem>
       </itemizedlist></para>
 
-    <para><emphasis role="bold">Nagios</emphasis></para>
+    <para><emphasis role="bold"><!-- DNT-Start -->Nagios<!-- DNT-End --></emphasis></para>
 
-    <para>The HPCC reporting and alerting component leverages Nagios, a
+    <para>The <!-- DNT-Start -->HPCC<!-- DNT-End --> reporting and alerting component leverages <!-- DNT-Start -->Nagios<!-- DNT-End -->, a
     powerful monitoring and notification system, which can help you identify
     and resolve infrastructure problems before they affect critical
     processes.</para>
 
-    <para>With the HPCC reporting and alerting component you can set up alerts
+    <para>With the <!-- DNT-Start -->HPCC<!-- DNT-End --> reporting and alerting component you can set up alerts
     to inform of any changes to:</para>
 
     <para><itemizedlist>
@@ -136,11 +136,11 @@
         </listitem>
 
         <listitem>
-          <para>Service Bindings on ESP Servers</para>
+          <para>Service Bindings on <!-- DNT-Start -->ESP<!-- DNT-End --> Servers</para>
         </listitem>
 
         <listitem>
-          <para>SSH connectivity</para>
+          <para><!-- DNT-Start -->SSH<!-- DNT-End --> connectivity</para>
         </listitem>
 
         <listitem>
@@ -154,45 +154,45 @@
   </chapter>
 
   <chapter id="Ganglya_Overview">
-    <title>Ganglia</title>
+    <!-- DNT-Start --><title>Ganglia</title><!-- DNT-End -->
 
-    <para>The HPCC Monitoring component leverages Ganglia, an open source,
+    <para>The <!-- DNT-Start -->HPCC<!-- DNT-End --> Monitoring component leverages <!-- DNT-Start -->Ganglia<!-- DNT-End -->, an open source,
     scalable, distributed monitoring system, to produce a graphical view of a
-    Roxie cluster's servers. Ganglia leverages widely accepted technologies
+    Roxie cluster's servers. <!-- DNT-Start -->Ganglia<!-- DNT-End --> leverages widely accepted technologies
     for data representation. It provides near real-time monitoring and
     visualizations for performance metrics. If your enterprise already has a
-    Ganglia monitoring server, you can easily add Roxie clusters to its
+    <!-- DNT-Start -->Ganglia<!-- DNT-End --> monitoring server, you can easily add Roxie clusters to its
     monitoring.</para>
 
     <sect1 id="Ganglia_Overview">
-      <title>Ganglia Overview</title>
+      <!-- DNT-Start --><title>Ganglia Overview</title><!-- DNT-End -->
 
-      <para>Ganglia Monitoring has two primary components: the viewer and the
-      Ganglia Monitoring Daemon (gmond). Installation and configuration will
+      <para><!-- DNT-Start -->Ganglia<!-- DNT-End --> Monitoring has two primary components: the viewer and the
+      <!-- DNT-Start -->Ganglia<!-- DNT-End --> Monitoring Daemon (gmond). Installation and configuration will
       vary depending on your system.</para>
 
-      <para>On an <emphasis role="bold">RPM-based system</emphasis>, install
-      the <emphasis>ganglia-gmond-modules-python</emphasis> RPM running a
+      <para>On an <emphasis role="bold"><!-- DNT-Start -->RPM<!-- DNT-End -->-based system</emphasis>, install
+      the <emphasis>ganglia-gmond-modules-python</emphasis> <!-- DNT-Start -->RPM<!-- DNT-End --> running a
       command such as:</para>
 
-      <programlisting>sudo rpm -i ganglia-gmond-modules-python-3.4.0-1.x86_64.rpm</programlisting>
+      <!-- DNT-Start --><programlisting>sudo rpm -i ganglia-gmond-modules-python-3.4.0-1.x86_64.rpm</programlisting><!-- DNT-End -->
 
       <para>On a <emphasis role="bold">Debian-based system</emphasis>, install
       the <emphasis>ganglia-monitor</emphasis> running a command such
       as:</para>
 
-      <programlisting>sudo apt-get install ganglia-monitor</programlisting>
+      <!-- DNT-Start --><programlisting>sudo apt-get install ganglia-monitor</programlisting><!-- DNT-End -->
 
-      <para>The specific steps required to install and configure Ganglia are
-      covered in the Ganglia wiki:</para>
+      <para>The specific steps required to install and configure <!-- DNT-Start -->Ganglia<!-- DNT-End --> are
+      covered in the <!-- DNT-Start -->Ganglia<!-- DNT-End --> wiki:</para>
 
       <para><ulink
       url="http://sourceforge.net/apps/trac/ganglia/wiki/ganglia_gmond_python_modules">http://sourceforge.net/apps/trac/ganglia/wiki/ganglia_gmond_python_modules</ulink></para>
 
       <sect2 id="Ganglia_Requirements">
-        <title>The Viewer</title>
+        <!-- DNT-Start --><title>The Viewer</title><!-- DNT-End -->
 
-        <para>In order to use Ganglia with Roxie you must have the following
+        <para>In order to use <!-- DNT-Start -->Ganglia<!-- DNT-End --> with Roxie you must have the following
         packages installed on every node you wish to monitor.</para>
 
         <itemizedlist>
@@ -220,7 +220,7 @@
       </sect2>
 
       <sect2 id="Ganglia_Monitoring_Daemon" role="brk">
-        <title>Ganglia Monitoring Daemon</title>
+        <!-- DNT-Start --><title>Ganglia Monitoring Daemon</title><!-- DNT-End -->
 
         <para>The monitoring daemon is required on the Roxie nodes you wish to
         monitor. Install the <emphasis>gmond</emphasis> daemon on the nodes
@@ -230,32 +230,32 @@
         <para><ulink
         url="http://sourceforge.net/apps/trac/ganglia/wiki/ganglia_gmond_python_modules">http://sourceforge.net/apps/trac/ganglia/wiki/ganglia_gmond_python_modules</ulink></para>
 
-        <para>If you have a Ganglia monitoring server running in your
+        <para>If you have a <!-- DNT-Start -->Ganglia<!-- DNT-End --> monitoring server running in your
         environment, you already have the required components and
         prerequisites. Verify that you have
         <emphasis>/etc/ganglia/conf.d</emphasis> and
         <emphasis>/etc/ganglia/.pyconf</emphasis> files in place and then add
         the Roxie nodes you wish to monitor. You can do that by installing the
-        Ganglia components and HPCC Monitoring components on to each Roxie
+        <!-- DNT-Start -->Ganglia<!-- DNT-End --> components and <!-- DNT-Start -->HPCC<!-- DNT-End --> Monitoring components on to each Roxie
         node.</para>
 
-        <para>If you do not have Ganglia, or want to install it, read the
-        Ganglia documentation provided at the above link, and install it and
+        <para>If you do not have <!-- DNT-Start -->Ganglia<!-- DNT-End -->, or want to install it, read the
+        <!-- DNT-Start -->Ganglia<!-- DNT-End --> documentation provided at the above link, and install it and
         any system dependencies. You will then need to download and install
-        the HPCC Monitoring component.</para>
+        the <!-- DNT-Start -->HPCC<!-- DNT-End --> Monitoring component.</para>
 
         <sect3 id="Installing-HPCCGanglia" role="brk">
-          <title>Installing the HPCC Monitoring component</title>
+          <!-- DNT-Start --><title>Installing the HPCC Monitoring component</title><!-- DNT-End -->
 
-          <para>The HPCC Monitoring component is available for download. The
-          HPCC Monitoring components leverage the Ganglia monitoring tools,
-          and would only be needed if you do not already have Ganglia
+          <para>The <!-- DNT-Start -->HPCC<!-- DNT-End --> Monitoring component is available for download. The
+          <!-- DNT-Start -->HPCC<!-- DNT-End --> Monitoring components leverage the <!-- DNT-Start -->Ganglia<!-- DNT-End --> monitoring tools,
+          and would only be needed if you do not already have <!-- DNT-Start -->Ganglia<!-- DNT-End -->
           monitoring components on your system.</para>
 
-          <para>To get the HPCC Monitoring components, find the appropriate
+          <para>To get the <!-- DNT-Start -->HPCC<!-- DNT-End --> Monitoring components, find the appropriate
           package for your system.</para>
 
-          <para>Packages are available for download from the HPCC
+          <para>Packages are available for download from the <!-- DNT-Start -->HPCC<!-- DNT-End -->
           Systems<superscript>®</superscript> site:</para>
 
           <para><ulink
@@ -269,10 +269,10 @@
           <para>Find and install the appropriate package for your
           system.</para>
 
-          <para>For example, if you have a CentOS 6.x system, get the RPM
+          <para>For example, if you have a CentOS 6.x system, get the <!-- DNT-Start -->RPM<!-- DNT-End -->
           package.</para>
 
-          <programlisting>hpccsystems-ganglia-monitoring-4.2.0-rc1.el6.x86_64.rpm</programlisting>
+          <!-- DNT-Start --><programlisting>hpccsystems-ganglia-monitoring-4.2.0-rc1.el6.x86_64.rpm</programlisting><!-- DNT-End -->
 
           <para>Install the monitoring package on the system that you want to
           monitor. Optionally, you can look at that installation package
@@ -283,10 +283,10 @@
     </sect1>
 
     <sect1 id="HPCC_Viewer">
-      <title>The HPCC Ganglia Viewer</title>
+      <!-- DNT-Start --><title>The HPCC Ganglia Viewer</title><!-- DNT-End -->
 
-      <para>A Ganglia viewer comes preinstalled and configured in the 4.2.x
-      (or later) HPCC Virtual Machine. The monitoring provided with the
+      <para>A <!-- DNT-Start -->Ganglia<!-- DNT-End --> viewer comes preinstalled and configured in the 4.2.x
+      (or later) <!-- DNT-Start -->HPCC<!-- DNT-End --> Virtual Machine. The monitoring provided with the
       Virtual Machine is set up to monitor Roxie instances on the network.
       This document introduces the monitoring and describes how to get it
       working on your system. <figure>
@@ -300,20 +300,20 @@
         </figure></para>
 
       <para>The above image is an overview summary of all the monitored Roxie
-      nodes in the cluster named VM Demo.</para>
+      nodes in the cluster named <!-- DNT-Start -->VM<!-- DNT-End --> Demo.</para>
 
       <sect2 id="Ganglia_Viewer">
-        <title>The Viewer</title>
+        <!-- DNT-Start --><title>The Viewer</title><!-- DNT-End -->
 
-        <para>If you already have a Ganglia monitoring server running in your
+        <para>If you already have a <!-- DNT-Start -->Ganglia<!-- DNT-End --> monitoring server running in your
         network, the viewer component may already be in place. If you do not
-        have Ganglia then you will need to install and configure the
+        have <!-- DNT-Start -->Ganglia<!-- DNT-End --> then you will need to install and configure the
         viewer.</para>
 
         <para>Refer to the <ulink
         url="https://github.com/hpcc-systems/ganglia-monitoring/tree/master/vm_precise">https://github.com/hpcc-systems/ganglia-monitoring/tree/master/vm_precise</ulink>
         directory. There you will see the resources used to configure the
-        Ganglia for the virtual machine and can use them as the examples to
+        <!-- DNT-Start -->Ganglia<!-- DNT-End --> for the virtual machine and can use them as the examples to
         configure it for your enterprise.</para>
 
         <para>The script, <emphasis>install_graphs_helper.sh</emphasis>
@@ -325,13 +325,13 @@
     </sect1>
 
     <sect1 id="VirtuaLMetrics">
-      <title>Metrics in the Virtual Machine</title>
+      <!-- DNT-Start --><title>Metrics in the Virtual Machine</title><!-- DNT-End -->
 
       <para>An easy way to understand how the metrics work and how to
       implement them on a larger system, is to examine the metrics in
       action.</para>
 
-      <para>Ganglia integration is built into the current HPCC Virtual Machine
+      <para><!-- DNT-Start -->Ganglia<!-- DNT-End --> integration is built into the current <!-- DNT-Start -->HPCC<!-- DNT-End --> Virtual Machine
       images. Download and start up a virtual image and look at how the
       monitoring component works.</para>
 
@@ -354,55 +354,55 @@
       <para>Evaluate the value of the content and decide what aspects of
       measurement are relevant to your needs.</para>
 
-      <!--INCLUDE-VM_STEPS-as-Sect2-->
+      <!-- DNT-Start --><!--INCLUDE-VM_STEPS-as-Sect2--><!-- DNT-End -->
 
-      <!--H11780-->
+      <!-- DNT-Start --><!--H11780--><!-- DNT-End -->
 
       <xi:include href="HPCCMonitoring/MonRep-Mods/MonRep-VM.xml"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
 
     <sect1 id="GangliaIntegration">
-      <title>Ganglia Integration with HPCC</title>
+      <!-- DNT-Start --><title>Ganglia Integration with HPCC</title><!-- DNT-End -->
 
-      <para>The Roxie nodes are able to report metrics to Ganglia when the
-      nodes have Ganglia monitoring and the associated dependencies
+      <para>The Roxie nodes are able to report metrics to <!-- DNT-Start -->Ganglia<!-- DNT-End --> when the
+      nodes have <!-- DNT-Start -->Ganglia<!-- DNT-End --> monitoring and the associated dependencies
       installed.</para>
 
-      <para>Review the Ganglia wiki: <ulink
+      <para>Review the <!-- DNT-Start -->Ganglia<!-- DNT-End --> wiki: <ulink
       url="http://sourceforge.net/apps/trac/ganglia/wiki/ganglia_gmond_python_modules">http://sourceforge.net/apps/trac/ganglia/wiki/ganglia_gmond_python_modules</ulink>
       to understand the requirements.</para>
 
       <orderedlist>
         <listitem>
-          <para>Install the Ganglia components on every node.</para>
+          <para>Install the <!-- DNT-Start -->Ganglia<!-- DNT-End --> components on every node.</para>
         </listitem>
 
         <listitem>
-          <para>Configure the Ganglia as appropriate for your system</para>
+          <para>Configure the <!-- DNT-Start -->Ganglia<!-- DNT-End --> as appropriate for your system</para>
 
-          <para>The Ganglia configuration files can be typically found in the
+          <para>The <!-- DNT-Start -->Ganglia<!-- DNT-End --> configuration files can be typically found in the
           <emphasis>/etc/ganglia/</emphasis> directory.</para>
         </listitem>
 
         <listitem>
-          <para>Install the HPCC Systems<superscript>®</superscript>
+          <para>Install the <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript>
           monitoring component on every node.</para>
         </listitem>
 
         <listitem>
-          <para>Deploy the monitoring daemon (gmond) and the HPCC Monitoring
+          <para>Deploy the monitoring daemon (gmond) and the <!-- DNT-Start -->HPCC<!-- DNT-End --> Monitoring
           package to each of the nodes you wish to monitor.</para>
         </listitem>
       </orderedlist>
 
-      <para>The VM graphs can be used to monitor Roxie clusters. You can add
+      <para>The <!-- DNT-Start -->VM<!-- DNT-End --> graphs can be used to monitor Roxie clusters. You can add
       more Roxie nodes installed anywhere on the same network utilizing
       multi-cast.</para>
 
-      <para>To add a new Roxie node, install the HPCC Monitoring package on to
+      <para>To add a new Roxie node, install the <!-- DNT-Start -->HPCC<!-- DNT-End --> Monitoring package on to
       each Roxie node to monitor. In most basic configurations you may need to
-      add the node(s) IP address(es) to the
+      add the node(s) <!-- DNT-Start -->IP<!-- DNT-End --> address(es) to the
       <emphasis>/etc/ganglia/gmetad.conf</emphasis> file. As long as the new
       Roxie node can communicate with (for example ping) the Monitoring
       component host, the graphs for that will automatically be added to the
@@ -422,15 +422,15 @@
     </sect1>
 
     <sect1 id="GangliaInECLWatch">
-      <title>Ganglia in ECL Watch</title>
+      <!-- DNT-Start --><title>Ganglia in ECL Watch</title><!-- DNT-End -->
 
-      <para>With the Ganglia for HPCC Plugin installed. You can view the
-      Ganglia statistics and graphs right through the ECL Watch interface. The
+      <para>With the <!-- DNT-Start -->Ganglia<!-- DNT-End --> for <!-- DNT-Start -->HPCC<!-- DNT-End --> Plugin installed. You can view the
+      <!-- DNT-Start -->Ganglia<!-- DNT-End --> statistics and graphs right through the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch interface. The
       out of the box monitoring displays several key statistics by default.
       You can customize and configure the views.</para>
 
       <figure>
-        <title>Ganglia in ECL Watch</title>
+        <!-- DNT-Start --><title>Ganglia in ECL Watch</title><!-- DNT-End -->
 
         <mediaobject>
           <imageobject>
@@ -446,30 +446,30 @@
       Use the drop menus to display the various graphing utilities.</para>
 
       <sect2 id="UsingGangliaInECLWatch">
-        <title>Installing Ganglia in ECL Watch</title>
+        <!-- DNT-Start --><title>Installing Ganglia in ECL Watch</title><!-- DNT-End -->
 
-        <para>In order to get the Ganglia in ECL Watch, You need to have
-        Ganglia on your HPCC Systems. <orderedlist>
+        <para>In order to get the <!-- DNT-Start -->Ganglia<!-- DNT-End --> in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch, You need to have
+        <!-- DNT-Start -->Ganglia<!-- DNT-End --> on your <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems. <orderedlist>
             <listitem>
-              <para>Install or ensure you have the HPCC Monitoring components
-              on a node where ECL Watch is installed.</para>
+              <para>Install or ensure you have the <!-- DNT-Start -->HPCC<!-- DNT-End --> Monitoring components
+              on a node where <!-- DNT-Start -->ECL<!-- DNT-End --> Watch is installed.</para>
             </listitem>
 
             <listitem>
-              <para>Ensure that the Ganglia gtemad daemon is running.</para>
+              <para>Ensure that the <!-- DNT-Start -->Ganglia<!-- DNT-End --> gtemad daemon is running.</para>
             </listitem>
 
             <listitem>
-              <para>Restart the ESP if this is the initial installation of any
+              <para>Restart the <!-- DNT-Start -->ESP<!-- DNT-End --> if this is the initial installation of any
               of those components.</para>
             </listitem>
 
             <listitem>
-              <para>Start or connect to ECL Watch on that node.</para>
+              <para>Start or connect to <!-- DNT-Start -->ECL<!-- DNT-End --> Watch on that node.</para>
             </listitem>
 
             <listitem>
-              <para>Click the plugin icon at the top of the ECL Watch
+              <para>Click the plugin icon at the top of the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch
               page.</para>
 
               <para>The graphs display data.</para>
@@ -482,12 +482,12 @@
       </sect2>
 
       <sect2 id="ConfiguringGangliaGraphsInECLWatch">
-        <title>Configuring Ganglia graphs in ECL Watch</title>
+        <!-- DNT-Start --><title>Configuring Ganglia graphs in ECL Watch</title><!-- DNT-End -->
 
-        <para>The configuration of Ganglia in ECL Watch is maintained in the
+        <para>The configuration of <!-- DNT-Start -->Ganglia<!-- DNT-End --> in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch is maintained in the
         <emphasis role="bold">ganglia.json</emphasis> file. That can be found
-        in the HPCC Systems<superscript>®</superscript> system
-        directory/componentfiles. The default HPCC
+        in the <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript> system
+        directory/componentfiles. The default <!-- DNT-Start -->HPCC<!-- DNT-End -->
         Systems<superscript>®</superscript> system directory ganglia resources
         is:</para>
 
@@ -500,16 +500,16 @@
   </chapter>
 
   <chapter id="HPCC_Nagios_Chapter">
-    <title>Nagios</title>
+    <!-- DNT-Start --><title>Nagios</title><!-- DNT-End -->
 
-    <para>The HPCC Reporting component leverages Nagios, an open source,
+    <para>The <!-- DNT-Start -->HPCC<!-- DNT-End --> Reporting component leverages <!-- DNT-Start -->Nagios<!-- DNT-End -->, an open source,
     system and network infrastructure monitoring application to monitor and
-    alert HPCC Administrators. Nagios leverages established and accepted open
-    source technologies to alert users to changes or potential issues. Nagios
+    alert <!-- DNT-Start -->HPCC<!-- DNT-End --> Administrators. <!-- DNT-Start -->Nagios<!-- DNT-End --> leverages established and accepted open
+    source technologies to alert users to changes or potential issues. <!-- DNT-Start -->Nagios<!-- DNT-End -->
     provides regular periodic system monitoring and reporting.</para>
 
-    <para>With the HPCC integration, you can generate Nagios configuration
-    files to monitor HPCC server health. Once the Nagios is configured, you
+    <para>With the <!-- DNT-Start -->HPCC<!-- DNT-End --> integration, you can generate <!-- DNT-Start -->Nagios<!-- DNT-End --> configuration
+    files to monitor <!-- DNT-Start -->HPCC<!-- DNT-End --> server health. Once the <!-- DNT-Start -->Nagios<!-- DNT-End --> is configured, you
     can monitor:<itemizedlist>
         <listitem>
           <para>Disk Usage</para>
@@ -532,16 +532,16 @@
         </listitem>
 
         <listitem>
-          <para>Service Bindings on ESP Servers</para>
+          <para>Service Bindings on <!-- DNT-Start -->ESP<!-- DNT-End --> Servers</para>
         </listitem>
       </itemizedlist></para>
 
     <para>With additional available (3rd party) plugins, check utilities, and
-    modification of the config file, Nagios can also monitor:</para>
+    modification of the config file, <!-- DNT-Start -->Nagios<!-- DNT-End --> can also monitor:</para>
 
     <para><itemizedlist>
         <listitem>
-          <para>SSH connectivity</para>
+          <para><!-- DNT-Start -->SSH<!-- DNT-End --> connectivity</para>
         </listitem>
 
         <listitem>
@@ -553,7 +553,7 @@
         </listitem>
 
         <listitem>
-          <para>Disk / CPU / Memory usage</para>
+          <para>Disk / <!-- DNT-Start -->CPU<!-- DNT-End --> / Memory usage</para>
         </listitem>
 
         <listitem>
@@ -566,48 +566,48 @@
       </itemizedlist></para>
 
     <sect1 id="NagiosIntro">
-      <title>Nagios Introduction</title>
+      <!-- DNT-Start --><title>Nagios Introduction</title><!-- DNT-End -->
 
-      <para>Nagios is a powerful monitoring and notification system, which can
-      be used with HPCC to help identify and resolve infrastructure problems
-      before they affect critical processes. Nagios hardware notifications can
+      <para><!-- DNT-Start -->Nagios<!-- DNT-End --> is a powerful monitoring and notification system, which can
+      be used with <!-- DNT-Start -->HPCC<!-- DNT-End --> to help identify and resolve infrastructure problems
+      before they affect critical processes. <!-- DNT-Start -->Nagios<!-- DNT-End --> hardware notifications can
       help keep your system highly available and alerts can assist in
       pre-emptive maintenance for processes which are down or behaving outside
       expected parameters to ensure system stability, reliability, and uptime.
-      Scripts and tools are provided to extract HPCC Platform system metrics
-      and easily integrate that data into Nagios.</para>
+      Scripts and tools are provided to extract <!-- DNT-Start -->HPCC<!-- DNT-End --> Platform system metrics
+      and easily integrate that data into <!-- DNT-Start -->Nagios<!-- DNT-End -->.</para>
 
       <para>Administrators should note that different platforms may not
       support all plugins. The <emphasis>hpcc-nagios-tools</emphasis> utility
       can be used to simplify the addition of custom plugins. Many additional
-      Nagios plugins and utilities are available from 3rd parties.</para>
+      <!-- DNT-Start -->Nagios<!-- DNT-End --> plugins and utilities are available from 3rd parties.</para>
 
-      <para>The Nagios package is not simply an "install and run" utility, it
+      <para>The <!-- DNT-Start -->Nagios<!-- DNT-End --> package is not simply an "install and run" utility, it
       requires additional steps to configure and use properly. If you are not
-      already familiar with Nagios, then you should:<itemizedlist>
+      already familiar with <!-- DNT-Start -->Nagios<!-- DNT-End -->, then you should:<itemizedlist>
           <listitem>
-            <para>Familiarize yourself with the base Nagios package from
+            <para>Familiarize yourself with the base <!-- DNT-Start -->Nagios<!-- DNT-End --> package from
             https://www.nagios.org</para>
           </listitem>
 
           <listitem>
-            <para>Set up a base Nagios installation, such as one on a virtual
+            <para>Set up a base <!-- DNT-Start -->Nagios<!-- DNT-End --> installation, such as one on a virtual
             machine.</para>
           </listitem>
 
           <listitem>
-            <para>Review our HPCC Monitoring and Reporting documentation in
+            <para>Review our <!-- DNT-Start -->HPCC<!-- DNT-End --> Monitoring and Reporting documentation in
             its entirety.</para>
           </listitem>
 
           <listitem>
-            <para>Review our VM installation and configuration.</para>
+            <para>Review our <!-- DNT-Start -->VM<!-- DNT-End --> installation and configuration.</para>
           </listitem>
         </itemizedlist></para>
 
-      <para>Nagios sets thresholds to trigger alerts. A check may indicate a
+      <para><!-- DNT-Start -->Nagios<!-- DNT-End --> sets thresholds to trigger alerts. A check may indicate a
       failure or high load that caused a timeout, so some historical baseline
-      would be helpful. Ganglia maybe useful for that purpose. Nagios
+      would be helpful. <!-- DNT-Start -->Ganglia<!-- DNT-End --> maybe useful for that purpose. <!-- DNT-Start -->Nagios<!-- DNT-End -->
       monitoring uses a polling interval to check system health. Frequency and
       number of checks would depend on the needs in the cluster. Alerts are
       only useful if they are actionable. Consider who gets alerted (tiered
@@ -617,17 +617,17 @@
     </sect1>
 
     <sect1 id="NagiosVM">
-      <title>Nagios in the Virtual Machine</title>
+      <!-- DNT-Start --><title>Nagios in the Virtual Machine</title><!-- DNT-End -->
 
-      <para>An easy way to understand how the Nagios works and how to
+      <para>An easy way to understand how the <!-- DNT-Start -->Nagios<!-- DNT-End --> works and how to
       implement it on a larger system, is to examine an established session in
       action.</para>
 
-      <para>Nagios integration is built into the current HPCC Virtual Machine
+      <para><!-- DNT-Start -->Nagios<!-- DNT-End --> integration is built into the current <!-- DNT-Start -->HPCC<!-- DNT-End --> Virtual Machine
       images. Download and start up a virtual image and look at how the
       monitoring component works.</para>
 
-      <para>The Nagios component for HPCC on the VM allows you:</para>
+      <para>The <!-- DNT-Start -->Nagios<!-- DNT-End --> component for <!-- DNT-Start -->HPCC<!-- DNT-End --> on the <!-- DNT-Start -->VM<!-- DNT-End --> allows you:</para>
 
       <itemizedlist>
         <listitem>
@@ -646,7 +646,7 @@
       <para>Evaluate the value of the content and decide what aspects are
       relevant to your needs.</para>
 
-      <!--INCLUDE-VM_STEPS-as-Sect2-->
+      <!-- DNT-Start --><!--INCLUDE-VM_STEPS-as-Sect2--><!-- DNT-End -->
 
       <sect2 id="hpcc-2id">
         <xi:include href="HPCCMonitoring/MonRep-Mods/MonRep-VM.xml"
@@ -655,11 +655,11 @@
       </sect2>
 
       <sect2 id="TheNagiosInterface">
-        <title>Nagios Interface</title>
+        <!-- DNT-Start --><title>Nagios Interface</title><!-- DNT-End -->
 
-        <para>There are a number of Nagios configurations available. To get a
-        better understanding of Nagios configuration, look at the
-        configuration delivered with the VM. To login to the Nagios admin
+        <para>There are a number of <!-- DNT-Start -->Nagios<!-- DNT-End --> configurations available. To get a
+        better understanding of <!-- DNT-Start -->Nagios<!-- DNT-End --> configuration, look at the
+        configuration delivered with the <!-- DNT-Start -->VM<!-- DNT-End -->. To login to the <!-- DNT-Start -->Nagios<!-- DNT-End --> admin
         page:</para>
 
         <orderedlist>
@@ -667,8 +667,8 @@
             <para>Go to
             <emphasis>http://nnn.nnn.nnn.nnn/</emphasis>nagios3</para>
 
-            <para>Where the <emphasis>nnn.nnn.nnn.nnn</emphasis> is your ESP
-            server running ECL Watch.</para>
+            <para>Where the <emphasis>nnn.nnn.nnn.nnn</emphasis> is your <!-- DNT-Start -->ESP<!-- DNT-End -->
+            server running <!-- DNT-Start -->ECL<!-- DNT-End --> Watch.</para>
           </listitem>
 
           <listitem>
@@ -680,12 +680,12 @@
           </listitem>
         </orderedlist>
 
-        <para>Once logged in the Nagios landing page displays. This page
-        displays information about Nagios and contains links to the various
+        <para>Once logged in the <!-- DNT-Start -->Nagios<!-- DNT-End --> landing page displays. This page
+        displays information about <!-- DNT-Start -->Nagios<!-- DNT-End --> and contains links to the various
         components, items, and documentation.</para>
 
         <para>To view the configuration, click on the <emphasis
-        role="bold">Host Groups</emphasis> link from the Nagios navigation
+        role="bold">Host Groups</emphasis> link from the <!-- DNT-Start -->Nagios<!-- DNT-End --> navigation
         menu on the left side of the page.</para>
 
         <para><figure>
@@ -701,7 +701,7 @@
         <para>This displays the Host Groups being monitored.</para>
 
         <figure>
-          <title>Nagios Host Groups</title>
+          <!-- DNT-Start --><title>Nagios Host Groups</title><!-- DNT-End -->
 
           <mediaobject>
             <imageobject>
@@ -711,10 +711,10 @@
         </figure>
 
         <sect3 id="NagiosServices">
-          <title>Nagios Services</title>
+          <!-- DNT-Start --><title>Nagios Services</title><!-- DNT-End -->
 
           <para>Click on the <emphasis role="bold">Services</emphasis> link
-          from the Nagios navigation menu on the left side of the page.
+          from the <!-- DNT-Start -->Nagios<!-- DNT-End --> navigation menu on the left side of the page.
           <figure>
               <title>Nagios Services</title>
 
@@ -743,28 +743,28 @@
     </sect1>
 
     <sect1 id="NagiosInstallation">
-      <title>Installation of Nagios</title>
+      <!-- DNT-Start --><title>Installation of Nagios</title><!-- DNT-End -->
 
-      <para>The HPCC Nagios package provides tools and utilities for
-      generating Nagios configurations. These configurations check HPCC and
-      perform some of the HPCC specific checks. HPCC Nagios installation is
-      provided on the HPCC Systems<superscript>®</superscript> portal.</para>
+      <para>The <!-- DNT-Start -->HPCC<!-- DNT-End --> <!-- DNT-Start -->Nagios<!-- DNT-End --> package provides tools and utilities for
+      generating <!-- DNT-Start -->Nagios<!-- DNT-End --> configurations. These configurations check <!-- DNT-Start -->HPCC<!-- DNT-End --> and
+      perform some of the <!-- DNT-Start -->HPCC<!-- DNT-End --> specific checks. <!-- DNT-Start -->HPCC<!-- DNT-End --> <!-- DNT-Start -->Nagios<!-- DNT-End --> installation is
+      provided on the <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript> portal.</para>
 
       <sect2 id="HPCC_Nagios_Installation">
-        <title>HPCC Nagios Installation Package</title>
+        <!-- DNT-Start --><title>HPCC Nagios Installation Package</title><!-- DNT-End -->
 
-        <para>To get the HPCC Nagios monitoring on your system you need the
-        Installation package. Download the installation package from the HPCC
+        <para>To get the <!-- DNT-Start -->HPCC<!-- DNT-End --> <!-- DNT-Start -->Nagios<!-- DNT-End --> monitoring on your system you need the
+        Installation package. Download the installation package from the <!-- DNT-Start -->HPCC<!-- DNT-End -->
         Systems portal.</para>
 
-        <para>The HPCC Systems<superscript>®</superscript> web portal is where
-        you can find HPCC resources, downloads, plugins, as well as helpful
+        <para>The <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript> web portal is where
+        you can find <!-- DNT-Start -->HPCC<!-- DNT-End --> resources, downloads, plugins, as well as helpful
         information.</para>
 
         <para><ulink
         url="http://hpccsystems.com/download/free-community-edition/monitoring">http://hpccsystems.com/</ulink></para>
 
-        <para>You can find the HPCC Monitoring and Reporting Installation
+        <para>You can find the <!-- DNT-Start -->HPCC<!-- DNT-End --> Monitoring and Reporting Installation
         packages at:</para>
 
         <para><ulink
@@ -775,10 +775,10 @@
       </sect2>
 
       <sect2 id="HPCC_InstallNagios" role="brk">
-        <title>Install Nagios</title>
+        <!-- DNT-Start --><title>Install Nagios</title><!-- DNT-End -->
 
-        <para>To Install Nagios for HPCC, you must have HPCC System platform
-        installed and also have the open-source Nagios package
+        <para>To Install <!-- DNT-Start -->Nagios<!-- DNT-End --> for <!-- DNT-Start -->HPCC<!-- DNT-End -->, you must have <!-- DNT-Start -->HPCC<!-- DNT-End --> System platform
+        installed and also have the open-source <!-- DNT-Start -->Nagios<!-- DNT-End --> package
         installed.</para>
 
         <para><orderedlist>
@@ -786,25 +786,25 @@
               <para>Install the <emphasis
               role="bold">hpcc-nagios-monitoring</emphasis> on the node that
               will be doing the monitoring. The node where you install the
-              Nagios monitoring must have network connectivity to all the
+              <!-- DNT-Start -->Nagios<!-- DNT-End --> monitoring must have network connectivity to all the
               monitored nodes.</para>
 
-              <para>With the hpcc-nagios tools installed, you have HPCC check
+              <para>With the hpcc-nagios tools installed, you have <!-- DNT-Start -->HPCC<!-- DNT-End --> check
               utilities in:</para>
 
               <para><programlisting> /usr/lib/nagios/plugins/ </programlisting></para>
             </listitem>
 
             <listitem>
-              <para>Generate Nagios configuration files. There are several
-              configuration options for Nagios. Determine your needs and
+              <para>Generate <!-- DNT-Start -->Nagios<!-- DNT-End --> configuration files. There are several
+              configuration options for <!-- DNT-Start -->Nagios<!-- DNT-End -->. Determine your needs and
               customize accordingly.</para>
 
-              <para>The main features included are tools to generate Nagios
+              <para>The main features included are tools to generate <!-- DNT-Start -->Nagios<!-- DNT-End -->
               configurations. The generated configurations can be modified
               with optional flags to fit the environment that is being
               monitored. The default package also provides some utilities to
-              monitor HPCC processes such as Roxies, ESP Services by node and
+              monitor <!-- DNT-Start -->HPCC<!-- DNT-End --> processes such as Roxies, <!-- DNT-Start -->ESP<!-- DNT-End --> Services by node and
               port, Dali, and dafilesrv. Other processes could also be
               monitored if a check utility is provided and the generated
               config file is modified (find/replace all would probably
@@ -813,15 +813,15 @@
           </orderedlist>Generate a host groups configuration for
         Nagios.</para>
 
-        <programlisting> /opt/HPCCSystem/bin/hpcc-nagios-tools -env   \
+        <!-- DNT-Start --><programlisting> /opt/HPCCSystem/bin/hpcc-nagios-tools -env   \
  /etc/HPCCSystems/environment.xml -g -out /etc/nagios3/config.d/hpcc_hostgroups.cfg 
-</programlisting>
+</programlisting><!-- DNT-End -->
 
         <para>Generate a services configuration file.</para>
 
-        <programlisting> /opt/HPCCSystem/bin/hpcc-nagios-tools -env   \
+        <!-- DNT-Start --><programlisting> /opt/HPCCSystem/bin/hpcc-nagios-tools -env   \
  /etc/HPCCSystems/environment.xml -s -out /etc/nagios3/config.d/hpcc_services.cfg
-</programlisting>
+</programlisting><!-- DNT-End -->
 
         <para>Generate an escalation notifications file.</para>
 
@@ -835,17 +835,17 @@
         <para><orderedlist continuation="continues">
             <listitem>
               <para>Integrate the host and services configuration files into
-              the Nagios configuration folders.</para>
+              the <!-- DNT-Start -->Nagios<!-- DNT-End --> configuration folders.</para>
             </listitem>
 
             <listitem>
-              <para>Restart Nagios for the new configuration to take
+              <para>Restart <!-- DNT-Start -->Nagios<!-- DNT-End --> for the new configuration to take
               effect.</para>
             </listitem>
           </orderedlist></para>
 
         <sect3 id="NagiosOptions">
-          <title>Nagios Options</title>
+          <!-- DNT-Start --><title>Nagios Options</title><!-- DNT-End -->
 
           <para>You may need to override some of the default values, depending
           on your Linux distribution. For different distributions you may need
@@ -861,12 +861,12 @@
           <para>To override the defaults, modify the generated configurations
           as needed.</para>
 
-          <para>Monitoring tools like Ganglia can help to determine what the
+          <para>Monitoring tools like <!-- DNT-Start -->Ganglia<!-- DNT-End --> can help to determine what the
           thresholds should be.</para>
         </sect3>
 
         <sect3 id="nagios-tools_Usage" role="brk">
-          <title>hpcc-nagios-tools usage</title>
+          <!-- DNT-Start --><title>hpcc-nagios-tools usage</title><!-- DNT-End -->
 
           <para><emphasis role="bold">hpcc-nagios-tools -env</emphasis>
           <emphasis>&lt;environment file&gt;</emphasis> <emphasis
@@ -884,7 +884,7 @@
 
                 <thead>
                   <row>
-                    <entry>Option/Flag</entry>
+                    <entry><!-- DNT-Start -->Option/Flag<!-- DNT-End --></entry>
 
                     <entry>Detail</entry>
 
@@ -894,7 +894,7 @@
 
                 <tbody>
                   <row>
-                    <entry>-c or -cfggen</entry>
+                    <entry><!-- DNT-Start -->-c or -cfggen<!-- DNT-End --></entry>
 
                     <entry>The path to the configgen</entry>
 
@@ -902,7 +902,7 @@
                   </row>
 
                   <row>
-                    <entry>-g or -hostgroup</entry>
+                    <entry><!-- DNT-Start -->-g or -hostgroup<!-- DNT-End --></entry>
 
                     <entry>generate host group file</entry>
 
@@ -910,7 +910,7 @@
                   </row>
 
                   <row>
-                    <entry>-s or -service</entry>
+                    <entry><!-- DNT-Start -->-s or -service<!-- DNT-End --></entry>
 
                     <entry>generate service and host file</entry>
 
@@ -918,7 +918,7 @@
                   </row>
 
                   <row>
-                    <entry>-t or -host</entry>
+                    <entry><!-- DNT-Start -->-t or -host<!-- DNT-End --></entry>
 
                     <entry>generate host file</entry>
 
@@ -926,7 +926,7 @@
                   </row>
 
                   <row>
-                    <entry>-n or -nrpe</entry>
+                    <entry><!-- DNT-Start -->-n or -nrpe<!-- DNT-End --></entry>
 
                     <entry>generate client plugin cfgs for nrpe</entry>
 
@@ -934,7 +934,7 @@
                   </row>
 
                   <row>
-                    <entry>-e or -env</entry>
+                    <entry><!-- DNT-Start -->-e or -env<!-- DNT-End --></entry>
 
                     <entry>hpcc environment configuration file</entry>
 
@@ -942,7 +942,7 @@
                   </row>
 
                   <row>
-                    <entry>-ec or -escalation_cmds</entry>
+                    <entry><!-- DNT-Start -->-ec or -escalation_cmds<!-- DNT-End --></entry>
 
                     <entry>generate escalation commands</entry>
 
@@ -950,7 +950,7 @@
                   </row>
 
                   <row>
-                    <entry>-enable_host_notify</entry>
+                    <entry><!-- DNT-Start -->-enable_host_notify<!-- DNT-End --></entry>
 
                     <entry>enable host notifications</entry>
 
@@ -958,7 +958,7 @@
                   </row>
 
                   <row>
-                    <entry>-enable_service_notify</entry>
+                    <entry><!-- DNT-Start -->-enable_service_notify<!-- DNT-End --></entry>
 
                     <entry>enable service notifications</entry>
 
@@ -966,7 +966,7 @@
                   </row>
 
                   <row>
-                    <entry>-set_url</entry>
+                    <entry><!-- DNT-Start -->-set_url<!-- DNT-End --></entry>
 
                     <entry>set the url link for escalation
                     notifications</entry>
@@ -975,27 +975,27 @@
                   </row>
 
                   <row>
-                    <entry>-override_send_serivce_status</entry>
+                    <entry><!-- DNT-Start -->-override_send_serivce_status<!-- DNT-End --></entry>
 
                     <entry>override send_status escalation command</entry>
 
-                    <entry>/opt/HPCCSystems/bin/send_status -o $HOSTADDRESS$
-                    -s $SERVICESTATE$ -d '$SERVICENOTES$' -t $TIMET$ -n
-                    $SERVICEDISPLAYNAME$</entry>
+                    <entry>/opt/HPCCSystems/bin/send_status -o $<!-- DNT-Start -->HOSTADDRESS<!-- DNT-End -->$
+                    -s $<!-- DNT-Start -->SERVICESTATE<!-- DNT-End -->$ -d '$<!-- DNT-Start -->SERVICENOTES<!-- DNT-End -->$' -t $<!-- DNT-Start -->TIMET<!-- DNT-End -->$ -n
+                    $<!-- DNT-Start -->SERVICEDISPLAYNAME<!-- DNT-End -->$</entry>
                   </row>
 
                   <row>
-                    <entry>-override_send_host_status</entry>
+                    <entry><!-- DNT-Start -->-override_send_host_status<!-- DNT-End --></entry>
 
                     <entry>override send_status escalation command</entry>
 
-                    <entry>/opt/HPCCSystems/bin/send_status -o $HOSTADDRESS$
-                    -s $HOSTSTATE$ -d '$HOSTNOTES$' -t $TIMET$ -n
-                    $HOSTDISPLAYNAME$</entry>
+                    <entry>/opt/HPCCSystems/bin/send_status -o $<!-- DNT-Start -->HOSTADDRESS<!-- DNT-End -->$
+                    -s $<!-- DNT-Start -->HOSTSTATE<!-- DNT-End -->$ -d '$<!-- DNT-Start -->HOSTNOTES<!-- DNT-End -->$' -t $<!-- DNT-Start -->TIMET<!-- DNT-End -->$ -n
+                    $<!-- DNT-Start -->HOSTDISPLAYNAME<!-- DNT-End -->$</entry>
                   </row>
 
                   <row>
-                    <entry>-override_service_status</entry>
+                    <entry><!-- DNT-Start -->-override_service_status<!-- DNT-End --></entry>
 
                     <entry>override host_notification_commands</entry>
 
@@ -1003,7 +1003,7 @@
                   </row>
 
                   <row>
-                    <entry>-override_host_status</entry>
+                    <entry><!-- DNT-Start -->-override_host_status<!-- DNT-End --></entry>
 
                     <entry>override service_notification_commands</entry>
 
@@ -1011,7 +1011,7 @@
                   </row>
 
                   <row>
-                    <entry>-override_eclwatch_host_port</entry>
+                    <entry><!-- DNT-Start -->-override_eclwatch_host_port<!-- DNT-End --></entry>
 
                     <entry>Override eclwatch host port for escalation
                     commands. This flag may be specified multiple
@@ -1021,7 +1021,7 @@
                   </row>
 
                   <row>
-                    <entry>-o or -output</entry>
+                    <entry><!-- DNT-Start -->-o or -output<!-- DNT-End --></entry>
 
                     <entry>outpfile where the generated configuration will be
                     written</entry>
@@ -1030,16 +1030,16 @@
                   </row>
 
                   <row>
-                    <entry>-r or -retry</entry>
+                    <entry><!-- DNT-Start -->-r or -retry<!-- DNT-End --></entry>
 
-                    <entry>keep attempting to resolve IP to hostnames. Stops
+                    <entry>keep attempting to resolve <!-- DNT-Start -->IP<!-- DNT-End --> to hostnames. Stops
                     after 1st failure.</entry>
 
                     <entry></entry>
                   </row>
 
                   <row>
-                    <entry>-lookup</entry>
+                    <entry><!-- DNT-Start -->-lookup<!-- DNT-End --></entry>
 
                     <entry>look up hostname form ip</entry>
 
@@ -1047,25 +1047,25 @@
                   </row>
 
                   <row>
-                    <entry>-u or -user</entry>
+                    <entry><!-- DNT-Start -->-u or -user<!-- DNT-End --></entry>
 
-                    <entry>MACRO name to use for username for esp server
-                    login. Example: $USER1$</entry>
-
-                    <entry></entry>
-                  </row>
-
-                  <row>
-                    <entry>-p or -pass</entry>
-
-                    <entry>MACRO to use for password for esp server login.
-                    Example: $USER2$</entry>
+                    <entry><!-- DNT-Start -->MACRO<!-- DNT-End --> name to use for username for esp server
+                    login. Example: $<!-- DNT-Start -->USER<!-- DNT-End -->1$</entry>
 
                     <entry></entry>
                   </row>
 
                   <row>
-                    <entry>-attempts</entry>
+                    <entry><!-- DNT-Start -->-p or -pass<!-- DNT-End --></entry>
+
+                    <entry><!-- DNT-Start -->MACRO<!-- DNT-End --> to use for password for esp server login.
+                    Example: $<!-- DNT-Start -->USER<!-- DNT-End -->2$</entry>
+
+                    <entry></entry>
+                  </row>
+
+                  <row>
+                    <entry><!-- DNT-Start -->-attempts<!-- DNT-End --></entry>
 
                     <entry>max host retry attempts</entry>
 
@@ -1073,7 +1073,7 @@
                   </row>
 
                   <row>
-                    <entry>-sysload1warn</entry>
+                    <entry><!-- DNT-Start -->-sysload1warn<!-- DNT-End --></entry>
 
                     <entry>load1 warning threshold</entry>
 
@@ -1081,7 +1081,7 @@
                   </row>
 
                   <row>
-                    <entry>-sysload5warn</entry>
+                    <entry><!-- DNT-Start -->-sysload5warn<!-- DNT-End --></entry>
 
                     <entry>load5 warning threshold</entry>
 
@@ -1089,7 +1089,7 @@
                   </row>
 
                   <row>
-                    <entry>-sysload15warn</entry>
+                    <entry><!-- DNT-Start -->-sysload15warn<!-- DNT-End --></entry>
 
                     <entry>load15 warning threshold</entry>
 
@@ -1097,7 +1097,7 @@
                   </row>
 
                   <row>
-                    <entry>-sysload1crit</entry>
+                    <entry><!-- DNT-Start -->-sysload1crit<!-- DNT-End --></entry>
 
                     <entry>load1 critical threshold</entry>
 
@@ -1105,7 +1105,7 @@
                   </row>
 
                   <row>
-                    <entry>-sysload5crit</entry>
+                    <entry><!-- DNT-Start -->-sysload5crit<!-- DNT-End --></entry>
 
                     <entry>load5 critical threshold</entry>
 
@@ -1113,7 +1113,7 @@
                   </row>
 
                   <row>
-                    <entry>-sysload15crit</entry>
+                    <entry><!-- DNT-Start -->-sysload15crit<!-- DNT-End --></entry>
 
                     <entry>load15 critical threshold</entry>
 
@@ -1121,7 +1121,7 @@
                   </row>
 
                   <row>
-                    <entry>-diskspacewarn</entry>
+                    <entry><!-- DNT-Start -->-diskspacewarn<!-- DNT-End --></entry>
 
                     <entry>disk space % warning threshold</entry>
 
@@ -1129,7 +1129,7 @@
                   </row>
 
                   <row>
-                    <entry>-diskspacecrit</entry>
+                    <entry><!-- DNT-Start -->-diskspacecrit<!-- DNT-End --></entry>
 
                     <entry>disk space % critical threshold</entry>
 
@@ -1137,7 +1137,7 @@
                   </row>
 
                   <row>
-                    <entry>-usernumwarn</entry>
+                    <entry><!-- DNT-Start -->-usernumwarn<!-- DNT-End --></entry>
 
                     <entry>users logged in warning threshold</entry>
 
@@ -1145,7 +1145,7 @@
                   </row>
 
                   <row>
-                    <entry>-usernumcrit</entry>
+                    <entry><!-- DNT-Start -->-usernumcrit<!-- DNT-End --></entry>
 
                     <entry>users logged in critical threshold</entry>
 
@@ -1153,7 +1153,7 @@
                   </row>
 
                   <row>
-                    <entry>-totalprocswarn</entry>
+                    <entry><!-- DNT-Start -->-totalprocswarn<!-- DNT-End --></entry>
 
                     <entry>total process warning threshold</entry>
 
@@ -1161,7 +1161,7 @@
                   </row>
 
                   <row>
-                    <entry>-totalprocscrit</entry>
+                    <entry><!-- DNT-Start -->-totalprocscrit<!-- DNT-End --></entry>
 
                     <entry>total process critical threshold</entry>
 
@@ -1169,7 +1169,7 @@
                   </row>
 
                   <row>
-                    <entry>-checkperiod</entry>
+                    <entry><!-- DNT-Start -->-checkperiod<!-- DNT-End --></entry>
 
                     <entry>host check period</entry>
 
@@ -1177,7 +1177,7 @@
                   </row>
 
                   <row>
-                    <entry>-contacts</entry>
+                    <entry><!-- DNT-Start -->-contacts<!-- DNT-End --></entry>
 
                     <entry>host contacts</entry>
 
@@ -1185,7 +1185,7 @@
                   </row>
 
                   <row>
-                    <entry>-contactgroups</entry>
+                    <entry><!-- DNT-Start -->-contactgroups<!-- DNT-End --></entry>
 
                     <entry>host contact groups</entry>
 
@@ -1193,7 +1193,7 @@
                   </row>
 
                   <row>
-                    <entry>-notify_interval</entry>
+                    <entry><!-- DNT-Start -->-notify_interval<!-- DNT-End --></entry>
 
                     <entry>host contact groups</entry>
 
@@ -1201,7 +1201,7 @@
                   </row>
 
                   <row>
-                    <entry>-notify_period</entry>
+                    <entry><!-- DNT-Start -->-notify_period<!-- DNT-End --></entry>
 
                     <entry>host contact groups</entry>
 
@@ -1209,11 +1209,11 @@
                   </row>
 
                   <row>
-                    <entry>-set_esp_username_pw</entry>
+                    <entry><!-- DNT-Start -->-set_esp_username_pw<!-- DNT-End --></entry>
 
-                    <entry>Set specific login credentials for ESP checks. All
+                    <entry>Set specific login credentials for <!-- DNT-Start -->ESP<!-- DNT-End --> checks. All
                     fields are required (esp name, user name, password). Can
-                    be specified more than once to support multiple ESP
+                    be specified more than once to support multiple <!-- DNT-Start -->ESP<!-- DNT-End -->
                     servers.</entry>
 
                     <entry><para>&lt;esp name&gt;</para><para>&lt;user
@@ -1221,7 +1221,7 @@
                   </row>
 
                   <row>
-                    <entry>-override_retry_interval</entry>
+                    <entry><!-- DNT-Start -->-override_retry_interval<!-- DNT-End --></entry>
 
                     <entry>check retry_interval</entry>
 
@@ -1229,7 +1229,7 @@
                   </row>
 
                   <row>
-                    <entry>-override_active_checks_enabled</entry>
+                    <entry><!-- DNT-Start -->-override_active_checks_enabled<!-- DNT-End --></entry>
 
                     <entry>active_checks</entry>
 
@@ -1237,7 +1237,7 @@
                   </row>
 
                   <row>
-                    <entry>-override_passive_checks_enabled</entry>
+                    <entry><!-- DNT-Start -->-override_passive_checks_enabled<!-- DNT-End --></entry>
 
                     <entry>passive_checks</entry>
 
@@ -1245,7 +1245,7 @@
                   </row>
 
                   <row>
-                    <entry>-override_parallelize_check</entry>
+                    <entry><!-- DNT-Start -->-override_parallelize_check<!-- DNT-End --></entry>
 
                     <entry>parallelize_check</entry>
 
@@ -1253,7 +1253,7 @@
                   </row>
 
                   <row>
-                    <entry>-override_obsess_over_service</entry>
+                    <entry><!-- DNT-Start -->-override_obsess_over_service<!-- DNT-End --></entry>
 
                     <entry>obsess_over_service</entry>
 
@@ -1261,7 +1261,7 @@
                   </row>
 
                   <row>
-                    <entry>-override_check_freshness</entry>
+                    <entry><!-- DNT-Start -->-override_check_freshness<!-- DNT-End --></entry>
 
                     <entry>check_freshness</entry>
 
@@ -1269,7 +1269,7 @@
                   </row>
 
                   <row>
-                    <entry>-override_event_handler_enabled</entry>
+                    <entry><!-- DNT-Start -->-override_event_handler_enabled<!-- DNT-End --></entry>
 
                     <entry>event_handler_enabled</entry>
 
@@ -1277,7 +1277,7 @@
                   </row>
 
                   <row>
-                    <entry>-override_is_volatile</entry>
+                    <entry><!-- DNT-Start -->-override_is_volatile<!-- DNT-End --></entry>
 
                     <entry>is_volatile</entry>
 
@@ -1285,7 +1285,7 @@
                   </row>
 
                   <row>
-                    <entry>-override_normal_check_interval</entry>
+                    <entry><!-- DNT-Start -->-override_normal_check_interval<!-- DNT-End --></entry>
 
                     <entry>normal_check_interval</entry>
 
@@ -1293,7 +1293,7 @@
                   </row>
 
                   <row>
-                    <entry>-override_flap_detection_enabled</entry>
+                    <entry><!-- DNT-Start -->-override_flap_detection_enabled<!-- DNT-End --></entry>
 
                     <entry>flap_detection_enabled</entry>
 
@@ -1301,7 +1301,7 @@
                   </row>
 
                   <row>
-                    <entry>-override_process_perf_data</entry>
+                    <entry><!-- DNT-Start -->-override_process_perf_data<!-- DNT-End --></entry>
 
                     <entry>process_perf_data</entry>
 
@@ -1309,7 +1309,7 @@
                   </row>
 
                   <row>
-                    <entry>-override_failure_prediction_enabled</entry>
+                    <entry><!-- DNT-Start -->-override_failure_prediction_enabled<!-- DNT-End --></entry>
 
                     <entry>failure_prediction_enabled</entry>
 
@@ -1317,7 +1317,7 @@
                   </row>
 
                   <row>
-                    <entry>-override_retain_status_information</entry>
+                    <entry><!-- DNT-Start -->-override_retain_status_information<!-- DNT-End --></entry>
 
                     <entry>retain_status_information</entry>
 
@@ -1325,7 +1325,7 @@
                   </row>
 
                   <row>
-                    <entry>-override_retain_nonstatus_information</entry>
+                    <entry><!-- DNT-Start -->-override_retain_nonstatus_information<!-- DNT-End --></entry>
 
                     <entry>retain_nonstatus_information</entry>
 
@@ -1333,7 +1333,7 @@
                   </row>
 
                   <row>
-                    <entry>-check_all_disks</entry>
+                    <entry><!-- DNT-Start -->-check_all_disks<!-- DNT-End --></entry>
 
                     <entry>enable/disable check_all_disks service
                     check</entry>
@@ -1342,7 +1342,7 @@
                   </row>
 
                   <row>
-                    <entry>-override_check_all_disks</entry>
+                    <entry><!-- DNT-Start -->-override_check_all_disks<!-- DNT-End --></entry>
 
                     <entry>check_all_disk plugin name</entry>
 
@@ -1350,7 +1350,7 @@
                   </row>
 
                   <row>
-                    <entry>-check_users</entry>
+                    <entry><!-- DNT-Start -->-check_users<!-- DNT-End --></entry>
 
                     <entry>enable/disable check_users service check</entry>
 
@@ -1358,7 +1358,7 @@
                   </row>
 
                   <row>
-                    <entry>-override_check_users</entry>
+                    <entry><!-- DNT-Start -->-override_check_users<!-- DNT-End --></entry>
 
                     <entry>check_users plugin name</entry>
 
@@ -1366,7 +1366,7 @@
                   </row>
 
                   <row>
-                    <entry>-check_procs</entry>
+                    <entry><!-- DNT-Start -->-check_procs<!-- DNT-End --></entry>
 
                     <entry>enable/disable check_procs service check</entry>
 
@@ -1374,7 +1374,7 @@
                   </row>
 
                   <row>
-                    <entry>-override_check_procs</entry>
+                    <entry><!-- DNT-Start -->-override_check_procs<!-- DNT-End --></entry>
 
                     <entry>check_procs plugin name</entry>
 
@@ -1382,7 +1382,7 @@
                   </row>
 
                   <row>
-                    <entry>-check_load</entry>
+                    <entry><!-- DNT-Start -->-check_load<!-- DNT-End --></entry>
 
                     <entry>enable/disable check_load service check</entry>
 
@@ -1390,7 +1390,7 @@
                   </row>
 
                   <row>
-                    <entry>-override_check_load</entry>
+                    <entry><!-- DNT-Start -->-override_check_load<!-- DNT-End --></entry>
 
                     <entry>check_load plugin name</entry>
 
@@ -1398,7 +1398,7 @@
                   </row>
 
                   <row>
-                    <entry>-check_ssh</entry>
+                    <entry><!-- DNT-Start -->-check_ssh<!-- DNT-End --></entry>
 
                     <entry>enable/disable ssh service check</entry>
 
@@ -1406,7 +1406,7 @@
                   </row>
 
                   <row>
-                    <entry>-set_catch_all_hostgroup</entry>
+                    <entry><!-- DNT-Start -->-set_catch_all_hostgroup<!-- DNT-End --></entry>
 
                     <entry>create a hostgroup and include all nodes as
                     memebers</entry>
@@ -1415,7 +1415,7 @@
                   </row>
 
                   <row>
-                    <entry>-set_host_check_command</entry>
+                    <entry><!-- DNT-Start -->-set_host_check_command<!-- DNT-End --></entry>
 
                     <entry>set the check_command for hosts</entry>
 
@@ -1423,7 +1423,7 @@
                   </row>
 
                   <row>
-                    <entry>-check_host</entry>
+                    <entry><!-- DNT-Start -->-check_host<!-- DNT-End --></entry>
 
                     <entry>enable/disable check host check</entry>
 
@@ -1431,7 +1431,7 @@
                   </row>
 
                   <row>
-                    <entry>-disable_use_of_note_for_host_port</entry>
+                    <entry><!-- DNT-Start -->-disable_use_of_note_for_host_port<!-- DNT-End --></entry>
 
                     <entry>the send command will use the detail/note for
                     host:ip insteaad of param</entry>
@@ -1440,17 +1440,17 @@
                   </row>
 
                   <row>
-                    <entry>-use_https</entry>
+                    <entry><!-- DNT-Start -->-use_https<!-- DNT-End --></entry>
 
                     <entry>Use https connection for esp service calls.
-                    <emphasis role="bold">HIGHLY RECOMMENDED</emphasis> when
+                    <emphasis role="bold"><!-- DNT-Start -->HIGHLY<!-- DNT-End --> <!-- DNT-Start -->RECOMMENDED<!-- DNT-End --></emphasis> when
                     using username/password</entry>
 
                     <entry></entry>
                   </row>
 
                   <row>
-                    <entry>-d or -debug</entry>
+                    <entry><!-- DNT-Start -->-d or -debug<!-- DNT-End --></entry>
 
                     <entry>verbose debug output\n</entry>
 
@@ -1461,15 +1461,15 @@
             </informaltable></para>
 
           <para>Use the available option flags to customize the configuration
-          of Nagios as appropriate for your environment.</para>
+          of <!-- DNT-Start -->Nagios<!-- DNT-End --> as appropriate for your environment.</para>
         </sect3>
 
         <sect3 id="HPCC_NagiosHelp">
-          <title>Help</title>
+          <!-- DNT-Start --><title>Help</title><!-- DNT-End -->
 
-          <para>For help with HPCC Nagios enter:</para>
+          <para>For help with <!-- DNT-Start -->HPCC<!-- DNT-End --> <!-- DNT-Start -->Nagios<!-- DNT-End --> enter:</para>
 
-          <programlisting> /opt/HPCCSystems/bin/hpcc-nagios-tools</programlisting>
+          <!-- DNT-Start --><programlisting> /opt/HPCCSystems/bin/hpcc-nagios-tools</programlisting><!-- DNT-End -->
 
           <para>Entering the command without any parameters or options
           specified displays all the available options.</para>

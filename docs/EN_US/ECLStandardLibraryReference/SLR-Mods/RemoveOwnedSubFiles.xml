@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="RemoveOwnedSubFiles">
-  <title>RemoveOwnedSubFiles</title>
+  <!-- DNT-Start --><title>RemoveOwnedSubFiles</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.File.RemoveOwnedSubFiles<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.File.RemoveOwnedSubFiles<indexterm>
       <primary>STD.File.RemoveOwnedSubFiles</primary>
     </indexterm><indexterm>
       <primary>File.RemoveOwnedSubFiles</primary>
@@ -12,7 +12,7 @@
       <primary>RemoveOwnedSubFiles</primary>
     </indexterm>(</emphasis> <emphasis> superfile</emphasis><emphasis
   role="bold"> [</emphasis> <emphasis>, delete</emphasis> <emphasis
-  role="bold">])</emphasis></para>
+  role="bold">])</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -22,23 +22,23 @@
 
       <tbody>
         <row>
-          <entry><emphasis>superfile</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>superfile</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the logical name of the
           superfile.</entry>
         </row>
 
         <row>
-          <entry><emphasis>delete</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>delete</emphasis><!-- DNT-End --></entry>
 
           <entry>A boolean flag specifying to delete the sub-files from disk
-          when TRUE or just remove them from the <emphasis>superfile
+          when <!-- DNT-Start -->TRUE<!-- DNT-End --> or just remove them from the <emphasis>superfile
           </emphasis>list of files. If omitted, the default is to just remove
           them from the <emphasis>superfile </emphasis>list of files.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
           <entry>Null.</entry>
         </row>
@@ -46,19 +46,19 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">RemoveOwnedSubFiles </emphasis>function
+  <para>The <emphasis role="bold"><!-- DNT-Start -->RemoveOwnedSubFiles<!-- DNT-End --> </emphasis>function
   removes all owned sub-files from the specified superfile. These are only
   removed if they are soley owned by the superfile. If a subfile is co-owned,
   (i.e.,a member of any other superfile), then the removal is ignored.</para>
 
   <para>This function may be included in a superfile transaction, unless the
-  delete Flag is TRUE.</para>
+  delete Flag is <!-- DNT-Start -->TRUE<!-- DNT-End -->.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">SEQUENTIAL(
+  <!-- DNT-Start --><programlisting format="linespecific">SEQUENTIAL(
  STD.File.StartSuperFileTransaction(),
  STD.File.RemoveOwnedSubFiles('MySuperFile'),
  STD.File.FinishSuperFileTransaction()
-);</programlisting>
+);</programlisting><!-- DNT-End -->
 </sect1>

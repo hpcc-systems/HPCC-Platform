@@ -2,28 +2,28 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="FAILCODE">
-  <title>FAILCODE<indexterm>
+  <!-- DNT-Start --><title>FAILCODE<indexterm>
       <primary>FAILCODE function</primary>
-    </indexterm></title>
+    </indexterm></title><!-- DNT-End -->
 
-  <para><emphasis role="bold">FAILCODE<indexterm>
-      <primary>FAILCODE</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->FAILCODE<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->FAILCODE<!-- DNT-End --></primary>
     </indexterm></emphasis></para>
 
-  <para>The <emphasis role="bold">FAILCODE </emphasis>function returns the
-  last failure code, for use in the FAILURE workflow service<indexterm>
-      <primary>FAILURE workflow service</primary>
-    </indexterm> or in the TRANSFORM structure<indexterm>
-      <primary>TRANSFORM structure</primary>
-    </indexterm> referenced in the ONFAIL option of SOAPCALL.</para>
+  <para>The <emphasis role="bold"><!-- DNT-Start -->FAILCODE<!-- DNT-End --> </emphasis>function returns the
+  last failure code, for use in the <!-- DNT-Start -->FAILURE<!-- DNT-End --> workflow service<indexterm>
+      <primary><!-- DNT-Start -->FAILURE<!-- DNT-End --> workflow service</primary>
+    </indexterm> or in the <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> structure<indexterm>
+      <primary><!-- DNT-Start -->TRANSFORM<!-- DNT-End --> structure</primary>
+    </indexterm> referenced in the <!-- DNT-Start -->ONFAIL<!-- DNT-End --> option of <!-- DNT-Start -->SOAPCALL<!-- DNT-End -->.</para>
 
   <para>Example:</para>
 
-  <programlisting>SPeople := SORT(Person,Person.per_first_name);
+  <!-- DNT-Start --><programlisting>SPeople := SORT(Person,Person.per_first_name);
 nUniques := COUNT(DEDUP(sPeople,Person.per_first_name AND
                  Person.address))
 :FAILURE(Email.simpleSend(SystemsPersonnel,
-SystemsPersonel.email,FAILCODE));</programlisting>
+SystemsPersonel.email,FAILCODE));</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="FAILURE">FAILURE</link>, <link linkend="FAILMESSAGE">FAILMESSAGE</link>, <link linkend="SOAPCALL">SOAPCALL</link></para>
+  <para>See Also: <link linkend="FAILURE"><!-- DNT-Start -->FAILURE<!-- DNT-End --></link>, <link linkend="FAILMESSAGE"><!-- DNT-Start -->FAILMESSAGE<!-- DNT-End --></link>, <link linkend="SOAPCALL"><!-- DNT-Start -->SOAPCALL<!-- DNT-End --></link></para>
 </sect1>

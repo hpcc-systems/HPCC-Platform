@@ -2,15 +2,15 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="File_layout_resolution">
-  <title>File Layout Resolution at Compile Time</title>
+  <!-- DNT-Start --><title>File Layout Resolution at Compile Time</title><!-- DNT-End -->
 
-  <para>When reading a disk file in ECL, the layout of the file is specified
-  in the ECL code. This allows the code to be compiled to access the data very
+  <para>When reading a disk file in <!-- DNT-Start -->ECL<!-- DNT-End -->, the layout of the file is specified
+  in the <!-- DNT-Start -->ECL<!-- DNT-End --> code. This allows the code to be compiled to access the data very
   efficiently, but can cause issues if the file on disk is actually using a
   different layout.</para>
 
   <para>In particular, it can present a challenge to the version control
-  process, if you have ECL queries that are being changed to add
+  process, if you have <!-- DNT-Start -->ECL<!-- DNT-End --> queries that are being changed to add
   functionality, but which need to be applied without modification to data
   files whose layout is changing on a different timeline.</para>
 
@@ -20,7 +20,7 @@
   has significant potential overhead and is not available for flat files or on
   Thor. This feature supports flat files and Thor files.</para>
 
-  <para>A new feature, added in the HPCC Systems 6.4.0 release, allows file
+  <para>A new feature, added in the <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems 6.4.0 release, allows file
   resolution to be performed at compile time, which provides the following
   advantages:</para>
 
@@ -49,23 +49,23 @@
 
   <itemizedlist>
     <listitem>
-      <para>Using a LOOKUP attribute on DATASET or INDEX declarations.</para>
+      <para>Using a <!-- DNT-Start -->LOOKUP<!-- DNT-End --> attribute on <!-- DNT-Start -->DATASET<!-- DNT-End --> or <!-- DNT-Start -->INDEX<!-- DNT-End --> declarations.</para>
     </listitem>
   </itemizedlist>
 
   <itemizedlist>
     <listitem>
-      <para>Using a LOOKUP attribute in a RECORDOF function.</para>
+      <para>Using a <!-- DNT-Start -->LOOKUP<!-- DNT-End --> attribute in a <!-- DNT-Start -->RECORDOF<!-- DNT-End --> function.</para>
     </listitem>
   </itemizedlist>
 
   <sect2 id="Using_LOOKUP_on_DATASET">
-    <title>Using LOOKUP on a DATASET</title>
+    <!-- DNT-Start --><title>Using LOOKUP on a DATASET</title><!-- DNT-End -->
 
-    <para>Adding the LOOKUP attribute to a DATASET declaration indicates that
+    <para>Adding the <!-- DNT-Start -->LOOKUP<!-- DNT-End --> attribute to a <!-- DNT-Start -->DATASET<!-- DNT-End --> declaration indicates that
     the file layout should be looked up at compile time:</para>
 
-    <programlisting>myrecord := RECORD
+    <!-- DNT-Start --><programlisting>myrecord := RECORD
   STRING field1;
   STRING field2;
 END;
@@ -74,28 +74,28 @@ f := DATASET('myfilename', myrecord, FLAT);
   // This will fail at runtime if file layout does not match myrecord
 f := DATASET('myfilename', myrecord, FLAT, LOOKUP);    
   // This will automatically project from the actual to the requested layout
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para>If we assume that the actual layout of the file on disk is:</para>
 
-    <programlisting>myactualrecord := RECORD
+    <!-- DNT-Start --><programlisting>myactualrecord := RECORD
   STRING field1;
   STRING field2;
   STRING field3;
-END;</programlisting>
+END;</programlisting><!-- DNT-End -->
 
     <?hard-pagebreak ?>
 
-    <para>Then the effect of the LOOKUP attribute will be as if your code
+    <para>Then the effect of the <!-- DNT-Start -->LOOKUP<!-- DNT-End --> attribute will be as if your code
     was:</para>
 
-    <programlisting>actualfile := DATASET('myfilename', myactualrecord, FLAT);
+    <!-- DNT-Start --><programlisting>actualfile := DATASET('myfilename', myactualrecord, FLAT);
 f := PROJECT(actualfile, TRANSFORM(myrecord, SELF := LEFT; SELF := []));
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para>Fields that are present in both record structures are assigned
     across, fields that are present only in the disk version are dropped and
-    fields that are present only in the ECL version receive their default
+    fields that are present only in the <!-- DNT-Start -->ECL<!-- DNT-End --> version receive their default
     value (a warning will be issued in this latter case).</para>
 
     <para>There is also a compiler directive that can be used to specify
@@ -103,25 +103,25 @@ f := PROJECT(actualfile, TRANSFORM(myrecord, SELF := LEFT; SELF := []));
 
     <para><programlisting>#OPTION('translateDFSlayouts',TRUE);</programlisting></para>
 
-    <para>The LOOKUP attribute accepts a parameter (TRUE or FALSE) to allow
+    <para>The <!-- DNT-Start -->LOOKUP<!-- DNT-End --> attribute accepts a parameter (<!-- DNT-Start -->TRUE<!-- DNT-End --> or <!-- DNT-Start -->FALSE<!-- DNT-End -->) to allow
     easier control of where and when you want translation to occur. Any
     Boolean expression that can be evaluated at compile time can be
     supplied.</para>
 
-    <para>When using the #OPTION for <emphasis>translateDFSlayouts</emphasis>,
-    you may want to use LOOKUP(FALSE) to override the default on some specific
+    <para>When using the #<!-- DNT-Start -->OPTION<!-- DNT-End --> for <emphasis>translateDFSlayouts</emphasis>,
+    you may want to use <!-- DNT-Start -->LOOKUP<!-- DNT-End -->(<!-- DNT-Start -->FALSE<!-- DNT-End -->) to override the default on some specific
     datasets.</para>
   </sect2>
 
   <sect2 id="Using_LOOKUP_in_RECORDOF">
-    <title>Using LOOKUP in a RECORDOF function</title>
+    <!-- DNT-Start --><title>Using LOOKUP in a RECORDOF function</title><!-- DNT-End -->
 
-    <para>Using a LOOKUP attribute in a RECORDOF function is useful when
+    <para>Using a <!-- DNT-Start -->LOOKUP<!-- DNT-End --> attribute in a <!-- DNT-Start -->RECORDOF<!-- DNT-End --> function is useful when
     fields were present in the original and later dropped or when you want to
     write to a file that matches the layout of an existing file, but you don't
     know the layout.</para>
 
-    <para>The LOOKUP attribute in the RECORDOF function takes a filename
+    <para>The <!-- DNT-Start -->LOOKUP<!-- DNT-End --> attribute in the <!-- DNT-Start -->RECORDOF<!-- DNT-End --> function takes a filename
     rather than a dataset. The result is expanded at compile time to the
     record layout stored in the named file's metadata. There are several forms
     of this construct:</para>
@@ -129,14 +129,14 @@ f := PROJECT(actualfile, TRANSFORM(myrecord, SELF := LEFT; SELF := []));
     <para><programlisting>RECORDOF('myfile', LOOKUP);
 RECORDOF('myfile', defaultstructure, LOOKUP);
 RECORDOF('myfile', defaultstructure, LOOKUP, OPT);</programlisting>You can
-    also specify a DATASET as the first parameter instead of a filename (a
+    also specify a <!-- DNT-Start -->DATASET<!-- DNT-End --> as the first parameter instead of a filename (a
     syntactic convenience) and the filename specified on the dataset will be
     used for the lookup.</para>
 
     <para>The <emphasis>defaultstructure</emphasis> is useful for situations
     where the file layout information may not be available (for example, when
     syntax-checking locally or creating an archive). It is also useful when
-    the file being looked up may not exist--this is where OPT should be
+    the file being looked up may not exist--this is where <!-- DNT-Start -->OPT<!-- DNT-End --> should be
     used.</para>
 
     <para>The compiler checks that the actual record structure retrieved from
@@ -144,7 +144,7 @@ RECORDOF('myfile', defaultstructure, LOOKUP, OPT);</programlisting>You can
     that the types are compatible.</para>
 
     <para>For example, to read a file whose structure is unknown other than
-    that it contains an ID field, and create an output file containing all
+    that it contains an <!-- DNT-Start -->ID<!-- DNT-End --> field, and create an output file containing all
     records that matched a supplied value, you could write:</para>
 
     <para><programlisting>myfile := DATASET('myinputfile', RECORDOF('myinputfile', { STRING id },
@@ -154,7 +154,7 @@ OUTPUT(filtered,,'myfilteredfile');</programlisting></para>
   </sect2>
 
   <sect2 id="LOOKUP-Additional_Details">
-    <title>Additional Details</title>
+    <!-- DNT-Start --><title>Additional Details</title><!-- DNT-End -->
 
     <itemizedlist>
       <listitem>
@@ -169,18 +169,18 @@ OUTPUT(filtered,,'myfilteredfile');</programlisting></para>
       </listitem>
 
       <listitem>
-        <para>You can also use the LOOKUP attribute on INDEX declarations as
-        well as DATASET.</para>
+        <para>You can also use the <!-- DNT-Start -->LOOKUP<!-- DNT-End --> attribute on <!-- DNT-Start -->INDEX<!-- DNT-End --> declarations as
+        well as <!-- DNT-Start -->DATASET<!-- DNT-End -->.</para>
       </listitem>
 
       <listitem>
-        <para>When using the RECORDOF form and supplying a default layout, you
+        <para>When using the <!-- DNT-Start -->RECORDOF<!-- DNT-End --> form and supplying a default layout, you
         may need to use the =&gt; form of the record layout syntax to specify
         both keyed and payload fields in the same record.</para>
       </listitem>
 
       <listitem>
-        <para>Files that have been sprayed rather than created by ECL jobs may
+        <para>Files that have been sprayed rather than created by <!-- DNT-Start -->ECL<!-- DNT-End --> jobs may
         not have record information (metadata) available in the distributed
         file system.</para>
       </listitem>
@@ -197,28 +197,28 @@ OUTPUT(filtered,,'myfilteredfile');</programlisting></para>
 
               <tbody>
                 <row>
-                  <entry>-dfs=ip</entry>
+                  <entry><!-- DNT-Start -->-dfs=ip<!-- DNT-End --></entry>
 
-                  <entry>Use specified Dali IP for filename
+                  <entry>Use specified Dali <!-- DNT-Start -->IP<!-- DNT-End --> for filename
                   resolution.</entry>
                 </row>
 
                 <row>
-                  <entry>-scope=prefix</entry>
+                  <entry><!-- DNT-Start -->-scope=prefix<!-- DNT-End --></entry>
 
                   <entry>Use specified scope prefix in filename
                   resolution.</entry>
                 </row>
 
                 <row>
-                  <entry>-user=id</entry>
+                  <entry><!-- DNT-Start -->-user=id<!-- DNT-End --></entry>
 
                   <entry>Use specified username in filename
                   resolution.</entry>
                 </row>
 
                 <row>
-                  <entry>password=xxx</entry>
+                  <entry><!-- DNT-Start -->password=xxx<!-- DNT-End --></entry>
 
                   <entry>Use specified password in filename resolution (Leave
                   blank to prompt)</entry>

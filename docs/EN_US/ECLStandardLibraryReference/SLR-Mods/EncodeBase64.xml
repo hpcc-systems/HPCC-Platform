@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="EncodeBase64">
-  <title>EncodeBase64</title>
+  <!-- DNT-Start --><title>EncodeBase64</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Str.EncodeBase64<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.Str.EncodeBase64<indexterm>
       <primary>STD.Str.EncodeBase64</primary>
     </indexterm><indexterm>
       <primary>Str.EncodeBase64</primary>
     </indexterm><indexterm>
       <primary>EncodeBase64</primary>
     </indexterm>(</emphasis> <emphasis>value</emphasis> <emphasis
-  role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
+  role="bold">)</emphasis> <emphasis role="bold"></emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,29 +21,29 @@
 
       <tbody>
         <row>
-          <entry><emphasis>value</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>value</emphasis><!-- DNT-End --></entry>
 
-          <entry>A DATA value containing the data to encode.</entry>
+          <entry>A <!-- DNT-Start -->DATA<!-- DNT-End --> value containing the data to encode.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>EncodeBase64 returns a STRING value.</entry>
+          <entry>EncodeBase64 returns a <!-- DNT-Start -->STRING<!-- DNT-End --> value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
   <para>The <emphasis role="bold">EncodeBase64 </emphasis>function returns a
-  STRING containing the binary data encoded in Base64.</para>
+  <!-- DNT-Start -->STRING<!-- DNT-End --> containing the binary data encoded in Base64.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">IMPORT STD;
+  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 dat:=X'0102030405';
 EncodedStr:= STD.Str.EncodeBase64(dat);
-EncodedStr;</programlisting>
+EncodedStr;</programlisting><!-- DNT-End -->
 
   <para>See Also: <link linkend="DecodeBase64">DecodeBase64</link></para>
 </sect1>

@@ -2,21 +2,21 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="WordCount">
-  <title>WordCount</title>
+  <!-- DNT-Start --><title>WordCount</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Str.WordCount<indexterm>
-      <primary>STD.Str.WordCount</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->WordCount<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->WordCount<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Str.WordCount</primary>
+      <primary>Str.<!-- DNT-Start -->WordCount<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>WordCount</primary>
+      <primary><!-- DNT-Start -->WordCount<!-- DNT-End --></primary>
     </indexterm>(</emphasis> <emphasis>source</emphasis><emphasis role="bold">
   )</emphasis></para>
 
-  <para><emphasis role="bold">STD.Uni.WordCount<indexterm>
-      <primary>STD.Uni.WordCount</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->WordCount<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->WordCount<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Uni.WordCount</primary>
+      <primary>Uni.<!-- DNT-Start -->WordCount<!-- DNT-End --></primary>
     </indexterm>(</emphasis> <emphasis>source </emphasis><emphasis
   role="bold">[</emphasis><emphasis>, locale </emphasis><emphasis role="bold">
   ] )</emphasis></para>
@@ -29,14 +29,14 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>source</emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the words to count. Words are delimited
           by spaces.</entry>
         </row>
 
         <row>
-          <entry><emphasis>locale</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>locale</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the language and country
           code to use to determine correct sort order and other
@@ -44,20 +44,20 @@
         </row>
 
         <row>
-          <entry>Return:</entry>
+          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-          <entry>WordCount returns an integer value.</entry>
+          <entry><!-- DNT-Start -->WordCount<!-- DNT-End --> returns an integer value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">WordCount </emphasis>function returns the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->WordCount<!-- DNT-End --> </emphasis>function returns the
   number of words in the <emphasis>source</emphasis> string.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">IMPORT Std;
+  <!-- DNT-Start --><programlisting format="linespecific">IMPORT Std;
 
 str1 := 'a word a day keeps the doctor away';
 
@@ -65,7 +65,7 @@ output(LENGTH(TRIM(Str1,LEFT,RIGHT)) - LENGTH(TRIM(Str1,ALL)) + 1);
                                  //finds eight words by removing spaces
 
 STD.Str.WordCount(str1);         //finds eight words based on space delimiter
-</programlisting>
+</programlisting><!-- DNT-End -->
 
   <para></para>
 </sect1>

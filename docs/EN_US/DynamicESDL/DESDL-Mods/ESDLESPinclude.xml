@@ -2,16 +2,16 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESPinclude">
-  <title>ESPinclude</title>
+  <!-- DNT-Start --><title>ESPinclude</title><!-- DNT-End -->
 
-  <para>ESPinclude <indexterm>
-      <primary>ESPinclude</primary>
-    </indexterm>allows you to include an external ESDL file. This is similar
+  <para><!-- DNT-Start -->ESPinclude<!-- DNT-End --> <indexterm>
+      <primary><!-- DNT-Start -->ESPinclude<!-- DNT-End --></primary>
+    </indexterm>allows you to include an external <!-- DNT-Start -->ESDL<!-- DNT-End --> file. This is similar
   to the #include statement.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <programlisting>
+  <!-- DNT-Start --><programlisting>
  ESPinclude(commonStructures);
-   </programlisting>
+   </programlisting><!-- DNT-End -->
 </sect1>

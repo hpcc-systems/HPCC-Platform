@@ -2,64 +2,64 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="DATASET">
-  <title>DATASET<indexterm>
+  <!-- DNT-Start --><title>DATASET<indexterm>
       <primary>DATASET</primary>
-    </indexterm></title>
+    </indexterm></title><!-- DNT-End -->
 
   <para><emphasis>attr</emphasis><emphasis role="bold"> :=
-  DATASET(</emphasis><emphasis> file, struct, filetype </emphasis><emphasis
-  role="bold">[,LOOKUP]);</emphasis></para>
+  <!-- DNT-Start -->DATASET<!-- DNT-End -->(</emphasis><emphasis> file, struct, filetype </emphasis><emphasis
+  role="bold">[,<!-- DNT-Start -->LOOKUP<!-- DNT-End -->]);</emphasis></para>
 
   <para><emphasis>attr</emphasis><emphasis role="bold"> :=
-  DATASET(</emphasis><emphasis> dataset, file, filetype </emphasis><emphasis
-  role="bold">[,LOOKUP]);</emphasis></para>
+  <!-- DNT-Start -->DATASET<!-- DNT-End -->(</emphasis><emphasis> dataset, file, filetype </emphasis><emphasis
+  role="bold">[,<!-- DNT-Start -->LOOKUP<!-- DNT-End -->]);</emphasis></para>
 
   <para><emphasis>attr</emphasis><emphasis role="bold"> :=
-  DATASET(</emphasis><emphasis> </emphasis><emphasis
-  role="bold">WORKUNIT<indexterm>
-      <primary>WORKUNIT</primary>
+  <!-- DNT-Start -->DATASET<!-- DNT-End -->(</emphasis><emphasis> </emphasis><emphasis
+  role="bold"><!-- DNT-Start -->WORKUNIT<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->WORKUNIT<!-- DNT-End --></primary>
     </indexterm>( </emphasis>[ <emphasis>wuid ,</emphasis> ]<emphasis>
   namedoutput </emphasis><emphasis role="bold">)</emphasis><emphasis>, struct
   </emphasis><emphasis role="bold">);</emphasis></para>
 
   <para><emphasis role="bold">[ </emphasis><emphasis>attr</emphasis><emphasis
-  role="bold"> := ] DATASET(</emphasis><emphasis> recordset
+  role="bold"> := ] <!-- DNT-Start -->DATASET<!-- DNT-End -->(</emphasis><emphasis> recordset
   </emphasis><emphasis role="bold">[</emphasis><emphasis>, recstruct
   </emphasis><emphasis role="bold">] );</emphasis></para>
 
-  <para><emphasis role="bold">DATASET(</emphasis><emphasis> row
+  <para><emphasis role="bold"><!-- DNT-Start -->DATASET<!-- DNT-End -->(</emphasis><emphasis> row
   </emphasis><emphasis role="bold">)</emphasis></para>
 
-  <para><emphasis role="bold">DATASET(</emphasis><emphasis> childstruct
+  <para><emphasis role="bold"><!-- DNT-Start -->DATASET<!-- DNT-End -->(</emphasis><emphasis> childstruct
   </emphasis><emphasis role="bold"> [</emphasis><emphasis>,
-  </emphasis><emphasis role="bold">COUNT<indexterm>
-      <primary>COUNT</primary>
+  </emphasis><emphasis role="bold"><!-- DNT-Start -->COUNT<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->COUNT<!-- DNT-End --></primary>
     </indexterm>(</emphasis><emphasis> count </emphasis><emphasis
-  role="bold">) | LENGTH<indexterm>
-      <primary>LENGTH</primary>
+  role="bold">) | <!-- DNT-Start -->LENGTH<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->LENGTH<!-- DNT-End --></primary>
     </indexterm>(</emphasis><emphasis> size </emphasis><emphasis role="bold">)
   ]</emphasis><emphasis role="bold"> [</emphasis><emphasis>,
-  </emphasis><emphasis role="bold">CHOOSEN<indexterm>
-      <primary>CHOOSEN</primary>
+  </emphasis><emphasis role="bold"><!-- DNT-Start -->CHOOSEN<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->CHOOSEN<!-- DNT-End --></primary>
     </indexterm>(</emphasis><emphasis> maxrecs </emphasis><emphasis
   role="bold">) ] )</emphasis></para>
 
-  <para><emphasis role="bold">[GROUPED<indexterm>
-      <primary>GROUPED</primary>
-    </indexterm>] [LINKCOUNTED<indexterm>
-      <primary>LINKCOUNTED</primary>
-    </indexterm>] [STREAMED<indexterm>
-      <primary>STREAMED</primary>
-    </indexterm>] DATASET<indexterm>
-      <primary>DATASET</primary>
+  <para><emphasis role="bold">[<!-- DNT-Start -->GROUPED<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->GROUPED<!-- DNT-End --></primary>
+    </indexterm>] [<!-- DNT-Start -->LINKCOUNTED<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->LINKCOUNTED<!-- DNT-End --></primary>
+    </indexterm>] [<!-- DNT-Start -->STREAMED<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STREAMED<!-- DNT-End --></primary>
+    </indexterm>] <!-- DNT-Start -->DATASET<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->DATASET<!-- DNT-End --></primary>
     </indexterm>(</emphasis><emphasis> struct </emphasis><emphasis
   role="bold">)</emphasis></para>
 
-  <para><emphasis role="bold">DATASET(</emphasis><emphasis> dict
+  <para><emphasis role="bold"><!-- DNT-Start -->DATASET<!-- DNT-End -->(</emphasis><emphasis> dict
   </emphasis><emphasis role="bold">)</emphasis></para>
 
-  <para><emphasis role="bold">DATASET(</emphasis><emphasis> count, transform
-  </emphasis><emphasis role="bold"> [, DISTRIBUTED | LOCAL ]
+  <para><emphasis role="bold"><!-- DNT-Start -->DATASET<!-- DNT-End -->(</emphasis><emphasis> count, transform
+  </emphasis><emphasis role="bold"> [, <!-- DNT-Start -->DISTRIBUTED<!-- DNT-End --> | <!-- DNT-Start -->LOCAL<!-- DNT-End --> ]
   )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -70,14 +70,14 @@
 
       <tbody>
         <row>
-          <entry><emphasis>attr</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>attr</emphasis><!-- DNT-End --></entry>
 
-          <entry>The name of the DATASET for later use in other
+          <entry>The name of the <!-- DNT-Start -->DATASET<!-- DNT-End --> for later use in other
           definitions.</entry>
         </row>
 
         <row>
-          <entry><emphasis>file</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>file</emphasis><!-- DNT-End --></entry>
 
           <entry>A string constant containing the logical file name. See the
           <emphasis>Scope &amp; Logical Filenames</emphasis> section for more
@@ -85,31 +85,31 @@
         </row>
 
         <row>
-          <entry><emphasis>struct</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>struct</emphasis><!-- DNT-End --></entry>
 
-          <entry>The RECORD structure defining the layout of the fields. This
-          may use RECORDOF.</entry>
+          <entry>The <!-- DNT-Start -->RECORD<!-- DNT-End --> structure defining the layout of the fields. This
+          may use <!-- DNT-Start -->RECORDOF<!-- DNT-End -->.</entry>
         </row>
 
         <row>
-          <entry><emphasis>filetype</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>filetype</emphasis><!-- DNT-End --></entry>
 
           <entry>One of the following keywords, optionally followed by
-          relevant options for that specific type of file: THOR /FLAT, CSV,
-          XML, JSON, PIPE. Each of these is discussed in its own section,
+          relevant options for that specific type of file: <!-- DNT-Start -->THOR<!-- DNT-End --> /<!-- DNT-Start -->FLAT<!-- DNT-End -->, <!-- DNT-Start -->CSV<!-- DNT-End -->,
+          <!-- DNT-Start -->XML<!-- DNT-End -->, <!-- DNT-Start -->JSON<!-- DNT-End -->, <!-- DNT-Start -->PIPE<!-- DNT-End -->. Each of these is discussed in its own section,
           below.</entry>
         </row>
 
         <row>
-          <entry><emphasis>dataset</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>dataset</emphasis><!-- DNT-End --></entry>
 
-          <entry>A previously-defined DATASET or recordset from which the
-          record layout is derived. This form is primarily used by the BUILD
-          action and is equivalent to: <programlisting>      ds := DATASET('filename',RECORDOF(anotherdataset), ... )</programlisting></entry>
+          <entry>A previously-defined <!-- DNT-Start -->DATASET<!-- DNT-End --> or recordset from which the
+          record layout is derived. This form is primarily used by the <!-- DNT-Start -->BUILD<!-- DNT-End -->
+          action and is equivalent to: <programlisting>      ds := <!-- DNT-Start -->DATASET<!-- DNT-End -->('filename',<!-- DNT-Start -->RECORDOF<!-- DNT-End -->(anotherdataset), ... )</programlisting></entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">LOOKUP</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">LOOKUP</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. Specifies that the file layout should be looked up
           at compile time. See <emphasis>File Layout Resolution at Compile
@@ -118,29 +118,29 @@
         </row>
 
         <row>
-          <entry><emphasis role="bold">WORKUNIT</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">WORKUNIT</emphasis><!-- DNT-End --></entry>
 
-          <entry>Specifies the DATASET is the result of an OUTPUT with the
-          NAMED option within the same or another workunit.</entry>
+          <entry>Specifies the <!-- DNT-Start -->DATASET<!-- DNT-End --> is the result of an <!-- DNT-Start -->OUTPUT<!-- DNT-End --> with the
+          <!-- DNT-Start -->NAMED<!-- DNT-End --> option within the same or another workunit.</entry>
         </row>
 
         <row>
-          <entry><emphasis>wuid</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>wuid</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. A string expression that specifies the workunit
-          identifier of the job that produced the NAMED OUTPUT.</entry>
+          identifier of the job that produced the <!-- DNT-Start -->NAMED<!-- DNT-End --> <!-- DNT-Start -->OUTPUT<!-- DNT-End -->.</entry>
         </row>
 
         <row>
-          <entry><emphasis>namedoutput</emphasis><emphasis
-          role="bold"></emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>namedoutput</emphasis><emphasis
+          role="bold"></emphasis><!-- DNT-End --></entry>
 
           <entry>A string expression that specifies the name given in the
-          NAMED option.</entry>
+          <!-- DNT-Start -->NAMED<!-- DNT-End --> option.</entry>
         </row>
 
         <row>
-          <entry><emphasis>recordset</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>recordset</emphasis><!-- DNT-End --></entry>
 
           <entry><para>A set of in-line data records. This can simply name a
           previously-defined set definition or explicitly use square brackets
@@ -155,9 +155,9 @@
         </row>
 
         <row>
-          <entry><emphasis>recstruct</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>recstruct</emphasis><!-- DNT-End --></entry>
 
-          <entry>Optional. The RECORD structure of the
+          <entry>Optional. The <!-- DNT-Start -->RECORD<!-- DNT-End --> structure of the
           <emphasis>recordset.</emphasis> Omittable <emphasis
           role="underline">only</emphasis> if the
           <emphasis>recordset</emphasis> parameter is just one record or a
@@ -165,22 +165,22 @@
         </row>
 
         <row>
-          <entry><emphasis>row</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>row</emphasis><!-- DNT-End --></entry>
 
           <entry>A single data record. This may be a single-record passed
-          parameter, or the ROW or PROJECT function that defines a 1-row
+          parameter, or the <!-- DNT-Start -->ROW<!-- DNT-End --> or <!-- DNT-Start -->PROJECT<!-- DNT-End --> function that defines a 1-row
           dataset.</entry>
         </row>
 
         <row>
-          <entry><emphasis>childstruct</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>childstruct</emphasis><!-- DNT-End --></entry>
 
-          <entry>The RECORD structure of the child records being defined. This
-          may use the RECORDOF function.</entry>
+          <entry>The <!-- DNT-Start -->RECORD<!-- DNT-End --> structure of the child records being defined. This
+          may use the <!-- DNT-Start -->RECORDOF<!-- DNT-End --> function.</entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">COUNT</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">COUNT</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. Specifies the number of child records attached to
           the parent (for use when interfacing to external file
@@ -188,15 +188,15 @@
         </row>
 
         <row>
-          <entry><emphasis>count</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>count</emphasis><!-- DNT-End --></entry>
 
           <entry>An expression defining the number of child records. This may
-          be a constant or a field in the enclosing RECORD structure
-          (addressed as SELF.<emphasis>fieldname</emphasis>).</entry>
+          be a constant or a field in the enclosing <!-- DNT-Start -->RECORD<!-- DNT-End --> structure
+          (addressed as <!-- DNT-Start -->SELF<!-- DNT-End -->.<emphasis>fieldname</emphasis>).</entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">LENGTH</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">LENGTH</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. Specifies the <emphasis>size</emphasis> of the
           child records attached to the parent (for use when interfacing to
@@ -204,84 +204,84 @@
         </row>
 
         <row>
-          <entry><emphasis>size</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>size</emphasis><!-- DNT-End --></entry>
 
           <entry>An expression defining the size of child records. This may be
-          a constant or a field in the enclosing RECORD structure (addressed
-          as SELF.<emphasis>fieldname</emphasis>).</entry>
+          a constant or a field in the enclosing <!-- DNT-Start -->RECORD<!-- DNT-End --> structure (addressed
+          as <!-- DNT-Start -->SELF<!-- DNT-End -->.<emphasis>fieldname</emphasis>).</entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">CHOOSEN</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">CHOOSEN</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. Limits the number of child records attached to the
-          parent. This implicitly uses the CHOOSEN function wherever the child
+          parent. This implicitly uses the <!-- DNT-Start -->CHOOSEN<!-- DNT-End --> function wherever the child
           dataset is read.</entry>
         </row>
 
         <row>
-          <entry><emphasis>maxrecs</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>maxrecs</emphasis><!-- DNT-End --></entry>
 
           <entry>An expression defining the maximum number of child records
           for a single parent.</entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">GROUPED</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">GROUPED</emphasis><!-- DNT-End --></entry>
 
-          <entry>Specifies the DATASET being passed has been grouped using the
-          GROUP function.</entry>
+          <entry>Specifies the <!-- DNT-Start -->DATASET<!-- DNT-End --> being passed has been grouped using the
+          <!-- DNT-Start -->GROUP<!-- DNT-End --> function.</entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">LINKCOUNTED</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">LINKCOUNTED</emphasis><!-- DNT-End --></entry>
 
-          <entry>Specifies the DATASET being passed or returned uses the link
+          <entry>Specifies the <!-- DNT-Start -->DATASET<!-- DNT-End --> being passed or returned uses the link
           counted format (each row is stored as a separate memory allocation)
           instead of the default (embedded) format where the rows of a dataset
           are all stored in a single block of memory. This is primarily for
-          use in BEGINC++ functions or external C++ library functions.</entry>
+          use in <!-- DNT-Start -->BEGINC<!-- DNT-End -->++ functions or external C++ library functions.</entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">STREAMED</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">STREAMED</emphasis><!-- DNT-End --></entry>
 
-          <entry>Specifies the DATASET being returned is returned as a pointer
+          <entry>Specifies the <!-- DNT-Start -->DATASET<!-- DNT-End --> being returned is returned as a pointer
           to an IRowStream interface (see the eclhelper.hpp include file for
           the definition).<emphasis role="bold">Valid only as a return
-          type.</emphasis> This is primarily for use in BEGINC++ functions or
+          type.</emphasis> This is primarily for use in <!-- DNT-Start -->BEGINC<!-- DNT-End -->++ functions or
           external C++ library functions.</entry>
         </row>
 
         <row>
-          <entry><emphasis>struct</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>struct</emphasis><!-- DNT-End --></entry>
 
-          <entry>The RECORD structure of the dataset field or parameter. This
-          may use the RECORDOF function.</entry>
+          <entry>The <!-- DNT-Start -->RECORD<!-- DNT-End --> structure of the dataset field or parameter. This
+          may use the <!-- DNT-Start -->RECORDOF<!-- DNT-End --> function.</entry>
         </row>
 
         <row>
-          <entry><emphasis>dict</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>dict</emphasis><!-- DNT-End --></entry>
 
-          <entry>The name of a DICTIONARY definition.</entry>
+          <entry>The name of a <!-- DNT-Start -->DICTIONARY<!-- DNT-End --> definition.</entry>
         </row>
 
         <row>
-          <entry><emphasis>count</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>count</emphasis><!-- DNT-End --></entry>
 
           <entry>An integer expression specifying the number of records to
           create.</entry>
         </row>
 
         <row>
-          <entry><emphasis>transform</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>transform</emphasis><!-- DNT-End --></entry>
 
-          <entry>The TRANSFORM function that will create the records. This may
-          take an integer COUNTER parameter.</entry>
+          <entry>The <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function that will create the records. This may
+          take an integer <!-- DNT-Start -->COUNTER<!-- DNT-End --> parameter.</entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">DISTRIBUTED</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">DISTRIBUTED</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. Specifies distributing the created records across
           all nodes of the cluster. If omitted, all records are created on
@@ -289,7 +289,7 @@
         </row>
 
         <row>
-          <entry><emphasis role="bold">LOCAL</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">LOCAL</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. Specifies records are created on every
           node.</entry>
@@ -298,80 +298,80 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">DATASET</emphasis> declaration defines a
+  <para>The <emphasis role="bold"><!-- DNT-Start -->DATASET<!-- DNT-End --></emphasis> declaration defines a
   file of records, on disk or in memory. The layout of the records is
-  specified by a RECORD structure (the <emphasis>struct</emphasis> or
+  specified by a <!-- DNT-Start -->RECORD<!-- DNT-End --> structure (the <emphasis>struct</emphasis> or
   <emphasis>recstruct</emphasis> parameters described above). The distribution
   of records across execution nodes is undefined in general, as it depends on
-  how the DATASET came to be (sprayed in from a landing zone or written to
-  disk by an OUTPUT action), the size of the cluster on which it resides, and
+  how the <!-- DNT-Start -->DATASET<!-- DNT-End --> came to be (sprayed in from a landing zone or written to
+  disk by an <!-- DNT-Start -->OUTPUT<!-- DNT-End --> action), the size of the cluster on which it resides, and
   the size of the cluster on which it is used (to specify distribution
-  requirements for a particular operation, see the DISTRIBUTE
+  requirements for a particular operation, see the <!-- DNT-Start -->DISTRIBUTE<!-- DNT-End -->
   function).</para>
 
   <para>The first two forms are alternatives to each other and either may be
   used with any of the <emphasis>filetypes</emphasis> described below
-  (<emphasis role="bold">THOR/FLAT, CSV, XML, JSON, PIPE</emphasis>).</para>
+  (<emphasis role="bold"><!-- DNT-Start -->THOR<!-- DNT-End -->/<!-- DNT-Start -->FLAT<!-- DNT-End -->, <!-- DNT-Start -->CSV<!-- DNT-End -->, <!-- DNT-Start -->XML<!-- DNT-End -->, <!-- DNT-Start -->JSON<!-- DNT-End -->, <!-- DNT-Start -->PIPE<!-- DNT-End --></emphasis>).</para>
 
-  <para>The third form defines the result of an OUTPUT with the NAMED option
+  <para>The third form defines the result of an <!-- DNT-Start -->OUTPUT<!-- DNT-End --> with the <!-- DNT-Start -->NAMED<!-- DNT-End --> option
   within the same workunit or the workunit specified by the
   <emphasis>wuid</emphasis> (see <emphasis role="bold">Named Output
-  DATASETs</emphasis> below).</para>
+  <!-- DNT-Start -->DATASETs<!-- DNT-End --></emphasis> below).</para>
 
   <para>The fourth form defines an in-line dataset (see <emphasis
-  role="bold">In-line DATASETs</emphasis> below).</para>
+  role="bold">In-line <!-- DNT-Start -->DATASETs<!-- DNT-End --></emphasis> below).</para>
 
   <para>The fifth form is only used in an expression context to allow you to
   in-line a single record dataset (see <emphasis role="bold">Single-row
-  DATASET Expressions</emphasis> below).</para>
+  <!-- DNT-Start -->DATASET<!-- DNT-End --> Expressions</emphasis> below).</para>
 
-  <para>The sixth form is only used as a value type in a RECORD structure to
-  define a child dataset (see <emphasis role="bold">Child DATASETs</emphasis>
+  <para>The sixth form is only used as a value type in a <!-- DNT-Start -->RECORD<!-- DNT-End --> structure to
+  define a child dataset (see <emphasis role="bold">Child <!-- DNT-Start -->DATASETs<!-- DNT-End --></emphasis>
   below).</para>
 
-  <para>The seventh form is only used as a value type to pass DATASET
+  <para>The seventh form is only used as a value type to pass <!-- DNT-Start -->DATASET<!-- DNT-End -->
   parameters<indexterm>
-      <primary>DATASET parameters</primary>
-    </indexterm> (see <emphasis role="bold">DATASET as a Parameter Type
+      <primary><!-- DNT-Start -->DATASET<!-- DNT-End --> parameters</primary>
+    </indexterm> (see <emphasis role="bold"><!-- DNT-Start -->DATASET<!-- DNT-End --> as a Parameter Type
   </emphasis>below).</para>
 
-  <para>The eighth form is used to define a DICTIONARY as a DATASET (see
-  <emphasis role="bold">DATASET from DICTIONARY </emphasis>below).</para>
+  <para>The eighth form is used to define a <!-- DNT-Start -->DICTIONARY<!-- DNT-End --> as a <!-- DNT-Start -->DATASET<!-- DNT-End --> (see
+  <emphasis role="bold"><!-- DNT-Start -->DATASET<!-- DNT-End --> from <!-- DNT-Start -->DICTIONARY<!-- DNT-End --> </emphasis>below).</para>
 
-  <para>The ninth form is used to create a DATASET using a TRANSFORM function
-  (see <emphasis role="bold">DATASET from TRANSFORM</emphasis> below)</para>
+  <para>The ninth form is used to create a <!-- DNT-Start -->DATASET<!-- DNT-End --> using a <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function
+  (see <emphasis role="bold"><!-- DNT-Start -->DATASET<!-- DNT-End --> from <!-- DNT-Start -->TRANSFORM<!-- DNT-End --></emphasis> below)</para>
 
   <sect2 id="THOR-FLAT_Files">
-    <title>THOR/FLAT Files</title>
+    <!-- DNT-Start --><title>THOR/FLAT Files</title><!-- DNT-End -->
 
     <para><emphasis> attr</emphasis><emphasis role="bold"> :=
-    DATASET(</emphasis><emphasis> file, struct, </emphasis><emphasis
-    role="bold">THOR<indexterm>
-        <primary>THOR</primary>
+    <!-- DNT-Start -->DATASET<!-- DNT-End -->(</emphasis><emphasis> file, struct, </emphasis><emphasis
+    role="bold"><!-- DNT-Start -->THOR<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->THOR<!-- DNT-End --></primary>
       </indexterm> [</emphasis><emphasis>,</emphasis><emphasis
-    role="bold">__COMPRESSED__<indexterm>
-        <primary>COMPRESSED</primary>
+    role="bold"><!-- DNT-Start -->__COMPRESSED__<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->COMPRESSED<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>__COMPRESSED__</primary>
-      </indexterm>][,OPT<indexterm>
-        <primary>OPT</primary>
-      </indexterm> ]</emphasis><emphasis role="bold"> [,UNSORTED<indexterm>
-        <primary>UNSORTED</primary>
-      </indexterm>][,PRELOAD<indexterm>
-        <primary>PRELOAD</primary>
+        <primary><!-- DNT-Start -->__COMPRESSED__<!-- DNT-End --></primary>
+      </indexterm>][,<!-- DNT-Start -->OPT<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->OPT<!-- DNT-End --></primary>
+      </indexterm> ]</emphasis><emphasis role="bold"> [,<!-- DNT-Start -->UNSORTED<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->UNSORTED<!-- DNT-End --></primary>
+      </indexterm>][,<!-- DNT-Start -->PRELOAD<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->PRELOAD<!-- DNT-End --></primary>
       </indexterm>([</emphasis><emphasis>nbr</emphasis><emphasis
-    role="bold">])]</emphasis><emphasis role="bold"> [,ENCRYPT<indexterm>
-        <primary>ENCRYPT</primary>
+    role="bold">])]</emphasis><emphasis role="bold"> [,<!-- DNT-Start -->ENCRYPT<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->ENCRYPT<!-- DNT-End --></primary>
       </indexterm>(</emphasis><emphasis>key</emphasis><emphasis role="bold">)
     ]);</emphasis></para>
 
     <para><emphasis> attr</emphasis><emphasis role="bold"> :=
-    DATASET(</emphasis><emphasis> file, struct, </emphasis><emphasis
-    role="bold">FLAT [</emphasis><emphasis>,</emphasis><emphasis
-    role="bold">__COMPRESSED__] [,OPT]</emphasis><emphasis role="bold">
-    [,UNSORTED] [,PRELOAD([</emphasis><emphasis>nbr</emphasis><emphasis
+    <!-- DNT-Start -->DATASET<!-- DNT-End -->(</emphasis><emphasis> file, struct, </emphasis><emphasis
+    role="bold"><!-- DNT-Start -->FLAT<!-- DNT-End --> [</emphasis><emphasis>,</emphasis><emphasis
+    role="bold"><!-- DNT-Start -->__COMPRESSED__<!-- DNT-End -->] [,<!-- DNT-Start -->OPT<!-- DNT-End -->]</emphasis><emphasis role="bold">
+    [,<!-- DNT-Start -->UNSORTED<!-- DNT-End -->] [,<!-- DNT-Start -->PRELOAD<!-- DNT-End -->([</emphasis><emphasis>nbr</emphasis><emphasis
     role="bold">])]</emphasis><emphasis role="bold">
-    [,ENCRYPT(</emphasis><emphasis>key</emphasis><emphasis role="bold">)
+    [,<!-- DNT-Start -->ENCRYPT<!-- DNT-End -->(</emphasis><emphasis>key</emphasis><emphasis role="bold">)
     ]);</emphasis></para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
@@ -382,48 +382,48 @@
 
         <tbody>
           <row>
-            <entry><emphasis role="bold">THOR</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">THOR</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the <emphasis>file</emphasis> is in the Data
             Refinery (may optionally be specified as <emphasis
-            role="bold">FLAT</emphasis><indexterm>
-                <primary>FLAT</primary>
-              </indexterm>, which is synonymous with THOR in this
+            role="bold"><!-- DNT-Start -->FLAT<!-- DNT-End --></emphasis><indexterm>
+                <primary><!-- DNT-Start -->FLAT<!-- DNT-End --></primary>
+              </indexterm>, which is synonymous with <!-- DNT-Start -->THOR<!-- DNT-End --> in this
             context).</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">__COMPRESSED__</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">__COMPRESSED__</emphasis><!-- DNT-End --></entry>
 
-            <entry>Optional. Specifies that the THOR <emphasis>file</emphasis>
-            is compressed because it is a result of the PERSIST Workflow
-            Service or was OUTPUT with the COMPRESSED option.</entry>
+            <entry>Optional. Specifies that the <!-- DNT-Start -->THOR<!-- DNT-End --> <emphasis>file</emphasis>
+            is compressed because it is a result of the <!-- DNT-Start -->PERSIST<!-- DNT-End --> Workflow
+            Service or was <!-- DNT-Start -->OUTPUT<!-- DNT-End --> with the <!-- DNT-Start -->COMPRESSED<!-- DNT-End --> option.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">__GROUPED__</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">__GROUPED__</emphasis><!-- DNT-End --></entry>
 
-            <entry>Specifies the DATASET has been grouped using the GROUP
+            <entry>Specifies the <!-- DNT-Start -->DATASET<!-- DNT-End --> has been grouped using the <!-- DNT-Start -->GROUP<!-- DNT-End -->
             function.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">OPT</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">OPT</emphasis><!-- DNT-End --></entry>
 
-            <entry>Optional. Specifies that using dataset when the THOR
+            <entry>Optional. Specifies that using dataset when the <!-- DNT-Start -->THOR<!-- DNT-End -->
             <emphasis>file</emphasis> doesn't exist results in an empty
             recordset instead of an error condition.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">UNSORTED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNSORTED</emphasis><!-- DNT-End --></entry>
 
-            <entry>Optional. Specifies the THOR <emphasis>file</emphasis> is
+            <entry>Optional. Specifies the <!-- DNT-Start -->THOR<!-- DNT-End --> <emphasis>file</emphasis> is
             not sorted, as a hint to the optimizer.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">PRELOAD</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">PRELOAD</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the <emphasis>file</emphasis> is left
             in memory after loading (valid only for Rapid Data Delivery Engine
@@ -431,7 +431,7 @@
           </row>
 
           <row>
-            <entry><emphasis>nbr</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>nbr</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. An integer constant specifying how many indexes
             to create "on the fly" for speedier access to the dataset. If &gt;
@@ -440,14 +440,14 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">ENCRYPT</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ENCRYPT</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the <emphasis>file</emphasis> was
-            created by OUTPUT with the ENCRYPT option.</entry>
+            created by <!-- DNT-Start -->OUTPUT<!-- DNT-End --> with the <!-- DNT-Start -->ENCRYPT<!-- DNT-End --> option.</entry>
           </row>
 
           <row>
-            <entry>key</entry>
+            <entry><!-- DNT-Start -->key<!-- DNT-End --></entry>
 
             <entry>A string constant containing the encryption key used to
             create the file.</entry>
@@ -456,20 +456,20 @@
       </tgroup>
     </informaltable>
 
-    <para>This form defines a THOR file that exists in the Data Refinery. This
+    <para>This form defines a <!-- DNT-Start -->THOR<!-- DNT-End --> file that exists in the Data Refinery. This
     could contain either fixed-length or variable-length records, depending on
-    the layout specified in the RECORD <emphasis>struct</emphasis>.</para>
+    the layout specified in the <!-- DNT-Start -->RECORD<!-- DNT-End --> <emphasis>struct</emphasis>.</para>
 
-    <para>The <emphasis>struct</emphasis> may contain an UNSIGNED8 field with
+    <para>The <emphasis>struct</emphasis> may contain an <!-- DNT-Start -->UNSIGNED<!-- DNT-End -->8 field with
     either <emphasis>{virtual(fileposition)}</emphasis> or
     <emphasis>{virtual(localfileposition)}</emphasis> appended to the field
     name. This indicates the field contains the record's position within the
     file (or part), and is used for those instances where a usable pointer to
-    the record is needed, such as the BUILD function.</para>
+    the record is needed, such as the <!-- DNT-Start -->BUILD<!-- DNT-End --> function.</para>
 
     <para><emphasis role="bold">Example:</emphasis></para>
 
-    <programlisting>PtblRec := RECORD
+    <!-- DNT-Start --><programlisting>PtblRec := RECORD
   STRING2 State := Person.per_st;
   STRING20 City := Person.per_full_city;
   STRING25 Lname := Person.per_last_name;
@@ -491,54 +491,54 @@ Ptbl := DATASET('~Thor400::RTTEMP::TestFile',
 OUTPUT(Tbl,,'~Thor400::RTTEMP::TestFileEncrypted',ENCRYPT('mykey'));
 PtblE := DATASET('~Thor400::RTTEMP::TestFileEncrypted',
                  PtblRec,
-                 THOR,OPT,ENCRYPT('mykey'));</programlisting>
+                 THOR,OPT,ENCRYPT('mykey'));</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="CSV_Files">
-    <title>CSV Files<indexterm>
+    <!-- DNT-Start --><title>CSV Files<indexterm>
         <primary>CSV Files</primary>
-      </indexterm></title>
+      </indexterm></title><!-- DNT-End -->
 
     <para><emphasis> attr</emphasis><emphasis role="bold"> :=
-    DATASET<indexterm>
-        <primary>DATASET</primary>
+    <!-- DNT-Start -->DATASET<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->DATASET<!-- DNT-End --></primary>
       </indexterm>(</emphasis><emphasis> file, struct, </emphasis><emphasis
-    role="bold"> CSV<indexterm>
-        <primary>CSV</primary>
-      </indexterm> [ ( [ HEADING<indexterm>
-        <primary>HEADING</primary>
+    role="bold"> <!-- DNT-Start -->CSV<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->CSV<!-- DNT-End --></primary>
+      </indexterm> [ ( [ <!-- DNT-Start -->HEADING<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->HEADING<!-- DNT-End --></primary>
       </indexterm>( </emphasis><emphasis>n</emphasis><emphasis role="bold"> )
-    ] [, SEPARATOR<indexterm>
-        <primary>SEPARATOR</primary>
+    ] [, <!-- DNT-Start -->SEPARATOR<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->SEPARATOR<!-- DNT-End --></primary>
       </indexterm>( </emphasis><emphasis>f_delimiters</emphasis><emphasis
     role="bold"> ) ]</emphasis><emphasis role="bold"> </emphasis></para>
 
-    <para><emphasis role="bold"> [, TERMINATOR<indexterm>
-        <primary>TERMINATOR</primary>
+    <para><emphasis role="bold"> [, <!-- DNT-Start -->TERMINATOR<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->TERMINATOR<!-- DNT-End --></primary>
       </indexterm>( </emphasis><emphasis>r_delimiters</emphasis><emphasis
-    role="bold"> ) ] [, QUOTE<indexterm>
-        <primary>QUOTE</primary>
+    role="bold"> ) ] [, <!-- DNT-Start -->QUOTE<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->QUOTE<!-- DNT-End --></primary>
       </indexterm>( </emphasis><emphasis>characters</emphasis><emphasis
-    role="bold"> ) ]</emphasis><emphasis role="bold"> [, ESCAPE<indexterm>
-        <primary>ESCAPE</primary>
+    role="bold"> ) ]</emphasis><emphasis role="bold"> [, <!-- DNT-Start -->ESCAPE<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->ESCAPE<!-- DNT-End --></primary>
       </indexterm>( </emphasis><emphasis>esc</emphasis><emphasis role="bold">
-    ) ] [, MAXLENGTH<indexterm>
-        <primary>MAXLENGTH</primary>
+    ) ] [, <!-- DNT-Start -->MAXLENGTH<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->MAXLENGTH<!-- DNT-End --></primary>
       </indexterm>( </emphasis><emphasis>size</emphasis><emphasis role="bold">
     ) ]</emphasis></para>
 
-    <para><emphasis role="bold"> [ ASCII<indexterm>
-        <primary>ASCII</primary>
-      </indexterm> | EBCDIC<indexterm>
-        <primary>EBCDIC</primary>
-      </indexterm> | UNICODE<indexterm>
-        <primary>UNICODE</primary>
-      </indexterm> ]</emphasis><emphasis role="bold"> [, NOTRIM<indexterm>
-        <primary>NOTRIM</primary>
-      </indexterm> ]) ]</emphasis><emphasis role="bold"> [,ENCRYPT<indexterm>
-        <primary>ENCRYPT</primary>
+    <para><emphasis role="bold"> [ <!-- DNT-Start -->ASCII<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->ASCII<!-- DNT-End --></primary>
+      </indexterm> | <!-- DNT-Start -->EBCDIC<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->EBCDIC<!-- DNT-End --></primary>
+      </indexterm> | <!-- DNT-Start -->UNICODE<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->UNICODE<!-- DNT-End --></primary>
+      </indexterm> ]</emphasis><emphasis role="bold"> [, <!-- DNT-Start -->NOTRIM<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->NOTRIM<!-- DNT-End --></primary>
+      </indexterm> ]) ]</emphasis><emphasis role="bold"> [,<!-- DNT-Start -->ENCRYPT<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->ENCRYPT<!-- DNT-End --></primary>
       </indexterm>(</emphasis><emphasis>key</emphasis><emphasis role="bold">)
-    ] [, __COMPRESSED__]);</emphasis></para>
+    ] [, <!-- DNT-Start -->__COMPRESSED__<!-- DNT-End -->]);</emphasis></para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -548,16 +548,16 @@ PtblE := DATASET('~Thor400::RTTEMP::TestFileEncrypted',
 
         <tbody>
           <row>
-            <entry><emphasis role="bold">CSV</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">CSV</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the <emphasis>file</emphasis> is a "comma
-            separated values" ASCII file.</entry>
+            separated values" <!-- DNT-Start -->ASCII<!-- DNT-End --> file.</entry>
           </row>
 
           <row>
-            <entry><emphasis
+            <entry><!-- DNT-Start --><emphasis
             role="bold">HEADING(</emphasis><emphasis>n</emphasis><emphasis
-            role="bold">)</emphasis></entry>
+            role="bold">)</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. The number of header records in the
             <emphasis>file</emphasis>. If omitted, the default is zero
@@ -565,7 +565,7 @@ PtblE := DATASET('~Thor400::RTTEMP::TestFileEncrypted',
           </row>
 
           <row>
-            <entry><emphasis role="bold">SEPARATOR</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">SEPARATOR</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. The field delimiter. If omitted, the default is a
             comma (',') or the delimiter specified in the spray operation that
@@ -573,16 +573,16 @@ PtblE := DATASET('~Thor400::RTTEMP::TestFileEncrypted',
           </row>
 
           <row>
-            <entry><emphasis>f_delimiters</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>f_delimiters</emphasis><!-- DNT-End --></entry>
 
             <entry>A single string constant, or set of string constants, that
             define the character(s) used as the field delimiter. If Unicode
-            constants are used, then the UTF8 representation of the
+            constants are used, then the <!-- DNT-Start -->UTF<!-- DNT-End -->8 representation of the
             character(s) will be used.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">TERMINATOR</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">TERMINATOR</emphasis><!-- DNT-End --></entry>
 
             <entry><para>Optional. The record delimiter. If omitted, the
             default is a line feed ('\n') or the delimiter specified in the
@@ -590,7 +590,7 @@ PtblE := DATASET('~Thor400::RTTEMP::TestFileEncrypted',
           </row>
 
           <row>
-            <entry><emphasis>r_delimiters</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>r_delimiters</emphasis><!-- DNT-End --></entry>
 
             <entry><para>A single string constant, or set of string constants,
             that define the character(s) used as the record
@@ -598,7 +598,7 @@ PtblE := DATASET('~Thor400::RTTEMP::TestFileEncrypted',
           </row>
 
           <row>
-            <entry><emphasis role="bold">QUOTE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">QUOTE</emphasis><!-- DNT-End --></entry>
 
             <entry><para>Optional. The string quote character used. If
             omitted, the default is a single quote ('\'') or the delimiter
@@ -607,7 +607,7 @@ PtblE := DATASET('~Thor400::RTTEMP::TestFileEncrypted',
           </row>
 
           <row>
-            <entry><emphasis>characters</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>characters</emphasis><!-- DNT-End --></entry>
 
             <entry><para>A single string constant, or set of string constants,
             that define the character(s) used as the string value
@@ -615,7 +615,7 @@ PtblE := DATASET('~Thor400::RTTEMP::TestFileEncrypted',
           </row>
 
           <row>
-            <entry><emphasis role="bold">ESCAPE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ESCAPE</emphasis><!-- DNT-End --></entry>
 
             <entry><para>Optional. The string escape character used to
             indicate the next character (usually a control character) is part
@@ -625,7 +625,7 @@ PtblE := DATASET('~Thor400::RTTEMP::TestFileEncrypted',
           </row>
 
           <row>
-            <entry><emphasis>esc</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>esc</emphasis><!-- DNT-End --></entry>
 
             <entry><para>A single string constant, or set of string constants,
             that define the character(s) used to escape control
@@ -633,9 +633,9 @@ PtblE := DATASET('~Thor400::RTTEMP::TestFileEncrypted',
           </row>
 
           <row>
-            <entry><emphasis
+            <entry><!-- DNT-Start --><emphasis
             role="bold">MAXLENGTH(</emphasis><emphasis>size</emphasis><emphasis
-            role="bold">)</emphasis></entry>
+            role="bold">)</emphasis><!-- DNT-End --></entry>
 
             <entry><para>Optional. Maximum record length in the
             <emphasis>file</emphasis>. If omitted, the default is
@@ -643,68 +643,68 @@ PtblE := DATASET('~Thor400::RTTEMP::TestFileEncrypted',
           </row>
 
           <row>
-            <entry><emphasis role="bold">ASCII</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ASCII</emphasis><!-- DNT-End --></entry>
 
-            <entry><para>Specifies all input is in ASCII format, including any
-            EBCDIC or UNICODE fields.</para></entry>
+            <entry><para>Specifies all input is in <!-- DNT-Start -->ASCII<!-- DNT-End --> format, including any
+            <!-- DNT-Start -->EBCDIC<!-- DNT-End --> or <!-- DNT-Start -->UNICODE<!-- DNT-End --> fields.</para></entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">EBCDIC</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">EBCDIC</emphasis><!-- DNT-End --></entry>
 
-            <entry><para>Specifies all input is in EBCDIC format except the
-            SEPARATOR and TERMINATOR (which are expressed as ASCII
+            <entry><para>Specifies all input is in <!-- DNT-Start -->EBCDIC<!-- DNT-End --> format except the
+            <!-- DNT-Start -->SEPARATOR<!-- DNT-End --> and <!-- DNT-Start -->TERMINATOR<!-- DNT-End --> (which are expressed as <!-- DNT-Start -->ASCII<!-- DNT-End -->
             values).</para></entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">UNICODE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNICODE</emphasis><!-- DNT-End --></entry>
 
-            <entry><para>Specifies all input is in Unicode UTF8
+            <entry><para>Specifies all input is in Unicode <!-- DNT-Start -->UTF<!-- DNT-End -->8
             format.</para></entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">NOTRIM</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">NOTRIM</emphasis><!-- DNT-End --></entry>
 
             <entry><para>Specifies preserving all whitespace in the input data
             (the default is to trim leading blanks).</para></entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">ENCRYPT</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ENCRYPT</emphasis><!-- DNT-End --></entry>
 
             <entry><para>Optional. Specifies the <emphasis>file</emphasis> was
-            created by OUTPUT with the ENCRYPT option.</para></entry>
+            created by <!-- DNT-Start -->OUTPUT<!-- DNT-End --> with the <!-- DNT-Start -->ENCRYPT<!-- DNT-End --> option.</para></entry>
           </row>
 
           <row>
-            <entry><emphasis>key</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>key</emphasis><!-- DNT-End --></entry>
 
             <entry><para>A string constant containing the encryption key used
             to create the file.</para></entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">__COMPRESSED__</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">__COMPRESSED__</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies that the <emphasis>file</emphasis> is
-            compressed because it was OUTPUT with the COMPRESSED
+            compressed because it was <!-- DNT-Start -->OUTPUT<!-- DNT-End --> with the <!-- DNT-Start -->COMPRESSED<!-- DNT-End -->
             option.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable>
 
-    <para>This form is used to read an ASCII CSV file. This can also be used
+    <para>This form is used to read an <!-- DNT-Start -->ASCII<!-- DNT-End --> <!-- DNT-Start -->CSV<!-- DNT-End --> file. This can also be used
     to read any variable-length record file that has a defined record
-    delimiter. If none of the ASCII, EBCDIC, or UNICODE options are specified,
-    the default input is in ASCII format with any UNICODE fields in UTF8
+    delimiter. If none of the <!-- DNT-Start -->ASCII<!-- DNT-End -->, <!-- DNT-Start -->EBCDIC<!-- DNT-End -->, or <!-- DNT-Start -->UNICODE<!-- DNT-End --> options are specified,
+    the default input is in <!-- DNT-Start -->ASCII<!-- DNT-End --> format with any <!-- DNT-Start -->UNICODE<!-- DNT-End --> fields in <!-- DNT-Start -->UTF<!-- DNT-End -->8
     format.</para>
 
     <para><emphasis role="bold">Example:</emphasis></para>
 
-    <programlisting>CSVRecord := RECORD
+    <!-- DNT-Start --><programlisting>CSVRecord := RECORD
   UNSIGNED4 person_id;
   STRING20 per_surname;
   STRING20 per_forename;
@@ -718,13 +718,13 @@ file3 := DATASET('MyFile.CSV',
                      SEPARATOR([',','\t']),
                      TERMINATOR(['\n','\r\n','\n\r'])));
           //1 header record, either comma or tab field delimiters,
-          // either LF or CR/LF or LF/CR record delimiters</programlisting>
+          // either LF or CR/LF or LF/CR record delimiters</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="XML_Files">
-    <title>XML Files</title>
+    <!-- DNT-Start --><title>XML Files</title><!-- DNT-End -->
 
-    <para><emphasis> attr</emphasis><emphasis role="bold"> :=
+    <!-- DNT-Start --><para><emphasis> attr</emphasis><emphasis role="bold"> :=
     DATASET(</emphasis><emphasis> file, struct, </emphasis><emphasis
     role="bold">XML<indexterm>
         <primary>XML</primary>
@@ -734,7 +734,7 @@ file3 := DATASET('MyFile.CSV',
       </indexterm> ] ) [,ENCRYPT<indexterm>
         <primary>ENCRYPT</primary>
       </indexterm>(</emphasis><emphasis>key</emphasis><emphasis role="bold">)
-    ]);</emphasis></para>
+    ]);</emphasis></para><!-- DNT-End -->
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -744,36 +744,36 @@ file3 := DATASET('MyFile.CSV',
 
         <tbody>
           <row>
-            <entry><emphasis role="bold">XML</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">XML</emphasis><!-- DNT-End --></entry>
 
-            <entry>Specifies the <emphasis>file</emphasis> is an XML
+            <entry>Specifies the <emphasis>file</emphasis> is an <!-- DNT-Start -->XML<!-- DNT-End -->
             file.</entry>
           </row>
 
           <row>
-            <entry><emphasis>xpath</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>xpath</emphasis><!-- DNT-End --></entry>
 
-            <entry>A string constant containing the full XPATH to the tag that
+            <entry>A string constant containing the full <!-- DNT-Start -->XPATH<!-- DNT-End --> to the tag that
             delimits the records in the <emphasis>file</emphasis>.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">NOROOT</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">NOROOT</emphasis><!-- DNT-End --></entry>
 
-            <entry>Specifies the <emphasis>file</emphasis> is an XML file with
+            <entry>Specifies the <emphasis>file</emphasis> is an <!-- DNT-Start -->XML<!-- DNT-End --> file with
             no file tags, only row tags.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold"><emphasis
-            role="bold">ENCRYPT</emphasis></emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
+            role="bold">ENCRYPT</emphasis></emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the <emphasis>file</emphasis> was
-            created by OUTPUT with the ENCRYPT option.</entry>
+            created by <!-- DNT-Start -->OUTPUT<!-- DNT-End --> with the <!-- DNT-Start -->ENCRYPT<!-- DNT-End --> option.</entry>
           </row>
 
           <row>
-            <entry><emphasis>key</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>key</emphasis><!-- DNT-End --></entry>
 
             <entry>A string constant containing the encryption key used to
             create the file.</entry>
@@ -782,39 +782,39 @@ file3 := DATASET('MyFile.CSV',
       </tgroup>
     </informaltable>
 
-    <para>This form is used to read an XML file into the Data Refinery. The
+    <para>This form is used to read an <!-- DNT-Start -->XML<!-- DNT-End --> file into the Data Refinery. The
     <emphasis>xpath</emphasis> parameter defines the record delimiter tag
-    using a subset of standard XPATH (<emphasis
-    role="underline">www.w3.org/TR/xpath</emphasis>) syntax (see the <emphasis
-    role="bold">XPATH Support</emphasis> section under the RECORD structure
+    using a subset of standard <!-- DNT-Start -->XPATH<!-- DNT-End --> (<emphasis
+    role="underline">www.w3.org/<!-- DNT-Start -->TR<!-- DNT-End -->/xpath</emphasis>) syntax (see the <emphasis
+    role="bold"><!-- DNT-Start -->XPATH<!-- DNT-End --> Support</emphasis> section under the <!-- DNT-Start -->RECORD<!-- DNT-End --> structure
     discussion for a description of the supported subset).</para>
 
-    <para>The key to getting individual field values from the XML lies in the
-    RECORD structure<indexterm>
-        <primary>RECORD structure</primary>
+    <para>The key to getting individual field values from the <!-- DNT-Start -->XML<!-- DNT-End --> lies in the
+    <!-- DNT-Start -->RECORD<!-- DNT-End --> structure<indexterm>
+        <primary><!-- DNT-Start -->RECORD<!-- DNT-End --> structure</primary>
       </indexterm> field definitions. If the field name exactly matches a
-    lower case XML tag containing the data, then nothing special is required.
+    lower case <!-- DNT-Start -->XML<!-- DNT-End --> tag containing the data, then nothing special is required.
     Otherwise, <emphasis>{xpath(xpathtag)} </emphasis>appended to the field
     name (where the <emphasis>xpathtag</emphasis> is a string constant
-    containing standard XPATH syntax) is required to extract the data. An
-    XPATH consisting of empty angle brackets (&lt;&gt;) indicates the field
-    receives the entire record. An absolute XPATH is used to access properties
-    of parent elements. Because XML is case sensitive, and ECL identifiers are
+    containing standard <!-- DNT-Start -->XPATH<!-- DNT-End --> syntax) is required to extract the data. An
+    <!-- DNT-Start -->XPATH<!-- DNT-End --> consisting of empty angle brackets (&lt;&gt;) indicates the field
+    receives the entire record. An absolute <!-- DNT-Start -->XPATH<!-- DNT-End --> is used to access properties
+    of parent elements. Because <!-- DNT-Start -->XML<!-- DNT-End --> is case sensitive, and <!-- DNT-Start -->ECL<!-- DNT-End --> identifiers are
     case insensitive, xpaths need to be specified if the tag contains any
     upper case characters.</para>
 
-    <para><emphasis role="bold">NOTE:</emphasis> XML reading and parsing can
+    <para><emphasis role="bold">NOTE:</emphasis> <!-- DNT-Start -->XML<!-- DNT-End --> reading and parsing can
     consume a large amount of memory, depending on the usage. In particular,
     if the specified xpath matches a very large amount of data, then a large
     data structure will be provided to the transform. Therefore, the more you
     match, the more resources you consume per match. For example, if you have
     a very large document and you match an element near the root that
     virtually encompasses the whole thing, then the whole thing will be
-    constructed as a referenceable structure that the ECL can get at.</para>
+    constructed as a referenceable structure that the <!-- DNT-Start -->ECL<!-- DNT-End --> can get at.</para>
 
     <para><emphasis role="bold">Example:</emphasis></para>
 
-    <programlisting>/* an XML file called "MyFile" contains this XML data:
+    <!-- DNT-Start --><programlisting>/* an XML file called "MyFile" contains this XML data:
 &lt;library&gt;
   &lt;book isbn="123456789X"&gt;
     &lt;author&gt;Bayliss&lt;/author&gt;
@@ -833,13 +833,13 @@ rform := RECORD
   STRING isbn {XPATH('@isbn')}; //isbn definition data from book tag
 tag
 END;
-books := DATASET('MyFile',rform,XML('library/book'));</programlisting>
+books := DATASET('MyFile',rform,XML('library/book'));</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="JSON_Files">
-    <title>JSON Files</title>
+    <!-- DNT-Start --><title>JSON Files</title><!-- DNT-End -->
 
-    <para><emphasis> attr</emphasis><emphasis role="bold"> :=
+    <!-- DNT-Start --><para><emphasis> attr</emphasis><emphasis role="bold"> :=
     DATASET(</emphasis><emphasis> file, struct, </emphasis><emphasis
     role="bold">JSON<indexterm>
         <primary>JSON</primary>
@@ -849,7 +849,7 @@ books := DATASET('MyFile',rform,XML('library/book'));</programlisting>
       </indexterm> ] ) [,ENCRYPT<indexterm>
         <primary>ENCRYPT</primary>
       </indexterm>(</emphasis><emphasis>key</emphasis><emphasis role="bold">)
-    ]);</emphasis></para>
+    ]);</emphasis></para><!-- DNT-End -->
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -859,36 +859,36 @@ books := DATASET('MyFile',rform,XML('library/book'));</programlisting>
 
         <tbody>
           <row>
-            <entry><emphasis role="bold">JSON</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">JSON</emphasis><!-- DNT-End --></entry>
 
-            <entry>Specifies the <emphasis>file</emphasis> is a JSON
+            <entry>Specifies the <emphasis>file</emphasis> is a <!-- DNT-Start -->JSON<!-- DNT-End -->
             file.</entry>
           </row>
 
           <row>
-            <entry><emphasis>xpath</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>xpath</emphasis><!-- DNT-End --></entry>
 
-            <entry>A string constant containing the full XPATH to the tag that
+            <entry>A string constant containing the full <!-- DNT-Start -->XPATH<!-- DNT-End --> to the tag that
             delimits the records in the <emphasis>file</emphasis>.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">NOROOT</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">NOROOT</emphasis><!-- DNT-End --></entry>
 
-            <entry>Specifies the <emphasis>file</emphasis> is a JSON file with
+            <entry>Specifies the <emphasis>file</emphasis> is a <!-- DNT-Start -->JSON<!-- DNT-End --> file with
             no root level markup, only a collection of objects.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold"><emphasis
-            role="bold">ENCRYPT</emphasis></emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold"><emphasis
+            role="bold">ENCRYPT</emphasis></emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the <emphasis>file</emphasis> was
-            created by OUTPUT with the ENCRYPT option.</entry>
+            created by <!-- DNT-Start -->OUTPUT<!-- DNT-End --> with the <!-- DNT-Start -->ENCRYPT<!-- DNT-End --> option.</entry>
           </row>
 
           <row>
-            <entry><emphasis>key</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>key</emphasis><!-- DNT-End --></entry>
 
             <entry>A string constant containing the encryption key used to
             create the file.</entry>
@@ -897,40 +897,40 @@ books := DATASET('MyFile',rform,XML('library/book'));</programlisting>
       </tgroup>
     </informaltable>
 
-    <para>This form is used to read a JSON file. The
+    <para>This form is used to read a <!-- DNT-Start -->JSON<!-- DNT-End --> file. The
     <emphasis>xpath</emphasis> parameter defines the path used to locate
-    records within the JSON content using a subset of standard XPATH
-    (<emphasis role="underline">www.w3.org/TR/xpath</emphasis>) syntax (see
-    the <emphasis role="bold">XPATH Support</emphasis> section under the
-    RECORD structure discussion for a description of the supported
+    records within the <!-- DNT-Start -->JSON<!-- DNT-End --> content using a subset of standard <!-- DNT-Start -->XPATH<!-- DNT-End -->
+    (<emphasis role="underline">www.w3.org/<!-- DNT-Start -->TR<!-- DNT-End -->/xpath</emphasis>) syntax (see
+    the <emphasis role="bold"><!-- DNT-Start -->XPATH<!-- DNT-End --> Support</emphasis> section under the
+    <!-- DNT-Start -->RECORD<!-- DNT-End --> structure discussion for a description of the supported
     subset).</para>
 
-    <para>The key to getting individual field values from the JSON lies in the
-    RECORD structure<indexterm>
-        <primary>RECORD structure</primary>
+    <para>The key to getting individual field values from the <!-- DNT-Start -->JSON<!-- DNT-End --> lies in the
+    <!-- DNT-Start -->RECORD<!-- DNT-End --> structure<indexterm>
+        <primary><!-- DNT-Start -->RECORD<!-- DNT-End --> structure</primary>
       </indexterm> field definitions. If the field name exactly matches a
-    lower case JSON tag containing the data, then nothing special is required.
+    lower case <!-- DNT-Start -->JSON<!-- DNT-End --> tag containing the data, then nothing special is required.
     Otherwise, <emphasis>{xpath(xpathtag)} </emphasis>appended to the field
     name (where the <emphasis>xpathtag</emphasis> is a string constant
-    containing standard XPATH syntax) is required to extract the data. An
-    XPATH consisting of empty quotes ('') indicates the field receives the
-    entire record. An absolute XPATH is used to access properties of child
-    elements. Because JSON is case sensitive, and ECL identifiers are case
+    containing standard <!-- DNT-Start -->XPATH<!-- DNT-End --> syntax) is required to extract the data. An
+    <!-- DNT-Start -->XPATH<!-- DNT-End --> consisting of empty quotes ('') indicates the field receives the
+    entire record. An absolute <!-- DNT-Start -->XPATH<!-- DNT-End --> is used to access properties of child
+    elements. Because <!-- DNT-Start -->JSON<!-- DNT-End --> is case sensitive, and <!-- DNT-Start -->ECL<!-- DNT-End --> identifiers are case
     insensitive, xpaths need to be specified if the tag contains any upper
     case characters.</para>
 
-    <para><emphasis role="bold">NOTE:</emphasis> JSON reading and parsing can
+    <para><emphasis role="bold">NOTE:</emphasis> <!-- DNT-Start -->JSON<!-- DNT-End --> reading and parsing can
     consume a large amount of memory, depending on the usage. In particular,
     if the specified xpath matches a very large amount of data, then a large
     data structure will be provided to the transform. Therefore, the more you
     match, the more resources you consume per match. For example, if you have
     a very large document and you match an element near the root that
     virtually encompasses the whole thing, then the whole thing will be
-    constructed as a referenceable structure that the ECL can get at.</para>
+    constructed as a referenceable structure that the <!-- DNT-Start -->ECL<!-- DNT-End --> can get at.</para>
 
     <para><emphasis role="bold">Example:</emphasis></para>
 
-    <programlisting>/* a JSON  file called "MyBooks.json" contains this data:
+    <!-- DNT-Start --><programlisting>/* a JSON  file called "MyBooks.json" contains this data:
 [
   {
     "id" : "978-0641723445",
@@ -953,15 +953,15 @@ BookRec := RECORD
 END;
 
 books := DATASET('~jd::mybooks.json',BookRec,JSON('/'));
-OUTPUT(books);</programlisting>
+OUTPUT(books);</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="PIPE_Files">
-    <title>PIPE Files<indexterm>
+    <!-- DNT-Start --><title>PIPE Files<indexterm>
         <primary>PIPE Files</primary>
-      </indexterm></title>
+      </indexterm></title><!-- DNT-End -->
 
-    <para><emphasis> attr</emphasis><emphasis role="bold"> :=
+    <!-- DNT-Start --><para><emphasis> attr</emphasis><emphasis role="bold"> :=
     DATASET(</emphasis><emphasis> file, struct, </emphasis><emphasis
     role="bold">PIPE<indexterm>
         <primary>Pipe</primary>
@@ -970,7 +970,7 @@ OUTPUT(books);</programlisting>
         <primary>CSV</primary>
       </indexterm> | XML<indexterm>
         <primary>XML</primary>
-      </indexterm> ]) );</emphasis></para>
+      </indexterm> ]) );</emphasis></para><!-- DNT-End -->
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -980,7 +980,7 @@ OUTPUT(books);</programlisting>
 
         <tbody>
           <row>
-            <entry><emphasis role="bold">PIPE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">PIPE</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the <emphasis>file</emphasis>comes from the
             <emphasis>command</emphasis>program. This is a "read"
@@ -988,7 +988,7 @@ OUTPUT(books);</programlisting>
           </row>
 
           <row>
-            <entry><emphasis>command</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>command</emphasis><!-- DNT-End --></entry>
 
             <entry>The name of the program to execute, which must output
             records in the <emphasis>struct</emphasis> format to standard
@@ -996,33 +996,33 @@ OUTPUT(books);</programlisting>
           </row>
 
           <row>
-            <entry><emphasis role="bold">CSV</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">CSV</emphasis><!-- DNT-End --></entry>
 
-            <entry>Optional. Specifies the output data format is CSV. If
+            <entry>Optional. Specifies the output data format is <!-- DNT-Start -->CSV<!-- DNT-End -->. If
             omitted, the format is raw.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">XML</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">XML</emphasis><!-- DNT-End --></entry>
 
-            <entry>Optional. Specifies the output data format is XML. If
+            <entry>Optional. Specifies the output data format is <!-- DNT-Start -->XML<!-- DNT-End -->. If
             omitted, the format is raw.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable>
 
-    <para>This form uses PIPE(<emphasis>command</emphasis>) to send the
+    <para>This form uses <!-- DNT-Start -->PIPE<!-- DNT-End -->(<emphasis>command</emphasis>) to send the
     <emphasis>file</emphasis> to the <emphasis>command</emphasis> program,
     which then returns the records to standard output in the
-    <emphasis>struct</emphasis> format. This is also known as an input PIPE
-    (analogous to the PIPE function<indexterm>
-        <primary>PIPE function</primary>
-      </indexterm> and PIPE option on OUTPUT).</para>
+    <emphasis>struct</emphasis> format. This is also known as an input <!-- DNT-Start -->PIPE<!-- DNT-End -->
+    (analogous to the <!-- DNT-Start -->PIPE<!-- DNT-End --> function<indexterm>
+        <primary><!-- DNT-Start -->PIPE<!-- DNT-End --> function</primary>
+      </indexterm> and <!-- DNT-Start -->PIPE<!-- DNT-End --> option on <!-- DNT-Start -->OUTPUT<!-- DNT-End -->).</para>
 
     <para><emphasis role="bold">Example:</emphasis></para>
 
-    <programlisting>PtblRec := RECORD
+    <!-- DNT-Start --><programlisting>PtblRec := RECORD
   STRING2 State;
   STRING20 City;
   STRING25 Lname;
@@ -1032,30 +1032,30 @@ END;
 Ptbl := DATASET('~Thor50::RTTEMP::TestFile',
                 PtblRec,
                 PIPE('ProcessFile'));
-          // ProcessFile is the input pipe</programlisting>
+          // ProcessFile is the input pipe</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="Named_Output_DATASETs">
-    <title>Named Output DATASET<indexterm>
+    <!-- DNT-Start --><title>Named Output DATASET<indexterm>
         <primary>Named Output Dataset</primary>
-      </indexterm>s</title>
+      </indexterm>s</title><!-- DNT-End -->
 
     <para><emphasis> attr</emphasis><emphasis role="bold"> :=
-    DATASET(</emphasis><emphasis> </emphasis><emphasis
-    role="bold">WORKUNIT<indexterm>
+    <!-- DNT-Start -->DATASET<!-- DNT-End -->(</emphasis><emphasis> </emphasis><emphasis
+    role="bold"><!-- DNT-Start -->WORKUNIT<!-- DNT-End --><indexterm>
         <primary>Workunit</primary>
       </indexterm>( </emphasis>[ <emphasis>wuid ,</emphasis> ]<emphasis>
     namedoutput </emphasis><emphasis role="bold">)</emphasis><emphasis>,
     struct </emphasis><emphasis role="bold">);</emphasis></para>
 
-    <para>This form allows you to use as a DATASET the result of an OUTPUT
-    with the NAMED option within the same workunit, or the workunit specified
-    by the <emphasis>wuid</emphasis> (workunit ID). This is a feature most
+    <para>This form allows you to use as a <!-- DNT-Start -->DATASET<!-- DNT-End --> the result of an <!-- DNT-Start -->OUTPUT<!-- DNT-End -->
+    with the <!-- DNT-Start -->NAMED<!-- DNT-End --> option within the same workunit, or the workunit specified
+    by the <emphasis>wuid</emphasis> (workunit <!-- DNT-Start -->ID<!-- DNT-End -->). This is a feature most
     useful in the Rapid Data Delivery Engine.</para>
 
     <para><emphasis role="bold">Example:</emphasis></para>
 
-    <programlisting>//Named Output DATASET in the same workunit:
+    <!-- DNT-Start --><programlisting>//Named Output DATASET in the same workunit:
 a := OUTPUT(Person(per_st='FL') ,NAMED('FloridaFolk'));
 x := DATASET(WORKUNIT('FloridaFolk'),
              RECORDOF(Person));
@@ -1072,19 +1072,19 @@ OUTPUT(SomeFile,NAMED('Fred'));
 
 // Second workunit contains this code, producing the same result:
 ds := DATASET(WORKUNIT('W20051202-155102','Fred'), MyRec);
-OUTPUT(ds);</programlisting>
+OUTPUT(ds);</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="In-line_DATASETs">
-    <title>In-line DATASET<indexterm>
+    <!-- DNT-Start --><title>In-line DATASET<indexterm>
         <primary>In-Line Dataset</primary>
       </indexterm><indexterm>
         <primary>In Line Dataset</primary>
-      </indexterm>s</title>
+      </indexterm>s</title><!-- DNT-End -->
 
     <para><emphasis role="bold"> [
     </emphasis><emphasis>attr</emphasis><emphasis role="bold"> := ]
-    DATASET(</emphasis><emphasis> recordset , recstruct</emphasis><emphasis
+    <!-- DNT-Start -->DATASET<!-- DNT-End -->(</emphasis><emphasis> recordset , recstruct</emphasis><emphasis
     role="bold"> );</emphasis></para>
 
     <para>This form allows you to in-line a set of data<indexterm>
@@ -1098,16 +1098,16 @@ OUTPUT(ds);</programlisting>
       </indexterm> that specifically exercise those boundaries. This form may
     be used in an expression context.</para>
 
-    <para>Nested RECORD structure<indexterm>
-        <primary>RECORD structure</primary>
+    <para>Nested <!-- DNT-Start -->RECORD<!-- DNT-End --> structure<indexterm>
+        <primary><!-- DNT-Start -->RECORD<!-- DNT-End --> structure</primary>
       </indexterm>s may be represented by nesting records within records.
-    Nested child datasets may also be initialized inside TRANSFORM functions
+    Nested child datasets may also be initialized inside <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> functions
     using inline datasets (see the <emphasis role="bold">Child
-    DATASETs</emphasis> discussion).</para>
+    <!-- DNT-Start -->DATASETs<!-- DNT-End --></emphasis> discussion).</para>
 
     <para><emphasis role="bold">Example:</emphasis></para>
 
-    <programlisting>//Inline DATASET using definition values
+    <!-- DNT-Start --><programlisting>//Inline DATASET using definition values
 myrec := {REAL diff, INTEGER1 reason};
 rms5008 := 10.0;
 rms5009 := 11.0;
@@ -1174,17 +1174,17 @@ T2(IDtype idval,FMtype fname,FMtype mname, Ltype lname ) :=
             SELF.lastname := lname);
 ds := DATASET([T1(123,'Fred','Jones'),
                T2(456,'John','Q','Public'),
-               T1(789,'Susie','Smith')]);</programlisting>
+               T1(789,'Susie','Smith')]);</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="Single-row_DATASET_Expressions">
-    <title>Single-row DATASET<indexterm>
+    <!-- DNT-Start --><title>Single-row DATASET<indexterm>
         <primary>Single-Row Dataset</primary>
       </indexterm><indexterm>
         <primary>Single Row Dataset</primary>
-      </indexterm> Expressions</title>
+      </indexterm> Expressions</title><!-- DNT-End -->
 
-    <para><emphasis role="bold"> DATASET(</emphasis><emphasis> row
+    <para><emphasis role="bold"> <!-- DNT-Start -->DATASET<!-- DNT-End -->(</emphasis><emphasis> row
     </emphasis><emphasis role="bold">)</emphasis></para>
 
     <para>This form is only used in an expression context. It allows you to
@@ -1192,7 +1192,7 @@ ds := DATASET([T1(123,'Fred','Jones'),
 
     <para><emphasis role="bold">Example:</emphasis></para>
 
-    <programlisting>//the following examples demonstrate 4 ways to do the same thing:
+    <!-- DNT-Start --><programlisting>//the following examples demonstrate 4 ways to do the same thing:
 personRecord := RECORD
   STRING20 surname;
   STRING10 forename;
@@ -1258,95 +1258,95 @@ addressRecord t4(namesRecord l) := TRANSFORM
   SELF := [];
 END;
 p3 := PROJECT(namesTable, t4(LEFT));
-OUTPUT(p3);</programlisting>
+OUTPUT(p3);</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="Child_DATASETs">
-    <title>Child DATASET<indexterm>
+    <!-- DNT-Start --><title>Child DATASET<indexterm>
         <primary>Child Dataset</primary>
-      </indexterm>s</title>
+      </indexterm>s</title><!-- DNT-End -->
 
-    <para><emphasis role="bold"> DATASET(</emphasis><emphasis> childstruct
+    <para><emphasis role="bold"> <!-- DNT-Start -->DATASET<!-- DNT-End -->(</emphasis><emphasis> childstruct
     </emphasis><emphasis role="bold"> [</emphasis><emphasis>,
-    </emphasis><emphasis role="bold">COUNT<indexterm>
-        <primary>COUNT</primary>
+    </emphasis><emphasis role="bold"><!-- DNT-Start -->COUNT<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->COUNT<!-- DNT-End --></primary>
       </indexterm>(</emphasis><emphasis> count </emphasis><emphasis
-    role="bold">) | LENGTH<indexterm>
-        <primary>LENGTH</primary>
+    role="bold">) | <!-- DNT-Start -->LENGTH<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->LENGTH<!-- DNT-End --></primary>
       </indexterm>(</emphasis><emphasis> size </emphasis><emphasis
     role="bold">) ]</emphasis><emphasis role="bold"> [</emphasis><emphasis>,
-    </emphasis><emphasis role="bold">CHOOSEN<indexterm>
-        <primary>CHOOSEN</primary>
+    </emphasis><emphasis role="bold"><!-- DNT-Start -->CHOOSEN<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->CHOOSEN<!-- DNT-End --></primary>
       </indexterm>(</emphasis><emphasis> maxrecs </emphasis><emphasis
     role="bold">) ] )</emphasis></para>
 
-    <para>This form is used as a value type inside a RECORD structure to
+    <para>This form is used as a value type inside a <!-- DNT-Start -->RECORD<!-- DNT-End --> structure to
     define child dataset records<indexterm>
         <primary>child dataset records</primary>
-      </indexterm> in a non-normalized flat file. The form without COUNT or
-    LENGTH is the simplest to use, and just means that the dataset the length
-    and data are stored within myfield. The COUNT form limits the number of
-    elements to the <emphasis>count</emphasis> expression. The LENGTH form
+      </indexterm> in a non-normalized flat file. The form without <!-- DNT-Start -->COUNT<!-- DNT-End --> or
+    <!-- DNT-Start -->LENGTH<!-- DNT-End --> is the simplest to use, and just means that the dataset the length
+    and data are stored within myfield. The <!-- DNT-Start -->COUNT<!-- DNT-End --> form limits the number of
+    elements to the <emphasis>count</emphasis> expression. The <!-- DNT-Start -->LENGTH<!-- DNT-End --> form
     specifies the <emphasis>size</emphasis> in another field instead of the
     count. This can only be used for dataset input.</para>
 
     <para>The following alternative syntaxes are also supported:</para>
 
     <para><emphasis> childstruct </emphasis><emphasis role="bold">fieldname
-    [</emphasis><emphasis> </emphasis>SELF.<emphasis>count
+    [</emphasis><emphasis> </emphasis><!-- DNT-Start -->SELF<!-- DNT-End -->.<emphasis>count
     </emphasis><emphasis role="bold">]</emphasis><emphasis
     role="bold"></emphasis></para>
 
-    <para><emphasis role="bold"> DATASET newname :=
+    <para><emphasis role="bold"> <!-- DNT-Start -->DATASET<!-- DNT-End --> newname :=
     fieldname</emphasis></para>
 
-    <para><emphasis role="bold"> DATASET fieldname (deprecated form -- will go
-    away post-SR9)</emphasis></para>
+    <para><emphasis role="bold"> <!-- DNT-Start -->DATASET<!-- DNT-End --> fieldname (deprecated form -- will go
+    away post-<!-- DNT-Start -->SR<!-- DNT-End -->9)</emphasis></para>
 
     <para>Any operation may be performed on child datasets in hthor and the
     Rapid Data Delivery Engine (Roxie), but only the following operations are
     supported in the Data Refinery (Thor):</para>
 
-    <para>1) PROJECT, CHOOSEN, TABLE (non-grouped), and filters on child
+    <para>1) <!-- DNT-Start -->PROJECT<!-- DNT-End -->, <!-- DNT-Start -->CHOOSEN<!-- DNT-End -->, <!-- DNT-Start -->TABLE<!-- DNT-End --> (non-grouped), and filters on child
     tables.</para>
 
     <para>2) Aggregate operations are allowed on any of the above</para>
 
     <para>3) Several aggregates can be calculated at once by using</para>
 
-    <programlisting>          summary := TABLE(x.children,{ f1 := COUNT(GROUP),
+    <!-- DNT-Start --><programlisting>          summary := TABLE(x.children,{ f1 := COUNT(GROUP),
                                         f2 := SUM(GROUP,x),
                                         f3 := MAX(GROUP,y)});
-          summary.f1;</programlisting>
+          summary.f1;</programlisting><!-- DNT-End -->
 
-    <para>4) DATASET[<emphasis>n</emphasis>] is supported to index the child
+    <para>4) <!-- DNT-Start -->DATASET<!-- DNT-End -->[<emphasis>n</emphasis>] is supported to index the child
     elements</para>
 
-    <para>5) SORT(dataset, a, b)[1] is also supported to retrieve the best
+    <para>5) <!-- DNT-Start -->SORT<!-- DNT-End -->(dataset, a, b)[1] is also supported to retrieve the best
     match.</para>
 
     <para>6) Concatenation<indexterm>
         <primary>Concatenation</primary>
       </indexterm> of datasets is supported.</para>
 
-    <para>7) Temporary TABLEs can be used in conjunction.</para>
+    <para>7) Temporary <!-- DNT-Start -->TABLEs<!-- DNT-End --> can be used in conjunction.</para>
 
-    <para>8) Initialization of child datasets in temp TABLE definitions allows
+    <para>8) Initialization of child datasets in temp <!-- DNT-Start -->TABLE<!-- DNT-End --> definitions allows
     [ ] to be used to initialize 0 elements.</para>
 
     <para>Note that,</para>
 
-    <programlisting>TABLE(ds, { ds.id, ds.children(age != 10) });</programlisting>
+    <!-- DNT-Start --><programlisting>TABLE(ds, { ds.id, ds.children(age != 10) });</programlisting><!-- DNT-End -->
 
     <para>is not supported, because a dataset in a record definition means
     "expand all the fields from the dataset in the output." However adding an
     identifier creates a form that is supported:</para>
 
-    <programlisting>TABLE(ds, { ds.id, newChildren := ds.children(age != 10); });</programlisting>
+    <!-- DNT-Start --><programlisting>TABLE(ds, { ds.id, newChildren := ds.children(age != 10); });</programlisting><!-- DNT-End -->
 
     <para><emphasis role="bold">Example:</emphasis></para>
 
-    <programlisting>ParentRec := {INTEGER1 NameID, STRING20 Name};
+    <!-- DNT-Start --><programlisting>ParentRec := {INTEGER1 NameID, STRING20 Name};
 ParentTable := DATASET([{1,'Kevin'},{2,'Liz'},
                         {3,'Mr Nobody'},{4,'Anywhere'}], ParentRec);
 ChildRec := {INTEGER1 NameID, STRING20 Addr};
@@ -1411,35 +1411,35 @@ outputRec makeChildren(outputRec l, outputRec r) := TRANSFORM
                                      AkaRec);
 END;
 
-r := ROLLUP(fatIn, id, makeChildren(LEFT, RIGHT));</programlisting>
+r := ROLLUP(fatIn, id, makeChildren(LEFT, RIGHT));</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="DATASET_as_a_Parameter_Type">
-    <title>DATASET as a Parameter Type</title>
+    <!-- DNT-Start --><title>DATASET as a Parameter Type</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">[GROUPED<indexterm>
-        <primary>GROUPED</primary>
-      </indexterm>] [LINKCOUNTED<indexterm>
-        <primary>LINKCOUNTED</primary>
-      </indexterm>] [STREAMED<indexterm>
-        <primary>STREAMED</primary>
-      </indexterm>] DATASET<indexterm>
-        <primary>DATASET</primary>
+    <para><emphasis role="bold">[<!-- DNT-Start -->GROUPED<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->GROUPED<!-- DNT-End --></primary>
+      </indexterm>] [<!-- DNT-Start -->LINKCOUNTED<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->LINKCOUNTED<!-- DNT-End --></primary>
+      </indexterm>] [<!-- DNT-Start -->STREAMED<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->STREAMED<!-- DNT-End --></primary>
+      </indexterm>] <!-- DNT-Start -->DATASET<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->DATASET<!-- DNT-End --></primary>
       </indexterm>(</emphasis><emphasis> struct </emphasis><emphasis
     role="bold">)</emphasis></para>
 
     <para>This form is only used as a Value Type for passing
     parameters<indexterm>
-        <primary>Passing a DATASET parameter</primary>
-      </indexterm>, specifying function return types, or defining a SET OF
-    datasets. If GROUPED is present, the passed parameter must have been
-    grouped using the GROUP function. The LINKCOUNTED and STREAMED keywords
-    are primarily for use in BEGINC++ functions or external C++ library
+        <primary>Passing a <!-- DNT-Start -->DATASET<!-- DNT-End --> parameter</primary>
+      </indexterm>, specifying function return types, or defining a <!-- DNT-Start -->SET<!-- DNT-End --> <!-- DNT-Start -->OF<!-- DNT-End -->
+    datasets. If <!-- DNT-Start -->GROUPED<!-- DNT-End --> is present, the passed parameter must have been
+    grouped using the <!-- DNT-Start -->GROUP<!-- DNT-End --> function. The <!-- DNT-Start -->LINKCOUNTED<!-- DNT-End --> and <!-- DNT-Start -->STREAMED<!-- DNT-End --> keywords
+    are primarily for use in <!-- DNT-Start -->BEGINC<!-- DNT-End -->++ functions or external C++ library
     functions.</para>
 
     <para><emphasis role="bold">Example:</emphasis></para>
 
-    <programlisting>MyRec := {STRING1 Letter};
+    <!-- DNT-Start --><programlisting>MyRec := {STRING1 Letter};
 SomeFile := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'}],MyRec);
          
 //Passing a DATASET parameter
@@ -1529,23 +1529,23 @@ b_Name := PlayWithName(ds_names2, DisplayLastName, 'D',1,1);
 OUTPUT(s_Name1);
 OUTPUT(s_Name2);
 OUTPUT(a_Name);
-OUTPUT(b_Name);</programlisting>
+OUTPUT(b_Name);</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="DATASET_from_DICTIONARY">
-    <title>DATASET from DICTIONARY</title>
+    <!-- DNT-Start --><title>DATASET from DICTIONARY</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">DATASET(</emphasis><emphasis> dict
+    <para><emphasis role="bold"><!-- DNT-Start -->DATASET<!-- DNT-End -->(</emphasis><emphasis> dict
     </emphasis><emphasis role="bold">)</emphasis></para>
 
     <para>This form re-defines the<emphasis> dict </emphasis> as a
-    DATASET<indexterm>
-        <primary>Treating DICTIONARY as a DATASET</primary>
+    <!-- DNT-Start -->DATASET<!-- DNT-End --><indexterm>
+        <primary>Treating <!-- DNT-Start -->DICTIONARY<!-- DNT-End --> as a <!-- DNT-Start -->DATASET<!-- DNT-End --></primary>
       </indexterm>.</para>
 
     <para><emphasis role="bold">Example:</emphasis></para>
 
-    <programlisting>rec := {STRING color,UNSIGNED1 code, STRING name};
+    <!-- DNT-Start --><programlisting>rec := {STRING color,UNSIGNED1 code, STRING name};
 ColorCodes := DATASET([{'Black' ,0 , 'Fred'},
                        {'Brown' ,1 , 'Sam'},
                        {'Red'   ,2 , 'Sue'},
@@ -1554,33 +1554,33 @@ ColorCodes := DATASET([{'Black' ,0 , 'Fred'},
 ColorCodesDCT := DICTIONARY(ColorCodes,{Color,Code});
 
 ds := DATASET(ColorCodesDCT);
-OUTPUT(ds);         </programlisting>
+OUTPUT(ds);         </programlisting><!-- DNT-End -->
 
-    <para>See Also: <link linkend="OUTPUT">OUTPUT</link>, <link
-    linkend="RECORD_Structure">RECORD Structure</link>, <link
-    linkend="TABLE">TABLE</link>, <link linkend="ROW">ROW</link>, <link
-    linkend="RECORDOF">RECORDOF</link>, <link
-    linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link
-    linkend="DICTIONARY">DICTIONARY</link></para>
+    <para>See Also: <link linkend="OUTPUT"><!-- DNT-Start -->OUTPUT<!-- DNT-End --></link>, <link
+    linkend="RECORD_Structure"><!-- DNT-Start -->RECORD<!-- DNT-End --> Structure</link>, <link
+    linkend="TABLE"><!-- DNT-Start -->TABLE<!-- DNT-End --></link>, <link linkend="ROW"><!-- DNT-Start -->ROW<!-- DNT-End --></link>, <link
+    linkend="RECORDOF"><!-- DNT-Start -->RECORDOF<!-- DNT-End --></link>, <link
+    linkend="TRANSFORM_Structure"><!-- DNT-Start -->TRANSFORM<!-- DNT-End --> Structure</link>, <link
+    linkend="DICTIONARY"><!-- DNT-Start -->DICTIONARY<!-- DNT-End --></link></para>
   </sect2>
 
   <sect2 id="DATASET_from_TRANSFORM">
-    <title>DATASET from TRANSFORM</title>
+    <!-- DNT-Start --><title>DATASET from TRANSFORM</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">DATASET(</emphasis><emphasis> count, transform
-    </emphasis><emphasis role="bold"> [, DISTRIBUTED | LOCAL ]
+    <para><emphasis role="bold"><!-- DNT-Start -->DATASET<!-- DNT-End -->(</emphasis><emphasis> count, transform
+    </emphasis><emphasis role="bold"> [, <!-- DNT-Start -->DISTRIBUTED<!-- DNT-End --> | <!-- DNT-Start -->LOCAL<!-- DNT-End --> ]
     )</emphasis></para>
 
     <para>This form uses the<emphasis> transform </emphasis> to create the
     records. The result type of the <emphasis>transform</emphasis> function
-    determines the structure. The integer COUNTER can be used to number each
+    determines the structure. The integer <!-- DNT-Start -->COUNTER<!-- DNT-End --> can be used to number each
     iteration of the <emphasis>transform</emphasis> function.</para>
 
-    <para>LOCAL executes separately and independently on each node.</para>
+    <para><!-- DNT-Start -->LOCAL<!-- DNT-End --> executes separately and independently on each node.</para>
 
     <para><emphasis role="bold">Example:</emphasis></para>
 
-    <programlisting>IMPORT STD;
+    <!-- DNT-Start --><programlisting>IMPORT STD;
 msg(UNSIGNED c) := 'Rec ' + (STRING)c + ' on node ' + (STRING)(STD.system.Thorlib.Node()+1);
 
 // DISTRIBUTED example
@@ -1614,9 +1614,9 @@ creates a result like this:
    Rec 2 on node 2
    Rec 1 on node 3
    Rec 2 on node 3
-*/</programlisting>
+*/</programlisting><!-- DNT-End -->
 
-    <para>See Also: <link linkend="RECORD_Structure">RECORD Structure</link>,
-    <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link></para>
+    <para>See Also: <link linkend="RECORD_Structure"><!-- DNT-Start -->RECORD<!-- DNT-End --> Structure</link>,
+    <link linkend="TRANSFORM_Structure"><!-- DNT-Start -->TRANSFORM<!-- DNT-End --> Structure</link></para>
   </sect2>
 </sect1>

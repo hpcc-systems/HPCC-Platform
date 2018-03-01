@@ -2,35 +2,35 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SELF">
-  <title>SELF</title>
+  <!-- DNT-Start --><title>SELF</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">SELF<indexterm>
-      <primary>SELF</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->SELF<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->SELF<!-- DNT-End --></primary>
     </indexterm>.</emphasis><emphasis>element</emphasis></para>
 
   <para><emphasis>element</emphasis> The name of a field in the result type
-  RECORD structure<indexterm>
-      <primary>RECORD structure</primary>
-    </indexterm> of a TRANSFORM structure<indexterm>
-      <primary>TRANSFORM structure</primary>
+  <!-- DNT-Start -->RECORD<!-- DNT-End --> structure<indexterm>
+      <primary><!-- DNT-Start -->RECORD<!-- DNT-End --> structure</primary>
+    </indexterm> of a <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> structure<indexterm>
+      <primary><!-- DNT-Start -->TRANSFORM<!-- DNT-End --> structure</primary>
     </indexterm>.</para>
 
-  <para>The <emphasis role="bold">SELF</emphasis> keyword<indexterm>
-      <primary>SELF keyword</primary>
-    </indexterm> is used in TRANSFORM structures to indicate a field in the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->SELF<!-- DNT-End --></emphasis> keyword<indexterm>
+      <primary><!-- DNT-Start -->SELF<!-- DNT-End --> keyword</primary>
+    </indexterm> is used in <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> structures to indicate a field in the
   output structure. It should not be used on the right hand side of any
   attribute definition.</para>
 
   <para>Example:</para>
 
-  <programlisting>Ages := RECORD
+  <!-- DNT-Start --><programlisting>Ages := RECORD
         INTEGER8 Age; //a field named "Age"
 END;
 
 TodaysYear := 2001;
 Ages req_output(person l) := TRANSFORM
         SELF.Age := TodaysYear - l.birthdate[1..4];
-END;</programlisting>
+END;</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link></para>
+  <para>See Also: <link linkend="TRANSFORM_Structure"><!-- DNT-Start -->TRANSFORM<!-- DNT-End --> Structure</link></para>
 </sect1>

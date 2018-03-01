@@ -2,21 +2,21 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ERROR">
-  <title>ERROR<indexterm>
+  <!-- DNT-Start --><title>ERROR<indexterm>
       <primary>ERROR</primary>
-    </indexterm></title>
+    </indexterm></title><!-- DNT-End -->
 
-  <para><emphasis role="bold">ERROR<indexterm>
-      <primary>ERROR function</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->ERROR<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->ERROR<!-- DNT-End --> function</primary>
     </indexterm> [ ( </emphasis><emphasis>errormessage</emphasis> <emphasis
   role="bold">| </emphasis><emphasis>errorcode </emphasis><emphasis
   role="bold">) ] ;</emphasis><emphasis role="bold"></emphasis></para>
 
-  <para><emphasis role="bold">ERROR ( </emphasis><emphasis>errorcode
+  <para><emphasis role="bold"><!-- DNT-Start -->ERROR<!-- DNT-End --> ( </emphasis><emphasis>errorcode
   </emphasis>, <emphasis>errormessage</emphasis><emphasis role="bold">
   </emphasis><emphasis role="bold">) ;</emphasis></para>
 
-  <para><emphasis role="bold">ERROR( </emphasis><emphasis>datatype
+  <para><emphasis role="bold"><!-- DNT-Start -->ERROR<!-- DNT-End -->( </emphasis><emphasis>datatype
   </emphasis><emphasis role="bold">[</emphasis>,<emphasis role="bold"> [
   </emphasis><emphasis>errorcode </emphasis><emphasis role="bold">]
   [</emphasis>, <emphasis>errormessage </emphasis><emphasis role="bold">] ] )
@@ -30,44 +30,44 @@
 
         <tbody>
           <row>
-            <entry><emphasis>errormessage</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>errormessage</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. A string constant containing the message to
             display.</entry>
           </row>
 
           <row>
-            <entry><emphasis>errorcode</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>errorcode</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. An integer constant containing the error number
             to display.</entry>
           </row>
 
           <row>
-            <entry><emphasis>datatype</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>datatype</emphasis><!-- DNT-End --></entry>
 
-            <entry>The value type or name of a RECORD structure. This may use
-            the TYPEOF function.</entry>
+            <entry>The value type or name of a <!-- DNT-Start -->RECORD<!-- DNT-End --> structure. This may use
+            the <!-- DNT-Start -->TYPEOF<!-- DNT-End --> function.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">ERROR </emphasis>function immediately halts
+  <para>The <emphasis role="bold"><!-- DNT-Start -->ERROR<!-- DNT-End --> </emphasis>function immediately halts
   processing on the workunit and displays the <emphasis>errorcode</emphasis>
   and/or <emphasis>errormessage</emphasis>. The third form is available for
   use in contexts where a value type or dataset is required. This function
-  does the same thing as the FAIL action<indexterm>
-      <primary>FAIL action</primary>
+  does the same thing as the <!-- DNT-Start -->FAIL<!-- DNT-End --> action<indexterm>
+      <primary><!-- DNT-Start -->FAIL<!-- DNT-End --> action</primary>
     </indexterm>, but may be used in an expression context, such as within a
-  TRANSFORM function.</para>
+  <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function.</para>
 
   <para>Example:</para>
 
-  <programlisting>outrec Xform(inrec L, inrec R) := TRANSFORM
+  <!-- DNT-Start --><programlisting>outrec Xform(inrec L, inrec R) := TRANSFORM
   SELF.key := IF(L.key &lt;= R.key, R.key,ERROR('Recs not in order'));
 END;
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="FAILURE">FAILURE</link>, <link linkend="FAIL">FAIL</link></para>
+  <para>See Also: <link linkend="FAILURE"><!-- DNT-Start -->FAILURE<!-- DNT-End --></link>, <link linkend="FAIL"><!-- DNT-Start -->FAIL<!-- DNT-End --></link></para>
 </sect1>

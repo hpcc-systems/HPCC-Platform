@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SetFileDescription">
-  <title>SetFileDescription</title>
+  <!-- DNT-Start --><title>SetFileDescription</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.File.SetFileDescription<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.File.SetFileDescription<indexterm>
       <primary>STD.File.SetFileDescription</primary>
     </indexterm><indexterm>
       <primary>File.SetFileDescription</primary>
     </indexterm><indexterm>
       <primary>SetFileDescription</primary>
     </indexterm>( </emphasis> <emphasis>filename , value </emphasis> <emphasis
-  role="bold">)</emphasis></para>
+  role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,14 +21,14 @@
 
       <tbody>
         <row>
-          <entry><emphasis>filename</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>filename</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the logical name of the
           file.</entry>
         </row>
 
         <row>
-          <entry><emphasis>value</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>value</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the description to place
           on the file.</entry>
@@ -37,13 +37,13 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">SetFileDescription </emphasis>function
-  changes the description information stored by the DFU about the specified
+  <para>The <emphasis role="bold"><!-- DNT-Start -->SetFileDescription<!-- DNT-End --> </emphasis>function
+  changes the description information stored by the <!-- DNT-Start -->DFU<!-- DNT-End --> about the specified
   <emphasis>filename </emphasis>to the specified <emphasis>value</emphasis>.
-  This description is seen either through ECL watch or by using the
-  STD.File.GetFileDescription function.</para>
+  This description is seen either through <!-- DNT-Start -->ECL<!-- DNT-End --> watch or by using the
+  <!-- DNT-Start -->STD<!-- DNT-End -->.File.GetFileDescription function.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">A := STD.File.SetFileDescription('Fred','All the Freds in the world');</programlisting>
+  <!-- DNT-Start --><programlisting format="linespecific">A := STD.File.SetFileDescription('Fred','All the Freds in the world');</programlisting><!-- DNT-End -->
 </sect1>

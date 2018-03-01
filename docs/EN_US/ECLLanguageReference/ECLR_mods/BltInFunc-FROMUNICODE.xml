@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="FROMUNICODE">
-  <title>FROMUNICODE</title>
+  <!-- DNT-Start --><title>FROMUNICODE</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">FROMUNICODE<indexterm>
-      <primary>FROMUNICODE</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->FROMUNICODE<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->FROMUNICODE<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>FROMUNICODE function</primary>
+      <primary><!-- DNT-Start -->FROMUNICODE<!-- DNT-End --> function</primary>
     </indexterm>(</emphasis><emphasis> string, encoding </emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -19,34 +19,34 @@
 
         <tbody>
           <row>
-            <entry><emphasis>string</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>string</emphasis><!-- DNT-End --></entry>
 
-            <entry>The UNICODE string to translate.</entry>
+            <entry>The <!-- DNT-Start -->UNICODE<!-- DNT-End --> string to translate.</entry>
           </row>
 
           <row>
-            <entry><emphasis>encoding</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>encoding</emphasis><!-- DNT-End --></entry>
 
-            <entry>The encoding codepage (supported by IBM's ICU) to use for
+            <entry>The encoding codepage (supported by <!-- DNT-Start -->IBM<!-- DNT-End -->'s <!-- DNT-Start -->ICU<!-- DNT-End -->) to use for
             the translation.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>FROMUNICODE returns a single DATA value.</entry>
+            <entry><!-- DNT-Start -->FROMUNICODE<!-- DNT-End --> returns a single <!-- DNT-Start -->DATA<!-- DNT-End --> value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">FROMUNICODE </emphasis>function returns the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->FROMUNICODE<!-- DNT-End --> </emphasis>function returns the
   <emphasis>string </emphasis>translated from the specified <emphasis>encoding
-  </emphasis>to a DATA value.</para>
+  </emphasis>to a <!-- DNT-Start -->DATA<!-- DNT-End --> value.</para>
 
   <para>Example:</para>
 
-  <programlisting>DATA5 x := FROMUNICODE(u'ABCDE','UTF-8'); //results in 4142434445</programlisting>
+  <!-- DNT-Start --><programlisting>DATA5 x := FROMUNICODE(u'ABCDE','UTF-8'); //results in 4142434445</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="TOUNICODE">TOUNICODE</link>, <link linkend="UNICODEORDER">UNICODEORDER</link></para>
+  <para>See Also: <link linkend="TOUNICODE"><!-- DNT-Start -->TOUNICODE<!-- DNT-End --></link>, <link linkend="UNICODEORDER"><!-- DNT-Start -->UNICODEORDER<!-- DNT-End --></link></para>
 </sect1>

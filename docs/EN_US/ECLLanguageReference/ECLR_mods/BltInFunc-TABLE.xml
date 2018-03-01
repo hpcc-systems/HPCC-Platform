@@ -2,34 +2,34 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="TABLE">
-  <title>TABLE</title>
+  <!-- DNT-Start --><title>TABLE</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">TABLE<indexterm>
-      <primary>TABLE</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->TABLE<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->TABLE<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>TABLE Function</primary>
+      <primary><!-- DNT-Start -->TABLE<!-- DNT-End --> Function</primary>
     </indexterm>(</emphasis><emphasis>recordset, format</emphasis><emphasis
   role="bold"> [</emphasis><emphasis>, expression</emphasis><emphasis
-  role="bold"> [</emphasis>,<emphasis role="bold">FEW<indexterm>
-      <primary>FEW</primary>
-    </indexterm> | MANY<indexterm>
-      <primary>MANY</primary>
+  role="bold"> [</emphasis>,<emphasis role="bold"><!-- DNT-Start -->FEW<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->FEW<!-- DNT-End --></primary>
+    </indexterm> | <!-- DNT-Start -->MANY<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->MANY<!-- DNT-End --></primary>
     </indexterm>] [</emphasis>, <emphasis
-  role="bold">UNSORTED<indexterm>
-      <primary>UNSORTED</primary>
-    </indexterm>]] [</emphasis>, <emphasis role="bold">LOCAL<indexterm>
-      <primary>LOCAL</primary>
-    </indexterm>] [, KEYED<indexterm>
-      <primary>KEYED</primary>
-    </indexterm> ] [, MERGE<indexterm>
-      <primary>MERGE</primary>
-    </indexterm> ] [, SKEW<indexterm>
-      <primary>SKEW</primary>
+  role="bold"><!-- DNT-Start -->UNSORTED<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->UNSORTED<!-- DNT-End --></primary>
+    </indexterm>]] [</emphasis>, <emphasis role="bold"><!-- DNT-Start -->LOCAL<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->LOCAL<!-- DNT-End --></primary>
+    </indexterm>] [, <!-- DNT-Start -->KEYED<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->KEYED<!-- DNT-End --></primary>
+    </indexterm> ] [, <!-- DNT-Start -->MERGE<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->MERGE<!-- DNT-End --></primary>
+    </indexterm> ] [, <!-- DNT-Start -->SKEW<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->SKEW<!-- DNT-End --></primary>
     </indexterm>(</emphasis><emphasis>limit</emphasis><emphasis role="bold">[</emphasis><emphasis>, target</emphasis><emphasis role="bold">]
-  ) [, THRESHOLD<indexterm>
-      <primary>THRESHOLD</primary>
+  ) [, <!-- DNT-Start -->THRESHOLD<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->THRESHOLD<!-- DNT-End --></primary>
     </indexterm>(</emphasis><emphasis>size</emphasis><emphasis role="bold">) ]
-  ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+  ] </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -39,7 +39,7 @@
 
         <tbody>
           <row>
-            <entry><emphasis>recordset</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>recordset</emphasis><!-- DNT-End --></entry>
 
             <entry>The set of records to process. This may be the name of a
             dataset or a record set derived from some filter condition, or any
@@ -47,28 +47,28 @@
           </row>
 
           <row>
-            <entry><emphasis>format</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>format</emphasis><!-- DNT-End --></entry>
 
-            <entry>An output RECORD structure<indexterm>
-                <primary>RECORD structure</primary>
+            <entry>An output <!-- DNT-Start -->RECORD<!-- DNT-End --> structure<indexterm>
+                <primary><!-- DNT-Start -->RECORD<!-- DNT-End --> structure</primary>
               </indexterm> definition that defines the type, name, and source
             of the data for each field.</entry>
           </row>
 
           <row>
-            <entry><emphasis>expression</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies a "group by" clause. You may have
             multiple expressions separated by commas to create a single
             logical "group by" clause. If expression is a field of the
             recordset, then there is a single group record in the resulting
             table for every distinct value of the expression. Otherwise
-            expression is a LEFT/RIGHT type expression in the DEDUP
+            expression is a <!-- DNT-Start -->LEFT<!-- DNT-End -->/<!-- DNT-Start -->RIGHT<!-- DNT-End --> type expression in the <!-- DNT-Start -->DEDUP<!-- DNT-End -->
             manner.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">FEW</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">FEW</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Indicates that the expression will result in
             fewer than 10,000 distinct groups. This allows optimization to
@@ -76,14 +76,14 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">MANY</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">MANY</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Indicates that the expression will result in many
             distinct groups.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">UNSORTED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNSORTED</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies that you don't care about the order of
             the groups. This allows optimization to produce a significantly
@@ -91,16 +91,16 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">LOCAL</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the operation is performed on each
             supercomputer node independently, without requiring interaction
             with all other nodes to acquire data; the operation maintains the
-            distribution of any previous DISTRIBUTE.</entry>
+            distribution of any previous <!-- DNT-Start -->DISTRIBUTE<!-- DNT-End -->.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">KEYED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">KEYED</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the activity is part of an index read
             operation, which allows the optimizer to generate optimal code for
@@ -108,18 +108,18 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">MERGE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">MERGE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies that results are aggregated on each
             node and then the aggregated intermediaries are aggregated
             globally. This is a safe method of aggregation that shines
             particularly well if the underlying data was skewed. If it is
-            known that the number of groups will be low then ,FEW will be even
+            known that the number of groups will be low then ,<!-- DNT-Start -->FEW<!-- DNT-End --> will be even
             faster; avoiding the local sort of the underlying data.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">SKEW</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">SKEW</emphasis><!-- DNT-End --></entry>
 
             <entry>Indicates that you know the data will not be spread evenly
             across nodes (will be skewed and you choose to override the
@@ -128,7 +128,7 @@
           </row>
 
           <row>
-            <entry><emphasis>limit</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>limit</emphasis><!-- DNT-End --></entry>
 
             <entry>A value between zero (0) and one (1.0 = 100%) indicating
             the maximum percentage of skew to allow before the job fails (the
@@ -137,7 +137,7 @@
           </row>
 
           <row>
-            <entry><emphasis>target</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>target</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. A value between zero (0) and one (1.0 = 100%)
             indicating the desired maximum percentage of skew to allow (the
@@ -146,75 +146,75 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">THRESHOLD</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">THRESHOLD</emphasis><!-- DNT-End --></entry>
 
             <entry>Indicates the minimum size for a single part before the
-            SKEW limit is enforced.</entry>
+            <!-- DNT-Start -->SKEW<!-- DNT-End --> limit is enforced.</entry>
           </row>
 
           <row>
-            <entry><emphasis>size</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>size</emphasis><!-- DNT-End --></entry>
 
             <entry>An integer value indicating the minimum number of bytes for
-            a single part. Default is 1GB.</entry>
+            a single part. Default is 1<!-- DNT-Start -->GB<!-- DNT-End -->.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the output record order is not significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the significance of the output record order.</entry>
           </row>
           <row>
-            <entry><emphasis>bool</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
 
             <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">STABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is not significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity in parallel.</entry>
           </row>
           <row>
-            <entry><emphasis>numthreads</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Override the algorithm used for this activity.</entry>
           </row>
           <row>
-            <entry><emphasis>name</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>TABLE returns a new table.</entry>
+            <entry><!-- DNT-Start -->TABLE<!-- DNT-End --> returns a new table.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">TABLE </emphasis>function is similar to
-  OUTPUT, but instead of writing records to a file, it outputs those records
+  <para>The <emphasis role="bold"><!-- DNT-Start -->TABLE<!-- DNT-End --> </emphasis>function is similar to
+  <!-- DNT-Start -->OUTPUT<!-- DNT-End -->, but instead of writing records to a file, it outputs those records
   in a new table (a new dataset in the supercomputer), in memory. The new
   table is temporary and exists only while the specific query that invoked it
   is running.</para>
@@ -224,7 +224,7 @@
   <emphasis>expression</emphasis> is used to perform aggregation. This means
   the parent record is available when processing table records, and you can
   also access the set of child records related to each table record. There are
-  two forms of TABLE usage: the "Vertical Slice" form, and the "CrossTab
+  two forms of <!-- DNT-Start -->TABLE<!-- DNT-End --> usage: the "Vertical Slice" form, and the "CrossTab
   Report" form.</para>
 
   <para>For the "Vertical Slice" form, there is no
@@ -234,16 +234,16 @@
 
   <para>For the "CrossTab Report" form there is usually an
   <emphasis>expression</emphasis> parameter and, more importantly, the output
-  <emphasis>format</emphasis> RECORD structure<indexterm>
-      <primary>RECORD structure</primary>
+  <emphasis>format</emphasis> <!-- DNT-Start -->RECORD<!-- DNT-End --> structure<indexterm>
+      <primary><!-- DNT-Start -->RECORD<!-- DNT-End --> structure</primary>
     </indexterm> contains at least one field using an aggregate function with
-  the keyword GROUP as its first parameter. The number of records produced is
+  the keyword <!-- DNT-Start -->GROUP<!-- DNT-End --> as its first parameter. The number of records produced is
   equal to the number of distinct values of the
   <emphasis>expression</emphasis>.</para>
 
   <para>Example:</para>
 
-  <programlisting>//"vertical slice" form:
+  <!-- DNT-Start --><programlisting>//"vertical slice" form:
 MyFormat := RECORD
 STRING25 Lname := Person.per_last_name;
 Person.per_first_name;
@@ -261,9 +261,9 @@ END
 Mytable := TABLE(Person,rec,per_st,FEW);
 // group persons by state in Mytable to produce a
         crosstab
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="OUTPUT">OUTPUT</link>, <link
-  linkend="GROUP">GROUP</link>, <link linkend="DATASET">DATASET</link>, <link
-  linkend="RECORD_Structure">RECORD Structure</link></para>
+  <para>See Also: <link linkend="OUTPUT"><!-- DNT-Start -->OUTPUT<!-- DNT-End --></link>, <link
+  linkend="GROUP"><!-- DNT-Start -->GROUP<!-- DNT-End --></link>, <link linkend="DATASET"><!-- DNT-Start -->DATASET<!-- DNT-End --></link>, <link
+  linkend="RECORD_Structure"><!-- DNT-Start -->RECORD<!-- DNT-End --> Structure</link></para>
 </sect1>

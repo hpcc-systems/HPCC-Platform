@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="StartsWith">
-  <title>StartsWith</title>
+  <!-- DNT-Start --><title>StartsWith</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Str.StartsWith<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.Str.StartsWith<indexterm>
       <primary>STD.Str.StartsWith</primary>
     </indexterm><indexterm>
       <primary>Str.StartsWith</primary>
     </indexterm><indexterm>
       <primary>StartsWith</primary>
     </indexterm>(</emphasis> <emphasis>source, prefix</emphasis> <emphasis
-  role="bold">)</emphasis></para>
+  role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,34 +21,34 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>source</emphasis><!-- DNT-End --></entry>
 
           <entry>The string to search.</entry>
         </row>
 
         <row>
-          <entry><emphasis>prefix</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>prefix</emphasis><!-- DNT-End --></entry>
 
           <entry>The string to find.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>StartsWith returns a BOOLEAN value.</entry>
+          <entry><!-- DNT-Start -->StartsWith<!-- DNT-End --> returns a <!-- DNT-Start -->BOOLEAN<!-- DNT-End --> value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">StartsWith</emphasis> function returns TRUE
+  <para>The <emphasis role="bold"><!-- DNT-Start -->StartsWith<!-- DNT-End --></emphasis> function returns <!-- DNT-Start -->TRUE<!-- DNT-End -->
   if the <emphasis>source</emphasis> starts with the text in the
   <emphasis>prefix</emphasis> parameter.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">IMPORT STD;
+  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 STD.Str.StartsWith('a word away','a word');   //returns TRUE
 STD.Str.StartsWith('a word away','aword');   //returns FALSE
-</programlisting>
+</programlisting><!-- DNT-End -->
 </sect1>

@@ -2,24 +2,24 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Using_ECL_Keys-INDEX_Files">
-  <title>Using ECL Keys (INDEX Files)</title>
+  <!-- DNT-Start --><title>Using ECL Keys (INDEX Files)</title><!-- DNT-End -->
 
-  <para>The ETL (Extract, Transform, and Load--standard data ingest processing)
-  operations in ECL typically operate against all or most of the records in
-  any given dataset, which makes the use of keys (INDEX files) of little use.
+  <para>The <!-- DNT-Start -->ETL<!-- DNT-End --> (Extract, Transform, and Load--standard data ingest processing)
+  operations in <!-- DNT-Start -->ECL<!-- DNT-End --> typically operate against all or most of the records in
+  any given dataset, which makes the use of keys (<!-- DNT-Start -->INDEX<!-- DNT-End --> files) of little use.
   Many queries do the same.</para>
 
   <para>However, production data delivery to end-users rarely requires
   accessing all records in a dataset. End-users always want "instant" access
   to the data they're interested in, and most often that data is a very small
   subset of the total set of records available. Therefore, using keys
-  (INDEXes) becomes a requirement.</para>
+  (<!-- DNT-Start -->INDEXes<!-- DNT-End -->) becomes a requirement.</para>
 
   <para>The following attribute definitions used by the code examples in this
-  article are declared in the DeclareData MODULE structure attribute in the
-  DeclareData.ECL file:</para>
+  article are declared in the DeclareData <!-- DNT-Start -->MODULE<!-- DNT-End --> structure attribute in the
+  DeclareData.<!-- DNT-Start -->ECL<!-- DNT-End --> file:</para>
 
-  <programlisting>EXPORT Person := MODULE
+  <!-- DNT-Start --><programlisting>EXPORT Person := MODULE
   EXPORT File := DATASET('~PROGGUIDE::EXAMPLEDATA::People',Layout_Person, THOR);
   EXPORT FilePlus := DATASET('~PROGGUIDE::EXAMPLEDATA::People',
                              {Layout_Person,
@@ -56,42 +56,42 @@ EXPORT IDX__Person_PersonID_Payload :=
               {FirstName,LastName,MiddleInitial,
                Gender,Street,City,State,Zip,RecPos},
               '~PROGGUIDE::EXAMPLEDATA::KEYS::People.PersonID.Payload');
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>Although you can use an INDEX as if it were a DATASET, there are only
-  two operations in ECL that directly use keys: FETCH and JOIN.</para>
+  <para>Although you can use an <!-- DNT-Start -->INDEX<!-- DNT-End --> as if it were a <!-- DNT-Start -->DATASET<!-- DNT-End -->, there are only
+  two operations in <!-- DNT-Start -->ECL<!-- DNT-End --> that directly use keys: <!-- DNT-Start -->FETCH<!-- DNT-End --> and <!-- DNT-Start -->JOIN<!-- DNT-End -->.</para>
 
   <sect2 id="Simple_FETCH">
-    <title>Simple FETCH</title>
+    <!-- DNT-Start --><title>Simple FETCH</title><!-- DNT-End -->
 
-    <para>The FETCH is the simplest use of an INDEX. Its purpose is to
-    retrieve records from a dataset by using an INDEX to directly access only
+    <para>The <!-- DNT-Start -->FETCH<!-- DNT-End --> is the simplest use of an <!-- DNT-Start -->INDEX<!-- DNT-End -->. Its purpose is to
+    retrieve records from a dataset by using an <!-- DNT-Start -->INDEX<!-- DNT-End --> to directly access only
     the specified records.</para>
 
-    <para>The example code below (contained in the IndexFetch.ECL file)
+    <para>The example code below (contained in the IndexFetch.<!-- DNT-Start -->ECL<!-- DNT-End --> file)
     illustrates the usual form:</para>
 
-    <programlisting>IMPORT $;
+    <!-- DNT-Start --><programlisting>IMPORT $;
 
 F1 := FETCH($.DeclareData.Person.FilePlus,
             $.DeclareData.IDX_Person_PersonID(PersonID=1),  
             RIGHT.RecPos);
-OUTPUT(F1);	</programlisting>
+OUTPUT(F1);	</programlisting><!-- DNT-End -->
 
-    <para>You will note that the DATASET named as the first parameter has no
-    filter, while the INDEX named as the second parameter does have a filter.
-    This is always the case with FETCH. The purpose of an INDEX in ECL is
+    <para>You will note that the <!-- DNT-Start -->DATASET<!-- DNT-End --> named as the first parameter has no
+    filter, while the <!-- DNT-Start -->INDEX<!-- DNT-End --> named as the second parameter does have a filter.
+    This is always the case with <!-- DNT-Start -->FETCH<!-- DNT-End -->. The purpose of an <!-- DNT-Start -->INDEX<!-- DNT-End --> in <!-- DNT-Start -->ECL<!-- DNT-End --> is
     always to allow "direct" access to individual records in the base dataset,
-    therefore filtering the INDEX is always required to define the exact set
+    therefore filtering the <!-- DNT-Start -->INDEX<!-- DNT-End --> is always required to define the exact set
     of records to retrieve. Given that, filtering the base dataset is
     unnecessary.</para>
 
-    <para>As you can see, there is no TRANSFORM function in this code. For
-    most typical uses of FETCH a transform function is unnecessary, although
+    <para>As you can see, there is no <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function in this code. For
+    most typical uses of <!-- DNT-Start -->FETCH<!-- DNT-End --> a transform function is unnecessary, although
     it is certainly appropriate if the result data requires formatting, as in
-    this example (also contained in the IndexFetch.ECL file):</para>
+    this example (also contained in the IndexFetch.<!-- DNT-Start -->ECL<!-- DNT-End --> file):</para>
 
-    <programlisting>r := RECORD
+    <!-- DNT-Start --><programlisting>r := RECORD
   STRING FullName;
   STRING Address;
   STRING CSZ;
@@ -108,30 +108,30 @@ F2 := FETCH($.DeclareData.Person.FilePlus,
             RIGHT.RecPos,
             Xform(LEFT));
 OUTPUT(F2);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-    <para>Even with a TRANSFORM function, this code is still a very
+    <para>Even with a <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function, this code is still a very
     straight-forward "go get me the records, please" operation.</para>
   </sect2>
 
   <sect2 id="Full-keyed_JOIN">
-    <title>Full-keyed JOIN</title>
+    <!-- DNT-Start --><title>Full-keyed JOIN</title><!-- DNT-End -->
 
-    <para>As simple as FETCH is, using INDEXes in JOIN operations is a little
-    more complex. The most obvious form is a "full-keyed" JOIN, specified by
-    the KEYED option, which, nominates an INDEX into the right-hand recordset
-    (the second JOIN parameter). The purpose for this form is to handle
+    <para>As simple as <!-- DNT-Start -->FETCH<!-- DNT-End --> is, using <!-- DNT-Start -->INDEXes<!-- DNT-End --> in <!-- DNT-Start -->JOIN<!-- DNT-End --> operations is a little
+    more complex. The most obvious form is a "full-keyed" <!-- DNT-Start -->JOIN<!-- DNT-End -->, specified by
+    the <!-- DNT-Start -->KEYED<!-- DNT-End --> option, which, nominates an <!-- DNT-Start -->INDEX<!-- DNT-End --> into the right-hand recordset
+    (the second <!-- DNT-Start -->JOIN<!-- DNT-End --> parameter). The purpose for this form is to handle
     situations where the left-hand recordset (named as the first parameter to
-    the JOIN) is a fairly small dataset that needs to join to a large, indexed
-    dataset (the right-hand recordset). By using the KEYED option, the JOIN
-    operation uses the specified INDEX to find the matching right-hand
+    the <!-- DNT-Start -->JOIN<!-- DNT-End -->) is a fairly small dataset that needs to join to a large, indexed
+    dataset (the right-hand recordset). By using the <!-- DNT-Start -->KEYED<!-- DNT-End --> option, the <!-- DNT-Start -->JOIN<!-- DNT-End -->
+    operation uses the specified <!-- DNT-Start -->INDEX<!-- DNT-End --> to find the matching right-hand
     records. This means that the join condition must use the key fields in the
-    INDEX to find matching records.</para>
+    <!-- DNT-Start -->INDEX<!-- DNT-End --> to find matching records.</para>
 
-    <para>This example code (contained in the IndexFullKeyedJoin.ECL file)
+    <para>This example code (contained in the IndexFullKeyedJoin.<!-- DNT-Start -->ECL<!-- DNT-End --> file)
     illustrates the usual use of a full-keyed join:</para>
 
-    <programlisting>IMPORT $;
+    <!-- DNT-Start --><programlisting>IMPORT $;
 
 r1 := RECORD
   $.DeclareData.Layout_Person;
@@ -150,13 +150,13 @@ J1 := JOIN($.DeclareData.Person.FilePlus(PersonID BETWEEN 1 AND 100),
            KEYED($.DeclareData.IDX_Accounts_PersonID));
 
 OUTPUT(J1,ALL);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para>The right-hand Accounts file contains five million records, and with
     the specified filter condition the left-hand Person recordset contains
-    exactly one hundred records. A standard JOIN between these two would
+    exactly one hundred records. A standard <!-- DNT-Start -->JOIN<!-- DNT-End --> between these two would
     normally require that all five million Accounts records be read to produce
-    the result. However, by using the KEYED option the INDEX's binary tree is
+    the result. However, by using the <!-- DNT-Start -->KEYED<!-- DNT-End --> option the <!-- DNT-Start -->INDEX<!-- DNT-End -->'s binary tree is
     used to find the entries with the appropriate key field values and get the
     pointers to the exact set of Accounts records required to produce the
     correct result. That means that the only records read from the right-hand
@@ -164,21 +164,21 @@ OUTPUT(J1,ALL);
   </sect2>
 
   <sect2 id="Half-keyed_JOIN">
-    <title>Half-keyed JOIN</title>
+    <!-- DNT-Start --><title>Half-keyed JOIN</title><!-- DNT-End -->
 
-    <para>The half-keyed JOIN is a simpler version, wherein the INDEX is the
-    right-hand recordset in the JOIN. Just as with the full-keyed JOIN, the
-    join condition must use the key fields in the INDEX to do its work. The
-    purpose of the half-keyed JOIN is the same as the full-keyed
+    <para>The half-keyed <!-- DNT-Start -->JOIN<!-- DNT-End --> is a simpler version, wherein the <!-- DNT-Start -->INDEX<!-- DNT-End --> is the
+    right-hand recordset in the <!-- DNT-Start -->JOIN<!-- DNT-End -->. Just as with the full-keyed <!-- DNT-Start -->JOIN<!-- DNT-End -->, the
+    join condition must use the key fields in the <!-- DNT-Start -->INDEX<!-- DNT-End --> to do its work. The
+    purpose of the half-keyed <!-- DNT-Start -->JOIN<!-- DNT-End --> is the same as the full-keyed
     version.</para>
 
-    <para>In fact, a full-keyed JOIN is, behind the curtains, actually the
-    same as a half-keyed JOIN then a FETCH to retrieve the base dataset
-    records. Therefore, a half-keyed JOIN and a FETCH are semantically and
+    <para>In fact, a full-keyed <!-- DNT-Start -->JOIN<!-- DNT-End --> is, behind the curtains, actually the
+    same as a half-keyed <!-- DNT-Start -->JOIN<!-- DNT-End --> then a <!-- DNT-Start -->FETCH<!-- DNT-End --> to retrieve the base dataset
+    records. Therefore, a half-keyed <!-- DNT-Start -->JOIN<!-- DNT-End --> and a <!-- DNT-Start -->FETCH<!-- DNT-End --> are semantically and
     functionally equivalent, as shown in this example code (contained in the
-    IndexHalfKeyedJoin.ECL file):</para>
+    IndexHalfKeyedJoin.<!-- DNT-Start -->ECL<!-- DNT-End --> file):</para>
 
-    <programlisting>IMPORT $;
+    <!-- DNT-Start --><programlisting>IMPORT $;
 
 r1 := RECORD
   $.DeclareData.Layout_Person;
@@ -210,46 +210,46 @@ F1 := FETCH($.DeclareData.Accounts,
             Xform3(LEFT,RIGHT));
 
 OUTPUT(F1,ALL);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para>This code produces the same result set as the previous
     example.</para>
 
-    <para>The advantage of using half-keyed JOINs over the full-keyed version
-    comes in where you may need to do several JOINs to fully perform whatever
+    <para>The advantage of using half-keyed <!-- DNT-Start -->JOINs<!-- DNT-End --> over the full-keyed version
+    comes in where you may need to do several <!-- DNT-Start -->JOINs<!-- DNT-End --> to fully perform whatever
     process is being run. Using the half-keyed form allows you to accomplish
-    all the necessary JOINs before you explicitly do the FETCH to retrieve the
+    all the necessary <!-- DNT-Start -->JOINs<!-- DNT-End --> before you explicitly do the <!-- DNT-Start -->FETCH<!-- DNT-End --> to retrieve the
     final result records, thereby making the code more efficient.</para>
   </sect2>
 
   <sect2 id="Payload_INDEXes">
-    <title>Payload INDEXes</title>
+    <!-- DNT-Start --><title>Payload INDEXes</title><!-- DNT-End -->
 
-    <para>There is an extended form of INDEX that allows each entry to carry a
+    <para>There is an extended form of <!-- DNT-Start -->INDEX<!-- DNT-End --> that allows each entry to carry a
     "payload"--additional data not included in the set of key fields. These
     additional fields may simply be additional fields from the base dataset
     (not required as part of the search key), or they may contain the result
     of some preliminary computation (computed fields). Since the data in an
-    INDEX is always compressed (using LZW compression), carrying the extra
+    <!-- DNT-Start -->INDEX<!-- DNT-End --> is always compressed (using <!-- DNT-Start -->LZW<!-- DNT-End --> compression), carrying the extra
     payload doesn't tax the system unduly.</para>
 
-    <para>A payload INDEX requires two separate RECORD structures as the
-    second and third parameters of the INDEX declaration. The second parameter
-    RECORD structure lists the key fields on which the INDEX is built (the
-    search fields), while the third parameter RECORD structure defines the
+    <para>A payload <!-- DNT-Start -->INDEX<!-- DNT-End --> requires two separate <!-- DNT-Start -->RECORD<!-- DNT-End --> structures as the
+    second and third parameters of the <!-- DNT-Start -->INDEX<!-- DNT-End --> declaration. The second parameter
+    <!-- DNT-Start -->RECORD<!-- DNT-End --> structure lists the key fields on which the <!-- DNT-Start -->INDEX<!-- DNT-End --> is built (the
+    search fields), while the third parameter <!-- DNT-Start -->RECORD<!-- DNT-End --> structure defines the
     additional payload fields.</para>
 
     <para>The <emphasis role="bold">virtual(fileposition)</emphasis> record
-    pointer field must always be the last field listed in any type of INDEX,
+    pointer field must always be the last field listed in any type of <!-- DNT-Start -->INDEX<!-- DNT-End -->,
     therefore, when you're defining a payload key it is always the last field
-    in the third parameter RECORD structure.</para>
+    in the third parameter <!-- DNT-Start -->RECORD<!-- DNT-End --> structure.</para>
 
-    <para>This example code (contained in the IndexHalfKeyedPayloadJoin.ECL
+    <para>This example code (contained in the IndexHalfKeyedPayloadJoin.<!-- DNT-Start -->ECL<!-- DNT-End -->
     file) once again duplicates the previous results, but does so using just
-    the half-keyed JOIN (without the FETCH) by making use of a payload
+    the half-keyed <!-- DNT-Start -->JOIN<!-- DNT-End --> (without the <!-- DNT-Start -->FETCH<!-- DNT-End -->) by making use of a payload
     key:</para>
 
-    <programlisting>IMPORT $;
+    <!-- DNT-Start --><programlisting>IMPORT $;
 
 r1 := RECORD
   $.DeclareData.Layout_Person;
@@ -268,28 +268,28 @@ J2 := JOIN($.DeclareData.Person.FilePlus(PersonID BETWEEN 1 AND 100),
            Xform(LEFT,RIGHT));
  
 OUTPUT(J2,ALL);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para>You can see that this makes for tighter code. By eliminating the
-    FETCH operation you also eliminate the disk access associated with it,
+    <!-- DNT-Start -->FETCH<!-- DNT-End --> operation you also eliminate the disk access associated with it,
     making your process faster. The requirement, of course, is to pre-build
-    the payload keys so that the FETCH becomes unnecessary.</para>
+    the payload keys so that the <!-- DNT-Start -->FETCH<!-- DNT-End --> becomes unnecessary.</para>
   </sect2>
 
   <sect2 id="Computed_Fields_in_Payload_Keys">
-    <title>Computed Fields in Payload Keys</title>
+    <!-- DNT-Start --><title>Computed Fields in Payload Keys</title><!-- DNT-End -->
 
     <para>There is a trick to putting computed fields in the payload. Since a
     "computed field" by definition does not exist in the dataset, the
     technique required for their creation and use is to build the content of
-    the INDEX beforehand.</para>
+    the <!-- DNT-Start -->INDEX<!-- DNT-End --> beforehand.</para>
 
-    <para>The following example code (contained in IndexPayloadFetch.ECL)
+    <para>The following example code (contained in IndexPayloadFetch.<!-- DNT-Start -->ECL<!-- DNT-End -->)
     illustrates how to accomplish this by building the content of some
-    computed fields (derived from related child records) in a TABLE on which
-    the INDEX is built:</para>
+    computed fields (derived from related child records) in a <!-- DNT-Start -->TABLE<!-- DNT-End --> on which
+    the <!-- DNT-Start -->INDEX<!-- DNT-End --> is built:</para>
 
-    <programlisting>IMPORT $;
+    <!-- DNT-Start --><programlisting>IMPORT $;
 
 PersonFile := $.DeclareData.Person.FilePlus;
 AcctFile   := $.DeclareData.Accounts;
@@ -340,51 +340,51 @@ f := FETCH(PersonFile,i(PersonID BETWEEN 1 AND 100),RIGHT.RecPos);
 Get := OUTPUT(f,ALL);
 
 SEQUENTIAL(Bld,Get);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-    <para>The first TABLE function gets all the key field values from the
-    Person dataset for the INDEX and creates empty fields to contain the
+    <para>The first <!-- DNT-Start -->TABLE<!-- DNT-End --> function gets all the key field values from the
+    Person dataset for the <!-- DNT-Start -->INDEX<!-- DNT-End --> and creates empty fields to contain the
     computed values. Note well that the RecPos virtual(fileposition) field
     value is also retrieved at this point.</para>
 
-    <para>The second TABLE function calculates the values to go into the
+    <para>The second <!-- DNT-Start -->TABLE<!-- DNT-End --> function calculates the values to go into the
     computed fields. The values in this example are coming from the related
     Accounts dataset. These computed field values will allow the final payload
-    INDEX into the Person dataset to produce these child recordset values
+    <!-- DNT-Start -->INDEX<!-- DNT-End --> into the Person dataset to produce these child recordset values
     without any additional code (or disk access).</para>
 
-    <para>The JOIN operation moves combines the result from two TABLEs into
-    its final form. This is the data from which the INDEX is built.</para>
+    <para>The <!-- DNT-Start -->JOIN<!-- DNT-End --> operation moves combines the result from two <!-- DNT-Start -->TABLEs<!-- DNT-End --> into
+    its final form. This is the data from which the <!-- DNT-Start -->INDEX<!-- DNT-End --> is built.</para>
 
-    <para>The BUILDINDEX action writes the INDEX to disk. The tricky part then
-    is to declare the INDEX against the base dataset (not the JOIN result). So
-    the key to this technique is to build the INDEX against a derived/computed
-    set of data, then declare the INDEX against the base dataset from which
+    <para>The <!-- DNT-Start -->BUILDINDEX<!-- DNT-End --> action writes the <!-- DNT-Start -->INDEX<!-- DNT-End --> to disk. The tricky part then
+    is to declare the <!-- DNT-Start -->INDEX<!-- DNT-End --> against the base dataset (not the <!-- DNT-Start -->JOIN<!-- DNT-End --> result). So
+    the key to this technique is to build the <!-- DNT-Start -->INDEX<!-- DNT-End --> against a derived/computed
+    set of data, then declare the <!-- DNT-Start -->INDEX<!-- DNT-End --> against the base dataset from which
     that data was drawn.</para>
 
-    <para>To demonstrate the use of a computed-field payload INDEX, this
-    example code just does a simple FETCH to return the combined result
+    <para>To demonstrate the use of a computed-field payload <!-- DNT-Start -->INDEX<!-- DNT-End -->, this
+    example code just does a simple <!-- DNT-Start -->FETCH<!-- DNT-End --> to return the combined result
     containing all the fields from the Person dataset along with all the
     computed field values. In "normal" use, this type of payload key would
-    generally be used in a half-keyed JOIN operation.</para>
+    generally be used in a half-keyed <!-- DNT-Start -->JOIN<!-- DNT-End --> operation.</para>
   </sect2>
 
   <sect2 id="Computed_Fields_in_Search_Keys">
-    <title>Computed Fields in Search Keys</title>
+    <!-- DNT-Start --><title>Computed Fields in Search Keys</title><!-- DNT-End -->
 
     <para>There is one situation where using a computed field as a search key
-    is required--when the field you want to search on is a REAL or DECIMAL data
+    is required--when the field you want to search on is a <!-- DNT-Start -->REAL<!-- DNT-End --> or <!-- DNT-Start -->DECIMAL<!-- DNT-End --> data
     type. Neither of these two is valid for use as a search key. Therefore,
-    making the search key a computed STRING field containing the value to
+    making the search key a computed <!-- DNT-Start -->STRING<!-- DNT-End --> field containing the value to
     search on is a way to get around this limitation.</para>
 
     <para>The trick to computed fields in the payload is the same for search
-    keys--build the content of the INDEX beforehand. The following example code
-    (contained in IndexREALkey.ECL) illustrates how to accomplish this by
-    building the content of computed search key fields on which the INDEX is
-    built using a TABLE and PROJECT:</para>
+    keys--build the content of the <!-- DNT-Start -->INDEX<!-- DNT-End --> beforehand. The following example code
+    (contained in IndexREALkey.<!-- DNT-Start -->ECL<!-- DNT-End -->) illustrates how to accomplish this by
+    building the content of computed search key fields on which the <!-- DNT-Start -->INDEX<!-- DNT-End --> is
+    built using a <!-- DNT-Start -->TABLE<!-- DNT-End --> and <!-- DNT-Start -->PROJECT<!-- DNT-End -->:</para>
 
-    <programlisting>IMPORT $;
+    <!-- DNT-Start --><programlisting>IMPORT $;
 
 r := RECORD
   REAL8      Float := 0.0;
@@ -435,24 +435,24 @@ JoinOut5 := OUTPUT(j5,,OutName5,OVERWRITE);
 JoinOut6 := OUTPUT(j6,,OutName6,OVERWRITE);
 
 SEQUENTIAL(DSout,Bld1Out,Bld2Out,JoinOut1,JoinOut2,JoinOut3,JoinOut4,JoinOut5,JoinOut6);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para>This code starts with some filename definitions. The record
     structure adds two fields to the existing set of fields from our base
-    dataset: a REAL8 field named "float" and a DECIMAL12_6 field named "dec."
-    These will contain our REAL and DECIMAL data that we want to search on.
-    The PROJECT of the TABLE puts values into these two fields (in this case,
+    dataset: a <!-- DNT-Start -->REAL<!-- DNT-End -->8 field named "float" and a <!-- DNT-Start -->DECIMAL<!-- DNT-End -->12_6 field named "dec."
+    These will contain our <!-- DNT-Start -->REAL<!-- DNT-End --> and <!-- DNT-Start -->DECIMAL<!-- DNT-End --> data that we want to search on.
+    The <!-- DNT-Start -->PROJECT<!-- DNT-End --> of the <!-- DNT-Start -->TABLE<!-- DNT-End --> puts values into these two fields (in this case,
     just dividing the PersonID file by 1000 to achieve a floating point value
     to use that will be unique).</para>
 
-    <para>The IDX1 INDEX definition creates the REAL search key as a STRING13
-    computed field by using the REALFORMAT function to right-justify the
-    floating point value into a 13-character STRING. This formats the value
-    with exactly the number of decimal places specified in the REALFORMAT
+    <para>The <!-- DNT-Start -->IDX<!-- DNT-End -->1 <!-- DNT-Start -->INDEX<!-- DNT-End --> definition creates the <!-- DNT-Start -->REAL<!-- DNT-End --> search key as a <!-- DNT-Start -->STRING<!-- DNT-End -->13
+    computed field by using the <!-- DNT-Start -->REALFORMAT<!-- DNT-End --> function to right-justify the
+    floating point value into a 13-character <!-- DNT-Start -->STRING<!-- DNT-End -->. This formats the value
+    with exactly the number of decimal places specified in the <!-- DNT-Start -->REALFORMAT<!-- DNT-End -->
     function.</para>
 
-    <para>The IDX2 INDEX definition creates the DECIMAL search key as a
-    STRING13 computed field by casting the DECIMAL data to a STRING13. Using
+    <para>The <!-- DNT-Start -->IDX<!-- DNT-End -->2 <!-- DNT-Start -->INDEX<!-- DNT-End --> definition creates the <!-- DNT-Start -->DECIMAL<!-- DNT-End --> search key as a
+    <!-- DNT-Start -->STRING<!-- DNT-End -->13 computed field by casting the <!-- DNT-Start -->DECIMAL<!-- DNT-End --> data to a <!-- DNT-Start -->STRING<!-- DNT-End -->13. Using
     the typecast operator simply left-justifies the value in the string. It
     may also drop trailing zeros, so the number of decimal places is not
     guaranteed to always be the same.</para>
@@ -460,28 +460,28 @@ SEQUENTIAL(DSout,Bld1Out,Bld2Out,JoinOut1,JoinOut2,JoinOut3,JoinOut4,JoinOut5,Jo
     <para>Because of the two different methods of constructing the search key
     strings, the strings themselves are not equal, although the values used to
     create them are the same. This means that you cannot expect to "mix and
-    match" between the two--you need to use each INDEX with the method used to
-    create it. That's why the two JOIN operations that demonstrate their usage
+    match" between the two--you need to use each <!-- DNT-Start -->INDEX<!-- DNT-End --> with the method used to
+    create it. That's why the two <!-- DNT-Start -->JOIN<!-- DNT-End --> operations that demonstrate their usage
     use the same method to create the string comparison value as was used to
-    create the INDEX. This way, you are guaranteed to achieve matching
+    create the <!-- DNT-Start -->INDEX<!-- DNT-End -->. This way, you are guaranteed to achieve matching
     values.</para>
   </sect2>
 
   <sect2 id="Using_an_INDEX_like_a_DATASET">
-    <title>Using an INDEX like a DATASET</title>
+    <!-- DNT-Start --><title>Using an INDEX like a DATASET</title><!-- DNT-End -->
 
-    <para>Payload keys can also be used for standard DATASET-type operations.
-    In this type of usage, the INDEX acts as if it were a dataset, with the
+    <para>Payload keys can also be used for standard <!-- DNT-Start -->DATASET<!-- DNT-End -->-type operations.
+    In this type of usage, the <!-- DNT-Start -->INDEX<!-- DNT-End --> acts as if it were a dataset, with the
     advantage that it contains compressed data and a btree index. The key
-    difference in this type of use is the use of KEYED and WILD in INDEX
-    filters, which allows the INDEX read to make use of the btree instead of
+    difference in this type of use is the use of <!-- DNT-Start -->KEYED<!-- DNT-End --> and <!-- DNT-Start -->WILD<!-- DNT-End --> in <!-- DNT-Start -->INDEX<!-- DNT-End -->
+    filters, which allows the <!-- DNT-Start -->INDEX<!-- DNT-End --> read to make use of the btree instead of
     doing a full-table scan.</para>
 
-    <para>The following example code (contained in IndexAsDataset.ECL)
-    illustrates the use of an INDEX as if it were a DATASET, and compares the
-    relative performance of INDEX versus DATASET use:</para>
+    <para>The following example code (contained in IndexAsDataset.<!-- DNT-Start -->ECL<!-- DNT-End -->)
+    illustrates the use of an <!-- DNT-Start -->INDEX<!-- DNT-End --> as if it were a <!-- DNT-Start -->DATASET<!-- DNT-End -->, and compares the
+    relative performance of <!-- DNT-Start -->INDEX<!-- DNT-End --> versus <!-- DNT-Start -->DATASET<!-- DNT-End --> use:</para>
 
-    <programlisting>IMPORT $;
+    <!-- DNT-Start --><programlisting>IMPORT $;
 
 OutRec := RECORD
   INTEGER   Seq;
@@ -514,17 +514,17 @@ O2 := PROJECT(Base(lastname='COOLING',
               state='OK'),
               XF2(LEFT,COUNTER));
 OUTPUT(O2,ALL);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-    <para>Both PROJECT operations will produce exactly the same result, but
-    the first one uses an INDEX and the second uses a DATASET. The only
-    significant difference between the two is the use of KEYED in the INDEX
+    <para>Both <!-- DNT-Start -->PROJECT<!-- DNT-End --> operations will produce exactly the same result, but
+    the first one uses an <!-- DNT-Start -->INDEX<!-- DNT-End --> and the second uses a <!-- DNT-Start -->DATASET<!-- DNT-End -->. The only
+    significant difference between the two is the use of <!-- DNT-Start -->KEYED<!-- DNT-End --> in the <!-- DNT-Start -->INDEX<!-- DNT-End -->
     filter. This indicates that the index read should use the btree to find
-    the specific set of leaf node records to read. The DATASET version must
+    the specific set of leaf node records to read. The <!-- DNT-Start -->DATASET<!-- DNT-End --> version must
     read all the records in the file to find the correct one, making it a much
     slower process.</para>
 
-    <para>If you check the workunit timings in ECL Watch, you should see a
+    <para>If you check the workunit timings in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch, you should see a
     difference. In this test case, the difference may not appear to be
     significant (there's not that much test data), but in your real-world
     applications the difference between an index read operation and a

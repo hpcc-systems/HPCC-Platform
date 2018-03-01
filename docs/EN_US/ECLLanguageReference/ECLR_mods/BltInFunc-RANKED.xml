@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="RANKED">
-  <title>RANKED</title>
+  <!-- DNT-Start --><title>RANKED</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">RANKED<indexterm>
-      <primary>RANKED</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->RANKED<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->RANKED<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>RANKED function</primary>
+      <primary><!-- DNT-Start -->RANKED<!-- DNT-End --> function</primary>
     </indexterm>(</emphasis><emphasis>position, set </emphasis><emphasis
   role="bold">[ </emphasis><emphasis>,</emphasis><emphasis
-  role="bold">DESCEND<indexterm>
-      <primary>DESCEND</primary>
+  role="bold"><!-- DNT-Start -->DESCEND<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->DESCEND<!-- DNT-End --></primary>
     </indexterm> ])</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -22,50 +22,50 @@
 
         <tbody>
           <row>
-            <entry><emphasis>position</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>position</emphasis><!-- DNT-End --></entry>
 
             <entry>An integer indicating the element in the unsorted set to
             return.</entry>
           </row>
 
           <row>
-            <entry><emphasis>set</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>set</emphasis><!-- DNT-End --></entry>
 
             <entry>The set of values.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">DESCEND</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">DESCEND</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Indicates descending order sort.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>RANKED returns a single value.</entry>
+            <entry><!-- DNT-Start -->RANKED<!-- DNT-End --> returns a single value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">RANKED </emphasis>function sorts the
-  <emphasis>set</emphasis> in ascending (or descending, if DESCEND is present)
+  <para>The <emphasis role="bold"><!-- DNT-Start -->RANKED<!-- DNT-End --> </emphasis>function sorts the
+  <emphasis>set</emphasis> in ascending (or descending, if <!-- DNT-Start -->DESCEND<!-- DNT-End --> is present)
   order, then returns the ordinal position (its index value) of the sorted
   set's <emphasis>position</emphasis> element in the unsorted
-  <emphasis>set</emphasis>. This is the opposite of RANK.</para>
+  <emphasis>set</emphasis>. This is the opposite of <!-- DNT-Start -->RANK<!-- DNT-End -->.</para>
 
   <para>Example:</para>
 
-  <programlisting>Ranking := RANKED(1,[20,30,10,40]);
+  <!-- DNT-Start --><programlisting>Ranking := RANKED(1,[20,30,10,40]);
 // returns 3 - 1st element (10) in sorted set [10,20,30,40]
 // was 3rd element in unsorted set
 
 Ranking := RANKED(1,[20,30,10,40],DESCEND);
 // returns 4 - 1st element (40) in sorted set [40,30,20,10]
-// was 4th element in unsorted set</programlisting>
+// was 4th element in unsorted set</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="RANK">RANK</link>, <link
-  linkend="SORT">SORT</link>, <link linkend="SORTED">SORTED</link>, <link
+  <para>See Also: <link linkend="RANK"><!-- DNT-Start -->RANK<!-- DNT-End --></link>, <link
+  linkend="SORT"><!-- DNT-Start -->SORT<!-- DNT-End --></link>, <link linkend="SORTED"><!-- DNT-Start -->SORTED<!-- DNT-End --></link>, <link
   linkend="Recordset_Filtering">Sets and Filters</link></para>
 </sect1>

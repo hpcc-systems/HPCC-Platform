@@ -2,10 +2,10 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="PIPEIN" role="nobrk">
-  <title>HDFSConnector.PipeIn</title>
+  <!-- DNT-Start --><title>HDFSConnector.PipeIn</title><!-- DNT-End -->
 
   <para><emphasis role="bold">HDFSConnector.PipeIn </emphasis><emphasis>(
-  ECL_RS, HadoopFileName, Layout, HadoopFileFormat, HDFSHost, HDFSPort
+  <!-- DNT-Start -->ECL<!-- DNT-End -->_<!-- DNT-Start -->RS<!-- DNT-End -->, HadoopFileName, Layout, HadoopFileFormat, HDFSHost, HDFSPort
   )</emphasis></para>
 
   <para><informaltable colsep="0" frame="none" rowsep="0">
@@ -16,38 +16,38 @@
 
         <tbody>
           <row>
-            <entry><emphasis>ECL_RS</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>ECL_RS</emphasis><!-- DNT-End --></entry>
 
-            <entry>The ECL recordset definition name to generate.</entry>
+            <entry>The <!-- DNT-Start -->ECL<!-- DNT-End --> recordset definition name to generate.</entry>
           </row>
 
           <row>
-            <entry><emphasis>HadoopFileName</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>HadoopFileName</emphasis><!-- DNT-End --></entry>
 
-            <entry>The Hadoop data file name as it exists in the HDFS.</entry>
+            <entry>The Hadoop data file name as it exists in the <!-- DNT-Start -->HDFS<!-- DNT-End -->.</entry>
           </row>
 
           <row>
-            <entry><emphasis>Layout</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>Layout</emphasis><!-- DNT-End --></entry>
 
-            <entry>The ECL RECORD structure representing the structure of the
+            <entry>The <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->RECORD<!-- DNT-End --> structure representing the structure of the
             Hadoop data.</entry>
           </row>
 
           <row>
-            <entry><emphasis>HadoopFileFormat</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>HadoopFileFormat</emphasis><!-- DNT-End --></entry>
 
-            <entry>The Hadoop data file format : FLAT | CSV.</entry>
+            <entry>The Hadoop data file format : <!-- DNT-Start -->FLAT<!-- DNT-End --> | <!-- DNT-Start -->CSV<!-- DNT-End -->.</entry>
           </row>
 
           <row>
-            <entry><emphasis>HDFSHost</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>HDFSHost</emphasis><!-- DNT-End --></entry>
 
-            <entry>The Hadoop DFS host name or IP address.</entry>
+            <entry>The Hadoop <!-- DNT-Start -->DFS<!-- DNT-End --> host name or <!-- DNT-Start -->IP<!-- DNT-End --> address.</entry>
           </row>
 
           <row>
-            <entry><emphasis>HDFSPort</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>HDFSPort</emphasis><!-- DNT-End --></entry>
 
             <entry>The Hadoop NameNode port number.</entry>
           </row>
@@ -56,12 +56,12 @@
     </informaltable></para>
 
   <para>The <emphasis role="bold">HDFSConnector.PipeIn </emphasis>macro is
-  called to pipe in data from the Hadoop file system (HDFS) to a Thor
+  called to pipe in data from the Hadoop file system (<!-- DNT-Start -->HDFS<!-- DNT-End -->) to a Thor
   Cluster.</para>
 
   <para>Example:</para>
 
-  <programlisting>#OPTION('pickBestEngine', 0);
+  <!-- DNT-Start --><programlisting>#OPTION('pickBestEngine', 0);
 IMPORT std;
 IMPORT DataConnectors;
 Layout_Flat := RECORD
@@ -82,11 +82,11 @@ DataConnectors.HDFSConnector.PipeIn(MyDataFile,
                            '192.168.56.120', 
                            54310);
 OUTPUT(MyDataFile);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
   <?hard-pagebreak ?>
 
-  <programlisting>#OPTION('pickBestEngine', 0);
+  <!-- DNT-Start --><programlisting>#OPTION('pickBestEngine', 0);
 IMPORT std;
 IMPORT DataConnectors;
 Layout_CSV := RECORD
@@ -107,7 +107,7 @@ DataConnectors.HDFSConnector.PipeIn(MyDataFile,
                            '192.168.56.120', 
                            54310);
 OUTPUT(MyDataFile);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
   <para></para>
 </sect1>

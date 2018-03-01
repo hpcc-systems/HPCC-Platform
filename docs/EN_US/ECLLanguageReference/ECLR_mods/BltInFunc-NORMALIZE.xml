@@ -2,20 +2,20 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="NORMALIZE">
-  <title>NORMALIZE</title>
+  <!-- DNT-Start --><title>NORMALIZE</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">NORMALIZE<indexterm>
-      <primary>NORMALIZE</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->NORMALIZE<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->NORMALIZE<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>NORMALIZE function</primary>
+      <primary><!-- DNT-Start -->NORMALIZE<!-- DNT-End --> function</primary>
     </indexterm>(</emphasis><emphasis>recordset, expression, transform
-  </emphasis> <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+  </emphasis> <emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
-  <para><emphasis role="bold">NORMALIZE(</emphasis><emphasis>recordset,
-  </emphasis><emphasis role="bold">LEFT<indexterm>
-      <primary>LEFT</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->NORMALIZE<!-- DNT-End -->(</emphasis><emphasis>recordset,
+  </emphasis><emphasis role="bold"><!-- DNT-Start -->LEFT<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->LEFT<!-- DNT-End --></primary>
     </indexterm>.</emphasis><emphasis>childdataset, transform
-  </emphasis> <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+  </emphasis> <emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -25,95 +25,95 @@
 
         <tbody>
           <row>
-            <entry><emphasis>recordset</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>recordset</emphasis><!-- DNT-End --></entry>
 
             <entry>The set of records to process.</entry>
           </row>
 
           <row>
-            <entry><emphasis>expression</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
 
             <entry>A numeric expression specifying the total number of times
             to call the transform for that record.</entry>
           </row>
 
           <row>
-            <entry><emphasis>transform</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>transform</emphasis><!-- DNT-End --></entry>
 
-            <entry>The TRANSFORM function to call for each record in the
+            <entry>The <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function to call for each record in the
             recordset.</entry>
           </row>
 
           <row>
-            <entry><emphasis>childdataset</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>childdataset</emphasis><!-- DNT-End --></entry>
 
-            <entry>The field name of a child DATASET in the recordset. This
-            must use the keyword LEFT as its qualifier.</entry>
+            <entry>The field name of a child <!-- DNT-Start -->DATASET<!-- DNT-End --> in the recordset. This
+            must use the keyword <!-- DNT-Start -->LEFT<!-- DNT-End --> as its qualifier.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the output record order is not significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the significance of the output record order.</entry>
           </row>
           <row>
-            <entry><emphasis>bool</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
 
             <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">STABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is not significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity in parallel.</entry>
           </row>
           <row>
-            <entry><emphasis>numthreads</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Override the algorithm used for this activity.</entry>
           </row>
           <row>
-            <entry><emphasis>name</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>NORMALIZE returns a record set.</entry>
+            <entry><!-- DNT-Start -->NORMALIZE<!-- DNT-End --> returns a record set.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">NORMALIZE </emphasis>function normalizes
+  <para>The <emphasis role="bold"><!-- DNT-Start -->NORMALIZE<!-- DNT-End --> </emphasis>function normalizes
   child records out of a <emphasis>recordset</emphasis> where the child
   records are appended to the end of the parent data records. The purpose is
   to take variable-length flat-file records and split out the child
   information. The parent information can easily be extracted using either
-  TABLE or PROJECT.</para>
+  <!-- DNT-Start -->TABLE<!-- DNT-End --> or <!-- DNT-Start -->PROJECT<!-- DNT-End -->.</para>
 
   <sect2 id="NORMALIZE_Form_1">
-    <title>NORMALIZE Form 1</title>
+    <!-- DNT-Start --><title>NORMALIZE Form 1</title><!-- DNT-End -->
 
     <para>Form 1 processes through all records in the <emphasis>recordset
     </emphasis>performing the <emphasis>transform</emphasis> function the
@@ -122,18 +122,18 @@
   </sect2>
 
   <sect2 id="TRANSFORM_Function_Requirements_for_Form_1">
-    <title>TRANSFORM Function Requirements for Form 1</title>
+    <!-- DNT-Start --><title>TRANSFORM Function Requirements for Form 1</title><!-- DNT-End -->
 
     <para>The <emphasis>transform</emphasis> function must take at least two
-    parameters: a LEFT record of the same format as the
-    <emphasis>recordset,</emphasis> and an integer COUNTER specifying the
+    parameters: a <!-- DNT-Start -->LEFT<!-- DNT-End --> record of the same format as the
+    <emphasis>recordset,</emphasis> and an integer <!-- DNT-Start -->COUNTER<!-- DNT-End --> specifying the
     number of times the <emphasis>transform</emphasis> has been called for
     that record. The resulting record set format does not need to be the same
     as the input.</para>
   </sect2>
 
   <sect2 id="NORMALIZE_Form_2">
-    <title>NORMALIZE Form 2</title>
+    <!-- DNT-Start --><title>NORMALIZE Form 2</title><!-- DNT-End -->
 
     <para>Form 2 processes through all records in the <emphasis>recordset
     </emphasis>iterating the <emphasis>transform</emphasis> function through
@@ -142,16 +142,16 @@
   </sect2>
 
   <sect2 id="TRANSFORM_Function_Requirements_for_Form_2">
-    <title>TRANSFORM Function Requirements for Form 2</title>
+    <!-- DNT-Start --><title>TRANSFORM Function Requirements for Form 2</title><!-- DNT-End -->
 
     <para>The <emphasis>transform</emphasis> function must take at least one
-    parameter: a RIGHT record of the same format as the
+    parameter: a <!-- DNT-Start -->RIGHT<!-- DNT-End --> record of the same format as the
     <emphasis>childdataset</emphasis>. The resulting record set format does
     not need to be the same as the input.</para>
 
     <para>Example:</para>
 
-    <programlisting>//Form 1 example
+    <!-- DNT-Start --><programlisting>//Form 1 example
 NamesRec := RECORD
   
 UNSIGNED1 numRows;
@@ -217,8 +217,8 @@ ChildRec NewChildren(ChildRec R) := TRANSFORM
 SELF := R;
 END;
 NewChilds := NORMALIZE(ds,LEFT.Children,NewChildren(RIGHT));
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-    <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link linkend="RECORD_Structure">RECORD Structure</link>, <link linkend="DENORMALIZE">DENORMALIZE</link></para>
+    <para>See Also: <link linkend="TRANSFORM_Structure"><!-- DNT-Start -->TRANSFORM<!-- DNT-End --> Structure</link>, <link linkend="RECORD_Structure"><!-- DNT-Start -->RECORD<!-- DNT-End --> Structure</link>, <link linkend="DENORMALIZE"><!-- DNT-Start -->DENORMALIZE<!-- DNT-End --></link></para>
   </sect2>
 </sect1>

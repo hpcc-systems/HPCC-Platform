@@ -2,26 +2,26 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="CompareIgnoreCase">
-  <title>CompareIgnoreCase</title>
+  <!-- DNT-Start --><title>CompareIgnoreCase</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Str.CompareIgnoreCase<indexterm>
-      <primary>STD.Str.CompareIgnoreCase</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->CompareIgnoreCase<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->CompareIgnoreCase<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Str.CompareIgnoreCase</primary>
+      <primary>Str.<!-- DNT-Start -->CompareIgnoreCase<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>CompareIgnoreCase</primary>
+      <primary><!-- DNT-Start -->CompareIgnoreCase<!-- DNT-End --></primary>
     </indexterm>(</emphasis> <emphasis>source1,source2</emphasis> <emphasis
   role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
-  <para><emphasis role="bold">STD.Uni.CompareIgnoreCase<indexterm>
-      <primary>STD.Uni.CompareIgnoreCase</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->CompareIgnoreCase<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->CompareIgnoreCase<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Uni.CompareIgnoreCase</primary>
+      <primary>Uni.<!-- DNT-Start -->CompareIgnoreCase<!-- DNT-End --></primary>
     </indexterm>(</emphasis> <emphasis>source1,source2</emphasis> <emphasis
   role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
-  <para><emphasis role="bold">STD.Uni.LocaleCompareIgnoreCase<indexterm>
-      <primary>STD.Uni.LocaleCompareIgnoreCase</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.LocaleCompareIgnoreCase<indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.LocaleCompareIgnoreCase</primary>
     </indexterm><indexterm>
       <primary>Uni.LocaleCompareIgnoreCase</primary>
     </indexterm><indexterm>
@@ -37,19 +37,19 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source1</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>source1</emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the data to compare.</entry>
         </row>
 
         <row>
-          <entry><emphasis>source2</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>source2</emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the data to compare.</entry>
         </row>
 
         <row>
-          <entry><emphasis>locale</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>locale</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the language and country
           code to use to determine correct sort order and other
@@ -57,15 +57,15 @@
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>CompareIgnoreCase returns an INTEGER value.</entry>
+          <entry><!-- DNT-Start -->CompareIgnoreCase<!-- DNT-End --> returns an <!-- DNT-Start -->INTEGER<!-- DNT-End --> value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">CompareIgnoreCase </emphasis>functions
+  <para>The <emphasis role="bold"><!-- DNT-Start -->CompareIgnoreCase<!-- DNT-End --> </emphasis>functions
   return zero (0) if the <emphasis>source1</emphasis> and
   <emphasis>source2</emphasis> strings contain the same data, ignoring any
   differences in the case of the letters. These functions return negative one
@@ -75,10 +75,10 @@
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">A := STD.Str.CompareIgnoreCase('ABCDE','abcde');
+  <!-- DNT-Start --><programlisting format="linespecific">A := STD.Str.CompareIgnoreCase('ABCDE','abcde');
  //A contains 0 -- they "match"
 
 B := STD.Str.CompareIgnoreCase('ABCDE','edcba');
  //B contains -1 -- they do not "match"
-</programlisting>
+</programlisting><!-- DNT-End -->
 </sect1>

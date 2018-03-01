@@ -2,13 +2,13 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Data_double">
-  <title>double</title>
+  <!-- DNT-Start --><title>double</title><!-- DNT-End -->
 
   <para><indexterm>
-      <primary>double</primary>
+      <primary><!-- DNT-Start -->double<!-- DNT-End --></primary>
     </indexterm>An 8-byte floating point or real number.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <programlisting>double Temperature;   </programlisting>
+  <!-- DNT-Start --><programlisting>double Temperature;   </programlisting><!-- DNT-End -->
 </sect1>

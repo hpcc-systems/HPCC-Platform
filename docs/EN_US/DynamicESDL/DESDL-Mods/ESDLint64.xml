@@ -2,7 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Data_int64">
-  <title>int64</title>
+  <!-- DNT-Start --><title>int64</title><!-- DNT-End -->
 
   <para><indexterm>
       <primary>int64</primary>
@@ -10,6 +10,6 @@
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <programlisting>int64 Iterations;
-</programlisting>
+  <!-- DNT-Start --><programlisting>int64 Iterations;
+</programlisting><!-- DNT-End -->
 </sect1>

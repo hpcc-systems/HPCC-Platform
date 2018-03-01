@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="TOXML">
-  <title>TOXML</title>
+  <!-- DNT-Start --><title>TOXML</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">TOXML<indexterm>
-      <primary>TOXML</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->TOXML<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->TOXML<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>TOXML function</primary>
+      <primary><!-- DNT-Start -->TOXML<!-- DNT-End --> function</primary>
     </indexterm>(</emphasis><emphasis> record </emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -17,30 +17,30 @@
 
         <tbody>
           <row>
-            <entry><emphasis>record</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>record</emphasis><!-- DNT-End --></entry>
 
-            <entry>The row (record) of data to convert to an XML
+            <entry>The row (record) of data to convert to an <!-- DNT-Start -->XML<!-- DNT-End -->
             format.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>TOXML returns a STRING.</entry>
+            <entry><!-- DNT-Start -->TOXML<!-- DNT-End --> returns a <!-- DNT-Start -->STRING<!-- DNT-End -->.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">TOXML </emphasis>function returns a single
-  string with the data in the <emphasis>record</emphasis> re-formatted as XML.
-  If the RECORD structure of the <emphasis>record</emphasis> has XPATHs
+  <para>The <emphasis role="bold"><!-- DNT-Start -->TOXML<!-- DNT-End --> </emphasis>function returns a single
+  string with the data in the <emphasis>record</emphasis> re-formatted as <!-- DNT-Start -->XML<!-- DNT-End -->.
+  If the <!-- DNT-Start -->RECORD<!-- DNT-End --> structure of the <emphasis>record</emphasis> has <!-- DNT-Start -->XPATHs<!-- DNT-End -->
   defined, then they will be used, otherwise the lower-cased field names are
-  used as the XML tag names.</para>
+  used as the <!-- DNT-Start -->XML<!-- DNT-End --> tag names.</para>
 
   <para>Example:</para>
 
-  <programlisting>namesRec1 := RECORD
+  <!-- DNT-Start --><programlisting>namesRec1 := RECORD
   UNSIGNED2 EmployeeID{xpath('EmpID')};
   STRING10  Firstname{xpath('FName')};
   STRING10  Lastname{xpath('LName')};
@@ -60,8 +60,8 @@ rec2 := TOXML(ROW({42,'Fred','Flintstone'},namesRec2));
 OUTPUT(rec2);
 //returns this string:
 //'&lt;employeeid&gt;42&lt;/employeeid&gt;&lt;firstname&gt;Fred&lt;/firstname&gt;&lt;lastname&gt;Flintstone&lt;/lastname&gt;'
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="ROW">ROW</link>, <link
-  linkend="FROMXML">FROMXML</link></para>
+  <para>See Also: <link linkend="ROW"><!-- DNT-Start -->ROW<!-- DNT-End --></link>, <link
+  linkend="FROMXML"><!-- DNT-Start -->FROMXML<!-- DNT-End --></link></para>
 </sect1>

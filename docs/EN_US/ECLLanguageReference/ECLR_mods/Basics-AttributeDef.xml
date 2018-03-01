@@ -2,13 +2,13 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Attribute_Definition">
-  <title>Definitions</title>
+  <!-- DNT-Start --><title>Definitions</title><!-- DNT-End -->
 
-  <para>Each ECL definition<indexterm>
-      <primary>ECL definition</primary>
-    </indexterm> is the basic building block of ECL. A definition specifies
+  <para>Each <!-- DNT-Start -->ECL<!-- DNT-End --> definition<indexterm>
+      <primary><!-- DNT-Start -->ECL<!-- DNT-End --> definition</primary>
+    </indexterm> is the basic building block of <!-- DNT-Start -->ECL<!-- DNT-End -->. A definition specifies
   <emphasis>what </emphasis>is done but not <emphasis>how</emphasis> it is to
-  be done. Definitions can be thought of as a highly developed form of
+  be done. <!-- DNT-Start -->Definitions<!-- DNT-End --> can be thought of as a highly developed form of
   macro-substitution, making each succeeding definition more and more highly
   leveraged upon the work that has gone before. This results in extremely
   efficient query construction.</para>
@@ -45,11 +45,11 @@
   terminated with a semi-colon (;). The Definition name can be used in
   subsequent definitions:</para>
 
-  <programlisting>MyFirstDefinition := 5; //defined as 5
-MySecondDefinition := MyFirstDefinition + 5; //this is 10</programlisting>
+  <!-- DNT-Start --><programlisting>MyFirstDefinition := 5; //defined as 5
+MySecondDefinition := MyFirstDefinition + 5; //this is 10</programlisting><!-- DNT-End -->
 
   <sect2 id="Attribute_Name_Rules">
-    <title>Definition Name Rules</title>
+    <!-- DNT-Start --><title>Definition Name Rules</title><!-- DNT-End -->
 
     <para>Definition name<indexterm>
         <primary>Definition Name</primary>
@@ -58,19 +58,19 @@ MySecondDefinition := MyFirstDefinition + 5; //this is 10</programlisting>
       </indexterm>begin with a letter and may contain only letters, numbers,
     or underscores (_).</para>
 
-    <programlisting>My_First_Definition1 := 5; // valid name
-My First Definition := 5;  // INVALID name, spaces not allowed</programlisting>
+    <!-- DNT-Start --><programlisting>My_First_Definition1 := 5; // valid name
+My First Definition := 5;  // INVALID name, spaces not allowed</programlisting><!-- DNT-End -->
 
     <para>You may name a Definition with the name of a previously created
-    module in the ECL Repository, if the attribute is defined with an explicit
+    module in the <!-- DNT-Start -->ECL<!-- DNT-End --> Repository, if the attribute is defined with an explicit
     <emphasis>ValueType</emphasis>.</para>
   </sect2>
 
   <sect2 id="Reserved_Words">
-    <title>Reserved Words</title>
+    <!-- DNT-Start --><title>Reserved Words</title><!-- DNT-End -->
 
-    <para>ECL keywords<indexterm>
-        <primary>ECL keywords</primary>
+    <para><!-- DNT-Start -->ECL<!-- DNT-End --> keywords<indexterm>
+        <primary><!-- DNT-Start -->ECL<!-- DNT-End --> keywords</primary>
       </indexterm>, built-in functions and their options are reserved
     words<indexterm>
         <primary>Reserved Words</primary>
@@ -79,37 +79,37 @@ My First Definition := 5;  // INVALID name, spaces not allowed</programlisting>
     words as field or definition names, provided you explicitly disambiguate
     them, as in this example:</para>
 
-    <programlisting>ds2 := DEDUP(ds, ds.all, ALL); //ds.all is the 'all' field in the
-                               //ds dataset - not DEDUP's ALL option</programlisting>
+    <!-- DNT-Start --><programlisting>ds2 := DEDUP(ds, ds.all, ALL); //ds.all is the 'all' field in the
+                               //ds dataset - not DEDUP's ALL option</programlisting><!-- DNT-End -->
 
-    <para>However, it is still a good idea to avoid using ECL keywords as
+    <para>However, it is still a good idea to avoid using <!-- DNT-Start -->ECL<!-- DNT-End --> keywords as
     definition or field names.</para>
 
     <para>Definition or field names cannot begin with <emphasis
-    role="bold">UNICODE_</emphasis> , <emphasis role="bold">UTF8_</emphasis>,
-    or <emphasis role="bold">VARUNICODE_</emphasis>. Labels beginning with
+    role="bold"><!-- DNT-Start -->UNICODE<!-- DNT-End -->_</emphasis> , <emphasis role="bold"><!-- DNT-Start -->UTF<!-- DNT-End -->8_</emphasis>,
+    or <emphasis role="bold"><!-- DNT-Start -->VARUNICODE<!-- DNT-End -->_</emphasis>. Labels beginning with
     those prefixes are treated as type names, and should be regarded as
     reserved.</para>
   </sect2>
 
   <sect2 id="Attribute_Naming">
-    <title>Definition Naming</title>
+    <!-- DNT-Start --><title>Definition Naming</title><!-- DNT-End -->
 
-    <para>Use descriptive names for all EXPORTed and SHARED Definitions. This
+    <para>Use descriptive names for all <!-- DNT-Start -->EXPORTed<!-- DNT-End --> and <!-- DNT-Start -->SHARED<!-- DNT-End --> <!-- DNT-Start -->Definitions<!-- DNT-End -->. This
     will make your code more readable. The naming convention adopted
-    throughout the ECL documentation and training courses is as
+    throughout the <!-- DNT-Start -->ECL<!-- DNT-End --> documentation and training courses is as
     follows:</para>
 
-    <programlisting><emphasis role="bold">Definition Type</emphasis>     <emphasis
+    <!-- DNT-Start --><programlisting><emphasis role="bold">Definition Type</emphasis>     <emphasis
         role="bold">Are Named
 </emphasis>Boolean              Is...
 Set Definition       Set...
-Record Set           ...DatasetName</programlisting>
+Record Set           ...DatasetName</programlisting><!-- DNT-End -->
 
     <para>For example:</para>
 
-    <programlisting>IsTrue := TRUE;                         // a BOOLEAN Definition
+    <!-- DNT-Start --><programlisting>IsTrue := TRUE;                         // a BOOLEAN Definition
 SetNumbers := [1,2,3,4,5];              // a Set Definition
-R_People := People(firstname[1] = 'R'); // a Record Set Definition</programlisting>
+R_People := People(firstname[1] = 'R'); // a Record Set Definition</programlisting><!-- DNT-End -->
   </sect2>
 </sect1>

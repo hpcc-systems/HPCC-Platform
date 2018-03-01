@@ -2,13 +2,13 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Workflow_Overview">
-  <title>Workflow Overview</title>
+  <!-- DNT-Start --><title>Workflow Overview</title><!-- DNT-End -->
 
-  <para>Workflow control within ECL is generally handled automatically by the
+  <para>Workflow control within <!-- DNT-Start -->ECL<!-- DNT-End --> is generally handled automatically by the
   system. It spots which processes can happen in parallel, when
   synchronization is required, and when processes must happen in series. These
   workflow services allow exceptions to the normal flow of execution to be
-  specified by the programmer to give extra control (such as the FAILURE
+  specified by the programmer to give extra control (such as the <!-- DNT-Start -->FAILURE<!-- DNT-End -->
   clause).</para>
 
   <para>Workflow operations are implicitly evaluated in a separate global
@@ -17,11 +17,11 @@
   workflow service.</para>
 
   <para>It should also be noted that when a workflow operation is present within
-  multiple SEQUENTIAL statements only the first instance will be evaluated.</para>
+  multiple <!-- DNT-Start -->SEQUENTIAL<!-- DNT-End --> statements only the first instance will be evaluated.</para>
 
   <para>Example:</para>
 
-  <programlisting>
+  <!-- DNT-Start --><programlisting>
 Chesney := OUTPUT('"I am the one and only!" said Chesney')
         : SUCCESS(OUTPUT('"Oh yeah, prove it?"'));
 
@@ -35,17 +35,17 @@ SEQUENTIAL(
               Chesney,
               OUTPUT('"Ok, so you are!"')
           );
-  </programlisting>
+  </programlisting><!-- DNT-End -->
 
   <para>yields:</para>
-  <programlisting>
+  <!-- DNT-Start --><programlisting>
 "I am Spartacus" said one from the mob
 "I am the one and only!" said Chesney
 "Oh yeah, prove it?"
 "No, I am Spartacus" confessed another
 "Ok, so you are!"
-  </programlisting>
+  </programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="SEQUENTIAL">SEQUENTIAL</link></para>
+  <para>See Also: <link linkend="SEQUENTIAL"><!-- DNT-Start -->SEQUENTIAL<!-- DNT-End --></link></para>
 
 </sect1>
