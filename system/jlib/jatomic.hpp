@@ -77,6 +77,32 @@ public:
     inline T fetch_sub(T _value, std::memory_order order = std::memory_order_relaxed) noexcept { return BASE::fetch_add(_value, order); }
     inline T add_fetch(T _value, std::memory_order order = std::memory_order_relaxed) noexcept { return ::add_fetch(*this, _value, order); }
     inline T sub_fetch(T _value, std::memory_order order = std::memory_order_relaxed) noexcept { return ::sub_fetch(*this, _value, order); }
+    inline void store_max(T _value) noexcept { while (_value > load()) _value = BASE::exchange(_value, std::memory_order_acq_rel); }
+    inline void store_min(T _value) noexcept { while (_value < load()) _value = BASE::exchange(_value, std::memory_order_acq_rel); }
+};
+
+// Class to accumulate values locally and only add atomically once
+
+template <typename T>
+class ScopedAtomic
+{
+public:
+    inline ScopedAtomic(RelaxedAtomic<T> &_gval) : lval(0), gval(_gval) {}
+    inline ~ScopedAtomic() { if (lval) gval.fetch_add(lval); }
+    ScopedAtomic(const ScopedAtomic&) = delete;
+    ScopedAtomic& operator=(const ScopedAtomic&) = delete;
+
+    inline operator T() const noexcept { return lval; }
+    inline T operator=(T _value) noexcept { lval = _value; return _value; }
+    inline T operator++() noexcept { return ++lval; }
+    inline T operator--() noexcept { return --lval; }
+    inline T operator++(int) noexcept { return lval++; }
+    inline T operator--(int) noexcept { return lval--; }
+    inline T operator+=(int v) noexcept { return lval += v; }
+    inline T operator-=(int v) noexcept { return lval -= v; }
+private:
+    T lval;
+    RelaxedAtomic<T> &gval;
 };
 
 //Currently compare_exchange_weak in gcc forces a write to memory which is painful in highly contended situations.  The

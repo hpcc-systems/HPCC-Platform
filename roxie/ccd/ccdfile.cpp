@@ -1003,7 +1003,7 @@ public:
                         {
                             next.set(popped);
                         }
-                        atomic_dec(&numFilesToProcess);    // must decrement counter for SNMP accuracy
+                        numFilesToProcess--;    // must decrement counter for SNMP accuracy
                     }
                 }
                 if (next)
@@ -1125,7 +1125,7 @@ public:
             if (file == &todo.item(idx))
             {
                 todo.remove(idx);
-                atomic_dec(&numFilesToProcess);    // must decrement counter for SNMP accuracy
+                numFilesToProcess--;    // must decrement counter for SNMP accuracy
             }
         }
     }
@@ -1225,7 +1225,7 @@ public:
                             todo.add(*ret, 0);
                         else
                             todo.append(*ret);
-                        atomic_inc(&numFilesToProcess);  // must increment counter for SNMP accuracy
+                        numFilesToProcess++;  // must increment counter for SNMP accuracy
                         toCopy.signal();
 
                     }

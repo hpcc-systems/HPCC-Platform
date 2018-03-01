@@ -34,7 +34,6 @@
 #include <cppunit/extensions/HelperMacros.h>
 #endif
 
-CriticalSection queueCrit;
 static unsigned channels[MAX_CLUSTER_SIZE];     // list of all channel numbers for this node
 static unsigned channelCount;                   // number of channels this node is doing
 static unsigned subChannels[MAX_CLUSTER_SIZE];  // maps channel numbers to subChannels for this node
@@ -892,15 +891,12 @@ class RoxieQueue : public CInterface, implements IThreadFactory
     CriticalSection qcrit;
     unsigned headRegionSize;
     unsigned numWorkers;
-    unsigned started;
+    RelaxedAtomic<unsigned> started;
     std::atomic<unsigned> idle;
 
     void noteQueued()
     {
-        CriticalBlock b(counterCrit);
-        queueLength++;
-        if (queueLength>maxQueueLength)
-            maxQueueLength = queueLength;
+        maxQueueLength.store_max(++queueLength);
         // NOTE - there is a small race condition here - if idle is 1 but two enqueue's happen
         // close enough together that the signal has not yet caused idle to come back down to zero, then the
         // desired new thread may not be created. It's unlikely, and it's benign in that the query is still
@@ -959,10 +955,10 @@ public:
     void enqueue(IRoxieQueryPacket *x)
     {
         {
-            CriticalBlock qc(qcrit);
 #ifdef TIME_PACKETS
-            header.tick = msTick();
+            x->queryHeader().tick = msTick();
 #endif
+            CriticalBlock qc(qcrit);
             waiting.enqueue(x);
             noteQueued();
         }
@@ -971,12 +967,13 @@ public:
 
     void enqueueUnique(IRoxieQueryPacket *x)
     {
+        RoxiePacketHeader &header = x->queryHeader();
+#ifdef TIME_PACKETS
+        header.tick = msTick();
+#endif
+        bool found = false;
         {
             CriticalBlock qc(qcrit);
-            RoxiePacketHeader &header = x->queryHeader();
-#ifdef TIME_PACKETS
-            header.tick = msTick();
-#endif
             unsigned len = waiting.ordinality();
             unsigned i;
             for (i = 0; i < len; i++)
@@ -984,70 +981,83 @@ public:
                 IRoxieQueryPacket *queued = waiting.item(i);
                 if (queued && queued->queryHeader().matchPacket(header))
                 {
-                    bool primChannel = true;
-                    if (subChannels[header.channel] != 1) primChannel = false;
-                    if (traceLevel > 0)
-                    {
-                        StringBuffer xx; 
-                        SlaveContextLogger l(x);
-                        l.CTXLOG("Ignored retry on %s channel for queued activity %s", primChannel?"primary":"secondary", header.toString(xx).str());
-                    }
-                    if (primChannel) 
-                        atomic_inc(&retriesIgnoredPrm);
-                    else 
-                        atomic_inc(&retriesIgnoredSec);
-                    x->Release();
-                    return;
+                    found = true;
+                    break;
                 }
             }
+            if (!found)
+                waiting.enqueue(x);
+        }
+        if (found)
+        {
+            bool primChannel = true;
+            if (subChannels[header.channel] != 1) primChannel = false;
+            if (traceLevel > 0)
+            {
+                StringBuffer xx;
+                SlaveContextLogger l(x);
+                l.CTXLOG("Ignored retry on %s channel for queued activity %s", primChannel?"primary":"secondary", header.toString(xx).str());
+            }
+            if (primChannel)
+                retriesIgnoredPrm++;
+            else
+                retriesIgnoredSec++;
+            x->Release();
+        }
+        else
+        {
+            available.signal();
+            noteQueued();
             if (traceLevel > 10)
             {
                 SlaveContextLogger l(x);
                 StringBuffer xx; 
                 l.CTXLOG("enqueued %s", header.toString(xx).str());
             }
-            waiting.enqueue(x);
-            noteQueued();
         }
-        available.signal();
     }
 
     bool remove(RoxiePacketHeader &x)
     {
-        CriticalBlock qc(qcrit);
-        unsigned len = waiting.ordinality();
-        unsigned i;
         unsigned scanLength = 0;
-        for (i = 0; i < len; i++)
+        IRoxieQueryPacket *found = nullptr;
         {
-            IRoxieQueryPacket *queued = waiting.item(i);
-            if (queued)
+            CriticalBlock qc(qcrit);
+            unsigned len = waiting.ordinality();
+            unsigned i;
+            for (i = 0; i < len; i++)
             {
-                scanLength++;
-                if (queued->queryHeader().matchPacket(x))
+                IRoxieQueryPacket *queued = waiting.item(i);
+                if (queued)
                 {
-#ifdef _DEBUG
-                    RoxiePacketHeader &header = queued->queryHeader();
-                    SlaveContextLogger l(queued);
-                    StringBuffer xx; 
-                    l.CTXLOG("discarded %s", header.toString(xx).str());
-#endif
-                    // Already done in doIBYTI()...queue.remove() !!!!! atomic_inc(&ibytiPacketsWorked);
-                    waiting.set(i, NULL);
-                    queued->Release();
-                    CriticalBlock b(counterCrit);
-                    queueLength--;
-                    if (scanLength > maxScanLength)
-                        maxScanLength = scanLength;
-                    totScanLength += scanLength;
-                    totScans++;
-                    if (totScans)
-                        meanScanLength = totScanLength / totScans;
-                    return true;
+                    scanLength++;
+                    if (queued->queryHeader().matchPacket(x))
+                    {
+                        waiting.set(i, NULL);
+                        found = queued;
+                        break;
+                    }
                 }
             }
         }
-        return false;
+        if (found)
+        {
+#ifdef _DEBUG
+            RoxiePacketHeader &header = found->queryHeader();
+            SlaveContextLogger l(found);
+            StringBuffer xx;
+            l.CTXLOG("discarded %s", header.toString(xx).str());
+#endif
+            found->Release();
+            queueLength--;
+            if (scanLength > maxScanLength)
+                maxScanLength = scanLength;
+            totScanLength += scanLength;
+            totScans++;
+            return true;
+        }
+        else
+            return false;
     }
 
     void wait()
@@ -1322,9 +1332,9 @@ public:
                 {
 #ifndef NO_IBYTI_DELAYS_COUNT
                     if (primChannel)
-                        atomic_inc(&ibytiNoDelaysPrm);
+                        ibytiNoDelaysPrm++;
                     else
-                        atomic_inc(&ibytiNoDelaysSec);
+                        ibytiNoDelaysSec++;
 #endif
                     if (logctx.queryTraceLevel() > 6)
                     {
@@ -1346,7 +1356,7 @@ public:
             }
             if (!debugging)
                 ROQ->sendIbyti(header, logctx);
-            atomic_inc(&activitiesStarted);
+            activitiesStarted++;
             Owned <ISlaveActivityFactory> factory = queryFactory->getSlaveActivityFactory(activityId);
             assertex(factory);
             setActivity(factory->createActivity(logctx, packet));
@@ -1406,7 +1416,7 @@ public:
                 }
                 if (output)
                 {
-                    atomic_inc(&activitiesCompleted);
+                    activitiesCompleted++;
                     busy = false; // Keep order - before setActivity below
                     setActivity(NULL);  // Ensures all stats are merged from child queries etc
                     logctx.flush();
@@ -1444,27 +1454,16 @@ public:
                     queue->wait();
                     if (stopped)
                         break;
-                    {
-                        CriticalBlock b(counterCrit);
-                        slavesActive++;
-                        if (slavesActive > maxSlavesActive)
-                            maxSlavesActive = slavesActive;
-                    }
+                    slavesActive++;
+                    maxSlavesActive.store_max(slavesActive);
                     abortJob = false;
                     busy = true;
                     if (doIbytiDelay) 
                         ibytiSem.reinit(0U); // Make sure sem is is in no-signaled state
-                    
-                    {
-                        CriticalBlock b(queueCrit);
-                        packet.setown(queue->dequeue());
-                    }
+                    packet.setown(queue->dequeue());
                     if (packet)
                     {
-                        {
-                            CriticalBlock b(counterCrit);
-                            queueLength--;
-                        }
+                        queueLength--;
                         RoxiePacketHeader &header = packet->queryHeader();
                         logctx.set(packet);
 #ifdef TIME_PACKETS
@@ -1472,11 +1471,9 @@ public:
                             unsigned now = msTick();
                             unsigned packetWait = now-header.tick;
                             header.tick = now;
-                            CriticalBlock b(counterCrit);
-                            if (packetWait > packetWaitMax)
-                                packetWaitMax = packetWait;
+                            packetWaitMax.store_max(packetWait);
                             packetWaitElapsed += packetWait;
-                            atomic_inc(&packetWaitCount);
+                            packetWaitCount++;
                         }
 #endif
                         if (logctx.queryTraceLevel() > 10)
@@ -1512,11 +1509,9 @@ public:
                         {
                             unsigned now = msTick();
                             unsigned packetRun = now-header.tick;
-                            CriticalBlock b(counterCrit);
-                            if (packetRun > packetRunMax)
-                                packetRunMax = packetRun;
+                            packetRunMax.store_max(packetRun);
                             packetRunElapsed += packetRun;
-                            atomic_inc(&packetRunCount);
+                            packetRunCount++;
                         }
 #endif
                     }
@@ -1526,10 +1521,7 @@ public:
                         packet.clear();
                         logctx.set(NULL);
                     }
-                    {
-                        CriticalBlock b(counterCrit);
-                        slavesActive--;
-                    }
+                    slavesActive--;
                 }
             }
             catch(...)
@@ -1552,7 +1544,6 @@ IPooledThread *RoxieQueue::createNew()
 
 void RoxieQueue::abortChannel(unsigned channel)
 {
-    CriticalBlock b(counterCrit);
     Owned<IPooledThreadIterator> wi = workers->running();
     ForEach(*wi)
     {
@@ -1848,7 +1839,7 @@ public:
                 }
                 if (channelWrite(header.channel, &header, length) != length)
                     DBGLOG("multicast write wrote too little");
-                atomic_inc(&packetsSent);
+                packetsSent++;
             }
             catch (StoppedException *E)
             {
@@ -1970,7 +1961,6 @@ public:
         running = false;
     }
 
-    CriticalSection crit;
     Owned<RoxieThrottledPacketSender> throttledPacketSendManager;
 
     virtual void sendPacket(IRoxieQueryPacket *x, const IRoxieContextLogger &logctx)
@@ -1981,7 +1971,6 @@ public:
         {
             MTIME_SECTION(queryActiveTimer(), "RoxieSocketQueueManager::sendPacket");
             RoxiePacketHeader &header = x->queryHeader();
-
 
             unsigned length = x->queryHeader().packetlength;
             assertex (header.activityId & ~ROXIE_PRIORITY_MASK);
@@ -1999,17 +1988,14 @@ public:
                     logctx.CTXLOG("Sending packet size=%d: %s", length, header.toString(s).str());
                 break;
             }
-            // MORE - crashes have been observed after exceptions here - mechanism not yet clear nor reproducible
             if (length > maxPacketSize)
             {
                 StringBuffer s;
                 throw MakeStringException(ROXIE_PACKET_ERROR, "Maximum packet length %d exceeded sending packet %s", maxPacketSize, header.toString(s).str());
             }
-
-            CriticalBlock c(crit); // is this needed or was it just protecting multicast array? prevent interleaving?
             if (channelWrite(header.channel, &header, length) != length)
                 logctx.CTXLOG("multicast write wrote too little");
-            atomic_inc(&packetsSent);
+            packetsSent++;
         }
     }
 
@@ -2022,12 +2008,9 @@ public:
         {
             StringBuffer s; logctx.CTXLOG("Sending IBYTI packet %s", ibytiHeader.toString(s).str());
         }
-
-        CriticalBlock c(crit); // Not sure we really need this? Preventing interleave on writes? Should sock manage it?
         if (channelWrite(header.channel, &ibytiHeader, sizeof(RoxiePacketHeader)) != sizeof(RoxiePacketHeader))
             logctx.CTXLOG("sendIbyti wrote too little");
-
-        atomic_inc(&ibytiPacketsSent);
+        ibytiPacketsSent++;
     }
 
     virtual void sendAbort(RoxiePacketHeader &header, const IRoxieContextLogger &logctx)
@@ -2039,11 +2022,9 @@ public:
         {
             StringBuffer s; logctx.CTXLOG("Sending ABORT packet %s", abortHeader.toString(s).str());
         }
-        CriticalBlock c(crit); // Not sure we really need this? Preventing interleave on writes? Should sock manage it?
         if (channelWrite(header.channel, &abortHeader, sizeof(RoxiePacketHeader)) != sizeof(RoxiePacketHeader))
             logctx.CTXLOG("sendAbort wrote too little");
-
-        atomic_inc(&abortsSent);
+        abortsSent++;
     }
 
     virtual void sendAbortCallback(const RoxiePacketHeader &header, const char *lfn, const IRoxieContextLogger &logctx) 
@@ -2057,10 +2038,9 @@ public:
         {
             StringBuffer s; logctx.CTXLOG("Sending ABORT FILECALLBACK packet %s for file %s", abortHeader.toString(s).str(), lfn);
         }
-        CriticalBlock c(crit); // Not sure we really need this? Preventing interleave on writes? Should sock manage it?
         if (channelWrite(header.channel, data.toByteArray(), data.length()) != data.length())
             logctx.CTXLOG("tr->write wrote too little");
-        atomic_inc(&abortsSent);
+        abortsSent++;
     }
 
     virtual IMessagePacker *createOutputStream(RoxiePacketHeader &header, bool outOfBand, const IRoxieContextLogger &logctx)
@@ -2114,7 +2094,7 @@ public:
     void doIbyti(RoxiePacketHeader &header, RoxieQueue &queue)
     {
         assertex(!localSlave);
-        atomic_inc(&ibytiPacketsReceived);
+        ibytiPacketsReceived++;
         bool preActivity = false;
 
         if (traceLevel > 10)
@@ -2144,36 +2124,33 @@ public:
             {
                 if (traceLevel > 10)
                     DBGLOG("doIBYTI packet was from self");
-                atomic_inc(&ibytiPacketsFromSelf);
+                ibytiPacketsFromSelf++;
             }
             else
             {
                 liveSubChannels[header.channel] |= header.retries & ROXIE_RETRIES_MASK;
-                bool foundInQ;
+                bool foundInQ = queue.remove(header);
+                if (foundInQ)
                 {
-                    CriticalBlock b(queueCrit);
-                    foundInQ = queue.remove(header);
-                }
-                if (foundInQ) {
                     if (traceLevel > 10)
                     {
                         StringBuffer s; 
                         DBGLOG("Removed activity from Q : %s", header.toString(s).str());
                     }
-                    atomic_inc(&ibytiPacketsWorked);
+                    ibytiPacketsWorked++;
                     return;
                 }
                 if (abortRunning(header, queue, true, preActivity))
                 {
                     if (preActivity)
-                        atomic_inc(&ibytiPacketsWorked); // MORE - may want to have a diff counter for this (not in queue but in IBYTI wait or before) 
+                        ibytiPacketsWorked++;
                     else 
-                        atomic_inc(&ibytiPacketsHalfWorked);
+                        ibytiPacketsHalfWorked++;
                     return;
                 }               
                 if (traceLevel > 10)
                     DBGLOG("doIBYTI packet was too late");
-                atomic_inc(&ibytiPacketsTooLate); // meaning either I started and reserve the right to finish, or I finished already
+                ibytiPacketsTooLate++; // meaning either I started and reserve the right to finish, or I finished already
             }
         }
     }
@@ -2221,9 +2198,9 @@ public:
                 bool primChannel = true;
                 if (subChannels[header.channel] != 1) primChannel = false;
                 if (primChannel) 
-                    atomic_inc(&retriesReceivedPrm); 
+                    retriesReceivedPrm++;
                 else  
-                    atomic_inc(&retriesReceivedSec); 
+                    retriesReceivedSec++;
                 bool alreadyRunning = false;
                 Owned<IPooledThreadIterator> wi = queue.running();
                 ForEach(*wi)
@@ -2233,9 +2210,9 @@ public:
                     {
                         alreadyRunning = true;
                         if (primChannel) 
-                            atomic_inc(&retriesIgnoredPrm);
+                            retriesIgnoredPrm++;
                         else 
-                            atomic_inc(&retriesIgnoredSec);
+                            retriesIgnoredSec++;
                         ROQ->sendIbyti(header, logctx);
                         if (logctx.queryTraceLevel() > 10)
                         {
@@ -2248,9 +2225,9 @@ public:
                 {
                     alreadyRunning = true;
                     if (primChannel) 
-                        atomic_inc(&retriesIgnoredPrm); 
+                        retriesIgnoredPrm++;
                     else 
-                        atomic_inc(&retriesIgnoredSec);
+                        retriesIgnoredSec++;
                     ROQ->sendIbyti(header, logctx);
                     if (logctx.queryTraceLevel() > 10)
                     {
@@ -2302,7 +2279,7 @@ public:
                 unsigned l;
                 multicastSocket->read(mb.reserve(maxPacketSize), sizeof(RoxiePacketHeader), maxPacketSize, l, 5);
                 mb.setLength(l);
-                atomic_inc(&packetsReceived);
+                packetsReceived++;
                 RoxiePacketHeader &header = *(RoxiePacketHeader *) mb.toByteArray();
                 if (l != header.packetlength)
                     DBGLOG("sock->read returned %d but packetlength was %d", l, header.packetlength);
@@ -2752,7 +2729,7 @@ public:
         data.append(sizeof(abortHeader), &abortHeader);
         Owned<IRoxieQueryPacket> packet = createRoxiePacket(data);
         sendPacket(packet, logctx);
-        atomic_inc(&abortsSent);
+        abortsSent++;
     }
 
     virtual void sendAbortCallback(const RoxiePacketHeader &header, const char *lfn, const IRoxieContextLogger &logctx)
@@ -2768,7 +2745,7 @@ public:
         }
         Owned<IRoxieQueryPacket> packet = createRoxiePacket(data);
         sendPacket(packet, logctx);
-        atomic_inc(&abortsSent);
+        abortsSent++;
     }
 
     virtual IMessagePacker *createOutputStream(RoxiePacketHeader &header, bool outOfBand, const IRoxieContextLogger &logctx)

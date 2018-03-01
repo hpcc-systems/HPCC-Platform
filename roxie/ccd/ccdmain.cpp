@@ -85,7 +85,7 @@ bool defaultTraceEnabled = false;
 unsigned defaultTraceLimit = 10;
 unsigned watchActivityId = 0;
 unsigned testSlaveFailure = 0;
-unsigned restarts = 0;
+RelaxedAtomic<unsigned> restarts;
 RecordTranslationMode fieldTranslationEnabled = RecordTranslationMode::None;
 bool mergeSlaveStatistics = true;
 PTreeReaderOptions defaultXmlReadFlags = ptr_ignoreWhiteSpace;
@@ -644,7 +644,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         if (restarts)
         {
             if (traceLevel)
-                DBGLOG("Roxie restarting: restarts = %d build = %s", restarts, BUILD_TAG);
+                DBGLOG("Roxie restarting: restarts = %d build = %s", restarts.load(), BUILD_TAG);
             setStartRuid(restarts);
         }
         else

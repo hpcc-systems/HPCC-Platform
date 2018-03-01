@@ -22,51 +22,46 @@
 
 class CRoxieMetricsManager;
 
-extern CriticalSection counterCrit;
-
 class RoxieQueryStats
 {
 public:
-    unsigned count;
-    unsigned failedCount;
-    atomic_t active;
-    unsigned __int64 totalTime;
-    unsigned maxTime;
-    unsigned minTime; 
+    RelaxedAtomic<unsigned> count;
+    RelaxedAtomic<unsigned> failedCount;
+    RelaxedAtomic<unsigned> active;
+    RelaxedAtomic<unsigned __int64> totalTime;
+    RelaxedAtomic<unsigned> maxTime;
+    RelaxedAtomic<unsigned> minTime;
 
 public:
     RoxieQueryStats()
     {
         count = 0;
         failedCount = 0;
-        atomic_set(&active, 0);
+        active = 0;
         totalTime = 0;
         maxTime = 0;
-        minTime = 0; 
+        minTime = (unsigned) -1;
     }
 
     inline void noteActive()
     {
-        atomic_inc(&active);
+        active++;
     }
 
     inline void noteComplete()
     {
-        atomic_dec(&active);
+        active--;
     }
 
     void noteQuery(bool failed, unsigned elapsedms)
     {
-        CriticalBlock b(counterCrit);
         totalTime += elapsedms;
-        if (elapsedms > maxTime)
-            maxTime = elapsedms;
-        if (!count || elapsedms < minTime)
-            minTime = elapsedms;
+        maxTime.store_max(elapsedms);
+        minTime.store_min(elapsedms);
         count++;
         if (failed)
             failedCount++;
-        atomic_dec(&active);
+        active--;
     }
 
     void addMetrics(CRoxieMetricsManager *mgr, const char *prefix, unsigned interval);
@@ -82,62 +77,61 @@ extern IQueryStatsAggregator *queryGlobalQueryStatsAggregator();
 extern IQueryStatsAggregator *createQueryStatsAggregator(const char *queryName, unsigned expirySeconds);
 extern IPropertyTree *getAllQueryStats(bool includeQueries, time_t from, time_t to);
 
-extern atomic_t queryCount;
+extern RelaxedAtomic<unsigned> queryCount;
 extern RoxieQueryStats unknownQueryStats;
 extern RoxieQueryStats loQueryStats;
 extern RoxieQueryStats hiQueryStats;
 extern RoxieQueryStats slaQueryStats;
 extern RoxieQueryStats combinedQueryStats;
-extern atomic_t retriesIgnoredPrm;
-extern atomic_t retriesIgnoredSec;
-extern atomic_t retriesNeeded;
-extern atomic_t retriesReceivedPrm;
-extern atomic_t retriesReceivedSec;
-extern atomic_t retriesSent;
-extern atomic_t rowsIn;
-extern atomic_t ibytiPacketsFromSelf;
-extern atomic_t ibytiPacketsSent;
-extern atomic_t ibytiPacketsWorked;
-extern atomic_t ibytiPacketsHalfWorked;
-extern atomic_t ibytiPacketsReceived;
-extern atomic_t ibytiPacketsTooLate;
-extern atomic_t ibytiNoDelaysPrm;
-extern atomic_t ibytiNoDelaysSec;
-extern atomic_t packetsReceived;
-extern atomic_t packetsSent;
-extern atomic_t resultsReceived;
-extern atomic_t indexRecordsRead;
-extern atomic_t postFiltered;
-extern atomic_t abortsSent;
-extern atomic_t activitiesStarted;
-extern atomic_t activitiesCompleted;
-extern atomic_t diskReadStarted;
-extern atomic_t diskReadCompleted;
-extern atomic_t globalSignals;
-extern atomic_t globalLocks;
+extern RelaxedAtomic<unsigned> retriesIgnoredPrm;
+extern RelaxedAtomic<unsigned> retriesIgnoredSec;
+extern RelaxedAtomic<unsigned> retriesNeeded;
+extern RelaxedAtomic<unsigned> retriesReceivedPrm;
+extern RelaxedAtomic<unsigned> retriesReceivedSec;
+extern RelaxedAtomic<unsigned> retriesSent;
+extern RelaxedAtomic<unsigned> rowsIn;
+extern RelaxedAtomic<unsigned> ibytiPacketsFromSelf;
+extern RelaxedAtomic<unsigned> ibytiPacketsSent;
+extern RelaxedAtomic<unsigned> ibytiPacketsWorked;
+extern RelaxedAtomic<unsigned> ibytiPacketsHalfWorked;
+extern RelaxedAtomic<unsigned> ibytiPacketsReceived;
+extern RelaxedAtomic<unsigned> ibytiPacketsTooLate;
+extern RelaxedAtomic<unsigned> ibytiNoDelaysPrm;
+extern RelaxedAtomic<unsigned> ibytiNoDelaysSec;
+extern RelaxedAtomic<unsigned> packetsReceived;
+extern RelaxedAtomic<unsigned> packetsSent;
+extern RelaxedAtomic<unsigned> resultsReceived;
+extern RelaxedAtomic<unsigned> indexRecordsRead;
+extern RelaxedAtomic<unsigned> postFiltered;
+extern RelaxedAtomic<unsigned> abortsSent;
+extern RelaxedAtomic<unsigned> activitiesStarted;
+extern RelaxedAtomic<unsigned> activitiesCompleted;
+extern RelaxedAtomic<unsigned> diskReadStarted;
+extern RelaxedAtomic<unsigned> diskReadCompleted;
+extern RelaxedAtomic<unsigned> globalSignals;
+extern RelaxedAtomic<unsigned> globalLocks;
 
-extern unsigned maxSlavesActive;
-extern unsigned slavesActive;
-extern unsigned rowsOut;
-extern unsigned queueLength;
-extern unsigned maxQueueLength;
-extern unsigned maxScanLength;
-extern unsigned totScanLength;
-extern unsigned totScans;
-extern unsigned meanScanLength;
-extern atomic_t numFilesToProcess;
+extern RelaxedAtomic<unsigned> maxSlavesActive;
+extern RelaxedAtomic<unsigned> slavesActive;
+extern RelaxedAtomic<unsigned> rowsOut;
+extern RelaxedAtomic<unsigned> queueLength;
+extern RelaxedAtomic<unsigned> maxQueueLength;
+extern RelaxedAtomic<unsigned> maxScanLength;
+extern RelaxedAtomic<unsigned> totScanLength;
+extern RelaxedAtomic<unsigned> totScans;
+extern RelaxedAtomic<unsigned> numFilesToProcess;
 
 #ifdef TIME_PACKETS
-extern unsigned __int64 packetWaitElapsed;
-extern atomic_t packetWaitCount;
-extern unsigned packetWaitMax;
-extern unsigned __int64 packetRunElapsed;
-extern atomic_t packetRunCount;
-extern unsigned packetRunMax;
+extern RelaxedAtomic<unsigned __int64> packetWaitElapsed;
+extern RelaxedAtomic<unsigned> packetWaitMax;
+extern RelaxedAtomic<unsigned> packetWaitCount;
+extern RelaxedAtomic<unsigned __int64> packetRunElapsed;
+extern RelaxedAtomic<unsigned> packetRunMax;
+extern RelaxedAtomic<unsigned> packetRunCount;
 #endif
 
-extern unsigned lastQueryDate;
-extern unsigned lastQueryTime;
+extern RelaxedAtomic<unsigned> lastQueryDate;
+extern RelaxedAtomic<unsigned> lastQueryTime;
 
 interface IRoxieMetricsManager : extends IInterface
 {
