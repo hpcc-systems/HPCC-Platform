@@ -80,7 +80,7 @@ MACRO(DOCBOOK_TO_PDF _xsl _file _name)
         IF(MAKE_DOCS)
                 STRING(REGEX REPLACE "([0-9a-z_-]*).xml" "\\1" _file_base "${_file}")
                 SET(_fo_file ${_file_base}.fo)
-                SET(_pdf_file ${_name}-${version}-${stagever}.pdf)
+                SET(_pdf_file ${_name}-${DOC_VERSION_ONLY}.pdf)
                 SET( _docs_target "doc_${_pdf_file}")  # File to Name of type.
                 CLEAN_REL_BOOK(${_file} ${VERSION_DIR} ${DOC_IMAGES} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
                 set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/${_file_base}.xsl  PROPERTIES GENERATED TRUE)
@@ -114,7 +114,7 @@ MACRO(DOCBOOK_TO_HTML _xsl_file _xml_file _out_dir _html_target _css_path _zip_t
        STRING(REGEX REPLACE ".+/([^/]+)$" "\\1" _out_dir2 "${_out_dir}")
 
        if(NOT "${_zip_target}" STREQUAL "")
-          SET(_zip_file ${_out_dir2}-${version}-${stagever}.zip)
+          SET(_zip_file ${_out_dir2}-${DOC_VERSION_ONLY}.zip)
        endif()
        ADD_CUSTOM_COMMAND(
            COMMAND mkdir -p ${_out_dir}
