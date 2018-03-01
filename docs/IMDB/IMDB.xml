@@ -155,25 +155,19 @@
         <itemizedlist mark="bullet">
           <listitem>
             <para><ulink
-            url="ftp://ftp.fu-berlin.de/pub/misc/movies/database/">ftp://ftp.fu-berlin.de/pub/misc/movies/database/</ulink>
+            url="ftp://ftp.fu-berlin.de/pub/misc/movies/database/frozendata/">ftp://ftp.fu-berlin.de/pub/misc/movies/database/frozendata/</ulink>
             (Germany)</para>
           </listitem>
 
           <listitem>
             <para><ulink
-            url="ftp://ftp.funet.fi/pub/mirrors/ftp.imdb.com/pub/">ftp://ftp.funet.fi/pub/mirrors/ftp.imdb.com/pub/</ulink>
+            url="ftp://ftp.funet.fi/pub/mirrors/ftp.imdb.com/pub/frozendata/">ftp://ftp.funet.fi/pub/mirrors/ftp.imdb.com/pub/frozendata/</ulink>
             (Finland)</para>
-          </listitem>
-
-          <listitem>
-            <para><ulink
-            url="ftp://ftp.sunet.se/pub/tv+movies/imdb/">ftp://ftp.sunet.se/pub/tv+movies/imdb/</ulink>
-            (Sweden)</para>
           </listitem>
         </itemizedlist>
 
-        <para>The files are compressed using GNUzip to save space and
-        bandwidth.</para>
+        <para>In addition to being available from the IMDB site as well. The
+        files are compressed using GNUzip to save space and bandwidth.</para>
 
         <para>We will focus initially on two of the larger data sets in the
         IMDB database</para>
