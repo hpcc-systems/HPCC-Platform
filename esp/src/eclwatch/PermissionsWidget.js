@@ -119,7 +119,12 @@ define([
                         editorArgs: { value: true },
                         className: "hpccCentered",
                         autoSave: true,
-                        canEdit: function (object, value) { return object.__hpcc_type != "Permission"; },
+                        canEdit: function (object, value) {
+                            if (object.__hpcc_type === "Permission" || object.AccountName === "Administrators") {
+                                return false
+                            }
+                            return true;
+                        },
                         renderHeaderCell: function (node) {
                             node.innerHTML = context.i18n.DenyAccess
                         }
@@ -130,7 +135,12 @@ define([
                         editorArgs: { value: true },
                         className: "hpccCentered",
                         autoSave: true,
-                        canEdit: function (object, value) { return object.__hpcc_type != "Permission"; },
+                        canEdit: function (object, value) {
+                            if (object.__hpcc_type === "Permission" || object.AccountName === "Administrators") {
+                                return false
+                            }
+                            return true;
+                        },
                         renderHeaderCell: function (node) {
                             node.innerHTML = context.i18n.DenyRead
                         }
@@ -141,7 +151,12 @@ define([
                         editorArgs: { value: true },
                         className: "hpccCentered",
                         autoSave: true,
-                        canEdit: function (object, value) { return object.__hpcc_type != "Permission"; },
+                        canEdit: function (object, value) {
+                            if (object.__hpcc_type === "Permission" || object.AccountName === "Administrators") {
+                                return false
+                            }
+                            return true;
+                        },
                         renderHeaderCell: function (node) {
                             node.innerHTML = context.i18n.DenyWrite
                         }
@@ -152,7 +167,12 @@ define([
                         editorArgs: { value: true },
                         className: "hpccCentered",
                         autoSave: true,
-                        canEdit: function (object, value) { return object.__hpcc_type != "Permission"; },
+                        canEdit: function (object, value) {
+                            if (object.__hpcc_type === "Permission" || object.AccountName === "Administrators") {
+                                return false
+                            }
+                            return true;
+                        },
                         renderHeaderCell: function (node) {
                             node.innerHTML = context.i18n.DenyFull
                         }
