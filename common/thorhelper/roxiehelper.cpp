@@ -1598,7 +1598,15 @@ void CSafeSocket::setHttpMode(const char *queryName, bool arrayMode, HttpHelper 
     mlResponseFmt = httphelper.queryResponseMlFormat();
     respCompression = httphelper.getRespCompression();
     heartbeat = false;
-    assertex(contentHead.length()==0 && contentTail.length()==0);
+
+    //reset persistent http connection
+    contentHead.clear();
+    contentTail.clear();
+    ForEachItemIn(idx, queued)
+        free(queued.item(idx));
+    queued.kill();
+    lengths.kill();
+
     if (mlResponseFmt==MarkupFmt_JSON)
     {
         contentHead.set("{");
@@ -1747,10 +1755,11 @@ private:
     StringBuffer content;
     ISocket *sock = nullptr;
     HttpCompression compression = HttpCompression::NONE;
+    bool httpKeepAlive = false;
     unsigned int sent = 0;
 public:
 
-    HttpResponseHandler(ISocket *s, CriticalSection &crit) : sock(s), c(crit)
+    HttpResponseHandler(ISocket *s, CriticalSection &crit, bool keepAlive) : sock(s), c(crit), httpKeepAlive(keepAlive)
     {
     }
     inline bool compressing()
@@ -1771,6 +1780,8 @@ public:
             compression = respCompression;
         header.append("HTTP/1.0 200 OK\r\n");
         header.append("Content-Type: ").append(mlFmt == MarkupFmt_JSON ? "application/json" : "text/xml").append("\r\n");
+        if (httpKeepAlive)
+            header.append("Connection: Keep-alive\r\n");
         if (!compressing())
         {
             header.append("Content-Length: ").append(length).append("\r\n\r\n");
@@ -1835,7 +1846,7 @@ void CSafeSocket::flush()
         ForEachItemIn(idx, lengths)
             contentLength += lengths.item(idx);
 
-        HttpResponseHandler resp(sock, crit);
+        HttpResponseHandler resp(sock, crit, httpKeepAlive);
 
         resp.init(contentLength, mlResponseFmt, respCompression);
         if (!adaptiveRoot || mlResponseFmt != MarkupFmt_JSON)
