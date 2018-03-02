@@ -159,6 +159,7 @@ ESPStruct [nil_remove] DFUFileDetail
     [min_ver("1.28")] bool BrowseData(true);
     [min_ver("1.37"), json_inline(1)] string jsonInfo;
     [min_ver("1.37")] binary binInfo;
+    [min_ver("1.38")] string PackageID;
 };
 
 ESPStruct DFUSpaceItem
@@ -307,6 +308,8 @@ DFUInfoRequest
     string Name;
     string Cluster;
     bool UpdateDescription(false);
+    [min_ver("1.38")] string QuerySet;
+    [min_ver("1.38")] string Query;
     [depr_ver("1.38")] string FileName;
     string FileDesc;
     [min_ver("1.37")] bool IncludeJsonTypeInfo(false);
