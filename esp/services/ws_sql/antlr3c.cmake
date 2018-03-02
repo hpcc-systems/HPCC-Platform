@@ -19,6 +19,8 @@
 set(ANTLRcCONFIGURE_COMMAND_PARAMS "--silent" "--disable-antlrdebug")
 if(WIN32)
     set(ANTLR3c_lib "antlr3c.lib")
+elseif(APPLE)
+    set(ANTLR3c_lib "libantlr3c.dylib")
 else()
     set(ANTLR3c_lib "libantlr3c.so")
 endif()
@@ -49,7 +51,7 @@ ExternalProject_Add(
     )
 
 add_library(libantlr3c SHARED IMPORTED GLOBAL)
-set_property(TARGET libantlr3c PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/antlr3c/lib/libantlr3c.so)
+set_property(TARGET libantlr3c PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/antlr3c/lib/${ANTLR3c_lib})
 add_dependencies(libantlr3c antlr3c)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/antlr3c/lib/libantlr3c.so
