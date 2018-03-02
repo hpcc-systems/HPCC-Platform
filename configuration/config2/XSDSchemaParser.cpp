@@ -312,7 +312,7 @@ void XSDSchemaParser::parseElement(const pt::ptree &elemTree)
     std::string typeName = elemTree.get("<xmlattr>.type", "");
     unsigned minOccurs = elemTree.get("<xmlattr>.minOccurs", 1);
     std::string maxOccursStr = elemTree.get("<xmlattr>.maxOccurs", "1");
-    unsigned maxOccurs = (maxOccursStr != "unbounded") ? stoi(maxOccursStr) : UINTMAX_MAX;
+    unsigned maxOccurs = (maxOccursStr != "unbounded") ? stoi(maxOccursStr) : UINT_MAX;
 
     std::shared_ptr<SchemaItem> pConfigElement = std::make_shared<SchemaItem>(elementName, className, m_pSchemaItem);
     pConfigElement->setProperty("displayName", displayName);
