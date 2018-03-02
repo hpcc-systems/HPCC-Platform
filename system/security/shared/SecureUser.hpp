@@ -257,6 +257,11 @@ public:
         destination.setFqdn(getFqdn());
         destination.setPeer(getPeer());
         destination.credentials().setPassword(credentials().getPassword());
+        destination.credentials().setSessionToken(credentials().getSessionToken());
+        destination.credentials().setSignature(credentials().getSignature());
+        CDateTime exp;
+        credentials().getPasswordExpiration(exp);
+        destination.credentials().setPasswordExpiration(exp);
         CDateTime tmpTime;
         destination.setPasswordExpiration(getPasswordExpiration(tmpTime));
         destination.setStatus(getStatus());
