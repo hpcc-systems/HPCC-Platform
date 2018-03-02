@@ -349,7 +349,7 @@ bool CPermissionsCache::lookup(ISecUser& sec_user)
 
         time_t now;
         time(&now);
-        if(user->getTimestamp() < (now - m_cacheTimeout))
+        if(user->getTimestamp() < (now - m_cacheTimeout)  && 0==sec_user.credentials().getSessionToken())//don't delete session based users
         {
             deleteEntry = true;
         }

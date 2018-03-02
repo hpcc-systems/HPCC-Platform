@@ -471,6 +471,7 @@ public:
     virtual bool authenticateUser(ISecUser & user, bool * superUser);
     virtual secManagerType querySecMgrType() { return SMT_LDAP; }
     inline virtual const char* querySecMgrTypeName() { return "LdapSecurity"; }
+    virtual bool logoutUser(ISecUser & user);
 
     //Data View related interfaces
     virtual void createView(const char * viewName, const char * viewDescription);
