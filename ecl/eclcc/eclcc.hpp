@@ -140,6 +140,7 @@ const char * const helpText[] = {
     "?!  -fshowRecordCountInGraph  Show estimates of record counts in the graph",
     "?!  -fspanMultipleCpp       Generate a work unit in multiple c++ files",
     "?!  -fsubgraphToRegenerate=n Regenerate the ECL for a particular subgraph",
+    "?!  -ftimeParser            Add timings for parsing each ECL attribute",
     "?!  -ftimeTransforms        Add timings for internal transforms to the workunit",
     "",
 };

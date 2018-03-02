@@ -1201,11 +1201,14 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
 
     {
         //Minimize the scope of the parse context to reduce lifetime of cached items.
-        HqlParseContext parseCtx(instance.dataServer, &instance, instance.archive);
+        WuStatisticTarget statsTarget(instance.wu, "eclcc");
+        HqlParseContext parseCtx(instance.dataServer, &instance, instance.archive, statsTarget);
         parseCtx.cache = cache;
         parseCtx.optionHash = optionHash;
         if (optFastSyntax)
             parseCtx.setFastSyntax();
+        parseCtx.timeParser = instance.wu->getDebugValueBool("timeParser", false);
+
         unsigned maxErrorsDebugOption = instance.wu->getDebugValueInt("maxErrors", 0);
         if (maxErrorsDebugOption != 0)
             parseCtx.maxErrors = maxErrorsDebugOption;

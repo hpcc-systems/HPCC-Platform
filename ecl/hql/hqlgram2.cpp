@@ -12207,6 +12207,16 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
     bool isMacro = parsed && parsed->isMacro();
 
     attrCtx.noteEndAttribute(true, canCache, isMacro, simplified);
+
+    if (attrCtx.queryParseContext().timeParser)
+    {
+        StringBuffer fullname;
+        fullname.append(scope->queryFullName());
+        if (fullname)
+            fullname.append(".");
+        fullname.append(str(name));
+        attrCtx.reportTiming(fullname);
+    }
 }
 
 int testHqlInternals()
