@@ -5315,15 +5315,13 @@ public:
             StringBuffer fullFilename(name);
             addPathSepChar(fullFilename).append(mask);
             Owned<IFile> iFile = createIFile(fullFilename);
+
+            // NB: This must preserve same serialization format as CRemoteDirectoryIterator::serialize produces for <=1 file.
+            reply.append((unsigned)RFEnoerror);
             if (!iFile->exists())
-            {
-                reply.append((unsigned)RFSERR_GetDirFailed);
-                return false;
-            }
+                reply.append((byte)0);
             else
             {
-                reply.append((unsigned)RFEnoerror);
-                // NB: This must preserve same serialization format as CRemoteDirectoryIterator::serialize produces for 1 file.
                 byte b=1;
                 reply.append(b);
                 bool isDir = foundYes == iFile->isDirectory();
@@ -5335,8 +5333,8 @@ public:
                 reply.append(iFile->queryFilename());
                 b = 0;
                 reply.append(b);
-                return true;
             }
+            return true;
         }
         else
         {
