@@ -39,6 +39,7 @@ class THORHELPER_API HttpHelper : public CInterface
 private:
     HttpMethod method;
     bool useEnvelope = false;
+    StringAttr version;
     StringAttr url;
     StringAttr authToken;
     StringAttr contentType;
@@ -65,6 +66,13 @@ public:
     HttpHelper(StringArray *_validTargets) : validTargets(_validTargets), method(HttpMethod::NONE) {parameters.setown(createProperties(true));}
     inline bool isHttp() { return method!=HttpMethod::NONE; }
     inline bool isHttpGet(){ return method==HttpMethod::GET; }
+    inline bool allowKeepAlive()
+    {
+        const char *connection = queryRequestHeader("Connection");
+        if (!connection)
+            return streq(version, "1.1");
+        return strieq(connection, "Keep-alive");
+    }
     inline bool isControlUrl()
     {
         const char *control = queryTarget();
@@ -146,6 +154,13 @@ public:
         {
             url.set(v, end - v);
             parseURL();
+            v=end+5;
+            if (*v=='/')
+            {
+                end=strstr(++v, "\r\n");
+                if (end)
+                    version.set(v, end-v);
+            }
         }
     }
     void parseRequestHeaders(const char *headers);
@@ -343,6 +358,7 @@ interface SafeSocket : extends IInterface
     virtual void sendJsonException(IException *E, const char *queryName) = 0;
     virtual void setHttpMode(const char *queryName, bool arrayMode, HttpHelper &httphelper) = 0;
     virtual void setHttpMode(bool mode) = 0;
+    virtual void setHttpKeepAlive(bool val) = 0;
     virtual void setHeartBeat() = 0;
     virtual bool sendHeartBeat(const IContextLogger &logctx) = 0;
     virtual void flush() = 0;
@@ -363,6 +379,7 @@ class THORHELPER_API CSafeSocket : implements SafeSocket, public CInterface
 protected:
     Linked<ISocket> sock;
     bool httpMode;
+    bool httpKeepAlive = false;
     bool heartbeat;
     bool adaptiveRoot = false;
     TextMarkupFormat mlResponseFmt = MarkupFmt_Unknown;
@@ -386,6 +403,7 @@ public:
     bool readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHttpHelper, bool &, bool &, unsigned maxBlockSize);
     void setHttpMode(const char *queryName, bool arrayMode, HttpHelper &httphelper);
     void setHttpMode(bool mode) override {httpMode = mode;}
+    virtual void setHttpKeepAlive(bool val) { httpKeepAlive = val; }
     void setAdaptiveRoot(bool adaptive){adaptiveRoot=adaptive;}
     bool getAdaptiveRoot(){return adaptiveRoot;}
     void checkSendHttpException(HttpHelper &httphelper, IException *E, const char *queryName);
