@@ -192,9 +192,6 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 
 const char *queryEclccPath(bool optVerbose);
 
-bool isValidMemoryValue(const char *value);
-bool isValidPriorityValue(const char *value);
-
 bool extractEclCmdOption(StringBuffer & option, IProperties * globals, const char * envName, const char * propertyName, const char * defaultPrefix, const char * defaultSuffix);
 bool extractEclCmdOption(StringAttr & option, IProperties * globals, const char * envName, const char * propertyName, const char * defaultPrefix, const char * defaultSuffix);
 bool extractEclCmdOption(bool & option, IProperties * globals, const char * envName, const char * propertyName, bool defval);
