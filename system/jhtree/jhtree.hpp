@@ -24,6 +24,7 @@
 #define jhtree_decl DECL_IMPORT
 #endif
 
+#include "platform.h"
 #include "jiface.hpp"
 #include "jfile.hpp"
 #include "jlog.hpp"
@@ -144,13 +145,9 @@ extern jhtree_decl bool flushJHtreeCacheOnOOM;
 extern jhtree_decl bool useMemoryMappedIndexes;
 extern jhtree_decl void clearNodeStats();
 
-
 #define CHEAP_UCHAR_DEF
-#ifdef _WIN32
-typedef wchar_t UChar;
-#else //_WIN32
-typedef unsigned short UChar;
-#endif //_WIN32
+typedef cheap_uchar_t UChar;
+
 #include "rtlkey.hpp"
 #include "jmisc.hpp"
 

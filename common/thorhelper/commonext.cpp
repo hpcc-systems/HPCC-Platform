@@ -17,11 +17,7 @@
 
 #include "platform.h"
 #define CHEAP_UCHAR_DEF
-#ifdef _WIN32
-typedef wchar_t UChar;
-#else 
-typedef unsigned short UChar;
-#endif 
+typedef cheap_uchar_t UChar;
 #include "eclhelper.hpp"
 
 #include "jmisc.hpp"

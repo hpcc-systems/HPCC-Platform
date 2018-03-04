@@ -46,11 +46,7 @@
 #include <math.h>
 
 #define CHEAP_UCHAR_DEF
-#if _WIN32
-typedef wchar_t UChar;
-#else //_WIN32
-typedef unsigned short UChar;
-#endif //_WIN32
+typedef cheap_uchar_t UChar;
 
 #ifdef _WIN32
 typedef unsigned int size32_t; // avoid pulling in platform.h (which pulls in windows.h etc) just for this...
