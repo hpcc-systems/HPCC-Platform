@@ -86,13 +86,14 @@
 
 #define RAERR_InvalidUsernamePassword_Text      "Invalid (upper case U) in username/password"
 
+#define RFSERR_GetDirFailed_Text                "Failed to open file."
 
 interface REMOTE_API IDAFS_Exception: extends IException
 { // Raise by dafilesrv calls
 };
 
 enum DAFS_ERROR_CODES {
-    DAFSERR_connection_failed               = -1,   
+    DAFSERR_connection_failed               = -1,
     DAFSERR_authenticate_failed             = -2,
     DAFSERR_protocol_failure                = -3,
     DAFSERR_serveraccept_failed             = -4,
