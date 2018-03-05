@@ -7,9 +7,8 @@
  &quot;ty2&quot;: {
   &quot;fieldType&quot;: 1067,
   &quot;length&quot;: 0,
-  &quot;filterField&quot;: 0,
   &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;=[4]&quot;,
+  &quot;filter&quot;: &quot;0=[4]&quot;,
   &quot;fields&quot;: [
    {
     &quot;name&quot;: &quot;extra&quot;,
@@ -42,9 +41,8 @@
  &quot;ty2&quot;: {
   &quot;fieldType&quot;: 1067,
   &quot;length&quot;: 0,
-  &quot;filterField&quot;: 0,
   &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;=[4]&quot;,
+  &quot;filter&quot;: &quot;0=[4]&quot;,
   &quot;fields&quot;: [
    {
     &quot;name&quot;: &quot;extra&quot;,
@@ -72,39 +70,7 @@
  <Row><Result_3>true</Result_3></Row>
 </Dataset>
 <Dataset name='Result 4'>
- <Row><Result_4>{
- &quot;ty1&quot;: {
-  &quot;fieldType&quot;: 257,
-  &quot;length&quot;: 8
- },
- &quot;ty2&quot;: {
-  &quot;fieldType&quot;: 1067,
-  &quot;length&quot;: 0,
-  &quot;filterField&quot;: 0,
-  &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;=(4,10),[200,250]&quot;,
-  &quot;fields&quot;: [
-   {
-    &quot;name&quot;: &quot;extra&quot;,
-    &quot;type&quot;: &quot;ty1&quot;,
-    &quot;flags&quot;: 257
-   }
-  ]
- },
- &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 8,
- &quot;fields&quot;: [
-  {
-   &quot;name&quot;: &quot;id&quot;,
-   &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 257
-  },
-  {
-   &quot;type&quot;: &quot;ty2&quot;,
-   &quot;flags&quot;: 1067
-  }
- ]
-}</Result_4></Row>
+ <Row><Result_4>true</Result_4></Row>
 </Dataset>
 <Dataset name='Result 5'>
  <Row><Result_5>{
@@ -115,9 +81,8 @@
  &quot;ty2&quot;: {
   &quot;fieldType&quot;: 1067,
   &quot;length&quot;: 0,
-  &quot;filterField&quot;: 0,
   &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;=(4,10),[200,250]&quot;,
+  &quot;filter&quot;: &quot;0=(4,10),[200,250]&quot;,
   &quot;fields&quot;: [
    {
     &quot;name&quot;: &quot;extra&quot;,
@@ -142,45 +107,47 @@
 }</Result_5></Row>
 </Dataset>
 <Dataset name='Result 6'>
- <Row><Result_6>true</Result_6></Row>
+ <Row><Result_6>{
+ &quot;ty1&quot;: {
+  &quot;fieldType&quot;: 257,
+  &quot;length&quot;: 8
+ },
+ &quot;ty2&quot;: {
+  &quot;fieldType&quot;: 1067,
+  &quot;length&quot;: 0,
+  &quot;filterType&quot;: &quot;ty1&quot;,
+  &quot;filter&quot;: &quot;0=(4,10),[200,250]&quot;,
+  &quot;fields&quot;: [
+   {
+    &quot;name&quot;: &quot;extra&quot;,
+    &quot;type&quot;: &quot;ty1&quot;,
+    &quot;flags&quot;: 257
+   }
+  ]
+ },
+ &quot;fieldType&quot;: 1037,
+ &quot;length&quot;: 8,
+ &quot;fields&quot;: [
+  {
+   &quot;name&quot;: &quot;id&quot;,
+   &quot;type&quot;: &quot;ty1&quot;,
+   &quot;flags&quot;: 257
+  },
+  {
+   &quot;type&quot;: &quot;ty2&quot;,
+   &quot;flags&quot;: 1067
+  }
+ ]
+}</Result_6></Row>
 </Dataset>
 <Dataset name='Result 7'>
- <Row><Result_7>{
- &quot;ty1&quot;: {
-  &quot;fieldType&quot;: 257,
-  &quot;length&quot;: 8
- },
- &quot;ty2&quot;: {
-  &quot;fieldType&quot;: 1067,
-  &quot;length&quot;: 0,
-  &quot;filterField&quot;: 0,
-  &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;=[200,1000)&quot;,
-  &quot;fields&quot;: [
-   {
-    &quot;name&quot;: &quot;extra&quot;,
-    &quot;type&quot;: &quot;ty1&quot;,
-    &quot;flags&quot;: 257
-   }
-  ]
- },
- &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 8,
- &quot;fields&quot;: [
-  {
-   &quot;name&quot;: &quot;id&quot;,
-   &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 257
-  },
-  {
-   &quot;type&quot;: &quot;ty2&quot;,
-   &quot;flags&quot;: 1067
-  }
- ]
-}</Result_7></Row>
+ <Row><Result_7>true</Result_7></Row>
 </Dataset>
 <Dataset name='Result 8'>
- <Row><Result_8>{
+ <Row><Result_8>true</Result_8></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><Result_9>{
  &quot;ty1&quot;: {
   &quot;fieldType&quot;: 257,
   &quot;length&quot;: 8
@@ -188,9 +155,8 @@
  &quot;ty2&quot;: {
   &quot;fieldType&quot;: 1067,
   &quot;length&quot;: 0,
-  &quot;filterField&quot;: 0,
   &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;=[200,1000)&quot;,
+  &quot;filter&quot;: &quot;0=[200,1000)&quot;,
   &quot;fields&quot;: [
    {
     &quot;name&quot;: &quot;extra&quot;,
@@ -212,10 +178,7 @@
    &quot;flags&quot;: 1067
   }
  ]
-}</Result_8></Row>
-</Dataset>
-<Dataset name='Result 9'>
- <Row><Result_9>true</Result_9></Row>
+}</Result_9></Row>
 </Dataset>
 <Dataset name='Result 10'>
  <Row><Result_10>{
@@ -226,9 +189,8 @@
  &quot;ty2&quot;: {
   &quot;fieldType&quot;: 1067,
   &quot;length&quot;: 0,
-  &quot;filterField&quot;: 0,
   &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;=[1],[2],[3],[99],[1000]&quot;,
+  &quot;filter&quot;: &quot;0=[200,1000)&quot;,
   &quot;fields&quot;: [
    {
     &quot;name&quot;: &quot;extra&quot;,
@@ -253,7 +215,13 @@
 }</Result_10></Row>
 </Dataset>
 <Dataset name='Result 11'>
- <Row><Result_11>{
+ <Row><Result_11>true</Result_11></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><Result_12>true</Result_12></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><Result_13>{
  &quot;ty1&quot;: {
   &quot;fieldType&quot;: 257,
   &quot;length&quot;: 8
@@ -261,9 +229,8 @@
  &quot;ty2&quot;: {
   &quot;fieldType&quot;: 1067,
   &quot;length&quot;: 0,
-  &quot;filterField&quot;: 0,
   &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;=[1],[2],[3],[99],[1000]&quot;,
+  &quot;filter&quot;: &quot;0=[1],[2],[3],[99],[1000]&quot;,
   &quot;fields&quot;: [
    {
     &quot;name&quot;: &quot;extra&quot;,
@@ -285,84 +252,37 @@
    &quot;flags&quot;: 1067
   }
  ]
-}</Result_11></Row>
-</Dataset>
-<Dataset name='Result 12'>
- <Row><Result_12>true</Result_12></Row>
-</Dataset>
-<Dataset name='Result 13'>
- <Row><Result_13>{
- &quot;ty1&quot;: {
-  &quot;fieldType&quot;: 4,
-  &quot;length&quot;: 2
- },
- &quot;ty2&quot;: {
-  &quot;fieldType&quot;: 257,
-  &quot;length&quot;: 8
- },
- &quot;ty3&quot;: {
-  &quot;fieldType&quot;: 1067,
-  &quot;length&quot;: 0,
-  &quot;filterField&quot;: 0,
-  &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;=[&apos;a &apos;],[&apos;b &apos;],[&apos;c &apos;],[&apos;f &apos;,&apos;k &apos;),[&apos;xx&apos;]&quot;,
-  &quot;fields&quot;: [
-   {
-    &quot;name&quot;: &quot;extra&quot;,
-    &quot;type&quot;: &quot;ty2&quot;,
-    &quot;flags&quot;: 257
-   }
-  ]
- },
- &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 2,
- &quot;fields&quot;: [
-  {
-   &quot;name&quot;: &quot;id&quot;,
-   &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 4
-  },
-  {
-   &quot;type&quot;: &quot;ty3&quot;,
-   &quot;flags&quot;: 1067
-  }
- ]
 }</Result_13></Row>
 </Dataset>
 <Dataset name='Result 14'>
  <Row><Result_14>{
  &quot;ty1&quot;: {
-  &quot;fieldType&quot;: 4,
-  &quot;length&quot;: 2
- },
- &quot;ty2&quot;: {
   &quot;fieldType&quot;: 257,
   &quot;length&quot;: 8
  },
- &quot;ty3&quot;: {
+ &quot;ty2&quot;: {
   &quot;fieldType&quot;: 1067,
   &quot;length&quot;: 0,
-  &quot;filterField&quot;: 0,
   &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;=[&apos;a &apos;],[&apos;b &apos;],[&apos;c &apos;],[&apos;f &apos;,&apos;k &apos;),[&apos;xx&apos;]&quot;,
+  &quot;filter&quot;: &quot;0=[1],[2],[3],[99],[1000]&quot;,
   &quot;fields&quot;: [
    {
     &quot;name&quot;: &quot;extra&quot;,
-    &quot;type&quot;: &quot;ty2&quot;,
+    &quot;type&quot;: &quot;ty1&quot;,
     &quot;flags&quot;: 257
    }
   ]
  },
  &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 2,
+ &quot;length&quot;: 8,
  &quot;fields&quot;: [
   {
    &quot;name&quot;: &quot;id&quot;,
    &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 4
+   &quot;flags&quot;: 257
   },
   {
-   &quot;type&quot;: &quot;ty3&quot;,
+   &quot;type&quot;: &quot;ty2&quot;,
    &quot;flags&quot;: 1067
   }
  ]
@@ -372,49 +292,13 @@
  <Row><Result_15>true</Result_15></Row>
 </Dataset>
 <Dataset name='Result 16'>
- <Row><Result_16>{
- &quot;ty1&quot;: {
-  &quot;fieldType&quot;: 1028,
-  &quot;length&quot;: 0
- },
- &quot;ty2&quot;: {
-  &quot;fieldType&quot;: 257,
-  &quot;length&quot;: 8
- },
- &quot;ty3&quot;: {
-  &quot;fieldType&quot;: 1067,
-  &quot;length&quot;: 0,
-  &quot;filterField&quot;: 0,
-  &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;=[&apos;\\&apos;&apos;],[&apos;a&apos;],[&apos;b &apos;],[&apos;bxx&apos;],[&apos;faa&apos;,&apos;kaa&apos;],(&apos;xxa&apos;,&apos;xyz&apos;)&quot;,
-  &quot;fields&quot;: [
-   {
-    &quot;name&quot;: &quot;extra&quot;,
-    &quot;type&quot;: &quot;ty2&quot;,
-    &quot;flags&quot;: 257
-   }
-  ]
- },
- &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 4,
- &quot;fields&quot;: [
-  {
-   &quot;name&quot;: &quot;id&quot;,
-   &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 1028
-  },
-  {
-   &quot;type&quot;: &quot;ty3&quot;,
-   &quot;flags&quot;: 1067
-  }
- ]
-}</Result_16></Row>
+ <Row><Result_16>true</Result_16></Row>
 </Dataset>
 <Dataset name='Result 17'>
  <Row><Result_17>{
  &quot;ty1&quot;: {
-  &quot;fieldType&quot;: 1028,
-  &quot;length&quot;: 0
+  &quot;fieldType&quot;: 4,
+  &quot;length&quot;: 2
  },
  &quot;ty2&quot;: {
   &quot;fieldType&quot;: 257,
@@ -423,9 +307,8 @@
  &quot;ty3&quot;: {
   &quot;fieldType&quot;: 1067,
   &quot;length&quot;: 0,
-  &quot;filterField&quot;: 0,
   &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;=[&apos;\\&apos;&apos;],[&apos;a&apos;],[&apos;b &apos;],[&apos;bxx&apos;],[&apos;faa&apos;,&apos;kaa&apos;],(&apos;xxa&apos;,&apos;xyz&apos;)&quot;,
+  &quot;filter&quot;: &quot;0=[&apos;a &apos;],[&apos;b &apos;],[&apos;c &apos;],[&apos;f &apos;,&apos;k &apos;),[&apos;xx&apos;]&quot;,
   &quot;fields&quot;: [
    {
     &quot;name&quot;: &quot;extra&quot;,
@@ -435,12 +318,12 @@
   ]
  },
  &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 4,
+ &quot;length&quot;: 2,
  &quot;fields&quot;: [
   {
    &quot;name&quot;: &quot;id&quot;,
    &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 1028
+   &quot;flags&quot;: 4
   },
   {
    &quot;type&quot;: &quot;ty3&quot;,
@@ -450,52 +333,54 @@
 }</Result_17></Row>
 </Dataset>
 <Dataset name='Result 18'>
- <Row><Result_18>true</Result_18></Row>
+ <Row><Result_18>{
+ &quot;ty1&quot;: {
+  &quot;fieldType&quot;: 4,
+  &quot;length&quot;: 2
+ },
+ &quot;ty2&quot;: {
+  &quot;fieldType&quot;: 257,
+  &quot;length&quot;: 8
+ },
+ &quot;ty3&quot;: {
+  &quot;fieldType&quot;: 1067,
+  &quot;length&quot;: 0,
+  &quot;filterType&quot;: &quot;ty1&quot;,
+  &quot;filter&quot;: &quot;0=[&apos;a &apos;],[&apos;b &apos;],[&apos;c &apos;],[&apos;f &apos;,&apos;k &apos;),[&apos;xx&apos;]&quot;,
+  &quot;fields&quot;: [
+   {
+    &quot;name&quot;: &quot;extra&quot;,
+    &quot;type&quot;: &quot;ty2&quot;,
+    &quot;flags&quot;: 257
+   }
+  ]
+ },
+ &quot;fieldType&quot;: 1037,
+ &quot;length&quot;: 2,
+ &quot;fields&quot;: [
+  {
+   &quot;name&quot;: &quot;id&quot;,
+   &quot;type&quot;: &quot;ty1&quot;,
+   &quot;flags&quot;: 4
+  },
+  {
+   &quot;type&quot;: &quot;ty3&quot;,
+   &quot;flags&quot;: 1067
+  }
+ ]
+}</Result_18></Row>
 </Dataset>
 <Dataset name='Result 19'>
- <Row><Result_19>{
- &quot;ty1&quot;: {
-  &quot;fieldType&quot;: 4,
-  &quot;length&quot;: 2
- },
- &quot;ty2&quot;: {
-  &quot;fieldType&quot;: 257,
-  &quot;length&quot;: 8
- },
- &quot;ty3&quot;: {
-  &quot;fieldType&quot;: 1067,
-  &quot;length&quot;: 0,
-  &quot;filterField&quot;: 0,
-  &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;=[&apos;a &apos;],[&apos;b &apos;],(&apos;fa&apos;,&apos;ka&apos;],(&apos;xx&apos;,&apos;xy&apos;]&quot;,
-  &quot;fields&quot;: [
-   {
-    &quot;name&quot;: &quot;extra&quot;,
-    &quot;type&quot;: &quot;ty2&quot;,
-    &quot;flags&quot;: 257
-   }
-  ]
- },
- &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 2,
- &quot;fields&quot;: [
-  {
-   &quot;name&quot;: &quot;id&quot;,
-   &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 4
-  },
-  {
-   &quot;type&quot;: &quot;ty3&quot;,
-   &quot;flags&quot;: 1067
-  }
- ]
-}</Result_19></Row>
+ <Row><Result_19>true</Result_19></Row>
 </Dataset>
 <Dataset name='Result 20'>
- <Row><Result_20>{
+ <Row><Result_20>true</Result_20></Row>
+</Dataset>
+<Dataset name='Result 21'>
+ <Row><Result_21>{
  &quot;ty1&quot;: {
-  &quot;fieldType&quot;: 4,
-  &quot;length&quot;: 2
+  &quot;fieldType&quot;: 1028,
+  &quot;length&quot;: 0
  },
  &quot;ty2&quot;: {
   &quot;fieldType&quot;: 257,
@@ -504,9 +389,8 @@
  &quot;ty3&quot;: {
   &quot;fieldType&quot;: 1067,
   &quot;length&quot;: 0,
-  &quot;filterField&quot;: 0,
   &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;=[&apos;a &apos;],[&apos;b &apos;],(&apos;fa&apos;,&apos;ka&apos;],(&apos;xx&apos;,&apos;xy&apos;]&quot;,
+  &quot;filter&quot;: &quot;0=[&apos;\\&apos;&apos;],[&apos;a&apos;],[&apos;b &apos;],[&apos;bxx&apos;],[&apos;faa&apos;,&apos;kaa&apos;],(&apos;xxa&apos;,&apos;xyz&apos;)&quot;,
   &quot;fields&quot;: [
    {
     &quot;name&quot;: &quot;extra&quot;,
@@ -516,28 +400,25 @@
   ]
  },
  &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 2,
+ &quot;length&quot;: 4,
  &quot;fields&quot;: [
   {
    &quot;name&quot;: &quot;id&quot;,
    &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 4
+   &quot;flags&quot;: 1028
   },
   {
    &quot;type&quot;: &quot;ty3&quot;,
    &quot;flags&quot;: 1067
   }
  ]
-}</Result_20></Row>
-</Dataset>
-<Dataset name='Result 21'>
- <Row><Result_21>true</Result_21></Row>
+}</Result_21></Row>
 </Dataset>
 <Dataset name='Result 22'>
  <Row><Result_22>{
  &quot;ty1&quot;: {
-  &quot;fieldType&quot;: 4,
-  &quot;length&quot;: 2
+  &quot;fieldType&quot;: 1028,
+  &quot;length&quot;: 0
  },
  &quot;ty2&quot;: {
   &quot;fieldType&quot;: 257,
@@ -546,9 +427,8 @@
  &quot;ty3&quot;: {
   &quot;fieldType&quot;: 1067,
   &quot;length&quot;: 0,
-  &quot;filterField&quot;: 0,
   &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;=(&apos;fa&apos;,&apos;ka&apos;]&quot;,
+  &quot;filter&quot;: &quot;0=[&apos;\\&apos;&apos;],[&apos;a&apos;],[&apos;b &apos;],[&apos;bxx&apos;],[&apos;faa&apos;,&apos;kaa&apos;],(&apos;xxa&apos;,&apos;xyz&apos;)&quot;,
   &quot;fields&quot;: [
    {
     &quot;name&quot;: &quot;extra&quot;,
@@ -558,12 +438,12 @@
   ]
  },
  &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 2,
+ &quot;length&quot;: 4,
  &quot;fields&quot;: [
   {
    &quot;name&quot;: &quot;id&quot;,
    &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 4
+   &quot;flags&quot;: 1028
   },
   {
    &quot;type&quot;: &quot;ty3&quot;,
@@ -573,43 +453,7 @@
 }</Result_22></Row>
 </Dataset>
 <Dataset name='Result 23'>
- <Row><Result_23>{
- &quot;ty1&quot;: {
-  &quot;fieldType&quot;: 4,
-  &quot;length&quot;: 2
- },
- &quot;ty2&quot;: {
-  &quot;fieldType&quot;: 257,
-  &quot;length&quot;: 8
- },
- &quot;ty3&quot;: {
-  &quot;fieldType&quot;: 1067,
-  &quot;length&quot;: 0,
-  &quot;filterField&quot;: 0,
-  &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;=(&apos;fa&apos;,&apos;ka&apos;]&quot;,
-  &quot;fields&quot;: [
-   {
-    &quot;name&quot;: &quot;extra&quot;,
-    &quot;type&quot;: &quot;ty2&quot;,
-    &quot;flags&quot;: 257
-   }
-  ]
- },
- &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 2,
- &quot;fields&quot;: [
-  {
-   &quot;name&quot;: &quot;id&quot;,
-   &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 4
-  },
-  {
-   &quot;type&quot;: &quot;ty3&quot;,
-   &quot;flags&quot;: 1067
-  }
- ]
-}</Result_23></Row>
+ <Row><Result_23>true</Result_23></Row>
 </Dataset>
 <Dataset name='Result 24'>
  <Row><Result_24>true</Result_24></Row>
@@ -627,9 +471,8 @@
  &quot;ty3&quot;: {
   &quot;fieldType&quot;: 1067,
   &quot;length&quot;: 0,
-  &quot;filterField&quot;: 0,
   &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;=[&apos;a &apos;],[&apos;b &apos;]&quot;,
+  &quot;filter&quot;: &quot;0=[&apos;a &apos;],[&apos;b &apos;],(&apos;fa&apos;,&apos;ka&apos;],(&apos;xx&apos;,&apos;xy&apos;]&quot;,
   &quot;fields&quot;: [
    {
     &quot;name&quot;: &quot;extra&quot;,
@@ -666,9 +509,8 @@
  &quot;ty3&quot;: {
   &quot;fieldType&quot;: 1067,
   &quot;length&quot;: 0,
-  &quot;filterField&quot;: 0,
   &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;=[&apos;a &apos;],[&apos;b &apos;]&quot;,
+  &quot;filter&quot;: &quot;0=[&apos;a &apos;],[&apos;b &apos;],(&apos;fa&apos;,&apos;ka&apos;],(&apos;xx&apos;,&apos;xy&apos;]&quot;,
   &quot;fields&quot;: [
    {
     &quot;name&quot;: &quot;extra&quot;,
@@ -696,43 +538,7 @@
  <Row><Result_27>true</Result_27></Row>
 </Dataset>
 <Dataset name='Result 28'>
- <Row><Result_28>{
- &quot;ty1&quot;: {
-  &quot;fieldType&quot;: 4,
-  &quot;length&quot;: 2
- },
- &quot;ty2&quot;: {
-  &quot;fieldType&quot;: 257,
-  &quot;length&quot;: 8
- },
- &quot;ty3&quot;: {
-  &quot;fieldType&quot;: 1067,
-  &quot;length&quot;: 0,
-  &quot;filterField&quot;: 0,
-  &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;=(&apos;ax&apos;,&apos;bx&apos;],(&apos;dx&apos;,&apos;ex&apos;]&quot;,
-  &quot;fields&quot;: [
-   {
-    &quot;name&quot;: &quot;extra&quot;,
-    &quot;type&quot;: &quot;ty2&quot;,
-    &quot;flags&quot;: 257
-   }
-  ]
- },
- &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 2,
- &quot;fields&quot;: [
-  {
-   &quot;name&quot;: &quot;id&quot;,
-   &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 4
-  },
-  {
-   &quot;type&quot;: &quot;ty3&quot;,
-   &quot;flags&quot;: 1067
-  }
- ]
-}</Result_28></Row>
+ <Row><Result_28>true</Result_28></Row>
 </Dataset>
 <Dataset name='Result 29'>
  <Row><Result_29>{
@@ -747,9 +553,8 @@
  &quot;ty3&quot;: {
   &quot;fieldType&quot;: 1067,
   &quot;length&quot;: 0,
-  &quot;filterField&quot;: 0,
   &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;=(&apos;ax&apos;,&apos;bx&apos;],(&apos;dx&apos;,&apos;ex&apos;]&quot;,
+  &quot;filter&quot;: &quot;0=(&apos;fa&apos;,&apos;ka&apos;]&quot;,
   &quot;fields&quot;: [
    {
     &quot;name&quot;: &quot;extra&quot;,
@@ -774,49 +579,51 @@
 }</Result_29></Row>
 </Dataset>
 <Dataset name='Result 30'>
- <Row><Result_30>true</Result_30></Row>
+ <Row><Result_30>{
+ &quot;ty1&quot;: {
+  &quot;fieldType&quot;: 4,
+  &quot;length&quot;: 2
+ },
+ &quot;ty2&quot;: {
+  &quot;fieldType&quot;: 257,
+  &quot;length&quot;: 8
+ },
+ &quot;ty3&quot;: {
+  &quot;fieldType&quot;: 1067,
+  &quot;length&quot;: 0,
+  &quot;filterType&quot;: &quot;ty1&quot;,
+  &quot;filter&quot;: &quot;0=(&apos;fa&apos;,&apos;ka&apos;]&quot;,
+  &quot;fields&quot;: [
+   {
+    &quot;name&quot;: &quot;extra&quot;,
+    &quot;type&quot;: &quot;ty2&quot;,
+    &quot;flags&quot;: 257
+   }
+  ]
+ },
+ &quot;fieldType&quot;: 1037,
+ &quot;length&quot;: 2,
+ &quot;fields&quot;: [
+  {
+   &quot;name&quot;: &quot;id&quot;,
+   &quot;type&quot;: &quot;ty1&quot;,
+   &quot;flags&quot;: 4
+  },
+  {
+   &quot;type&quot;: &quot;ty3&quot;,
+   &quot;flags&quot;: 1067
+  }
+ ]
+}</Result_30></Row>
 </Dataset>
 <Dataset name='Result 31'>
- <Row><Result_31>{
- &quot;ty1&quot;: {
-  &quot;fieldType&quot;: 4,
-  &quot;length&quot;: 2
- },
- &quot;ty2&quot;: {
-  &quot;fieldType&quot;: 257,
-  &quot;length&quot;: 8
- },
- &quot;ty3&quot;: {
-  &quot;fieldType&quot;: 1067,
-  &quot;length&quot;: 0,
-  &quot;filterField&quot;: 0,
-  &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;=[&apos;a &apos;],[&apos;b &apos;]&quot;,
-  &quot;fields&quot;: [
-   {
-    &quot;name&quot;: &quot;extra&quot;,
-    &quot;type&quot;: &quot;ty2&quot;,
-    &quot;flags&quot;: 257
-   }
-  ]
- },
- &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 2,
- &quot;fields&quot;: [
-  {
-   &quot;name&quot;: &quot;id&quot;,
-   &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 4
-  },
-  {
-   &quot;type&quot;: &quot;ty3&quot;,
-   &quot;flags&quot;: 1067
-  }
- ]
-}</Result_31></Row>
+ <Row><Result_31>true</Result_31></Row>
 </Dataset>
 <Dataset name='Result 32'>
- <Row><Result_32>{
+ <Row><Result_32>true</Result_32></Row>
+</Dataset>
+<Dataset name='Result 33'>
+ <Row><Result_33>{
  &quot;ty1&quot;: {
   &quot;fieldType&quot;: 4,
   &quot;length&quot;: 2
@@ -828,9 +635,8 @@
  &quot;ty3&quot;: {
   &quot;fieldType&quot;: 1067,
   &quot;length&quot;: 0,
-  &quot;filterField&quot;: 0,
   &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;=[&apos;a &apos;],[&apos;b &apos;]&quot;,
+  &quot;filter&quot;: &quot;0=[&apos;a &apos;],[&apos;b &apos;]&quot;,
   &quot;fields&quot;: [
    {
     &quot;name&quot;: &quot;extra&quot;,
@@ -852,80 +658,48 @@
    &quot;flags&quot;: 1067
   }
  ]
-}</Result_32></Row>
-</Dataset>
-<Dataset name='Result 33'>
- <Row><Result_33>true</Result_33></Row>
+}</Result_33></Row>
 </Dataset>
 <Dataset name='Result 34'>
  <Row><Result_34>{
  &quot;ty1&quot;: {
+  &quot;fieldType&quot;: 4,
+  &quot;length&quot;: 2
+ },
+ &quot;ty2&quot;: {
   &quot;fieldType&quot;: 257,
   &quot;length&quot;: 8
  },
- &quot;ty2&quot;: {
+ &quot;ty3&quot;: {
   &quot;fieldType&quot;: 1067,
   &quot;length&quot;: 0,
-  &quot;filterField&quot;: 0,
   &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;=[4]&quot;,
+  &quot;filter&quot;: &quot;0=[&apos;a &apos;],[&apos;b &apos;]&quot;,
   &quot;fields&quot;: [
    {
     &quot;name&quot;: &quot;extra&quot;,
-    &quot;type&quot;: &quot;ty1&quot;,
+    &quot;type&quot;: &quot;ty2&quot;,
     &quot;flags&quot;: 257
    }
   ]
  },
  &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 8,
+ &quot;length&quot;: 2,
  &quot;fields&quot;: [
   {
    &quot;name&quot;: &quot;id&quot;,
    &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 257
+   &quot;flags&quot;: 4
   },
   {
-   &quot;type&quot;: &quot;ty2&quot;,
+   &quot;type&quot;: &quot;ty3&quot;,
    &quot;flags&quot;: 1067
   }
  ]
 }</Result_34></Row>
 </Dataset>
 <Dataset name='Result 35'>
- <Row><Result_35>{
- &quot;ty1&quot;: {
-  &quot;fieldType&quot;: 257,
-  &quot;length&quot;: 8
- },
- &quot;ty2&quot;: {
-  &quot;fieldType&quot;: 1067,
-  &quot;length&quot;: 0,
-  &quot;filterField&quot;: 0,
-  &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;=[4]&quot;,
-  &quot;fields&quot;: [
-   {
-    &quot;name&quot;: &quot;extra&quot;,
-    &quot;type&quot;: &quot;ty1&quot;,
-    &quot;flags&quot;: 257
-   }
-  ]
- },
- &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 8,
- &quot;fields&quot;: [
-  {
-   &quot;name&quot;: &quot;id&quot;,
-   &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 257
-  },
-  {
-   &quot;type&quot;: &quot;ty2&quot;,
-   &quot;flags&quot;: 1067
-  }
- ]
-}</Result_35></Row>
+ <Row><Result_35>true</Result_35></Row>
 </Dataset>
 <Dataset name='Result 36'>
  <Row><Result_36>true</Result_36></Row>
@@ -933,33 +707,36 @@
 <Dataset name='Result 37'>
  <Row><Result_37>{
  &quot;ty1&quot;: {
+  &quot;fieldType&quot;: 4,
+  &quot;length&quot;: 2
+ },
+ &quot;ty2&quot;: {
   &quot;fieldType&quot;: 257,
   &quot;length&quot;: 8
  },
- &quot;ty2&quot;: {
+ &quot;ty3&quot;: {
   &quot;fieldType&quot;: 1067,
   &quot;length&quot;: 0,
-  &quot;filterField&quot;: 0,
   &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;=(4,10),[200,250]&quot;,
+  &quot;filter&quot;: &quot;0=(&apos;ax&apos;,&apos;bx&apos;],(&apos;dx&apos;,&apos;ex&apos;]&quot;,
   &quot;fields&quot;: [
    {
     &quot;name&quot;: &quot;extra&quot;,
-    &quot;type&quot;: &quot;ty1&quot;,
+    &quot;type&quot;: &quot;ty2&quot;,
     &quot;flags&quot;: 257
    }
   ]
  },
  &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 8,
+ &quot;length&quot;: 2,
  &quot;fields&quot;: [
   {
    &quot;name&quot;: &quot;id&quot;,
    &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 257
+   &quot;flags&quot;: 4
   },
   {
-   &quot;type&quot;: &quot;ty2&quot;,
+   &quot;type&quot;: &quot;ty3&quot;,
    &quot;flags&quot;: 1067
   }
  ]
@@ -968,15 +745,140 @@
 <Dataset name='Result 38'>
  <Row><Result_38>{
  &quot;ty1&quot;: {
+  &quot;fieldType&quot;: 4,
+  &quot;length&quot;: 2
+ },
+ &quot;ty2&quot;: {
+  &quot;fieldType&quot;: 257,
+  &quot;length&quot;: 8
+ },
+ &quot;ty3&quot;: {
+  &quot;fieldType&quot;: 1067,
+  &quot;length&quot;: 0,
+  &quot;filterType&quot;: &quot;ty1&quot;,
+  &quot;filter&quot;: &quot;0=(&apos;ax&apos;,&apos;bx&apos;],(&apos;dx&apos;,&apos;ex&apos;]&quot;,
+  &quot;fields&quot;: [
+   {
+    &quot;name&quot;: &quot;extra&quot;,
+    &quot;type&quot;: &quot;ty2&quot;,
+    &quot;flags&quot;: 257
+   }
+  ]
+ },
+ &quot;fieldType&quot;: 1037,
+ &quot;length&quot;: 2,
+ &quot;fields&quot;: [
+  {
+   &quot;name&quot;: &quot;id&quot;,
+   &quot;type&quot;: &quot;ty1&quot;,
+   &quot;flags&quot;: 4
+  },
+  {
+   &quot;type&quot;: &quot;ty3&quot;,
+   &quot;flags&quot;: 1067
+  }
+ ]
+}</Result_38></Row>
+</Dataset>
+<Dataset name='Result 39'>
+ <Row><Result_39>true</Result_39></Row>
+</Dataset>
+<Dataset name='Result 40'>
+ <Row><Result_40>true</Result_40></Row>
+</Dataset>
+<Dataset name='Result 41'>
+ <Row><Result_41>{
+ &quot;ty1&quot;: {
+  &quot;fieldType&quot;: 4,
+  &quot;length&quot;: 2
+ },
+ &quot;ty2&quot;: {
+  &quot;fieldType&quot;: 257,
+  &quot;length&quot;: 8
+ },
+ &quot;ty3&quot;: {
+  &quot;fieldType&quot;: 1067,
+  &quot;length&quot;: 0,
+  &quot;filterType&quot;: &quot;ty1&quot;,
+  &quot;filter&quot;: &quot;0=[&apos;a &apos;],[&apos;b &apos;]&quot;,
+  &quot;fields&quot;: [
+   {
+    &quot;name&quot;: &quot;extra&quot;,
+    &quot;type&quot;: &quot;ty2&quot;,
+    &quot;flags&quot;: 257
+   }
+  ]
+ },
+ &quot;fieldType&quot;: 1037,
+ &quot;length&quot;: 2,
+ &quot;fields&quot;: [
+  {
+   &quot;name&quot;: &quot;id&quot;,
+   &quot;type&quot;: &quot;ty1&quot;,
+   &quot;flags&quot;: 4
+  },
+  {
+   &quot;type&quot;: &quot;ty3&quot;,
+   &quot;flags&quot;: 1067
+  }
+ ]
+}</Result_41></Row>
+</Dataset>
+<Dataset name='Result 42'>
+ <Row><Result_42>{
+ &quot;ty1&quot;: {
+  &quot;fieldType&quot;: 4,
+  &quot;length&quot;: 2
+ },
+ &quot;ty2&quot;: {
+  &quot;fieldType&quot;: 257,
+  &quot;length&quot;: 8
+ },
+ &quot;ty3&quot;: {
+  &quot;fieldType&quot;: 1067,
+  &quot;length&quot;: 0,
+  &quot;filterType&quot;: &quot;ty1&quot;,
+  &quot;filter&quot;: &quot;0=[&apos;a &apos;],[&apos;b &apos;]&quot;,
+  &quot;fields&quot;: [
+   {
+    &quot;name&quot;: &quot;extra&quot;,
+    &quot;type&quot;: &quot;ty2&quot;,
+    &quot;flags&quot;: 257
+   }
+  ]
+ },
+ &quot;fieldType&quot;: 1037,
+ &quot;length&quot;: 2,
+ &quot;fields&quot;: [
+  {
+   &quot;name&quot;: &quot;id&quot;,
+   &quot;type&quot;: &quot;ty1&quot;,
+   &quot;flags&quot;: 4
+  },
+  {
+   &quot;type&quot;: &quot;ty3&quot;,
+   &quot;flags&quot;: 1067
+  }
+ ]
+}</Result_42></Row>
+</Dataset>
+<Dataset name='Result 43'>
+ <Row><Result_43>true</Result_43></Row>
+</Dataset>
+<Dataset name='Result 44'>
+ <Row><Result_44>true</Result_44></Row>
+</Dataset>
+<Dataset name='Result 45'>
+ <Row><Result_45>{
+ &quot;ty1&quot;: {
   &quot;fieldType&quot;: 257,
   &quot;length&quot;: 8
  },
  &quot;ty2&quot;: {
   &quot;fieldType&quot;: 1067,
   &quot;length&quot;: 0,
-  &quot;filterField&quot;: 0,
   &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;=(4,10),[200,250]&quot;,
+  &quot;filter&quot;: &quot;0=[4]&quot;,
   &quot;fields&quot;: [
    {
     &quot;name&quot;: &quot;extra&quot;,
@@ -998,8 +900,119 @@
    &quot;flags&quot;: 1067
   }
  ]
-}</Result_38></Row>
+}</Result_45></Row>
 </Dataset>
-<Dataset name='Result 39'>
- <Row><Result_39>true</Result_39></Row>
+<Dataset name='Result 46'>
+ <Row><Result_46>{
+ &quot;ty1&quot;: {
+  &quot;fieldType&quot;: 257,
+  &quot;length&quot;: 8
+ },
+ &quot;ty2&quot;: {
+  &quot;fieldType&quot;: 1067,
+  &quot;length&quot;: 0,
+  &quot;filterType&quot;: &quot;ty1&quot;,
+  &quot;filter&quot;: &quot;0=[4]&quot;,
+  &quot;fields&quot;: [
+   {
+    &quot;name&quot;: &quot;extra&quot;,
+    &quot;type&quot;: &quot;ty1&quot;,
+    &quot;flags&quot;: 257
+   }
+  ]
+ },
+ &quot;fieldType&quot;: 1037,
+ &quot;length&quot;: 8,
+ &quot;fields&quot;: [
+  {
+   &quot;name&quot;: &quot;id&quot;,
+   &quot;type&quot;: &quot;ty1&quot;,
+   &quot;flags&quot;: 257
+  },
+  {
+   &quot;type&quot;: &quot;ty2&quot;,
+   &quot;flags&quot;: 1067
+  }
+ ]
+}</Result_46></Row>
+</Dataset>
+<Dataset name='Result 47'>
+ <Row><Result_47>true</Result_47></Row>
+</Dataset>
+<Dataset name='Result 48'>
+ <Row><Result_48>true</Result_48></Row>
+</Dataset>
+<Dataset name='Result 49'>
+ <Row><Result_49>{
+ &quot;ty1&quot;: {
+  &quot;fieldType&quot;: 257,
+  &quot;length&quot;: 8
+ },
+ &quot;ty2&quot;: {
+  &quot;fieldType&quot;: 1067,
+  &quot;length&quot;: 0,
+  &quot;filterType&quot;: &quot;ty1&quot;,
+  &quot;filter&quot;: &quot;0=(4,10),[200,250]&quot;,
+  &quot;fields&quot;: [
+   {
+    &quot;name&quot;: &quot;extra&quot;,
+    &quot;type&quot;: &quot;ty1&quot;,
+    &quot;flags&quot;: 257
+   }
+  ]
+ },
+ &quot;fieldType&quot;: 1037,
+ &quot;length&quot;: 8,
+ &quot;fields&quot;: [
+  {
+   &quot;name&quot;: &quot;id&quot;,
+   &quot;type&quot;: &quot;ty1&quot;,
+   &quot;flags&quot;: 257
+  },
+  {
+   &quot;type&quot;: &quot;ty2&quot;,
+   &quot;flags&quot;: 1067
+  }
+ ]
+}</Result_49></Row>
+</Dataset>
+<Dataset name='Result 50'>
+ <Row><Result_50>{
+ &quot;ty1&quot;: {
+  &quot;fieldType&quot;: 257,
+  &quot;length&quot;: 8
+ },
+ &quot;ty2&quot;: {
+  &quot;fieldType&quot;: 1067,
+  &quot;length&quot;: 0,
+  &quot;filterType&quot;: &quot;ty1&quot;,
+  &quot;filter&quot;: &quot;0=(4,10),[200,250]&quot;,
+  &quot;fields&quot;: [
+   {
+    &quot;name&quot;: &quot;extra&quot;,
+    &quot;type&quot;: &quot;ty1&quot;,
+    &quot;flags&quot;: 257
+   }
+  ]
+ },
+ &quot;fieldType&quot;: 1037,
+ &quot;length&quot;: 8,
+ &quot;fields&quot;: [
+  {
+   &quot;name&quot;: &quot;id&quot;,
+   &quot;type&quot;: &quot;ty1&quot;,
+   &quot;flags&quot;: 257
+  },
+  {
+   &quot;type&quot;: &quot;ty2&quot;,
+   &quot;flags&quot;: 1067
+  }
+ ]
+}</Result_50></Row>
+</Dataset>
+<Dataset name='Result 51'>
+ <Row><Result_51>true</Result_51></Row>
+</Dataset>
+<Dataset name='Result 52'>
+ <Row><Result_52>true</Result_52></Row>
 </Dataset>

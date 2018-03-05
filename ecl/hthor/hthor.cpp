@@ -518,7 +518,7 @@ void CHThorDiskWriteActivity::open()
     serializedOutputMeta.set(input->queryOutputMeta()->querySerializedDiskMeta());//returns outputMeta if serialization not needed
 
     Linked<IRecordSize> groupedMeta = input->queryOutputMeta()->querySerializedDiskMeta();
-    if(grouped)
+    if (grouped)
         groupedMeta.setown(createDeltaRecordSize(groupedMeta, +1));
     blockcompressed = checkIsCompressed(helper.getFlags(), serializedOutputMeta.getFixedSize(), grouped);//TDWnewcompress for new compression, else check for row compression
     void *ekey;
@@ -526,7 +526,8 @@ void CHThorDiskWriteActivity::open()
     helper.getEncryptKey(ekeylen,ekey);
     encrypted = false;
     Owned<ICompressor> ecomp;
-    if (ekeylen!=0) {
+    if (ekeylen!=0)
+    {
         ecomp.setown(createAESCompressor256(ekeylen,ekey));
         memset(ekey,0,ekeylen);
         rtlFree(ekey);
@@ -547,9 +548,9 @@ void CHThorDiskWriteActivity::open()
         diskout->seek(0, IFSend);
 
     unsigned rwFlags = rw_autoflush;
-    if(grouped)
+    if (grouped)
         rwFlags |= rw_grouped;
-    if(!(helper.getFlags() & TDRnocrccheck))
+    if (!(helper.getFlags() & TDRnocrccheck))
         rwFlags |= rw_crc;
     IExtRowWriter * writer = createRowWriter(diskout, rowIf, rwFlags);
     outSeq.setown(writer);
@@ -8009,7 +8010,6 @@ void CHThorDiskReadBaseActivity::ready()
     CHThorActivityBase::ready(); 
 
     grouped = false;
-    recordsize = 0;
     fixedDiskRecordSize = 0;
     eofseen = false;
     opened = false;
@@ -8097,12 +8097,12 @@ void CHThorDiskReadBaseActivity::resolve()
 
 void CHThorDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
 {
-    if(fileDesc)
+    if (fileDesc)
     {
         if (!agent.queryResolveFilesLocally())
         {
             grouped = fileDesc->isGrouped();
-            if(grouped != ((helper.getFlags() & TDXgrouped) != 0))
+            if (grouped != ((helper.getFlags() & TDXgrouped) != 0))
             {
                 StringBuffer msg;
                 msg.append("DFS and code generated group info. differs: DFS(").append(grouped ? "grouped" : "ungrouped").append("), CodeGen(").append(grouped ? "ungrouped" : "grouped").append("), using DFS info");
@@ -8119,25 +8119,14 @@ void CHThorDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
     }
 
     actualDiskMeta.set(helper.queryDiskRecordSize()->querySerializedDiskMeta());
-    if (grouped)
-        actualDiskMeta.setown(new CSuffixedOutputMeta(+1, actualDiskMeta));
-    if (outputMeta.isFixedSize())
-    {
-        recordsize = outputMeta.getFixedSize();
-        if (grouped)
-            recordsize++;
-    }
-    else
-        recordsize = 0;
     calcFixedDiskRecordSize();
-
-    if(fileDesc)
+    if (fileDesc)
     {
         compressed = fileDesc->isCompressed(&blockcompressed); //try new decompression, fall back to old unless marked as block
-        if(fixedDiskRecordSize)
+        if (fixedDiskRecordSize)
         {
             size32_t dfsSize = fileDesc->queryProperties().getPropInt("@recordSize");
-            if(!((dfsSize == 0) || (dfsSize == fixedDiskRecordSize) || (grouped && (dfsSize+1 == fixedDiskRecordSize)))) //third option for backwards compatibility, as hthor used to publish @recordSize not including the grouping byte
+            if (!((dfsSize == 0) || (dfsSize == fixedDiskRecordSize) || (grouped && (dfsSize+1 == fixedDiskRecordSize)))) //third option for backwards compatibility, as hthor used to publish @recordSize not including the grouping byte
                 throw MakeStringException(0, "Published record size %d for file %s does not match coded record size %d", dfsSize, mangledHelperFileName.str(), fixedDiskRecordSize);
             if (!compressed && (((helper.getFlags() & TDXcompress) != 0) && (fixedDiskRecordSize >= MIN_ROWCOMPRESS_RECSIZE)))
             {
@@ -8196,11 +8185,21 @@ void CHThorDiskReadBaseActivity::closepart()
     inputfile.clear();
 }
 
+
+bool CHThorDiskReadBaseActivity::forceRemote(const RemoteFilename &rfn) const
+{
+    StringBuffer localPath;
+    rfn.getLocalPath(localPath);
+    return testForceRemote(localPath);
+}
+
 bool CHThorDiskReadBaseActivity::openNext()
 {
     offsetOfPart += localOffset;
     localOffset = 0;
     saveOpenExc.clear();
+    actualFilter.clear();
+    unsigned projectedCrc = helper.getFormatCrc();
 
     if (dfsParts||ldFile)
     {
@@ -8226,58 +8225,22 @@ bool CHThorDiskReadBaseActivity::openNext()
                 }
             }
 
+            unsigned actualCrc = 0;
             if (dFile)
             {
                 IPropertyTree &props = dFile->queryAttributes();
-                unsigned thisFormatCrc = props.getPropInt("@formatCrc");
-                if (thisFormatCrc != lastFormatCrc)
-                {
-                    translator.clear();
-                    lastFormatCrc = thisFormatCrc;
-                    if (thisFormatCrc != helper.getFormatCrc() && helper.getFormatCrc() && (helper.getFlags() & TDRnocrccheck) == 0)
-                    {
-                        actualDiskMeta.setown(getDaliLayoutInfo(props));
-                        if (grouped)
-                            actualDiskMeta.setown(new CSuffixedOutputMeta(+1, actualDiskMeta));
-                        if (actualDiskMeta)
-                        {
-                            translator.setown(createRecordTranslator(projectedDiskMeta->queryRecordAccessor(true), actualDiskMeta->queryRecordAccessor(true)));
-                            if (translator->needsTranslate())
-                            {
-                                keyedTranslator.setown(createKeyTranslator(actualDiskMeta->queryRecordAccessor(true), expectedDiskMeta->queryRecordAccessor(true)));
-                                if (translator->canTranslate())
-                                {
-                                    if (agent.rltEnabled()==RecordTranslationMode::None)
-                                    {
-    #ifdef _DEBUG
-                                        translator->describe();
-    #endif
-                                        throw MakeStringException(0, "Translatable key layout mismatch reading file %s but translation disabled", logicalFileName.str());
-                                    }
-                                }
-                                else
-                                    throw MakeStringException(0, "Untranslatable key layout mismatch reading file %s", logicalFileName.str());
-                            }
-                            else
-                                translator.clear();  // MORE - could question why the format appeared to mismatch
-                        }
-                        else
-                            throw MakeStringException(0, "Untranslatable key layout mismatch reading file %s - key layout information not found", logicalFileName.str());
-                    }
-                    else
-                    {
-                        actualDiskMeta.set(helper.queryDiskRecordSize()->querySerializedDiskMeta());
-                        if (grouped)
-                            actualDiskMeta.setown(new CSuffixedOutputMeta(+1, actualDiskMeta));
-                    }
-                }
+                actualDiskMeta.setown(getDaliLayoutInfo(props));
+                actualCrc = props.getPropInt("@formatCrc");
             }
+            if (!actualDiskMeta)
+                actualDiskMeta.set(expectedDiskMeta->querySerializedDiskMeta());
+            keyedTranslator.setown(createKeyTranslator(actualDiskMeta->queryRecordAccessor(true), expectedDiskMeta->queryRecordAccessor(true)));
+            if (keyedTranslator && keyedTranslator->needsTranslate())
+                keyedTranslator->translate(actualFilter, fieldFilters);
             else
-            {
-                translator.clear();
-                keyedTranslator.clear();
-            }
-            calcFixedDiskRecordSize();
+                actualFilter.appendFilters(fieldFilters);
+
+            bool canSerializeTypeInfo = actualDiskMeta->queryTypeInfo()->canSerialize() && projectedDiskMeta->queryTypeInfo()->canSerialize();
             for (unsigned copy=0; copy < numCopies; copy++)
             {
                 RemoteFilename rfilename;
@@ -8289,22 +8252,42 @@ bool CHThorDiskReadBaseActivity::openNext()
                 filelist.append('\n').append(file);
                 try
                 {
-                    inputfile.setown(createIFile(rfilename));   
-                    if(compressed)
+                    inputfile.setown(createIFile(rfilename));
+
+                    // NB: only binary handles can be remotely processed by dafilesrv at the moment
+                    if ((rt_binary != readType) || !canSerializeTypeInfo || (rfilename.isLocal() && !forceRemote(rfilename)))
                     {
-                        Owned<IExpander> eexp;
-                        if (encryptionkey.length()!=0) 
-                            eexp.setown(createAESExpander256((size32_t)encryptionkey.length(),encryptionkey.bufferBase()));
-                        inputfileio.setown(createCompressedFileReader(inputfile,eexp));
-                        if(!inputfileio && !blockcompressed) //fall back to old decompression, unless dfs marked as new
+                        if (compressed)
                         {
-                            inputfileio.setown(inputfile->open(IFOread));
-                            if(inputfileio)
-                                rowcompressed = true;
+                            Owned<IExpander> eexp;
+                            if (encryptionkey.length()!=0)
+                                eexp.setown(createAESExpander256((size32_t)encryptionkey.length(),encryptionkey.bufferBase()));
+                            inputfileio.setown(createCompressedFileReader(inputfile,eexp));
+                            if(!inputfileio && !blockcompressed) //fall back to old decompression, unless dfs marked as new
+                            {
+                                inputfileio.setown(inputfile->open(IFOread));
+                                if(inputfileio)
+                                    rowcompressed = true;
+                            }
                         }
+                        else
+                            inputfileio.setown(inputfile->open(IFOread));
                     }
                     else
-                        inputfileio.setown(inputfile->open(IFOread));
+                    {
+                        // Open a stream from remote file, having passed actual, expected, projected, and filters to it
+                        SocketEndpoint ep(rfilename.queryEndpoint());
+                        setDafsEndpointPort(ep);
+                        StringBuffer path;
+                        rfilename.getLocalPath(path);
+                        inputfileio.setown(createRemoteFilteredFile(ep, path, actualDiskMeta, projectedDiskMeta, actualFilter, compressed, grouped));
+                        if (inputfileio)
+                        {
+                            actualDiskMeta.set(projectedDiskMeta);
+                            expectedDiskMeta = projectedDiskMeta;
+                            actualFilter.clear();
+                        }
+                    }
                     if (inputfileio)
                         break;
                 }
@@ -8318,6 +8301,29 @@ bool CHThorDiskReadBaseActivity::openNext()
                 closepart();
             }
 
+            if (projectedCrc && actualCrc != projectedCrc)
+                translator.setown(createRecordTranslator(projectedDiskMeta->queryRecordAccessor(true), actualDiskMeta->queryRecordAccessor(true)));
+            if (translator && translator->needsTranslate())
+            {
+                if (translator->canTranslate())
+                {
+                    if (agent.rltEnabled()==RecordTranslationMode::None)
+                    {
+#ifdef _DEBUG
+                        translator->describe();
+#endif
+                        throw MakeStringException(0, "Translatable key layout mismatch reading file %s but translation disabled", logicalFileName.str());
+                    }
+                }
+                else
+                    throw MakeStringException(0, "Untranslatable key layout mismatch reading file %s", logicalFileName.str());
+            }
+            else
+            {
+                translator.clear();
+                keyedTranslator.clear();
+            }
+            calcFixedDiskRecordSize();
             if (dfsParts)
                 dfsParts->next();
             partNum++;
@@ -8405,7 +8411,7 @@ bool CHThorDiskReadBaseActivity::checkOpenedFile(char const * filename, char con
     saveOpenExc.clear();
     if (filesize)
     {
-        if (!compressed && fixedDiskRecordSize && (filesize % fixedDiskRecordSize) != 0)
+        if (!compressed && fixedDiskRecordSize && ((offset_t)-1 != filesize) && (filesize % fixedDiskRecordSize) != 0)
         {
             StringBuffer s;
             s.append("File ").append(filename).append(" size is ").append(filesize).append(" which is not a multiple of ").append(fixedDiskRecordSize);
@@ -8442,14 +8448,17 @@ CHThorBinaryDiskReadBase::CHThorBinaryDiskReadBase(IAgentContext &_agent, unsign
 : CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind),
   segHelper(_segHelper), prefetchBuffer(NULL)
 {
+    readType = rt_binary;
 }
 
 void CHThorBinaryDiskReadBase::calcFixedDiskRecordSize()
 {
     fixedDiskRecordSize = actualDiskMeta->getFixedSize();
+    if (fixedDiskRecordSize && grouped)
+        fixedDiskRecordSize += 1;
 }
 
-void CHThorBinaryDiskReadBase::append(FFoption option, IFieldFilter * filter)
+void CHThorBinaryDiskReadBase::append(FFoption option, const IFieldFilter * filter)
 {
     if (filter->isWild())
         filter->Release();
@@ -8475,12 +8484,6 @@ bool CHThorBinaryDiskReadBase::openNext()
             PROGLOG("Disk read falling back to legacy decompression routine");
             //in.setown(createRowCompReadSeq(*inputfileiostream, 0, fixedDiskRecordSize));
         }
-        actualFilter.clear();
-        if (keyedTranslator)
-            keyedTranslator->translate(actualFilter, fieldFilters);
-        else
-            actualFilter.appendFilters(fieldFilters);
-
         //Only one of these will actually be used.
         prefetcher.setown(actualDiskMeta->createDiskPrefetcher());
         deserializer.setown(actualDiskMeta->createDiskDeserializer(agent.queryCodeContext(), activityId));
@@ -8569,7 +8572,6 @@ const void *CHThorDiskReadActivity::nextRow()
                     prefetcher->readAhead(prefetchBuffer);
                     const byte * next = prefetchBuffer.queryRow();
                     size32_t sizeRead = prefetchBuffer.queryRowSize();
-                    bool eog = grouped && next[sizeRead-1];
                     size32_t thisSize;
                     if (segMonitorsMatch(next)) // NOTE - keyed fields are checked pre-translation
                     {
@@ -8584,6 +8586,9 @@ const void *CHThorDiskReadActivity::nextRow()
                     }
                     else
                         thisSize = 0;
+                    bool eog = false;
+                    if (grouped)
+                        prefetchBuffer.read(sizeof(eog), &eog);
 
                     prefetchBuffer.finishedRow();
 
@@ -8592,7 +8597,7 @@ const void *CHThorDiskReadActivity::nextRow()
                     {
                         if (grouped)
                             eogPending = eog;
-                        if ((processed - initialProcessed) >=limit)
+                        if ((processed - initialProcessed) >= limit)
                         {
                             outBuilder.clear();
                             if ( agent.queryCodeContext()->queryDebugContext())
@@ -9000,6 +9005,7 @@ const void *CHThorDiskGroupAggregateActivity::nextRow()
 CHThorCsvReadActivity::CHThorCsvReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCsvReadArg &_arg, ThorActivityKind _kind) : CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
 {
     maxRowSize = agent.queryWorkUnit()->getDebugValueInt(OPT_MAXCSVROWSIZE, defaultMaxCsvRowSize) * 1024 * 1024;
+    readType = rt_csv;
 }
 
 CHThorCsvReadActivity::~CHThorCsvReadActivity()
@@ -9139,6 +9145,7 @@ void CHThorCsvReadActivity::checkOpenNext()
 
 CHThorXmlReadActivity::CHThorXmlReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlReadArg &_arg, ThorActivityKind _kind) : CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
 {
+    readType = rt_xml;
 }
 
 void CHThorXmlReadActivity::ready()

@@ -28,12 +28,15 @@ BITMASK_ENUM(TransitionMask);
  * The RowFilter class represents a multiple-field filter of a row.
  */
 
+//MORE: This should probably have an RtlRecord member.
 class ECLRTL_API RowFilter
 {
 public:
     void addFilter(const IFieldFilter & filter);
+    void addFilter(const RtlRecord & record, const char * filter);
     bool matches(const RtlRow & row) const;
 
+    void createSegmentMonitors(IIndexReadContext *irc);
     void extractKeyFilter(const RtlRecord & record, IConstArrayOf<IFieldFilter> & keyFilters) const;
     void extractMemKeyFilter(const RtlRecord & record, const UnsignedArray &sortOrder, IConstArrayOf<IFieldFilter> & keyFilters) const;
     unsigned numFilterFields() const { return filters.ordinality(); }

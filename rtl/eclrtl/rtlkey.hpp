@@ -77,6 +77,7 @@ ECLRTL_API int memcmplittleunsigned(const void *l, const void *r, unsigned size)
 ECLRTL_API int memcmplittlesigned(const void *l, const void *r, unsigned size);
 
 class RtlRow;
+class RtlRecord;
 
 interface IKeySegmentMonitor : public IInterface
 {
@@ -142,7 +143,7 @@ public:
     virtual void append(IKeySegmentMonitor *segment) = 0;
     virtual unsigned ordinality() const = 0;
     virtual IKeySegmentMonitor *item(unsigned idx) const = 0;
-    virtual void append(FFoption option, IFieldFilter * filter) = 0;
+    virtual void append(FFoption option, const IFieldFilter * filter) = 0;
 };
 
 ECLRTL_API IStringSet *createRtlStringSet(size32_t size);
@@ -321,8 +322,9 @@ extern ECLRTL_API IFieldFilter * createWildFieldFilter(unsigned fieldId, const R
 extern ECLRTL_API IFieldFilter * createSubStringFieldFilter(unsigned fieldId, size32_t subLength, IValueSet * values);
 
 extern ECLRTL_API IFieldFilter * deserializeFieldFilter(unsigned fieldId, const RtlTypeInfo & type, const char * src);
+extern ECLRTL_API IFieldFilter * deserializeFieldFilter(const RtlRecord & record, const char * src);
 extern ECLRTL_API IFieldFilter * deserializeFieldFilter(unsigned fieldId, const RtlTypeInfo & type, MemoryBuffer & in);
-
+extern ECLRTL_API void readFieldFromFieldFilter(StringBuffer & fieldText, const char * & src);
 
 
 #endif

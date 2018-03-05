@@ -27,7 +27,6 @@
 #define REMOTE_API DECL_IMPORT
 #endif
 
-#define RFEnoerror      0
 
 enum ThrottleClass
 {
@@ -60,7 +59,7 @@ interface IRemoteFileServer : extends IInterface
     virtual StringBuffer &getStats(StringBuffer &stats, bool reset) = 0;
 };
 
-#define FILESRV_VERSION 21 // don't forget VERSTRING in sockfile.cpp
+#define FILESRV_VERSION 22 // don't forget VERSTRING in sockfile.cpp
 
 interface IKeyManager;
 interface IDelayedFile;
@@ -73,12 +72,16 @@ extern REMOTE_API IRemoteFileServer * createRemoteFileServer(unsigned maxThreads
 extern REMOTE_API int setDafsTrace(ISocket * socket,byte flags);
 extern REMOTE_API int setDafsThrottleLimit(ISocket * socket, ThrottleClass throttleClass, unsigned throttleLimit, unsigned throttleDelayMs, unsigned throttleCPULimit, unsigned queueLimit, StringBuffer *errMsg=NULL);
 extern REMOTE_API bool enableDafsAuthentication(bool on);
-extern void remoteExtractBlobElements(const SocketEndpoint &ep, const char * prefix, const char * filename, ExtractedBlobArray & extracted);
-extern int getDafsInfo(ISocket * socket, unsigned level, StringBuffer &retstr);
-extern void setDafsEndpointPort(SocketEndpoint &ep);
-extern void setDafsLocalMountRedirect(const IpAddress &ip,const char *dir,const char *mountdir);
+extern REMOTE_API void remoteExtractBlobElements(const SocketEndpoint &ep, const char * prefix, const char * filename, ExtractedBlobArray & extracted);
+extern REMOTE_API int getDafsInfo(ISocket * socket, unsigned level, StringBuffer &retstr);
+extern REMOTE_API void setDafsEndpointPort(SocketEndpoint &ep);
+extern REMOTE_API void setDafsLocalMountRedirect(const IpAddress &ip,const char *dir,const char *mountdir);
 extern REMOTE_API ISocket *connectDafs(SocketEndpoint &ep, unsigned timeoutms); // NOTE: might alter ep.port if configured for multiple ports ...
 extern REMOTE_API ISocket *checkSocketSecure(ISocket *socket);
+class IOutputMetaData;
+class RowFilter;
+extern REMOTE_API IFileIO *createRemoteFilteredFile(SocketEndpoint &ep, const char * filename, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, bool compressed, bool grouped);
+
 
 // client only
 extern void clientSetDaliServixSocketCaching(bool set);

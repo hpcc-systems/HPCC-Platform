@@ -669,9 +669,17 @@ class ECLRTL_API MemoryBufferBuilder : public RtlRowBuilderBase
 {
 public:
     MemoryBufferBuilder(MemoryBuffer & _buffer, unsigned _minSize)
-        : buffer(_buffer), minSize(_minSize)
+        : buffer(&_buffer), minSize(_minSize)
     {
-        reserved = 0;
+    }
+
+    MemoryBufferBuilder(unsigned _minSize) : minSize(_minSize)
+    {
+    }
+
+    void setBuffer(MemoryBuffer &_buffer)
+    {
+        buffer = &_buffer;
     }
 
     virtual byte * ensureCapacity(size32_t required, const char * fieldName);
@@ -695,9 +703,9 @@ protected:
     }
 
 protected:
-    MemoryBuffer & buffer;
-    size32_t minSize;
-    size32_t reserved;
+    MemoryBuffer * buffer = nullptr;
+    size32_t minSize = 0;
+    size32_t reserved = 0;
 };
 
 class ECLRTL_API CHThorDictHelper : public IHash, public ICompare
