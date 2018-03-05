@@ -894,13 +894,6 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="ensureESPCache" type="xs:boolean" use="optional" default="false">
-                <xs:annotation>
-                    <xs:appinfo>
-                        <tooltip>If true, ESP will not be started if no ESP cache service is available.</tooltip>
-                    </xs:appinfo>
-                </xs:annotation>
-            </xs:attribute>
             <xs:attribute name="espCacheInitString" type="xs:string" use="optional">
                 <xs:annotation>
                     <xs:appinfo>

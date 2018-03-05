@@ -2225,7 +2225,7 @@ ESPresponse [exceptions_inline] WUEclDefinitionActionResponse
 // ----------------------------------------------------------------------------------
 ESPservice [
     auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
-    version("1.73"), default_client_version("1.73"),
+    version("1.73"), default_client_version("1.73"), cache_group("ESPWsWUs"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
@@ -2237,10 +2237,10 @@ ESPservice [
     ESPmethod [cache_seconds(30), resp_xsl_default("/esp/xslt/graph_gvc.xslt")]     WUGVCGraphInfo(WUGVCGraphInfoRequest, WUGVCGraphInfoResponse);
     ESPmethod [description("Stub for Ajax GVC Graph."), help(""), resp_xsl_default("/esp/xslt/GvcGraph.xslt")] GVCAjaxGraph(GVCAjaxGraphRequest, GVCAjaxGraphResponse);
     ESPmethod [cache_seconds(30), resp_xsl_default("/esp/xslt/result.xslt")]        WUResult(WUResultRequest, WUResultResponse);
-    ESPmethod [cache_seconds(30)] WUFullResult(WUFullResultRequest, WUFullResultResponse);
+    ESPmethod WUFullResult(WUFullResultRequest, WUFullResultResponse);
     ESPmethod [cache_seconds(30)] WUResultView(WUResultViewRequest, WUResultViewResponse);
     ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/wuid_jobs.xslt")]     WUJobList(WUJobListRequest, WUJobListResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/wuaction_results.xslt")] WUAction(WUActionRequest, WUActionResponse);
+    ESPmethod [clear_cache_group, resp_xsl_default("/esp/xslt/wuaction_results.xslt")] WUAction(WUActionRequest, WUActionResponse);
     ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/scheduledwus.xslt")] WUShowScheduled(WUShowScheduledRequest, WUShowScheduledResponse);
 
     ESPmethod [cache_seconds(30)] WUResultSummary(WUResultSummaryRequest, WUResultSummaryResponse);
@@ -2250,26 +2250,26 @@ ESPservice [
     ESPmethod WUClusterJobQueueLOG(WUClusterJobQueueLOGRequest, WUClusterJobQueueLOGResponse);
     ESPmethod [cache_seconds(60)] WUClusterJobXLS(WUClusterJobXLSRequest, WUClusterJobXLSResponse);
     ESPmethod [cache_seconds(60)] WUClusterJobSummaryXLS(WUClusterJobSummaryXLSRequest, WUClusterJobSummaryXLSResponse);
-    ESPmethod [auth_feature("OwnWorkunitsAccess:WRITE")] WUCreate(WUCreateRequest, WUCreateResponse);
-    ESPmethod [auth_feature("OwnWorkunitsAccess:WRITE")] WUCreateAndUpdate(WUUpdateRequest, WUUpdateResponse);
-    ESPmethod WUUpdate(WUUpdateRequest, WUUpdateResponse);
-    ESPmethod WUDelete(WUDeleteRequest, WUDeleteResponse);
-    ESPmethod WUSubmit(WUSubmitRequest, WUSubmitResponse);
-    ESPmethod WUSchedule(WUScheduleRequest, WUScheduleResponse);
-    ESPmethod WUPushEvent(WUPushEventRequest, WUPushEventResponse);
-    ESPmethod WUDeployWorkunit(WUDeployWorkunitRequest, WUDeployWorkunitResponse);
+    ESPmethod [clear_cache_group, auth_feature("OwnWorkunitsAccess:WRITE")] WUCreate(WUCreateRequest, WUCreateResponse);
+    ESPmethod [clear_cache_group, auth_feature("OwnWorkunitsAccess:WRITE")] WUCreateAndUpdate(WUUpdateRequest, WUUpdateResponse);
+    ESPmethod [clear_cache_group] WUUpdate(WUUpdateRequest, WUUpdateResponse);
+    ESPmethod [clear_cache_group] WUDelete(WUDeleteRequest, WUDeleteResponse);
+    ESPmethod [clear_cache_group] WUSubmit(WUSubmitRequest, WUSubmitResponse);
+    ESPmethod [clear_cache_group] WUSchedule(WUScheduleRequest, WUScheduleResponse);
+    ESPmethod [clear_cache_group] WUPushEvent(WUPushEventRequest, WUPushEventResponse);
+    ESPmethod [clear_cache_group] WUDeployWorkunit(WUDeployWorkunitRequest, WUDeployWorkunitResponse);
 
-    ESPmethod WUAbort(WUAbortRequest, WUAbortResponse);
-    ESPmethod WUProtect(WUProtectRequest, WUProtectResponse);
+    ESPmethod [clear_cache_group] WUAbort(WUAbortRequest, WUAbortResponse);
+    ESPmethod [clear_cache_group] WUProtect(WUProtectRequest, WUProtectResponse);
     ESPmethod [min_ver("1.70")] WURecreateQuery(WURecreateQueryRequest, WURecreateQueryResponse);
-    ESPmethod WUResubmit(WUResubmitRequest, WUResubmitResponse); //????
-    ESPmethod WURun(WURunRequest, WURunResponse);
+    ESPmethod [clear_cache_group] WUResubmit(WUResubmitRequest, WUResubmitResponse); //????
+    ESPmethod [clear_cache_group] WURun(WURunRequest, WURunResponse);
 
     ESPmethod WUExport(WUExportRequest, WUExportResponse);
     ESPmethod WUWaitCompiled(WUWaitRequest, WUWaitResponse);
     ESPmethod WUWaitComplete(WUWaitRequest, WUWaitResponse);
     ESPmethod WUSyntaxCheckECL(WUSyntaxCheckRequest, WUSyntaxCheckResponse);
-    ESPmethod WUCompileECL(WUCompileECLRequest, WUCompileECLResponse);
+    ESPmethod [clear_cache_group] WUCompileECL(WUCompileECLRequest, WUCompileECLResponse);
 
     //ESPmethod WUAction(WUActionRequest, WUActionResponse);
     ESPmethod [cache_seconds(60)]WUFile(WULogFileRequest, WULogFileResponse);
@@ -2281,26 +2281,26 @@ ESPservice [
     ESPmethod [cache_seconds(30)] WUGetDependancyTrees(WUGetDependancyTreesRequest, WUGetDependancyTreesResponse);
 
     ESPmethod [cache_seconds(60)] WUListLocalFileRequired(WUListLocalFileRequiredRequest, WUListLocalFileRequiredResponse);
-    ESPmethod WUAddLocalFileToWorkunit(WUAddLocalFileToWorkunitRequest, WUAddLocalFileToWorkunitResponse);
+    ESPmethod [clear_cache_group] WUAddLocalFileToWorkunit(WUAddLocalFileToWorkunitRequest, WUAddLocalFileToWorkunitResponse);
     ESPmethod WUCDebug(WUDebugRequest, WUDebugResponse);
 
     ESPmethod [resp_xsl_default("/esp/xslt/WUPublishWorkunit.xslt")] WUPublishWorkunit(WUPublishWorkunitRequest, WUPublishWorkunitResponse);
-    ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/WUQuerysets.xslt")] WUQuerysets(WUQuerysetsRequest, WUQuerysetsResponse);
-    ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/WUQuerysetQueries.xslt")] WUQuerysetDetails(WUQuerySetDetailsRequest, WUQuerySetDetailsResponse);
-    ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/WUQueryDetails.xslt")] WUQueryDetails(WUQueryDetailsRequest, WUQueryDetailsResponse);
+    ESPmethod [cache_group("ESPWsWUQS"), cache_seconds(60), resp_xsl_default("/esp/xslt/WUQuerysets.xslt")] WUQuerysets(WUQuerysetsRequest, WUQuerysetsResponse);
+    ESPmethod [cache_group("ESPWsWUQS"), cache_seconds(60), resp_xsl_default("/esp/xslt/WUQuerysetQueries.xslt")] WUQuerysetDetails(WUQuerySetDetailsRequest, WUQuerySetDetailsResponse);
+    ESPmethod [cache_group("ESPWsWUQS"), cache_seconds(60), resp_xsl_default("/esp/xslt/WUQueryDetails.xslt")] WUQueryDetails(WUQueryDetailsRequest, WUQueryDetailsResponse);
     ESPmethod [cache_seconds(60)] WUMultiQuerysetDetails(WUMultiQuerySetDetailsRequest, WUMultiQuerySetDetailsResponse);
-    ESPmethod [min_ver("1.71")] WUQuerysetImport(WUQuerysetImportRequest, WUQuerysetImportResponse);
-    ESPmethod [min_ver("1.71")] WUQuerysetExport(WUQuerysetExportRequest, WUQuerysetExportResponse);
-    ESPmethod WUQuerysetQueryAction(WUQuerySetQueryActionRequest, WUQuerySetQueryActionResponse);
-    ESPmethod WUQuerysetAliasAction(WUQuerySetAliasActionRequest, WUQuerySetAliasActionResponse);
-    ESPmethod WUQuerysetCopyQuery(WUQuerySetCopyQueryRequest, WUQuerySetCopyQueryResponse);
-    ESPmethod WUCopyQuerySet(WUCopyQuerySetRequest, WUCopyQuerySetResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/WUCopyLogicalFiles.xslt")] WUCopyLogicalFiles(WUCopyLogicalFilesRequest, WUCopyLogicalFilesResponse);
+    ESPmethod [clear_cache_group("ESPWsWUQS"), min_ver("1.71")] WUQuerysetImport(WUQuerysetImportRequest, WUQuerysetImportResponse);
+    ESPmethod [cache_group("ESPWsWUQS"), min_ver("1.71")] WUQuerysetExport(WUQuerysetExportRequest, WUQuerysetExportResponse);
+    ESPmethod [clear_cache_group("ESPWsWUQS")] WUQuerysetQueryAction(WUQuerySetQueryActionRequest, WUQuerySetQueryActionResponse);
+    ESPmethod [clear_cache_group("ESPWsWUQS")] WUQuerysetAliasAction(WUQuerySetAliasActionRequest, WUQuerySetAliasActionResponse);
+    ESPmethod [clear_cache_group("ESPWsWUQS")] WUQuerysetCopyQuery(WUQuerySetCopyQueryRequest, WUQuerySetCopyQueryResponse);
+    ESPmethod [clear_cache_group("ESPWsWUQS")] WUCopyQuerySet(WUCopyQuerySetRequest, WUCopyQuerySetResponse);
+    ESPmethod [clear_cache_group("ESPWsWUQS"), resp_xsl_default("/esp/xslt/WUCopyLogicalFiles.xslt")] WUCopyLogicalFiles(WUCopyLogicalFilesRequest, WUCopyLogicalFilesResponse);
     ESPmethod WUQueryConfig(WUQueryConfigRequest, WUQueryConfigResponse);
-    ESPmethod [cache_seconds(60)] WUListQueries(WUListQueriesRequest, WUListQueriesResponse);
-    ESPmethod [min_ver("1.59")] WUUpdateQueryEntry(WUUpdateQueryEntryRequest, WUUpdateQueryEntryResponse);
-    ESPmethod [cache_seconds(60)]WUQueryFiles(WUQueryFilesRequest, WUQueryFilesResponse);
-    ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/QueriesUsingFile.xslt")] WUListQueriesUsingFile(WUListQueriesUsingFileRequest, WUListQueriesUsingFileResponse);
+    ESPmethod [cache_group("ESPWsWUQS"), cache_seconds(60)] WUListQueries(WUListQueriesRequest, WUListQueriesResponse);
+    ESPmethod [clear_cache_group("ESPWsWUQS"), min_ver("1.59")] WUUpdateQueryEntry(WUUpdateQueryEntryRequest, WUUpdateQueryEntryResponse);
+    ESPmethod [cache_group("ESPWsWUQS"), cache_seconds(60)] WUQueryFiles(WUQueryFilesRequest, WUQueryFilesResponse);
+    ESPmethod [cache_group("ESPWsWUQS"), cache_seconds(60), resp_xsl_default("/esp/xslt/QueriesUsingFile.xslt")] WUListQueriesUsingFile(WUListQueriesUsingFileRequest, WUListQueriesUsingFileResponse);
     ESPmethod WUCreateZAPInfo(WUCreateZAPInfoRequest, WUCreateZAPInfoResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUZAPInfoForm.xslt")] WUGetZAPInfo(WUGetZAPInfoRequest, WUGetZAPInfoResponse);
     ESPmethod WUCheckFeatures(WUCheckFeaturesRequest, WUCheckFeaturesResponse);
@@ -2309,8 +2309,8 @@ ESPservice [
     ESPmethod [cache_seconds(60), min_ver("1.57")] WUGetArchiveFile(WUGetArchiveFileRequest, WUGetArchiveFileResponse);
     ESPmethod [cache_seconds(60), min_ver("1.61")] WUGetNumFileToCopy(WUGetNumFileToCopyRequest, WUGetNumFileToCopyResponse);
     ESPmethod [min_ver("1.71")] WUDetails(WUDetailsRequest, WUDetailsResponse);
-    ESPmethod [cache_seconds(600),min_ver("1.71")] WUDetailsMeta(WUDetailsMetaRequest, WUDetailsMetaResponse);
-    ESPmethod [min_ver("1.72")] WUEclDefinitionAction(WUEclDefinitionActionRequest, WUEclDefinitionActionResponse);
+    ESPmethod [cache_seconds(600), min_ver("1.71")] WUDetailsMeta(WUDetailsMetaRequest, WUDetailsMetaResponse);
+    ESPmethod [clear_cache_group, min_ver("1.72")] WUEclDefinitionAction(WUEclDefinitionActionRequest, WUEclDefinitionActionResponse);
 };
 
 

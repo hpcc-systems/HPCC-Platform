@@ -807,10 +807,10 @@ const char* EspHttpBinding::createESPCacheID(CHttpRequest* request, StringBuffer
     return cacheID.str();
 }
 
-bool EspHttpBinding::sendFromESPCache(CHttpRequest* request, CHttpResponse* response, const char* cacheID)
+bool EspHttpBinding::sendFromESPCache(IEspCache* cacheClient, CHttpRequest* request, CHttpResponse* response, const char* cacheID)
 {
     StringBuffer content, contentType;
-    if (!espCacheClient->readResponseCache(cacheID, content.clear(), contentType.clear()))
+    if (!cacheClient->readResponseCache(cacheID, content.clear(), contentType.clear()))
         ESPLOG(LogMax, "Failed to read from ESP Cache for %s.", request->queryServiceMethod());
     if (content.isEmpty() || contentType.isEmpty())
         return false;
@@ -822,38 +822,53 @@ bool EspHttpBinding::sendFromESPCache(CHttpRequest* request, CHttpResponse* resp
     return true;
 }
 
-void EspHttpBinding::addToESPCache(CHttpRequest* request, CHttpResponse* response, const char* cacheID)
+void EspHttpBinding::addToESPCache(IEspCache* cacheClient, CHttpRequest* request, CHttpResponse* response, const char* cacheID, unsigned cacheSeconds)
 {
-    unsigned cacheSeconds = 0;
-    const char* method = request->queryServiceMethod();
-    if (!queryCacheSeconds(method, cacheSeconds)) //no cache required for this method
-        return;
-
     StringBuffer content, contentType;
     response->getContent(content);
     response->getContentType(contentType);
-    if (espCacheClient->cacheResponse(cacheID, cacheSeconds, content.str(), contentType.str()))
-        ESPLOG(LogMax, "AddTo ESP Cache for %s.", method);
+    if (cacheClient->cacheResponse(cacheID, cacheSeconds, content.str(), contentType.str()))
+        ESPLOG(LogMax, "AddTo ESP Cache for %s.", request->queryServiceMethod());
     else
-        ESPLOG(LogMax, "Failed to add ESP Cache for %s.", method);
+        ESPLOG(LogMax, "Failed to add ESP Cache for %s.", request->queryServiceMethod());
+}
+
+void EspHttpBinding::clearCacheByGroupID(const char *ids)
+{
+    if (isEmptyString(ids))
+        return;
+
+    IEspContainer *espContainer = getESPContainer();
+    if (!espContainer->hasCacheClient())
+        return;
+
+    ESPLOG(LogMax, "clearCacheByGroupID %s.", ids);
+    StringArray errorMsgs;
+    espContainer->clearCacheByGroupID(ids, errorMsgs);
+    if (errorMsgs.length() > 0)
+    {
+        ForEachItemIn(i, errorMsgs)
+            DBGLOG("%s", errorMsgs.item(i));
+    }
 }
 
 void EspHttpBinding::handleHttpPost(CHttpRequest *request, CHttpResponse *response)
 {
     StringBuffer cacheID;
-    if (cacheMethods > 0)
+    unsigned cacheSeconds = 0;
+    IEspCache *cacheClient = nullptr;
+    IEspContext &context = *request->queryContext();
+
+    IEspContainer *espContainer = getESPContainer();
+    if (espContainer->hasCacheClient() && (cacheMethods > 0)
+        && queryCacheSeconds(request->queryServiceMethod(), cacheSeconds)) //ESP cache is needed for this method
     {
-        unsigned cacheSeconds = 0;
-        const char* method = request->queryServiceMethod();
-        if (queryCacheSeconds(method, cacheSeconds)) //ESP cache is needed for this method
-        {
-            if (!espCacheClient)
-                espCacheClient.setown(createESPCache(espCacheInitString.get()));
-            if (espCacheClient)
-                createESPCacheID(request, cacheID);
-            if (!cacheID.isEmpty() && sendFromESPCache(request, response, cacheID.str()))
-                return;
-        }
+        cacheClient = (IEspCache*) espContainer->queryCacheClient(getCacheGroupID(request->queryServiceMethod()));
+        if (cacheClient)
+            createESPCacheID(request, cacheID);
+        if (!cacheID.isEmpty() && !context.queryRequestParameters()->queryProp("dirty_cache")
+            && sendFromESPCache(cacheClient, request, response, cacheID.str()))
+            return;
     }
 
     if(request->isSoapMessage()) 
@@ -867,7 +882,7 @@ void EspHttpBinding::handleHttpPost(CHttpRequest *request, CHttpResponse *respon
         onPost(request, response);
 
     if (!cacheID.isEmpty())
-        addToESPCache(request, response, cacheID.str());
+        addToESPCache(cacheClient, request, response, cacheID.str(), cacheSeconds);
 }
 
 int EspHttpBinding::onGet(CHttpRequest* request, CHttpResponse* response)

@@ -982,6 +982,11 @@ public:
         response_ =strdup(name);
     }
 
+    bool hasMetaTag(const char *tag)
+    {
+        return findMetaTag(tags,tag)!=NULL;
+    }
+
     const char *getMetaString(const char *tag, const char *def_val)
     {
         return ::getMetaString(tags, tag, def_val);

@@ -3036,7 +3036,19 @@ int WUSchedule::run()
                             now.setNow();
                             cw.getTimeScheduled(dt);
                             if (now.compare(dt)>=0)
+                            {
                                 runWorkUnit(cw.queryWuid(), cw.queryClusterName());
+                                if (m_container->hasCacheClient())
+                                {
+                                    StringArray errorMsgs;
+                                    m_container->clearCacheByGroupID("ESPWsWUs", errorMsgs);
+                                    if (errorMsgs.length() > 0)
+                                    {
+                                        ForEachItemIn(i, errorMsgs)
+                                            DBGLOG("%s", errorMsgs.item(i));
+                                    }
+                                }
+                            }
                         }
                         catch(IException *e)
                         {

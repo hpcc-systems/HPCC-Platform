@@ -143,8 +143,8 @@ private:
     StringAttrMapping desc_map;
     StringAttrMapping help_map;
 
-    Owned<IEspCache> espCacheClient;
-    StringAttr espCacheInitString;
+    StringAttr cacheGroupID;
+    StringAttrMapping cacheMethodGroupIDs;
     unsigned cacheMethods = 0;
     MapStringTo<unsigned> cacheSecondsMap;
     MapStringTo<bool> cacheGlobalMap;
@@ -152,8 +152,8 @@ private:
     bool queryCacheSeconds(const char *method, unsigned& cacheSecond);
     bool queryCacheGlobal(const char *method);
     const char* createESPCacheID(CHttpRequest* request, StringBuffer& cacheID);
-    void addToESPCache(CHttpRequest* request, CHttpResponse* response, const char* cacheID);
-    bool sendFromESPCache(CHttpRequest* request, CHttpResponse* response, const char* cacheID);
+    void addToESPCache(IEspCache* cacheClient, CHttpRequest* request, CHttpResponse* response, const char* cacheID, unsigned cacheSecond);
+    bool sendFromESPCache(IEspCache* cacheClient, CHttpRequest* request, CHttpResponse* response, const char* cacheID);
 
     StringAttr              processName;
     StringAttr              domainName;
@@ -231,15 +231,29 @@ public:
     //starting and the WsWorkunits lib is loading.
     void setCacheTimeout(const char *method, unsigned timeoutSeconds, bool global)
     {
-        //Disable http caching until it has been rethought - it makes the system unusable.
-#if 0
         StringBuffer key(method);
         cacheSecondsMap.setValue(key.toUpperCase().str(), timeoutSeconds);
         cacheMethods++;
         if (global)
             cacheGlobalMap.setValue(key.str(), global);
-#endif
     }
+    void setCacheGroupID(const char *method, const char *id)
+    {
+        if (isEmptyString(method))
+            cacheGroupID.set(id);
+        else
+        {
+            StringBuffer key(method);
+            cacheMethodGroupIDs.setValue(key.toUpperCase().str(), id);
+        }
+    }
+    const char *getCacheGroupID(const char *method)
+    {
+        StringBuffer key(method);
+        StringAttr *idStr = cacheMethodGroupIDs.getValue(key.toUpperCase().str());
+        return idStr ? idStr->get() : cacheGroupID.get();
+    }
+    void clearCacheByGroupID(const char *id);
 
     int onGetConfig(IEspContext &context, CHttpRequest* request, CHttpResponse* response);
 
