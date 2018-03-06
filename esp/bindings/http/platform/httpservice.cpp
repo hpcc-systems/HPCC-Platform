@@ -953,7 +953,7 @@ EspAuthState CEspHttpServer::checkUserAuth()
 
     //HTTP authentication failed. Send out a login page or 401.
     bool authSession = (domainAuthType == AuthPerSessionOnly) || ((domainAuthType == AuthTypeMixed) && authorizationHeader.isEmpty());
-    return handleAuthFailed(authSession, authReq, false);
+    return handleAuthFailed(authSession, authReq, false, nullptr);
 }
 
 //Read authentication related information into EspAuthRequest.
@@ -1080,7 +1080,7 @@ EspAuthState CEspHttpServer::handleUserNameOnlyMode(EspAuthRequest& authReq)
     if (isEmptyString(userNameIn))
     {
         //Display a GetUserName (similar to login) page to get a user name.
-        askUserLogin(authReq);
+        askUserLogin(authReq, "Empty username.");
         return authFailed;
     }
 
@@ -1155,7 +1155,7 @@ EspAuthState CEspHttpServer::checkUserAuthPerSession(EspAuthRequest& authReq)
     if (authReq.isSoapPost) //from SOAP Test page
         sendMessage("Authentication failed: empty user name or password.", "text/html; charset=UTF-8");
     else //from other page
-        askUserLogin(authReq);
+        askUserLogin(authReq, "Empty username or password.");
     return authFailed;
 }
 
@@ -1204,7 +1204,7 @@ EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char*
     if (!authReq.authBinding->doAuth(authReq.ctx))
     {
         ESPLOG(LogMin, "Authentication failed for %s@%s", _userName, peer.str());
-        return handleAuthFailed(true, authReq, unlock);
+        return handleAuthFailed(true, authReq, unlock, "User authentication failed.");
     }
 
     // authenticate optional groups
@@ -1399,7 +1399,7 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
         if (authReq.isSoapPost) //from SOAP Test page
             sendMessage("Session expired. Please close this page and login again.", "text/html; charset=UTF-8");
         else
-            askUserLogin(authReq);
+            askUserLogin(authReq, "Authentication failed: invalid sessionID.");
         return authFailed;
     }
 
@@ -1507,7 +1507,7 @@ void CEspHttpServer::logoutSession(EspAuthRequest& authReq, unsigned sessionID, 
         sendMessage(nullptr, "text/html; charset=UTF-8");
 }
 
-EspAuthState CEspHttpServer::handleAuthFailed(bool sessionAuth, EspAuthRequest& authReq, bool unlock)
+EspAuthState CEspHttpServer::handleAuthFailed(bool sessionAuth, EspAuthRequest& authReq, bool unlock, const char* msg)
 {
     ISecUser *user = authReq.ctx->queryUser();
     if (user && user->getAuthenticateStatus() == AS_PASSWORD_VALID_BUT_EXPIRED)
@@ -1537,12 +1537,12 @@ EspAuthState CEspHttpServer::handleAuthFailed(bool sessionAuth, EspAuthRequest& 
     else
     {
         ESPLOG(LogMin, "Authentication failed: call askUserLogin.");
-        askUserLogin(authReq);
+        askUserLogin(authReq, msg);
     }
     return authFailed;
 }
 
-void CEspHttpServer::askUserLogin(EspAuthRequest& authReq)
+void CEspHttpServer::askUserLogin(EspAuthRequest& authReq, const char* msg)
 {
     StringBuffer urlCookie;
     readCookie(SESSION_START_URL_COOKIE, urlCookie);
@@ -1560,6 +1560,8 @@ void CEspHttpServer::askUserLogin(EspAuthRequest& authReq)
 
         addCookie(SESSION_START_URL_COOKIE, sessionStartURL.str(), 0, true); //time out when browser is closed
     }
+    if (!isEmptyString(msg))
+        addCookie(SESSION_AUTH_MSG_COOKIE, msg, 0, true); //time out when browser is closed
     m_response->redirect(*m_request, authReq.authBinding->queryLoginURL());
 }
 

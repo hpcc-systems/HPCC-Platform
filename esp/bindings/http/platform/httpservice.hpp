@@ -81,9 +81,9 @@ protected:
     EspAuthState authNewSession(EspAuthRequest& authReq, const char* _userName, const char* _password, const char* sessionStartURL, bool unlock);
     EspAuthState authExistingSession(EspAuthRequest& req, unsigned sessionID);
     void logoutSession(EspAuthRequest& authReq, unsigned sessionID, IPropertyTree* domainSessions, bool lock);
-    void askUserLogin(EspAuthRequest& authReq);
+    void askUserLogin(EspAuthRequest& authReq, const char* msg);
     EspAuthState handleUserNameOnlyMode(EspAuthRequest& authReq);
-    EspAuthState handleAuthFailed(bool sessionAuth, EspAuthRequest& authReq, bool unlock);
+    EspAuthState handleAuthFailed(bool sessionAuth, EspAuthRequest& authReq, bool unlock, const char* msg);
     EspHttpBinding* getEspHttpBinding(EspAuthRequest& req);
     bool isAuthRequiredForBinding(EspAuthRequest& req);
     void authOptionalGroups(EspAuthRequest& req);
