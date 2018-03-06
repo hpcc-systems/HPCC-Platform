@@ -225,6 +225,7 @@ define({root:
     FileSize: "File Size",
     FilesNoPackage: "Files without matching package definitions",
     FilePermission: "<b>File Permission</b>",
+    FilesWarning: "The number of files returned is too large. Only the first 100,000 files sorted by date/time modified were returned. If you wish to limit results, set a filter.",
     FilesWithUnknownSize: "Files With Unknown Size",
     FileType: "File Type",
     FileUploader: "File Uploader",

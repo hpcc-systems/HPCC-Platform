@@ -54,6 +54,7 @@ define([
         filterDropDown: null,
         filterForm: null,
         filterLabel: null,
+        filterMessage: null,
         tableContainer: null,
 
         postCreate: function (args) {
@@ -95,6 +96,11 @@ define([
 
         setValue: function (id, value) {
             registry.byId(id).set("value", value);
+            this.refreshState();
+        },
+
+        setFilterMessage: function (value) {
+            dom.byId("FilterMessage").textContent = value;
             this.refreshState();
         },
 
