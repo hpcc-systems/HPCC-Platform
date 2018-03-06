@@ -167,6 +167,8 @@ class RegressMain:
                                 nargs=1,  default = ['none'],   metavar="class[,class,...]")
         executionParser.add_argument('--handleEclccWarningFile', '-w', help="Create/overwrite/delete ECLCC warning file.",
                                 action='store_true')
+        executionParser.add_argument('--jobnamesuffix', help="Specify workunit job name suffix.", default='',
+                                metavar="suffix")
 
         parser = argparse.ArgumentParser(prog=prog, description=description,  parents=[helperParser, commonParser,  executionParser])
 
