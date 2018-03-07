@@ -1085,7 +1085,7 @@ EspAuthState CEspHttpServer::handleUserNameOnlyMode(EspAuthRequest& authReq)
     }
 
     //We just got the user name. Let's add it into cookie for future use.
-    addCookie(USER_NAME_COOKIE, userNameIn, 0, true);
+    addCookie(USER_NAME_COOKIE, userNameIn, 0, false);
 
     StringBuffer urlCookie;
     readCookie(SESSION_START_URL_COOKIE, urlCookie);
