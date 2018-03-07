@@ -62,6 +62,7 @@ Result:
 |                                 exclude subclass(es) of the suite. Default value is 'none'
 |        --handleEclccWarningFile, -w
 |                                 Create/overwrite/delete ECLCC warning file.
+|        --jobnamesuffix suffix   Specify workunit job name suffix.
 |
 
 Important!
@@ -146,6 +147,9 @@ Result:
 |                                 run subclass(es) of the suite. Default value is 'all'
 |        --excludeclass class[,class,...], -e class[,class,...]
 |                                 exclude subclass(es) of the suite. Default value is 'none'
+|        --handleEclccWarningFile, -w
+|                                 Create/overwrite/delete ECLCC warning file.
+|        --jobnamesuffix suffix   Specify workunit job name suffix.
 |        --target [target_cluster_list | all], -t [target_cluster_list | all]
 |                                 run the setup on target cluster(s). If target = 'all' then run setup on all clusters. If undefined the config 'defaultSetupClusters' value will be used.
 |
@@ -196,6 +200,9 @@ Result:
 |                                 run subclass(es) of the suite. Default value is 'all'
 |        --excludeclass class[,class,...], -e class[,class,...]
 |                                 exclude subclass(es) of the suite. Default value is 'none'
+|        --handleEclccWarningFile, -w
+|                                 Create/overwrite/delete ECLCC warning file.
+|        --jobnamesuffix suffix   Specify workunit job name suffix.
 |        --target [target_cluster_list | all], -t [target_cluster_list | all]
 |                                 run the setup on target cluster(s). If target = 'all' then run setup on all clusters. If undefined the config 'defaultSetupClusters' value will be used.
 |        --publish, -p            publish compiled query instead of run.
@@ -252,6 +259,9 @@ Result:
 |                                 run subclass(es) of the suite. Default value is 'all'
 |        --excludeclass class[,class,...], -e class[,class,...]
 |                                 exclude subclass(es) of the suite. Default value is 'none'
+|        --handleEclccWarningFile, -w
+|                                 Create/overwrite/delete ECLCC warning file.
+|        --jobnamesuffix suffix   Specify workunit job name suffix.
 |        --target [target_cluster_list | all], -t [target_cluster_list | all]
 |                                 run the setup on target cluster(s). If target = 'all' then run setup on all clusters. If undefined the config 'defaultSetupClusters' value will be used.
 |        --publish, -p            publish compiled query instead of run.

@@ -56,6 +56,7 @@ class ECLFile:
             pass
 
     def __init__(self, ecl, dir_a, dir_ex, dir_r, dir_inc, cluster, args):
+        logging.debug("%3d. ECLFile(ecl:%s, cluster:%s).", self.taskId, ecl,  cluster)
         self.dir_ec = os.path.dirname(ecl)
         self.dir_ex = dir_ex
         self.dir_r = dir_r
@@ -84,6 +85,9 @@ class ECLFile:
         self.args = args
         self.eclccWarning = ''
         self.eclccWarningChanges = ''
+        self.jobNameSuffix = args.jobnamesuffix
+        if self.jobNameSuffix != '':
+            self.jobNameSuffix = '-' + self.jobNameSuffix
 
         #If there is a --publish CL parameter then force publish this ECL file
         self.forcePublish=False
@@ -501,7 +505,10 @@ class ECLFile:
         pass
         
     def setJobname(self,  timestamp):
-        self.jobname = self.basename + self.jobnameVersion +"-"+timestamp
+        self.jobname = self.basename + self.jobnameVersion
+        if len(timestamp) > 0:
+            self.jobname += "-" + timestamp
+        self.jobname += self.jobNameSuffix
 
     def getJobname(self):
         return self.jobname
