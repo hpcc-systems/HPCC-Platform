@@ -54,7 +54,7 @@ add_library(libantlr3c SHARED IMPORTED GLOBAL)
 set_property(TARGET libantlr3c PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/antlr3c/lib/${ANTLR3c_lib})
 add_dependencies(libantlr3c antlr3c)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/antlr3c/lib/libantlr3c.so
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/antlr3c/lib/${ANTLR3c_lib}
     DESTINATION ${LIB_DIR}/external
     COMPONENT Runtime
     )
