@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-//noroxie   - roxie doesn't support spilling to disk with the results being read from a child graph, the spill file is too large for memory
 
 //generate an error if a workunit spill is used
 #option ('outputLimitMb', 1);

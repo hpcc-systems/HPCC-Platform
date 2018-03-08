@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-//noRoxie
 //nothor
 //class=file
 //class=index

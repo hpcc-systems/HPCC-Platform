@@ -1,5 +1,4 @@
 //nothor
-//noroxie
 import $.setup;
 prefix := setup.Files(false, false).IndexPrefix;
 d := dataset(

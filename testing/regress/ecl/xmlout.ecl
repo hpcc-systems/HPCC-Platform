@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-//noroxie
 import $.setup;
 prefix := setup.Files(false, false).FilePrefix;
 
