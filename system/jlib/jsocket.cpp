@@ -349,6 +349,20 @@ enum SOCKETMODE { sm_tcp_server, sm_tcp, sm_udp_server, sm_udp, sm_multicast_ser
 
 #define BADSOCKERR(err) ((err==JSE_BADF)||(err==JSE_NOTSOCK))
 
+#ifdef POLLRDHUP
+# define POLLINX (POLLIN | POLLRDHUP)
+#else
+# define POLLINX POLLIN
+#endif
+
+#ifdef _HAS_EPOLL_SUPPORT
+# ifdef EPOLLRDHUP
+#  define EPOLLINX (EPOLLIN | EPOLLRDHUP)
+# else
+#  define EPOLLINX EPOLLIN
+# endif
+#endif
+
 class CSocket: public ISocket, public CInterface
 {
 public:
@@ -1591,7 +1605,7 @@ int CSocket::wait_read(unsigned timeout)
 #else
         struct pollfd fds[1];
         fds[0].fd = sock;
-        fds[0].events = POLLIN;
+        fds[0].events = POLLINX;
         fds[0].revents = 0;
         ret = ::poll(fds, 1, timeout);
 #endif
@@ -1619,15 +1633,15 @@ int CSocket::wait_read(unsigned timeout)
                 ret = -1;
             }
 #else
-            if ( (fds[0].revents & (POLLERR | POLLNVAL)) || (!(fds[0].revents & (POLLIN | POLLHUP))) )
+            if ( (fds[0].revents & (POLLERR | POLLNVAL)) || (!(fds[0].revents & (POLLINX | POLLHUP))) )
             {
                 errno = logPollError(fds[0].revents, "wait_read");
                 ret = -1;
             }
             else
             {
-                // cannot error out on POLLHUP as there can still be data to read
-                // POLLIN | POLLHUP ok
+                // cannot error out on POLLRDHUP or POLLHUP as there can still be data to read
+                // POLLIN | POLLRDHUP | POLLHUP ok
                 break;
             }
 #endif
@@ -3944,7 +3958,7 @@ public:
 #else
         struct pollfd fds[1];
         fds[0].fd = sock;
-        fds[0].events = POLLIN | POLLOUT;
+        fds[0].events = (POLLINX | POLLOUT);
         fds[0].revents = 0;
         int rc = ::poll(fds, 1, 0);
         if (rc==0)
@@ -4658,17 +4672,17 @@ class CSocketEpollThread: public CSocketBaseThread
                 }
             }
             sidummy->handle = dummysock[0];
-            epoll_op(epfd, EPOLL_CTL_ADD, sidummy, EPOLLIN);
+            epoll_op(epfd, EPOLL_CTL_ADD, sidummy, EPOLLINX);
 #else
             if (IP6preferred)
                 dummysock = ::socket(AF_INET6, SOCK_STREAM, PF_INET6);
             else
                 dummysock = ::socket(AF_INET, SOCK_STREAM, 0);
-            // added EPOLLIN also because cannot find anywhere MSG_OOB is sent
+            // added EPOLLIN and EPOLLRDHUP also because cannot find anywhere MSG_OOB is sent
             // added here to match existing select() code above which sets
             // the except fd_set mask.
             sidummy->handle = dummysock;
-            epoll_op(epfd, EPOLL_CTL_ADD, sidummy, (EPOLLIN | EPOLLPRI));
+            epoll_op(epfd, EPOLL_CTL_ADD, sidummy, (EPOLLINX | EPOLLPRI));
 #endif
             dummysockopen = true;
         }
@@ -4869,7 +4883,7 @@ public:
         items.append(sn);
         unsigned int ep_mode = 0;
         if (mode & SELECTMODE_READ)
-            ep_mode |= EPOLLIN;
+            ep_mode |= EPOLLINX;
         if (mode & SELECTMODE_WRITE)
             ep_mode |= EPOLLOUT;
         if (mode & SELECTMODE_EXCEPT)
@@ -4993,7 +5007,7 @@ public:
                                 }
 # endif
                                 unsigned int ep_mode = 0;
-                                if (epevents[j].events & (EPOLLIN | EPOLLHUP | EPOLLERR))
+                                if (epevents[j].events & (EPOLLINX | EPOLLHUP | EPOLLERR))
                                     ep_mode |= SELECTMODE_READ;
                                 if (epevents[j].events & EPOLLOUT)
                                     ep_mode |= SELECTMODE_WRITE;
@@ -6507,7 +6521,7 @@ int wait_multiple(bool isRead,               //IN   true if wait read, false it 
 #endif
         SOCKET s = socks.item(idx);
         fds[idx].fd = s;
-        fds[idx].events = isRead ? POLLIN : POLLOUT;
+        fds[idx].events = isRead ? POLLINX : POLLOUT;
         fds[idx].revents = 0;
     }
 #endif
