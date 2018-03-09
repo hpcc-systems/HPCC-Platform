@@ -15,18 +15,13 @@
     limitations under the License.
 ############################################################################## */
 
+//nohthor
+
+//class=spray
+
 import Std.File AS FileServices;
 import $.setup;
 prefix := setup.Files(false, false).FilePrefix;
-
-// This is not an engine test, but a DFU.
-// Doesn't matter much which engine does it, so we restrict to only one
-
-//noRoxie
-//noThorLCR
-//noThor
-
-//class=spray
 
 dropzonePath := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
 
@@ -69,7 +64,7 @@ rec despray(rec l) := TRANSFORM
 end;
 
 dst1 := NOFOLD(DATASET([{'', ''}], rec));
-p1 := PROJECT(NOFOLD(dst1), despray(LEFT));
+p1 := NOTHOR(PROJECT(NOFOLD(dst1), despray(LEFT)));
 c1 := CATCH(NOFOLD(p1), ONFAIL(TRANSFORM(rec,
                                  SELF.result := 'Despray Fail',
                                  SELF.msg := FAILMESSAGE
@@ -93,7 +88,7 @@ rec desprayXml(rec l) := TRANSFORM
 end;
 
 dst2 := NOFOLD(DATASET([{'', ''}], rec));
-p2 := PROJECT(NOFOLD(dst1), desprayXml(LEFT));
+p2 := NOTHOR(PROJECT(NOFOLD(dst1), desprayXml(LEFT)));
 c2 := CATCH(NOFOLD(p2), ONFAIL(TRANSFORM(rec,
                                  SELF.result := 'Despray Fail',
                                  SELF.msg := FAILMESSAGE
@@ -112,15 +107,15 @@ DestFile := prefix + 'spray_expire.txt';
 ESPportIP := 'http://127.0.0.1:8010/FileSpray';
 
 expireDaysOut1 := 9;
-expireDaysIn1 := FileServices.GetLogicalFileAttribute(DestFile, 'expireDays');
+expireDaysIn1 := NOTHOR(FileServices.GetLogicalFileAttribute(DestFile, 'expireDays'));
 res1:=if(expireDaysIn1 = intformat(expireDaysOut1,1,0), 'Pass', 'Fail ('+intformat(expireDaysOut1,1,0)+','+expireDaysIn1+')');
 
 expireDaysOut2 := 7;
-expireDaysIn2 := FileServices.GetLogicalFileAttribute(DestFile, 'expireDays');
+expireDaysIn2 := NOTHOR(FileServices.GetLogicalFileAttribute(DestFile, 'expireDays'));
 res2:=if(expireDaysIn2 = intformat(expireDaysOut2,1,0), 'Pass', 'Fail ('+intformat(expireDaysOut2,1,0)+','+expireDaysIn2+')');
 
 expireDaysOut3 := 11;
-expireDaysIn3 := FileServices.GetLogicalFileAttribute(DestFile, 'expireDays');
+expireDaysIn3 := NOTHOR(FileServices.GetLogicalFileAttribute(DestFile, 'expireDays'));
 res3:=if(expireDaysIn3 = intformat(expireDaysOut3,2,0), 'Pass', 'Fail ('+intformat(expireDaysOut3,2,0)+','+expireDaysIn3+')');
 
 expireDaysOut4 := 13;

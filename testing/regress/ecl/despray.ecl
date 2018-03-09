@@ -15,16 +15,31 @@
     limitations under the License.
 ############################################################################# */
 
-import $.setup;
-prefix := setup.Files(false, false).IndexPrefix;
-
+// The aim of this code is to test the Dropzone Restriction feature implemented in DFU server and
+// in some cases (e.g. path points outside of the DZ) it forces the DFU server to throw exeption.
+//
+// NOTHOR() effectively forces something to be executed globally.  At the moment if a global operation
+// fails then the query fails - rather than continuing and only failing if the result of using that
+// operation causes a failure.
+// So, to avoid to abort this code is excluded from Thor target
 //nothor
 
+//nohthor
 //class=spray
 
+import std.system.thorlib;
+import $.setup;
 import Std.File AS FileServices;
 
+jlib:= SERVICE
+    unsigned8 rtlTick() : library='jlib',eclrtl,entrypoint='rtlNano';
+END;
+
+
 dropzonePath := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
+engine := thorlib.platform() : stored('thor');
+prefix := setup.Files(false, false).FilePrefix + '-' + engine + '-';
+suffix := '-' + jlib.rtlTick() : stored('startTime');
 
 unsigned VERBOSE := 0;
 
@@ -38,12 +53,10 @@ allPeople := DATASET([ {1,'Fred','Smith'},
                        {2,'Joe','Blow'},
                        {3,'Jane','Smith'}],Layout_Person);
 
-import * from lib_fileservices;
-
 SrcAddrIp := '.';
 SrcAddrLocalhost := 'localhost';
 File := 'persons';
-SourceFile := prefix + File;
+SourceFile := prefix + File + suffix;
 
 //  Outputs  ---
 setupPeople := output(allPeople, , SourceFile, OVERWRITE);
@@ -78,7 +91,9 @@ end;
 // This should be fine based on valid target file path and SrcAddIp
 DestFile1 := dropzonePath + File;
 dst2 := NOFOLD(DATASET([{SourceFile, DestFile1, SrcAddrIp, True, '', ''}], rec));
+
 p2 := PROJECT(NOFOLD(dst2), t(LEFT));
+
 c2 := CATCH(NOFOLD(p2), ONFAIL(TRANSFORM(rec,
                                  SELF.sourceFile := SourceFile,
                                  SELF.destFile := DestFile1,
@@ -96,7 +111,9 @@ c2 := CATCH(NOFOLD(p2), ONFAIL(TRANSFORM(rec,
 
 // This should fail based on 'localhost' used as source address
 dst3 := NOFOLD(DATASET([{SourceFile, DestFile1, SrcAddrLocalhost, True, '', ''}], rec));
+
 p3 := PROJECT(NOFOLD(dst3), t(LEFT));
+
 c3 := CATCH(NOFOLD(p3), ONFAIL(TRANSFORM(rec,
                                  SELF.result := 'Fail',
                                  SELF.destFile := DestFile1,
@@ -115,7 +132,9 @@ c3 := CATCH(NOFOLD(p3), ONFAIL(TRANSFORM(rec,
 // This should fail based on '/./' used in target path
 DestFile4 := dropzonePath + './' + File;
 dst4 := NOFOLD(DATASET([{SourceFile, DestFile4, SrcAddrIp, True, '', ''}], rec));
+
 p4 := PROJECT(NOFOLD(dst4), t(LEFT));
+
 c4 := CATCH(NOFOLD(p4), ONFAIL(TRANSFORM(rec,
                                  SELF.result := 'Fail',
                                  SELF.destFile := DestFile4,
@@ -134,7 +153,9 @@ c4 := CATCH(NOFOLD(p4), ONFAIL(TRANSFORM(rec,
 // This should fail based on '/../' used in target path
 DestFile5 := dropzonePath + '../' + File;
 dst5 := NOFOLD(DATASET([{SourceFile, DestFile5, SrcAddrIp, True, '', ''}], rec));
+
 p5 := PROJECT(NOFOLD(dst5), t(LEFT));
+
 c5 := CATCH(NOFOLD(p5), ONFAIL(TRANSFORM(rec,
                                  SELF.result := 'Fail',
                                  SELF.destFile := DestFile5,
@@ -154,7 +175,9 @@ c5 := CATCH(NOFOLD(p5), ONFAIL(TRANSFORM(rec,
 // not an existing dropzone path used in target file path
 DestFile6 := '/var/lib/HPCCSystems/mydropzona/' + File;
 dst6 := NOFOLD(DATASET([{SourceFile, DestFile6, SrcAddrIp, True, '', ''}], rec));
+
 p6 := PROJECT(NOFOLD(dst6), t(LEFT));
+
 c6 := CATCH(NOFOLD(p6), ONFAIL(TRANSFORM(rec,
                                  SELF.result := 'Fail',
                                  SELF.destFile := DestFile6,
@@ -174,7 +197,9 @@ c6 := CATCH(NOFOLD(p6), ONFAIL(TRANSFORM(rec,
 // try to despray out of a drop zone
 DestFile7 := '/var/lib/HPCCSystems/' + File;
 dst7 := NOFOLD(DATASET([{SourceFile, DestFile7, SrcAddrIp, True, '', ''}], rec));
+
 p7 := PROJECT(NOFOLD(dst7), t(LEFT));
+
 c7 := CATCH(NOFOLD(p7), ONFAIL(TRANSFORM(rec,
                                  SELF.result := 'Fail',
                                  SELF.destFile := DestFile7,
@@ -194,7 +219,9 @@ c7 := CATCH(NOFOLD(p7), ONFAIL(TRANSFORM(rec,
 // not an existing dropzone path used in target file path
 DestFile8 := '/var/lib/HPCCSystems/mydropzone../' + File;
 dst8 := NOFOLD(DATASET([{SourceFile, DestFile8, SrcAddrIp, True, '', ''}], rec));
+
 p8 := PROJECT(NOFOLD(dst8), t(LEFT));
+
 c8 := CATCH(NOFOLD(p8), ONFAIL(TRANSFORM(rec,
                                  SELF.result := 'Fail',
                                  SELF.destFile := DestFile8,
@@ -211,9 +238,11 @@ c8 := CATCH(NOFOLD(p8), ONFAIL(TRANSFORM(rec,
 
 
 // This should pass based on valid target file path and valid source address used
-DestFile9 := dropzonePath + 'test/' + File;
+DestFile9 := dropzonePath + 'test/' + prefix + File + suffix;
 dst9 := NOFOLD(DATASET([{SourceFile, DestFile9, SrcAddrIp, True, '', ''}], rec));
+
 p9 := PROJECT(NOFOLD(dst9), t(LEFT));
+
 c9 := CATCH(NOFOLD(p9), ONFAIL(TRANSFORM(rec,
                                  SELF.result := 'Fail',
                                  SELF.destFile := DestFile9,
@@ -234,7 +263,9 @@ c9 := CATCH(NOFOLD(p9), ONFAIL(TRANSFORM(rec,
 // This shoud fail based on the previous despray already created a file on the target path
 // and overwrite not allowed.
 dst10 := NOFOLD(DATASET([{SourceFile, DestFile9, SrcAddrIp, False, '', ''}], rec));
+
 p10 := PROJECT(NOFOLD(dst10), t(LEFT));
+
 c10 := CATCH(NOFOLD(p10), ONFAIL(TRANSFORM(rec,
                                  SELF.result := 'Fail',
                                  SELF.destFile := DestFile9,
@@ -260,6 +291,16 @@ SEQUENTIAL(
     o7,
     o8,
     o9,
-    o10
-  )
+  ),
+    // To ensure it running after o9
+    o10,
+    // Clean-up
+    FileServices.DeleteLogicalFile(SourceFile),
+    FileServices.DeleteExternalFile('.', DestFile1),
+    FileServices.DeleteExternalFile('.', DestFile4),
+    FileServices.DeleteExternalFile('.', DestFile5),
+    FileServices.DeleteExternalFile('.', DestFile6),
+    FileServices.DeleteExternalFile('.', DestFile7),
+    FileServices.DeleteExternalFile('.', DestFile8),
+    FileServices.DeleteExternalFile('.', DestFile9),
 );
