@@ -17,7 +17,6 @@
 
 import $.setup;
 prefix := setup.Files(false, false).FilePrefix;
-//noRoxie
 
 vstring(integer i) := TYPE
     export integer physicallength(string s) := i;

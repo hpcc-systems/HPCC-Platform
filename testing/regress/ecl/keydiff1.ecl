@@ -18,7 +18,6 @@
 import $.setup;
 prefix := setup.Files(false, false).FilePrefix;
 
-//noRoxie
 //noHthor
 import Std.System.ThorLib;
 import Std.File AS FileServices;

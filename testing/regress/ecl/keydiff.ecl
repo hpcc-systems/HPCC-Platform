@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-//noRoxie
 //noHthor
 //varskip setuptype==hthor TBD
 //varskip varload TBD

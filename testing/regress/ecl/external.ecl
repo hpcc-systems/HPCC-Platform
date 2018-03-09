@@ -1,4 +1,3 @@
-//noroxie
 
 import Std.File;
 

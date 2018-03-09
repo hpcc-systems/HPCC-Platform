@@ -17,7 +17,6 @@
 
 import $.setup;
 prefix := setup.Files(false, false).FilePrefix;
-//noroxie
 
 import std.system.thorlib;
 import Std.File AS FileServices;

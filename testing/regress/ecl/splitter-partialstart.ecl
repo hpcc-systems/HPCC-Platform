@@ -18,7 +18,6 @@
 import $.setup;
 prefix := setup.Files(false, false).FilePrefix;
 
-//noRoxie
 //nolocal
 
 import Std;

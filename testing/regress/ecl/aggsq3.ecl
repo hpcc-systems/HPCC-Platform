@@ -16,7 +16,6 @@
 ############################################################################## */
 
 //nothor
-//noRoxie
 #option ('optimizeDiskSource',true);
 #option ('optimizeThorCounts',false);
 #option ('optimizeChildSource',true);

@@ -22,7 +22,6 @@ prefix := setup.Files(false, false).FilePrefix;
 // This is not an engine test, but a DFU.
 // Doesn't matter much which engine does it, so we restrict to only one
 
-//noRoxie
 //noThorLCR
 
 //class=spray
