@@ -151,7 +151,8 @@ class RegressMain:
         commonParser.add_argument('-X', help="sets the stored input value (stored('name')).",
                             nargs=1, type=checkXParam,  default='None',  metavar="name1=value1[,name2=value2...]")
         commonParser.add_argument('-f', help="set an ECL option (equivalent to #option and multiple -f can be use in a command line).", action="append",
-                            type=checkXParam,  metavar="optionA=valueA[,optionB=valueB...]")
+                            metavar="optionA=valueA[,optionB=valueB...]")
+
 
         commonParser.add_argument('--pq', help="Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2 )",
                                 type=checkPqParam,  default = 0,   metavar="threadNumber")
@@ -200,7 +201,11 @@ class RegressMain:
         self.parser_query.add_argument('--publish', '-p', help="Publish compiled query instead of run.",
                                 action='store_true')
 
-        self.args = parser.parse_args()
+        try:
+            self.args = parser.parse_args()
+        except Error as e:
+            logging.critical(e)
+            exit(e.getErrorCode());
 
         regressionSuiteMainDir = os.path.dirname(__file__)
         regressionSuiteFullPath = os.path.realpath(regressionSuiteMainDir)

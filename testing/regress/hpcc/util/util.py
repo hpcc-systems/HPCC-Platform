@@ -22,8 +22,6 @@ import platform
 import logging
 import os
 import subprocess
-import urllib2
-import base64
 
 from ..common.error import Error
 from ..common.shell import Shell
@@ -49,8 +47,7 @@ def checkXParam(string):
         if ('=' in param) or ('None' == param):
             value = param
         else:
-            #logging.error("%s. Missing or wrong argument '%s' after -X parameter!\nIt should be 'name=val[,name2=val2..]'\n5000\n" % (1,  param))
-            value="5000"
+            raise Error("5000",  err="But got argument:'%s'" % (param) )
     else:
         msg = "Missing argument of -X parameter!"
         raise argparse.ArgumentTypeError(msg)
