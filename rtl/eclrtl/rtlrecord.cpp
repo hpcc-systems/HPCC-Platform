@@ -446,7 +446,7 @@ size32_t RtlRecord::deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource
         in.read(fixedSize, self + offset);
         if (excluded(field, self, conditionValues))
             continue;
-        offset = queryType(fieldIndex)->deserialize(rowBuilder, in, offset);
+        offset = queryType(fieldIndex)->deserialize(rowBuilder, in, offset + fixedSize);
     }
     size32_t lastFixedSize = fixedOffsets[numFields];
     byte * self = rowBuilder.ensureCapacity(offset + lastFixedSize, "");
