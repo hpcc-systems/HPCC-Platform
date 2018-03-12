@@ -38,7 +38,13 @@ set (HTML_HELP_XSL ${CMAKE_CURRENT_BINARY_DIR}/resources/docbook-xsl/htmlhelp/ht
 if ( "${HPCC_MATURITY}" STREQUAL "release" )
 	set (DOC_VERSION "${DOC_VERSION}-${HPCC_SEQUENCE}")
 else()
+   if (DOCTAG)
+	set (DOC_VERSION "${majorver}-${minorver}-${DOCTAG}")
+        string (REGEX REPLACE "-#.*" "" DOC_VERSION_ONLY ${DOC_VERSION})
+   else()
 	set (DOC_VERSION "${DOC_VERSION}-${HPCC_MATURITY}${HPCC_SEQUENCE}")
+	set (DOC_VERSION_ONLY "${DOC_VERSION}")
+  endif()
 endif()
 
 # Build image file list to add to source watch.
