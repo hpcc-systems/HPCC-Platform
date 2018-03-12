@@ -248,7 +248,7 @@ void addToQueryStringFromInt(StringBuffer &queryString, const char *name, __int6
 
 void parseTwoStringArrays(const char *input, StringArray& strarray1, StringArray& strarray2)
 {
-    if (!input && strlen(input) > 2)
+    if (!input || strlen(input) <= 2)
         return;
 
     char c0[2], c1[2];
