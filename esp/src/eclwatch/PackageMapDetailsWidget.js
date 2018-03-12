@@ -45,6 +45,7 @@ define([
         templateString: template,
         baseClass: "PackageMapDetailsWidget",
         i18n: nlsHPCC,
+
         borderContainer: null,
         tabContainer: null,
         validateWidget: null,
@@ -123,7 +124,7 @@ define([
             this.process = params.process;
             this.active = params.active;
             if (params.packageMap) {
-                registry.byId(this.id + "Summary").set("title", params.packageMap);
+                registry.byId(this.id + "_Summary").set("title", params.packageMap);
                 domAttr.set(this.id + "PMID", "innerHTML", params.packageMap);
                 domAttr.set(this.id + "Target", "value", params.target);
                 domAttr.set(this.id + "Process", "value", params.process);

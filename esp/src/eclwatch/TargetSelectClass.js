@@ -164,10 +164,14 @@ define([
             var context = this;
             WsPackageMaps.GetPackageMapSelectOptions({
                 request: {
-                    includeTargets: true
+                    IncludeTargets: true
                 }
             }).then(function (response) {
                 if (lang.exists("GetPackageMapSelectOptionsResponse.Targets.TargetData", response)) {
+                    context.options.push({
+                        label: "ANY",
+                        value: ""
+                    });
                     var targetData = response.GetPackageMapSelectOptionsResponse.Targets.TargetData;
                     for (var i = 0; i < targetData.length; ++i) {
                         context.options.push({
@@ -184,12 +188,20 @@ define([
             var context = this;
             WsPackageMaps.GetPackageMapSelectOptions({
                 request: {
-                    IncludeProcesses: true
+                    IncludeProcesses: true,
+                    IncludeProcessFilters: true
                 }
             }).then(function (response) {
                 if (lang.exists("GetPackageMapSelectOptionsResponse.ProcessFilters.Item", response)) {
+                    context.options.push({
+                        label: "ANY",
+                        value: ""
+                    });
                     var targetData = response.GetPackageMapSelectOptionsResponse.ProcessFilters.Item;
                     for (var i = 0; i < targetData.length; ++i) {
+                        if (targetData[i] === "*") {
+                            targetData[i] = "*"
+                        }
                         context.options.push({
                             label: targetData[i],
                             value: targetData[i]
