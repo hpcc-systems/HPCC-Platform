@@ -2403,13 +2403,14 @@ jlib_decl const IProperties &queryEnvironmentConf()
 
 
 
-static StringBuffer DAFSpassPhrase;//deprecated
+static StringBuffer DAFSpassPhraseDec;//deprecated
 static CriticalSection DAFSpassPhraseCrit;
+//Deprecated, please use queryHPCCPKIKeyFiles() instead
 jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
                                      unsigned short *_port,
                                      const char * *  _certificate,
                                      const char * *  _privateKey,
-                                     const char * *  _passPhrase)
+                                     const char * *  _passPhrase)//decrypted passphrase
 {
     if (_connectMethod)
         *_connectMethod = SSLNone;//default
@@ -2455,25 +2456,41 @@ jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
              if (*_privateKey)
                  dfsKeywords = true;
         }
+
+        StringBuffer DAFSpassPhraseEnc;
         if (_passPhrase)
         {
             CriticalBlock b(DAFSpassPhraseCrit);
-            if (DAFSpassPhrase.isEmpty())
+            if (DAFSpassPhraseDec.isEmpty())//previously retrieved/decrypted it?
             {
                 const char *passPhrasePtr = conf.queryProp("dfsSSLPassPhrase");
                 if (!isEmptyString(passPhrasePtr))
                 {
+                    DAFSpassPhraseEnc.append(passPhrasePtr);//got encrypted pwd
                     dfsKeywords = true;
-                    decrypt(DAFSpassPhrase, passPhrasePtr);
                 }
             }
-            *_passPhrase = DAFSpassPhrase.str();
         }
 
         if (!dfsKeywords && (_certificate || _privateKey || _passPhrase))
         {
         //end of deprecated code
-            queryHPCCPKIKeyFiles(_certificate, _privateKey, _passPhrase);//use new keywords
+            const char *passPhrasePtr = nullptr;
+            queryHPCCPKIKeyFiles(_certificate, nullptr, _privateKey, _passPhrase ? &passPhrasePtr : nullptr);//use new keywords
+            if (!isEmptyString(passPhrasePtr))
+            {
+                CriticalBlock b(DAFSpassPhraseCrit);
+                if (DAFSpassPhraseEnc.isEmpty())
+                    DAFSpassPhraseEnc.append(passPhrasePtr);//got encrypted pwd
+            }
+        }
+
+        if (_passPhrase)
+        {
+            CriticalBlock b(DAFSpassPhraseCrit);
+            if (DAFSpassPhraseDec.isEmpty()  &&  !DAFSpassPhraseEnc.isEmpty())
+                decrypt(DAFSpassPhraseDec, DAFSpassPhraseEnc.str());
+            *_passPhrase = DAFSpassPhraseDec.str();//return decrypted password. Note the preferred queryHPCCPKIKeyFiles() method returns it encrypted
         }
     }
 
@@ -2499,28 +2516,20 @@ jlib_decl bool queryDafsSecSettings(DAFSConnectCfg *_connectMethod,
 }
 
 //query PKI values from environment.conf
-static StringBuffer HPCCpassPhrase;
-static CriticalSection HPCCpassPhraseCrit;
-jlib_decl bool queryHPCCPKIKeyFiles(const char * *  _certificate,//HPCCCertFile
+jlib_decl bool queryHPCCPKIKeyFiles(const char * *  _certificate,//HPCCCertificateFile
+                                    const char * *  _publicKey,  //HPCCPublicKeyFile
                                     const char * *  _privateKey, //HPCCPrivateKeyFile
                                     const char * *  _passPhrase) //HPCCPassPhrase
 {
     const IProperties & conf = queryEnvironmentConf();
     if (_certificate)
-        *_certificate = conf.queryProp("HPCCCertFile");
+        *_certificate = conf.queryProp("HPCCCertificateFile");
+    if (_publicKey)
+        *_publicKey = conf.queryProp("HPCCPublicKeyFile");
     if (_privateKey)
-        *_privateKey = conf.queryProp("HPCCPrivateKeyFile");;
+        *_privateKey = conf.queryProp("HPCCPrivateKeyFile");
     if (_passPhrase)
-    {
-        CriticalBlock b(HPCCpassPhraseCrit);
-        if (HPCCpassPhrase.isEmpty())
-        {
-            const char *passPhrasePtr = conf.queryProp("HPCCPassPhrase");
-            if (!isEmptyString(passPhrasePtr))
-                decrypt(HPCCpassPhrase, passPhrasePtr);
-        }
-        *_passPhrase = HPCCpassPhrase.str();
-    }
+        *_passPhrase = conf.queryProp("HPCCPassPhrase"); //return encrypted
     return true;
 }
 
