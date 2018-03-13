@@ -237,6 +237,8 @@ int main(int argc, const char *argv[])
 
             writeSentinelFile(sentinelFile);
 
+            enableForceRemoteReads(); // forces file reads to be remote reads if they match environment setting 'forceRemotePattern' pattern.
+
             engine->joinListeners();
             if (replserver.get())
                 replserver->stopServer();

@@ -381,6 +381,8 @@ int main( int argc, char *argv[]  )
             if (daFileSrvHook) // probably always installed
                 daFileSrvHook->addFilters(globals->queryPropTree("NAS"), &slfEp);
 
+            enableForceRemoteReads(); // forces file reads to be remote reads if they match environment setting 'forceRemotePattern' pattern.
+
             StringBuffer thorPath;
             globals->getProp("@thorPath", thorPath);
             recursiveCreateDirectory(thorPath.str());

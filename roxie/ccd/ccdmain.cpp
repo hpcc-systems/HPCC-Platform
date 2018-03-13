@@ -1022,6 +1022,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             openMulticastSocket();
 
         setDaliServixSocketCaching(true);  // enable daliservix caching
+        enableForceRemoteReads(); // forces file reads to be remote reads if they match environment setting 'forceRemotePattern' pattern.
+
         loadPlugins();
         createDelayedReleaser();
         globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());

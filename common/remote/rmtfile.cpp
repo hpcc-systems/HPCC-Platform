@@ -21,6 +21,7 @@
 #include "jlib.hpp"
 #include "jio.hpp"
 #include "jlog.hpp"
+#include "jregexp.hpp"
 
 #include "jmutex.hpp"
 #include "jfile.hpp"
@@ -205,6 +206,7 @@ CDaliServixFilter *createDaliServixFilter(IPropertyTree &filterProps)
 class CDaliServixIntercept: public CInterface, implements IDaFileSrvHook
 {
     CIArrayOf<CDaliServixFilter> filters;
+    StringAttr forceRemotePattern;
 
     void addFilter(CDaliServixFilter *filter)
     {
@@ -216,6 +218,10 @@ class CDaliServixIntercept: public CInterface, implements IDaFileSrvHook
     }
 public:
     IMPLEMENT_IINTERFACE;
+    virtual void forceRemote(const char *pattern)
+    {
+        forceRemotePattern.set(pattern);
+    }
     virtual IFile * createIFile(const RemoteFilename & filename)
     {
         SocketEndpoint ep = filename.queryEndpoint();
@@ -258,6 +264,14 @@ public:
 #endif
                 )
                 return createDaliServixFile(filename);  
+        }
+        else if (forceRemotePattern)
+        {
+            StringBuffer localPath;
+            filename.getLocalPath(localPath);
+            // must be local to be here, check if matches forceRemotePattern
+            if (WildMatch(localPath, forceRemotePattern, false))
+                return createDaliServixFile(filename);
         }
         return NULL;
     }
@@ -882,4 +896,17 @@ MODULE_EXIT()
 IDaFileSrvHook *queryDaFileSrvHook()
 {
     return DaliServixIntercept;
+}
+
+void enableForceRemoteReads()
+{
+    const char *forceRemotePattern = queryEnvironmentConf().queryProp("forceRemotePattern");
+    if (!isEmptyString(forceRemotePattern))
+        queryDaFileSrvHook()->forceRemote(forceRemotePattern);
+}
+
+bool testForceRemote(const char *path)
+{
+    const char *forceRemotePattern = queryEnvironmentConf().queryProp("forceRemotePattern");
+    return !isEmptyString(forceRemotePattern) && WildMatch(path, forceRemotePattern, false);
 }

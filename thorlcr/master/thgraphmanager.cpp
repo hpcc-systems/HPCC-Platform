@@ -21,6 +21,7 @@
 #include "jfile.hpp"
 #include "jmutex.hpp"
 #include "jlog.hpp"
+#include "rmtfile.hpp"
 
 #include "portlist.h"
 #include "wujobq.hpp"
@@ -1052,6 +1053,8 @@ void thorMain(ILogMsgHandler *logHandler)
         initFileManager();
         CThorResourceMaster masterResource;
         setIThorResource(masterResource);
+
+        enableForceRemoteReads(); // forces file reads to be remote reads if they match environment setting 'forceRemotePattern' pattern.
 
         Owned<CJobManager> jobManager = new CJobManager(logHandler);
         try {
