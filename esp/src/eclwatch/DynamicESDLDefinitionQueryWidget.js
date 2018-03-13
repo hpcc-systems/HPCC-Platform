@@ -23,10 +23,11 @@ define([
     "hpcc/GridDetailsWidget",
     "hpcc/WsESDLConfig",
     "hpcc/ESPUtil",
-    "hpcc/DynamicESDLDefinitionDetailsWidget"
+    "hpcc/DynamicESDLDefinitionDetailsWidget",
+    "hpcc/Utility"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil,
-                GridDetailsWidget, WsESDLConfig, ESPUtil, DynamicESDLDefinitionDetailsWidget) {
+                GridDetailsWidget, WsESDLConfig, ESPUtil, DynamicESDLDefinitionDetailsWidget, Utility) {
     return declare("DynamicESDLWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 
@@ -36,10 +37,10 @@ define([
         init: function (params) {
             var context = this;
             if (this.inherited(arguments))
+                return;
 
             this._refreshActionState();
             this.refreshGrid();
-            this.initTab();
         },
 
         postCreate: function (args) {
@@ -94,11 +95,16 @@ define([
                         }
                         results.push(Def);
                     });
+                    Utility.alphanumSort(results, "Name");
                 }
                 context.store.setData(results);
                 context.grid.refresh();
-                var firstRowSelection = context.store.query({Id: 0});
-                context.grid.select({Name:firstRowSelection[0].Name});
+                if (context.params.firstLoad && results.length) {
+                    var firstRowSelection = context.store.query({Id: results[0].Id});
+                    if (firstRowSelection.length) {
+                        context.grid.select({Name:firstRowSelection[0].Name});
+                    }
+                }
             });
         }
     });

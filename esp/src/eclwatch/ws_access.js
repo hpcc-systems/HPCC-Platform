@@ -108,6 +108,7 @@ define([
                         __hpcc_id: this.parentRow.__hpcc_id + CONCAT_SYMBOL + item.name,
                         __hpcc_parent: this.parentRow,
                         DisplayName: item.description ? item.description : item.name,
+                        AccountName: this.groupname,
                         allow_access: accountPermission ? accountPermission.allow_access : false,
                         allow_read: accountPermission ? accountPermission.allow_read : false,
                         allow_write: accountPermission ? accountPermission.allow_write : false,

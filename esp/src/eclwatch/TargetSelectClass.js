@@ -278,31 +278,34 @@ define([
 
         loadDropZones: function () {
             var context = this;
+            this.set("disabled", true);
             WsTopology.TpDropZoneQuery({
-                load: function (response) {
-                    if (lang.exists("TpDropZoneQueryResponse.TpDropZones.TpDropZone", response)) {
-                        var targetData = response.TpDropZoneQueryResponse.TpDropZones.TpDropZone;
-                        for (var i = 0; i < targetData.length; ++i) {
-                            context.options.push({
-                                label: targetData[i].Name,
-                                value: targetData[i].Name,
-                                machine: targetData[i].TpMachines.TpMachine[0]
-                            });
-                        }
-                        context._postLoad();
+            }).then(function (response) {
+                context.set("disabled", false);
+                if (lang.exists("TpDropZoneQueryResponse.TpDropZones.TpDropZone", response)) {
+                    var targetData = response.TpDropZoneQueryResponse.TpDropZones.TpDropZone;
+                    for (var i = 0; i < targetData.length; ++i) {
+                        context.options.push({
+                            label: targetData[i].Name,
+                            value: targetData[i].Name,
+                            machine: targetData[i].TpMachines.TpMachine[0]
+                        });
                     }
+                    context._postLoad();
                 }
             });
         },
 
         loadDropZoneMachines: function (Name) {
             var context = this;
+            this.set("disabled", true);
             if (Name) {
                 WsTopology.TpDropZoneQuery({
                     request: {
                         Name: Name
                     }
                 }).then(function (response) {
+                    context.set("disabled", false);
                     if (lang.exists("TpDropZoneQueryResponse.TpDropZones.TpDropZone", response)) {
                         context.set("options", []);
                         arrayUtil.forEach(response.TpDropZoneQueryResponse.TpDropZones.TpDropZone, function(item, idx) {
@@ -569,6 +572,7 @@ define([
                 load: function (response) {
                     if (lang.exists("ListESDLDefinitionsResponse.Definitions.Definition", response)) {
                         var targetData = response.ListESDLDefinitionsResponse.Definitions.Definition;
+                        Utility.alphanumSort(targetData, "Id");
                         for (var i = 0; i < targetData.length; ++i) {
                             context.options.push({
                                 label: targetData[i].Id,
