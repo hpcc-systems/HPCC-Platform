@@ -90,6 +90,19 @@ def setConfig(config):
 def getConfig():
     return gConfig
 
+def getEclRunArgs(test,  cluster):
+    retString=''
+    test.setJobname("")
+    retString += "ecl run -fpickBestEngine=false --target=%s --cluster=%s --port=%s " % (cluster, cluster, gConfig.espSocket)
+    retString += "--exception-level=warning --noroot --name=\"%s\" " % (test.getJobname())
+    retString += "%s " % (" ".join(test.getFParameters()))
+    retString += "%s " % (" ".join(test.getDParameters()))
+    retString += "%s " % (" ".join(test.getStoredInputParameters()))
+    args = []
+    addCommonEclArgs(args)
+    retString += "%s " % (" ".join(args))
+    return retString
+
 def addCommonEclArgs(args):
     args.append('--server=' + gConfig.espIp)
     args.append('--username=' + gConfig.username)
