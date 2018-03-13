@@ -357,19 +357,19 @@ bool vunicodeNeedsNormalize(UChar * in, UErrorCode * err)
 
 void unicodeReplaceNormalized(unsigned inlen, UChar * in, UErrorCode * err)
 {
-    UChar * buff = (UChar *)rtlMalloc(inlen*2);
+    UChar * buff = (UChar *)rtlMalloc(inlen*sizeof(UChar));
     unsigned len = unorm_normalize(in, inlen, UNORM_NFC, 0, buff, inlen, err);
     while(len<inlen) buff[len++] = 0x0020;
-    memcpy(in, buff, inlen);
+    memcpy(in, buff, inlen * sizeof(UChar));
     free(buff);
 }
 
 void vunicodeReplaceNormalized(unsigned inlen, UChar * in, UErrorCode * err)
 {
-    UChar * buff = (UChar *)rtlMalloc(inlen*2);
+    UChar * buff = (UChar *)rtlMalloc(inlen*sizeof(UChar));
     unsigned len = unorm_normalize(in, -1, UNORM_NFC, 0, buff, inlen-1, err);
     buff[len] = 0x0000;
-    memcpy(in, buff, inlen);
+    memcpy(in, buff, inlen * sizeof(UChar));
     free(buff);
 }
 

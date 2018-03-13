@@ -481,4 +481,15 @@ EXPORT STRING Version() := lib_unicodelib.UnicodeLib.UnicodeVersion();
 EXPORT RemoveSuffix(unicode src, unicode suff, string form) :=
     lib_unicodelib.UnicodeLib.UnicodeLocaleRemoveSuffix(src, suff, form);
 
+/*
+ * Returns a string containing text repeated n times.
+ *
+ * @param src           The string to be repeated.
+ * @param n             Number of repetitions.
+ * @return              A string containing n concatenations of the string text.
+ */
+
+EXPORT Repeat(unicode src, unsigned4 n) :=
+    lib_unicodelib.UnicodeLib.UnicodeLocaleRepeat(src, n);
+
 END;
