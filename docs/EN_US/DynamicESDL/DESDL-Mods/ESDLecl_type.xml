@@ -2,17 +2,17 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Attributes_ecl_type">
-  <title>ecl_type <indexterm>
+  <!-- DNT-Start --><title>ecl_type <indexterm>
       <primary>ecl_type</primary>
-    </indexterm>("type")</title>
+    </indexterm>("type")</title><!-- DNT-End -->
 
   <para>The <emphasis>ecl_type</emphasis> attribute defines the field type in
-  ECL.</para>
+  <!-- DNT-Start -->ECL<!-- DNT-End -->.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <programlisting> [ecl_type("Decimal10_2")] double RetailPrice;   </programlisting>
+  <!-- DNT-Start --><programlisting> [ecl_type("Decimal10_2")] double RetailPrice;   </programlisting><!-- DNT-End -->
 
-  <para>ESDL does not have a monetary type, so we use
+  <para><!-- DNT-Start -->ESDL<!-- DNT-End --> does not have a monetary type, so we use
   <emphasis>ecl_type</emphasis> to define it.</para>
 </sect1>

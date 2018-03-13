@@ -2,7 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Data_ECLTypeMapping">
-  <title>ESDL, XSD, and ECL Type Mapping</title>
+  <!-- DNT-Start --><title>ESDL, XSD, and ECL Type Mapping</title><!-- DNT-End -->
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="3">
@@ -14,15 +14,15 @@
 
         <tbody>
           <row>
-            <entry><emphasis role="bold">ESDL</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ESDL</emphasis><!-- DNT-End --></entry>
 
-            <entry><emphasis role="bold">XSD</emphasis></entry>
+            <entry><emphasis role="bold"><!-- DNT-Start -->XSD<!-- DNT-End --></emphasis></entry>
 
-            <entry><emphasis role="bold">ECL</emphasis></entry>
+            <entry><emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End --></emphasis></entry>
           </row>
 
           <row>
-            <entry>Bool boolean</entry>
+            <entry><!-- DNT-Start -->Bool boolean<!-- DNT-End --></entry>
 
             <entry>bool</entry>
 
@@ -30,7 +30,7 @@
           </row>
 
           <row>
-            <entry>Binary</entry>
+            <entry><!-- DNT-Start -->Binary<!-- DNT-End --></entry>
 
             <entry>Base64Binary</entry>
 
@@ -38,39 +38,39 @@
           </row>
 
           <row>
-            <entry>Float</entry>
+            <entry><!-- DNT-Start -->Float<!-- DNT-End --></entry>
 
             <entry>float</entry>
 
-            <entry>REAL4</entry>
+            <entry><!-- DNT-Start -->REAL<!-- DNT-End -->4</entry>
           </row>
 
           <row>
-            <entry>Double</entry>
+            <entry><!-- DNT-Start -->Double<!-- DNT-End --></entry>
 
             <entry>double</entry>
 
-            <entry>REAL8</entry>
+            <entry><!-- DNT-Start -->REAL<!-- DNT-End -->8</entry>
           </row>
 
           <row>
-            <entry>Int</entry>
+            <entry><!-- DNT-Start -->Int<!-- DNT-End --></entry>
 
             <entry>int</entry>
 
-            <entry>INTEGER</entry>
+            <entry><!-- DNT-Start -->INTEGER<!-- DNT-End --></entry>
           </row>
 
           <row>
-            <entry>Int64</entry>
+            <entry><!-- DNT-Start -->Int64<!-- DNT-End --></entry>
 
             <entry>long</entry>
 
-            <entry>INTEGER8</entry>
+            <entry><!-- DNT-Start -->INTEGER<!-- DNT-End -->8</entry>
           </row>
 
           <row>
-            <entry>String</entry>
+            <entry><!-- DNT-Start -->String<!-- DNT-End --></entry>
 
             <entry>string</entry>
 

@@ -2,14 +2,14 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="LENGTH">
-  <title>LENGTH</title>
+  <!-- DNT-Start --><title>LENGTH</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">LENGTH<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">LENGTH<indexterm>
       <primary>LENGTH</primary>
     </indexterm><indexterm>
       <primary>LENGTH function</primary>
     </indexterm>(</emphasis><emphasis>expression</emphasis><emphasis
-  role="bold">)</emphasis></para>
+  role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -19,28 +19,28 @@
 
       <tbody>
         <row>
-          <entry><emphasis>expression</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
 
           <entry>A string expression.</entry>
         </row>
 
         <row>
-          <entry>Return:</entry>
+          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-          <entry>LENGTH returns a single integer value.</entry>
+          <entry><!-- DNT-Start -->LENGTH<!-- DNT-End --> returns a single integer value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">LENGTH </emphasis>function returns the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->LENGTH<!-- DNT-End --> </emphasis>function returns the
   length of the string resulting from the <emphasis>expression</emphasis> by
-  treating the <emphasis>expression </emphasis>as a temporary STRING.</para>
+  treating the <emphasis>expression </emphasis>as a temporary <!-- DNT-Start -->STRING<!-- DNT-End -->.</para>
 
   <para>Example:</para>
 
-  <programlisting>INTEGER MyLength := LENGTH('XYZ' + 'ABC');
-      //MyLength is 6</programlisting>
+  <!-- DNT-Start --><programlisting>INTEGER MyLength := LENGTH('XYZ' + 'ABC');
+      //MyLength is 6</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="String_Operators">String Operators</link>, <link linkend="STRING">STRING</link></para>
+  <para>See Also: <link linkend="String_Operators">String Operators</link>, <link linkend="STRING"><!-- DNT-Start -->STRING<!-- DNT-End --></link></para>
 </sect1>

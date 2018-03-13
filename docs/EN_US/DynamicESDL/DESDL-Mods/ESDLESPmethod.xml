@@ -2,17 +2,17 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESPmethod">
-  <title>ESPmethod</title>
+  <!-- DNT-Start --><title>ESPmethod</title><!-- DNT-End -->
 
   <para><indexterm>
-      <primary>ESPmethod</primary>
+      <primary><!-- DNT-Start -->ESPmethod<!-- DNT-End --></primary>
     </indexterm>This defines a method definition you can reference in an
   ESPservice structure. The method definition should contain references to a
   previously defined ESPrequest and ESPresponse.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <programlisting>
+  <!-- DNT-Start --><programlisting>
  ESPservice MyService
   {
    ESPmethod MyMethod1(MyMethod1Request, MyMethod1Response);
@@ -26,5 +26,5 @@
    MyMethod2(MyMethod2Request, MyMethod2Response);
  };
  
-    </programlisting>
+    </programlisting><!-- DNT-End -->
 </sect1>

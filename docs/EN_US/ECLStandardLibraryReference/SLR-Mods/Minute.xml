@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Minute">
-  <title>Minute</title>
+  <!-- DNT-Start --><title>Minute</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Date.Minute<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.Date.Minute<indexterm>
       <primary>STD.Date.Minute</primary>
     </indexterm><indexterm>
       <primary>Date.Minute</primary>
     </indexterm><indexterm>
       <primary>Minute</primary>
     </indexterm>(</emphasis> <emphasis>time</emphasis> <emphasis
-  role="bold">)</emphasis></para>
+  role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,32 +21,32 @@
 
       <tbody>
         <row>
-          <entry><emphasis>time</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>time</emphasis><!-- DNT-End --></entry>
 
           <entry>A time value in the Time_ format.</entry>
         </row>
 
         <row>
-          <entry>Return:</entry>
+          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-          <entry>Minute returns an INTEGER value representing the minute in
+          <entry><!-- DNT-Start -->Minute<!-- DNT-End --> returns an <!-- DNT-Start -->INTEGER<!-- DNT-End --> value representing the minute in
           the range of 0-59.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">Minute</emphasis> function returns the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->Minute<!-- DNT-End --></emphasis> function returns the
   minute from the <emphasis>time</emphasis> value.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">IMPORT STD;
+  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 MyTime:= STD.Date.CurrentTime(TRUE);   //Local Time
   
 t1 := STD.Date.Minute(MyTime);
     //t1 contains the minute of the current local time
-</programlisting>
+</programlisting><!-- DNT-End -->
 
   <para></para>
 </sect1>

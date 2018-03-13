@@ -2,17 +2,17 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="PROCESS">
-  <title>PROCESS</title>
+  <!-- DNT-Start --><title>PROCESS</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">PROCESS<indexterm>
-      <primary>PROCESS</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->PROCESS<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->PROCESS<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>PROCESS function</primary>
+      <primary><!-- DNT-Start -->PROCESS<!-- DNT-End --> function</primary>
     </indexterm>(</emphasis><emphasis>recordset, datarow,</emphasis><emphasis
   role="bold"> </emphasis><emphasis>datasettransform, rowtransform
-  </emphasis><emphasis role="bold">[, LOCAL<indexterm>
-      <primary>LOCAL</primary>
-    </indexterm> ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+  </emphasis><emphasis role="bold">[, <!-- DNT-Start -->LOCAL<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->LOCAL<!-- DNT-End --></primary>
+    </indexterm> ] </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -22,97 +22,97 @@
 
         <tbody>
           <row>
-            <entry><emphasis>recordset</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>recordset</emphasis><!-- DNT-End --></entry>
 
             <entry>The set of records to process.</entry>
           </row>
 
           <row>
-            <entry><emphasis>datarow</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>datarow</emphasis><!-- DNT-End --></entry>
 
-            <entry>The initial RIGHT record to process, typically expressed by
-            the ROW function.</entry>
+            <entry>The initial <!-- DNT-Start -->RIGHT<!-- DNT-End --> record to process, typically expressed by
+            the <!-- DNT-Start -->ROW<!-- DNT-End --> function.</entry>
           </row>
 
           <row>
-            <entry><emphasis>datasettransform</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>datasettransform</emphasis><!-- DNT-End --></entry>
 
-            <entry>The TRANSFORM function to call for each record in the
+            <entry>The <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function to call for each record in the
             recordset.</entry>
           </row>
 
           <row>
-            <entry><emphasis>rowtransform</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>rowtransform</emphasis><!-- DNT-End --></entry>
 
-            <entry>The TRANSFORM function to call to produce the next RIGHT
+            <entry>The <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function to call to produce the next <!-- DNT-Start -->RIGHT<!-- DNT-End -->
             record for the <emphasis>datasettransform</emphasis>.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">LOCAL</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the operation is performed on each
             supercomputer node independently, without requiring interaction
             with all other nodes to acquire data; the operation maintains the
-            distribution of any previous DISTRIBUTE.</entry>
+            distribution of any previous <!-- DNT-Start -->DISTRIBUTE<!-- DNT-End -->.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the output record order is not significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the significance of the output record order.</entry>
           </row>
           <row>
-            <entry><emphasis>bool</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
 
             <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">STABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is not significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity in parallel.</entry>
           </row>
           <row>
-            <entry><emphasis>numthreads</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Override the algorithm used for this activity.</entry>
           </row>
           <row>
-            <entry><emphasis>name</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>PROCESS returns a record set.</entry>
+            <entry><!-- DNT-Start -->PROCESS<!-- DNT-End --> returns a record set.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">PROCESS </emphasis>function operates in a
-  similar manner to ITERATE in that it processes through all records in the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->PROCESS<!-- DNT-End --> </emphasis>function operates in a
+  similar manner to <!-- DNT-Start -->ITERATE<!-- DNT-End --> in that it processes through all records in the
   <emphasis>recordset</emphasis> one pair of records at a time, performing the
   <emphasis>datasettransform</emphasis> function on each pair of records in
   turn. The first record in the recordset is passed to the
@@ -120,12 +120,12 @@
   the <emphasis>datarow</emphasis> as the right record. The
   <emphasis>rowtransform</emphasis> is used to construct the right record for
   the next pair. If either the <emphasis>datasettransform</emphasis> or the
-  <emphasis>rowtransform</emphasis> contains a SKIP, then no record is
+  <emphasis>rowtransform</emphasis> contains a <!-- DNT-Start -->SKIP<!-- DNT-End -->, then no record is
   produced by the <emphasis>datasettransform</emphasis> for the skipped
   record.</para>
 
   <sect2 id="TRANSFORM_Function_Requirements_Process">
-    <title>TRANSFORM Function<indexterm>
+    <!-- DNT-Start --><title>TRANSFORM Function<indexterm>
         <primary>TRANSFORM Function</primary>
       </indexterm> Requirements - PROCESS<indexterm>
         <primary>TRANSFORM Function Requirements</primary>
@@ -133,25 +133,25 @@
         <primary>Transform Requirements</primary>
       </indexterm><indexterm>
         <primary>Transform Requirement Process</primary>
-      </indexterm></title>
+      </indexterm></title><!-- DNT-End -->
 
     <para>The <emphasis>datasettransform</emphasis> and
     <emphasis>rowtransform</emphasis> functions both must take at least two
-    parameters: a LEFT record of the same format as the <emphasis>recordset
-    </emphasis>and a RIGHT record of the same format as the
+    parameters: a <!-- DNT-Start -->LEFT<!-- DNT-End --> record of the same format as the <emphasis>recordset
+    </emphasis>and a <!-- DNT-Start -->RIGHT<!-- DNT-End --> record of the same format as the
     <emphasis>datarow</emphasis>. The format of the resulting record set for
     the <emphasis>datasettransform</emphasis> both must be the same as the
     input <emphasis>recordset</emphasis>. The format of the resulting record
     set for the <emphasis>rowtransform</emphasis> both must be the same as the
     initial <emphasis>datarow</emphasis>. Optionally, the
     <emphasis>datsettransform</emphasis> may take a third parameter: an
-    integer COUNTER specifying the number of times the transform has been
+    integer <!-- DNT-Start -->COUNTER<!-- DNT-End --> specifying the number of times the transform has been
     called for the <emphasis>recordset </emphasis>or the current group in the
-    <emphasis>recordset</emphasis> (see the GROUP function).</para>
+    <emphasis>recordset</emphasis> (see the <!-- DNT-Start -->GROUP<!-- DNT-End --> function).</para>
 
     <para>Example:</para>
 
-    <programlisting>DSrec := RECORD
+    <!-- DNT-Start --><programlisting>DSrec := RECORD
   STRING4 Letter;
   STRING4 LeftRecIn := '';
   STRING4 RightRecIn := '';
@@ -218,8 +218,8 @@ A
 C***
 D
 */
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-    <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link linkend="RECORD_Structure">RECORD Structure</link>, <link linkend="ROW">ROW</link>, <link linkend="ITERATE">ITERATE</link></para>
+    <para>See Also: <link linkend="TRANSFORM_Structure"><!-- DNT-Start -->TRANSFORM<!-- DNT-End --> Structure</link>, <link linkend="RECORD_Structure"><!-- DNT-Start -->RECORD<!-- DNT-End --> Structure</link>, <link linkend="ROW"><!-- DNT-Start -->ROW<!-- DNT-End --></link>, <link linkend="ITERATE"><!-- DNT-Start -->ITERATE<!-- DNT-End --></link></para>
   </sect2>
 </sect1>

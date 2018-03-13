@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="InstallHDFS" role="brk">
-  <title>Installation and Configuration</title>
+  <!-- DNT-Start --><title>Installation and Configuration</title><!-- DNT-End -->
 
   <sect2 role="nobrk">
     <title role="nobrk">Installing the Server-side components</title>
@@ -17,32 +17,32 @@
       </listitem>
 
       <listitem>
-        <para>You must install the package on every HPCC Thor node. To install
+        <para>You must install the package on every <!-- DNT-Start -->HPCC<!-- DNT-End --> Thor node. To install
         the package, follow the installation instructions for your operating
         system:</para>
 
         <para><emphasis role="bold">Centos/Red Hat/SuSe</emphasis></para>
 
-        <para>Install RPM with the -Uvh switch.</para>
+        <para>Install <!-- DNT-Start -->RPM<!-- DNT-End --> with the -Uvh switch.</para>
 
         <para>This is the upgrade command and will perform an automatic
         upgrade if a previous version is installed or it will just install
         fresh if no other version has been installed.</para>
 
-        <programlisting>sudo rpm -Uvh &lt;rpm file name&gt;</programlisting>
+        <!-- DNT-Start --><programlisting>sudo rpm -Uvh &lt;rpm file name&gt;</programlisting><!-- DNT-End -->
 
         <variablelist>
           <varlistentry>
             <term>Note:</term>
 
             <listitem>
-              <para>For ANY version of SuSe you must set a password for the
+              <para>For <!-- DNT-Start -->ANY<!-- DNT-End --> version of SuSe you must set a password for the
               <emphasis role="bluebold">hpcc</emphasis> user on all nodes. One
               way to do do this is to issue the following command:</para>
 
-              <programlisting>sudo passwd hpcc</programlisting>
+              <!-- DNT-Start --><programlisting>sudo passwd hpcc</programlisting><!-- DNT-End -->
 
-              <para>Be sure to set the password on ALL nodes</para>
+              <para>Be sure to set the password on <!-- DNT-Start -->ALL<!-- DNT-End --> nodes</para>
             </listitem>
           </varlistentry>
         </variablelist>
@@ -52,20 +52,20 @@
         <para>For Ubuntu installations a Debian package is provided. To
         install the package, use:</para>
 
-        <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
+        <!-- DNT-Start --><programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting><!-- DNT-End -->
       </listitem>
     </orderedlist>
   </sect2>
 
   <sect2>
-    <title>Editing and distributing the Configuration file</title>
+    <!-- DNT-Start --><title>Editing and distributing the Configuration file</title><!-- DNT-End -->
 
-    <para>After you install the HDFS to HPCC Connector package, you must edit
+    <para>After you install the <!-- DNT-Start -->HDFS<!-- DNT-End --> to <!-- DNT-Start -->HPCC<!-- DNT-End --> Connector package, you must edit
     the configuration file and push it out to all nodes.</para>
 
     <orderedlist>
       <listitem>
-        <para>SSH to a node where the package has been installed.</para>
+        <para><!-- DNT-Start -->SSH<!-- DNT-End --> to a node where the package has been installed.</para>
       </listitem>
 
       <listitem>
@@ -74,7 +74,7 @@
 
         <para>The configuration file contains one line:</para>
 
-        <programlisting>HADOOP_LOCATION=/usr/local/hadoop</programlisting>
+        <!-- DNT-Start --><programlisting>HADOOP_LOCATION=/usr/local/hadoop</programlisting><!-- DNT-End -->
 
         <para>Make sure the value is set to the location where Hadoop is
         installed.</para>
@@ -94,29 +94,29 @@
   </sect2>
 
   <sect2 role="brk">
-    <title>Installing the ECL library to your ECL IDE source folder</title>
+    <!-- DNT-Start --><title>Installing the ECL library to your ECL IDE source folder</title><!-- DNT-End -->
 
-    <para>The HDSF to HPCC Connector library is a single ECL file containing
-    three MACROs. These steps explain how to install to your ECL source
+    <para>The <!-- DNT-Start -->HDSF<!-- DNT-End --> to <!-- DNT-Start -->HPCC<!-- DNT-End --> Connector library is a single <!-- DNT-Start -->ECL<!-- DNT-End --> file containing
+    three <!-- DNT-Start -->MACROs<!-- DNT-End -->. These steps explain how to install to your <!-- DNT-Start -->ECL<!-- DNT-End --> source
     repository.</para>
 
     <para><orderedlist>
         <listitem>
-          <para>Download the .ZIP file from the portal.</para>
+          <para>Download the .<!-- DNT-Start -->ZIP<!-- DNT-End --> file from the portal.</para>
         </listitem>
 
         <listitem>
-          <para>Extract the contents of the zip file to the ECL IDE source
+          <para>Extract the contents of the zip file to the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> source
           folder. Make sure to select the option to use the folder names from
           the Zip file.</para>
 
-          <para>The ECL Source folder is typically located at <emphasis
-          role="bluebold">C:\Users\Public\Documents\HPCC Systems\ECL\My
+          <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> Source folder is typically located at <emphasis
+          role="bluebold">C:\Users\Public\Documents\<!-- DNT-Start -->HPCC<!-- DNT-End --> Systems\<!-- DNT-Start -->ECL<!-- DNT-End -->\My
           Files</emphasis>.</para>
 
-          <para>To locate your source folder, refer to your ECL IDE
+          <para>To locate your source folder, refer to your <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->
           preference, located at <emphasis role="bold">Preferences &gt;&gt;
-          Compiler &gt;&gt; ECL Folders</emphasis>.</para>
+          Compiler &gt;&gt; <!-- DNT-Start -->ECL<!-- DNT-End --> Folders</emphasis>.</para>
 
           <para>When you are finished, the library will be in a repository
           folder named <emphasis role="bluebold">DataConnectors</emphasis>. It

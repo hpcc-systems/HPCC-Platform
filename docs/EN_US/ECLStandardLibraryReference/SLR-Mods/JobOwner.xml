@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="User">
-  <title>User</title>
+  <!-- DNT-Start --><title>User</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.System.Job.User<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.System.Job.User<indexterm>
       <primary>STD.System.Job.User</primary>
     </indexterm> <indexterm>
       <primary>System.Job.User</primary>
@@ -13,7 +13,7 @@
     </indexterm> <indexterm>
       <primary>User</primary>
     </indexterm>(</emphasis> <emphasis> </emphasis> <emphasis
-  role="bold">)</emphasis></para>
+  role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -23,18 +23,18 @@
 
       <tbody>
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>User returns a VARSTRING value.</entry>
+          <entry><!-- DNT-Start -->User<!-- DNT-End --> returns a <!-- DNT-Start -->VARSTRING<!-- DNT-End --> value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">User </emphasis>function returns the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->User<!-- DNT-End --> </emphasis>function returns the
   username of the person running the workunit.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">A := STD.System.Job.User();</programlisting>
+  <!-- DNT-Start --><programlisting format="linespecific">A := STD.System.Job.User();</programlisting><!-- DNT-End -->
 </sect1>

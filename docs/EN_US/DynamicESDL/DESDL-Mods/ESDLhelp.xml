@@ -2,17 +2,17 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Attributes_help">
-  <title>help</title>
+  <!-- DNT-Start --><title>help</title><!-- DNT-End -->
 
   <para><indexterm>
-      <primary>help</primary>
-    </indexterm>The help attribute (valid only for an ESPMethod) allows you to
+      <primary><!-- DNT-Start -->help<!-- DNT-End --></primary>
+    </indexterm>The <!-- DNT-Start -->help<!-- DNT-End --> attribute (valid only for an ESPMethod) allows you to
   specify some additional text to display on the form that is automatically
   generated to execute a method.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <programlisting>ESPservice MyService
+  <!-- DNT-Start --><programlisting>ESPservice MyService
 
  {
    ESPmethod MyMethod1(MyMethod1Request, MyMethod1Response);
@@ -23,5 +23,5 @@
      min_ver("1.2")
     ]
    MyMethod2(MyMethod2Request, MyMethod2Response);
- };</programlisting>
+ };</programlisting><!-- DNT-End -->
 </sect1>

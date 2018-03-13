@@ -2,18 +2,18 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="GLOBAL">
-  <title>GLOBAL</title>
+  <!-- DNT-Start --><title>GLOBAL</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">GLOBAL<indexterm>
-      <primary>GLOBAL</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->GLOBAL<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->GLOBAL<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>GLOBAL function</primary>
+      <primary><!-- DNT-Start -->GLOBAL<!-- DNT-End --> function</primary>
     </indexterm>( </emphasis><emphasis>expression </emphasis><emphasis
-  role="bold">[</emphasis>,<emphasis role="bold"> FEW<indexterm>
-      <primary>FEW</primary>
+  role="bold">[</emphasis>,<emphasis role="bold"> <!-- DNT-Start -->FEW<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->FEW<!-- DNT-End --></primary>
     </indexterm> | </emphasis><emphasis> </emphasis><emphasis
-  role="bold">MANY<indexterm>
-      <primary>MANY</primary>
+  role="bold"><!-- DNT-Start -->MANY<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->MANY<!-- DNT-End --></primary>
     </indexterm></emphasis><emphasis> </emphasis><emphasis role="bold">]
   )</emphasis></para>
 
@@ -25,13 +25,13 @@
 
         <tbody>
           <row>
-            <entry><emphasis>expression</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
 
             <entry>The expression to evaluate at a global scope.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">FEW</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">FEW</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Indicates that the expression will result in
             fewer than 10,000 records. This allows optimization to produce a
@@ -39,31 +39,31 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">MANY</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">MANY</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Indicates that the expression will result in many
             records.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>GLOBAL may return scalar values or record sets.</entry>
+            <entry><!-- DNT-Start -->GLOBAL<!-- DNT-End --> may return scalar values or record sets.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">GLOBAL </emphasis>function evaluates the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->GLOBAL<!-- DNT-End --> </emphasis>function evaluates the
   <emphasis>expression</emphasis> at a global scope, similar to what the
-  GLOBAL workflow service<indexterm>
-      <primary>GLOBAL workflow service</primary>
+  <!-- DNT-Start -->GLOBAL<!-- DNT-End --> workflow service<indexterm>
+      <primary><!-- DNT-Start -->GLOBAL<!-- DNT-End --> workflow service</primary>
     </indexterm> does but without the need to define a separate
   attribute.</para>
 
   <para>Example:</para>
 
-  <programlisting>IMPORT doxie;
+  <!-- DNT-Start --><programlisting>IMPORT doxie;
 besr := doxie.best_records;
 ssnr := doxie.ssn_records;
 
@@ -82,8 +82,8 @@ rec tra(nada l) := TRANSFORM
   SELF.ssn_children := GLOBAL(ssnr);
 END;
 EXPORT central_records := PROJECT(nada, tra(left));
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="GLOBAL_workflow_service">GLOBAL Workflow
+  <para>See Also: <link linkend="GLOBAL_workflow_service"><!-- DNT-Start -->GLOBAL<!-- DNT-End --> Workflow
   Service</link></para>
 </sect1>

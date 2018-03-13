@@ -2,21 +2,21 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="EVALUATE">
-  <title>EVALUATE</title>
+  <!-- DNT-Start --><title>EVALUATE</title><!-- DNT-End -->
 
   <sect2 id="EVALUATE_action">
-    <title>EVALUATE<indexterm>
+    <!-- DNT-Start --><title>EVALUATE<indexterm>
         <primary>EVALUATE</primary>
-      </indexterm> action</title>
+      </indexterm> action</title><!-- DNT-End -->
 
     <para><emphasis>[</emphasis><emphasis>attrname</emphasis> :=<emphasis
-    role="bold"> ] EVALUATE<indexterm>
-        <primary>EVALUATE action</primary>
+    role="bold"> ] <!-- DNT-Start -->EVALUATE<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->EVALUATE<!-- DNT-End --> action</primary>
       </indexterm>(</emphasis><emphasis>expression</emphasis><emphasis
     role="bold">) ;</emphasis></para>
 
     <para><emphasis>[</emphasis><emphasis>attrname</emphasis> :=<emphasis
-    role="bold"> ] EVALUATE(</emphasis><emphasis>module </emphasis><emphasis
+    role="bold"> ] <!-- DNT-Start -->EVALUATE<!-- DNT-End -->(</emphasis><emphasis>module </emphasis><emphasis
     role="bold">[</emphasis><emphasis>, defname </emphasis><emphasis
     role="bold"> ] ) ;</emphasis></para>
 
@@ -28,7 +28,7 @@
 
           <tbody>
             <row>
-              <entry><emphasis>attrname</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>attrname</emphasis><!-- DNT-End --></entry>
 
               <entry>Optional. The action name, which turns the action into a
               definition, therefore not executed until the
@@ -36,19 +36,19 @@
             </row>
 
             <row>
-              <entry><emphasis>expression</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
 
               <entry>The function to call in an action context.</entry>
             </row>
 
             <row>
-              <entry><emphasis>module</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>module</emphasis><!-- DNT-End --></entry>
 
               <entry>The module to evaluate.</entry>
             </row>
 
             <row>
-              <entry><emphasis>defname</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>defname</emphasis><!-- DNT-End --></entry>
 
               <entry>Optional. The name of a specific definition within the
               <emphasis>module</emphasis> to evaluate. If omitted, all
@@ -59,13 +59,13 @@
         </tgroup>
       </informaltable></para>
 
-    <para>The first form of the <emphasis role="bold">EVALUATE</emphasis>
+    <para>The first form of the <emphasis role="bold"><!-- DNT-Start -->EVALUATE<!-- DNT-End --></emphasis>
     action names an <emphasis>expression</emphasis> (typically a function
     call) to execute in an action context. This is mainly useful for calling
     functions that have side-effects, where you don't care about the return
     value.</para>
 
-    <para>The second form of the <emphasis role="bold">EVALUATE</emphasis>
+    <para>The second form of the <emphasis role="bold"><!-- DNT-Start -->EVALUATE<!-- DNT-End --></emphasis>
     action recursively expands the exported definitions of the
     <emphasis>module</emphasis> and evaluates them. If a
     <emphasis>defname</emphasis> is specified, then only that definition is
@@ -75,7 +75,7 @@
 
     <para>Form 1 example:</para>
 
-    <programlisting>myService := SERVICE
+    <!-- DNT-Start --><programlisting>myService := SERVICE
   UNSIGNED4 doSomething(STRING text);
 END;
 
@@ -84,11 +84,11 @@ ds := DATASET('MyFile', {STRING20 text} , THOR);
 APPLY(ds, EVALUATE(doSomething(ds.text)));
  //calls the doSomething function once for each record in the ds
  // dataset, ignoring the returned values from the function
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para>Form 2 example:</para>
 
-    <programlisting>M := MODULE
+    <!-- DNT-Start --><programlisting>M := MODULE
   EXPORT a := 10;
   EXPORT b := OUTPUT('Hello');
 END;
@@ -102,17 +102,17 @@ EVALUATE(M2);
 //produces three results:
 //  Result_1: 10
 //  Result_2: Hello
-//  Result_3: Richard</programlisting>
+//  Result_3: Richard</programlisting><!-- DNT-End -->
 
-    <para>See Also: <link linkend="APPLY">APPLY</link>, <link
-    linkend="SERVICE_Structure">SERVICE Structure</link>,</para>
+    <para>See Also: <link linkend="APPLY"><!-- DNT-Start -->APPLY<!-- DNT-End --></link>, <link
+    linkend="SERVICE_Structure"><!-- DNT-Start -->SERVICE<!-- DNT-End --> Structure</link>,</para>
   </sect2>
 
   <sect2 id="EVALUATE_function">
-    <title>EVALUATE function</title>
+    <!-- DNT-Start --><title>EVALUATE function</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">EVALUATE(</emphasis><indexterm>
-        <primary>EVALUATE function</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->EVALUATE<!-- DNT-End -->(</emphasis><indexterm>
+        <primary><!-- DNT-Start -->EVALUATE<!-- DNT-End --> function</primary>
       </indexterm><emphasis>onerecord, value</emphasis><emphasis
     role="bold">)</emphasis></para>
 
@@ -124,49 +124,49 @@ EVALUATE(M2);
 
           <tbody>
             <row>
-              <entry><emphasis>onerecord</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>onerecord</emphasis><!-- DNT-End --></entry>
 
               <entry>A record set consisting of a single record.</entry>
             </row>
 
             <row>
-              <entry><emphasis>value</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>value</emphasis><!-- DNT-End --></entry>
 
               <entry>The value to return. This may be any expression yielding
               a value.</entry>
             </row>
 
             <row>
-              <entry>Return:</entry>
+              <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-              <entry>EVALUATE returns a single value.</entry>
+              <entry><!-- DNT-Start -->EVALUATE<!-- DNT-End --> returns a single value.</entry>
             </row>
           </tbody>
         </tgroup>
       </informaltable></para>
 
-    <para>The <emphasis role="bold">EVALUATE</emphasis> function returns the
+    <para>The <emphasis role="bold"><!-- DNT-Start -->EVALUATE<!-- DNT-End --></emphasis> function returns the
     <emphasis>value</emphasis> evaluated in the context of the
     <emphasis>onerecord</emphasis> set (which must be a single record, only).
     This function typically uses indexing to select a single record for the
     <emphasis>onerecord</emphasis> recordset. The usage is to return a value
     from a specific child record when operating at the parent record's scope
-    level. The advantage that EVALUATE has over using recordset indexing into
+    level. The advantage that <!-- DNT-Start -->EVALUATE<!-- DNT-End --> has over using recordset indexing into
     a single field is that the <emphasis>value</emphasis> returned can be any
     expression and not just a single field from the child dataset.</para>
   </sect2>
 
   <sect2 id="Accessing_Field-level_Data_in_a_Specific_Record">
-    <title>Accessing Field-level Data in a Specific Record</title>
+    <!-- DNT-Start --><title>Accessing Field-level Data in a Specific Record</title><!-- DNT-End -->
 
     <para>To access field level data in a specific record, the recordset
-    indexing capability must be used to select a single record. The SORT
+    indexing capability must be used to select a single record. The <!-- DNT-Start -->SORT<!-- DNT-End -->
     function and recordset filters are useful in selecting and ordering the
     recordset so that the appropriate record can be selected.</para>
 
     <para>Example:</para>
 
-    <programlisting>WorstCard := SORT(Cards,Std.Scoring);
+    <!-- DNT-Start --><programlisting>WorstCard := SORT(Cards,Std.Scoring);
 MyValue   := EVALUATE(WorstCard[1],Std.Utilization);
  // WorstCard[1] uses indexing to get the first record
  // in the sort order, then evaluates that record
@@ -193,8 +193,8 @@ CurrentRate := MAP(~EXISTS(SortedTrades) =&gt; ' ',
                    EVALUATE(SortedTrades[1], trades.trd_rate));
 
 OUTPUT(person,{CurrentRate});
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-    <para>See Also: <link linkend="SORT">SORT</link></para>
+    <para>See Also: <link linkend="SORT"><!-- DNT-Start -->SORT<!-- DNT-End --></link></para>
   </sect2>
 </sect1>

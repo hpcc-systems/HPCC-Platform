@@ -2,81 +2,81 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="NLP_RECORD_and_TRANSFORM_Functions">
-  <title>NLP RECORD and TRANSFORM Functions</title>
+  <!-- DNT-Start --><title>NLP RECORD and TRANSFORM Functions</title><!-- DNT-End -->
 
   <para><emphasis>The following functions are used in field definition
-  expressions within the RECORD structure<indexterm>
-      <primary>RECORD structure</primary>
-    </indexterm> or TRANSFORM function that defines the result set from the
-  PARSE function<indexterm>
-      <primary>PARSE function</primary>
+  expressions within the <!-- DNT-Start -->RECORD<!-- DNT-End --> structure<indexterm>
+      <primary><!-- DNT-Start -->RECORD<!-- DNT-End --> structure</primary>
+    </indexterm> or <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function that defines the result set from the
+  <!-- DNT-Start -->PARSE<!-- DNT-End --> function<indexterm>
+      <primary><!-- DNT-Start -->PARSE<!-- DNT-End --> function</primary>
     </indexterm>:</emphasis></para>
 
-  <para><emphasis role="bold">MATCHED(<indexterm>
-      <primary>MATCHED</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->MATCHED<!-- DNT-End -->(<indexterm>
+      <primary><!-- DNT-Start -->MATCHED<!-- DNT-End --></primary>
     </indexterm></emphasis><emphasis> </emphasis><emphasis role="bold">[
   </emphasis><emphasis>patternreference </emphasis><emphasis role="bold">]
   )</emphasis></para>
 
-  <para><emphasis role="bold">MATCHED</emphasis> returns true or false as to
+  <para><emphasis role="bold"><!-- DNT-Start -->MATCHED<!-- DNT-End --></emphasis> returns true or false as to
   whether the <emphasis>patternreference</emphasis> found a match. If the
   <emphasis>patternreference</emphasis> is omitted, it indicates whether the
-  entire pattern matched or not (for use with the NOT MATCHED option).</para>
+  entire pattern matched or not (for use with the <!-- DNT-Start -->NOT<!-- DNT-End --> <!-- DNT-Start -->MATCHED<!-- DNT-End --> option).</para>
 
-  <para><emphasis role="bold">MATCHTEXT</emphasis><emphasis><indexterm>
-      <primary>MATCHTEXT</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->MATCHTEXT<!-- DNT-End --></emphasis><emphasis><indexterm>
+      <primary><!-- DNT-Start -->MATCHTEXT<!-- DNT-End --></primary>
     </indexterm> </emphasis><emphasis role="bold">[
   (</emphasis><emphasis>patternreference</emphasis><emphasis role="bold">)
   ]</emphasis></para>
 
-  <para><emphasis role="bold">MATCHTEXT</emphasis> returns the matching ASCII
+  <para><emphasis role="bold"><!-- DNT-Start -->MATCHTEXT<!-- DNT-End --></emphasis> returns the matching <!-- DNT-Start -->ASCII<!-- DNT-End -->
   text the <emphasis>patternreference</emphasis> found, or blank if not found.
-  If the <emphasis>patternreference</emphasis> is omitted, MATCHTEXT returns
+  If the <emphasis>patternreference</emphasis> is omitted, <!-- DNT-Start -->MATCHTEXT<!-- DNT-End --> returns
   all matching text.</para>
 
-  <para><emphasis role="bold">MATCHUNICODE(<indexterm>
-      <primary>MATCHUNICODE</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->MATCHUNICODE<!-- DNT-End -->(<indexterm>
+      <primary><!-- DNT-Start -->MATCHUNICODE<!-- DNT-End --></primary>
     </indexterm></emphasis><emphasis>patternreference</emphasis><emphasis
   role="bold">)</emphasis></para>
 
-  <para><emphasis role="bold">MATCHUNICODE</emphasis> returns the matching
+  <para><emphasis role="bold"><!-- DNT-Start -->MATCHUNICODE<!-- DNT-End --></emphasis> returns the matching
   Unicode text the <emphasis>patternreference</emphasis> found, or blank if
   not found.</para>
 
-  <para><emphasis role="bold">MATCHLENGTH(<indexterm>
-      <primary>MATCHLENGTH</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->MATCHLENGTH<!-- DNT-End -->(<indexterm>
+      <primary><!-- DNT-Start -->MATCHLENGTH<!-- DNT-End --></primary>
     </indexterm></emphasis><emphasis>patternreference</emphasis><emphasis
   role="bold">)</emphasis></para>
 
-  <para><emphasis role="bold">MATCHLENGTH</emphasis> returns the number of
+  <para><emphasis role="bold"><!-- DNT-Start -->MATCHLENGTH<!-- DNT-End --></emphasis> returns the number of
   characters in the matching text the <emphasis>patternreference</emphasis>
   found, or 0 if not found.</para>
 
-  <para><emphasis role="bold">MATCHPOSITION(<indexterm>
-      <primary>MATCHPOSITION</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->MATCHPOSITION<!-- DNT-End -->(<indexterm>
+      <primary><!-- DNT-Start -->MATCHPOSITION<!-- DNT-End --></primary>
     </indexterm></emphasis><emphasis>patternreference</emphasis><emphasis
   role="bold">)</emphasis></para>
 
-  <para><emphasis role="bold">MATCHPOSITION</emphasis> returns the position
+  <para><emphasis role="bold"><!-- DNT-Start -->MATCHPOSITION<!-- DNT-End --></emphasis> returns the position
   within the text of the first character in the matching text the
   <emphasis>patternreference</emphasis> found, or 0 if not found.</para>
 
-  <para><emphasis role="bold">MATCHROW(<indexterm>
-      <primary>MATCHROW</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->MATCHROW<!-- DNT-End -->(<indexterm>
+      <primary><!-- DNT-Start -->MATCHROW<!-- DNT-End --></primary>
     </indexterm></emphasis><emphasis>patternreference</emphasis><emphasis
   role="bold">)</emphasis></para>
 
-  <para><emphasis role="bold">MATCHROW</emphasis> returns the entire row of
-  the matching text the <emphasis>patternreference</emphasis> found for a RULE
-  (valid only when the PARSE option is used on the PARSE function). This may
-  be used to fully qualify a field in the RECORD structure of the row.</para>
+  <para><emphasis role="bold"><!-- DNT-Start -->MATCHROW<!-- DNT-End --></emphasis> returns the entire row of
+  the matching text the <emphasis>patternreference</emphasis> found for a <!-- DNT-Start -->RULE<!-- DNT-End -->
+  (valid only when the <!-- DNT-Start -->PARSE<!-- DNT-End --> option is used on the <!-- DNT-Start -->PARSE<!-- DNT-End --> function). This may
+  be used to fully qualify a field in the <!-- DNT-Start -->RECORD<!-- DNT-End --> structure of the row.</para>
 
   <sect2 id="Pattern_References">
-    <title>Pattern References</title>
+    <!-- DNT-Start --><title>Pattern References</title><!-- DNT-End -->
 
     <para>The <emphasis>patternreference</emphasis> parameter to these
-    functions is a slash-delimited (/) list of previously defined PATTERN,
-    TOKEN, or RULE attributes with or without an instance number appended in
+    functions is a slash-delimited (/) list of previously defined <!-- DNT-Start -->PATTERN<!-- DNT-End -->,
+    <!-- DNT-Start -->TOKEN<!-- DNT-End -->, or <!-- DNT-Start -->RULE<!-- DNT-End --> attributes with or without an instance number appended in
     square brackets.</para>
 
     <para>If an instance number is supplied, the
@@ -88,7 +88,7 @@
 
     <para>Example:</para>
 
-    <programlisting>PATTERN ws := PATTERN('[ \t\r\n]');
+    <!-- DNT-Start --><programlisting>PATTERN ws := PATTERN('[ \t\r\n]');
 PATTERN arb := PATTERN('[-!.,\t a-zA-Z0-9]')+;
 PATTERN number := PATTERN('[0-9]')+;
 PATTERN age := '(' number OPT('/I') ')';
@@ -148,10 +148,10 @@ resultsRec extractResults(infile l, attrRec attr) := TRANSFORM
 END;
 
 OUTPUT(PARSE(infile,line,expr,extractResults(LEFT, $1),
-            FIRST,WHOLE,PARSE,SKIP(ws)));</programlisting>
+            FIRST,WHOLE,PARSE,SKIP(ws)));</programlisting><!-- DNT-End -->
 
-    <para>See Also: <link linkend="PARSE">PARSE</link>, <link
-    linkend="RECORD_Structure">RECORD Structure</link>, <link
-    linkend="TRANSFORM_Structure">TRANSFORM Structure</link></para>
+    <para>See Also: <link linkend="PARSE"><!-- DNT-Start -->PARSE<!-- DNT-End --></link>, <link
+    linkend="RECORD_Structure"><!-- DNT-Start -->RECORD<!-- DNT-End --> Structure</link>, <link
+    linkend="TRANSFORM_Structure"><!-- DNT-Start -->TRANSFORM<!-- DNT-End --> Structure</link></para>
   </sect2>
 </sect1>

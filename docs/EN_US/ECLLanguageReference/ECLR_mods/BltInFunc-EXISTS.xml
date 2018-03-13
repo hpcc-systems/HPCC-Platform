@@ -2,18 +2,18 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="EXISTS">
-  <title>EXISTS<indexterm>
+  <!-- DNT-Start --><title>EXISTS<indexterm>
       <primary>EXISTS</primary>
-    </indexterm></title>
+    </indexterm></title><!-- DNT-End -->
 
-  <para><emphasis role="bold">EXISTS<indexterm>
-      <primary>EXISTS function</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->EXISTS<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->EXISTS<!-- DNT-End --> function</primary>
     </indexterm>(</emphasis><emphasis>recordset </emphasis><emphasis
-  role="bold">[, KEYED<indexterm>
-      <primary>KEYED</primary>
-    </indexterm> ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+  role="bold">[, <!-- DNT-Start -->KEYED<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->KEYED<!-- DNT-End --></primary>
+    </indexterm> ] </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
-  <para><emphasis role="bold">EXISTS(</emphasis><emphasis> valuelist</emphasis><emphasis role="bold"> )</emphasis></para>
+  <para><emphasis role="bold"><!-- DNT-Start -->EXISTS<!-- DNT-End -->(</emphasis><emphasis> valuelist</emphasis><emphasis role="bold"> )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -23,7 +23,7 @@
 
         <tbody>
           <row>
-            <entry><emphasis>recordset</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>recordset</emphasis><!-- DNT-End --></entry>
 
             <entry>The set of records to process. This may be the name of an
             index, a dataset, or a record set derived from some filter
@@ -32,7 +32,7 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">KEYED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">KEYED</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the activity is part of an index read
             operation, which allows the optimizer to generate optimal code for
@@ -40,81 +40,81 @@
           </row>
 
           <row>
-            <entry><emphasis>valuelist</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>valuelist</emphasis><!-- DNT-End --></entry>
 
             <entry>A comma-delimited list of expressions. This may also be a
-            SET of values.</entry>
+            <!-- DNT-Start -->SET<!-- DNT-End --> of values.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the output record order is not significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the significance of the output record order.</entry>
           </row>
           <row>
-            <entry><emphasis>bool</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
 
             <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">STABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is not significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity in parallel.</entry>
           </row>
           <row>
-            <entry><emphasis>numthreads</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Override the algorithm used for this activity.</entry>
           </row>
           <row>
-            <entry><emphasis>name</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>EXISTS returns a single BOOLEAN value.</entry>
+            <entry><!-- DNT-Start -->EXISTS<!-- DNT-End --> returns a single <!-- DNT-Start -->BOOLEAN<!-- DNT-End --> value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">EXISTS</emphasis> function returns true if
+  <para>The <emphasis role="bold"><!-- DNT-Start -->EXISTS<!-- DNT-End --></emphasis> function returns true if
   the number of records in the specified <emphasis>recordset</emphasis> is
   &gt; 0, or the <emphasis>valuelist</emphasis> is populated. This is most
   commonly used to detect whether a filter has filtered out all the
   records.</para>
 
   <para>When checking for an empty recordset, use the
-  EXISTS(<emphasis>recordset</emphasis>) function instead of the expression:
-  COUNT(<emphasis>recordset</emphasis>) &gt; 0. Using EXISTS results in more
+  <!-- DNT-Start -->EXISTS<!-- DNT-End -->(<emphasis>recordset</emphasis>) function instead of the expression:
+  <!-- DNT-Start -->COUNT<!-- DNT-End -->(<emphasis>recordset</emphasis>) &gt; 0. Using <!-- DNT-Start -->EXISTS<!-- DNT-End --> results in more
   efficient processing and better performance under those
   circumstances.</para>
 
   <para>Example:</para>
 
-  <programlisting>MyBoolean := EXISTS(Publics(pub_type = 'B'));
+  <!-- DNT-Start --><programlisting>MyBoolean := EXISTS(Publics(pub_type = 'B'));
 TradesExistPersons := Person(EXISTS(Trades));
 NoTradesPerson := Person(NOT EXISTS(Trades));
 
@@ -123,8 +123,8 @@ SetVals := [4,8,16,2,1];
 MinVal3 := EXISTS(SetVals);  //returns TRUE
 NullSet := [];
 MinVal3 := EXISTS(NullSet);  //returns FALSE
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="DEDUP">DEDUP</link>, <link
+  <para>See Also: <link linkend="DEDUP"><!-- DNT-Start -->DEDUP<!-- DNT-End --></link>, <link
   linkend="Recordset_Filtering">Record Filters</link></para>
 </sect1>

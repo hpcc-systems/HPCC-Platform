@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Record_SetRecord_Set_Operators">
-  <title>Record Set<indexterm>
+  <!-- DNT-Start --><title>Record Set<indexterm>
       <primary>Record Set</primary>
     </indexterm> Operators<indexterm>
       <primary>Record Set Operators</primary>
-    </indexterm></title>
+    </indexterm></title><!-- DNT-End -->
 
-  <para>The following record set operators are supported (all require that the
+  <!-- DNT-Start --><para>The following record set operators are supported (all require that the
   files were created using identical RECORD structures<indexterm>
       <primary>RECORD structure</primary>
-    </indexterm>):</para>
+    </indexterm>):</para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup align="left" cols="2">
@@ -21,21 +21,21 @@
 
       <tbody>
         <row>
-          <entry>+</entry>
+          <entry><!-- DNT-Start -->+<!-- DNT-End --></entry>
 
           <entry>Append all records from both files, independent of any
           order</entry>
         </row>
 
         <row>
-          <entry>&amp;</entry>
+          <entry><!-- DNT-Start -->&amp;<!-- DNT-End --></entry>
 
           <entry>Append all records from both files, maintaining record order
           on each node</entry>
         </row>
 
         <row>
-          <entry>-</entry>
+          <entry><!-- DNT-Start -->-<!-- DNT-End --></entry>
 
           <entry>Subtract records from a file</entry>
         </row>
@@ -45,7 +45,7 @@
 
   <para>Example:</para>
 
-  <programlisting>MyLayout := RECORD
+  <!-- DNT-Start --><programlisting>MyLayout := RECORD
   UNSIGNED Num;
   STRING Number;
 END;
@@ -60,15 +60,15 @@ ResultSet   := WholeRecSet-ExcludeThese;
 
 OUTPUT (WholeRecSet);
 OUTPUT(ResultSet);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
   <sect2 id="Prefix_Append_Operator">
-    <title>Prefix Append Operator</title>
+    <!-- DNT-Start --><title>Prefix Append Operator</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">(+)
+    <!-- DNT-Start --><para><emphasis role="bold">(+)
     (</emphasis><emphasis>ds_list</emphasis><emphasis role="bold">)
     [</emphasis><emphasis>, options</emphasis><emphasis role="bold">]
-    )</emphasis></para>
+    )</emphasis></para><!-- DNT-End -->
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -78,21 +78,21 @@ OUTPUT(ResultSet);
 
         <tbody>
           <row>
-            <entry><emphasis role="bold">(+)</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">(+)</emphasis><!-- DNT-End --></entry>
 
             <entry>The prefix append operator.</entry>
           </row>
 
           <row>
-            <entry><emphasis>ds_list</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>ds_list</emphasis><!-- DNT-End --></entry>
 
             <entry>A comma-delimited list of record sets to append (two or
-            more). All the record sets must have identical RECORD
+            more). All the record sets must have identical <!-- DNT-Start -->RECORD<!-- DNT-End -->
             structures.</entry>
           </row>
 
           <row>
-            <entry><emphasis>options</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>options</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. A comma-delimited list of options from the list
             below.</entry>
@@ -108,10 +108,10 @@ OUTPUT(ResultSet);
 
     <para>The following <emphasis>options</emphasis> may be used:</para>
 
-    <para><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
-    <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
-    [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
-    role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
+    <para><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis>
+    <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ]
+    [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+    role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name
     </emphasis><emphasis role="bold">) ]</emphasis></para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
@@ -122,21 +122,21 @@ OUTPUT(ResultSet);
 
         <tbody>
           <row>
-            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the output record order is not
             significant.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the significance of the output record
             order.</entry>
           </row>
 
           <row>
-            <entry><emphasis>bool</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
 
             <entry>When False, specifies the output record order is not
             significant. When True, specifies the default output record
@@ -144,46 +144,46 @@ OUTPUT(ResultSet);
           </row>
 
           <row>
-            <entry><emphasis role="bold">STABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is
             significant.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is not
             significant.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity in
             parallel.</entry>
           </row>
 
           <row>
-            <entry><emphasis>numthreads</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity using
             <emphasis>numthreads</emphasis> threads.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Override the algorithm used for this
             activity.</entry>
           </row>
 
           <row>
-            <entry><emphasis>name</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
 
             <entry>The algorithm to use for this activity. Must be from the
-            list of supported algorithms for the SORT function's STABLE and
-            UNSTABLE options.</entry>
+            list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and
+            <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
           </row>
         </tbody>
       </tgroup>
@@ -191,13 +191,13 @@ OUTPUT(ResultSet);
 
     <para>Example:</para>
 
-    <programlisting>ds_1 := (+)(ds1, ds2, UNORDERED);
+    <!-- DNT-Start --><programlisting>ds_1 := (+)(ds1, ds2, UNORDERED);
   //equivalent to: ds := ds1 + ds2;        
   
 ds_2 := (+)(ds1, ds2);
   //equivalent to: ds := ds1 &amp; ds2;                
 
 ds_3 := (+)(ds1, ds2, ds3);
-  //multiple file appends are supported</programlisting>
+  //multiple file appends are supported</programlisting><!-- DNT-End -->
   </sect2>
 </sect1>

@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="addWorkunitWarning">
-  <title>addWorkunitWarning</title>
+  <!-- DNT-Start --><title>addWorkunitWarning</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.System.Log.addWorkunitWarning<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.System.Log.addWorkunitWarning<indexterm>
       <primary>STD.System.Log.addWorkunitWarning</primary>
     </indexterm> <indexterm>
       <primary>System.Log.addWorkunitWarning</primary>
@@ -14,7 +14,7 @@
       <primary>addWorkunitWarning</primary>
     </indexterm>(</emphasis> <emphasis> text </emphasis><emphasis
   role="bold">[</emphasis> <emphasis>, code </emphasis><emphasis role="bold">]
-  )</emphasis></para>
+  )</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -24,13 +24,13 @@
 
       <tbody>
         <row>
-          <entry><emphasis>text</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>text</emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the text to write.</entry>
         </row>
 
         <row>
-          <entry><emphasis>code</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>code</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. The code number to associate with the
           <emphasis>text</emphasis>. If omitted, the default is zero
@@ -38,24 +38,24 @@
         </row>
 
         <row>
-          <entry>Return:</entry>
+          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-          <entry>addWorkunitWarning does not return a value.</entry>
+          <entry><!-- DNT-Start -->addWorkunitWarning<!-- DNT-End --> does not return a value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">addWorkunitWarning </emphasis>action writes
+  <para>The <emphasis role="bold"><!-- DNT-Start -->addWorkunitWarning<!-- DNT-End --> </emphasis>action writes
   the <emphasis>text</emphasis> string to the eclagent.log file for the
   workunit, and also displays the <emphasis>code</emphasis> and
   <emphasis>text</emphasis> in the Syntax Errors toolbox along with the
-  Warnings section of the ECL Watch page for the workunit.</para>
+  Warnings section of the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch page for the workunit.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">IMPORT STD;
+  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 STD.System.Log.addWorkunitWarning('Got Here',1);    
    //write text to log and display "1: Got Here" in Warnings
-</programlisting>
+</programlisting><!-- DNT-End -->
 </sect1>

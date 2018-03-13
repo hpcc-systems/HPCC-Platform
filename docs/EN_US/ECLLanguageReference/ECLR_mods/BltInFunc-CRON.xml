@@ -2,13 +2,13 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="CRON">
-  <title>CRON</title>
+  <!-- DNT-Start --><title>CRON</title><!-- DNT-End -->
 
   <informalexample id="SchCRON">
-    <para><emphasis role="bold">CRON<indexterm>
-        <primary>CRON</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->CRON<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->CRON<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>CRON function</primary>
+        <primary><!-- DNT-Start -->CRON<!-- DNT-End --> function</primary>
       </indexterm>(</emphasis><emphasis> time </emphasis><emphasis
     role="bold">)</emphasis></para>
 
@@ -20,29 +20,29 @@
 
           <tbody>
             <row>
-              <entry><emphasis>time</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>time</emphasis><!-- DNT-End --></entry>
 
               <entry>A string expression containing a unix-standard cron
               time.</entry>
             </row>
 
             <row>
-              <entry>Return:</entry>
+              <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-              <entry>CRON defines a single timer event.</entry>
+              <entry><!-- DNT-Start -->CRON<!-- DNT-End --> defines a single timer event.</entry>
             </row>
           </tbody>
         </tgroup>
       </informaltable></para>
 
-    <para>The <emphasis role="bold">CRON</emphasis> function defines a timer
-    event for use within the WHEN workflow service<indexterm>
-        <primary>WHEN workflow service</primary>
-      </indexterm> or WAIT function. This is synonymous with EVENT('CRON',
+    <para>The <emphasis role="bold"><!-- DNT-Start -->CRON<!-- DNT-End --></emphasis> function defines a timer
+    event for use within the <!-- DNT-Start -->WHEN<!-- DNT-End --> workflow service<indexterm>
+        <primary><!-- DNT-Start -->WHEN<!-- DNT-End --> workflow service</primary>
+      </indexterm> or <!-- DNT-Start -->WAIT<!-- DNT-End --> function. This is synonymous with <!-- DNT-Start -->EVENT<!-- DNT-End -->('<!-- DNT-Start -->CRON<!-- DNT-End -->',
     <emphasis>time</emphasis>).</para>
 
     <para>The <emphasis>time </emphasis>parameter is unix-standard cron time,
-    expressed in UTC (aka Greenwich Mean Time) as a string containing the
+    expressed in <!-- DNT-Start -->UTC<!-- DNT-End --> (aka Greenwich Mean Time) as a string containing the
     following, space-delimited components:</para>
 
     <para><emphasis>minute hour dom month dow</emphasis></para>
@@ -55,35 +55,35 @@
 
           <tbody>
             <row>
-              <entry><emphasis>minute</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>minute</emphasis><!-- DNT-End --></entry>
 
               <entry>An integer value for the minute of the hour. Valid values
               are from 0 to 59.</entry>
             </row>
 
             <row>
-              <entry><emphasis>hour</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>hour</emphasis><!-- DNT-End --></entry>
 
               <entry>An integer value for the hour. Valid values are from 0 to
               23 (using the 24 hour clock).</entry>
             </row>
 
             <row>
-              <entry><emphasis>dom</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>dom</emphasis><!-- DNT-End --></entry>
 
               <entry>An integer value for the day of the month. Valid values
               are from 1 to 31.</entry>
             </row>
 
             <row>
-              <entry><emphasis>month</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>month</emphasis><!-- DNT-End --></entry>
 
               <entry>An integer value for the month. Valid values are from 1
               to 12.</entry>
             </row>
 
             <row>
-              <entry><emphasis>dow</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>dow</emphasis><!-- DNT-End --></entry>
 
               <entry>An integer value for the day of the week. Valid values
               are from 0 to 6 (where 0 represents Sunday).</entry>
@@ -101,7 +101,7 @@
 
     <para>Example:</para>
 
-    <programlisting>EXPORT events := MODULE
+    <!-- DNT-Start --><programlisting>EXPORT events := MODULE
   EXPORT dailyAtMidnight := CRON('0 0 * * *');
   EXPORT dailyAt( INTEGER hour,
    INTEGER minute=0) :=
@@ -114,10 +114,10 @@ END;
 BUILD(teenagers) : WHEN(events.dailyAtMidnight);
 BUILD(oldies)    : WHEN(events.dailyAt(6));
 BUILD(NewStuff)    : WHEN(events.EveryThreeHours);
-</programlisting>
+</programlisting><!-- DNT-End -->
   </informalexample>
 
-  <para>See Also: <link linkend="EVENT">EVENT</link>, <link
-  linkend="WHEN">WHEN</link>, <link linkend="WAIT">WAIT</link>, <link
-  linkend="NOTIFY">NOTIFY</link></para>
+  <para>See Also: <link linkend="EVENT"><!-- DNT-Start -->EVENT<!-- DNT-End --></link>, <link
+  linkend="WHEN"><!-- DNT-Start -->WHEN<!-- DNT-End --></link>, <link linkend="WAIT"><!-- DNT-Start -->WAIT<!-- DNT-End --></link>, <link
+  linkend="NOTIFY"><!-- DNT-Start -->NOTIFY<!-- DNT-End --></link></para>
 </sect1>

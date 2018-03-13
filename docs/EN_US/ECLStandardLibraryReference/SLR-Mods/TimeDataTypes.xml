@@ -2,32 +2,32 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Time_Data_Types">
-  <title>Time Data Types</title>
+  <!-- DNT-Start --><title>Time Data Types</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Date.Time_rec<indexterm>
-      <primary>STD.Date.Time_rec</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Date.Time_rec<indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Date.Time_rec</primary>
     </indexterm><indexterm>
       <primary>Date.Time_rec</primary>
     </indexterm><indexterm>
       <primary>Time_rec</primary>
     </indexterm></emphasis></para>
 
-  <para><emphasis role="bold">STD.Date.Time_t<indexterm>
-      <primary>STD.Date.Time_t</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Date.Time_t<indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Date.Time_t</primary>
     </indexterm><indexterm>
       <primary>Date.Time_t</primary>
     </indexterm><indexterm>
       <primary>Time_t</primary>
     </indexterm></emphasis></para>
 
-  <para><emphasis role="bold">STD.DateTime_rec <indexterm>
-      <primary><emphasis role="bold">STD.DateTime_rec</emphasis></primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.DateTime_rec <indexterm>
+      <primary><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.DateTime_rec</emphasis></primary>
     </indexterm><indexterm>
       <primary><emphasis role="bold">DateTime_rec</emphasis></primary>
     </indexterm></emphasis></para>
 
-  <para><emphasis role="bold">STD.Timestamp_t <indexterm>
-      <primary><emphasis role="bold">STD.Timestamp_t</emphasis></primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Timestamp_t <indexterm>
+      <primary><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Timestamp_t</emphasis></primary>
     </indexterm><indexterm>
       <primary><emphasis role="bold">Timestamp_t</emphasis></primary>
     </indexterm></emphasis></para>
@@ -40,38 +40,38 @@
 
       <tbody>
         <row>
-          <entry><emphasis role="bold">Time_rec</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">Time_rec</emphasis><!-- DNT-End --></entry>
 
-          <entry>A RECORD structure containing three fields, and INTEGER1
-          hour, an UNSIGNED1 minute, and an UNSIGNED1 second.</entry>
+          <entry>A <!-- DNT-Start -->RECORD<!-- DNT-End --> structure containing three fields, and <!-- DNT-Start -->INTEGER<!-- DNT-End -->1
+          hour, an <!-- DNT-Start -->UNSIGNED<!-- DNT-End -->1 minute, and an <!-- DNT-Start -->UNSIGNED<!-- DNT-End -->1 second.</entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">Time_t</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">Time_t</emphasis><!-- DNT-End --></entry>
 
-          <entry>An UNSIGNED3 holding a time of day in the decimal form
-          HHMMDD.</entry>
+          <entry>An <!-- DNT-Start -->UNSIGNED<!-- DNT-End -->3 holding a time of day in the decimal form
+          <!-- DNT-Start -->HHMMDD<!-- DNT-End -->.</entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">Seconds_t</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">Seconds_t</emphasis><!-- DNT-End --></entry>
 
-          <entry>An INTEGER8 holding holding a number of seconds. Can be used
+          <entry>An <!-- DNT-Start -->INTEGER<!-- DNT-End -->8 holding holding a number of seconds. Can be used
           to represent either a duration or the number of seconds since epoch
           (Jan 1, 1970).</entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">DateTime_rec</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">DateTime_rec</emphasis><!-- DNT-End --></entry>
 
-          <entry>A RECORD structure containing both a Date_rec and a
+          <entry>A <!-- DNT-Start -->RECORD<!-- DNT-End --> structure containing both a Date_rec and a
           Time_rec</entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">Timestamp_t </emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">Timestamp_t </emphasis><!-- DNT-End --></entry>
 
-          <entry>An INTEGER8 holding a number of microseconds. Can be used to
+          <entry>An <!-- DNT-Start -->INTEGER<!-- DNT-End -->8 holding a number of microseconds. Can be used to
           represent // either a duration or the number of microseconds since
           epoch (Jan 1, 1970).</entry>
         </row>
@@ -81,7 +81,7 @@
 
   <para>The Time data types defined in the Date Standard Library are:</para>
 
-  <programlisting format="linespecific">// A record structure with the different time elements separated out.
+  <!-- DNT-Start --><programlisting format="linespecific">// A record structure with the different time elements separated out.
 EXPORT Time_rec := RECORD
     UNSIGNED1   hour;
     UNSIGNED1   minute;
@@ -104,7 +104,7 @@ END;
 // A signed number holding a number of microseconds.  Can be used to represent
 // either a duration or the number of microseconds since epoch (Jan 1, 1970).
 EXPORT Timestamp_t := INTEGER8;
-</programlisting>
+</programlisting><!-- DNT-End -->
 
   <para>See Also: <link linkend="Date_Data_Types">Date Data
   Types</link></para>

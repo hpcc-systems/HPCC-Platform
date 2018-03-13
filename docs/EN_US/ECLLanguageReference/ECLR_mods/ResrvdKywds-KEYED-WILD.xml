@@ -2,19 +2,19 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="KEYED-WILD">
-  <title>KEYED<indexterm>
+  <!-- DNT-Start --><title>KEYED<indexterm>
       <primary>KEYED</primary>
     </indexterm> and WILD<indexterm>
       <primary>WILD index filter</primary>
-    </indexterm></title>
+    </indexterm></title><!-- DNT-End -->
 
-  <para><emphasis role="bold">KEYED( </emphasis><emphasis>expression
-  </emphasis><emphasis role="bold">[, OPT<indexterm>
-      <primary>OPT</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->KEYED<!-- DNT-End -->( </emphasis><emphasis>expression
+  </emphasis><emphasis role="bold">[, <!-- DNT-Start -->OPT<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->OPT<!-- DNT-End --></primary>
     </indexterm> ] )</emphasis><emphasis role="bold"> </emphasis></para>
 
-  <para><emphasis role="bold">WILD<indexterm>
-      <primary>WILD</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->WILD<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->WILD<!-- DNT-End --></primary>
     </indexterm>( </emphasis><emphasis>field </emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -26,36 +26,36 @@
 
       <tbody>
         <row>
-          <entry><emphasis>expression</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
 
-          <entry>An INDEX filter condition.</entry>
+          <entry>An <!-- DNT-Start -->INDEX<!-- DNT-End --> filter condition.</entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">OPT</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">OPT</emphasis><!-- DNT-End --></entry>
 
-          <entry>Only generate An INDEX filter condition.</entry>
+          <entry>Only generate An <!-- DNT-Start -->INDEX<!-- DNT-End --> filter condition.</entry>
         </row>
 
         <row>
-          <entry><emphasis>field</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>field</emphasis><!-- DNT-End --></entry>
 
-          <entry>A single field in an INDEX.</entry>
+          <entry>A single field in an <!-- DNT-Start -->INDEX<!-- DNT-End -->.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">KEYED</emphasis><indexterm>
-      <primary>KEYED Keyword</primary>
-    </indexterm> and <emphasis role="bold">WILD<indexterm>
-      <primary>WILD Keyword</primary>
-    </indexterm></emphasis> keywords are valid only for filters on INDEX
+  <para>The <emphasis role="bold"><!-- DNT-Start -->KEYED<!-- DNT-End --></emphasis><indexterm>
+      <primary><!-- DNT-Start -->KEYED<!-- DNT-End --> Keyword</primary>
+    </indexterm> and <emphasis role="bold"><!-- DNT-Start -->WILD<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->WILD<!-- DNT-End --> Keyword</primary>
+    </indexterm></emphasis> keywords are valid only for filters on <!-- DNT-Start -->INDEX<!-- DNT-End -->
   attributes (which also qualifies as part of the
   <emphasis>joincondition</emphasis><indexterm>
       <primary>joincondition</primary>
-    </indexterm> for a "half-keyed" JOIN). They indicate to the compiler which
-  of the leading index fields are used as filters (KEYED) or wildcarded (WILD)
+    </indexterm> for a "half-keyed" <!-- DNT-Start -->JOIN<!-- DNT-End -->). They indicate to the compiler which
+  of the leading index fields are used as filters (<!-- DNT-Start -->KEYED<!-- DNT-End -->) or wildcarded (<!-- DNT-Start -->WILD<!-- DNT-End -->)
   so that the compiler can warn you if you've gotten it wrong. Trailing fields
   not used in the filter are ignored (always treated as wildcards).</para>
 
@@ -63,34 +63,34 @@
   to an internal object created to represent the possible match conditions for
   a single keyable field):</para>
 
-  <para>1. KEYED generates a segmonitor. The segmonitor may be a wild one if
+  <para>1. <!-- DNT-Start -->KEYED<!-- DNT-End --> generates a segmonitor. The segmonitor may be a wild one if
   the <emphasis>expression</emphasis> can never be false, such as:</para>
 
-  <programlisting>   KEYED(inputval = '' OR field = inputval)</programlisting>
+  <!-- DNT-Start --><programlisting>   KEYED(inputval = '' OR field = inputval)</programlisting><!-- DNT-End -->
 
-  <para>2. WILD generates a wild segmonitor, unless there is also a KEYED()
+  <para>2. <!-- DNT-Start -->WILD<!-- DNT-End --> generates a wild segmonitor, unless there is also a <!-- DNT-Start -->KEYED<!-- DNT-End -->()
   filter on the same field.</para>
 
-  <para>3. KEYED, OPT generates a non-wild segmonitor only if the preceding
+  <para>3. <!-- DNT-Start -->KEYED<!-- DNT-End -->, <!-- DNT-Start -->OPT<!-- DNT-End --> generates a non-wild segmonitor only if the preceding
   field did.</para>
 
-  <para>4. Any field that is both KEYED and KEYED OPT creates a compile time
+  <para>4. Any field that is both <!-- DNT-Start -->KEYED<!-- DNT-End --> and <!-- DNT-Start -->KEYED<!-- DNT-End --> <!-- DNT-Start -->OPT<!-- DNT-End --> creates a compile time
   error.</para>
 
-  <para>5. If WILD or KEYED are not specified for any fields, segmonitors are
+  <para>5. If <!-- DNT-Start -->WILD<!-- DNT-End --> or <!-- DNT-Start -->KEYED<!-- DNT-End --> are not specified for any fields, segmonitors are
   generated for all keyable conditions.</para>
 
-  <para>6. An INDEX filter condition with no KEYED specified generates a wild
+  <para>6. An <!-- DNT-Start -->INDEX<!-- DNT-End --> filter condition with no <!-- DNT-Start -->KEYED<!-- DNT-End --> specified generates a wild
   segmonitor (except as specified by 5).</para>
 
-  <para>7. KEYED limits are based upon all non-wild segmonitors.</para>
+  <para>7. <!-- DNT-Start -->KEYED<!-- DNT-End --> limits are based upon all non-wild segmonitors.</para>
 
   <para>8. Conditions that do not generate segmonitors are
   post-filtered.</para>
 
   <para>Example:</para>
 
-  <programlisting>ds := DATASET('~local::rkc::person',
+  <!-- DNT-Start --><programlisting>ds := DATASET('~local::rkc::person',
         { STRING15 f1, STRING15 f2, STRING15 f3, STRING15 f4,
         UNSIGNED8 filepos{virtual(fileposition)} }, FLAT);
 ix := INDEX(ds, { ds },'\\lexis\\person.name_first.key');
@@ -132,8 +132,8 @@ COUNT(ix(WILD(f3) and f2='Halliday'));
         // missing WILD(f1) before wild after valid field
 
 COUNT(ds(KEYED(f1='Kevin')));
-        //KEYED not valid in DATASET filters</programlisting>
+        //KEYED not valid in DATASET filters</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="INDEX_record_structure">INDEX</link>, <link
-  linkend="JOIN">JOIN</link>, <link linkend="FETCH">FETCH</link></para>
+  <para>See Also: <link linkend="INDEX_record_structure"><!-- DNT-Start -->INDEX<!-- DNT-End --></link>, <link
+  linkend="JOIN"><!-- DNT-Start -->JOIN<!-- DNT-End --></link>, <link linkend="FETCH"><!-- DNT-Start -->FETCH<!-- DNT-End --></link></para>
 </sect1>

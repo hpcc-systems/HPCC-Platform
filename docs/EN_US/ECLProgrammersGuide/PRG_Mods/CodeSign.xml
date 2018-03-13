@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="code-signing">
-  <title>Code Signing, Embedded languages, and Security</title>
+  <!-- DNT-Start --><title>Code Signing, Embedded languages, and Security</title><!-- DNT-End -->
 
-  <para>Versions of HPCC Systems<superscript>®</superscript> platform prior to
+  <para>Versions of <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript> platform prior to
   6.0.0 have always allowed some control over which operations were permitted
-  in ECL code. This was done, among other reasons, as a way to ensure that
-  operations like PIPE or embedded C++ could not be used to circumvent access
+  in <!-- DNT-Start -->ECL<!-- DNT-End --> code. This was done, among other reasons, as a way to ensure that
+  operations like <!-- DNT-Start -->PIPE<!-- DNT-End --> or embedded C++ could not be used to circumvent access
   controls on files by reading them directly from the operating system.</para>
 
   <para>Version 6.0.0 (and above) has two features to provide more flexibility
@@ -15,24 +15,24 @@
 
   <itemizedlist>
     <listitem>
-      <para>We now limit which SERVICE functions are called at compile time
-      using the FOLD attribute. Typically, for security reasons , FOLD should
+      <para>We now limit which <!-- DNT-Start -->SERVICE<!-- DNT-End --> functions are called at compile time
+      using the <!-- DNT-Start -->FOLD<!-- DNT-End --> attribute. Typically, for security reasons , <!-- DNT-Start -->FOLD<!-- DNT-End --> should
       only be enabled in signed modules.</para>
     </listitem>
 
     <listitem>
       <para>You can configure the access rights (which control the ability to
-      use PIPE, embed C++, or restrict the use of a SERVICE) to be dependent
+      use <!-- DNT-Start -->PIPE<!-- DNT-End -->, embed C++, or restrict the use of a <!-- DNT-Start -->SERVICE<!-- DNT-End -->) to be dependent
       on the code being signed. This means that we can provide signed code in
-      the ECL Standard Library that makes use of these features, without
+      the <!-- DNT-Start -->ECL<!-- DNT-End --> Standard Library that makes use of these features, without
       opening them up for anyone to call anything.</para>
     </listitem>
   </itemizedlist>
 
   <sect2 id="ECLCCOptions">
-    <title>ECLCC Configuration Settings</title>
+    <!-- DNT-Start --><title>ECLCC Configuration Settings</title><!-- DNT-End -->
 
-    <para>In Configuration Manager, the ECLCC Server component has a tab named
+    <para>In Configuration Manager, the <!-- DNT-Start -->ECLCC<!-- DNT-End --> Server component has a tab named
     <emphasis role="bold">Options</emphasis>. This tab allows you to enter
     name value pairs for permissions to execute various types of embedded code
     or plugins.</para>
@@ -47,19 +47,19 @@
 
           <tbody>
             <row>
-              <entry><emphasis>--allow</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>--allow</emphasis><!-- DNT-End --></entry>
 
               <entry>Allow the option specified.</entry>
             </row>
 
             <row>
-              <entry><emphasis>--deny</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>--deny</emphasis><!-- DNT-End --></entry>
 
               <entry>Deny the option specified.</entry>
             </row>
 
             <row>
-              <entry><emphasis>--allowsigned</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>--allowsigned</emphasis><!-- DNT-End --></entry>
 
               <entry>Allow the option specified if the code has been signed
               and the key is present.</entry>
@@ -87,7 +87,7 @@
 
         <tbody>
           <row>
-            <entry><emphasis>cpp</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>cpp</emphasis><!-- DNT-End --></entry>
 
             <entry>Allow/Deny C++ and other embedded languages. For languages
             other than C++ and Cassandra, an optional plugin must also be
@@ -95,20 +95,20 @@
           </row>
 
           <row>
-            <entry><emphasis>pipe</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>pipe</emphasis><!-- DNT-End --></entry>
 
-            <entry>Allow/Deny using external applications using the PIPE
+            <entry>Allow/Deny using external applications using the <!-- DNT-Start -->PIPE<!-- DNT-End -->
             command.</entry>
           </row>
 
           <row>
-            <entry><emphasis>extern</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>extern</emphasis><!-- DNT-End --></entry>
 
-            <entry>Allow/Deny an external function (SERVICE)</entry>
+            <entry>Allow/Deny an external function (<!-- DNT-Start -->SERVICE<!-- DNT-End -->)</entry>
           </row>
 
           <row>
-            <entry><emphasis>datafile</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>datafile</emphasis><!-- DNT-End --></entry>
 
             <entry>(Valid only for --allowedsigned). This specifies that
             access to data is only allowed if the code has been signed and the
@@ -122,7 +122,7 @@
   </sect2>
 
   <sect2 id="codesigning">
-    <title>Code Signing</title>
+    <!-- DNT-Start --><title>Code Signing</title><!-- DNT-End -->
 
     <para>Code signing is similar to the way that emails can be signed to
     prove that they are from who they say they are and they have not been
@@ -134,15 +134,15 @@
     verify that the signature is valid and that the content is
     unchanged.</para>
 
-    <para>We have signed the SERVICE definitions provided by the ECL standard
-    plugins and included the public key in the HPCC platform installation.
+    <para>We have signed the <!-- DNT-Start -->SERVICE<!-- DNT-End --> definitions provided by the <!-- DNT-Start -->ECL<!-- DNT-End --> standard
+    plugins and included the public key in the <!-- DNT-Start -->HPCC<!-- DNT-End --> platform installation.
     Code that tries to use service definitions that are signed will continue
     to work as before but, code that tries to call arbitrary library functions
-    using user-supplied SERVICE definitions will give compile errors, if the
+    using user-supplied <!-- DNT-Start -->SERVICE<!-- DNT-End --> definitions will give compile errors, if the
     code is unsigned, and the extern setting (see above) is set to deny or
     allowsigned.</para>
 
-    <para>System administrators can install additional keys on the ECLCC
+    <para>System administrators can install additional keys on the <!-- DNT-Start -->ECLCC<!-- DNT-End -->
     Server machine, so if you want to use your own service definitions, they
     can be signed using a key that has been installed in this way:</para>
 

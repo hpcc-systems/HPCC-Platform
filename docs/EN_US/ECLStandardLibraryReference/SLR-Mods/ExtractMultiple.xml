@@ -2,23 +2,23 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ExtractMultiple">
-  <title>ExtractMultiple</title>
+  <!-- DNT-Start --><title>ExtractMultiple</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Str.ExtractMultiple<indexterm>
-      <primary>STD.Str.ExtractMultiple</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->ExtractMultiple<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->ExtractMultiple<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Str.ExtractMultiple</primary>
+      <primary>Str.<!-- DNT-Start -->ExtractMultiple<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>ExtractMultiple</primary>
+      <primary><!-- DNT-Start -->ExtractMultiple<!-- DNT-End --></primary>
     </indexterm>(</emphasis> <emphasis>source, instance</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
-  <para><emphasis role="bold">STD.Uni.ExtractMultiple<indexterm>
-      <primary>STD.Uni.ExtractMultiple</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->ExtractMultiple<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->ExtractMultiple<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Uni.ExtractMultiple</primary>
+      <primary>Uni.<!-- DNT-Start -->ExtractMultiple<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>ExtractMultiple</primary>
+      <primary><!-- DNT-Start -->ExtractMultiple<!-- DNT-End --></primary>
     </indexterm>(</emphasis> <emphasis>source, instance</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
@@ -30,13 +30,13 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>source</emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing a comma-delimited list of data.</entry>
         </row>
 
         <row>
-          <entry><emphasis>mask </emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>mask </emphasis><!-- DNT-End --></entry>
 
           <entry>A bitmask specifying the ordinal position of the data item
           within the <emphasis>source</emphasis> to return where bit 0 is item
@@ -44,24 +44,24 @@
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>ExtractMultiple returns either a STRING or UNICODE value, as
+          <entry><!-- DNT-Start -->ExtractMultiple<!-- DNT-End --> returns either a <!-- DNT-Start -->STRING<!-- DNT-End --> or <!-- DNT-Start -->UNICODE<!-- DNT-End --> value, as
           appropriate.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">ExtractMultiple </emphasis>function returns
+  <para>The <emphasis role="bold"><!-- DNT-Start -->ExtractMultiple<!-- DNT-End --> </emphasis>function returns
   the data at the bitmask positions specified by the <emphasis>mask
   </emphasis>within the comma-delimited <emphasis>source</emphasis> string.,
   where bit 0 is item 1, bit 1 is item 2, etc.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">IMPORT STD;
+  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 MyTestString:= 'You, only, live, twice';
 STD.Str.ExtractMultiple(MyTestString, 0b10011 ); //returns 'You, only'
-</programlisting>
+</programlisting><!-- DNT-End -->
 </sect1>

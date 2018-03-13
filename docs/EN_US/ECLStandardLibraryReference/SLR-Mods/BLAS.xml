@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="BLAS">
-  <title><emphasis>BLAS Support</emphasis></title>
+  <!-- DNT-Start --><title><emphasis>BLAS Support</emphasis></title><!-- DNT-End -->
 
   <para>This section provides support tor Basic Linear Algebra Subprogram
   support.</para>
 
-  <para>The BLAS functions use the column major mapping for the storage of a
+  <para>The <!-- DNT-Start -->BLAS<!-- DNT-End --> functions use the column major mapping for the storage of a
   matrix. This is the mapping used in Fortran, and has the entries of the
   first column followed by the entries of the second column. This is the
   transpose of the row major form commonly used in the C language where the
@@ -15,67 +15,67 @@
   row.</para>
 
   <sect1 id="BLASTypes">
-    <title>Types</title>
+    <!-- DNT-Start --><title>Types</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">STD.BLAS.Types<indexterm>
+    <!-- DNT-Start --><para><emphasis role="bold">STD.BLAS.Types<indexterm>
         <primary>STD.BLAS.Types</primary>
       </indexterm><indexterm>
         <primary>BLAS.Types</primary>
       </indexterm><indexterm>
         <primary>Types</primary>
-      </indexterm></emphasis></para>
+      </indexterm></emphasis></para><!-- DNT-End -->
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <tbody>
           <row>
-            <entry><emphasis>value_t</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>value_t</emphasis><!-- DNT-End --></entry>
 
-            <entry>REAL8</entry>
+            <entry><!-- DNT-Start -->REAL<!-- DNT-End -->8</entry>
           </row>
 
           <row>
-            <entry><emphasis>dimension_t</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>dimension_t</emphasis><!-- DNT-End --></entry>
 
-            <entry>UNSIGNED4</entry>
+            <entry><!-- DNT-Start -->UNSIGNED<!-- DNT-End -->4</entry>
           </row>
 
           <row>
-            <entry><emphasis>matrix_t</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>matrix_t</emphasis><!-- DNT-End --></entry>
 
-            <entry>SET OF REAL8</entry>
+            <entry><!-- DNT-Start -->SET<!-- DNT-End --> <!-- DNT-Start -->OF<!-- DNT-End --> <!-- DNT-Start -->REAL<!-- DNT-End -->8</entry>
           </row>
 
           <row>
-            <entry><emphasis>Triangle</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>Triangle</emphasis><!-- DNT-End --></entry>
 
-            <entry>ENUM(UNSIGNED1, Upper=1, Lower=2)</entry>
+            <entry><!-- DNT-Start -->ENUM<!-- DNT-End -->(<!-- DNT-Start -->UNSIGNED<!-- DNT-End -->1, Upper=1, Lower=2)</entry>
           </row>
 
           <row>
-            <entry><emphasis>Diagonal</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>Diagonal</emphasis><!-- DNT-End --></entry>
 
-            <entry>ENUM(UNSIGNED1, UnitTri=1, NotUnitTri=2)</entry>
+            <entry><!-- DNT-Start -->ENUM<!-- DNT-End -->(<!-- DNT-Start -->UNSIGNED<!-- DNT-End -->1, UnitTri=1, NotUnitTri=2)</entry>
           </row>
 
           <row>
-            <entry><emphasis>Side</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>Side</emphasis><!-- DNT-End --></entry>
 
-            <entry>ENUM(UNSIGNED1, Ax=1, xA=2)</entry>
+            <entry><!-- DNT-Start -->ENUM<!-- DNT-End -->(<!-- DNT-Start -->UNSIGNED<!-- DNT-End -->1, Ax=1, xA=2)</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable>
 
-    <para>Types for the Block Basic Linear Algebra Sub-programs support</para>
+    <para><!-- DNT-Start -->Types<!-- DNT-End --> for the Block Basic Linear Algebra Sub-programs support</para>
 
     <para></para>
   </sect1>
 
   <sect1 id="ICellFunc">
-    <title>ICellFunc</title>
+    <!-- DNT-Start --><title>ICellFunc</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">STD.BLAS.ICellFunc<indexterm>
+    <!-- DNT-Start --><para><emphasis role="bold">STD.BLAS.ICellFunc<indexterm>
         <primary>STD.BLAS.ICellFunc</primary>
       </indexterm><indexterm>
         <primary>BLAS.ICellFunc</primary>
@@ -83,7 +83,7 @@
         <primary>ICellFunc</primary>
       </indexterm>(</emphasis> <emphasis>v, r</emphasis> <emphasis
     role="bold">,</emphasis> <emphasis>c</emphasis> <emphasis>);</emphasis>
-    <emphasis></emphasis></para>
+    <emphasis></emphasis></para><!-- DNT-End -->
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -93,25 +93,25 @@
 
         <tbody>
           <row>
-            <entry><emphasis>v</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>v</emphasis><!-- DNT-End --></entry>
 
             <entry>The value</entry>
           </row>
 
           <row>
-            <entry><emphasis>r</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>r</emphasis><!-- DNT-End --></entry>
 
             <entry>The row ordinal</entry>
           </row>
 
           <row>
-            <entry><emphasis>c</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>c</emphasis><!-- DNT-End --></entry>
 
             <entry>The column ordinal</entry>
           </row>
 
           <row>
-            <entry>Return:<emphasis></emphasis></entry>
+            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
 
             <entry>The updated value</entry>
           </row>
@@ -119,26 +119,26 @@
       </tgroup>
     </informaltable>
 
-    <para><emphasis role="bold">ICellFunc </emphasis>is the function prototype
+    <para><emphasis role="bold"><!-- DNT-Start -->ICellFunc<!-- DNT-End --> </emphasis>is the function prototype
     for Apply2Cells.</para>
 
     <para>Example:</para>
 
-    <programlisting format="linespecific">IMPORT STD;
+    <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 REAL8 my_func(STD.BLAS.Types.value_t v, STD.BLAS.Types.dimension_t x, STD.BLAS.Types.dimension_t y) 
               := 1/v; //set element to the reciprocal value
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para>See Also: <link linkend="Apply2Cells">Apply2Cells</link></para>
   </sect1>
 
   <sect1 id="Apply2Cells">
-    <title>Apply2Cells</title>
+    <!-- DNT-Start --><title>Apply2Cells</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">STD.BLAS.Apply2Cells<indexterm>
-        <primary>STD.BLAS.Apply2Cells</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.Apply2Cells<indexterm>
+        <primary><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.Apply2Cells</primary>
       </indexterm><indexterm>
-        <primary>BLAS.Apply2Cells</primary>
+        <primary><!-- DNT-Start -->BLAS<!-- DNT-End -->.Apply2Cells</primary>
       </indexterm><indexterm>
         <primary>Apply2Cells</primary>
       </indexterm>(</emphasis> <emphasis>m, n</emphasis> <emphasis
@@ -155,31 +155,31 @@ REAL8 my_func(STD.BLAS.Types.value_t v, STD.BLAS.Types.dimension_t x, STD.BLAS.T
 
         <tbody>
           <row>
-            <entry><emphasis>m</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>m</emphasis><!-- DNT-End --></entry>
 
             <entry>Number of rows</entry>
           </row>
 
           <row>
-            <entry><emphasis>n</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>n</emphasis><!-- DNT-End --></entry>
 
             <entry>Number of columns</entry>
           </row>
 
           <row>
-            <entry><emphasis>x</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>x</emphasis><!-- DNT-End --></entry>
 
             <entry>Matrix</entry>
           </row>
 
           <row>
-            <entry><emphasis>f</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>f</emphasis><!-- DNT-End --></entry>
 
             <entry>Function to apply</entry>
           </row>
 
           <row>
-            <entry>Return:<emphasis></emphasis></entry>
+            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
 
             <entry>The updated matrix</entry>
           </row>
@@ -192,7 +192,7 @@ REAL8 my_func(STD.BLAS.Types.value_t v, STD.BLAS.Types.dimension_t x, STD.BLAS.T
 
     <para>Example:</para>
 
-    <programlisting format="linespecific">IMPORT STD;
+    <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 STD.BLAS.Types.value_t example_1(STD.BLAS.Types.value_t v, 
                                  STD.BLAS.Types.dimensiopn_t x, 
                                  STD.BLAS.Types.dimension_t y) := FUNCTION
@@ -203,20 +203,20 @@ init_mat := [1, 2, 4, 4, 5, 10, 2, 5, 2];
 new_mat := STD.BLAS.Apply2Cells(3, 3, init_mat, example_1);
 
 // The new_mat matrix will be [1, .5, .25, .25, 1, .1, .5, .2, 1]
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-    <para>See Also: <link linkend="ICellFunc">ICellFunc</link></para>
+    <para>See Also: <link linkend="ICellFunc"><!-- DNT-Start -->ICellFunc<!-- DNT-End --></link></para>
   </sect1>
 
   <sect1 id="dasum">
-    <title>dasum</title>
+    <!-- DNT-Start --><title>dasum</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">STD.BLAS.dasum<indexterm>
-        <primary>STD.BLAS.dasum</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.<!-- DNT-Start -->dasum<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.<!-- DNT-Start -->dasum<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>BLAS.dasum</primary>
+        <primary><!-- DNT-Start -->BLAS<!-- DNT-End -->.<!-- DNT-Start -->dasum<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>dasum</primary>
+        <primary><!-- DNT-Start -->dasum<!-- DNT-End --></primary>
       </indexterm>(</emphasis> <emphasis>m, </emphasis> <emphasis>x, incx,
     skipped);</emphasis> <emphasis></emphasis></para>
 
@@ -230,33 +230,33 @@ new_mat := STD.BLAS.Apply2Cells(3, 3, init_mat, example_1);
 
         <tbody>
           <row>
-            <entry><emphasis>m</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>m</emphasis><!-- DNT-End --></entry>
 
             <entry>Number of entries</entry>
           </row>
 
           <row>
-            <entry><emphasis>x</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>x</emphasis><!-- DNT-End --></entry>
 
             <entry>The column major matrix holding the vector</entry>
           </row>
 
           <row>
-            <entry><emphasis>incxx</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>incxx</emphasis><!-- DNT-End --></entry>
 
             <entry>The increment for x, 1 in the case of an actual
             vector</entry>
           </row>
 
           <row>
-            <entry><emphasis>skipped</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>skipped</emphasis><!-- DNT-End --></entry>
 
             <entry>The number of entries stepped over. Default is
             zero.</entry>
           </row>
 
           <row>
-            <entry>Return:<emphasis></emphasis></entry>
+            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
 
             <entry>The sum of the absolute values</entry>
           </row>
@@ -264,28 +264,28 @@ new_mat := STD.BLAS.Apply2Cells(3, 3, init_mat, example_1);
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold">dasum </emphasis>function gets the
+    <para>The <emphasis role="bold"><!-- DNT-Start -->dasum<!-- DNT-End --> </emphasis>function gets the
     absolute sum, the 1 norm of a vector.</para>
 
     <para>Example:</para>
 
-    <programlisting format="linespecific">IMPORT STD;
+    <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 STD.BLAS.Types.matrix_t test_data := [2, -2, -3, 3, 1, 3, -1, -1, 1];
 STD.BLAS.dasum(9, test_data, 1); //sums the absolute values of the matrix, and returns 17
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para></para>
   </sect1>
 
   <sect1 id="daxpy">
-    <title>daxpy</title>
+    <!-- DNT-Start --><title>daxpy</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">STD.BLAS.daxpy<indexterm>
-        <primary>STD.BLAS.daxpy</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.<!-- DNT-Start -->daxpy<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.<!-- DNT-Start -->daxpy<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>BLAS.daxpy</primary>
+        <primary><!-- DNT-Start -->BLAS<!-- DNT-End -->.<!-- DNT-Start -->daxpy<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>daxpy</primary>
+        <primary><!-- DNT-Start -->daxpy<!-- DNT-End --></primary>
       </indexterm>(</emphasis> <emphasis>N, alpha, X, incX, Y, incY,
     x_skipped,y_skipped);</emphasis> <emphasis></emphasis></para>
 
@@ -299,58 +299,58 @@ STD.BLAS.dasum(9, test_data, 1); //sums the absolute values of the matrix, and r
 
         <tbody>
           <row>
-            <entry><emphasis>N</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>N</emphasis><!-- DNT-End --></entry>
 
             <entry>Number of entries</entry>
           </row>
 
           <row>
-            <entry><emphasis>alpha</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>alpha</emphasis><!-- DNT-End --></entry>
 
             <entry>The column major matrix holding the vector</entry>
           </row>
 
           <row>
-            <entry><emphasis>X</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>X</emphasis><!-- DNT-End --></entry>
 
             <entry>The increment for x, 1 in the case of an actual
             vector</entry>
           </row>
 
           <row>
-            <entry><emphasis>incX</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>incX</emphasis><!-- DNT-End --></entry>
 
             <entry>The column major matrix holding the vector X</entry>
           </row>
 
           <row>
-            <entry><emphasis>Y</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>Y</emphasis><!-- DNT-End --></entry>
 
             <entry>The column major matrix holding the vector Y</entry>
           </row>
 
           <row>
-            <entry><emphasis>incY</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>incY</emphasis><!-- DNT-End --></entry>
 
             <entry>The increment or stride of Y</entry>
           </row>
 
           <row>
-            <entry><emphasis>x_skipped</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>x_skipped</emphasis><!-- DNT-End --></entry>
 
             <entry>The number of entries stepped over. to get to the first X
             .</entry>
           </row>
 
           <row>
-            <entry><emphasis>y_skipped</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>y_skipped</emphasis><!-- DNT-End --></entry>
 
             <entry>The number of entries stepped over. to get to the first Y
             .</entry>
           </row>
 
           <row>
-            <entry>Return:<emphasis></emphasis></entry>
+            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
 
             <entry>The updated matrix</entry>
           </row>
@@ -358,31 +358,31 @@ STD.BLAS.dasum(9, test_data, 1); //sums the absolute values of the matrix, and r
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold">daxpy</emphasis> function is used to sum
+    <para>The <emphasis role="bold"><!-- DNT-Start -->daxpy<!-- DNT-End --></emphasis> function is used to sum
     two vectors or matrices with a scalar multiplier applied during the sum
     operation..</para>
 
     <para>Example:</para>
 
-    <programlisting format="linespecific">IMPORT STD;
+    <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 STD.BLAS.Types.t_matrix term_1 := [1, 2, 3];
 STD.BLAS.Types.t_matrix term_2 := [3, 2, 1].
 STD.BLAS.daxpy(3, 2, term_1, 1, term_2, 1); // result is [5, 6, 7]
 
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para></para>
   </sect1>
 
   <sect1 id="dgemm">
-    <title>dgemm</title>
+    <!-- DNT-Start --><title>dgemm</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">STD.BLAS.dgemm<indexterm>
-        <primary>STD.BLAS.dgemm</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.<!-- DNT-Start -->dgemm<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.<!-- DNT-Start -->dgemm<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>BLAS.dgemm</primary>
+        <primary><!-- DNT-Start -->BLAS<!-- DNT-End -->.<!-- DNT-Start -->dgemm<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>dgemm</primary>
+        <primary><!-- DNT-Start -->dgemm<!-- DNT-End --></primary>
       </indexterm>(</emphasis> <emphasis>transposeA, transposeB, M, N, K,
     alpha, A, B, beta, C);</emphasis> <emphasis></emphasis></para>
 
@@ -396,68 +396,68 @@ STD.BLAS.daxpy(3, 2, term_1, 1, term_2, 1); // result is [5, 6, 7]
 
         <tbody>
           <row>
-            <entry><emphasis>transposeA</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>transposeA</emphasis><!-- DNT-End --></entry>
 
             <entry>True when transpose of A is used</entry>
           </row>
 
           <row>
-            <entry><emphasis>transposeB</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>transposeB</emphasis><!-- DNT-End --></entry>
 
             <entry>True when transpose of B is used</entry>
           </row>
 
           <row>
-            <entry><emphasis>M</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>M</emphasis><!-- DNT-End --></entry>
 
             <entry>Number of rows in product</entry>
           </row>
 
           <row>
-            <entry><emphasis>N</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>N</emphasis><!-- DNT-End --></entry>
 
             <entry>Number of columns in product</entry>
           </row>
 
           <row>
-            <entry><emphasis>K</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>K</emphasis><!-- DNT-End --></entry>
 
             <entry>Number of columns/rows for the
             multiplier/multiplicand</entry>
           </row>
 
           <row>
-            <entry><emphasis>alpha</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>alpha</emphasis><!-- DNT-End --></entry>
 
             <entry>Scalar used on A</entry>
           </row>
 
           <row>
-            <entry><emphasis>A</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>A</emphasis><!-- DNT-End --></entry>
 
             <entry>Matrix A</entry>
           </row>
 
           <row>
-            <entry><emphasis>B</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>B</emphasis><!-- DNT-End --></entry>
 
             <entry>Matrix B</entry>
           </row>
 
           <row>
-            <entry><emphasis>beta</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>beta</emphasis><!-- DNT-End --></entry>
 
             <entry>Scalar for matirx C</entry>
           </row>
 
           <row>
-            <entry><emphasis>C</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>C</emphasis><!-- DNT-End --></entry>
 
             <entry>Matrix C (or empty)</entry>
           </row>
 
           <row>
-            <entry>Return:<emphasis></emphasis></entry>
+            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
 
             <entry>The updated matrix</entry>
           </row>
@@ -465,31 +465,31 @@ STD.BLAS.daxpy(3, 2, term_1, 1, term_2, 1); // result is [5, 6, 7]
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold">dgemm</emphasis> function is used to
+    <para>The <emphasis role="bold"><!-- DNT-Start -->dgemm<!-- DNT-End --></emphasis> function is used to
     multiply two matrices and optionally add that product to another
     matrix.</para>
 
     <para>Example:</para>
 
-    <programlisting format="linespecific">IMPORT STD;
+    <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 STD.BLAS.Types.t_matrix term_a := [2, 4, 8];
 STD.BLAS.Types.t_matrix term_c := [2, 1, 1];
 
 STD.BLAS.dgemm(TRUE, FALSE, 3, 3, 1, 1, term_a, term_b);
                   //the outer product of the term_a and term_b vectors
                   //result is [4,8, 16, 2, 4, 8, 2, 4, 8]
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para></para>
   </sect1>
 
   <sect1 id="dgetf2">
-    <title>dgetf2</title>
+    <!-- DNT-Start --><title>dgetf2</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">STD.BLAS.dgetf2<indexterm>
-        <primary>STD.BLAS.dgetf2</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.dgetf2<indexterm>
+        <primary><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.dgetf2</primary>
       </indexterm><indexterm>
-        <primary>BLAS.dgetf2</primary>
+        <primary><!-- DNT-Start -->BLAS<!-- DNT-End -->.dgetf2</primary>
       </indexterm><indexterm>
         <primary>dgetf2</primary>
       </indexterm>(</emphasis> <emphasis>m, n, a);</emphasis>
@@ -505,25 +505,25 @@ STD.BLAS.dgemm(TRUE, FALSE, 3, 3, 1, 1, term_a, term_b);
 
         <tbody>
           <row>
-            <entry><emphasis>m</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>m</emphasis><!-- DNT-End --></entry>
 
             <entry>Number of rows of matrix a</entry>
           </row>
 
           <row>
-            <entry><emphasis>n</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>n</emphasis><!-- DNT-End --></entry>
 
             <entry>Number of columns of matrix a</entry>
           </row>
 
           <row>
-            <entry><emphasis>a</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>a</emphasis><!-- DNT-End --></entry>
 
             <entry>Matrix a</entry>
           </row>
 
           <row>
-            <entry>Return:<emphasis></emphasis></entry>
+            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
 
             <entry>Composite matrix of factors, lower triangle has an implied
             diagonal of ones. Upper triangle has the diagonal of the
@@ -538,21 +538,21 @@ STD.BLAS.dgemm(TRUE, FALSE, 3, 3, 1, 1, term_a, term_b);
 
     <para>Example:</para>
 
-    <programlisting format="linespecific">IMPORT STD;
+    <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 STD.BLAS.Types.t_matrix test := [2,4,6,3,10,25, 9,34,100];
 STD.BLAS.dgetf2(3, 3, test); //result is [2,2,3,3,4,4,9,16,25];
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para></para>
   </sect1>
 
   <sect1 id="dpotf2">
-    <title>dpotf2</title>
+    <!-- DNT-Start --><title>dpotf2</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">STD.BLAS.dpotf2<indexterm>
-        <primary>STD.BLAS.dpotf2</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.dpotf2<indexterm>
+        <primary><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.dpotf2</primary>
       </indexterm><indexterm>
-        <primary>BLAS.dpotf2</primary>
+        <primary><!-- DNT-Start -->BLAS<!-- DNT-End -->.dpotf2</primary>
       </indexterm><indexterm>
         <primary>dpotf2</primary>
       </indexterm>(</emphasis> <emphasis>tri,, r, A, clear);</emphasis>
@@ -568,31 +568,31 @@ STD.BLAS.dgetf2(3, 3, test); //result is [2,2,3,3,4,4,9,16,25];
 
         <tbody>
           <row>
-            <entry><emphasis>tri</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>tri</emphasis><!-- DNT-End --></entry>
 
             <entry>Indicates whether upper or lower triangle is used</entry>
           </row>
 
           <row>
-            <entry><emphasis>r</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>r</emphasis><!-- DNT-End --></entry>
 
             <entry>Number of rows/columns in the square matrix</entry>
           </row>
 
           <row>
-            <entry><emphasis>A</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>A</emphasis><!-- DNT-End --></entry>
 
             <entry>The square matrix A</entry>
           </row>
 
           <row>
-            <entry><emphasis>clear</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>clear</emphasis><!-- DNT-End --></entry>
 
             <entry>Clears the unused triangle</entry>
           </row>
 
           <row>
-            <entry>Return:<emphasis></emphasis></entry>
+            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
 
             <entry>The triangular matrix requested</entry>
           </row>
@@ -605,26 +605,26 @@ STD.BLAS.dgetf2(3, 3, test); //result is [2,2,3,3,4,4,9,16,25];
     factorization has the form A = U**T*U if the <emphasis>tri</emphasis>
     parameter is Triangle.Upper, or A = L * L**T if the
     <emphasis>tri</emphasis> parameter is Triangle.Lower. This is the
-    unblocked version of the algorithm, calling Level 2 BLAS.</para>
+    unblocked version of the algorithm, calling Level 2 <!-- DNT-Start -->BLAS<!-- DNT-End -->.</para>
 
     <para>Example:</para>
 
-    <programlisting format="linespecific">IMPORT STD;
+    <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 STD.BLAS.Types.matrix_t  symmetric_pos_def := [4, 6, 8, 6, 13, 18, 8, 18, 29];
-Lower_Triangle := BLAS.dpotf2(STD.BLAS.Types.Triangle.lower, 3, symmetric_pos_def); </programlisting>
+Lower_Triangle := BLAS.dpotf2(STD.BLAS.Types.Triangle.lower, 3, symmetric_pos_def); </programlisting><!-- DNT-End -->
 
     <para></para>
   </sect1>
 
   <sect1 id="dscal">
-    <title>dscal</title>
+    <!-- DNT-Start --><title>dscal</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">STD.BLAS.dscal<indexterm>
-        <primary>STD.BLAS.dscal</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.<!-- DNT-Start -->dscal<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.<!-- DNT-Start -->dscal<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>BLAS.dscal</primary>
+        <primary><!-- DNT-Start -->BLAS<!-- DNT-End -->.<!-- DNT-Start -->dscal<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>dscal</primary>
+        <primary><!-- DNT-Start -->dscal<!-- DNT-End --></primary>
       </indexterm>(</emphasis> <emphasis>N, alpha, X, incX,
     skipped);</emphasis> <emphasis></emphasis></para>
 
@@ -638,38 +638,38 @@ Lower_Triangle := BLAS.dpotf2(STD.BLAS.Types.Triangle.lower, 3, symmetric_pos_de
 
         <tbody>
           <row>
-            <entry><emphasis>N</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>N</emphasis><!-- DNT-End --></entry>
 
             <entry>Number of elements in the vector</entry>
           </row>
 
           <row>
-            <entry><emphasis>alpha</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>alpha</emphasis><!-- DNT-End --></entry>
 
             <entry>The scaling factor</entry>
           </row>
 
           <row>
-            <entry><emphasis>X</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>X</emphasis><!-- DNT-End --></entry>
 
             <entry>The column major matrix holding the vector</entry>
           </row>
 
           <row>
-            <entry><emphasis>incX</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>incX</emphasis><!-- DNT-End --></entry>
 
             <entry>The stride to get to the next element in the vector</entry>
           </row>
 
           <row>
-            <entry><emphasis>skipped</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>skipped</emphasis><!-- DNT-End --></entry>
 
             <entry>The number of elements skipped to get to the first
             element</entry>
           </row>
 
           <row>
-            <entry>Return:<emphasis></emphasis></entry>
+            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
 
             <entry>The updated matrix</entry>
           </row>
@@ -677,15 +677,15 @@ Lower_Triangle := BLAS.dpotf2(STD.BLAS.Types.Triangle.lower, 3, symmetric_pos_de
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold">dscal </emphasis> function scales a vector
+    <para>The <emphasis role="bold"><!-- DNT-Start -->dscal<!-- DNT-End --> </emphasis> function scales a vector
     alpha.</para>
 
     <para>Example:</para>
 
-    <programlisting format="linespecific">IMPORT STD;
+    <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 STD.BLAS.Types.matrix_t test := [1, 1, 1, 2, 2, 2, 3, 3, 3];
 result := STD.BLAS.dscal(9, 2.0, test, 1); // multiply each element by 2
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para></para>
 
@@ -695,14 +695,14 @@ result := STD.BLAS.dscal(9, 2.0, test, 1); // multiply each element by 2
   </sect1>
 
   <sect1 id="dsyrk">
-    <title>dsyrk</title>
+    <!-- DNT-Start --><title>dsyrk</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">STD.BLAS.dsyrk<indexterm>
-        <primary>STD.BLAS.dsyrk</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.<!-- DNT-Start -->dsyrk<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.<!-- DNT-Start -->dsyrk<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>BLAS.dsyrk</primary>
+        <primary><!-- DNT-Start -->BLAS<!-- DNT-End -->.<!-- DNT-Start -->dsyrk<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>dsyrk</primary>
+        <primary><!-- DNT-Start -->dsyrk<!-- DNT-End --></primary>
       </indexterm>(</emphasis> <emphasis>tri, transposeA, N, K, alpha, A,
     beta, C, clear);</emphasis> <emphasis></emphasis></para>
 
@@ -716,63 +716,63 @@ result := STD.BLAS.dscal(9, 2.0, test, 1); // multiply each element by 2
 
         <tbody>
           <row>
-            <entry><emphasis>tri</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>tri</emphasis><!-- DNT-End --></entry>
 
             <entry>Indicates whether upper or lower triangle is used</entry>
           </row>
 
           <row>
-            <entry><emphasis>transposeA</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>transposeA</emphasis><!-- DNT-End --></entry>
 
             <entry>Transpose the A matrix to be NxK</entry>
           </row>
 
           <row>
-            <entry><emphasis>N</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>N</emphasis><!-- DNT-End --></entry>
 
             <entry>Number of rows</entry>
           </row>
 
           <row>
-            <entry><emphasis>K</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>K</emphasis><!-- DNT-End --></entry>
 
             <entry>Number of columns in the update matrix or transpose</entry>
           </row>
 
           <row>
-            <entry><emphasis>alpha</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>alpha</emphasis><!-- DNT-End --></entry>
 
             <entry>The alpha scalar</entry>
           </row>
 
           <row>
-            <entry><emphasis>A</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>A</emphasis><!-- DNT-End --></entry>
 
             <entry>The update matrix, either NxK or KxN</entry>
           </row>
 
           <row>
-            <entry><emphasis>beta</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>beta</emphasis><!-- DNT-End --></entry>
 
             <entry>The beta scalar</entry>
           </row>
 
           <row>
-            <entry><emphasis>C</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>C</emphasis><!-- DNT-End --></entry>
 
             <entry>The matrix to update</entry>
           </row>
 
           <row>
-            <entry><emphasis>clear</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>clear</emphasis><!-- DNT-End --></entry>
 
-            <entry>Clear the triangle that is not updated. BLAS assumes that
+            <entry>Clear the triangle that is not updated. <!-- DNT-Start -->BLAS<!-- DNT-End --> assumes that
             symmetric matrices have only one of the triangles and this option
             lets you make that true.</entry>
           </row>
 
           <row>
-            <entry>Return:<emphasis></emphasis></entry>
+            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
 
             <entry>The updated matrix</entry>
           </row>
@@ -780,31 +780,31 @@ result := STD.BLAS.dscal(9, 2.0, test, 1); // multiply each element by 2
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold">dsyrk </emphasis> function implements a
+    <para>The <emphasis role="bold"><!-- DNT-Start -->dsyrk<!-- DNT-End --> </emphasis> function implements a
     symmetric rank update C &lt;- alpha A**T A + beta C or c &lt;- alpha A
     A**T + beta C. C is N x N.</para>
 
     <para>Example:</para>
 
-    <programlisting format="linespecific">IMPORT STD;
+    <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 STD.BLAS.Types.matrix_t initC := [1, 1, 1, 2, 2, 2, 3, 3, 3];
 STD.BLAS.Types.matrix_t initA := [1, 1, 1];
 Test1_mat := STD.BLAS.dsyrk(STD.BLAS.Types.Triangle.upper, FALSE, 3, 1, 1, initA, 1, initC, TRUE)
 
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para></para>
   </sect1>
 
   <sect1 id="dtrsm">
-    <title>dtrsm</title>
+    <!-- DNT-Start --><title>dtrsm</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">STD.BLAS.dtrsm<indexterm>
-        <primary>STD.BLAS.dtrsm</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.<!-- DNT-Start -->dtrsm<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.<!-- DNT-Start -->dtrsm<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>BLAS.dsyrk</primary>
+        <primary><!-- DNT-Start -->BLAS<!-- DNT-End -->.<!-- DNT-Start -->dsyrk<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>dtrsm</primary>
+        <primary><!-- DNT-Start -->dtrsm<!-- DNT-End --></primary>
       </indexterm>(</emphasis> <emphasis>side, tri, transposeA, diag, M, N,
     lda, alpha, A, B);</emphasis> <emphasis></emphasis></para>
 
@@ -818,68 +818,68 @@ Test1_mat := STD.BLAS.dsyrk(STD.BLAS.Types.Triangle.upper, FALSE, 3, 1, 1, initA
 
         <tbody>
           <row>
-            <entry><emphasis>side</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>side</emphasis><!-- DNT-End --></entry>
 
             <entry>Side for A, Side.Ax is op(A) X = alpha B</entry>
           </row>
 
           <row>
-            <entry><emphasis>tri</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>tri</emphasis><!-- DNT-End --></entry>
 
             <entry>Indicates whether upper or lower triangle is used</entry>
           </row>
 
           <row>
-            <entry><emphasis>transposeA</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>transposeA</emphasis><!-- DNT-End --></entry>
 
             <entry>Is op(A) the transpose of A</entry>
           </row>
 
           <row>
-            <entry><emphasis>diag</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>diag</emphasis><!-- DNT-End --></entry>
 
             <entry>The diagonal (an implied unit diagonal or supplied)</entry>
           </row>
 
           <row>
-            <entry><emphasis>M</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>M</emphasis><!-- DNT-End --></entry>
 
             <entry>Number of rows</entry>
           </row>
 
           <row>
-            <entry><emphasis>N</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>N</emphasis><!-- DNT-End --></entry>
 
             <entry>Number of columns</entry>
           </row>
 
           <row>
-            <entry><emphasis>lda </emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>lda </emphasis><!-- DNT-End --></entry>
 
             <entry>The leading dimension of the A matrix, either M or
             N</entry>
           </row>
 
           <row>
-            <entry><emphasis>alpha</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>alpha</emphasis><!-- DNT-End --></entry>
 
             <entry>The scalar multiplier for B</entry>
           </row>
 
           <row>
-            <entry><emphasis>A</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>A</emphasis><!-- DNT-End --></entry>
 
             <entry>A triangular matrix</entry>
           </row>
 
           <row>
-            <entry><emphasis>B</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>B</emphasis><!-- DNT-End --></entry>
 
             <entry>The matrix of values for the solve</entry>
           </row>
 
           <row>
-            <entry>Return:<emphasis></emphasis></entry>
+            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
 
             <entry>The matrix of coefficients to get B</entry>
           </row>
@@ -887,13 +887,13 @@ Test1_mat := STD.BLAS.dsyrk(STD.BLAS.Types.Triangle.upper, FALSE, 3, 1, 1, initA
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold">dtrsm </emphasis> function is a triangular
+    <para>The <emphasis role="bold"><!-- DNT-Start -->dtrsm<!-- DNT-End --> </emphasis> function is a triangular
     matrix solver. op(A) X = alpha B or X op(A) = alpha B * where op is
     Transpose, X and B is MxN</para>
 
     <para>Example:</para>
 
-    <programlisting format="linespecific">IMPORT STD;
+    <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 Side := STD.BLAS.Types.Side;
 Diagonal := STD.BLAS.Types.Diagonal;
 Triangle := STD.BLAS.Types.Triangle;
@@ -902,7 +902,7 @@ STD.BLAS.Types.matrix_t mat_b := [4, 6, 8, 6, 13, 18, 8, 18, 29];
 
 Test1_mat := STD.BLAS.dtrsm(Side.Ax, Triangle.Lower, FALSE, Diagonal.NotUnitTri,
                             3, 3, 3, 1.0, left_a0, mat_b);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para></para>
 
@@ -912,12 +912,12 @@ Test1_mat := STD.BLAS.dtrsm(Side.Ax, Triangle.Lower, FALSE, Diagonal.NotUnitTri,
   </sect1>
 
   <sect1 id="extract_diag">
-    <title>extract_diag</title>
+    <!-- DNT-Start --><title>extract_diag</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">STD.BLAS.extract_diag <indexterm>
-        <primary>STD.BLAS.extract_diag</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.extract_diag <indexterm>
+        <primary><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.extract_diag</primary>
       </indexterm><indexterm>
-        <primary>BLAS.extract_diag</primary>
+        <primary><!-- DNT-Start -->BLAS<!-- DNT-End -->.extract_diag</primary>
       </indexterm><indexterm>
         <primary>extract_diag</primary>
       </indexterm>(</emphasis> <emphasis>m.n.x);</emphasis>
@@ -933,25 +933,25 @@ Test1_mat := STD.BLAS.dtrsm(Side.Ax, Triangle.Lower, FALSE, Diagonal.NotUnitTri,
 
         <tbody>
           <row>
-            <entry><emphasis>m</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>m</emphasis><!-- DNT-End --></entry>
 
             <entry>Number of rows</entry>
           </row>
 
           <row>
-            <entry><emphasis>n</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>n</emphasis><!-- DNT-End --></entry>
 
             <entry>Number of columns</entry>
           </row>
 
           <row>
-            <entry><emphasis>x</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>x</emphasis><!-- DNT-End --></entry>
 
             <entry>The matrix from which to extract the diagonal</entry>
           </row>
 
           <row>
-            <entry>Return:<emphasis></emphasis></entry>
+            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
 
             <entry>Diagonal matrix</entry>
           </row>
@@ -964,10 +964,10 @@ Test1_mat := STD.BLAS.dtrsm(Side.Ax, Triangle.Lower, FALSE, Diagonal.NotUnitTri,
 
     <para>Example:</para>
 
-    <programlisting format="linespecific">IMPORT STD;
+    <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 STD.BLAS.Types.matrix_t x := [1.0, 2.0, 3.0, 2.0, 2.0, 2.0, 4.0, 4.0, 4.0];
 diagonal_only := := STD.BLAS.extract_diag(3, 3, x);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para></para>
 
@@ -977,12 +977,12 @@ diagonal_only := := STD.BLAS.extract_diag(3, 3, x);
   </sect1>
 
   <sect1 id="extract_tri">
-    <title>extract_tri</title>
+    <!-- DNT-Start --><title>extract_tri</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">STD.BLAS.extract_tri <indexterm>
-        <primary>STD.BLAS.extract_tri</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.extract_tri <indexterm>
+        <primary><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.extract_tri</primary>
       </indexterm><indexterm>
-        <primary>BLAS.extract_tri</primary>
+        <primary><!-- DNT-Start -->BLAS<!-- DNT-End -->.extract_tri</primary>
       </indexterm><indexterm>
         <primary>extract_tri</primary>
       </indexterm>(</emphasis> <emphasis>m, n, tri, dt, a );</emphasis>
@@ -998,37 +998,37 @@ diagonal_only := := STD.BLAS.extract_diag(3, 3, x);
 
         <tbody>
           <row>
-            <entry><emphasis>m</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>m</emphasis><!-- DNT-End --></entry>
 
             <entry>Number of rows</entry>
           </row>
 
           <row>
-            <entry><emphasis>n</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>n</emphasis><!-- DNT-End --></entry>
 
             <entry>Number of columns</entry>
           </row>
 
           <row>
-            <entry><emphasis>tri</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>tri</emphasis><!-- DNT-End --></entry>
 
             <entry>Indicates whether upper or lower triangle is used</entry>
           </row>
 
           <row>
-            <entry><emphasis>dt</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>dt</emphasis><!-- DNT-End --></entry>
 
             <entry>Use Diagonal.NotUnitTri or Diagonal.UnitTri</entry>
           </row>
 
           <row>
-            <entry><emphasis>a</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>a</emphasis><!-- DNT-End --></entry>
 
             <entry>The matrix, usually a composite from factoring</entry>
           </row>
 
           <row>
-            <entry>Return:<emphasis></emphasis></entry>
+            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
 
             <entry>Triangle</entry>
           </row>
@@ -1042,23 +1042,23 @@ diagonal_only := := STD.BLAS.extract_diag(3, 3, x);
 
     <para>Example:</para>
 
-    <programlisting format="linespecific">IMPORT STD;
+    <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 Diagonal := STD.BLAS.Types.Diagonal;
 Triangle := STD.BLAS.Types.Triangle;
 STD.BLAS.Types.matrix_t x := [1.0, 2.0, 3.0, 2.0, 2.0, 2.0, 4.0, 4.0, 4.0];
 triangle := STD.BLAS.extract_tri(3, 3, Triangle.upper, Diagonal.NotUnitTri, x);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para></para>
   </sect1>
 
   <sect1 id="make_diag">
-    <title>make_diag</title>
+    <!-- DNT-Start --><title>make_diag</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">STD.BLAS.make_diag <indexterm>
-        <primary>STD.BLAS.make_diag</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.make_diag <indexterm>
+        <primary><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.make_diag</primary>
       </indexterm><indexterm>
-        <primary>BLAS.make_diag</primary>
+        <primary><!-- DNT-Start -->BLAS<!-- DNT-End -->.make_diag</primary>
       </indexterm><indexterm>
         <primary>make_diag</primary>
       </indexterm>(</emphasis> <emphasis>m, v, X );</emphasis>
@@ -1074,25 +1074,25 @@ triangle := STD.BLAS.extract_tri(3, 3, Triangle.upper, Diagonal.NotUnitTri, x);
 
         <tbody>
           <row>
-            <entry><emphasis>m</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>m</emphasis><!-- DNT-End --></entry>
 
             <entry>Number of diagonal entries</entry>
           </row>
 
           <row>
-            <entry><emphasis>v</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>v</emphasis><!-- DNT-End --></entry>
 
             <entry>Option value, default is 1</entry>
           </row>
 
           <row>
-            <entry><emphasis>X</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>X</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional input of diagonal values, multiplied by v</entry>
           </row>
 
           <row>
-            <entry>Return:<emphasis></emphasis></entry>
+            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
 
             <entry>A diagonal matrix</entry>
           </row>
@@ -1105,21 +1105,21 @@ triangle := STD.BLAS.extract_tri(3, 3, Triangle.upper, Diagonal.NotUnitTri, x);
 
     <para>Example:</para>
 
-    <programlisting format="linespecific">IMPORT STD;
+    <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 STD.BLAS.Types.matrix_t init1 := [1.0, 2.0, 3.0, 4.0];
 Square := STD.BLAS.make_diag(4, 1, init1); //4x4 with diagonal 1, 2, 3, 4
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para></para>
   </sect1>
 
   <sect1 id="make_vector">
-    <title>make_vector</title>
+    <!-- DNT-Start --><title>make_vector</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">STD.BLAS.make_vector <indexterm>
-        <primary>STD.BLAS.make_vector</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.make_vector <indexterm>
+        <primary><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.make_vector</primary>
       </indexterm><indexterm>
-        <primary>BLAS.make_vector</primary>
+        <primary><!-- DNT-Start -->BLAS<!-- DNT-End -->.make_vector</primary>
       </indexterm><indexterm>
         <primary>make_vector</primary>
       </indexterm>(</emphasis> <emphasis>m, v );</emphasis>
@@ -1135,19 +1135,19 @@ Square := STD.BLAS.make_diag(4, 1, init1); //4x4 with diagonal 1, 2, 3, 4
 
         <tbody>
           <row>
-            <entry><emphasis>m</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>m</emphasis><!-- DNT-End --></entry>
 
             <entry>Number of elements</entry>
           </row>
 
           <row>
-            <entry><emphasis>v</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>v</emphasis><!-- DNT-End --></entry>
 
             <entry>The values, default is 1</entry>
           </row>
 
           <row>
-            <entry>Return:<emphasis></emphasis></entry>
+            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
 
             <entry>The vector</entry>
           </row>
@@ -1160,9 +1160,9 @@ Square := STD.BLAS.make_diag(4, 1, init1); //4x4 with diagonal 1, 2, 3, 4
 
     <para>Example:</para>
 
-    <programlisting format="linespecific">IMPORT STD;
+    <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 twos_vector := STD.BLAS.make_vector(4, 2); // a vector of [2, 2, 2, 2]
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para></para>
 
@@ -1170,14 +1170,14 @@ twos_vector := STD.BLAS.make_vector(4, 2); // a vector of [2, 2, 2, 2]
   </sect1>
 
   <sect1 id="BLASTrace">
-    <title>trace</title>
+    <!-- DNT-Start --><title>trace</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">STD.BLAS.trace <indexterm>
-        <primary>STD.BLAS.tracer</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.<!-- DNT-Start -->trace<!-- DNT-End --> <indexterm>
+        <primary><!-- DNT-Start -->STD<!-- DNT-End -->.<!-- DNT-Start -->BLAS<!-- DNT-End -->.tracer</primary>
       </indexterm><indexterm>
-        <primary>BLAS.trace</primary>
+        <primary><!-- DNT-Start -->BLAS<!-- DNT-End -->.<!-- DNT-Start -->trace<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>trace</primary>
+        <primary><!-- DNT-Start -->trace<!-- DNT-End --></primary>
       </indexterm>(</emphasis> <emphasis>m, n, x );</emphasis>
     <emphasis></emphasis></para>
 
@@ -1191,41 +1191,41 @@ twos_vector := STD.BLAS.make_vector(4, 2); // a vector of [2, 2, 2, 2]
 
         <tbody>
           <row>
-            <entry><emphasis>m</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>m</emphasis><!-- DNT-End --></entry>
 
             <entry>Number of rows</entry>
           </row>
 
           <row>
-            <entry><emphasis>n</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>n</emphasis><!-- DNT-End --></entry>
 
             <entry>Number of columns</entry>
           </row>
 
           <row>
-            <entry><emphasis>x</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>x</emphasis><!-- DNT-End --></entry>
 
             <entry>The matrix</entry>
           </row>
 
           <row>
-            <entry>Return:<emphasis></emphasis></entry>
+            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
 
-            <entry>The trace (sum of the diagonal entries)</entry>
+            <entry>The <!-- DNT-Start -->trace<!-- DNT-End --> (sum of the diagonal entries)</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold">trace</emphasis> function computes the
-    trace of the input matrix</para>
+    <para>The <emphasis role="bold"><!-- DNT-Start -->trace<!-- DNT-End --></emphasis> function computes the
+    <!-- DNT-Start -->trace<!-- DNT-End --> of the input matrix</para>
 
     <para>Example:</para>
 
-    <programlisting format="linespecific">IMPORT STD;
+    <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 STD.BLAS.Types.matrix_t x := [1.0, 2.0, 3.0, 2.0, 2.0, 2.0, 4.0, 4.0, 4.0];
 trace_of_x := STD.BLAS.trace(3,3,x); // the trace is 7
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para></para>
   </sect1>

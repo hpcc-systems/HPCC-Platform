@@ -2,14 +2,14 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Data_float">
-  <title>float</title>
+  <!-- DNT-Start --><title>float</title><!-- DNT-End -->
 
   <para><indexterm>
-      <primary>float</primary>
+      <primary><!-- DNT-Start -->float<!-- DNT-End --></primary>
     </indexterm>A 4-byte floating point or real number.</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <programlisting>float Temperature;
-</programlisting>
+  <!-- DNT-Start --><programlisting>float Temperature;
+</programlisting><!-- DNT-End -->
 </sect1>

@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Scanning_Landing_Zone_Files">
-  <title><emphasis>Scanning Landing Zone Files</emphasis></title>
+  <!-- DNT-Start --><title><emphasis>Scanning Landing Zone Files</emphasis></title><!-- DNT-End -->
 
   <para>Here's the scenario--you've just received a data file from someone and
   it has been put on your landing zone. Before you spray that file to your
@@ -12,11 +12,11 @@
   of ways to do this, including mapping a drive to your landing zone and using
   a text/hex editor to open the file and look at the contents.</para>
 
-  <para>This article will show you how to accomplish this from within the ECL
-  IDE using ECL. Here's the code (contained in the DeclareData MODULE
+  <para>This article will show you how to accomplish this from within the <!-- DNT-Start -->ECL<!-- DNT-End -->
+  <!-- DNT-Start -->IDE<!-- DNT-End --> using <!-- DNT-Start -->ECL<!-- DNT-End -->. Here's the code (contained in the DeclareData <!-- DNT-Start -->MODULE<!-- DNT-End -->
   attribute):</para>
 
-  <programlisting>EXPORT MAC_ScanFile(IP, infile, scansize) := MACRO
+  <!-- DNT-Start --><programlisting>EXPORT MAC_ScanFile(IP, infile, scansize) := MACRO
   ds := DATASET(Std.File.ExternalLogicalFileName(IP, infile),{DATA1 S},THOR )[1..scansize];
   OUTPUT(TABLE(ds,{hex := ds.s,txt := (STRING1)ds.s}),ALL);
   Rec := RECORD
@@ -36,70 +36,70 @@
   Rolled := ROLLUP(ds2,TRUE,XF2(LEFT,RIGHT));
   OUTPUT(TRANSFER(Rolled[1].S,STRING));
 ENDMACRO;
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>This is written as a MACRO because you could have multiple Landing
+  <para>This is written as a <!-- DNT-Start -->MACRO<!-- DNT-End --> because you could have multiple Landing
   Zones, and you certainly are going to want to look into different files each
-  time. Therefore, a MACRO that generates the standard process code to scan
+  time. Therefore, a <!-- DNT-Start -->MACRO<!-- DNT-End --> that generates the standard process code to scan
   the file is precisely what's needed here.</para>
 
-  <para>This MACRO takes three parameters: the IP of the landing zone
+  <para>This <!-- DNT-Start -->MACRO<!-- DNT-End --> takes three parameters: the <!-- DNT-Start -->IP<!-- DNT-End --> of the landing zone
   containing the file the fully-qualified path to that file on the landing
   zone the number of bytes to read (maximum 8K)</para>
 
-  <para>The initial DATASET declaration uses the
+  <para>The initial <!-- DNT-Start -->DATASET<!-- DNT-End --> declaration uses the
   Std.File.ExternalLogicalFileName function to name the file. Defining the
-  RECORD structure as a single DATA1 field is necessary to ensure that both
-  text and binary fields can be read correctly. Specifying the DATASET as a
-  THOR file (no matter what type of file it actually is) makes it simple to
+  <!-- DNT-Start -->RECORD<!-- DNT-End --> structure as a single <!-- DNT-Start -->DATA<!-- DNT-End -->1 field is necessary to ensure that both
+  text and binary fields can be read correctly. Specifying the <!-- DNT-Start -->DATASET<!-- DNT-End --> as a
+  <!-- DNT-Start -->THOR<!-- DNT-End --> file (no matter what type of file it actually is) makes it simple to
   read as a fixed-length record file. The square brackets at the end of the
-  DATASET declaration automatically limit the number of 1-byte records read to
+  <!-- DNT-Start -->DATASET<!-- DNT-End --> declaration automatically limit the number of 1-byte records read to
   the first <emphasis>scansize</emphasis> number of bytes in the file.</para>
 
-  <para>The first OUTPUT action allows you to see the raw Hexadecimal data
+  <para>The first <!-- DNT-Start -->OUTPUT<!-- DNT-End --> action allows you to see the raw Hexadecimal data
   from the file.</para>
 
-  <para>The TABLE function doubles up the input data, producing a DATA1
-  displaying the Hex value and a STRING1 that type casts each byte to a
-  STRING1 for display. Viewing the raw Hex value is necessary because most
+  <para>The <!-- DNT-Start -->TABLE<!-- DNT-End --> function doubles up the input data, producing a <!-- DNT-Start -->DATA<!-- DNT-End -->1
+  displaying the Hex value and a <!-- DNT-Start -->STRING<!-- DNT-End -->1 that type casts each byte to a
+  <!-- DNT-Start -->STRING<!-- DNT-End -->1 for display. Viewing the raw Hex value is necessary because most
   binary fields will not contain text-displayable characters (and those that
   do may mislead you as to the actual contents of the field). Non-displayable
   binary characters show up as a square box in the text column display.</para>
 
   <para>Next, we'll construct a more text-friendly view of the data. To do
-  that we'll start with the Rec RECORD structure, which defines a byte-counter
-  field (UNSIGNED2 C) and a variable-length field (DATA S {MAXLENGTH(8*1024)}
+  that we'll start with the Rec <!-- DNT-Start -->RECORD<!-- DNT-End --> structure, which defines a byte-counter
+  field (<!-- DNT-Start -->UNSIGNED<!-- DNT-End -->2 C) and a variable-length field (<!-- DNT-Start -->DATA<!-- DNT-End --> S {<!-- DNT-Start -->MAXLENGTH<!-- DNT-End -->(8*1024)}
   to contain the text representation of the data as a single horizontal line
   of text.</para>
 
-  <para>The XF1 TRANSFORM and its associated PROJECT moves the data from the
+  <para>The <!-- DNT-Start -->XF<!-- DNT-End -->1 <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> and its associated <!-- DNT-Start -->PROJECT<!-- DNT-End --> moves the data from the
   input format into the format needed to roll up that data into a single text
   string. Adding the byte-counter field is necessary to ensure that blank
   spaces are not accidentally trimmed out of the final display.</para>
 
-  <para>The XF2 TRANSFORM and its associated ROLLUP function performs the
-  actual data append. The TRUE condition parameter ensures that only one
+  <para>The <!-- DNT-Start -->XF<!-- DNT-End -->2 <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> and its associated <!-- DNT-Start -->ROLLUP<!-- DNT-End --> function performs the
+  actual data append. The <!-- DNT-Start -->TRUE<!-- DNT-End --> condition parameter ensures that only one
   record will result containing all the input bytes rolled into a single
   record.</para>
 
-  <para>The last OUTPUT action uses the TRANSFER function instead of type
+  <para>The last <!-- DNT-Start -->OUTPUT<!-- DNT-End --> action uses the <!-- DNT-Start -->TRANSFER<!-- DNT-End --> function instead of type
   casting to ensure that all the text characters in the original data are
   accurately represented.</para>
 
-  <para>You call this MACRO like this:</para>
+  <para>You call this <!-- DNT-Start -->MACRO<!-- DNT-End --> like this:</para>
 
-  <programlisting>IMPORT ProgrammersGuide AS PG;
+  <!-- DNT-Start --><programlisting>IMPORT ProgrammersGuide AS PG;
 PG.DeclareData.MAC_ScanFile( '10.173.9.4','C:\\training\\import\\BOCA.XML', 200);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>When viewing the result, the ECL IDE Result_1 tab displays a column of
+  <para>When viewing the result, the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> Result_1 tab displays a column of
   hexadecimal values and the text character (if any) next to it in the second
   column. This byte-by-byte view of the data is designed to allow you to see
   the raw Hexadecimal values of each byte alongside its text representation.
   This is the primary view to use when looking at the contents of files
   containing binary data.</para>
 
-  <para>The ECL IDE Result_2 tab displays a single record with a single field.
+  <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> Result_2 tab displays a single record with a single field.
   You can click on that field to highlight it, right-click and select "Copy"
   from the popup menu, then paste the text into any text editor to view.
   Binary fields will appear as square blocks or "garbage" characters,

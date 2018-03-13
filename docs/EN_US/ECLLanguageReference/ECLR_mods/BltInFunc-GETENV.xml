@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="GETENV">
-  <title>GETENV</title>
+  <!-- DNT-Start --><title>GETENV</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">GETENV<indexterm>
-      <primary>GETENV</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->GETENV<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->GETENV<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>GETENV function</primary>
+      <primary><!-- DNT-Start -->GETENV<!-- DNT-End --> function</primary>
     </indexterm>( </emphasis><emphasis>name </emphasis><emphasis
   role="bold">[, </emphasis>default<emphasis role="bold"> ]
   )</emphasis></para>
@@ -20,38 +20,38 @@
 
         <tbody>
           <row>
-            <entry><emphasis>name</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
 
             <entry>A string constant containing the name of the environment
             variable.</entry>
           </row>
 
           <row>
-            <entry><emphasis>default</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>default</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. A string constant containing the default value to
             use if the environment variable does not exist.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>GETENV returns a STRING value.</entry>
+            <entry><!-- DNT-Start -->GETENV<!-- DNT-End --> returns a <!-- DNT-Start -->STRING<!-- DNT-End --> value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">GETENV</emphasis> function returns the value
+  <para>The <emphasis role="bold"><!-- DNT-Start -->GETENV<!-- DNT-End --></emphasis> function returns the value
   of the <emphasis>name</emphasis>d environment variable. If the environment
   variable does not exist or contains no value, the
   <emphasis>default</emphasis> value is returned.</para>
 
   <para>Example:</para>
 
-  <programlisting>g1 := GETENV('namesTable');
+  <!-- DNT-Start --><programlisting>g1 := GETENV('namesTable');
 g2 := GETENV('myPort','25');
 
 OUTPUT(g1);
-</programlisting>
+</programlisting><!-- DNT-End -->
 </sect1>

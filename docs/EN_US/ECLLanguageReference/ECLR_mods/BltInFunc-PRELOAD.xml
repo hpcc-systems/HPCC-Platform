@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="PRELOAD">
-  <title>PRELOAD</title>
+  <!-- DNT-Start --><title>PRELOAD</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">PRELOAD<indexterm>
-      <primary>PRELOAD</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->PRELOAD<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->PRELOAD<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>PRELOAD function</primary>
+      <primary><!-- DNT-Start -->PRELOAD<!-- DNT-End --> function</primary>
     </indexterm>(</emphasis><emphasis>file </emphasis><emphasis
   role="bold">[</emphasis><emphasis>, nbr</emphasis><emphasis role="bold"> ]
   )</emphasis></para>
@@ -20,38 +20,38 @@
 
         <tbody>
           <row>
-            <entry><emphasis>file</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>file</emphasis><!-- DNT-End --></entry>
 
-            <entry>The name of a DATASET definition.</entry>
+            <entry>The name of a <!-- DNT-Start -->DATASET<!-- DNT-End --> definition.</entry>
           </row>
 
           <row>
-            <entry><emphasis>nbr</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>nbr</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. An integer constant specifying how many indexes
             to create "on the fly" for speedier access to the specified
-            DATASET file (only). If &gt; 1000, specifies the amount of memory
+            <!-- DNT-Start -->DATASET<!-- DNT-End --> file (only). If &gt; 1000, specifies the amount of memory
             set aside for these indexes.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>PRELOAD returns a record set.</entry>
+            <entry><!-- DNT-Start -->PRELOAD<!-- DNT-End --> returns a record set.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">PRELOAD </emphasis>function leaves the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->PRELOAD<!-- DNT-End --> </emphasis>function leaves the
   <emphasis>file </emphasis>in memory after loading (valid only for Data
-  Delivery Engine use). This is exactly equivalent to using the PRELOAD option
-  on the DATASET definition.</para>
+  Delivery Engine use). This is exactly equivalent to using the <!-- DNT-Start -->PRELOAD<!-- DNT-End --> option
+  on the <!-- DNT-Start -->DATASET<!-- DNT-End --> definition.</para>
 
   <para>Example:</para>
 
-  <programlisting>MyFile := DATASET('MyFile',{STRING20 F1, STRING20 F2},THOR);
-  COUNT(PRELOAD(MyFile))</programlisting>
+  <!-- DNT-Start --><programlisting>MyFile := DATASET('MyFile',{STRING20 F1, STRING20 F2},THOR);
+  COUNT(PRELOAD(MyFile))</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="DATASET">DATASET</link></para>
+  <para>See Also: <link linkend="DATASET"><!-- DNT-Start -->DATASET<!-- DNT-End --></link></para>
 </sect1>

@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="APPLY">
-  <title>APPLY</title>
+  <!-- DNT-Start --><title>APPLY</title><!-- DNT-End -->
 
   <para role="syntax"><emphasis
   role="bold">[</emphasis><emphasis>attrname</emphasis> :=<emphasis
@@ -27,7 +27,7 @@
 
         <tbody>
           <row>
-            <entry><emphasis>attrname</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>attrname</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. The action name, which turns the action into an
             attribute definition, therefore not executed until the
@@ -35,7 +35,7 @@
           </row>
 
           <row>
-            <entry><emphasis>dataset</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>dataset</emphasis><!-- DNT-End --></entry>
 
             <entry>The set of records to apply the action to. This must be the
             name of a physical dataset of a type that supports this
@@ -43,18 +43,18 @@
           </row>
 
           <row>
-            <entry><emphasis>actionlist</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>actionlist</emphasis><!-- DNT-End --></entry>
 
             <entry>A comma-delimited list of the operations to perform on the
-            dataset. Typically, this is an external service (see SERVICE
+            dataset. Typically, this is an external service (see <!-- DNT-Start -->SERVICE<!-- DNT-End -->
             Structure<indexterm>
-                <primary>SERVICE Structure</primary>
-              </indexterm>). This may not be an OUTPUT or any function that
+                <primary><!-- DNT-Start -->SERVICE<!-- DNT-End --> Structure</primary>
+              </indexterm>). This may not be an <!-- DNT-Start -->OUTPUT<!-- DNT-End --> or any function that
             triggers a child query.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">BEFORE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">BEFORE</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies executing the enclosed
             <emphasis>actionlist</emphasis> before the first dataset row is
@@ -63,7 +63,7 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">AFTER</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">AFTER</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies executing the enclosed
             <emphasis>actionlist</emphasis> after the last dataset row is
@@ -71,67 +71,67 @@
             Roxie.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the output record order is not significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the significance of the output record order.</entry>
           </row>
           <row>
-            <entry><emphasis>bool</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
 
             <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">STABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is not significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity in parallel.</entry>
           </row>
           <row>
-            <entry><emphasis>numthreads</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Override the algorithm used for this activity.</entry>
           </row>
           <row>
-            <entry><emphasis>name</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">APPLY </emphasis>action performs all the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->APPLY<!-- DNT-End --> </emphasis>action performs all the
   specified actions in the <emphasis>actionlist</emphasis> on each record of
   the nominated <emphasis>dataset</emphasis>. The actions execute in the order
   they appear in the <emphasis>actionlist</emphasis>.</para>
 
   <para>Example:</para>
 
-  <programlisting>EXPORT x :=  SERVICE
+  <!-- DNT-Start --><programlisting>EXPORT x :=  SERVICE
   echo(const string src):library='myfuncs',entrypoint='rtlEcho';
 END;
 APPLY(person,x.echo(last_name + ':' + first_name));
  // concatenate each person's lastname and firstname and echo it
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="SERVICE_Structure">SERVICE Structure</link>, <link linkend="DATASET">DATASET</link></para>
+  <para>See Also: <link linkend="SERVICE_Structure"><!-- DNT-Start -->SERVICE<!-- DNT-End --> Structure</link>, <link linkend="DATASET"><!-- DNT-Start -->DATASET<!-- DNT-End --></link></para>
 </sect1>

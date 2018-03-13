@@ -2,10 +2,10 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_WORKUNIT">
-  <title>#WORKUNIT</title>
+  <!-- DNT-Start --><title>#WORKUNIT</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">#WORKUNIT<indexterm>
-      <primary>#WORKUNIT</primary>
+  <para><emphasis role="bold">#<!-- DNT-Start -->WORKUNIT<!-- DNT-End --><indexterm>
+      <primary>#<!-- DNT-Start -->WORKUNIT<!-- DNT-End --></primary>
     </indexterm>( </emphasis><emphasis> option, value </emphasis><emphasis
   role="bold">);</emphasis></para>
 
@@ -17,14 +17,14 @@
 
         <tbody>
           <row>
-            <entry><emphasis>option</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>option</emphasis><!-- DNT-End --></entry>
 
             <entry>A string constant specifying the name of the option to
             set.</entry>
           </row>
 
           <row>
-            <entry><emphasis>value</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>value</emphasis><!-- DNT-End --></entry>
 
             <entry>The value to set for the option.</entry>
           </row>
@@ -32,11 +32,11 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">#WORKUNIT </emphasis>statement sets the
+  <para>The <emphasis role="bold">#<!-- DNT-Start -->WORKUNIT<!-- DNT-End --> </emphasis>statement sets the
   <emphasis>option</emphasis> to the specified <emphasis>value </emphasis>for
-  the current workunit. This statement may be used outside an XML scope and
-  does not require a previous call to the LOADXML function to instantiate an
-  XML scope.</para>
+  the current workunit. This statement may be used outside an <!-- DNT-Start -->XML<!-- DNT-End --> scope and
+  does not require a previous call to the <!-- DNT-Start -->LOADXML<!-- DNT-End --> function to instantiate an
+  <!-- DNT-Start -->XML<!-- DNT-End --> scope.</para>
 
   <para>Valid <emphasis>option</emphasis> settings are:</para>
 
@@ -48,28 +48,28 @@
 
         <tbody>
           <row>
-            <entry><emphasis>cluster</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>cluster</emphasis><!-- DNT-End --></entry>
 
             <entry>The value parameter is a string constant containing the
             name of the target cluster on which the workunit executes.</entry>
           </row>
 
           <row>
-            <entry><emphasis>protect</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>protect</emphasis><!-- DNT-End --></entry>
 
             <entry>The value parameter specifies true to indicate the workunit
             is protected from deletion, or false if not.</entry>
           </row>
 
           <row>
-            <entry><emphasis>name</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
 
             <entry>The value parameter is a string constant specifying the
             workunit's jobname.</entry>
           </row>
 
           <row>
-            <entry><emphasis>priority</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>priority</emphasis><!-- DNT-End --></entry>
 
             <entry>The value parameter is a string constant containing low,
             normal, or high to indicate the workunit's execution priority
@@ -78,12 +78,12 @@
           </row>
 
           <row>
-            <entry><emphasis>scope</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>scope</emphasis><!-- DNT-End --></entry>
 
             <entry>The value parameter is a string constant containing the
             scope value to use to override the workunit's default scope (the
-            user ID of the submitting person). This is a Workunit Security
-            feature and requires a system which is LDAP-enabled. </entry>
+            user <!-- DNT-Start -->ID<!-- DNT-End --> of the submitting person). This is a Workunit Security
+            feature and requires a system which is <!-- DNT-Start -->LDAP<!-- DNT-End -->-enabled. </entry>
           </row>
         </tbody>
       </tgroup>
@@ -91,11 +91,11 @@
 
   <para>Example:</para>
 
-  <programlisting>#WORKUNIT('cluster','400way'); //run the job on the 400-way target cluster
+  <!-- DNT-Start --><programlisting>#WORKUNIT('cluster','400way'); //run the job on the 400-way target cluster
 #WORKUNIT('protect',true);     //disallow deletion or archiving by Sasha 
 #WORKUNIT('name','My Job');    //name it "My Job"
 #WORKUNIT('priority','high');  //run before other lower-priority jobs
 #WORKUNIT('priority',10);      //run before other high-priority jobs
 #WORKUNIT('scope','NewVal');   //override the default scope (on an LDAP enabled system)
-</programlisting>
+</programlisting><!-- DNT-End -->
 </sect1>

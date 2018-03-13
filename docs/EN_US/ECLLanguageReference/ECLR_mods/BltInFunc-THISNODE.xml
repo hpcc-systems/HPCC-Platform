@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="THISNODE">
-  <title>THISNODE</title>
+  <!-- DNT-Start --><title>THISNODE</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">THISNODE<indexterm>
-      <primary>THISNODE</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->THISNODE<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->THISNODE<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>THISNODE Function</primary>
+      <primary><!-- DNT-Start -->THISNODE<!-- DNT-End --> Function</primary>
     </indexterm>(</emphasis><emphasis>operation</emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -19,31 +19,31 @@
 
         <tbody>
           <row>
-            <entry><emphasis>operation</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>operation</emphasis><!-- DNT-End --></entry>
 
             <entry>The name of an attribute or in-line code that results in a
-            DATASET or INDEX.</entry>
+            <!-- DNT-Start -->DATASET<!-- DNT-End --> or <!-- DNT-Start -->INDEX<!-- DNT-End -->.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>THISNODE returns a record set or index.</entry>
+            <entry><!-- DNT-Start -->THISNODE<!-- DNT-End --> returns a record set or index.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">THISNODE </emphasis>function specifies that
+  <para>The <emphasis role="bold"><!-- DNT-Start -->THISNODE<!-- DNT-End --> </emphasis>function specifies that
   the <emphasis>operation</emphasis> is performed on each node, independently.
-  This is typically used within an ALLNODES operation. <emphasis
+  This is typically used within an <!-- DNT-Start -->ALLNODES<!-- DNT-End --> operation. <emphasis
   role="bold">Available for use only in Roxie.</emphasis></para>
 
   <para>Example:</para>
 
-  <programlisting>ds := ALLNODES(JOIN(THISNODE(GetData(SomeData)),
+  <!-- DNT-Start --><programlisting>ds := ALLNODES(JOIN(THISNODE(GetData(SomeData)),
       THISNODE(GetIDX(SomeIndex)),
-      LEFT.ID = RIGHT.ID));</programlisting>
+      LEFT.ID = RIGHT.ID));</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="ALLNODES">ALLNODES</link>, <link linkend="LOCAL">LOCAL</link>, <link linkend="NOLOCAL">NOLOCAL</link></para>
+  <para>See Also: <link linkend="ALLNODES"><!-- DNT-Start -->ALLNODES<!-- DNT-End --></link>, <link linkend="LOCAL"><!-- DNT-Start -->LOCAL<!-- DNT-End --></link>, <link linkend="NOLOCAL"><!-- DNT-Start -->NOLOCAL<!-- DNT-End --></link></para>
 </sect1>

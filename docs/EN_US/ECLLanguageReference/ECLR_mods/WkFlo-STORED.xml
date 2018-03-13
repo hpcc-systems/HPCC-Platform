@@ -2,28 +2,28 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="STORED_workflow_service">
-  <title>STORED - Workflow Service</title>
+  <!-- DNT-Start --><title>STORED - Workflow Service</title><!-- DNT-End -->
 
   <para><emphasis>[</emphasis><emphasis>attribute </emphasis>:= <emphasis
   role="bold">]</emphasis><emphasis> expression </emphasis><emphasis
-  role="bold">: STORED<indexterm>
-      <primary>STORED</primary>
+  role="bold">: <!-- DNT-Start -->STORED<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STORED<!-- DNT-End --></primary>
     </indexterm>( </emphasis><emphasis> storedname </emphasis><emphasis
-  role="bold">[, FEW<indexterm>
-      <primary>FEW</primary>
-    </indexterm> ][</emphasis>, <emphasis role="bold">FORMAT</emphasis>(
+  role="bold">[, <!-- DNT-Start -->FEW<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->FEW<!-- DNT-End --></primary>
+    </indexterm> ][</emphasis>, <emphasis role="bold"><!-- DNT-Start -->FORMAT<!-- DNT-End --></emphasis>(
   <emphasis
-  role="bold">[SELECT(</emphasis><emphasis>valuestring</emphasis>)<emphasis
+  role="bold">[<!-- DNT-Start -->SELECT<!-- DNT-End -->(</emphasis><emphasis>valuestring</emphasis>)<emphasis
   role="bold">] </emphasis><emphasis
-  role="bold">[FIELDWIDTH(</emphasis><emphasis>widthvalue</emphasis>)<emphasis
+  role="bold">[<!-- DNT-Start -->FIELDWIDTH<!-- DNT-End -->(</emphasis><emphasis>widthvalue</emphasis>)<emphasis
   role="bold">]<emphasis
-  role="bold">[,FIELDHEIGHT(</emphasis><emphasis>heightvalue</emphasis>)][,SEQUENCE</emphasis>(<emphasis>sequencevalue</emphasis>)<emphasis
+  role="bold">[,<!-- DNT-Start -->FIELDHEIGHT<!-- DNT-End -->(</emphasis><emphasis>heightvalue</emphasis>)][,<!-- DNT-Start -->SEQUENCE<!-- DNT-End --></emphasis>(<emphasis>sequencevalue</emphasis>)<emphasis
   role="bold">]<emphasis
-  role="bold">[,NOINPUT</emphasis><emphasis></emphasis>)<emphasis
+  role="bold">[,<!-- DNT-Start -->NOINPUT<!-- DNT-End --></emphasis><emphasis></emphasis>)<emphasis
   role="bold">]</emphasis><emphasis
-  role="bold">[,PASSWORD</emphasis><emphasis></emphasis>)<emphasis
+  role="bold">[,<!-- DNT-Start -->PASSWORD<!-- DNT-End --></emphasis><emphasis></emphasis>)<emphasis
   role="bold">]</emphasis>] )</emphasis> <indexterm>
-      <primary>STORED workflow service</primary>
+      <primary><!-- DNT-Start -->STORED<!-- DNT-End --> workflow service</primary>
     </indexterm>;</para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -34,51 +34,51 @@
 
         <tbody>
           <row>
-            <entry><emphasis>attribute</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>attribute</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. The name of the Attribute.</entry>
           </row>
 
           <row>
-            <entry><emphasis>expression</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
 
             <entry>The definition of the attribute.</entry>
           </row>
 
           <row>
-            <entry><emphasis>storedname</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>storedname</emphasis><!-- DNT-End --></entry>
 
             <entry>A string constant containing the name of the stored
             attribute result.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">FEW</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">FEW</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. When the expression is a dataset or recordset,
-            FEW specifies that the dataset is stored completely within the
-            workunit. If not specified, then the dataset is stored as a THOR
-            file and the workunit contains only the name of the file. The FEW
-            option is required when using STORED in a SOAP-enabled MACRO and
+            <!-- DNT-Start -->FEW<!-- DNT-End --> specifies that the dataset is stored completely within the
+            workunit. If not specified, then the dataset is stored as a <!-- DNT-Start -->THOR<!-- DNT-End -->
+            file and the workunit contains only the name of the file. The <!-- DNT-Start -->FEW<!-- DNT-End -->
+            option is required when using <!-- DNT-Start -->STORED<!-- DNT-End --> in a <!-- DNT-Start -->SOAP<!-- DNT-End -->-enabled <!-- DNT-Start -->MACRO<!-- DNT-End --> and
             the expected input is a dataset (such as tns:xmlDataset).</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">FORMAT</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">FORMAT</emphasis><!-- DNT-End --></entry>
 
-            <entry>Optional. FORMAT specifies options for formatting the field
+            <entry>Optional. <!-- DNT-Start -->FORMAT<!-- DNT-End --> specifies options for formatting the field
             on a Web form in WsECL.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">SELECT</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">SELECT</emphasis><!-- DNT-End --></entry>
 
-            <entry>Optional. SELECT specifies a droplist input control on a
+            <entry>Optional. <!-- DNT-Start -->SELECT<!-- DNT-End --> specifies a droplist input control on a
             Web form in WsECL.</entry>
           </row>
 
           <row>
-            <entry><emphasis>valuestring</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>valuestring</emphasis><!-- DNT-End --></entry>
 
             <entry>An string containing the possible values for the droplist.
             An asterisk (*) denotes the default value. A expression in the
@@ -88,42 +88,42 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">FIELDWIDTH</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">FIELDWIDTH</emphasis><!-- DNT-End --></entry>
 
-            <entry>Optional. FIELDWIDTH specifies the width of the input box
+            <entry>Optional. <!-- DNT-Start -->FIELDWIDTH<!-- DNT-End --> specifies the width of the input box
             on a Web form in WsECL.</entry>
           </row>
 
           <row>
-            <entry><emphasis>widthvalue</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>widthvalue</emphasis><!-- DNT-End --></entry>
 
             <entry>An integer expression defining the width (number of
             characters) of the input box</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">FIELDHEIGHT</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">FIELDHEIGHT</emphasis><!-- DNT-End --></entry>
 
-            <entry>Optional. FIELDHEIGHT specifies the height of the input box
+            <entry>Optional. <!-- DNT-Start -->FIELDHEIGHT<!-- DNT-End --> specifies the height of the input box
             on a Web form in WsECL.</entry>
           </row>
 
           <row>
-            <entry><emphasis>heightvalue</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>heightvalue</emphasis><!-- DNT-End --></entry>
 
             <entry>An integer expression defining the height (number of rows)
             of the input box</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">SEQUENCE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">SEQUENCE</emphasis><!-- DNT-End --></entry>
 
-            <entry>Optional. SEQUENCE specifies field ordering on a Web form
+            <entry>Optional. <!-- DNT-Start -->SEQUENCE<!-- DNT-End --> specifies field ordering on a Web form
             in WsECL.</entry>
           </row>
 
           <row>
-            <entry><emphasis>sequencevalue</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>sequencevalue</emphasis><!-- DNT-End --></entry>
 
             <entry>An integer expression defining the sequential location of
             the input box. These can be sparse values (e.g., 100, 200, 300) to
@@ -131,44 +131,44 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">NOINPUT</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">NOINPUT</emphasis><!-- DNT-End --></entry>
 
-            <entry>Optional. If NOINPUT is specified, the field is not
+            <entry>Optional. If <!-- DNT-Start -->NOINPUT<!-- DNT-End --> is specified, the field is not
             displayed on the Web form in WsECL.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">PASSWORD</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">PASSWORD</emphasis><!-- DNT-End --></entry>
 
-            <entry>Optional. If PASSWORD is specified, a password entry box is
+            <entry>Optional. If <!-- DNT-Start -->PASSWORD<!-- DNT-End --> is specified, a password entry box is
             used on the Web form in WsECL and the field's supplied value is
             not displayed while entering it. The value is also hidden when
             viewing stored values in the workunit through EclWatch or from the
-            command line when extracting the WU XML.</entry>
+            command line when extracting the <!-- DNT-Start -->WU<!-- DNT-End --> <!-- DNT-Start -->XML<!-- DNT-End -->.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">STORED </emphasis>service stores the result
+  <para>The <emphasis role="bold"><!-- DNT-Start -->STORED<!-- DNT-End --> </emphasis>service stores the result
   of the <emphasis>expression</emphasis> with the work unit that uses the
   <emphasis>attribute</emphasis> so that it remains available for use
   throughout the work unit. If the <emphasis>attribute</emphasis> name is
   omitted, then the stored value can only be accessed afterwards from outside
-  of the ECL execution. If an <emphasis>attribute </emphasis>name is provided
+  of the <!-- DNT-Start -->ECL<!-- DNT-End --> execution. If an <emphasis>attribute </emphasis>name is provided
   then the value of that <emphasis>attribute</emphasis> will be pulled from
   storage, if it has not yet been set it will be computed, stored and then
   used from storage. This service implicitly causes the
   <emphasis>attribute</emphasis> to be evaluated at a global scope instead of
   the enclosing scope.</para>
 
-  <para>STORED creates a storage space in the workunit where the interface can
+  <para><!-- DNT-Start -->STORED<!-- DNT-End --> creates a storage space in the workunit where the interface can
   place the values to pass to a published query. See <emphasis>Working with
   Roxie</emphasis> in the <emphasis>Programmer's Guide</emphasis>.</para>
 
   <para>Example:</para>
 
-  <programlisting>  COUNT(person) : STORED('myname');
+  <!-- DNT-Start --><programlisting>  COUNT(person) : STORED('myname');
      // Name in work unit is myname,
      // stored value accessible only outside ECL
   fred := COUNT(person) : STORED('fred');
@@ -201,8 +201,8 @@
                                                    //starts empty, no specified default
   STRING ch3 := ''    : STORED('ch3', FORMAT(SELECT('apple=app,pear,*,banana=ban')));
                                                    //empty in middle, empty is default
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="STORED">STORED function</link>, <link
-  linkend="_WEBSERVICE">#WEBSERVICE</link></para>
+  <para>See Also: <link linkend="STORED"><!-- DNT-Start -->STORED<!-- DNT-End --> function</link>, <link
+  linkend="_WEBSERVICE">#<!-- DNT-Start -->WEBSERVICE<!-- DNT-End --></link></para>
 </sect1>

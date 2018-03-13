@@ -2,11 +2,11 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="VizIntro">
-  <title><emphasis>Visualization Introduction</emphasis></title>
+  <!-- DNT-Start --><title><emphasis>Visualization Introduction</emphasis></title><!-- DNT-End -->
 
-  <para>The Visualization bundle is an open-source add-on to the HPCC platform
+  <para>The Visualization bundle is an open-source add-on to the <!-- DNT-Start -->HPCC<!-- DNT-End --> platform
   to allow you to create visualizations from the results of queries written in
-  ECL.</para>
+  <!-- DNT-Start -->ECL<!-- DNT-End -->.</para>
 
   <para>Visualizations are an important means of conveying information from
   massive data. A good visual representation can help a human produce
@@ -18,7 +18,7 @@
   part of a solution; we must be able to make sense of the data, too. Data
   visualizations simplify the complex.</para>
 
-  <para>The Visualizer bundle extends the HPCC platform's functionality by
+  <para>The Visualizer bundle extends the <!-- DNT-Start -->HPCC<!-- DNT-End --> platform's functionality by
   allowing you to plot your data onto charts, graphs, and maps to add a visual
   representation that can be easily understood.</para>
 
@@ -27,7 +27,7 @@
   dashboards.</para>
 
   <sect1 id="VizInstall">
-    <title>Installation</title>
+    <!-- DNT-Start --><title>Installation</title><!-- DNT-End -->
 
     <para>To install the Visualization bundle, use the ecl command line
     interface.</para>
@@ -44,9 +44,9 @@
   </sect1>
 
   <sect1 id="VizUsing">
-    <title>Using the Visualization library</title>
+    <!-- DNT-Start --><title>Using the Visualization library</title><!-- DNT-End -->
 
-    <para>Once installed, you merely IMPORT the library, then call any method
+    <para>Once installed, you merely <!-- DNT-Start -->IMPORT<!-- DNT-End --> the library, then call any method
     that is appropriate for your data shape.</para>
 
     <para>Creating a basic visualization typically requires the following
@@ -74,7 +74,7 @@
 
     <para>For Example:</para>
 
-    <programlisting format="linespecific">IMPORT Visualizer;
+    <!-- DNT-Start --><programlisting format="linespecific">IMPORT Visualizer;
 ds := DATASET([ {'English', 5},
                 {'History', 17},
                 {'Geography', 7},
@@ -89,7 +89,7 @@ data_example := OUTPUT(ds, NAMED('Chart2D__test'));
 data_example;
 viz_bubble := Visualizer.TwoD.Bubble('bubble',, 'Chart2D__test');
 viz_bubble;
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para>This code creates a Bubble chart as shown below:</para>
 
@@ -102,10 +102,10 @@ viz_bubble;
   </sect1>
 
   <sect1 id="VizViewing">
-    <title>Viewing the Visualization</title>
+    <!-- DNT-Start --><title>Viewing the Visualization</title><!-- DNT-End -->
 
     <para>After running a query with a visualization included, you can see the
-    visualization in ECL Watch. Visualizations are appended to the workunit as
+    visualization in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch. Visualizations are appended to the workunit as
     additional <emphasis>resources</emphasis> and can be viewed from the
     <emphasis role="bold">Resources</emphasis> tab on the Workunit Details
     page.</para>
@@ -117,19 +117,19 @@ viz_bubble;
   </sect1>
 
   <sect1 id="VizDermProp">
-    <title>Dermatology Properties</title>
+    <!-- DNT-Start --><title>Dermatology Properties</title><!-- DNT-End -->
 
     <para>The dermatology layer provides a means of setting properties for the
     manner in which a visualization appears. For example, you can change the
     palletteID to a new color scheme. After running a query with a
-    visualization included, it can be viewed within ECL Watch.</para>
+    visualization included, it can be viewed within <!-- DNT-Start -->ECL<!-- DNT-End --> Watch.</para>
 
     <para>The <emphasis role="bold">Dermatology Editor</emphasis> lets you
     alter the appearance of the visualization after it has been executed. The
-    same properties can also be specified in the ECL when creating the
+    same properties can also be specified in the <!-- DNT-Start -->ECL<!-- DNT-End --> when creating the
     visualization.</para>
 
-    <para>You can set properties in your ECL code or afterwards in ECL
+    <para>You can set properties in your <!-- DNT-Start -->ECL<!-- DNT-End --> code or afterwards in <!-- DNT-Start -->ECL<!-- DNT-End -->
     Watch:</para>
 
     <orderedlist>

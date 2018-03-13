@@ -2,26 +2,26 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Find">
-  <title>Find</title>
+  <!-- DNT-Start --><title>Find</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Str.Find<indexterm>
-      <primary>STD.Str.Find</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->Find<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->Find<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Str.Find</primary>
+      <primary>Str.<!-- DNT-Start -->Find<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Find</primary>
+      <primary><!-- DNT-Start -->Find<!-- DNT-End --></primary>
     </indexterm>(</emphasis> <emphasis>source, target, instance</emphasis>
   <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
-  <para><emphasis role="bold">STD.Uni.Find<indexterm>
-      <primary>STD.Uni.Find</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->Find<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->Find<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Uni.Find</primary>
+      <primary>Uni.<!-- DNT-Start -->Find<!-- DNT-End --></primary>
     </indexterm>(</emphasis> <emphasis>source, target, instance</emphasis>
   <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
-  <para><emphasis role="bold">STD.Uni.LocaleFind<indexterm>
-      <primary>STD.Uni.LocaleFind</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.LocaleFind<indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.LocaleFind</primary>
     </indexterm><indexterm>
       <primary>Uni.LocaleFind</primary>
     </indexterm><indexterm>
@@ -37,26 +37,26 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>source</emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the data to search.</entry>
         </row>
 
         <row>
-          <entry><emphasis>target </emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>target </emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the substring to search for.</entry>
         </row>
 
         <row>
-          <entry><emphasis>instance </emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>instance </emphasis><!-- DNT-End --></entry>
 
           <entry>An integer specifying which occurrence of the
           <emphasis>target</emphasis> to find.</entry>
         </row>
 
         <row>
-          <entry><emphasis>locale</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>locale</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the language and country
           code to use to determine correct sort order and other
@@ -64,26 +64,26 @@
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>Find returns an INTEGER value.</entry>
+          <entry><!-- DNT-Start -->Find<!-- DNT-End --> returns an <!-- DNT-Start -->INTEGER<!-- DNT-End --> value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">Find </emphasis>functions return the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->Find<!-- DNT-End --> </emphasis>functions return the
   beginning index position within the <emphasis>source</emphasis> string of
   the specified <emphasis>instance</emphasis> of the <emphasis>target
   </emphasis>string. If the <emphasis>target</emphasis> is not found or the
   specified <emphasis>instance</emphasis> is greater than the number of
   occurrences of the <emphasis>target</emphasis> in the
-  <emphasis>source</emphasis>, <emphasis role="bold">Find</emphasis> returns
+  <emphasis>source</emphasis>, <emphasis role="bold"><!-- DNT-Start -->Find<!-- DNT-End --></emphasis> returns
   zero (0).</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">A := IF(STD.Str.Find('ABCDE', 'BC',1) = 2,
+  <!-- DNT-Start --><programlisting format="linespecific">A := IF(STD.Str.Find('ABCDE', 'BC',1) = 2,
    'Success',
    'Failure - 1');  //success
     
@@ -98,5 +98,5 @@ C := IF(STD.Str.Find('ABCDEABCDE', '') = 0,
 D := IF(STD.Str.Find('', 'BD', 1) = 0,
    'Success',
    'Failure - 4');  //success
-</programlisting>
+</programlisting><!-- DNT-End -->
 </sect1>

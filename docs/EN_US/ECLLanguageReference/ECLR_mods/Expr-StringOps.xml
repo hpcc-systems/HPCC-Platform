@@ -2,11 +2,11 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="String_Operators">
-  <title>String Operators</title>
+  <!-- DNT-Start --><title>String Operators</title><!-- DNT-End -->
 
-  <para>The following string operator<indexterm>
+  <!-- DNT-Start --><para>The following string operator<indexterm>
       <primary>string operator</primary>
-    </indexterm> is supported:</para>
+    </indexterm> is supported:</para><!-- DNT-End -->
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup align="left" cols="2">
@@ -15,7 +15,7 @@
         <colspec />
       <tbody>
         <row>
-          <entry>+</entry>
+          <entry><!-- DNT-Start -->+<!-- DNT-End --></entry>
 
           <entry>Concatenation<indexterm>
               <primary>Concatenation</primary>

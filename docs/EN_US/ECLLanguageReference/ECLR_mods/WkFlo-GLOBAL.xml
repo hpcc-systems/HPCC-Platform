@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="GLOBAL_workflow_service">
-  <title>GLOBAL - Service</title>
+  <!-- DNT-Start --><title>GLOBAL - Service</title><!-- DNT-End -->
 
   <para><emphasis>attribute </emphasis>:= <emphasis>expression
-  </emphasis><emphasis role="bold">: GLOBAL<indexterm>
-      <primary>GLOBAL</primary>
+  </emphasis><emphasis role="bold">: <!-- DNT-Start -->GLOBAL<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->GLOBAL<!-- DNT-End --></primary>
     </indexterm> [ ( </emphasis><emphasis>cluster</emphasis><emphasis
-  role="bold"> [, FEW<indexterm>
-      <primary>FEW</primary>
+  role="bold"> [, <!-- DNT-Start -->FEW<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->FEW<!-- DNT-End --></primary>
     </indexterm> ] ) ]<indexterm>
-      <primary>GLOBAL workflow service</primary>
+      <primary><!-- DNT-Start -->GLOBAL<!-- DNT-End --> workflow service</primary>
     </indexterm></emphasis>;</para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -22,19 +22,19 @@
 
         <tbody>
           <row>
-            <entry><emphasis>attribute</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>attribute</emphasis><!-- DNT-End --></entry>
 
             <entry>The name of the Attribute.</entry>
           </row>
 
           <row>
-            <entry><emphasis>expression</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
 
             <entry>The definition of the attribute.</entry>
           </row>
 
           <row>
-            <entry><emphasis>cluster</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>cluster</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. A string constant specifying the name of the
             supercomputer cluster on which to build the attribute. This makes
@@ -45,32 +45,32 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">FEW</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">FEW</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. When the expression is a dataset or recordset,
-            FEW specifies that the resulting dataset is stored completely
+            <!-- DNT-Start -->FEW<!-- DNT-End --> specifies that the resulting dataset is stored completely
             within the workunit. If not specified, then the dataset is stored
-            as a THOR file and the workunit contains only the name of the
+            as a <!-- DNT-Start -->THOR<!-- DNT-End --> file and the workunit contains only the name of the
             file.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">GLOBAL </emphasis>service causes the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->GLOBAL<!-- DNT-End --> </emphasis>service causes the
   <emphasis>attribute</emphasis> to be evaluated at global scope instead of
-  the enclosing scope, similar to the GLOBAL() function -- that is, not inside
+  the enclosing scope, similar to the <!-- DNT-Start -->GLOBAL<!-- DNT-End -->() function -- that is, not inside
   a filter/transform etc. It may be evaluated multiple times in the same
   workunit if it is used from multiple workflow items, but it will share code
   with the context it is used.</para>
 
-  <para>GLOBAL is different from INDEPENDENT operates in that INDEPENDENT is
-  only ever executed once, while GLOBAL is executed once in each workflow item
+  <para><!-- DNT-Start -->GLOBAL<!-- DNT-End --> is different from <!-- DNT-Start -->INDEPENDENT<!-- DNT-End --> operates in that <!-- DNT-Start -->INDEPENDENT<!-- DNT-End --> is
+  only ever executed once, while <!-- DNT-Start -->GLOBAL<!-- DNT-End --> is executed once in each workflow item
   that uses it.</para>
 
   <para>Example:</para>
 
-  <programlisting>I := RANDOM() : INDEPENDENT;  //calculated once, period
+  <!-- DNT-Start --><programlisting>I := RANDOM() : INDEPENDENT;  //calculated once, period
 G := RANDOM() : GLOBAL;       //calculated once in each graph
 
 ds := 
@@ -88,8 +88,8 @@ P2 := PROJECT(ds,XF(left)) : PERSIST('~RTTEST::PERSIST::IndependentVsGlobal2');
 
 OUTPUT(P1);    
 OUTPUT(P2);  //this gets the same Ival values as P1, but the Gval value is different than P1
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="GLOBAL">GLOBAL function</link>, <link
-  linkend="INDEPENDENT">INDEPENDENT</link></para>
+  <para>See Also: <link linkend="GLOBAL"><!-- DNT-Start -->GLOBAL<!-- DNT-End --> function</link>, <link
+  linkend="INDEPENDENT"><!-- DNT-Start -->INDEPENDENT<!-- DNT-End --></link></para>
 </sect1>

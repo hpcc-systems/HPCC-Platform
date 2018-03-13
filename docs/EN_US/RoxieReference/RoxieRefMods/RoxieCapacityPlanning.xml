@@ -2,10 +2,10 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Capacity_Planning" role="nobrk">
-  <title>Capacity Planning</title>
+  <!-- DNT-Start --><title>Capacity Planning</title><!-- DNT-End -->
 
   <para>Roxie clusters are disk-based High Performance Computing Clusters
-  (HPCC) , typically using indexed files. A cluster is capable of storing and
+  (<!-- DNT-Start -->HPCC<!-- DNT-End -->) , typically using indexed files. A cluster is capable of storing and
   manipulating as much data as its combined hard drive space; however, this
   does not produce optimal performance.</para>
 
@@ -13,7 +13,7 @@
   nodes perform most jobs in memory.</para>
 
   <para>For example, if a query uses three data files with a combined file
-  size of 60 GB, a 40-channel cluster is a good size, while a 60-channel is
+  size of 60 <!-- DNT-Start -->GB<!-- DNT-End -->, a 40-channel cluster is a good size, while a 60-channel is
   probably better.</para>
 
   <para>Another consideration is the size of the Thor cluster creating the
@@ -24,7 +24,7 @@
 
   <para>This is due to the manner in which data is loaded and processed by
   Roxie slaves. If data is copied to slave nodes, the file parts are directly
-  copied from source location to target locations. They are NOT split or
+  copied from source location to target locations. They are <!-- DNT-Start -->NOT<!-- DNT-End --> split or
   resized to fit a different sized cluster. Therefore, if you load 50 file
   parts onto a 40-channel cluster, part one goes to channel one, part two to
   channel two, etc. Parts 41-50 start at the top again so that part 41 goes to
@@ -36,11 +36,11 @@
   cluster. Each slave must also be a Server, but you can dedicate additional
   nodes to be only Server processes. This is useful for queries that require
   processing on the Server after results are returned from slaves. Those
-  Server-intensive queries could be sent only to dedicated Server IP addresses
+  Server-intensive queries could be sent only to dedicated Server <!-- DNT-Start -->IP<!-- DNT-End --> addresses
   so the load is removed from nodes acting as both Server and slave.</para>
 
   <sect2 id="Configuring_the_Channels">
-    <title>Configuring the Channels</title>
+    <!-- DNT-Start --><title>Configuring the Channels</title><!-- DNT-End -->
 
     <para>In the illustration below, the nodes are configured using an N+5
     scheme to share channels. Channels can be configured in many ways, this is

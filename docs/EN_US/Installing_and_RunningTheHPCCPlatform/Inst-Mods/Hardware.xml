@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book>
   <bookinfo>
-    <title>Installing the HPCC Platform: Hardware Module</title>
+    <!-- DNT-Start --><title>Installing the HPCC Platform: Hardware Module</title><!-- DNT-End -->
 
     <mediaobject>
       <imageobject>
@@ -27,7 +27,7 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para>HPCC Systems is a registered trademark of LexisNexis Risk Data
+      <para><!-- DNT-Start -->HPCC<!-- DNT-End --> Systems is a registered trademark of LexisNexis Risk Data
       Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
@@ -70,18 +70,18 @@
   </bookinfo>
 
   <chapter id="Hardware-and-Software-Chapter">
-    <title>Hardware and Software Requirements</title>
+    <!-- DNT-Start --><title>Hardware and Software Requirements</title><!-- DNT-End -->
 
     <para>This section describes some hardware and software requirements or
-    recommendations in order to run the HPCC. Essentially the HPCC system is
+    recommendations in order to run the <!-- DNT-Start -->HPCC<!-- DNT-End -->. Essentially the <!-- DNT-Start -->HPCC<!-- DNT-End --> system is
     designed to run on commodity hardware, and would probably work well on
-    almost any hardware. To really take advantage of the power of an HPCC
-    system you should deploy your HPCC system on more modern advanced
+    almost any hardware. To really take advantage of the power of an <!-- DNT-Start -->HPCC<!-- DNT-End -->
+    system you should deploy your <!-- DNT-Start -->HPCC<!-- DNT-End --> system on more modern advanced
     hardware.</para>
 
     <para>Hardware and software technology are constantly changing and
     improving, therefore the latest most up to date requirements and
-    recommendation are available on the HPCC Systems Portal. The System
+    recommendation are available on the <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems Portal. The System
     requirements page describes in detail the latest platform
     requirements.</para>
 
@@ -89,13 +89,13 @@
     url="http://hpccsystems.com/permlink/requirements">http://hpccsystems.com/permlink/requirements</ulink></para>
 
     <sect1 id="HW-Switch" role="nobrk">
-      <title>Network Switch</title>
+      <!-- DNT-Start --><title>Network Switch</title><!-- DNT-End -->
 
-      <para>The network switch is a significant component of the HPCC
+      <para>The network switch is a significant component of the <!-- DNT-Start -->HPCC<!-- DNT-End -->
       System.</para>
 
       <sect2 id="Switch-Requirements">
-        <title>Switch requirements</title>
+        <!-- DNT-Start --><title>Switch requirements</title><!-- DNT-End -->
 
         <itemizedlist spacing="compact">
           <listitem>
@@ -104,15 +104,15 @@
           </listitem>
 
           <listitem>
-            <para>IGMP v.2 support </para>
+            <para><!-- DNT-Start -->IGMP<!-- DNT-End --> v.2 support </para>
           </listitem>
 
           <listitem>
-            <para>IGMP snooping support</para>
+            <para><!-- DNT-Start -->IGMP<!-- DNT-End --> snooping support</para>
           </listitem>
         </itemizedlist>
 
-        <para>Ideally your HPCC system will perform better when each node is
+        <para>Ideally your <!-- DNT-Start -->HPCC<!-- DNT-End --> system will perform better when each node is
         connected directly into a single switch. You should be able to provide
         a port for each node on a single switch to optimize system
         performance. Your switch size should correspond to the size of your
@@ -121,7 +121,7 @@
       </sect2>
 
       <sect2 id="Switch-additional-recommend">
-        <title>Switch additional recommended features</title>
+        <!-- DNT-Start --><title>Switch additional recommended features</title><!-- DNT-End -->
 
         <para><itemizedlist mark="square" spacing="compact">
             <listitem>
@@ -141,7 +141,7 @@
             </listitem>
 
             <listitem>
-              <para>Managed and monitored (SNMP is a plus)</para>
+              <para>Managed and monitored (<!-- DNT-Start -->SNMP<!-- DNT-End --> is a plus)</para>
             </listitem>
 
             <listitem>
@@ -151,13 +151,13 @@
 
         <para>Generally, higher-end, higher throughput switches are also going
         to provide better performance. For larger systems, a high-capacity
-        managed switch that can be configured and tuned for HPCC efficiency is
+        managed switch that can be configured and tuned for <!-- DNT-Start -->HPCC<!-- DNT-End --> efficiency is
         the best choice.</para>
       </sect2>
     </sect1>
 
     <sect1 id="HW-LoadBalancer">
-      <title>Load Balancer</title>
+      <!-- DNT-Start --><title>Load Balancer</title><!-- DNT-End -->
 
       <para>A load balancer distributes network traffic across a number of
       servers. Each Roxie Node is capable of receiving requests and returning
@@ -166,10 +166,10 @@
       bottleneck.</para>
 
       <sect2 id="LoadBalancerRequirements">
-        <title>Load Balancer Requirements</title>
+        <!-- DNT-Start --><title>Load Balancer Requirements</title><!-- DNT-End -->
 
         <sect3 id="LoadBalancer_MinimumRequirements">
-          <title>Minimum requirements</title>
+          <!-- DNT-Start --><title>Minimum requirements</title><!-- DNT-End -->
 
           <para><itemizedlist spacing="compact">
               <listitem>
@@ -187,7 +187,7 @@
         </sect3>
 
         <sect3 id="LoadBalancer_StandardRequirements">
-          <title>Standard requirements</title>
+          <!-- DNT-Start --><title>Standard requirements</title><!-- DNT-End -->
 
           <para><itemizedlist spacing="compact">
               <listitem>
@@ -206,7 +206,7 @@
         </sect3>
 
         <sect3 id="LoadBalancer_RecommendedCapabilities">
-          <title>Recommended capabilities</title>
+          <!-- DNT-Start --><title>Recommended capabilities</title><!-- DNT-End -->
 
           <para><itemizedlist spacing="compact">
               <listitem>
@@ -215,7 +215,7 @@
               </listitem>
 
               <listitem>
-                <para>Ability to forward SOAP/HTTP traffic</para>
+                <para>Ability to forward <!-- DNT-Start -->SOAP<!-- DNT-End -->/<!-- DNT-Start -->HTTP<!-- DNT-End --> traffic</para>
               </listitem>
 
               <listitem>
@@ -241,9 +241,9 @@
     </sect1>
 
     <sect1 id="Nodes-Hardware">
-      <title>Nodes-Hardware</title>
+      <!-- DNT-Start --><title>Nodes-Hardware</title><!-- DNT-End -->
 
-      <para>An HPCC System can run as a single node system or a multi node
+      <para>An <!-- DNT-Start -->HPCC<!-- DNT-End --> System can run as a single node system or a multi node
       system.</para>
 
       <para>These hardware recommendations are intended for a multi-node
@@ -253,11 +253,11 @@
       your system will only run as fast as its slowest node.</para>
 
       <sect2 id="Node-Min-requirements">
-        <title>Node minimum requirements</title>
+        <!-- DNT-Start --><title>Node minimum requirements</title><!-- DNT-End -->
 
         <itemizedlist mark="square" spacing="compact">
           <listitem>
-            <para>Pentium 4 or newer CPU</para>
+            <para>Pentium 4 or newer <!-- DNT-Start -->CPU<!-- DNT-End --></para>
           </listitem>
 
           <listitem>
@@ -265,11 +265,11 @@
           </listitem>
 
           <listitem>
-            <para>1GB RAM per slave</para>
+            <para>1<!-- DNT-Start -->GB<!-- DNT-End --> <!-- DNT-Start -->RAM<!-- DNT-End --> per slave</para>
 
             <para>(Note: If you configure more than 1 slave per node, memory
             is shared. For example, if you want 2 slaves per node with each
-            having 4 GB of memory, the server would need 8 GB total.)</para>
+            having 4 <!-- DNT-Start -->GB<!-- DNT-End --> of memory, the server would need 8 <!-- DNT-Start -->GB<!-- DNT-End --> total.)</para>
           </listitem>
 
           <listitem>
@@ -285,11 +285,11 @@
       </sect2>
 
       <sect2 id="Node-recommended-specifications">
-        <title>Node recommended specifications</title>
+        <!-- DNT-Start --><title>Node recommended specifications</title><!-- DNT-End -->
 
         <para><itemizedlist mark="square" spacing="compact">
             <listitem>
-              <para>Dual Core i7 CPU (or better)</para>
+              <para>Dual Core i7 <!-- DNT-Start -->CPU<!-- DNT-End --> (or better)</para>
             </listitem>
 
             <listitem>
@@ -297,7 +297,7 @@
             </listitem>
 
             <listitem>
-              <para>4 GB RAM (or more) per slave</para>
+              <para>4 <!-- DNT-Start -->GB<!-- DNT-End --> <!-- DNT-Start -->RAM<!-- DNT-End --> (or more) per slave</para>
             </listitem>
 
             <listitem>
@@ -305,20 +305,20 @@
             </listitem>
 
             <listitem>
-              <para>PXE boot support in BIOS</para>
+              <para><!-- DNT-Start -->PXE<!-- DNT-End --> boot support in <!-- DNT-Start -->BIOS<!-- DNT-End --></para>
 
-              <para>PXE boot support is recommended so you can manage OS,
+              <para><!-- DNT-Start -->PXE<!-- DNT-End --> boot support is recommended so you can manage <!-- DNT-Start -->OS<!-- DNT-End -->,
               packages, and other settings when you have a large system</para>
             </listitem>
 
             <listitem>
-              <para>Optionally IPMI and KVM over IP support</para>
+              <para>Optionally <!-- DNT-Start -->IPMI<!-- DNT-End --> and <!-- DNT-Start -->KVM<!-- DNT-End --> over <!-- DNT-Start -->IP<!-- DNT-End --> support</para>
 
               <para><emphasis role="bold">For Roxie nodes:</emphasis></para>
             </listitem>
 
             <listitem>
-              <para>Two 10K RPM (or faster) SAS Hard Drives</para>
+              <para>Two 10K <!-- DNT-Start -->RPM<!-- DNT-End --> (or faster) <!-- DNT-Start -->SAS<!-- DNT-End --> Hard Drives</para>
 
               <para>Typically, drive speed is the priority for Roxie
               nodes</para>
@@ -327,12 +327,12 @@
             </listitem>
 
             <listitem>
-              <para>Two 7200K RPM (or faster) SATA Hard Drives (Thor)</para>
+              <para>Two 7200K <!-- DNT-Start -->RPM<!-- DNT-End --> (or faster) <!-- DNT-Start -->SATA<!-- DNT-End --> Hard Drives (Thor)</para>
             </listitem>
 
             <listitem>
               <para>Optionally 3 or more hard drives can be configured in a
-              RAID 5 container for increased performance and
+              <!-- DNT-Start -->RAID<!-- DNT-End --> 5 container for increased performance and
               availability</para>
 
               <para>Typically, drive capacity is the priority for Thor
@@ -343,29 +343,29 @@
     </sect1>
 
     <sect1 id="Nodes-Software">
-      <title>Nodes-Software</title>
+      <!-- DNT-Start --><title>Nodes-Software</title><!-- DNT-End -->
 
       <para>All nodes must have the identical operating systems. We recommend
-      all nodes have identical BIOS settings, and packages installed. This
+      all nodes have identical <!-- DNT-Start -->BIOS<!-- DNT-End --> settings, and packages installed. This
       significantly reduces variables when troubleshooting. It is easier to
       manage a system where all nodes are identical, but this is not
       required.</para>
 
       <sect2 id="Operating-System-Requirements">
-        <title>Operating System Requirements</title>
+        <!-- DNT-Start --><title>Operating System Requirements</title><!-- DNT-End -->
 
         <para>Binary installation packages are available for many Linux
-        Operating systems. HPCC System platform requirements are readily
-        available on the HPCC Portal.</para>
+        Operating systems. <!-- DNT-Start -->HPCC<!-- DNT-End --> System platform requirements are readily
+        available on the <!-- DNT-Start -->HPCC<!-- DNT-End --> Portal.</para>
 
         <para><ulink
         url="http://hpccsystems.com/permlink/requirements">http://hpccsystems.com/permlink/requirements</ulink></para>
       </sect2>
 
       <sect2 id="configuration-manager">
-        <title>Dependencies</title>
+        <!-- DNT-Start --><title>Dependencies</title><!-- DNT-End -->
 
-        <para>Installing HPCC on your system depends on having required
+        <para>Installing <!-- DNT-Start -->HPCC<!-- DNT-End --> on your system depends on having required
         component packages installed on the system. The required dependencies
         can vary depending on your platform. In some cases the dependencies
         are included in the installation packages. In other instances the
@@ -378,7 +378,7 @@
               <term>Note:</term>
 
               <listitem>
-                <para>For CentOS installations, the Fedora EPEL repository is
+                <para>For CentOS installations, the Fedora <!-- DNT-Start -->EPEL<!-- DNT-End --> repository is
                 required.</para>
               </listitem>
             </varlistentry>
@@ -386,14 +386,14 @@
       </sect2>
 
       <sect2 id="SSH_Keys" role="brk">
-        <title>SSH Keys</title>
+        <!-- DNT-Start --><title>SSH Keys</title><!-- DNT-End -->
 
-        <para>The HPCC components use ssh keys to authenticate each other.
+        <para>The <!-- DNT-Start -->HPCC<!-- DNT-End --> components use ssh keys to authenticate each other.
         This is required for communication between nodes. A script to generate
         keys has been provided .You should run that script and distribute the
         public and private keys to all nodes after you have installed the
         packages on all nodes, but before you configure a multi-node
-        HPCC.</para>
+        <!-- DNT-Start -->HPCC<!-- DNT-End -->.</para>
 
         <para><itemizedlist spacing="compact">
             <listitem>
@@ -433,14 +433,14 @@
     </sect1>
 
     <sect1 id="workstation-requirements">
-      <title>User Workstation Requirements</title>
+      <!-- DNT-Start --><title>User Workstation Requirements</title><!-- DNT-End -->
 
       <itemizedlist spacing="compact">
         <listitem>
-          <para>Running the HPCC platform requires communication from your
-          user workstation with a browser to the HPCC. You will use it to
-          access ECL Watch--a Web-based interface to your HPCC system. ECL
-          Watch enables you to examine and manage many aspects of the HPCC and
+          <para>Running the <!-- DNT-Start -->HPCC<!-- DNT-End --> platform requires communication from your
+          user workstation with a browser to the <!-- DNT-Start -->HPCC<!-- DNT-End -->. You will use it to
+          access <!-- DNT-Start -->ECL<!-- DNT-End --> Watch--a Web-based interface to your <!-- DNT-Start -->HPCC<!-- DNT-End --> system. <!-- DNT-Start -->ECL<!-- DNT-End -->
+          Watch enables you to examine and manage many aspects of the <!-- DNT-Start -->HPCC<!-- DNT-End --> and
           allows you to see information about jobs you run, data files, and
           system metrics.</para>
 
@@ -453,9 +453,9 @@
             </listitem>
 
             <listitem>
-              <para>Firefox™ 3.0 (or later.)</para>
+              <para>Firefox 3.0 (or later.)</para>
 
-              <!--***Add additional browsers when approved-->
+              <!-- DNT-Start --><!--***Add additional browsers when approved--><!-- DNT-End -->
             </listitem>
 
             <listitem>
@@ -467,39 +467,39 @@
           role="bold">High</emphasis>, you should add ECLWatch as a Trusted
           Site to allow Javascript execution.</para>
 
-          <!--note: window users may want to use the 32 bit graph control***-->
+          <!-- DNT-Start --><!--note: window users may want to use the 32 bit graph control***--><!-- DNT-End -->
         </listitem>
 
         <listitem>
-          <para>Install the ECL IDE</para>
+          <para>Install the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --></para>
 
-          <para>The ECL IDE (Integrated Development Environment) is the tool
-          used to create queries into your data and ECL files with which to
+          <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> (Integrated Development Environment) is the tool
+          used to create queries into your data and <!-- DNT-Start -->ECL<!-- DNT-End --> files with which to
           build your queries.</para>
 
-          <para>Download the ECL IDE from the HPCC Systems web portal.
+          <para>Download the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> from the <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems web portal.
           http://hpccsystems.com</para>
 
-          <para>You can find the ECL IDE and Client Tools on this page using
-          the following URL:</para>
+          <para>You can find the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> and Client Tools on this page using
+          the following <!-- DNT-Start -->URL<!-- DNT-End -->:</para>
 
           <para><ulink
           url="http://hpccsystems.com/download/free-community-edition/ecl-ide">http://hpccsystems.com/download/free-community-edition/ecl-ide</ulink></para>
 
-          <para>The ECL IDE was designed to run on Windows machines. See the
+          <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> was designed to run on Windows machines. See the
           appendix for instructions on running on Linux workstations using
           Wine.</para>
         </listitem>
 
         <listitem>
-          <para>Microsoft VS 2008 C++ compiler (either Express or Professional
+          <para>Microsoft <!-- DNT-Start -->VS<!-- DNT-End --> 2008 C++ compiler (either Express or Professional
           edition). This is needed if you are running Windows and want to
-          compile queries locally. This allows you to compile and run ECL code
+          compile queries locally. This allows you to compile and run <!-- DNT-Start -->ECL<!-- DNT-End --> code
           on your Windows workstation.</para>
         </listitem>
 
         <listitem>
-          <para>GCC. This is needed if you are running under Linux and want to
+          <para><!-- DNT-Start -->GCC<!-- DNT-End -->. This is needed if you are running under Linux and want to
           compile queries locally on a standalone Linux machine, (although it
           may already be available to you since it usually comes with the
           operating system).</para>

@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="WorkunitTimeStamps">
-  <title>WorkunitTimeStamps</title>
+  <!-- DNT-Start --><title>WorkunitTimeStamps</title><!-- DNT-End -->
 
-  <para><emphasis
+  <!-- DNT-Start --><para><emphasis
   role="bold">STD.System.Workunit.WorkunitTimeStamps    <indexterm>
       <primary>STD.System.Workunit.WorkunitTimeStamps</primary>
     </indexterm>
@@ -18,7 +18,7 @@
       <primary>WorkunitTimeStamps</primary>
     </indexterm>
 (</emphasis> <emphasis>
-  wuid </emphasis> <emphasis role="bold">)</emphasis></para>
+  wuid </emphasis> <emphasis role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -28,37 +28,37 @@
 
       <tbody>
         <row>
-          <entry><emphasis>wuid</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>wuid</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the WorkUnit
           IDentifier.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>WorkunitTimeStamps returns a DATASET value.</entry>
+          <entry><!-- DNT-Start -->WorkunitTimeStamps<!-- DNT-End --> returns a <!-- DNT-Start -->DATASET<!-- DNT-End --> value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">WorkunitTimeStamps </emphasis>function
-  returns a DATASET with this format:</para>
+  <para>The <emphasis role="bold"><!-- DNT-Start -->WorkunitTimeStamps<!-- DNT-End --> </emphasis>function
+  returns a <!-- DNT-Start -->DATASET<!-- DNT-End --> with this format:</para>
 
-  <programlisting>EXPORT WsTimeStamp := RECORD
+  <!-- DNT-Start --><programlisting>EXPORT WsTimeStamp := RECORD
   STRING32 application;
   STRING16 id;
   STRING20 time;
   STRING16 instance;
-END;</programlisting>
+END;</programlisting><!-- DNT-End -->
 
   <para>Each record in the returned dataset specifies a step in the workunit's
   execution process (creation, compilation, etc.).</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitTimeStamps('W20070308-164946'));
+  <!-- DNT-Start --><programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitTimeStamps('W20070308-164946'));
 /* produces output like this:
 'workunit     ','Created ','2008-02-13T18:28:20Z','              '
 'workunit     ','Modified','2008-02-13T18:32:47Z','              '
@@ -67,5 +67,5 @@ END;</programlisting>
 'Thor - graph1','Finished','2008-02-13T18:32:47Z','training009004'
 'Thor - graph1','Started ','2008-02-13T18:32:13Z','training009004'
 'EclAgent     ','Finished','2008-02-13T18:33:09Z','training009003'
-*/</programlisting>
+*/</programlisting><!-- DNT-End -->
 </sect1>

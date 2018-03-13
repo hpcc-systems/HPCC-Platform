@@ -2,10 +2,10 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ASSTRING">
-  <title>ASSTRING</title>
+  <!-- DNT-Start --><title>ASSTRING</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">ASSTRING<indexterm>
-      <primary>ASSTRING</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->ASSTRING<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->ASSTRING<!-- DNT-End --></primary>
     </indexterm>(</emphasis><emphasis>bitmap</emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -17,36 +17,36 @@
 
         <tbody>
           <row>
-            <entry><emphasis>bitmap</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>bitmap</emphasis><!-- DNT-End --></entry>
 
             <entry>The value to treat as a string.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>ASSTRING returns a single STRING value.</entry>
+            <entry><!-- DNT-Start -->ASSTRING<!-- DNT-End --> returns a single <!-- DNT-Start -->STRING<!-- DNT-End --> value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">ASSTRING </emphasis>function<indexterm>
-      <primary>ASSTRING function</primary>
+  <para>The <emphasis role="bold"><!-- DNT-Start -->ASSTRING<!-- DNT-End --> </emphasis>function<indexterm>
+      <primary><!-- DNT-Start -->ASSTRING<!-- DNT-End --> function</primary>
     </indexterm> returns the <emphasis>bitmap</emphasis> as a string. This is
   equivalent to
-  TRANSFER(<emphasis>bitmap</emphasis>,STRING<emphasis>n</emphasis>) where
+  <!-- DNT-Start -->TRANSFER<!-- DNT-End -->(<emphasis>bitmap</emphasis>,<!-- DNT-Start -->STRING<!-- DNT-End --><emphasis>n</emphasis>) where
   <emphasis>n</emphasis> is the same number of bytes as the data in the
   <emphasis>bitmap</emphasis>.</para>
 
   <para>Example:</para>
 
-  <programlisting>INTEGER1 MyInt := 65; //MyInt is an integer whose value is 65
+  <!-- DNT-Start --><programlisting>INTEGER1 MyInt := 65; //MyInt is an integer whose value is 65
 MyVal1 := ASSTRING(MyInt); //MyVal1 is "A" (ASCII 65)
  // this is directly equivalent to:
  // STRING1 MyVal1 := TRANSFER(MyInt,STRING1);INTEGER1 MyVal3 := (INTEGER)MyVal1; 
  //MyVal3 is 0 (zero) because "A" is not a numeric character
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="TRANSFER">TRANSFER</link>, <link linkend="Type_Casting">Type Casting</link></para>
+  <para>See Also: <link linkend="TRANSFER"><!-- DNT-Start -->TRANSFER<!-- DNT-End --></link>, <link linkend="Type_Casting">Type Casting</link></para>
 </sect1>

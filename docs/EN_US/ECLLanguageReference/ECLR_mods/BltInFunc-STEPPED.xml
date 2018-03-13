@@ -2,13 +2,13 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="STEPPED">
-  <title>STEPPED</title>
+  <!-- DNT-Start --><title>STEPPED</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STEPPED<indexterm>
-      <primary>STEPPED</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STEPPED<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STEPPED<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>STEPPED function</primary>
-    </indexterm>( </emphasis><emphasis>index, fields </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+      <primary><!-- DNT-Start -->STEPPED<!-- DNT-End --> function</primary>
+    </indexterm>( </emphasis><emphasis>index, fields </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -18,71 +18,71 @@
 
         <tbody>
           <row>
-            <entry><emphasis>index</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>index</emphasis><!-- DNT-End --></entry>
 
-            <entry>The INDEX to sort. This can be filtered or the result of a
-            PROJECT on an INDEX.</entry>
+            <entry>The <!-- DNT-Start -->INDEX<!-- DNT-End --> to sort. This can be filtered or the result of a
+            <!-- DNT-Start -->PROJECT<!-- DNT-End --> on an <!-- DNT-Start -->INDEX<!-- DNT-End -->.</entry>
           </row>
 
           <row>
-            <entry>fields</entry>
+            <entry><!-- DNT-Start -->fields<!-- DNT-End --></entry>
 
             <entry>A comma-delimited list of fields by which to sort the
             result, typically trailing elements in the key.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the output record order is not significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the significance of the output record order.</entry>
           </row>
           <row>
-            <entry><emphasis>bool</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
 
             <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">STABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is not significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity in parallel.</entry>
           </row>
           <row>
-            <entry><emphasis>numthreads</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Override the algorithm used for this activity.</entry>
           </row>
           <row>
-            <entry><emphasis>name</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
           </row>
           
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">STEPPED </emphasis>function sorts the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->STEPPED<!-- DNT-End --> </emphasis>function sorts the
   <emphasis>index</emphasis> by the specified <emphasis>fields</emphasis>.
-  This function is used in those cases where the SORTED(index) function will
+  This function is used in those cases where the <!-- DNT-Start -->SORTED<!-- DNT-End -->(index) function will
   not suffice.</para>
 
   <para>There are some restrictions in its use:</para>
@@ -93,13 +93,13 @@
 
   <para>Roxie only supports sorting by trailing components on indexes that are
   read locally (single part indexes or superkeys containing single part
-  indexes), or NOROOT indexes read within ALLNODES.</para>
+  indexes), or <!-- DNT-Start -->NOROOT<!-- DNT-End --> indexes read within <!-- DNT-Start -->ALLNODES<!-- DNT-End -->.</para>
 
-  <para>Thor does not support STEPPED.</para>
+  <para>Thor does not support <!-- DNT-Start -->STEPPED<!-- DNT-End -->.</para>
 
   <para>Example:</para>
 
-  <programlisting>DataFile := '~RTTEST::TestStepped';
+  <!-- DNT-Start --><programlisting>DataFile := '~RTTEST::TestStepped';
 KeyFile := '~RTTEST::TestSteppedKey';
 Rec := RECORD
 STRING2 state;
@@ -125,9 +125,9 @@ PA NEW STANTON WIKER DESSIE
 FL GAINESVILLE WIK MACHOUSTON
 FL DELAND WIKER OKE
 FL BOCA RATON WIK PICHA */
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="INDEX_record_structure">INDEX</link>, <link
-  linkend="SORTED">SORTED</link>, <link
-  linkend="ALLNODES">ALLNODES</link></para>
+  <para>See Also: <link linkend="INDEX_record_structure"><!-- DNT-Start -->INDEX<!-- DNT-End --></link>, <link
+  linkend="SORTED"><!-- DNT-Start -->SORTED<!-- DNT-End --></link>, <link
+  linkend="ALLNODES"><!-- DNT-Start -->ALLNODES<!-- DNT-End --></link></para>
 </sect1>

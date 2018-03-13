@@ -2,13 +2,13 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Data_binary">
-  <title>binary</title>
+  <!-- DNT-Start --><title>binary</title><!-- DNT-End -->
 
   <para><indexterm>
-      <primary>binary</primary>
-    </indexterm>A data type containing binary data, similar to a BLOB .</para>
+      <primary><!-- DNT-Start -->binary<!-- DNT-End --></primary>
+    </indexterm>A data type containing <!-- DNT-Start -->binary<!-- DNT-End --> data, similar to a <!-- DNT-Start -->BLOB<!-- DNT-End --> .</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
-  <programlisting>binary RetinaScanSample;   </programlisting>
+  <!-- DNT-Start --><programlisting>binary RetinaScanSample;   </programlisting><!-- DNT-End -->
 </sect1>

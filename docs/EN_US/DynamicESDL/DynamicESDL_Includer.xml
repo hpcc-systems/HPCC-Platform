@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book lang="en_US" xml:base="../">
   <bookinfo>
-    <title>Dynamic ESDL</title>
+    <!-- DNT-Start --><title>Dynamic ESDL</title><!-- DNT-End -->
 
     <mediaobject>
       <imageobject>
@@ -27,7 +27,7 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para>HPCC Systems<superscript>®</superscript> is a registered trademark
+      <para><!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript> is a registered trademark
       of LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
@@ -62,51 +62,51 @@
   </bookinfo>
 
   <chapter>
-    <title>Dynamic ESDL</title>
+    <!-- DNT-Start --><title>Dynamic ESDL</title><!-- DNT-End -->
 
-    <para>Dynamic ESDL (Enterprise Service Description Language) is a
+    <para>Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End --> (Enterprise Service Description Language) is a
     methodology that helps you develop and manage web-based query interfaces
     quickly and consistently.</para>
 
-    <para>Dynamic ESDL takes an interface-first development approach. It
-    leverages the ESDL Language to create a common interface "contract" that
+    <para>Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End --> takes an interface-first development approach. It
+    leverages the <!-- DNT-Start -->ESDL<!-- DNT-End --> Language to create a common interface "contract" that
     both Roxie Query and Web interface developers will adhere to. It is
     intended to allow developers to create production web services, with clean
     interfaces that can evolve and grow over time without breaking existing
     applications.</para>
 
-    <para>ESDL's built-in versioning support helps ensure compiled and
+    <para><!-- DNT-Start -->ESDL<!-- DNT-End -->'s built-in versioning support helps ensure compiled and
     deployed applications continue to operate while changes are made to the
     deployed service's interface for new functionality.</para>
 
-    <para>ESDL's ability to define and reuse common structures helps maintain
+    <para><!-- DNT-Start -->ESDL<!-- DNT-End -->'s ability to define and reuse common structures helps maintain
     consistent interfaces across methods.</para>
 
-    <para>The Dynamic ESDL service is built to scale horizontally, and hooks
+    <para>The Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End --> service is built to scale horizontally, and hooks
     are provided to add custom logging and security to help create fully
     "productionalized" web services.</para>
 
     <para>Once a service is deployed, application developers and end-users can
-    consume the service using REST, JSON, XML, SOAP, or form encoded posts.
-    Dynamic ESDL provides quick and easy access to a WSDL, live forms, sample
+    consume the service using <!-- DNT-Start -->REST<!-- DNT-End -->, <!-- DNT-Start -->JSON<!-- DNT-End -->, <!-- DNT-Start -->XML<!-- DNT-End -->, <!-- DNT-Start -->SOAP<!-- DNT-End -->, or form encoded posts.
+    Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End --> provides quick and easy access to a <!-- DNT-Start -->WSDL<!-- DNT-End -->, live forms, sample
     requests and responses, and testing interfaces to allow developers to test
     logic changes, data changes, or new features, as well as to interact with
-    the service directly using SOAP, XML, or JSON.</para>
+    the service directly using <!-- DNT-Start -->SOAP<!-- DNT-End -->, <!-- DNT-Start -->XML<!-- DNT-End -->, or <!-- DNT-Start -->JSON<!-- DNT-End -->.</para>
 
     <para></para>
   </chapter>
 
   <chapter id="DESDLWorkflowTutorial">
-    <title>Dynamic ESDL Workflow Tutorial</title>
+    <!-- DNT-Start --><title>Dynamic ESDL Workflow Tutorial</title><!-- DNT-End -->
 
     <sect1 id="DESDLBefore" role="nobrk">
-      <title>Before You Begin...</title>
+      <!-- DNT-Start --><title>Before You Begin...</title><!-- DNT-End -->
 
       <para>You will need:</para>
 
       <itemizedlist>
         <listitem>
-          <para>Access to an HPCC Cluster (version 6.4.2 or later) that you
+          <para>Access to an <!-- DNT-Start -->HPCC<!-- DNT-End --> Cluster (version 6.4.2 or later) that you
           can reconfigure using Configuration Manager. This can be one running
           in a Virtual Machine.</para>
 
@@ -118,30 +118,30 @@
 
       <itemizedlist>
         <listitem>
-          <para>Access to ECL Watch and WsECL (using a browser).</para>
+          <para>Access to <!-- DNT-Start -->ECL<!-- DNT-End --> Watch and WsECL (using a browser).</para>
 
           <para>For purposes of this tutorial, we assume that you know how to
           submit a published using WsECL.</para>
         </listitem>
 
         <listitem>
-          <para>The ECL IDE (version 6.4.2 or later)</para>
+          <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> (version 6.4.2 or later)</para>
 
-          <para>You won't need to know the ECL or ESDL languages to follow the
+          <para>You won't need to know the <!-- DNT-Start -->ECL<!-- DNT-End --> or <!-- DNT-Start -->ESDL<!-- DNT-End --> languages to follow the
           steps in this book, but you will need to understand both to develop
           dESDL-based applications.</para>
 
           <para>For purposes of this tutorial, you should know the basics of
-          using the ECL IDE including how to add files to your repository, how
-          to compile ECL Code, and how to publish a compiled query.</para>
+          using the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> including how to add files to your repository, how
+          to compile <!-- DNT-Start -->ECL<!-- DNT-End --> Code, and how to publish a compiled query.</para>
         </listitem>
       </itemizedlist>
 
-      <para><emphasis role="bold">dESDL and LDAP Security</emphasis></para>
+      <para><emphasis role="bold">dESDL and <!-- DNT-Start -->LDAP<!-- DNT-End --> Security</emphasis></para>
 
-      <para>If your HPCC platform is configured to use LDAP security, you must
-      ensure any user who will be publishing ESDL Definitions has Access to
-      <emphasis role="bold">ESDL configuration service</emphasis> set to
+      <para>If your <!-- DNT-Start -->HPCC<!-- DNT-End --> platform is configured to use <!-- DNT-Start -->LDAP<!-- DNT-End --> security, you must
+      ensure any user who will be publishing <!-- DNT-Start -->ESDL<!-- DNT-End --> Definitions has Access to
+      <emphasis role="bold"><!-- DNT-Start -->ESDL<!-- DNT-End --> configuration service</emphasis> set to
       <emphasis role="bold">Allow Full</emphasis>, as shown below.</para>
 
       <para><graphic fileref="images/desdl-LDAP.jpg" /></para>
@@ -150,7 +150,7 @@
     </sect1>
 
     <sect1 id="DESDLWorkflowOverview">
-      <title>Overview</title>
+      <!-- DNT-Start --><title>Overview</title><!-- DNT-End -->
 
       <para>In this tutorial, we will:</para>
 
@@ -158,45 +158,45 @@
 
       <itemizedlist>
         <listitem>
-          <para>Use Configuration Manager to add a Dynamic ESDL-based ESP
-          Service and bind it to a port on an ESP server.</para>
+          <para>Use Configuration Manager to add a Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End -->-based <!-- DNT-Start -->ESP<!-- DNT-End -->
+          Service and bind it to a port on an <!-- DNT-Start -->ESP<!-- DNT-End --> server.</para>
 
           <para></para>
         </listitem>
 
         <listitem>
-          <para>Write an ESDL Service Definition using the editor in the ECL
-          IDE.</para>
+          <para>Write an <!-- DNT-Start -->ESDL<!-- DNT-End --> Service Definition using the editor in the <!-- DNT-Start -->ECL<!-- DNT-End -->
+          <!-- DNT-Start -->IDE<!-- DNT-End -->.</para>
 
           <para></para>
         </listitem>
 
         <listitem>
-          <para>Generate ECL from the ESDL Service Definition within the ECL
-          IDE.</para>
+          <para>Generate <!-- DNT-Start -->ECL<!-- DNT-End --> from the <!-- DNT-Start -->ESDL<!-- DNT-End --> Service Definition within the <!-- DNT-Start -->ECL<!-- DNT-End -->
+          <!-- DNT-Start -->IDE<!-- DNT-End -->.</para>
 
-          <para>This step automatically generates an ECL file in your ECL
-          repository. You will use the definitions in that ECL file when you
-          write the ECL query that will deliver the result (the business
+          <para>This step automatically generates an <!-- DNT-Start -->ECL<!-- DNT-End --> file in your <!-- DNT-Start -->ECL<!-- DNT-End -->
+          repository. You will use the definitions in that <!-- DNT-Start -->ECL<!-- DNT-End --> file when you
+          write the <!-- DNT-Start -->ECL<!-- DNT-End --> query that will deliver the result (the business
           logic).</para>
         </listitem>
 
         <listitem>
-          <para>Write the ECL for the business logic of the query, compile it,
+          <para>Write the <!-- DNT-Start -->ECL<!-- DNT-End --> for the business logic of the query, compile it,
           and then publish the query to a Roxie cluster.</para>
 
           <para></para>
         </listitem>
 
         <listitem>
-          <para>Publish the Dynamic ESDL definition from the ECL IDE.</para>
+          <para>Publish the Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End --> definition from the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->.</para>
 
           <para></para>
         </listitem>
 
         <listitem>
           <para>Bind the service methods to the Roxie queries in ECLWatch
-          using an XML formatted configuration.</para>
+          using an <!-- DNT-Start -->XML<!-- DNT-End --> formatted configuration.</para>
 
           <para></para>
         </listitem>
@@ -206,10 +206,10 @@
     </sect1>
 
     <sect1 id="DESDLConfigureAndBind">
-      <title>Configure and Bind the dESDL Service</title>
+      <!-- DNT-Start --><title>Configure and Bind the dESDL Service</title><!-- DNT-End -->
 
-      <para>In this portion of the tutorial, we will add an ESP service and a
-      service binding that reserves a port for the dynamic ESDL
+      <para>In this portion of the tutorial, we will add an <!-- DNT-Start -->ESP<!-- DNT-End --> service and a
+      service binding that reserves a port for the dynamic <!-- DNT-Start -->ESDL<!-- DNT-End -->
       service.</para>
 
       <para>This step is independent of the development and publishing of the
@@ -218,10 +218,10 @@
 
       <orderedlist>
         <listitem>
-          <para>If it is running, stop the HPCC system, using this command in
+          <para>If it is running, stop the <!-- DNT-Start -->HPCC<!-- DNT-End --> system, using this command in
           a terminal window:</para>
 
-          <programlisting>sudo /etc/init.d/hpcc-init stop</programlisting>
+          <!-- DNT-Start --><programlisting>sudo /etc/init.d/hpcc-init stop</programlisting><!-- DNT-End -->
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <?dbfo keep-together="always"?>
@@ -236,7 +236,7 @@
                     <entry><inlinegraphic
                     fileref="images/OSSgr3.png" /></entry>
 
-                    <entry>You can use this command to confirm HPCC processes
+                    <entry>You can use this command to confirm <!-- DNT-Start -->HPCC<!-- DNT-End --> processes
                     are stopped:<para> <programlisting>sudo /etc/init.d/hpcc-init status</programlisting>
                     </para></entry>
                   </row>
@@ -255,7 +255,7 @@
           <para>Using a Web browser, go to the Configuration Manager's
           interface:</para>
 
-          <programlisting>http://&lt;<emphasis>node ip </emphasis>&gt;:8015</programlisting>
+          <!-- DNT-Start --><programlisting>http://&lt;<emphasis>node ip </emphasis>&gt;:8015</programlisting><!-- DNT-End -->
 
           <para>The Configuration Manager startup wizard displays.</para>
         </listitem>
@@ -264,7 +264,7 @@
           <?dbfo keep-together="always"?>
 
           <para>Select <emphasis role="bold">Advanced View</emphasis> and then
-          select the source environment XML file to edit.</para>
+          select the source environment <!-- DNT-Start -->XML<!-- DNT-End --> file to edit.</para>
 
           <para><graphic fileref="images/desdl-openconfig.jpg" /></para>
         </listitem>
@@ -283,7 +283,7 @@
 
         <listitem>
           <para>Right-click on <emphasis role="bold">Esp Services</emphasis>
-          and select <emphasis role="bold">Dynamic ESDL</emphasis> from
+          and select <emphasis role="bold">Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End --></emphasis> from
           <emphasis role="bold">New Esp Services.</emphasis></para>
 
           <para><graphic fileref="images/desdl-addDESDL.jpg" /></para>
@@ -301,7 +301,7 @@
         <listitem>
           <?dbfo keep-together="always"?>
 
-          <para>Select your ESP, then select the <emphasis role="bold">ESP
+          <para>Select your <!-- DNT-Start -->ESP<!-- DNT-End -->, then select the <emphasis role="bold"><!-- DNT-Start -->ESP<!-- DNT-End -->
           Service Bindings</emphasis> tab.</para>
 
           <para><graphic fileref="images/desdl-ESPSVCBinding.jpg" /></para>
@@ -330,7 +330,7 @@
         </listitem>
 
         <listitem>
-          <para>Press the Save As button and name your new XML file <emphasis
+          <para>Press the Save As button and name your new <!-- DNT-Start -->XML<!-- DNT-End --> file <emphasis
           role="bold">NewEnvironment</emphasis>.</para>
 
           <para><graphic fileref="images/desdl-configSaveAs.jpg" /></para>
@@ -346,8 +346,8 @@
           <para>Copy the NewEnvironment.xml file from the source directory to
           the /etc/HPCCSystems and rename the file to environment.xml</para>
 
-          <programlisting># for example
-sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
+          <!-- DNT-Start --><programlisting># for example
+sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting><!-- DNT-End -->
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <?dbfo keep-together="always"?>
@@ -379,17 +379,17 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
           role="bold">/etc/HPCCSystems/</emphasis> on <emphasis
           role="bold">every</emphasis> node.</para>
 
-          <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh -s &lt;sourcefile&gt; -t &lt;destinationfile&gt;</programlisting>
+          <!-- DNT-Start --><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh -s &lt;sourcefile&gt; -t &lt;destinationfile&gt;</programlisting><!-- DNT-End -->
         </listitem>
 
         <listitem>
           <?dbfo keep-together="always"?>
 
-          <para>Restart the HPCC system on <emphasis
+          <para>Restart the <!-- DNT-Start -->HPCC<!-- DNT-End --> system on <emphasis
           role="bold">every</emphasis> node. The following command starts the
-          HPCC system on an individual node:</para>
+          <!-- DNT-Start -->HPCC<!-- DNT-End --> system on an individual node:</para>
 
-          <programlisting>sudo /etc/init.d/hpcc-init start</programlisting>
+          <!-- DNT-Start --><programlisting>sudo /etc/init.d/hpcc-init start</programlisting><!-- DNT-End -->
 
           <para></para>
 
@@ -407,7 +407,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
 
                   <entry><para>You may want to create a script to push this
                   command out to every node. A sample script is provided with
-                  HPCC. Use the following command to start HPCC on all
+                  <!-- DNT-Start -->HPCC<!-- DNT-End -->. Use the following command to start <!-- DNT-Start -->HPCC<!-- DNT-End --> on all
                   nodes:</para> <para> <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start</programlisting>
                   </para></entry>
                 </row>
@@ -421,18 +421,18 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
     </sect1>
 
     <sect1 id="DESDLWriteDef">
-      <title>Write the ESDL Service Definition</title>
+      <!-- DNT-Start --><title>Write the ESDL Service Definition</title><!-- DNT-End -->
 
       <para>In this portion of the tutorial, we will write the Service
-      Definitions in the ECL IDE. The program listing below shows an ESDL
+      Definitions in the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->. The program listing below shows an <!-- DNT-Start -->ESDL<!-- DNT-End -->
       service called <emphasis>MathService</emphasis>. It contains one method,
       <emphasis>AddThis</emphasis>, with a request and a response
       defined.</para>
 
       <orderedlist>
         <listitem>
-          <para>Start the ECL IDE (Start &gt;&gt; All Programs &gt;&gt; HPCC
-          Systems &gt;&gt; ECL IDE )</para>
+          <para>Start the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> (Start &gt;&gt; All Programs &gt;&gt; <!-- DNT-Start -->HPCC<!-- DNT-End -->
+          Systems &gt;&gt; <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> )</para>
         </listitem>
 
         <listitem>
@@ -464,7 +464,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
           <?dbfo keep-together="always"?>
 
           <para>Enter <emphasis role="bold">MathService</emphasis> for the
-          label, then press the <emphasis role="bold">OK</emphasis>
+          label, then press the <emphasis role="bold"><!-- DNT-Start -->OK<!-- DNT-End --></emphasis>
           button.</para>
 
           <para><figure>
@@ -488,9 +488,9 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
           <?dbfo keep-together="always"?>
 
           <para>Enter <emphasis role="bold">MathService</emphasis> for the
-          label, select <emphasis>ESDL</emphasis> as the <emphasis
+          label, select <emphasis><!-- DNT-Start -->ESDL<!-- DNT-End --></emphasis> as the <emphasis
           role="bold">Type</emphasis>, then press the <emphasis
-          role="bold">OK</emphasis> button.</para>
+          role="bold"><!-- DNT-Start -->OK<!-- DNT-End --></emphasis> button.</para>
 
           <para><figure>
               <title>Insert File</title>
@@ -559,11 +559,11 @@ ESPresponse AddThisResponse
           role="bold">ctrl+s</emphasis> or the <emphasis role="bold">File
           &gt;&gt; Save</emphasis> menu option.</para>
 
-          <para>Notice that a new ECL file is now in the repository folder.
-          Saving the ESDL file automatically generated a file named
+          <para>Notice that a new <!-- DNT-Start -->ECL<!-- DNT-End --> file is now in the repository folder.
+          Saving the <!-- DNT-Start -->ESDL<!-- DNT-End --> file automatically generated a file named
           <emphasis>MathService.ecl</emphasis> in the current directory. You
           could generate this ECl using the dropdown button and selecting
-          <emphasis role="bold">Generate ECL</emphasis>.</para>
+          <emphasis role="bold">Generate <!-- DNT-Start -->ECL<!-- DNT-End --></emphasis>.</para>
 
           <para><figure>
               <title>Saving an ESDL file generates ECL</title>
@@ -575,19 +575,19 @@ ESPresponse AddThisResponse
               </mediaobject>
             </figure></para>
 
-          <para>This provides the ECL Structures you will IMPORT and use in
-          the ECL code you write to support the service method.</para>
+          <para>This provides the <!-- DNT-Start -->ECL<!-- DNT-End --> Structures you will <!-- DNT-Start -->IMPORT<!-- DNT-End --> and use in
+          the <!-- DNT-Start -->ECL<!-- DNT-End --> code you write to support the service method.</para>
         </listitem>
       </orderedlist>
     </sect1>
 
     <sect1>
-      <title>Writing the ECL</title>
+      <!-- DNT-Start --><title>Writing the ECL</title><!-- DNT-End -->
 
-      <para>First, let's examine the generated ECL code in
+      <para>First, let's examine the generated <!-- DNT-Start -->ECL<!-- DNT-End --> code in
       MathService.ecl.</para>
 
-      <programlisting><emphasis role="green">/*** Not to be hand edited (changes will be lost on re-generation) ***/
+      <!-- DNT-Start --><programlisting><emphasis role="green">/*** Not to be hand edited (changes will be lost on re-generation) ***/
 /*** ECL Interface generated by esdl2ecl version 1.0 from MathService.xml. ***/
 /*===================================================*/</emphasis>
 
@@ -606,16 +606,16 @@ end;
 <emphasis role="green">/*** Not to be hand edited (changes will be lost on re-generation) ***/
 /*** ECL Interface generated by esdl2ecl version 1.0 from MathService.xml. ***/
 /*===================================================*/</emphasis>
-</programlisting>
+</programlisting><!-- DNT-End -->
 
       <para>Notice it created a file named MathService.ecl which has defined a
-      MODULE named MathService. Remember in ECL, the name of the file
+      <!-- DNT-Start -->MODULE<!-- DNT-End --> named MathService. Remember in <!-- DNT-Start -->ECL<!-- DNT-End -->, the name of the file
       (MathService) <emphasis>must always exactly match</emphasis> the name of
-      the single EXPORT definition (MathService) contained in that
+      the single <!-- DNT-Start -->EXPORT<!-- DNT-End --> definition (MathService) contained in that
       file.</para>
 
-      <para>Next, we will write the ECL code to support the functionality of
-      the AddThis method. We will IMPORT the MathService module and reference
+      <para>Next, we will write the <!-- DNT-Start -->ECL<!-- DNT-End --> code to support the functionality of
+      the AddThis method. We will <!-- DNT-Start -->IMPORT<!-- DNT-End --> the MathService module and reference
       the request and response structures.</para>
 
       <para><orderedlist>
@@ -627,28 +627,28 @@ end;
 
           <listitem>
             <para>Enter <emphasis role="bold">AddThis</emphasis> for the
-            label, select <emphasis>ECL</emphasis> as the <emphasis
+            label, select <emphasis><!-- DNT-Start -->ECL<!-- DNT-End --></emphasis> as the <emphasis
             role="bold">Type</emphasis>, then press the <emphasis
-            role="bold">OK</emphasis> button.</para>
+            role="bold"><!-- DNT-Start -->OK<!-- DNT-End --></emphasis> button.</para>
 
             <para>An Editor Window opens.</para>
           </listitem>
 
           <listitem>
-            <para>Write ECL to support the service:</para>
+            <para>Write <!-- DNT-Start -->ECL<!-- DNT-End --> to support the service:</para>
 
-            <programlisting>IMPORT MathService;
+            <!-- DNT-Start --><programlisting>IMPORT MathService;
 rec_in := MathService.MathService.t_AddThisRequest;
 
 First_Row := ROW ([], rec_in) : STORED ('AddThisRequest', FEW);
 
 res:= first_row.FirstNumber + first_row.SecondNumber; 
 ds_out := ROW ({res},MathService.MathService.t_AddThisResponse);
-OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
+OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting><!-- DNT-End -->
           </listitem>
 
-          <listitem>
-            <para><?dbfo  keep-together="always"?>Using the <emphasis
+          <listitem><?dbfo keep-together="always"?>
+            <para>Using the <emphasis
             role="bold">Target</emphasis> drop list, select
             <emphasis>Roxie</emphasis> as the Target cluster.</para>
 
@@ -667,10 +667,10 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
             <para>In the Builder window, in the upper left corner the
             <emphasis role="bold">Submit</emphasis> button has a drop down
             arrow next to it. Select the arrow, then select <emphasis
-            role="bold">Compile</emphasis>.</para>
+            role="bold"><!-- DNT-Start -->Compile<!-- DNT-End --></emphasis>.</para>
 
             <figure>
-              <title>Compile</title>
+              <!-- DNT-Start --><title>Compile</title><!-- DNT-End -->
 
               <mediaobject>
                 <imageobject>
@@ -699,7 +699,7 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
             <para>Select the workunit tab for the AddThis workunit that you
             just compiled.</para>
 
-            <para>This opens the workunit in an ECL Watch tab.</para>
+            <para>This opens the workunit in an <!-- DNT-Start -->ECL<!-- DNT-End --> Watch tab.</para>
           </listitem>
 
           <listitem>
@@ -725,24 +725,24 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
     </sect1>
 
     <sect1 id="DESDLPublishandBind">
-      <title>Publish the ESDL Service Definitions and Bind the ESDL
-      Service</title>
+      <!-- DNT-Start --><title>Publish the ESDL Service Definitions and Bind the ESDL
+      Service</title><!-- DNT-End -->
 
-      <para>In this portion of the tutorial, we will publish the ESDL Service
+      <para>In this portion of the tutorial, we will publish the <!-- DNT-Start -->ESDL<!-- DNT-End --> Service
       definitions to the System Data Store and bind the methods to the
       published Roxie query.</para>
 
       <para><orderedlist>
           <listitem>
-            <para>Open the Dynamic ESDL definition file (MathService.esdl) in
-            the ECL IDE.</para>
+            <para>Open the Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End --> definition file (MathService.esdl) in
+            the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->.</para>
           </listitem>
 
           <listitem>
             <para>Press the <emphasis role="bold">Publish</emphasis>
             button.</para>
 
-            <para>This publishes the ESDL Service definition to the ESP
+            <para>This publishes the <!-- DNT-Start -->ESDL<!-- DNT-End --> Service definition to the <!-- DNT-Start -->ESP<!-- DNT-End -->
             Server. Next we will bind the <emphasis>AddThis</emphasis> method
             to the <emphasis>AddThis</emphasis> published query.</para>
 
@@ -750,7 +750,7 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
           </listitem>
 
           <listitem>
-            <para>Open ECL Watch in your browser (&lt;your ESP
+            <para>Open <!-- DNT-Start -->ECL<!-- DNT-End --> Watch in your browser (&lt;your <!-- DNT-Start -->ESP<!-- DNT-End -->
             ip&gt;:8010)</para>
 
             <para></para>
@@ -758,7 +758,7 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
 
           <listitem>
             <para>Select the Operations tab, then select <emphasis
-            role="bold">Dynamic ESDL</emphasis>.</para>
+            role="bold">Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End --></emphasis>.</para>
 
             <para><figure>
                 <title>Dynamic ESDL in ECLWatch</title>
@@ -773,12 +773,12 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
 
           <listitem>
             <para><?dbfo keep-together="always"?>Select the <emphasis
-            role="bold">Dynamic ESDL</emphasis> Tab, then expand
+            role="bold">Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End --></emphasis> Tab, then expand
             <emphasis>myesp</emphasis> by clicking on the triangle next to
             it.</para>
 
             <figure>
-              <title>Add Binding</title>
+              <!-- DNT-Start --><title>Add Binding</title><!-- DNT-End -->
 
               <mediaobject>
                 <imageobject>
@@ -808,21 +808,21 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
           </listitem>
 
           <listitem>
-            <para>Provide the Method Configuration (in XML format) in the text
+            <para>Provide the Method Configuration (in <!-- DNT-Start -->XML<!-- DNT-End --> format) in the text
             box.</para>
 
             <para><emphasis role="bold">Note: You must replace
-            &lt;RoxieIPRange&gt; with the IP Range of your Roxie
+            &lt;RoxieIPRange&gt; with the <!-- DNT-Start -->IP<!-- DNT-End --> Range of your Roxie
             servers.</emphasis></para>
 
-            <programlisting>&lt;Method name="AddThis"
+            <!-- DNT-Start --><programlisting>&lt;Method name="AddThis"
         queryname="AddThis"
         querytype="roxie"
         url="http://<emphasis role="bold">&lt;RoxieIPRange&gt;</emphasis>:9876"/&gt;
-</programlisting>
+</programlisting><!-- DNT-End -->
 
             <figure>
-              <title>Method Configuration</title>
+              <!-- DNT-Start --><title>Method Configuration</title><!-- DNT-End -->
 
               <mediaobject>
                 <imageobject>
@@ -848,5 +848,5 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
               xpointer="xpointer(//*[@id='ESDL_CLI'])"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-  <!-- Moved the ESDL Language Reference to a separate book -->
+  <!-- DNT-Start --><!-- Moved the ESDL Language Reference to a separate book --><!-- DNT-End -->
 </book>

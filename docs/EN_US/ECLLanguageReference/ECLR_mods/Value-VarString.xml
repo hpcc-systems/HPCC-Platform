@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="VARSTRING">
-  <title>VARSTRING</title>
+  <!-- DNT-Start --><title>VARSTRING</title><!-- DNT-End -->
 
-  <para><emphasis> </emphasis><emphasis role="bold">VARSTRING<indexterm>
-      <primary>VARSTRING</primary>
+  <para><emphasis> </emphasis><emphasis role="bold"><!-- DNT-Start -->VARSTRING<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->VARSTRING<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>VARSTRING value type</primary>
+      <primary><!-- DNT-Start -->VARSTRING<!-- DNT-End --> value type</primary>
     </indexterm>[</emphasis><emphasis>n</emphasis><emphasis
   role="bold">]</emphasis></para>
 
@@ -17,14 +17,14 @@
   parameter. You may use set indexing into any string to parse out a
   substring.</para>
 
-  <para>The upper size limit for any VARSTRING value is 4GB.</para>
+  <para>The upper size limit for any <!-- DNT-Start -->VARSTRING<!-- DNT-End --> value is 4<!-- DNT-Start -->GB<!-- DNT-End -->.</para>
 
   <para>Example:</para>
 
-  <programlisting>VARSTRING3 MyString := 'ABC';
-       // declares MyString a 3-byte null-terminated string</programlisting>
+  <!-- DNT-Start --><programlisting>VARSTRING3 MyString := 'ABC';
+       // declares MyString a 3-byte null-terminated string</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="LENGTH">LENGTH</link>, <link
-  linkend="TRIM">TRIM</link>, <link linkend="Set_Ordering_and_Indexing">Set
+  <para>See Also: <link linkend="LENGTH"><!-- DNT-Start -->LENGTH<!-- DNT-End --></link>, <link
+  linkend="TRIM"><!-- DNT-Start -->TRIM<!-- DNT-End --></link>, <link linkend="Set_Ordering_and_Indexing">Set
   Ordering and Indexing</link></para>
 </sect1>

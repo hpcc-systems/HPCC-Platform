@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SQRT">
-  <title>SQRT</title>
+  <!-- DNT-Start --><title>SQRT</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">SQRT<indexterm>
-      <primary>SQRT</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->SQRT<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->SQRT<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>SQRT function</primary>
+      <primary><!-- DNT-Start -->SQRT<!-- DNT-End --> function</primary>
     </indexterm>(</emphasis><emphasis>n</emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -19,26 +19,26 @@
 
         <tbody>
           <row>
-            <entry>n</entry>
+            <entry><!-- DNT-Start -->n<!-- DNT-End --></entry>
 
             <entry>The real number to evaluate.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>SQRT returns a single real value.</entry>
+            <entry><!-- DNT-Start -->SQRT<!-- DNT-End --> returns a single real value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">SQRT </emphasis>function returns the square
+  <para>The <emphasis role="bold"><!-- DNT-Start -->SQRT<!-- DNT-End --> </emphasis>function returns the square
   root of the parameter.</para>
 
   <para>Example:</para>
 
-  <programlisting>MyRoot := SQRT(16.0);</programlisting>
+  <!-- DNT-Start --><programlisting>MyRoot := SQRT(16.0);</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="POWER">POWER</link>, <link linkend="EXP">EXP</link>, <link linkend="LN">LN</link>, <link linkend="LOG">LOG</link></para>
+  <para>See Also: <link linkend="POWER"><!-- DNT-Start -->POWER<!-- DNT-End --></link>, <link linkend="EXP"><!-- DNT-Start -->EXP<!-- DNT-End --></link>, <link linkend="LN"><!-- DNT-Start -->LN<!-- DNT-End --></link>, <link linkend="LOG"><!-- DNT-Start -->LOG<!-- DNT-End --></link></para>
 </sect1>

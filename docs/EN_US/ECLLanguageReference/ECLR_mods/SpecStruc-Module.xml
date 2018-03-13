@@ -2,28 +2,28 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="MODULE_Structure">
-  <title>MODULE Structure<indexterm>
+  <!-- DNT-Start --><title>MODULE Structure<indexterm>
       <primary>MODULE Structure</primary>
-    </indexterm></title>
+    </indexterm></title><!-- DNT-End -->
 
   <para><emphasis>modulename </emphasis><emphasis role="bold">[
   (</emphasis><emphasis> parameters </emphasis><emphasis role="bold">) ] :=
-  MODULE<indexterm>
-      <primary>MODULE</primary>
+  <!-- DNT-Start -->MODULE<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->MODULE<!-- DNT-End --></primary>
     </indexterm> [ (</emphasis><emphasis> inherit </emphasis><emphasis
-  role="bold">) ] [, VIRTUAL<indexterm>
-      <primary>VIRTUAL</primary>
-    </indexterm> ]</emphasis><emphasis role="bold"> [, LIBRARY<indexterm>
-      <primary>LIBRARY</primary>
+  role="bold">) ] [, <!-- DNT-Start -->VIRTUAL<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->VIRTUAL<!-- DNT-End --></primary>
+    </indexterm> ]</emphasis><emphasis role="bold"> [, <!-- DNT-Start -->LIBRARY<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->LIBRARY<!-- DNT-End --></primary>
     </indexterm>(</emphasis><emphasis>interface</emphasis><emphasis
   role="bold">) ]</emphasis><emphasis role="bold"> <emphasis role="bold">[,
-  FORWARD<indexterm>
-      <primary>FORWARD</primary>
+  <!-- DNT-Start -->FORWARD<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->FORWARD<!-- DNT-End --></primary>
     </indexterm> ]</emphasis></emphasis><emphasis></emphasis></para>
 
   <para><emphasis>members;</emphasis></para>
 
-  <para><emphasis></emphasis><emphasis role="bold">END;</emphasis></para>
+  <para><emphasis></emphasis><emphasis role="bold"><!-- DNT-Start -->END<!-- DNT-End -->;</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -33,71 +33,71 @@
 
       <tbody>
         <row>
-          <entry><emphasis>modulename</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>modulename</emphasis><!-- DNT-End --></entry>
 
-          <entry>The ECL definition name of the module.</entry>
+          <entry>The <!-- DNT-Start -->ECL<!-- DNT-End --> definition name of the module.</entry>
         </row>
 
         <row>
-          <entry><emphasis>parameters</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>parameters</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. The parameters to make available to all the
           <emphasis>definitions</emphasis>.</entry>
         </row>
 
         <row>
-          <entry><emphasis>inherit</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>inherit</emphasis><!-- DNT-End --></entry>
 
-          <entry>A comma-delimited list of INTERFACE or abstract MODULE
+          <entry>A comma-delimited list of <!-- DNT-Start -->INTERFACE<!-- DNT-End --> or abstract <!-- DNT-Start -->MODULE<!-- DNT-End -->
           structures on which to base this instance. The current instance
           inherits all the <emphasis>members</emphasis> from the base
           structures. This may not be a passed parameter.</entry>
         </row>
 
         <row>
-          <entry><emphasis>members</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>members</emphasis><!-- DNT-End --></entry>
 
           <entry>The definitions that comprise the module. These definitions
-          may receive parameters, may include actions (such as OUTPUT), and
-          may use the EXPORT or SHARED scope types. These may not include
-          INTERFACE or abstract MODULEs (see below). If the LIBRARY option is
+          may receive parameters, may include actions (such as <!-- DNT-Start -->OUTPUT<!-- DNT-End -->), and
+          may use the <!-- DNT-Start -->EXPORT<!-- DNT-End --> or <!-- DNT-Start -->SHARED<!-- DNT-End --> scope types. These may not include
+          <!-- DNT-Start -->INTERFACE<!-- DNT-End --> or abstract <!-- DNT-Start -->MODULEs<!-- DNT-End --> (see below). If the <!-- DNT-Start -->LIBRARY<!-- DNT-End --> option is
           specified, the <emphasis>definitions</emphasis> must exactly
-          implement the EXPORTed members of the
+          implement the <!-- DNT-Start -->EXPORTed<!-- DNT-End --> members of the
           <emphasis>interface</emphasis>.</entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">VIRTUAL</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">VIRTUAL</emphasis><!-- DNT-End --></entry>
 
-          <entry>Optional. Specifies the MODULE defines an abstract interface
+          <entry>Optional. Specifies the <!-- DNT-Start -->MODULE<!-- DNT-End --> defines an abstract interface
           whose <emphasis>definitions</emphasis> do not require values to be
           defined for them.</entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">LIBRARY</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">LIBRARY</emphasis><!-- DNT-End --></entry>
 
-          <entry>Optional. Specifies the MODULE implements a query library
+          <entry>Optional. Specifies the <!-- DNT-Start -->MODULE<!-- DNT-End --> implements a query library
           <emphasis>interface</emphasis> definition.</entry>
         </row>
 
         <row>
-          <entry><emphasis>interface</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>interface</emphasis><!-- DNT-End --></entry>
 
-          <entry>Specifies the INTERFACE that defines the
+          <entry>Specifies the <!-- DNT-Start -->INTERFACE<!-- DNT-End --> that defines the
           <emphasis>parameters</emphasis> passed to the query
           library<indexterm>
               <primary>query library</primary>
             </indexterm>. The <emphasis>parameters</emphasis> passed to the
-          MODULE must exactly match the parameters passed to the specified
+          <!-- DNT-Start -->MODULE<!-- DNT-End --> must exactly match the parameters passed to the specified
           <emphasis>interface</emphasis>.</entry>
         </row>
 
         <row>
-          <entry><emphasis role="bold">FORWARD</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis role="bold">FORWARD</emphasis><!-- DNT-End --></entry>
 
           <entry>Optional. Delays processing of definitions until they are
-          used. Adding <emphasis role="bold">,FORWARD</emphasis> to a MODULE
+          used. Adding <emphasis role="bold">,<!-- DNT-Start -->FORWARD<!-- DNT-End --></emphasis> to a <!-- DNT-Start -->MODULE<!-- DNT-End -->
           delays processing of definitions within the module until they are
           used. This has two main effects: It prevents pulling in dependencies
           for definitions that are never used and it allows earlier
@@ -109,16 +109,16 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">MODULE </emphasis>structure is a container
+  <para>The <emphasis role="bold"><!-- DNT-Start -->MODULE<!-- DNT-End --> </emphasis>structure is a container
   that allows you to group related definitions. The
-  <emphasis>parameters</emphasis> passed to the MODULE are shared by all the
+  <emphasis>parameters</emphasis> passed to the <!-- DNT-Start -->MODULE<!-- DNT-End --> are shared by all the
   related <emphasis>members </emphasis>definitions. This is similar to the
-  FUNCTION structure except that there is no RETURN.</para>
+  <!-- DNT-Start -->FUNCTION<!-- DNT-End --> structure except that there is no <!-- DNT-Start -->RETURN<!-- DNT-End -->.</para>
 
   <sect2 id="Attribute_Visibility_Rules">
-    <title>Definition Visibility<indexterm>
+    <!-- DNT-Start --><title>Definition Visibility<indexterm>
         <primary>Definition Visibility</primary>
-      </indexterm> Rules</title>
+      </indexterm> Rules</title><!-- DNT-End -->
 
     <para>The scoping rules for the <emphasis>members</emphasis> are the same
     as those previously described in the <emphasis role="bold">Definition
@@ -126,29 +126,29 @@
 
     <itemizedlist>
       <listitem>
-        <para>Local definitions are visible only through the next EXPORT or
-        SHARED definition (including <emphasis>members</emphasis> of the
-        nested MODULE structure, if the next EXPORT or SHARED definition is a
-        MODULE).</para>
+        <para>Local definitions are visible only through the next <!-- DNT-Start -->EXPORT<!-- DNT-End --> or
+        <!-- DNT-Start -->SHARED<!-- DNT-End --> definition (including <emphasis>members</emphasis> of the
+        nested <!-- DNT-Start -->MODULE<!-- DNT-End --> structure, if the next <!-- DNT-Start -->EXPORT<!-- DNT-End --> or <!-- DNT-Start -->SHARED<!-- DNT-End --> definition is a
+        <!-- DNT-Start -->MODULE<!-- DNT-End -->).</para>
       </listitem>
 
       <listitem>
-        <para>SHARED definitions are visible to all subsequent definitions in
+        <para><!-- DNT-Start -->SHARED<!-- DNT-End --> definitions are visible to all subsequent definitions in
         the structure (including <emphasis>members</emphasis> of any nested
-        MODULE structures) but not outside of it.</para>
+        <!-- DNT-Start -->MODULE<!-- DNT-End --> structures) but not outside of it.</para>
       </listitem>
 
       <listitem>
-        <para>EXPORT definitions are visible within the MODULE structure
+        <para><!-- DNT-Start -->EXPORT<!-- DNT-End --> definitions are visible within the <!-- DNT-Start -->MODULE<!-- DNT-End --> structure
         (including <emphasis>members</emphasis> of any subsequent nested
-        MODULE structures) and outside of it .</para>
+        <!-- DNT-Start -->MODULE<!-- DNT-End --> structures) and outside of it .</para>
       </listitem>
     </itemizedlist>
 
-    <para>Any EXPORT <emphasis>members</emphasis> may be referenced using an
+    <para>Any <!-- DNT-Start -->EXPORT<!-- DNT-End --> <emphasis>members</emphasis> may be referenced using an
     additional level of standard object.property syntax. For example, assuming
-    the EXPORT MyModuleStructure MODULE structure is contained in an ECL
-    Repository module named MyModule and that it contains an EXPORT
+    the <!-- DNT-Start -->EXPORT<!-- DNT-End --> MyModuleStructure <!-- DNT-Start -->MODULE<!-- DNT-End --> structure is contained in an <!-- DNT-Start -->ECL<!-- DNT-End -->
+    Repository module named MyModule and that it contains an <!-- DNT-Start -->EXPORT<!-- DNT-End -->
     <emphasis>member</emphasis> named MyDefinition, you would reference that
     <emphasis>definition</emphasis> as:</para>
 
@@ -168,12 +168,12 @@ MyMod.InMod.Val2;</programlisting></para>
   </sect2>
 
   <sect2 id="Side-Effect_Actions">
-    <title>MODULE Side-Effect Actions</title>
+    <!-- DNT-Start --><title>MODULE Side-Effect Actions</title><!-- DNT-End -->
 
-    <para>Side-effect Actions are allowed in the MODULE only by using the WHEN
+    <para>Side-effect Actions are allowed in the <!-- DNT-Start -->MODULE<!-- DNT-End --> only by using the <!-- DNT-Start -->WHEN<!-- DNT-End -->
     function, as in this example:</para>
 
-    <programlisting>//An Example with a side-effect action 
+    <!-- DNT-Start --><programlisting>//An Example with a side-effect action 
 EXPORT customerNames := MODULE 
   EXPORT Layout := RECORD 
     STRING20 surname;  
@@ -185,39 +185,39 @@ EXPORT customerNames := MODULE
 END; 
 BOOLEAN doIt := TRUE : STORED('doIt'); 
 IF (doIt, OUTPUT(customerNames.File));
-//This code produces two results: the dataset, and the string</programlisting>
+//This code produces two results: the dataset, and the string</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="Concrete_vs_Abstract_Modules">
-    <title>Concrete vs. Abstract (VIRTUAL) Modules</title>
+    <!-- DNT-Start --><title>Concrete vs. Abstract (VIRTUAL) Modules</title><!-- DNT-End -->
 
-    <para>A MODULE may contain a mixture of VIRTUAL and non-VIRTUAL
+    <para>A <!-- DNT-Start -->MODULE<!-- DNT-End --> may contain a mixture of <!-- DNT-Start -->VIRTUAL<!-- DNT-End --> and non-<!-- DNT-Start -->VIRTUAL<!-- DNT-End -->
     <emphasis>members</emphasis>. The rules are:</para>
 
     <itemizedlist>
       <listitem>
-        <para>ALL <emphasis>members</emphasis> are VIRTUAL if the MODULE has
-        the VIRTUAL option or is an INTERFACE</para>
+        <para><!-- DNT-Start -->ALL<!-- DNT-End --> <emphasis>members</emphasis> are <!-- DNT-Start -->VIRTUAL<!-- DNT-End --> if the <!-- DNT-Start -->MODULE<!-- DNT-End --> has
+        the <!-- DNT-Start -->VIRTUAL<!-- DNT-End --> option or is an <!-- DNT-Start -->INTERFACE<!-- DNT-End --></para>
       </listitem>
 
       <listitem>
-        <para>A <emphasis>member</emphasis> is VIRTUAL if it is declared using
-        the EXPORT VIRTUAL or SHARED VIRTUAL keywords</para>
+        <para>A <emphasis>member</emphasis> is <!-- DNT-Start -->VIRTUAL<!-- DNT-End --> if it is declared using
+        the <!-- DNT-Start -->EXPORT<!-- DNT-End --> <!-- DNT-Start -->VIRTUAL<!-- DNT-End --> or <!-- DNT-Start -->SHARED<!-- DNT-End --> <!-- DNT-Start -->VIRTUAL<!-- DNT-End --> keywords</para>
       </listitem>
 
       <listitem>
-        <para>A <emphasis>member</emphasis> is VIRTUAL if the definition of
+        <para>A <emphasis>member</emphasis> is <!-- DNT-Start -->VIRTUAL<!-- DNT-End --> if the definition of
         the same name in the <emphasis>inherited</emphasis> module is
-        VIRTUAL.</para>
+        <!-- DNT-Start -->VIRTUAL<!-- DNT-End -->.</para>
       </listitem>
 
       <listitem>
-        <para>Some <emphasis>members</emphasis> can never be virtual -- RECORD
+        <para>Some <emphasis>members</emphasis> can never be virtual -- <!-- DNT-Start -->RECORD<!-- DNT-End -->
         structures.</para>
       </listitem>
     </itemizedlist>
 
-    <para>All EXPORTed and SHARED <emphasis>members</emphasis> of an
+    <para>All <!-- DNT-Start -->EXPORTed<!-- DNT-End --> and <!-- DNT-Start -->SHARED<!-- DNT-End --> <emphasis>members</emphasis> of an
     <emphasis>inherited</emphasis> abstract module can be overridden by
     re-defining them in the current instance, whether that current instance is
     abstract or concrete. Overridden definitions must exactly match the type
@@ -231,26 +231,26 @@ IF (doIt, OUTPUT(customerNames.File));
   </sect2>
 
   <sect2 id="LIBRARY_Modules">
-    <title>LIBRARY Modules</title>
+    <!-- DNT-Start --><title>LIBRARY Modules</title><!-- DNT-End -->
 
-    <para>A MODULE with the LIBRARY option defines a related set of functions
-    meant to be used as a query library (see the LIBRARY function and BUILD
+    <para>A <!-- DNT-Start -->MODULE<!-- DNT-End --> with the <!-- DNT-Start -->LIBRARY<!-- DNT-End --> option defines a related set of functions
+    meant to be used as a query library (see the <!-- DNT-Start -->LIBRARY<!-- DNT-End --> function and <!-- DNT-Start -->BUILD<!-- DNT-End -->
     action discussions). There are several restrictions on what may be
     included in a query library. They are:</para>
 
     <itemizedlist>
       <listitem>
-        <para>It may not contain side-effect actions (like OUTPUT or
-        BUILD)</para>
+        <para>It may not contain side-effect actions (like <!-- DNT-Start -->OUTPUT<!-- DNT-End --> or
+        <!-- DNT-Start -->BUILD<!-- DNT-End -->)</para>
       </listitem>
 
       <listitem>
         <para>It may not contain definitions with workflow services attached
-        to them (such as PERSIST, STORED, SUCCESS, etc.)</para>
+        to them (such as <!-- DNT-Start -->PERSIST<!-- DNT-End -->, <!-- DNT-Start -->STORED<!-- DNT-End -->, <!-- DNT-Start -->SUCCESS<!-- DNT-End -->, etc.)</para>
       </listitem>
     </itemizedlist>
 
-    <para>It may only EXPORT:</para>
+    <para>It may only <!-- DNT-Start -->EXPORT<!-- DNT-End -->:</para>
 
     <itemizedlist>
       <listitem>
@@ -258,8 +258,8 @@ IF (doIt, OUTPUT(customerNames.File));
       </listitem>
 
       <listitem>
-        <para>Datarow definitions (such as the ROW function<indexterm>
-            <primary>ROW function</primary>
+        <para>Datarow definitions (such as the <!-- DNT-Start -->ROW<!-- DNT-End --> function<indexterm>
+            <primary><!-- DNT-Start -->ROW<!-- DNT-End --> function</primary>
           </indexterm>)</para>
       </listitem>
 
@@ -268,29 +268,29 @@ IF (doIt, OUTPUT(customerNames.File));
       </listitem>
     </itemizedlist>
 
-    <para>And may NOT export:</para>
+    <para>And may <!-- DNT-Start -->NOT<!-- DNT-End --> export:</para>
 
     <itemizedlist>
       <listitem>
-        <para>Actions (like OUTPUT or BUILD)</para>
+        <para>Actions (like <!-- DNT-Start -->OUTPUT<!-- DNT-End --> or <!-- DNT-Start -->BUILD<!-- DNT-End -->)</para>
       </listitem>
 
       <listitem>
-        <para>TRANSFORM functions</para>
+        <para><!-- DNT-Start -->TRANSFORM<!-- DNT-End --> functions</para>
       </listitem>
 
       <listitem>
-        <para>Other MODULE structures</para>
+        <para>Other <!-- DNT-Start -->MODULE<!-- DNT-End --> structures</para>
       </listitem>
 
       <listitem>
-        <para>MACRO definitions</para>
+        <para><!-- DNT-Start -->MACRO<!-- DNT-End --> definitions</para>
       </listitem>
     </itemizedlist>
 
     <para>Example:</para>
 
-    <programlisting>EXPORT filterDataset(STRING search, BOOLEAN onlyOldies) := MODULE
+    <!-- DNT-Start --><programlisting>EXPORT filterDataset(STRING search, BOOLEAN onlyOldies) := MODULE
   f := namesTable; //local to the "g" definition
   SHARED g := IF (onlyOldies, f(age &gt;= 65), f);
           //SHARED = visible only within the structure
@@ -339,12 +339,12 @@ END;
 
 MyModule.foo;
 
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-    <para>See Also: <link linkend="FUNCTION_Structure">FUNCTION
+    <para>See Also: <link linkend="FUNCTION_Structure"><!-- DNT-Start -->FUNCTION<!-- DNT-End -->
     Structure</link>, <link linkend="Attribute_Visibility">Definition
-    Visibility</link>, <link linkend="INTERFACE_Structure">INTERFACE
-    Structure</link>, <link linkend="LIBRARY">LIBRARY</link>, <link
-    linkend="BUILD">BUILD</link></para>
+    Visibility</link>, <link linkend="INTERFACE_Structure"><!-- DNT-Start -->INTERFACE<!-- DNT-End -->
+    Structure</link>, <link linkend="LIBRARY"><!-- DNT-Start -->LIBRARY<!-- DNT-End --></link>, <link
+    linkend="BUILD"><!-- DNT-Start -->BUILD<!-- DNT-End --></link></para>
   </sect2>
 </sect1>

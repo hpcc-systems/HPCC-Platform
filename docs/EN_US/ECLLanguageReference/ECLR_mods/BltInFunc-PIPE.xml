@@ -2,31 +2,31 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="PIPE">
-  <title>PIPE</title>
+  <!-- DNT-Start --><title>PIPE</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">PIPE<indexterm>
-      <primary>PIPE</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->PIPE<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->PIPE<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>PIPE function</primary>
+      <primary><!-- DNT-Start -->PIPE<!-- DNT-End --> function</primary>
     </indexterm>(</emphasis><emphasis> command, recorddef </emphasis><emphasis
-  role="bold"> [, CSV<indexterm>
-      <primary>CSV</primary>
-    </indexterm> | XML<indexterm>
-      <primary>XML</primary>
+  role="bold"> [, <!-- DNT-Start -->CSV<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->CSV<!-- DNT-End --></primary>
+    </indexterm> | <!-- DNT-Start -->XML<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->XML<!-- DNT-End --></primary>
     </indexterm> ] )</emphasis></para>
 
-  <para><emphasis role="bold">PIPE(</emphasis><emphasis> recordset, command
+  <para><emphasis role="bold"><!-- DNT-Start -->PIPE<!-- DNT-End -->(</emphasis><emphasis> recordset, command
   </emphasis><emphasis role="bold">[</emphasis><emphasis>, recorddef
   </emphasis><emphasis role="bold">] [</emphasis>,<emphasis role="bold">
-  REPEAT<indexterm>
-      <primary>REPEAT</primary>
-    </indexterm>] [</emphasis>,<emphasis role="bold"> CSV | XML ]
-  [</emphasis>,<emphasis role="bold"> OUTPUT<indexterm>
-      <primary>OUTPUT</primary>
-    </indexterm>( CSV | XML ) ] [</emphasis>,<emphasis role="bold">
-  GROUP<indexterm>
-      <primary>GROUP</primary>
-    </indexterm>] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+  <!-- DNT-Start -->REPEAT<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->REPEAT<!-- DNT-End --></primary>
+    </indexterm>] [</emphasis>,<emphasis role="bold"> <!-- DNT-Start -->CSV<!-- DNT-End --> | <!-- DNT-Start -->XML<!-- DNT-End --> ]
+  [</emphasis>,<emphasis role="bold"> <!-- DNT-Start -->OUTPUT<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->OUTPUT<!-- DNT-End --></primary>
+    </indexterm>( <!-- DNT-Start -->CSV<!-- DNT-End --> | <!-- DNT-Start -->XML<!-- DNT-End --> ) ] [</emphasis>,<emphasis role="bold">
+  <!-- DNT-Start -->GROUP<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->GROUP<!-- DNT-End --></primary>
+    </indexterm>] </emphasis><emphasis role="bold">[, <!-- DNT-Start -->UNORDERED<!-- DNT-End --> | <!-- DNT-Start -->ORDERED<!-- DNT-End -->(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, <!-- DNT-Start -->STABLE<!-- DNT-End --> | <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> ] [, <!-- DNT-Start -->PARALLEL<!-- DNT-End --> [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, <!-- DNT-Start -->ALGORITHM<!-- DNT-End -->(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -36,129 +36,129 @@
 
         <tbody>
           <row>
-            <entry><emphasis>command</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>command</emphasis><!-- DNT-End --></entry>
 
             <entry>The name of a program to execute, which must take any input
             data through stdin and produce its output through stdout. This
-            program must have already been deployed on the HPCC cluster in the
+            program must have already been deployed on the <!-- DNT-Start -->HPCC<!-- DNT-End --> cluster in the
             Thor instance directory (such as: /var/lib/HPCCSystems/mythor/) but that can be
             overridden by the externalProgDir environment setting for the Thor
             cluster). </entry>
           </row>
 
           <row>
-            <entry><emphasis>recorddef</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>recorddef</emphasis><!-- DNT-End --></entry>
 
-            <entry>The RECORD structure format for output. If omitted, output
+            <entry>The <!-- DNT-Start -->RECORD<!-- DNT-End --> structure format for output. If omitted, output
             is the same as the input format.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">CSV</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">CSV</emphasis><!-- DNT-End --></entry>
 
-            <entry>Optional. In form 1 (and as the parameter to the OUTPUT
-            option), specifies the output data format is CSV. In form 2,
-            specifies the input data format is CSV. If omitted, the format is
+            <entry>Optional. In form 1 (and as the parameter to the <!-- DNT-Start -->OUTPUT<!-- DNT-End -->
+            option), specifies the output data format is <!-- DNT-Start -->CSV<!-- DNT-End -->. In form 2,
+            specifies the input data format is <!-- DNT-Start -->CSV<!-- DNT-End -->. If omitted, the format is
             raw.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">XML</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">XML</emphasis><!-- DNT-End --></entry>
 
-            <entry>Optional. In form 1 (and as the parameter to the OUTPUT
-            option), specifies the output data format is XML. In form 2,
-            specifies the input data format is XML. If omitted, the format is
+            <entry>Optional. In form 1 (and as the parameter to the <!-- DNT-Start -->OUTPUT<!-- DNT-End -->
+            option), specifies the output data format is <!-- DNT-Start -->XML<!-- DNT-End -->. In form 2,
+            specifies the input data format is <!-- DNT-Start -->XML<!-- DNT-End -->. If omitted, the format is
             raw.</entry>
           </row>
 
           <row>
-            <entry><emphasis>recordset</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>recordset</emphasis><!-- DNT-End --></entry>
 
             <entry>The input dataset.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">REPEAT</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">REPEAT</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies a new instance of the command program
             is created for each row in the recordset.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">OUTPUT</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">OUTPUT</emphasis><!-- DNT-End --></entry>
 
-            <entry>Optional. Specifies CSV or XML result data format.</entry>
+            <entry>Optional. Specifies <!-- DNT-Start -->CSV<!-- DNT-End --> or <!-- DNT-Start -->XML<!-- DNT-End --> result data format.</entry>
           </row>
 
           <row>
-            <entry><emphasis role="bold">GROUP</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">GROUP</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies each result record is generated in a
-            separate GROUP (only if REPEAT is specified).</entry>
+            separate <!-- DNT-Start -->GROUP<!-- DNT-End --> (only if <!-- DNT-Start -->REPEAT<!-- DNT-End --> is specified).</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the output record order is not significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ORDERED</emphasis><!-- DNT-End --></entry>
 
             <entry>Specifies the significance of the output record order.</entry>
           </row>
           <row>
-            <entry><emphasis>bool</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>bool</emphasis><!-- DNT-End --></entry>
 
             <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">STABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">STABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">UNSTABLE</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Specifies the input record order is not significant.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">PARALLEL</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity in parallel.</entry>
           </row>
           <row>
-            <entry><emphasis>numthreads</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>numthreads</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
           </row>
           <row>
-            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis role="bold">ALGORITHM</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. Override the algorithm used for this activity.</entry>
           </row>
           <row>
-            <entry><emphasis>name</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>name</emphasis><!-- DNT-End --></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the <!-- DNT-Start -->SORT<!-- DNT-End --> function's <!-- DNT-Start -->STABLE<!-- DNT-End --> and <!-- DNT-Start -->UNSTABLE<!-- DNT-End --> options.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>PIPE returns a record set.</entry>
+            <entry><!-- DNT-Start -->PIPE<!-- DNT-End --> returns a record set.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">PIPE </emphasis>function allows ECL code to
+  <para>The <emphasis role="bold"><!-- DNT-Start -->PIPE<!-- DNT-End --> </emphasis>function allows <!-- DNT-Start -->ECL<!-- DNT-End --> code to
   launch an external <emphasis>command</emphasis> program on each node,
-  effectively parallelizing a non-parallel processing program. PIPE has two
+  effectively parallelizing a non-parallel processing program. <!-- DNT-Start -->PIPE<!-- DNT-End --> has two
   forms:</para>
 
   <para>Form 1 takes no input, executes the <emphasis>command</emphasis>, and
   produces its output in the <emphasis>recorddef </emphasis>format. This is an
-  "input" pipe (like the PIPE option on a DATASET definition).</para>
+  "input" pipe (like the <!-- DNT-Start -->PIPE<!-- DNT-End --> option on a <!-- DNT-Start -->DATASET<!-- DNT-End --> definition).</para>
 
   <para>Form 2 takes the input <emphasis>recordset</emphasis>, executes the
   <emphasis>command</emphasis>, producing output in the <emphasis>recorddef
@@ -166,7 +166,7 @@
 
   <para>Example:</para>
 
-  <programlisting>namesRecord := RECORD
+  <!-- DNT-Start --><programlisting>namesRecord := RECORD
   STRING10 forename;
   STRING10 surname;
   STRING2 nl := '\r\n';
@@ -186,8 +186,8 @@ END;
 
 p := PIPE('echo &lt;Name&gt;&lt;FName&gt;George&lt;/FName&gt;&lt;LName&gt;Jetson&lt;/LName&gt;&lt;/Name&gt;', namesRecord, XML); 
 OUTPUT(p);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="OUTPUT">OUTPUT</link>, <link
-  linkend="DATASET">DATASET</link></para>
+  <para>See Also: <link linkend="OUTPUT"><!-- DNT-Start -->OUTPUT<!-- DNT-End --></link>, <link
+  linkend="DATASET"><!-- DNT-Start -->DATASET<!-- DNT-End --></link></para>
 </sect1>

@@ -2,30 +2,30 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Using_SuperKeys">
-  <title>Using SuperKeys</title>
+  <!-- DNT-Start --><title>Using SuperKeys</title><!-- DNT-End -->
 
-  <para>A SuperFile whose sub-files are INDEXes (not DATASETs) is a SuperKey.
+  <para>A SuperFile whose sub-files are <!-- DNT-Start -->INDEXes<!-- DNT-End --> (not <!-- DNT-Start -->DATASETs<!-- DNT-End -->) is a SuperKey.
   As described previously in the <emphasis>Indexing Into SuperFiles</emphasis>
   article, there is a problem with using a SuperKey to try to index into a
   SuperFile. So what good are SuperKeys?</para>
 
-  <para>In the <emphasis>Using ECL Keys (INDEX Files)</emphasis> article, the
-  technique of creating and using INDEXes that contain payload fields was
-  demonstrated. By putting the payload fields in the INDEX itself, there
-  becomes no need to directly access the base dataset from which the INDEX was
+  <para>In the <emphasis>Using <!-- DNT-Start -->ECL<!-- DNT-End --> Keys (<!-- DNT-Start -->INDEX<!-- DNT-End --> Files)</emphasis> article, the
+  technique of creating and using <!-- DNT-Start -->INDEXes<!-- DNT-End --> that contain payload fields was
+  demonstrated. By putting the payload fields in the <!-- DNT-Start -->INDEX<!-- DNT-End --> itself, there
+  becomes no need to directly access the base dataset from which the <!-- DNT-Start -->INDEX<!-- DNT-End --> was
   built. Thus, the problem becomes moot.</para>
 
   <para>SuperKeys are built with payload keys. And, since the primary
-  operation for a payload key is the half-keyed JOIN, that also becomes the
+  operation for a payload key is the half-keyed <!-- DNT-Start -->JOIN<!-- DNT-End -->, that also becomes the
   primary SuperKey operational use.</para>
 
   <para>Both SuperFiles and SuperKeys may be used in Thor or Roxie
   operations.</para>
 
   <para>The following attribute definitions used by the code examples in this
-  article are declared in the DeclareData MODULE structure attribute:</para>
+  article are declared in the DeclareData <!-- DNT-Start -->MODULE<!-- DNT-End --> structure attribute:</para>
 
-  <programlisting>EXPORT SubKey1 := '~PROGGUIDE::SUPERKEY::Accounts1';
+  <!-- DNT-Start --><programlisting>EXPORT SubKey1 := '~PROGGUIDE::SUPERKEY::Accounts1';
 EXPORT SubKey2 := '~PROGGUIDE::SUPERKEY::Accounts2';
 EXPORT SubKey3 := '~PROGGUIDE::SUPERKEY::Accounts3';
 EXPORT SubKey4 := '~PROGGUIDE::SUPERKEY::Accounts4';
@@ -36,16 +36,16 @@ EXPORT SubIDX4 := '~PROGGUIDE::SUPERKEY::KEY::AcctsIDX4';
 EXPORT AcctSKname :=
         '~PROGGUIDE::SUPERKEY::KEY::AcctsSK';
 EXPORT AcctSK := INDEX(Accounts,{PersonID},
-</programlisting>
+</programlisting><!-- DNT-End -->
 
   <sect2 id="Building_SuperKeys">
-    <title>Building SuperKeys</title>
+    <!-- DNT-Start --><title>Building SuperKeys</title><!-- DNT-End -->
 
-    <para>Before you can create a SuperKey, you must first have some INDEXes
-    to use. The following code (contained in SuperKey1.ECL) builds four
+    <para>Before you can create a SuperKey, you must first have some <!-- DNT-Start -->INDEXes<!-- DNT-End -->
+    to use. The following code (contained in SuperKey1.<!-- DNT-Start -->ECL<!-- DNT-End -->) builds four
     separate payload keys from the Account dataset:</para>
 
-    <programlisting>IMPORT $;
+    <!-- DNT-Start --><programlisting>IMPORT $;
 IMPORT Std;
 
 s1 := $.DeclareData.Accounts(Account[1] = '1');
@@ -116,11 +116,11 @@ BldIDX := PARALLEL(
            BUILDINDEX(i4)));
 
 SEQUENTIAL(BldDat,BldIDX);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para>This code sequentially builds logical files by taking sub-sets of
     records from the Accounts dataset and writing those records to files on
-    disk. Once the logical files physically exist, then the BUILDINDEX actions
+    disk. Once the logical files physically exist, then the <!-- DNT-Start -->BUILDINDEX<!-- DNT-End --> actions
     write the payload keys to disk.</para>
 
     <para>One interesting twist to this code is the use of the
@@ -133,13 +133,13 @@ SEQUENTIAL(BldDat,BldIDX);
   </sect2>
 
   <sect2 id="Creating_a_SuperKey">
-    <title>Creating a SuperKey</title>
+    <!-- DNT-Start --><title>Creating a SuperKey</title><!-- DNT-End -->
 
     <para>Creating a SuperKey is exactly the same process as creating a
-    SuperFile. The following code (contained in SuperKey2.ECL) creates a
+    SuperFile. The following code (contained in SuperKey2.<!-- DNT-Start -->ECL<!-- DNT-End -->) creates a
     SuperKey and adds the first two payload keys to it:</para>
 
-    <programlisting>IMPORT $;
+    <!-- DNT-Start --><programlisting>IMPORT $;
 IMPORT Std;
 
 SEQUENTIAL(
@@ -150,16 +150,16 @@ SEQUENTIAL(
    Std.File.AddSuperFile($.DeclareData.AcctSKname,$.DeclareData.SubIDX1),
    Std.File.AddSuperFile($.DeclareData.AcctSKname,$.DeclareData.SubIDX2),
    Std.File.FinishSuperFileTransaction());
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="Using_a_SuperKey">
-    <title>Using a SuperKey</title>
+    <!-- DNT-Start --><title>Using a SuperKey</title><!-- DNT-End -->
 
     <para>Once you have a SuperKey ready for use, you can use it in half-keyed
-    JOINs, as demonstrated in this code (contained in SuperKey3.ECL):</para>
+    <!-- DNT-Start -->JOINs<!-- DNT-End -->, as demonstrated in this code (contained in SuperKey3.<!-- DNT-Start -->ECL<!-- DNT-End -->):</para>
 
-    <programlisting>IMPORT $;
+    <!-- DNT-Start --><programlisting>IMPORT $;
 
 r1 := RECORD
   $.DeclareData.Layout_Person;
@@ -177,18 +177,18 @@ J3 := JOIN($.DeclareData.Person.FilePlus(PersonID BETWEEN 1 AND 100),
            Xform(LEFT,RIGHT));		
  
 OUTPUT(J3,ALL);
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="Maintaining_SuperKeys">
-    <title>Maintaining SuperKeys</title>
+    <!-- DNT-Start --><title>Maintaining SuperKeys</title><!-- DNT-End -->
 
     <para>A SuperKey is simply a SuperFile whose component sub-files are
     payload keys. Therefore, building and maintaining a SuperKey is exactly
     the same process as described already in the <emphasis>Creating and
     Maintaining SuperFiles</emphasis> article. The only significant difference
     is the manner in which you create the component sub-files, which process
-    is already described in the <emphasis>Using ECL Keys (INDEX
+    is already described in the <emphasis>Using <!-- DNT-Start -->ECL<!-- DNT-End --> Keys (<!-- DNT-Start -->INDEX<!-- DNT-End -->
     Files)</emphasis> article.</para>
   </sect2>
 </sect1>

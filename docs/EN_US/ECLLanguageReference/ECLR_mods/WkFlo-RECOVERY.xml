@@ -2,15 +2,15 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="RECOVERY">
-  <title>RECOVERY</title>
+  <!-- DNT-Start --><title>RECOVERY</title><!-- DNT-End -->
 
   <para><emphasis>attribute </emphasis>:= <emphasis>expression
-  </emphasis><emphasis role="bold">: RECOVERY<indexterm>
-      <primary>RECOVERY</primary>
+  </emphasis><emphasis role="bold">: <!-- DNT-Start -->RECOVERY<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->RECOVERY<!-- DNT-End --></primary>
     </indexterm>(</emphasis><emphasis>handler </emphasis><emphasis
   role="bold">[</emphasis><emphasis>, attempts</emphasis><emphasis
   role="bold">]) </emphasis><indexterm>
-      <primary>RECOVERY workflow service</primary>
+      <primary><!-- DNT-Start -->RECOVERY<!-- DNT-End --> workflow service</primary>
     </indexterm>;</para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -21,25 +21,25 @@
 
         <tbody>
           <row>
-            <entry><emphasis>attribute</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>attribute</emphasis><!-- DNT-End --></entry>
 
             <entry>The name of the Attribute.</entry>
           </row>
 
           <row>
-            <entry><emphasis>expression</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>expression</emphasis><!-- DNT-End --></entry>
 
             <entry>The definition of the attribute.</entry>
           </row>
 
           <row>
-            <entry><emphasis>handler</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>handler</emphasis><!-- DNT-End --></entry>
 
             <entry>The action to run if the expression fails.</entry>
           </row>
 
           <row>
-            <entry><emphasis>attempts</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>attempts</emphasis><!-- DNT-End --></entry>
 
             <entry>Optional. The number of times to try before giving
             up.</entry>
@@ -48,20 +48,20 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">RECOVERY </emphasis>service executes the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->RECOVERY<!-- DNT-End --> </emphasis>service executes the
   <emphasis>handler</emphasis> Attribute when the
   <emphasis>expression</emphasis> fails then re-runs the
   <emphasis>attribute</emphasis>. If the <emphasis>attribute</emphasis> still
   fails after the specified number of <emphasis>attempts</emphasis>, any
-  present FAILURE clause will execute. RECOVERY notionally executes in
+  present <!-- DNT-Start -->FAILURE<!-- DNT-End --> clause will execute. <!-- DNT-Start -->RECOVERY<!-- DNT-End --> notionally executes in
   parallel with the failed return result. This service implicitly causes the
   <emphasis>attribute</emphasis> to be evaluated at global scope instead of
   the enclosing scope. Only available if workflow services are turned on (see
-  #OPTION(workflow)).</para>
+  #<!-- DNT-Start -->OPTION<!-- DNT-End -->(workflow)).</para>
 
   <para>Example:</para>
 
-  <programlisting>  DoSomethingToFixIt := TRUE; //some action to repair the input
+  <!-- DNT-Start --><programlisting>  DoSomethingToFixIt := TRUE; //some action to repair the input
   
   SPeople := SORT(Person,Person.per_first_name);
   
@@ -70,7 +70,7 @@
             FAILURE(Email.simpleSend(SystemsPersonel,
                     SystemsPersonel.email,
                     'ouch.htm'));
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="SUCCESS">SUCCESS</link>, <link linkend="FAILURE">FAILURE</link></para>
+  <para>See Also: <link linkend="SUCCESS"><!-- DNT-Start -->SUCCESS<!-- DNT-End --></link>, <link linkend="FAILURE"><!-- DNT-Start -->FAILURE<!-- DNT-End --></link></para>
 </sect1>

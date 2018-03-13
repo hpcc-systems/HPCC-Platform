@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Translate">
-  <title>Translate</title>
+  <!-- DNT-Start --><title>Translate</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Str.Translate<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.Str.Translate<indexterm>
       <primary>STD.Str.Translate</primary>
     </indexterm><indexterm>
       <primary>Str.Translate</primary>
     </indexterm><indexterm>
       <primary>Translate</primary>
     </indexterm>(</emphasis> <emphasis>source, search, replacement</emphasis>
-  <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
+  <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,35 +21,35 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>source</emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the characters to search.</entry>
         </row>
 
         <row>
-          <entry><emphasis>search </emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>search </emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the characters to be replaced by
           characters in the <emphasis>replacement</emphasis> string.</entry>
         </row>
 
         <row>
-          <entry><emphasis>replacement </emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>replacement </emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the characters to act as
           replacements.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>Translate returns a STRING value.</entry>
+          <entry><!-- DNT-Start -->Translate<!-- DNT-End --> returns a <!-- DNT-Start -->STRING<!-- DNT-End --> value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">Translate </emphasis>functions return the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->Translate<!-- DNT-End --> </emphasis>functions return the
   <emphasis>source</emphasis> string with the <emphasis>replacement</emphasis>
   character substituted for all characters in the <emphasis>source</emphasis>
   string. The <emphasis>search</emphasis> string characters are replaced by
@@ -62,7 +62,7 @@
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">IMPORT STD;
+  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 A := STD.Str.Translate('abcabc','ca','yz'); //A contains 'zbyzby'
-</programlisting>
+</programlisting><!-- DNT-End -->
 </sect1>

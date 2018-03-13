@@ -2,20 +2,20 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Documentation_Conventions">
-  <title>Documentation Conventions</title>
+  <!-- DNT-Start --><title>Documentation Conventions</title><!-- DNT-End -->
 
   <sect2 id="ECL_Syntax_Case">
-    <title>ECL Syntax Case</title>
+    <!-- DNT-Start --><title>ECL Syntax Case</title><!-- DNT-End -->
 
-    <para>Although ECL is not case-sensitive, ECL reserved keywords and
-    built-in functions in this document are always shown in ALL CAPS to make
+    <para>Although <!-- DNT-Start -->ECL<!-- DNT-End --> is not case-sensitive, <!-- DNT-Start -->ECL<!-- DNT-End --> reserved keywords and
+    built-in functions in this document are always shown in <!-- DNT-Start -->ALL<!-- DNT-End --> <!-- DNT-Start -->CAPS<!-- DNT-End --> to make
     them stand out for easy identification. Definition and record set names
     are always shown in example code as mixed-case. Run-on words may be used
     to explicitly identify purpose in examples.</para>
   </sect2>
 
   <sect2 id="Optional_Items">
-    <title>Optional Items</title>
+    <!-- DNT-Start --><title>Optional Items</title><!-- DNT-End -->
 
     <para>Optional-use keywords and parameters are enclosed in square
     brackets<indexterm>
@@ -23,20 +23,20 @@
       </indexterm> in syntax diagrams with either/or options separated by a
     vertical bar (|), like this:</para>
 
-    <para><emphasis role="bold">EXAMPLEFUNC(</emphasis><emphasis>parameter
+    <para><emphasis role="bold"><!-- DNT-Start -->EXAMPLEFUNC<!-- DNT-End -->(</emphasis><emphasis>parameter
     </emphasis><emphasis
     role="bold">[</emphasis><emphasis>,optionalparameter</emphasis><emphasis
     role="bold">]</emphasis><emphasis> </emphasis><emphasis
-    role="bold">[,OPTIONAL | WORD])</emphasis></para>
+    role="bold">[,<!-- DNT-Start -->OPTIONAL<!-- DNT-End --> | <!-- DNT-Start -->WORD<!-- DNT-End -->])</emphasis></para>
   </sect2>
 
   <sect2 id="Example_Code">
-    <title>Example Code</title>
+    <!-- DNT-Start --><title>Example Code</title><!-- DNT-End -->
 
     <para><emphasis role="bold">All example code in this document appears as
     in the following listing:</emphasis></para>
 
-    <programlisting>TotalTrades := COUNT(Trades); // TotalTrades is the Definition name
-  // COUNT is a built-in function, Trades is the name of a record set</programlisting>
+    <!-- DNT-Start --><programlisting>TotalTrades := COUNT(Trades); // TotalTrades is the Definition name
+  // COUNT is a built-in function, Trades is the name of a record set</programlisting><!-- DNT-End -->
   </sect2>
 </sect1>

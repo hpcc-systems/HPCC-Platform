@@ -2,26 +2,26 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="_LOOP-_BREAK">
-  <title>#LOOP / #BREAK</title>
+  <!-- DNT-Start --><title>#LOOP / #BREAK</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">#LOOP<indexterm>
-      <primary>#LOOP</primary>
+  <para><emphasis role="bold">#<!-- DNT-Start -->LOOP<!-- DNT-End --><indexterm>
+      <primary>#<!-- DNT-Start -->LOOP<!-- DNT-End --></primary>
     </indexterm></emphasis><emphasis role="bold"> </emphasis></para>
 
   <para><emphasis role="bold">[ </emphasis><emphasis>statements
   </emphasis><emphasis role="bold">]</emphasis><emphasis role="bold">
   </emphasis></para>
 
-  <para><emphasis role="bold">#BREAK<indexterm>
-      <primary>#BREAK</primary>
+  <para><emphasis role="bold">#<!-- DNT-Start -->BREAK<!-- DNT-End --><indexterm>
+      <primary>#<!-- DNT-Start -->BREAK<!-- DNT-End --></primary>
     </indexterm></emphasis><emphasis role="bold"> </emphasis></para>
 
   <para><emphasis role="bold">[ </emphasis><emphasis>statements
   </emphasis><emphasis role="bold">]</emphasis><emphasis
   role="bold"></emphasis></para>
 
-  <para><emphasis role="bold">#END<indexterm>
-      <primary>#END</primary>
+  <para><emphasis role="bold">#<!-- DNT-Start -->END<!-- DNT-End --><indexterm>
+      <primary>#<!-- DNT-Start -->END<!-- DNT-End --></primary>
     </indexterm></emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -32,34 +32,34 @@
 
         <tbody>
           <row>
-            <entry><emphasis>statements</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>statements</emphasis><!-- DNT-End --></entry>
 
             <entry>The Template statements to execute each time.</entry>
           </row>
 
           <row>
-            <entry><emphasis>#BREAK</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>#BREAK</emphasis><!-- DNT-End --></entry>
 
             <entry>Terminates the loop.</entry>
           </row>
 
           <row>
-            <entry><emphasis>#END</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>#END</emphasis><!-- DNT-End --></entry>
 
-            <entry>The #LOOP structure terminator.</entry>
+            <entry>The #<!-- DNT-Start -->LOOP<!-- DNT-End --> structure terminator.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">#LOOP </emphasis>structure iterates,
+  <para>The <emphasis role="bold">#<!-- DNT-Start -->LOOP<!-- DNT-End --> </emphasis>structure iterates,
   executing the <emphasis>statements</emphasis> each time through the loop
-  until a #BREAK statement executes. If there is no #BREAK then #LOOP iterates
+  until a #<!-- DNT-Start -->BREAK<!-- DNT-End --> statement executes. If there is no #<!-- DNT-Start -->BREAK<!-- DNT-End --> then #<!-- DNT-Start -->LOOP<!-- DNT-End --> iterates
   infinitely.</para>
 
   <para>Example:</para>
 
-  <programlisting>  // This script creates a set attribute definition of the 1st 10
+  <!-- DNT-Start --><programlisting>  // This script creates a set attribute definition of the 1st 10
   // natural numbers and defines an attribute named "Set10"
   
   #DECLARE (SetString)
@@ -82,8 +82,8 @@
   EXPORT Set10 := %'SetString'%; //generate the ECL code
                      // This generates:
                      // EXPORT Set10 := [1,2,3,4,5,6,7,8,9,10];
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="_FOR">#FOR</link>, <link
-  linkend="_DECLARE">#DECLARE</link>, <link linkend="_IF">#IF</link></para>
+  <para>See Also: <link linkend="_FOR">#<!-- DNT-Start -->FOR<!-- DNT-End --></link>, <link
+  linkend="_DECLARE">#<!-- DNT-Start -->DECLARE<!-- DNT-End --></link>, <link linkend="_IF">#<!-- DNT-Start -->IF<!-- DNT-End --></link></para>
 </sect1>

@@ -4,15 +4,15 @@
  
 
     <sect1 id="ESDL_Attributes">
-    <title>ESDL Attributes</title>
+    <!-- DNT-Start --><title>ESDL Attributes</title><!-- DNT-End -->
 
-    <para>You can use ESDL attributes to extend and override the default
-    behavior of an ESDL definition. For example, adding a max_len(n) to a
+    <para>You can use <!-- DNT-Start -->ESDL<!-- DNT-End --> attributes to extend and override the default
+    behavior of an <!-- DNT-Start -->ESDL<!-- DNT-End --> definition. For example, adding a max_len(n) to a
     string defines the string will only need to store a certain number of
     characters.</para>
 
     <para>Many attributes are treated as hints that may have more effect on
     some implementations than others. For example, max_len(n) will affect
-    generated ECL code, but is ignored when generating C++.</para>
+    generated <!-- DNT-Start -->ECL<!-- DNT-End --> code, but is ignored when generating C++.</para>
     
     </sect1>

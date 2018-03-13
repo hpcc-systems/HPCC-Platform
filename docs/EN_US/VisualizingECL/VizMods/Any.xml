@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="VizBundleGeneralMethods">
-  <title><emphasis>General Visualization Methods</emphasis></title>
+  <!-- DNT-Start --><title><emphasis>General Visualization Methods</emphasis></title><!-- DNT-End -->
 
   <para>This section covers methods that create generic visualizations
   contained in the Any module. These visualizations are handy for testing and
@@ -11,14 +11,14 @@
   <para></para>
 
   <sect1 id="VizGrid">
-    <title>Grid</title>
+    <!-- DNT-Start --><title>Grid</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">Visualizer.Any.Grid(<indexterm>
-        <primary>Visualizer.Any.Grid</primary>
+    <para><emphasis role="bold">Visualizer.Any.<!-- DNT-Start -->Grid<!-- DNT-End -->(<indexterm>
+        <primary>Visualizer.Any.<!-- DNT-Start -->Grid<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>Any.Grid</primary>
+        <primary>Any.<!-- DNT-Start -->Grid<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>Grid</primary>
+        <primary><!-- DNT-Start -->Grid<!-- DNT-End --></primary>
       </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
     role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
     role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
@@ -36,46 +36,46 @@
 
         <tbody>
           <row>
-            <entry><emphasis>id</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>id</emphasis><!-- DNT-End --></entry>
 
             <entry>Unique identifier for the visualization</entry>
           </row>
 
           <row>
-            <entry><emphasis>dataSource</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>dataSource</emphasis><!-- DNT-End --></entry>
 
-            <entry>Location of the result set (WUID, Logical File, Roxie Query
-            result), defaults to the current WU</entry>
+            <entry>Location of the result set (<!-- DNT-Start -->WUID<!-- DNT-End -->, Logical File, Roxie Query
+            result), defaults to the current <!-- DNT-Start -->WU<!-- DNT-End --></entry>
           </row>
 
           <row>
-            <entry><emphasis>outputName</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>outputName</emphasis><!-- DNT-End --></entry>
 
             <entry>Result set name (ignored for Logical Files)</entry>
           </row>
 
           <row>
-            <entry><emphasis>mappings</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>mappings</emphasis><!-- DNT-End --></entry>
 
-            <entry>Maps Column Name &lt;--&gt; field ID</entry>
+            <entry>Maps Column Name &lt;--&gt; field <!-- DNT-Start -->ID<!-- DNT-End --></entry>
           </row>
 
           <row>
-            <entry><emphasis>filteredBy</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>filteredBy</emphasis><!-- DNT-End --></entry>
 
             <entry>Filter condition (also useful for widget
             interactions)</entry>
           </row>
 
           <row>
-            <entry><emphasis>properties</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>properties</emphasis><!-- DNT-End --></entry>
 
             <entry>Dermatology properties. See <link
             linkend="VizDermProp">Dermatology Properties</link></entry>
           </row>
 
           <row>
-            <entry>Return:<emphasis></emphasis></entry>
+            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
 
             <entry>A "meta" output describing the visualization.</entry>
           </row>
@@ -83,12 +83,12 @@
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold">Grid </emphasis>visualization method
+    <para>The <emphasis role="bold"><!-- DNT-Start -->Grid<!-- DNT-End --> </emphasis>visualization method
     creates a simple table or grid from any data.</para>
 
     <para>Example:</para>
 
-    <programlisting format="linespecific">IMPORT Visualizer;
+    <!-- DNT-Start --><programlisting format="linespecific">IMPORT Visualizer;
 ds := DATASET([ {'English', 5},
                 {'History', 17},
                 {'Geography', 7},
@@ -103,18 +103,18 @@ data_example := OUTPUT(ds, NAMED('Chart2D__test'));
 data_example;
 viz_Grid := Visualizer.Any.Grid('Grid',, 'Chart2D__test');
 viz_Grid;
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect1>
 
   <sect1 id="VizHandsonGrid">
-    <title>HandsonGrid</title>
+    <!-- DNT-Start --><title>HandsonGrid</title><!-- DNT-End -->
 
-    <para><emphasis role="bold">Visualizer.Any.HandsonGrid(<indexterm>
-        <primary>Visualizer.Any.HandsonGrid</primary>
+    <para><emphasis role="bold">Visualizer.Any.<!-- DNT-Start -->HandsonGrid<!-- DNT-End -->(<indexterm>
+        <primary>Visualizer.Any.<!-- DNT-Start -->HandsonGrid<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>Any.HandsonGrid</primary>
+        <primary>Any.<!-- DNT-Start -->HandsonGrid<!-- DNT-End --></primary>
       </indexterm><indexterm>
-        <primary>HandsonGrid</primary>
+        <primary><!-- DNT-Start -->HandsonGrid<!-- DNT-End --></primary>
       </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
     role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
     role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
@@ -132,46 +132,46 @@ viz_Grid;
 
         <tbody>
           <row>
-            <entry><emphasis>id</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>id</emphasis><!-- DNT-End --></entry>
 
             <entry>Unique identifier for the visualization</entry>
           </row>
 
           <row>
-            <entry><emphasis>dataSource</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>dataSource</emphasis><!-- DNT-End --></entry>
 
-            <entry>Location of the result set (WUID, Logical File, Roxie Query
-            result), defaults to the current WU</entry>
+            <entry>Location of the result set (<!-- DNT-Start -->WUID<!-- DNT-End -->, Logical File, Roxie Query
+            result), defaults to the current <!-- DNT-Start -->WU<!-- DNT-End --></entry>
           </row>
 
           <row>
-            <entry><emphasis>outputName</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>outputName</emphasis><!-- DNT-End --></entry>
 
             <entry>Result set name (ignored for Logical Files)</entry>
           </row>
 
           <row>
-            <entry><emphasis>mappings</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>mappings</emphasis><!-- DNT-End --></entry>
 
-            <entry>Maps Column Name &lt;--&gt; field ID</entry>
+            <entry>Maps Column Name &lt;--&gt; field <!-- DNT-Start -->ID<!-- DNT-End --></entry>
           </row>
 
           <row>
-            <entry><emphasis>filteredBy</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>filteredBy</emphasis><!-- DNT-End --></entry>
 
             <entry>Filter condition (also useful for widget
             interactions)</entry>
           </row>
 
           <row>
-            <entry><emphasis>properties</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>properties</emphasis><!-- DNT-End --></entry>
 
             <entry>Dermatology properties. See <link
             linkend="VizDermProp">Dermatology Properties</link></entry>
           </row>
 
           <row>
-            <entry>Return:<emphasis></emphasis></entry>
+            <entry><!-- DNT-Start -->Return:<emphasis></emphasis><!-- DNT-End --></entry>
 
             <entry>A "meta" output describing the visualization.</entry>
           </row>
@@ -179,12 +179,12 @@ viz_Grid;
       </tgroup>
     </informaltable>
 
-    <para>The <emphasis role="bold">HandsonGrid </emphasis>visualization
+    <para>The <emphasis role="bold"><!-- DNT-Start -->HandsonGrid<!-- DNT-End --> </emphasis>visualization
     method creates a hands on table or grid from any data.</para>
 
     <para>Example:</para>
 
-    <programlisting format="linespecific">IMPORT Visualizer;
+    <!-- DNT-Start --><programlisting format="linespecific">IMPORT Visualizer;
 ds := DATASET([ {'English', 5},
                 {'History', 17},
                 {'Geography', 7},
@@ -199,6 +199,6 @@ data_example := OUTPUT(ds, NAMED('Chart2D__test'));
 data_example;
 viz_HandsonGrid := Visualizer.Any.HandsonGrid('HandsonGrid',, 'Chart2D__test');
 viz_HandsonGrid;
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect1>
 </chapter>

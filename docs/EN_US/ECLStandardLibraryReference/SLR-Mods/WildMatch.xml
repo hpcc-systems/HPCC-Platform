@@ -2,21 +2,21 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="WildMatch">
-  <title>WildMatch</title>
+  <!-- DNT-Start --><title>WildMatch</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Str.WildMatch<indexterm>
-      <primary>STD.Str.WildMatch</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->WildMatch<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Str.<!-- DNT-Start -->WildMatch<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Str.WildMatch</primary>
+      <primary>Str.<!-- DNT-Start -->WildMatch<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>WildMatch</primary>
+      <primary><!-- DNT-Start -->WildMatch<!-- DNT-End --></primary>
     </indexterm>(</emphasis> <emphasis>source, pattern, nocase</emphasis>
   <emphasis role="bold">)</emphasis></para>
 
-  <para><emphasis role="bold">STD.Uni.WildMatch<indexterm>
-      <primary>STD.Uni.WildMatch</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->WildMatch<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->STD<!-- DNT-End -->.Uni.<!-- DNT-Start -->WildMatch<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>Uni.WildMatch</primary>
+      <primary>Uni.<!-- DNT-Start -->WildMatch<!-- DNT-End --></primary>
     </indexterm>(</emphasis> <emphasis>source, pattern, nocase</emphasis>
   <emphasis role="bold">)</emphasis></para>
 
@@ -28,13 +28,13 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>source</emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the data to search.</entry>
         </row>
 
         <row>
-          <entry><emphasis>pattern </emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>pattern </emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the wildcard expression to match. Valid
           wildcards are ? (single character) and * (multiple
@@ -42,34 +42,34 @@
         </row>
 
         <row>
-          <entry><emphasis>nocase</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>nocase</emphasis><!-- DNT-End --></entry>
 
           <entry>A boolean true or false indicating whether to ignore the
           case.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>WildMatch returns a BOOLEAN value.</entry>
+          <entry><!-- DNT-Start -->WildMatch<!-- DNT-End --> returns a <!-- DNT-Start -->BOOLEAN<!-- DNT-End --> value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">WildMatch </emphasis>function returns TRUE
+  <para>The <emphasis role="bold"><!-- DNT-Start -->WildMatch<!-- DNT-End --> </emphasis>function returns <!-- DNT-Start -->TRUE<!-- DNT-End -->
   if the <emphasis>pattern</emphasis> matches the
   <emphasis>source</emphasis>.</para>
 
-  <para>The case-insensitive version of the Unicode WildMatch has been
+  <para>The case-insensitive version of the Unicode <!-- DNT-Start -->WildMatch<!-- DNT-End --> has been
   optimized for speed over accuracy. For accurate case-folding, you should
   either use the Unicode ToUpperCase function explicitly and then a
-  case-sensitive the Unicode WildMatch, or use REGEXFIND.</para>
+  case-sensitive the Unicode <!-- DNT-Start -->WildMatch<!-- DNT-End -->, or use <!-- DNT-Start -->REGEXFIND<!-- DNT-End -->.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">STD.Str.wildmatch('abcdeabcdec', 'a?c*', false) = TRUE;
-</programlisting>
+  <!-- DNT-Start --><programlisting format="linespecific">STD.Str.wildmatch('abcdeabcdec', 'a?c*', false) = TRUE;
+</programlisting><!-- DNT-End -->
 
   <para></para>
 </sect1>

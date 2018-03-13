@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ROUNDUP">
-  <title>ROUNDUP</title>
+  <!-- DNT-Start --><title>ROUNDUP</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">ROUNDUP<indexterm>
-      <primary>ROUNDUP</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->ROUNDUP<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->ROUNDUP<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>ROUNDUP function</primary>
+      <primary><!-- DNT-Start -->ROUNDUP<!-- DNT-End --> function</primary>
     </indexterm>(</emphasis><emphasis>realvalue</emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -19,21 +19,21 @@
 
         <tbody>
           <row>
-            <entry><emphasis>realvalue</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>realvalue</emphasis><!-- DNT-End --></entry>
 
             <entry>The floating-point value to round.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>ROUNDUP returns a single integer value.</entry>
+            <entry><!-- DNT-Start -->ROUNDUP<!-- DNT-End --> returns a single integer value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">ROUNDUP </emphasis>function returns the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->ROUNDUP<!-- DNT-End --> </emphasis>function returns the
   rounded integer of the <emphasis>realvalue</emphasis><indexterm>
       <primary>realvalue</primary>
     </indexterm> by rounding any decimal portion to the next larger integer
@@ -41,12 +41,12 @@
 
   <para>Example:</para>
 
-  <programlisting>SomeRealValue := 3.14159;
+  <!-- DNT-Start --><programlisting>SomeRealValue := 3.14159;
 INTEGER4 MyVal := ROUNDUP(SomeRealValue); // MyVal is 4
 
 SomeRealValue := -3.9;
 INTEGER4 MyVal := ROUNDUP(SomeRealValue); // MyVal is -4
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="ROUND">ROUND</link>, <link linkend="TRUNCATE">TRUNCATE</link></para>
+  <para>See Also: <link linkend="ROUND"><!-- DNT-Start -->ROUND<!-- DNT-End --></link>, <link linkend="TRUNCATE"><!-- DNT-Start -->TRUNCATE<!-- DNT-End --></link></para>
 </sect1>

@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="VizMethods">
-  <title><emphasis>Methods</emphasis></title>
+  <!-- DNT-Start --><title><emphasis>Methods</emphasis></title><!-- DNT-End -->
 
   <para>Methods are categorized by the shape of the data they support. The
   categories are:</para>
@@ -18,9 +18,9 @@
   <para></para>
 
   <sect1 id="Viz2dlistl">
-    <title>Two-Dimensional Visualization Methods</title>
+    <!-- DNT-Start --><title>Two-Dimensional Visualization Methods</title><!-- DNT-End -->
 
-    <para>This MODULE contains a selection of visualizations for
+    <para>This <!-- DNT-Start -->MODULE<!-- DNT-End --> contains a selection of visualizations for
     two-dimensional data.</para>
 
     <para><link linkend="VizBubble">Bubble</link></para>
@@ -33,9 +33,9 @@
   </sect1>
 
   <sect1 id="VizNDList">
-    <title>Multi-Dimensional Visualization Methods</title>
+    <!-- DNT-Start --><title>Multi-Dimensional Visualization Methods</title><!-- DNT-End -->
 
-    <para>This MODULE contains a selection of visualizations for
+    <para>This <!-- DNT-Start -->MODULE<!-- DNT-End --> contains a selection of visualizations for
     multi-dimensional data.</para>
 
     <para><link linkend="VizMultiDArea">Area</link></para>
@@ -56,7 +56,7 @@
   </sect1>
 
   <sect1 id="VizGeoList">
-    <title>Geospatial Visualization Methods</title>
+    <!-- DNT-Start --><title>Geospatial Visualization Methods</title><!-- DNT-End -->
 
     <para><link linkend="VizUSStates">USStates</link></para>
 
@@ -76,7 +76,7 @@
   </sect1>
 
   <sect1 id="VizGeneralList">
-    <title>General Visualization Methods</title>
+    <!-- DNT-Start --><title>General Visualization Methods</title><!-- DNT-End -->
 
     <para><link linkend="VizGrid">Grid</link></para>
 

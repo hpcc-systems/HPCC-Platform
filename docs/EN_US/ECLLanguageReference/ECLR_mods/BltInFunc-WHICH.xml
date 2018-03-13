@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="WHICH">
-  <title>WHICH</title>
+  <!-- DNT-Start --><title>WHICH</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">WHICH<indexterm>
-      <primary>WHICH</primary>
+  <para><emphasis role="bold"><!-- DNT-Start -->WHICH<!-- DNT-End --><indexterm>
+      <primary><!-- DNT-Start -->WHICH<!-- DNT-End --></primary>
     </indexterm><indexterm>
-      <primary>WHICH Function</primary>
+      <primary><!-- DNT-Start -->WHICH<!-- DNT-End --> Function</primary>
     </indexterm>(</emphasis><emphasis>condition,...,condition</emphasis><emphasis
   role="bold">)</emphasis></para>
 
@@ -19,34 +19,34 @@
 
         <tbody>
           <row>
-            <entry><emphasis>condition</emphasis></entry>
+            <entry><!-- DNT-Start --><emphasis>condition</emphasis><!-- DNT-End --></entry>
 
             <entry>A conditional expression to evaluate.</entry>
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry>WHICH returns a single value.</entry>
+            <entry><!-- DNT-Start -->WHICH<!-- DNT-End --> returns a single value.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">WHICH </emphasis>function evaluates which of
+  <para>The <emphasis role="bold"><!-- DNT-Start -->WHICH<!-- DNT-End --> </emphasis>function evaluates which of
   the list of <emphasis>conditions</emphasis> returned true and returns its
   ordinal position in the list of <emphasis>conditions</emphasis>. Returns
-  zero (0) if none return true. This is the opposite of the REJECTED
+  zero (0) if none return true. This is the opposite of the <!-- DNT-Start -->REJECTED<!-- DNT-End -->
   function<indexterm>
-      <primary>REJECTED function</primary>
+      <primary><!-- DNT-Start -->REJECTED<!-- DNT-End --> function</primary>
     </indexterm>.</para>
 
   <para>Example:</para>
 
-  <programlisting>  Accept := WHICH(Person.per_first_name = 'Fred',
+  <!-- DNT-Start --><programlisting>  Accept := WHICH(Person.per_first_name = 'Fred',
   Person.per_first_name = 'Sue');
   //Accept is 0 for everyone but those named Fred or Sue
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>See Also: <link linkend="REJECTED">REJECTED</link>, <link linkend="MAP">MAP</link>, <link linkend="CHOOSE">CHOOSE</link>, <link linkend="IF">IF</link>, <link linkend="CASE">CASE</link></para>
+  <para>See Also: <link linkend="REJECTED"><!-- DNT-Start -->REJECTED<!-- DNT-End --></link>, <link linkend="MAP"><!-- DNT-Start -->MAP<!-- DNT-End --></link>, <link linkend="CHOOSE"><!-- DNT-Start -->CHOOSE<!-- DNT-End --></link>, <link linkend="IF"><!-- DNT-Start -->IF<!-- DNT-End --></link>, <link linkend="CASE"><!-- DNT-Start -->CASE<!-- DNT-End --></link></para>
 </sect1>

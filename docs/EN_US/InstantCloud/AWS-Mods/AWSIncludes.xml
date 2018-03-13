@@ -2,7 +2,7 @@
 <!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect2>
-  <title>Find your Amazon Access Key ID and Secret Access Key</title>
+  <!-- DNT-Start --><title>Find your Amazon Access Key ID and Secret Access Key</title><!-- DNT-End -->
 
   <para><orderedlist>
       <listitem>
@@ -25,7 +25,7 @@
       </listitem>
 
       <listitem>
-        <para>Note your <emphasis role="bold">Access Key ID</emphasis> and
+        <para>Note your <emphasis role="bold">Access Key <!-- DNT-Start -->ID<!-- DNT-End --></emphasis> and
         your <emphasis role="bold">Secret Access Key.</emphasis></para>
 
         <para><figure>
@@ -50,7 +50,7 @@
 
         <tbody>
           <row>
-            <entry>Access Key ID</entry>
+            <entry>Access Key <!-- DNT-Start -->ID<!-- DNT-End --></entry>
 
             <entry></entry>
           </row>

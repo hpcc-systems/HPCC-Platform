@@ -2,45 +2,45 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="External_Service_Implementation">
-  <title>External Service Implementation</title>
+  <!-- DNT-Start --><title>External Service Implementation</title><!-- DNT-End -->
 
-  <para>ECL external system services<indexterm>
+  <para><!-- DNT-Start -->ECL<!-- DNT-End --> external system services<indexterm>
       <primary>external system services</primary>
     </indexterm><indexterm>
       <primary>External Service</primary>
-    </indexterm> are implemented as exported functions in a .SO (Shared
+    </indexterm> are implemented as exported functions in a .<!-- DNT-Start -->SO<!-- DNT-End --> (Shared
   Object)<indexterm>
-      <primary>.SO</primary>
+      <primary>.<!-- DNT-Start -->SO<!-- DNT-End --></primary>
     </indexterm><indexterm>
       <primary>Shared Object</primary>
-    </indexterm>. An ECL system service .SO can contain one or more services
-  and (possibly) a single .SO initialization routine. All system service
+    </indexterm>. An <!-- DNT-Start -->ECL<!-- DNT-End --> system service .<!-- DNT-Start -->SO<!-- DNT-End --> can contain one or more services
+  and (possibly) a single .<!-- DNT-Start -->SO<!-- DNT-End --> initialization routine. All system service
   libraries must be thread safe.</para>
 
-  <para>All exported functions in the .SO (hereafter referred to as "entry
+  <para>All exported functions in the .<!-- DNT-Start -->SO<!-- DNT-End --> (hereafter referred to as "entry
   points") must adhere to certain calling and naming conventions. First, entry
   points must use the "C" naming convention. That is, function name decoration
   (like that used by C++) is not allowed.</para>
 
   <para>Second, the storage class of __declspec(dllexport) and declaration
   type _cdecl need to be declared for Windows/Microsoft C++ applications.
-  Typically, SERVICE_CALL is defined as _declspec(dllexport) and SERVICE_API
+  Typically, <!-- DNT-Start -->SERVICE<!-- DNT-End -->_<!-- DNT-Start -->CALL<!-- DNT-End --> is defined as _declspec(dllexport) and <!-- DNT-Start -->SERVICE<!-- DNT-End -->_<!-- DNT-Start -->API<!-- DNT-End -->
   is defined as _cdecl for Windows, and left as nulls for Linux. For
   example:</para>
 
-  <programlisting>Extern "C" _declspec(dllexport) unsigned _cdecl Countchars(const unsigned len, const char *string)</programlisting>
+  <!-- DNT-Start --><programlisting>Extern "C" _declspec(dllexport) unsigned _cdecl Countchars(const unsigned len, const char *string)</programlisting><!-- DNT-End -->
 
-  <para><emphasis role="bold">Note</emphasis>: The use of an external SERVICE
-  may be restricted to signed modules. See Code Signing in the ECL
+  <para><emphasis role="bold">Note</emphasis>: The use of an external <!-- DNT-Start -->SERVICE<!-- DNT-End -->
+  may be restricted to signed modules. See Code Signing in the <!-- DNT-Start -->ECL<!-- DNT-End -->
   Programmer's Guide.</para>
 
   <sect2 id="DLL_Initialization">
-    <title>.SO Initialization</title>
+    <!-- DNT-Start --><title>.SO Initialization</title><!-- DNT-End -->
 
-    <para>The following is an example prototype for an ECL (.SO) system
+    <para>The following is an example prototype for an <!-- DNT-Start -->ECL<!-- DNT-End --> (.<!-- DNT-Start -->SO<!-- DNT-End -->) system
     service initialization routine:</para>
 
-    <programlisting>extern "C" void stdcall &lt;functionName&gt; (IEclWorkUnit *w);</programlisting>
+    <!-- DNT-Start --><programlisting>extern "C" void stdcall &lt;functionName&gt; (IEclWorkUnit *w);</programlisting><!-- DNT-End -->
 
     <para>The IEclWorkUnit is transparent to the application, and can be
     declared as Struct IEclWorkUnit; or simply referred to as a void *.</para>
@@ -49,40 +49,40 @@
     its "Work Unit." Typically, a global variable is used to retain this
     value. For example:</para>
 
-    <programlisting>IEclWorkUnit *workUnit;
+    <!-- DNT-Start --><programlisting>IEclWorkUnit *workUnit;
      // global variable to hold the Work Unit reference
   
   extern "C" void SERVICE_API myInitFunction (IEclWorkUnit *w)
   {
        workUnit = w; // retain reference to "Work Unit"
   }
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="Entry_Points">
-    <title>Entry Points</title>
+    <!-- DNT-Start --><title>Entry Points</title><!-- DNT-End -->
 
     <para>Entry points have the same definition requirements as initialization
     routines. However, unlike initialization routines, entry points can return
     a value. Valid return types are listed below. The following is an example
     of an entry point:</para>
 
-    <programlisting>extern "C" __int64 SERVICE_API PrnLog(unsigned long len, const char *val)
+    <!-- DNT-Start --><programlisting>extern "C" __int64 SERVICE_API PrnLog(unsigned long len, const char *val)
   {
   }
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="SERVICE_Structure_external">
-    <title>SERVICE Structure - external<indexterm>
+    <!-- DNT-Start --><title>SERVICE Structure - external<indexterm>
         <primary>SERVICE Structure</primary>
-      </indexterm></title>
+      </indexterm></title><!-- DNT-End -->
 
-    <para>For each system service defined, a corresponding ECL function
-    prototype must be declared (see <emphasis role="bold">SERVICE
+    <para>For each system service defined, a corresponding <!-- DNT-Start -->ECL<!-- DNT-End --> function
+    prototype must be declared (see <emphasis role="bold"><!-- DNT-Start -->SERVICE<!-- DNT-End -->
     Structure</emphasis>).</para>
 
-    <programlisting>  servicename := SERVICE
+    <!-- DNT-Start --><programlisting>  servicename := SERVICE
     functionname(parameter list) [: keyword = value];
     END;
   
@@ -91,13 +91,13 @@
     simpleSend(STRING address, STRING template, STRING subject)
        : LIBRARY='ecl2cw', INITFUNCTION='initEcl2Cw';
      END;
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="Keywords">
-    <title>Keywords<indexterm>
+    <!-- DNT-Start --><title>Keywords<indexterm>
         <primary>Service Function Keywords</primary>
-      </indexterm></title>
+      </indexterm></title><!-- DNT-End -->
 
     <para>This is the list of valid keywords for use in service function
     prototypes:</para>
@@ -110,21 +110,21 @@
 
           <tbody>
             <row>
-              <entry><emphasis>LIBRARY</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>LIBRARY</emphasis><!-- DNT-End --></entry>
 
-              <entry>Indicates the name of the .SO module an entry point is
+              <entry>Indicates the name of the .<!-- DNT-Start -->SO<!-- DNT-End --> module an entry point is
               defined in.</entry>
             </row>
 
             <row>
-              <entry><emphasis>ENTRYPOINT</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>ENTRYPOINT</emphasis><!-- DNT-End --></entry>
 
               <entry>Specifies a name for the entry point. By default, the
               name of the entry point is the function name.</entry>
             </row>
 
             <row>
-              <entry><emphasis>INITFUNCTION</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>INITFUNCTION</emphasis><!-- DNT-End --></entry>
 
               <entry>Specifies the name of the initialization routine defined
               in the module containing the entry point. Currently, the
@@ -132,27 +132,27 @@
             </row>
 
             <row>
-              <entry><emphasis>INCLUDE<indexterm>
+              <entry><!-- DNT-Start --><emphasis>INCLUDE<indexterm>
                   <primary>INCLUDE</primary>
-                </indexterm></emphasis></entry>
+                </indexterm></emphasis><!-- DNT-End --></entry>
 
               <entry>Indicates the function prototype is in the specified
-              include file, so the generated CPP must #include that file. If
-              INCLUDE is not specified, the C++ prototype is generated from
-              the ECL function definition.</entry>
+              include file, so the generated <!-- DNT-Start -->CPP<!-- DNT-End --> must #include that file. If
+              <!-- DNT-Start -->INCLUDE<!-- DNT-End --> is not specified, the C++ prototype is generated from
+              the <!-- DNT-Start -->ECL<!-- DNT-End --> function definition.</entry>
             </row>
 
             <row>
-              <entry><emphasis>C</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>C</emphasis><!-- DNT-End --></entry>
 
               <entry>Indicates the generated C++ prototype is enclosed within
               an extern "C" rather than just extern.</entry>
             </row>
 
             <row>
-              <entry><emphasis>PURE<indexterm>
+              <entry><!-- DNT-Start --><emphasis>PURE<indexterm>
                   <primary>PURE</primary>
-                </indexterm></emphasis></entry>
+                </indexterm></emphasis><!-- DNT-End --></entry>
 
               <entry>Indicates the function returns the same result every time
               you call it with the same parameters and has no side effects.
@@ -161,9 +161,9 @@
             </row>
 
             <row>
-              <entry><emphasis>ONCE<indexterm>
+              <entry><!-- DNT-Start --><emphasis>ONCE<indexterm>
                   <primary>ONCE</primary>
-                </indexterm></emphasis></entry>
+                </indexterm></emphasis><!-- DNT-End --></entry>
 
               <entry>Indicates the function has no side effects and is
               evaluated at query execution time, even if the parameters are
@@ -172,36 +172,36 @@
             </row>
 
             <row>
-              <entry><emphasis>FOLD<indexterm>
+              <entry><!-- DNT-Start --><emphasis>FOLD<indexterm>
                   <primary>FOLD</primary>
-                </indexterm></emphasis></entry>
+                </indexterm></emphasis><!-- DNT-End --></entry>
 
               <entry>Specifies that the function is evaluated at compile time
-              if all parameters are constants. Specifying FOLD to the SERVICE
+              if all parameters are constants. Specifying <!-- DNT-Start -->FOLD<!-- DNT-End --> to the <!-- DNT-Start -->SERVICE<!-- DNT-End -->
               applys it to all function definitions in the service - in such
-              cases NOFOLD may be useful to override this default for
+              cases <!-- DNT-Start -->NOFOLD<!-- DNT-End --> may be useful to override this default for
               individual functions that are not suitable for constant
               folding.</entry>
             </row>
 
             <row>
-              <entry><emphasis>NOFOLD<indexterm>
+              <entry><!-- DNT-Start --><emphasis>NOFOLD<indexterm>
                   <primary>NOFOLD</primary>
-                </indexterm></emphasis></entry>
+                </indexterm></emphasis><!-- DNT-End --></entry>
 
               <entry>Specifies that the service is not suitable for constant
               folding.</entry>
             </row>
 
             <row>
-              <entry><emphasis>ACTION</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>ACTION</emphasis><!-- DNT-End --></entry>
 
               <entry>Indicates the function has side effects and requires the
               optimizer to not remove calls to the function.</entry>
             </row>
 
             <row>
-              <entry><emphasis>CONTEXT</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>CONTEXT</emphasis><!-- DNT-End --></entry>
 
               <entry>Internal use, only. Indicates an extra internal context
               parameter (ICodeContext *) is passed to the function. This must
@@ -209,15 +209,15 @@
             </row>
 
             <row>
-              <entry><emphasis>GLOBALCONTEXT</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>GLOBALCONTEXT</emphasis><!-- DNT-End --></entry>
 
-              <entry>Internal use, only. Same as CONTEXT, but there are
+              <entry>Internal use, only. Same as <!-- DNT-Start -->CONTEXT<!-- DNT-End -->, but there are
               restrictions on where the function can be used (for example, not
-              in a TRANSFORM).</entry>
+              in a <!-- DNT-Start -->TRANSFORM<!-- DNT-End -->).</entry>
             </row>
 
             <row>
-              <entry><emphasis>CTXMETHOD</emphasis></entry>
+              <entry><!-- DNT-Start --><emphasis>CTXMETHOD</emphasis><!-- DNT-End --></entry>
 
               <entry>Internal use, only. Indicates the function is actually a
               method of the internal code context.</entry>
@@ -228,78 +228,78 @@
   </sect2>
 
   <sect2 id="Data_Types">
-    <title>Data Types</title>
+    <!-- DNT-Start --><title>Data Types</title><!-- DNT-End -->
 
     <para><emphasis role="bold">Please see <link
-    linkend="ECL_to_Cplus_Mapping">ECL to C++ Mapping</link> documentation for
+    linkend="ECL_to_Cplus_Mapping"><!-- DNT-Start -->ECL<!-- DNT-End --> to C++ Mapping</link> documentation for
     data type mapping.</emphasis></para>
   </sect2>
 
   <sect2 id="Passing_Set_Parameters_to_a_Service">
-    <title>Passing Set Parameters<indexterm>
+    <!-- DNT-Start --><title>Passing Set Parameters<indexterm>
         <primary>Passing Set Parameters</primary>
       </indexterm><indexterm>
         <primary>Set Parameters</primary>
-      </indexterm> to a Service</title>
+      </indexterm> to a Service</title><!-- DNT-End -->
 
-    <para>Three types of set parameters are supported: INTEGER, REAL, and
-    STRING<emphasis>n</emphasis>.</para>
+    <para>Three types of set parameters are supported: <!-- DNT-Start -->INTEGER<!-- DNT-End -->, <!-- DNT-Start -->REAL<!-- DNT-End -->, and
+    <!-- DNT-Start -->STRING<!-- DNT-End --><emphasis>n</emphasis>.</para>
 
-    <para><emphasis role="bold">INTEGER<indexterm>
-        <primary>INTEGER</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->INTEGER<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->INTEGER<!-- DNT-End --></primary>
       </indexterm></emphasis></para>
 
     <para>If you want to sum up all the elements in a set of integers with an
-    external function, to declare the function in the SERVICE
+    external function, to declare the function in the <!-- DNT-Start -->SERVICE<!-- DNT-End -->
     structure:</para>
 
-    <programlisting>  SetFuncLib := SERVICE
+    <!-- DNT-Start --><programlisting>  SetFuncLib := SERVICE
     INTEGER SumInt(SET OF INTEGER ss) :
        holertl,library='dab',entrypoint='rtlSumInt';
   END;
   x:= 3+4.5;
   SetFuncLib.SumInt([x, 11.79]); //passed two REAL numbers - it works
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para>To define the external function, in the header (.h) file:</para>
 
-    <programlisting>__int64 rtlSumInt(unsigned len, __int64 * a);</programlisting>
+    <!-- DNT-Start --><programlisting>__int64 rtlSumInt(unsigned len, __int64 * a);</programlisting><!-- DNT-End -->
 
     <para>In the source code (.cpp) file:</para>
 
-    <programlisting>  __int64 rtlSumInt(unsigned len, __int64 * a) {
+    <!-- DNT-Start --><programlisting>  __int64 rtlSumInt(unsigned len, __int64 * a) {
        __int64 sum = 0;
        for(unsigned i = 0; i &lt; len; i++) {
             sum += a[i];
        }
        return sum;
     }
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para>The first parameter contains the length of the set, and the second
     parameter is an int array that holds the elements of the set. <emphasis
-    role="bold">Note:</emphasis> In declaring the function in ECL, you can
-    also have sets of INTEGER4, INTEGER2 and INTEGER1, but you need to change
+    role="bold">Note:</emphasis> In declaring the function in <!-- DNT-Start -->ECL<!-- DNT-End -->, you can
+    also have sets of <!-- DNT-Start -->INTEGER<!-- DNT-End -->4, <!-- DNT-Start -->INTEGER<!-- DNT-End -->2 and <!-- DNT-Start -->INTEGER<!-- DNT-End -->1, but you need to change
     the type of the C function parameter, too. The relationship is:</para>
 
-    <programlisting>  INTEGER8 -- __int64
+    <!-- DNT-Start --><programlisting>  INTEGER8 -- __int64
   INTEGER4 -- int
   INTEGER2 -- short
   INTEGER1 -- char
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-    <para><emphasis role="bold">REAL<indexterm>
-        <primary>REAL</primary>
+    <para><emphasis role="bold"><!-- DNT-Start -->REAL<!-- DNT-End --><indexterm>
+        <primary><!-- DNT-Start -->REAL<!-- DNT-End --></primary>
       </indexterm></emphasis></para>
 
     <para>If you want to sum up all the elements in a set of real
     numbers:</para>
 
-    <para>To declare the function in the SERVICE structure<indexterm>
-        <primary>SERVICE structure</primary>
+    <para>To declare the function in the <!-- DNT-Start -->SERVICE<!-- DNT-End --> structure<indexterm>
+        <primary><!-- DNT-Start -->SERVICE<!-- DNT-End --> structure</primary>
       </indexterm>:</para>
 
-    <programlisting>  SetFuncLib := SERVICE
+    <!-- DNT-Start --><programlisting>  SetFuncLib := SERVICE
        REAL8 SumReal(SET OF REAL8 ss) :
             holertl,library='dab',entrypoint='rtlSumReal';
   END;
@@ -308,7 +308,7 @@
   r2 := 20.345;
   SetFuncLib.SumReal([r1, r2]);
   // intentionally passed an integer to the real set, it works too.
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para>To define the external function, in the header (.h) file:</para>
 
@@ -316,50 +316,50 @@
 
     <para>In the source code (.cpp) file:</para>
 
-    <programlisting>  double rtlSumReal(unsigned len, double * a) {
+    <!-- DNT-Start --><programlisting>  double rtlSumReal(unsigned len, double * a) {
     double sum = 0;
     for(unsigned i = 0; i &lt; len; i++) {
        sum += a[i];
     }
     return sum;
   }
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para>The first parameter contains the length of the set, and the second
     parameter is an array that holds the elements of the set.</para>
 
     <para><emphasis role="bold">Note:</emphasis> You can also declare the
-    function in ECL as set of REAL4, but you need to change the parameter of
+    function in <!-- DNT-Start -->ECL<!-- DNT-End --> as set of <!-- DNT-Start -->REAL<!-- DNT-End -->4, but you need to change the parameter of
     the C function to float.</para>
 
-    <para><emphasis role="bold">STRING</emphasis><emphasis
+    <para><emphasis role="bold"><!-- DNT-Start -->STRING<!-- DNT-End --></emphasis><emphasis
     role="bold">n<indexterm>
-        <primary>STRINGn</primary>
+        <primary><!-- DNT-Start -->STRINGn<!-- DNT-End --></primary>
       </indexterm></emphasis></para>
 
     <para>If you want to calculate the sum of the lengths of all the strings
     in a set, with the trailing blanks trimmed off:</para>
 
-    <para>To declare the function in the SERVICE structure<indexterm>
-        <primary>SERVICE structure</primary>
+    <para>To declare the function in the <!-- DNT-Start -->SERVICE<!-- DNT-End --> structure<indexterm>
+        <primary><!-- DNT-Start -->SERVICE<!-- DNT-End --> structure</primary>
       </indexterm>:</para>
 
-    <programlisting>  SetFuncLib := SERVICE
+    <!-- DNT-Start --><programlisting>  SetFuncLib := SERVICE
     INTEGER SumCharLen(SET OF STRING20 ss) :
        holertl,library='dab',entrypoint='rtlSumCharLen';
   END;
   str1 := '1234567890'+'xxxx ';
   str2 := 'abc';
   SetFuncLib.SumCharLen([str1, str2]);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para>To define the external function, in the header (.h) file:</para>
 
-    <programlisting>__int64 rtlSumCharLen(unsigned len, char a[ ][20]);</programlisting>
+    <!-- DNT-Start --><programlisting>__int64 rtlSumCharLen(unsigned len, char a[ ][20]);</programlisting><!-- DNT-End -->
 
     <para>In the source code (.cpp) file:</para>
 
-    <programlisting>__int64 rtlSumCharLen(unsigned len, char a[][20]) {
+    <!-- DNT-Start --><programlisting>__int64 rtlSumCharLen(unsigned len, char a[][20]) {
     __int64 sumtrimedlen = 0;
        for(unsigned i = 0; i &lt; len; i++) {
           for(int j = 20-1; j &gt;= 0; j--) {
@@ -371,18 +371,18 @@
        sumtrimedlen += j + 1;
     }
     return sumtrimedlen;
-  } </programlisting>
+  } </programlisting><!-- DNT-End -->
 
     <para><emphasis role="bold">Note:</emphasis> In declaring the C function,
     we have two parameters for the set. The first parameter is the length of
-    the set, the second parameter is char[][n] where n is the SAME as that in
+    the set, the second parameter is char[][n] where n is the <!-- DNT-Start -->SAME<!-- DNT-End --> as that in
     stringn. Eg., if the service is declared as "integer SumCharLen(set of
     string20)", then in the C function the parameter type must be char
     a[][20].</para>
   </sect2>
 
   <sect2 id="PlugIn_Requirements">
-    <title>Plugin Requirements</title>
+    <!-- DNT-Start --><title>Plugin Requirements</title><!-- DNT-End -->
 
     <para>Plugins require an exported function with the following signature
     under Windows:</para>
@@ -402,7 +402,7 @@
     not load additional executable modules that are referenced by the
     specified module."</para>
 
-    <programlisting>Struct ECLPluginDefinitionBlock
+    <!-- DNT-Start --><programlisting>Struct ECLPluginDefinitionBlock
   {
     Size_t size;
        //size of passed structure - filled in by the calling function
@@ -418,7 +418,7 @@
        // Text describing version of plugin - used in debugging
     Const char *description;
        // Text describing plugin
-  } </programlisting>
+  } </programlisting><!-- DNT-End -->
 
     <para>To initialize information in a plugin, use a global variable or
     class and it will be appropriately constructed/destructed when the plugin
@@ -426,27 +426,27 @@
   </sect2>
 
   <sect2 id="Deployment">
-    <title>Deployment</title>
+    <!-- DNT-Start --><title>Deployment</title><!-- DNT-End -->
 
     <para>External .SOs must be deployed to the /opt/HPCCSystems/plugins
     directory on each node of the target environment. If external data files
     are required, they should be either manually deployed to each node, or
     referenced from a network node (the latter requires hard-coding the
-    address in the code for the .SO). Note that manually deployed files are
-    not backed up with the standard SDS backup utilities.</para>
+    address in the code for the .<!-- DNT-Start -->SO<!-- DNT-End -->). Note that manually deployed files are
+    not backed up with the standard <!-- DNT-Start -->SDS<!-- DNT-End --> backup utilities.</para>
   </sect2>
 
   <sect2 id="Constraints">
-    <title>Constraints</title>
+    <!-- DNT-Start --><title>Constraints</title><!-- DNT-End -->
 
     <para>The full set of data types is supported on the Data Refinery and
     Data Delivery Engines (Thor/Roxie/Doxie).</para>
   </sect2>
 
   <sect2 id="An_Example_Service">
-    <title>An Example Service</title>
+    <!-- DNT-Start --><title>An Example Service</title><!-- DNT-End -->
 
-    <para>The following code example depicts an ECL system service (.SO)
+    <para>The following code example depicts an <!-- DNT-Start -->ECL<!-- DNT-End --> system service (.<!-- DNT-Start -->SO<!-- DNT-End -->)
     called examplelib that contains one entry point (<emphasis
     role="bold">stringfind</emphasis>). This is a slightly modified version of
     the Find function found in the Str standard library. This version is
@@ -454,18 +454,18 @@
   </sect2>
 
   <sect2 id="ECL_definitions">
-    <title>ECL definitions</title>
+    <!-- DNT-Start --><title>ECL definitions</title><!-- DNT-End -->
 
-    <programlisting>  EXPORT ExampleLib := SERVICE
+    <!-- DNT-Start --><programlisting>  EXPORT ExampleLib := SERVICE
     UNSIGNED4 StringFind(CONST STRING src,
           CONST STRING tofind,
           UNSIGNED4 instance )
        : c, pure,entrypoint='elStringFind';
-  END; </programlisting>
+  END; </programlisting><!-- DNT-End -->
   </sect2>
 
   <sect2 id="DLL_code_module">
-    <title>.SO code module:</title>
+    <!-- DNT-Start --><title>.SO code module:</title><!-- DNT-End -->
 
     <para><programlisting>//******************************************************
   // hqlplugins.hpp : Defines standard values included
@@ -497,7 +497,7 @@
   
   #endif //__HQLPLUGIN_INCL</programlisting></para>
 
-    <programlisting>//******************************************************
+    <!-- DNT-Start --><programlisting>//******************************************************
   // examplelib.hpp : Defines standard values included in
   // the plugin code file.
   //******************************************************
@@ -527,11 +527,11 @@
   }
   
   #endif //EXAMPLELIB_INCL
-  </programlisting>
+  </programlisting><!-- DNT-End -->
 
     <para></para>
 
-    <programlisting>//******************************************************
+    <!-- DNT-Start --><programlisting>//******************************************************
 // examplelib.cpp : Defines the plugin code.
 //******************************************************
 #include &lt;time.h&gt;
@@ -589,6 +589,6 @@ EXAMPLELIB_API unsigned EXAMPLELIB_CALL elStringFind(unsigned srcLen,
     memcpy(tgt,src,srcLen);
     tgtLen = srcLen;
 }
-</programlisting>
+</programlisting><!-- DNT-End -->
   </sect2>
 </sect1>

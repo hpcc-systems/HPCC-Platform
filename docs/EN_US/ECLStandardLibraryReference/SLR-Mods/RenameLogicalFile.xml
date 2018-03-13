@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="RenameLogicalFile">
-  <title>RenameLogicalFile</title>
+  <!-- DNT-Start --><title>RenameLogicalFile</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.File.RenameLogicalFile<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.File.RenameLogicalFile<indexterm>
       <primary>STD.File.RenameLogicalFile</primary>
     </indexterm><indexterm>
       <primary>File.RenameLogicalFile</primary>
     </indexterm><indexterm>
       <primary>RenameLogicalFile</primary>
     </indexterm>(</emphasis> <emphasis> filename, newname </emphasis>
-  <emphasis role="bold">)</emphasis></para>
+  <emphasis role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,14 +21,14 @@
 
       <tbody>
         <row>
-          <entry><emphasis>filename</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>filename</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the current logical name
           of the file.</entry>
         </row>
 
         <row>
-          <entry><emphasis>newname</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>newname</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the new logical name for
           the file.</entry>
@@ -37,11 +37,11 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">RenameLogicalFile </emphasis>function
+  <para>The <emphasis role="bold"><!-- DNT-Start -->RenameLogicalFile<!-- DNT-End --> </emphasis>function
   changes the logical <emphasis>filename</emphasis> to the
   <emphasis>newname</emphasis>.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">A := STD.File.RenameLogicalFile('Fred', 'Freddie');</programlisting>
+  <!-- DNT-Start --><programlisting format="linespecific">A := STD.File.RenameLogicalFile('Fred', 'Freddie');</programlisting><!-- DNT-End -->
 </sect1>

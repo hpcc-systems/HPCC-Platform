@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Efficient_Value_Type_Usage">
-  <title>Efficient Value Type Usage</title>
+  <!-- DNT-Start --><title>Efficient Value Type Usage</title><!-- DNT-End -->
 
   <para>Architecting data structures is an art that can make a big difference
   in ultimate performance and data storage requirements. Despite the extensive
@@ -11,26 +11,26 @@
   processing system, resources are not infinite.</para>
 
   <sect2 id="Numeric_Data_Type_Selection">
-    <title>Numeric Data Type Selection</title>
+    <!-- DNT-Start --><title>Numeric Data Type Selection</title><!-- DNT-End -->
 
     <para>Selecting the right type to use for numeric data depends on whether
     the values are integers or contain fractional portions (floating point
     data).</para>
 
     <sect3 id="EfficientValue_IntegerData">
-      <title><emphasis role="bold">Integer Data</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">Integer Data</emphasis></title><!-- DNT-End -->
 
       <para>When working with integer data, you should always specify the
-      exact size of INTEGERn or UNSIGNEDn that is required to hold the largest
+      exact size of <!-- DNT-Start -->INTEGERn<!-- DNT-End --> or <!-- DNT-Start -->UNSIGNEDn<!-- DNT-End --> that is required to hold the largest
       number possible for that particular field. This will improve execution
       performance and compiler efficiency because the default integer data
-      type is INTEGER8 (also the default for Attributes with integer
+      type is <!-- DNT-Start -->INTEGER<!-- DNT-End -->8 (also the default for Attributes with integer
       expressions).</para>
 
       <para>The following table defines the largest values for each given
       type:</para>
 
-      <programlisting><emphasis role="bold">Type       Signed                      Unsigned</emphasis> 
+      <!-- DNT-Start --><programlisting><emphasis role="bold">Type       Signed                      Unsigned</emphasis> 
 INTEGER1   -128 to 127                 0 to 255
 INTEGER2   -32,768 to 32,767           0 to 65,535
 INTEGER3   -8,388,608 to 8,388,607     0 to 16,777,215
@@ -44,53 +44,53 @@ INTEGER7   36,028,797,018,963,968      0 to 72,057,594,037,927,935
              to 36,028,797,018,963,967
 INTEGER8   -9,223,372,036,854,775,808  0 to 18,446,744,073,709,551,615
              to 9,223,372,036,854,775,807
-</programlisting>
+</programlisting><!-- DNT-End -->
 
       <para>For example, if you have data coming in from the "outside world"
       where a 4-byte integer field contains values that range from zero (0) to
       ninety-nine (99), then it makes sense to move that data into an
-      UNSIGNED1 field. This saves three bytes per record, which, if the
+      <!-- DNT-Start -->UNSIGNED<!-- DNT-End -->1 field. This saves three bytes per record, which, if the
       dataset is fairly large one (say, 10 billion records), can translate
       into considerable savings on disk storage requirements.</para>
 
-      <para>One advantage ECL has over other languages is the richness of its
+      <para>One advantage <!-- DNT-Start -->ECL<!-- DNT-End --> has over other languages is the richness of its
       integer types. By allowing you to select the exact number of bytes (in
       the range of one to eight), you can tailor your storage requirements to
       the exact range of values you need to store, without wasting extra
       bytes.</para>
 
-      <para>Note that the use of the BIG_ENDIAN forms of all the integer types
+      <para>Note that the use of the <!-- DNT-Start -->BIG<!-- DNT-End -->_<!-- DNT-Start -->ENDIAN<!-- DNT-End --> forms of all the integer types
       is limited to defining data as it comes in and goes back out to the
       "outside world"--all integer data used internally must be in
-      LITTLE_ENDIAN format. The BIG_ENDIAN format is specifically designed for
+      <!-- DNT-Start -->LITTLE<!-- DNT-End -->_<!-- DNT-Start -->ENDIAN<!-- DNT-End --> format. The <!-- DNT-Start -->BIG<!-- DNT-End -->_<!-- DNT-Start -->ENDIAN<!-- DNT-End --> format is specifically designed for
       interfacing with external data sources, only.</para>
     </sect3>
 
     <sect3 id="EfficientValue_FloatingPoint">
-      <title><emphasis role="bold">Floating Point Data</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">Floating Point Data</emphasis></title><!-- DNT-End -->
 
       <para>When using floating point types, you should always specify the
-      exact size of the REALn required to hold the largest (and/or smallest)
+      exact size of the <!-- DNT-Start -->REALn<!-- DNT-End --> required to hold the largest (and/or smallest)
       number possible for that particular field. This will improve execution
-      performance and compiler efficiency because REAL defaults to REAL8
-      (eight bytes) unless otherwise specified. REAL values are stored
-      internally in IEEE signed floating point format; REAL4 is the 32-bit
-      format and REAL8 is the 64-bit format.</para>
+      performance and compiler efficiency because <!-- DNT-Start -->REAL<!-- DNT-End --> defaults to <!-- DNT-Start -->REAL<!-- DNT-End -->8
+      (eight bytes) unless otherwise specified. <!-- DNT-Start -->REAL<!-- DNT-End --> values are stored
+      internally in <!-- DNT-Start -->IEEE<!-- DNT-End --> signed floating point format; <!-- DNT-Start -->REAL<!-- DNT-End -->4 is the 32-bit
+      format and <!-- DNT-Start -->REAL<!-- DNT-End -->8 is the 64-bit format.</para>
 
       <para>The following table defines the number of significant digits of
       precision and the largest and smallest values that can be represented as
-      REAL (floating point) values:</para>
+      <!-- DNT-Start -->REAL<!-- DNT-End --> (floating point) values:</para>
 
-      <programlisting><emphasis role="bold">Type</emphasis><emphasis
+      <!-- DNT-Start --><programlisting><emphasis role="bold">Type</emphasis><emphasis
           role="bold">    </emphasis><emphasis role="bold">Significant Digits     Largest Value</emphasis><emphasis
           role="bold"> </emphasis><emphasis role="bold">    Smallest Value
 </emphasis>REAL4      7 (9999999)         3.402823e+038      1.175494e-038
-REAL8   15 (999999999999999)   1.797693e+308      2.225074e-308</programlisting>
+REAL8   15 (999999999999999)   1.797693e+308      2.225074e-308</programlisting><!-- DNT-End -->
 
       <para>If you need more than fifteen significant digits in your
-      calculations, then you should consider using the DECIMAL type. If all
-      components of an expression are DECIMAL types then the result is
-      calculated using BCD math libraries (performing base-10 math instead of
+      calculations, then you should consider using the <!-- DNT-Start -->DECIMAL<!-- DNT-End --> type. If all
+      components of an expression are <!-- DNT-Start -->DECIMAL<!-- DNT-End --> types then the result is
+      calculated using <!-- DNT-Start -->BCD<!-- DNT-End --> math libraries (performing base-10 math instead of
       floating point's base-2 math). This gives you the capability of
       achieving up to thirty-two digits of precision, if needed. By using
       base-10 math, you also eliminate the rounding issues that are common to
@@ -99,69 +99,69 @@ REAL8   15 (999999999999999)   1.797693e+308      2.225074e-308</programlisting>
   </sect2>
 
   <sect2 id="String_Data_Type_Selection">
-    <title>String Data Type Selection</title>
+    <!-- DNT-Start --><title>String Data Type Selection</title><!-- DNT-End -->
 
     <para>Deciding which of the various string data types to use can be a
-    complex process, since there are several choices: STRING, QSTRING,
-    VARSTRING, UNICODE, and VARUNICODE. The obvious choices are between the
-    various STRING types and UNICODE. You need to use UNICODE and/or
-    VARUNICODE only if you are actually dealing with Unicode data. If that is
+    complex process, since there are several choices: <!-- DNT-Start -->STRING<!-- DNT-End -->, <!-- DNT-Start -->QSTRING<!-- DNT-End -->,
+    <!-- DNT-Start -->VARSTRING<!-- DNT-End -->, <!-- DNT-Start -->UNICODE<!-- DNT-End -->, and <!-- DNT-Start -->VARUNICODE<!-- DNT-End -->. The obvious choices are between the
+    various <!-- DNT-Start -->STRING<!-- DNT-End --> types and <!-- DNT-Start -->UNICODE<!-- DNT-End -->. You need to use <!-- DNT-Start -->UNICODE<!-- DNT-End --> and/or
+    <!-- DNT-Start -->VARUNICODE<!-- DNT-End --> only if you are actually dealing with Unicode data. If that is
     the case, then the selection is simple. However, deciding exactly which
     type of string type to use can be more challenging.</para>
 
     <sect3 id="String_Data_String_vs_Varstring">
-      <title><emphasis role="bold">STRING vs. VARSTRING</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">STRING vs. VARSTRING</emphasis></title><!-- DNT-End -->
 
       <para>Data that comes in from or goes out to the "outside world" may
       contain null-terminated strings. If that is the case, then you need to
-      use VARSTRING to define those fields in the ingest/output data file.
+      use <!-- DNT-Start -->VARSTRING<!-- DNT-End --> to define those fields in the ingest/output data file.
       However, the temptation of programmers with a lot of C/C++ programming
-      experience is to use VARSTRING for everything, in the belief that it
+      experience is to use <!-- DNT-Start -->VARSTRING<!-- DNT-End --> for everything, in the belief that it
       will be more efficient--but that belief is mistaken.</para>
 
-      <para>There is no inherent advantage to using VARSTRING instead of
-      STRING within the system. STRING is the base internal string data type,
-      and so is the more efficient type to use. The VARSTRING type is
+      <para>There is no inherent advantage to using <!-- DNT-Start -->VARSTRING<!-- DNT-End --> instead of
+      <!-- DNT-Start -->STRING<!-- DNT-End --> within the system. <!-- DNT-Start -->STRING<!-- DNT-End --> is the base internal string data type,
+      and so is the more efficient type to use. The <!-- DNT-Start -->VARSTRING<!-- DNT-End --> type is
       specifically designed for interfacing with external data sources,
       although it may be used within the system, also.</para>
 
-      <para>This applies equally to making the choice between using UNICODE
-      versus VARUNICODE.</para>
+      <para>This applies equally to making the choice between using <!-- DNT-Start -->UNICODE<!-- DNT-End -->
+      versus <!-- DNT-Start -->VARUNICODE<!-- DNT-End -->.</para>
     </sect3>
 
     <sect3 id="String_Data_String_vs_QString">
-      <title><emphasis role="bold">STRING vs. QSTRING</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">STRING vs. QSTRING</emphasis></title><!-- DNT-End -->
 
       <para>Depending on what use you need to make of your data, you may or
       may not care about retaining the original case of the characters.
-      Therefore, if you DO NOT care about the case, then storing your string
-      data in all uppercase is perfectly appropriate and QSTRING is your
-      logical choice instead of the STRING type. If, however, you DO need to
-      maintain case sensitive data, then STRING is the only choice to
+      Therefore, if you <!-- DNT-Start -->DO<!-- DNT-End --> <!-- DNT-Start -->NOT<!-- DNT-End --> care about the case, then storing your string
+      data in all uppercase is perfectly appropriate and <!-- DNT-Start -->QSTRING<!-- DNT-End --> is your
+      logical choice instead of the <!-- DNT-Start -->STRING<!-- DNT-End --> type. If, however, you <!-- DNT-Start -->DO<!-- DNT-End --> need to
+      maintain case sensitive data, then <!-- DNT-Start -->STRING<!-- DNT-End --> is the only choice to
       make.</para>
 
-      <para>The advantage that QSTRING has over STRING is an "instant" 25%
-      data compression rate, since QSTRING data characters are represented by
+      <para>The advantage that <!-- DNT-Start -->QSTRING<!-- DNT-End --> has over <!-- DNT-Start -->STRING<!-- DNT-End --> is an "instant" 25%
+      data compression rate, since <!-- DNT-Start -->QSTRING<!-- DNT-End --> data characters are represented by
       six bits each instead of eight. It achieves this by storing the data in
       uppercase and only allowing alphanumeric characters and a small set of
       special characters (! " # $ % &amp; ' ( ) * + , - . / ; &lt; = &gt; ? @
       [ \ ] ^ _ ).</para>
 
       <para>For strings smaller than four bytes there is no advantage to using
-      QSTRING over STRING, since fields must still be aligned on byte
-      boundaries. Therefore, the smallest QSTRING that makes any sense to use
-      is a QSTRING4 (four characters stored in three bytes instead of
+      <!-- DNT-Start -->QSTRING<!-- DNT-End --> over <!-- DNT-Start -->STRING<!-- DNT-End -->, since fields must still be aligned on byte
+      boundaries. Therefore, the smallest <!-- DNT-Start -->QSTRING<!-- DNT-End --> that makes any sense to use
+      is a <!-- DNT-Start -->QSTRING<!-- DNT-End -->4 (four characters stored in three bytes instead of
       four).</para>
     </sect3>
 
     <sect3 id="StringData_FixedLength_vs_VariableLength_">
-      <title><emphasis role="bold">Fixed Length vs. Variable Length
-      Strings</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">Fixed Length vs. Variable Length
+      Strings</emphasis></title><!-- DNT-End -->
 
       <para>A string field or parameter may be defined at a specific length,
       by appending the number of characters to the type name (such as,
-      STRING20 for a 20-character string). They may also be defined as
-      variable-length by simply not defining the length (such as, STRING for a
+      <!-- DNT-Start -->STRING<!-- DNT-End -->20 for a 20-character string). They may also be defined as
+      variable-length by simply not defining the length (such as, <!-- DNT-Start -->STRING<!-- DNT-End --> for a
       variable-length string).</para>
 
       <para>String fields or parameters that are known to always be a specific
@@ -169,56 +169,56 @@ REAL8   15 (999999999999999)   1.797693e+308      2.225074e-308</programlisting>
       efficiency and performance by allowing the compiler to optimize for that
       specific size string and not incur the overhead of dynamically
       calculating the variable length at runtime. The variable-length value
-      type (STRING, QSTRING, or UNICODE) should only be used when the string
+      type (<!-- DNT-Start -->STRING<!-- DNT-End -->, <!-- DNT-Start -->QSTRING<!-- DNT-End -->, or <!-- DNT-Start -->UNICODE<!-- DNT-End -->) should only be used when the string
       length is variable or unknown.</para>
 
-      <para>You can use the LENGTH function to determine the length of a
+      <para>You can use the <!-- DNT-Start -->LENGTH<!-- DNT-End --> function to determine the length of a
       variable length string passed as a parameter to a function. A string
       passed to a function in which the parameter has been declared as a
-      STRING20 will always have a length of 20, regardless of its content. For
-      example, a STRING20 which contains 'ABC' will have a length of 20, not 3
-      (unless, of course, you include the TRIM function in the expression). A
-      string that has been declared as a variable-length STRING and contains
-      'ABC' will have a length of 3.</para>
+      <!-- DNT-Start -->STRING<!-- DNT-End -->20 will always have a length of 20, regardless of its content. For
+      example, a <!-- DNT-Start -->STRING<!-- DNT-End -->20 which contains '<!-- DNT-Start -->ABC<!-- DNT-End -->' will have a length of 20, not 3
+      (unless, of course, you include the <!-- DNT-Start -->TRIM<!-- DNT-End --> function in the expression). A
+      string that has been declared as a variable-length <!-- DNT-Start -->STRING<!-- DNT-End --> and contains
+      '<!-- DNT-Start -->ABC<!-- DNT-End -->' will have a length of 3.</para>
 
-      <programlisting>STRING20 CityName := 'Orlando';  // LENGTH(CityName) is 20
-STRING   CityName := 'Orlando';  // LENGTH(CityName) is 7</programlisting>
+      <!-- DNT-Start --><programlisting>STRING20 CityName := 'Orlando';  // LENGTH(CityName) is 20
+STRING   CityName := 'Orlando';  // LENGTH(CityName) is 7</programlisting><!-- DNT-End -->
     </sect3>
   </sect2>
 
   <sect2 id="User-Defined_Data_Types">
-    <title>User-Defined Data Types</title>
+    <!-- DNT-Start --><title>User-Defined Data Types</title><!-- DNT-End -->
 
-    <para>There are several ways you may define your own data types in ECL.
-    The RECORD and TYPE structures are the most common.</para>
+    <para>There are several ways you may define your own data types in <!-- DNT-Start -->ECL<!-- DNT-End -->.
+    The <!-- DNT-Start -->RECORD<!-- DNT-End --> and <!-- DNT-Start -->TYPE<!-- DNT-End --> structures are the most common.</para>
 
     <sect3 id="EfficientData_RecordStructure">
-      <title><emphasis role="bold">RECORD Structure</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">RECORD Structure</emphasis></title><!-- DNT-End -->
 
-      <para>The RECORD structure can be likened to a
+      <para>The <!-- DNT-Start -->RECORD<!-- DNT-End --> structure can be likened to a
       <emphasis>struct</emphasis> in the C/C++ languages. It defines a related
       set of fields that are the fields of a recordset, whether that recordset
-      is a dataset on disk, or a temporary TABLE, or the result of any
-      operation using a TRANSFORM function.</para>
+      is a dataset on disk, or a temporary <!-- DNT-Start -->TABLE<!-- DNT-End -->, or the result of any
+      operation using a <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function.</para>
 
-      <para>The RECORD structure is a user-defined data type because, once
+      <para>The <!-- DNT-Start -->RECORD<!-- DNT-End --> structure is a user-defined data type because, once
       defined as an attribute you may use that attribute as:</para>
 
       <blockquote>
-        <para>* the data type for parameters passed to TRANSFORM
+        <para>* the data type for parameters passed to <!-- DNT-Start -->TRANSFORM<!-- DNT-End -->
         functions</para>
 
-        <para>* the data type for a "field" in another RECORD structure
+        <para>* the data type for a "field" in another <!-- DNT-Start -->RECORD<!-- DNT-End --> structure
         (nested structures)</para>
 
-        <para>* the structure of a nested child DATASET field in another
-        RECORD structure</para>
+        <para>* the structure of a nested child <!-- DNT-Start -->DATASET<!-- DNT-End --> field in another
+        <!-- DNT-Start -->RECORD<!-- DNT-End --> structure</para>
       </blockquote>
 
       <para>Here's an example that shows all three uses (contained in the
-      RecStruct.ECL file) :</para>
+      RecStruct.<!-- DNT-Start -->ECL<!-- DNT-End --> file) :</para>
 
-      <programlisting>IMPORT ProgrammersGuide.DeclareData AS ProgGuide;
+      <!-- DNT-Start --><programlisting>IMPORT ProgrammersGuide.DeclareData AS ProgGuide;
 
 Layout_Person := RECORD
   UNSIGNED1 PersonID;
@@ -262,52 +262,52 @@ NestedPeopleAccts := DENORMALIZE(P_recs,
                                  CombineRecs(LEFT,RIGHT));
 
 OUTPUT(NestedPeopleAccts);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
       <para>The Layout_Accounts_Link contains Layout_Accounts. There is no
       field name given to it, which means that it simply inherits all the
       fields in that structure, as they are defined, and those inherited
       fields are referenced as if they were explicitly declared in the
-      Layout_Accounts_Link RECORD structure, like this:</para>
+      Layout_Accounts_Link <!-- DNT-Start -->RECORD<!-- DNT-End --> structure, like this:</para>
 
-      <programlisting>x := Accounts.Balance;</programlisting>
+      <!-- DNT-Start --><programlisting>x := Accounts.Balance;</programlisting><!-- DNT-End -->
 
       <para>However, if a name had been given to it, then it would define a
       nested structure and the fields in that nested structure would have to
       be referenced using the nested structure's name as part of the
       qualifier, like this:</para>
 
-      <programlisting>//Assuming the definition was this:
+      <!-- DNT-Start --><programlisting>//Assuming the definition was this:
 Layout_Accounts_Link := RECORD
   UNSIGNED1          PersonID;
   Layout_Accounts    AcctStruct;      //nested RECORD with name
 END;
   //then the field reference would have to be this:
 x := Accounts.AcctStruct.Balance;
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-      <para>The Layout_Accounts RECORD structure attribute defines the
-      structure of the child DATASET field in Layout_Combined. The
-      Layout_Combined RECORD structure is then used as the LEFT input and
-      output for the CombineRecs TRANSFORM function.</para>
+      <para>The Layout_Accounts <!-- DNT-Start -->RECORD<!-- DNT-End --> structure attribute defines the
+      structure of the child <!-- DNT-Start -->DATASET<!-- DNT-End --> field in Layout_Combined. The
+      Layout_Combined <!-- DNT-Start -->RECORD<!-- DNT-End --> structure is then used as the <!-- DNT-Start -->LEFT<!-- DNT-End --> input and
+      output for the CombineRecs <!-- DNT-Start -->TRANSFORM<!-- DNT-End --> function.</para>
     </sect3>
 
     <sect3 id="EfficientData_TYPE_Structure">
-      <title><emphasis role="bold">TYPE Structure</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">TYPE Structure</emphasis></title><!-- DNT-End -->
 
-      <para>The TYPE structure is an obvious user-defined type because you are
-      defining a data type that is not already supported in the ECL language.
+      <para>The <!-- DNT-Start -->TYPE<!-- DNT-End --> structure is an obvious user-defined type because you are
+      defining a data type that is not already supported in the <!-- DNT-Start -->ECL<!-- DNT-End --> language.
       Its purpose is to allow you to import data in whatever format you
       receive it, work with it in one of the internal formats, then re-write
       the data in its original format back to disk.</para>
 
-      <para>It works by defining specific callback functions inside the TYPE
-      structure (LOAD, STORE, etc.) that the system will use to read and write
-      the data from and to disk. The LOAD callback function reads the data
+      <para>It works by defining specific callback functions inside the <!-- DNT-Start -->TYPE<!-- DNT-End -->
+      structure (<!-- DNT-Start -->LOAD<!-- DNT-End -->, <!-- DNT-Start -->STORE<!-- DNT-End -->, etc.) that the system will use to read and write
+      the data from and to disk. The <!-- DNT-Start -->LOAD<!-- DNT-End --> callback function reads the data
       from disk and defines the internal type the data will be as you work
-      with it as the return data type from the LOAD function you write.</para>
+      with it as the return data type from the <!-- DNT-Start -->LOAD<!-- DNT-End --> function you write.</para>
 
-      <programlisting>GetXLen(DATA x,UNSIGNED len) := TRANSFER(((DATA4)(x[1..len])),UNSIGNED4);
+      <!-- DNT-Start --><programlisting>GetXLen(DATA x,UNSIGNED len) := TRANSFER(((DATA4)(x[1..len])),UNSIGNED4);
 xstring(UNSIGNED len) := TYPE
   EXPORT INTEGER PHYSICALLENGTH(DATA x) := GetXLen(x,len) + len;
   EXPORT STRING LOAD(DATA x) := (STRING)x[(len+1)..GetXLen(x,len) + len];
@@ -336,18 +336,18 @@ END;
 
 out := PROJECT(ds,MoveData(LEFT));
 OUTPUT(out);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
       <para>This example defines a "Pascal string" data type with the leading
       length stored as one to four bytes prepended to the data.</para>
     </sect3>
 
     <sect3 id="EfficientData_TypeDefAttributes">
-      <title><emphasis role="bold">TypeDef Attributes</emphasis></title>
+      <!-- DNT-Start --><title><emphasis role="bold">TypeDef Attributes</emphasis></title><!-- DNT-End -->
 
       <para>The TypeDef attribute is another obvious user-defined type because
       you are defining a specific instance of a data type that is already
-      supported in the ECL language as a new name, either for convenience of
+      supported in the <!-- DNT-Start -->ECL<!-- DNT-End --> language as a new name, either for convenience of
       maintenance or code readability purposes. The above example also
       demonstrates the use of TypeDef attributes.</para>
     </sect3>

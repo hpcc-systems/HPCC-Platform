@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="GetXMLParseTree">
-  <title>GetXMLParseTree</title>
+  <!-- DNT-Start --><title>GetXMLParseTree</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.System.Debug.GetXMLParseTree<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.System.Debug.GetXMLParseTree<indexterm>
       <primary>STD.System.Debug.GetXMLParseTree</primary>
     </indexterm> <indexterm>
       <primary>System.Debug.GetXMLParseTree</primary>
@@ -13,7 +13,7 @@
     </indexterm> <indexterm>
       <primary>GetXMLParseTree</primary>
     </indexterm>(</emphasis> <emphasis> </emphasis> <emphasis
-  role="bold">)</emphasis></para>
+  role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -23,23 +23,23 @@
 
       <tbody>
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>GetXMLParseTree returns a STRING value.</entry>
+          <entry><!-- DNT-Start -->GetXMLParseTree<!-- DNT-End --> returns a <!-- DNT-Start -->STRING<!-- DNT-End --> value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">GetXMLParseTree </emphasis>function returns
-  a textual representation of the match that occurred, using XML tags to
-  indicate nesting. This function is only used within the RECORD or TRANSFORM
-  structure that defines the result of a PARSE operation. This function is
-  useful for debugging PARSE operations.</para>
+  <para>The <emphasis role="bold"><!-- DNT-Start -->GetXMLParseTree<!-- DNT-End --> </emphasis>function returns
+  a textual representation of the match that occurred, using <!-- DNT-Start -->XML<!-- DNT-End --> tags to
+  indicate nesting. This function is only used within the <!-- DNT-Start -->RECORD<!-- DNT-End --> or <!-- DNT-Start -->TRANSFORM<!-- DNT-End -->
+  structure that defines the result of a <!-- DNT-Start -->PARSE<!-- DNT-End --> operation. This function is
+  useful for debugging <!-- DNT-Start -->PARSE<!-- DNT-End --> operations.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">IMPORT STD;
+  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 
 r := {string150 line};
 d := dataset([
@@ -82,5 +82,5 @@ looks like this:
  &lt;name&gt;Hamor&lt;/name&gt;
 &lt;/namet&gt;
 */
-</programlisting>
+</programlisting><!-- DNT-End -->
 </sect1>

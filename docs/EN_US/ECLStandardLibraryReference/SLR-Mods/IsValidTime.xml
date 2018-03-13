@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="IsValidTime">
-  <title>IsValidTime</title>
+  <!-- DNT-Start --><title>IsValidTime</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Date.IsValidTime<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.Date.IsValidTime<indexterm>
       <primary>STD.Date.IsValidTime</primary>
     </indexterm><indexterm>
       <primary>Date.IsValidTime</primary>
     </indexterm><indexterm>
       <primary>IsValidTime</primary>
     </indexterm>(</emphasis> <emphasis>time</emphasis> <emphasis
-  role="bold">)</emphasis></para>
+  role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,32 +21,32 @@
 
       <tbody>
         <row>
-          <entry><emphasis>time</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>time</emphasis><!-- DNT-End --></entry>
 
           <entry>A time value in the Time_t format.</entry>
         </row>
 
         <row>
-          <entry>Return:</entry>
+          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-          <entry>IsValidTime returns a BOOLEAN value.</entry>
+          <entry><!-- DNT-Start -->IsValidTime<!-- DNT-End --> returns a <!-- DNT-Start -->BOOLEAN<!-- DNT-End --> value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">IsValidDate</emphasis> function returns TRUE
+  <para>The <emphasis role="bold">IsValidDate</emphasis> function returns <!-- DNT-Start -->TRUE<!-- DNT-End -->
   if the time is valid, by validating each of the individual components
   (hours, minutes, and seconds)..</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">IMPORT STD;
+  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 d1 := 19631122;
 d2 := 19990230;  
 firstTest := STD.Date.IsValidDate(d1);  //d1 is valid
 secondTest := STD.Date.IsValidDate(d2); //d2 is not valid
-</programlisting>
+</programlisting><!-- DNT-End -->
 
   <para></para>
 </sect1>

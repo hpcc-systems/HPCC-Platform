@@ -2,26 +2,26 @@
 <!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Automated_ECL">
-  <title>Automated ECL</title>
+  <!-- DNT-Start --><title>Automated ECL</title><!-- DNT-End -->
 
-  <para>Once you have established standard ECL processes that you know you
+  <para>Once you have established standard <!-- DNT-Start -->ECL<!-- DNT-End --> processes that you know you
   need to perform regularly, you can begin to make those processes automated.
   Doing this eliminates the need to remember the order of processes, or their
   periodicity.</para>
 
-  <para>One form of automation typically involves launching MACROs with the
-  ECLPlus application. By using MACROs, you can have standard processes that
+  <para>One form of automation typically involves launching <!-- DNT-Start -->MACROs<!-- DNT-End --> with the
+  ECLPlus application. By using <!-- DNT-Start -->MACROs<!-- DNT-End -->, you can have standard processes that
   operate on different input each time, but produce the same result. Since
   ECLPlus is a command-line application, its use can be automatically launched
-  in many different ways -- DOS Batch files, from within another application,
+  in many different ways -- <!-- DNT-Start -->DOS<!-- DNT-End --> Batch files, from within another application,
   or ...</para>
 
-  <para>Here's an example. This MACRO (contained in DeclareData.ECL) takes two
+  <para>Here's an example. This <!-- DNT-Start -->MACRO<!-- DNT-End --> (contained in DeclareData.<!-- DNT-Start -->ECL<!-- DNT-End -->) takes two
   parameters: the name of a file, and the name of a field in that file to
   produce a count of the unique values in that field and a crosstab report of
   the number of instances of each value.</para>
 
-  <programlisting>EXPORT MAC_CountFieldValues(infile,infield) := MACRO
+  <!-- DNT-Start --><programlisting>EXPORT MAC_CountFieldValues(infile,infield) := MACRO
   // Create the count of unique values in the infield
   COUNT(DEDUP(TABLE(infile,{infile.infield}),infield,ALL));
 
@@ -35,40 +35,40 @@
   %y_macro% := TABLE(infile,%r_macro%,infield,FEW);
   OUTPUT(CHOOSEN(%y_macro%,50000));
 ENDMACRO;
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>By using #UNIQUENAME to generate all the attribute names, this MACRO
-  can be used multiple times in the same workunit. You can test the MACRO
-  through the ECL IDE program by executing a query like this in the ECL
+  <para>By using #<!-- DNT-Start -->UNIQUENAME<!-- DNT-End --> to generate all the attribute names, this <!-- DNT-Start -->MACRO<!-- DNT-End -->
+  can be used multiple times in the same workunit. You can test the <!-- DNT-Start -->MACRO<!-- DNT-End -->
+  through the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> program by executing a query like this in the <!-- DNT-Start -->ECL<!-- DNT-End -->
   Builder window:</para>
 
-  <programlisting>IMPORT ProgrammersGuide AS PG;
+  <!-- DNT-Start --><programlisting>IMPORT ProgrammersGuide AS PG;
 PG.DeclareData.MAC_CountFieldValues(PG.DeclareData.Person.file,gender);
-</programlisting>
+</programlisting><!-- DNT-End -->
 
-  <para>Once you've throughly tested the MACRO and are certain it works
+  <para>Once you've throughly tested the <!-- DNT-Start -->MACRO<!-- DNT-End --> and are certain it works
   correctly, you can automate the process by using ECLplus.</para>
 
-  <para>Install the ECLplus program in its own directory on the same PC that
-  runs the ECL IDE, and create an ECLPLUS.INI file in the same folder with the
+  <para>Install the ECLplus program in its own directory on the same <!-- DNT-Start -->PC<!-- DNT-End --> that
+  runs the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->, and create an <!-- DNT-Start -->ECLPLUS<!-- DNT-End -->.<!-- DNT-Start -->INI<!-- DNT-End --> file in the same folder with the
   correct settings to access your cluster (see the <emphasis>Command Line
-  ECL</emphasis> section of the <emphasis>Client Tools </emphasis>PDF). Then
+  <!-- DNT-Start -->ECL<!-- DNT-End --></emphasis> section of the <emphasis>Client Tools </emphasis><!-- DNT-Start -->PDF<!-- DNT-End -->). Then
   you can open a Command Prompt window and run the same query from the command
   line like this:</para>
 
-  <programlisting>C:\eclplus&gt;eclplus ecl=$ProgGuide.MAC_CountFieldValues(ProgrammersGuide.DeclareData.Person.File,gender)</programlisting>
+  <!-- DNT-Start --><programlisting>C:\eclplus&gt;eclplus ecl=$ProgGuide.MAC_CountFieldValues(ProgrammersGuide.DeclareData.Person.File,gender)</programlisting><!-- DNT-End -->
 
   <para>Notice that you're using the <emphasis>ecl=</emphasis> command line
   option and not the <emphasis>$Module.Attribute</emphasis> option. This is
-  the "proper" way to make a MACRO expand and execute through ECLplus. The
-  <emphasis>$Module.Attribute</emphasis> option is only used to execute ECL
+  the "proper" way to make a <!-- DNT-Start -->MACRO<!-- DNT-End --> expand and execute through ECLplus. The
+  <emphasis>$Module.Attribute</emphasis> option is only used to execute <!-- DNT-Start -->ECL<!-- DNT-End -->
   Builder window queries that have been saved as attributes in the repository
-  (Builder Window Runnable--BWR code) and won't work with MACROs.</para>
+  (Builder Window Runnable--<!-- DNT-Start -->BWR<!-- DNT-End --> code) and won't work with <!-- DNT-Start -->MACROs<!-- DNT-End -->.</para>
 
-  <para>When the MACRO expands and executes, you get a result that looks like
+  <para>When the <!-- DNT-Start -->MACRO<!-- DNT-End --> expands and executes, you get a result that looks like
   this in your Command Prompt window:</para>
 
-  <programlisting>Workunit W20070118-145647 submitted
+  <!-- DNT-Start --><programlisting>Workunit W20070118-145647 submitted
 [Result 1]
 Result_1
 2
@@ -76,47 +76,47 @@ Result_1
 gender     cnt
  F        500000
  M        500000
-</programlisting>
+</programlisting><!-- DNT-End -->
 
   <para>You can re-direct this output to a file by using the
   <emphasis>output="filename"</emphasis> option on the command line, like
   this:</para>
 
-  <programlisting>C:\eclplus&gt;eclplus ecl=$ProgGuide.MAC_CountFieldValues( ProgrammersGuide.DeclareData.Person.File, gender) 
-              output="MyFile.txt"</programlisting>
+  <!-- DNT-Start --><programlisting>C:\eclplus&gt;eclplus ecl=$ProgGuide.MAC_CountFieldValues( ProgrammersGuide.DeclareData.Person.File, gender) 
+              output="MyFile.txt"</programlisting><!-- DNT-End -->
 
-  <para>This will send the output to the "MyFile.txt" file on your local PC.
-  For larger output files, you'll want to have the OUTPUT action in your ECL
+  <para>This will send the output to the "MyFile.txt" file on your local <!-- DNT-Start -->PC<!-- DNT-End -->.
+  For larger output files, you'll want to have the <!-- DNT-Start -->OUTPUT<!-- DNT-End --> action in your <!-- DNT-Start -->ECL<!-- DNT-End -->
   code write the result set to disk in the supercomputer then de-spray it to
   your landing zone (you can use the Standard Library's File.Despray function
-  to do this from within your ECL code).</para>
+  to do this from within your <!-- DNT-Start -->ECL<!-- DNT-End --> code).</para>
 
   <sect2 id="Using_Text_Files">
-    <title>Using Text Files</title>
+    <!-- DNT-Start --><title>Using Text Files</title><!-- DNT-End -->
 
     <para>Another automation option is to generate a text file containing the
-    ECL code to execute, then execute that code from the command line.</para>
+    <!-- DNT-Start -->ECL<!-- DNT-End --> code to execute, then execute that code from the command line.</para>
 
     <para>For example, you could create a file containing this:</para>
 
-    <programlisting>IMPORT ProgrammersGuide AS PG;
+    <!-- DNT-Start --><programlisting>IMPORT ProgrammersGuide AS PG;
 PG.DeclareData.MAC_CountFieldValues(PG.DeclareData.Person.file,gender);
-PG.DeclareData.MAC_CountFieldValues(PG.DeclareData.person.File,state)</programlisting>
+PG.DeclareData.MAC_CountFieldValues(PG.DeclareData.person.File,state)</programlisting><!-- DNT-End -->
 
-    <para>These two MACRO calls will generate the field ordinality count and
+    <para>These two <!-- DNT-Start -->MACRO<!-- DNT-End --> calls will generate the field ordinality count and
     crosstab report for two fields in the same file. You could then execute
     them like this (where "test.ECL" is the name of the file you
     created):</para>
 
-    <programlisting>C:\eclplus&gt;eclplus @test.ecl</programlisting>
+    <!-- DNT-Start --><programlisting>C:\eclplus&gt;eclplus @test.ecl</programlisting><!-- DNT-End -->
 
     <para>This will generate similar results to that above.</para>
 
     <para>The advantage this method has is the ability to include any
-    necessary "setup" ECL code in the file before the MACRO calls, like this
-    (contained in RunText.ECL):</para>
+    necessary "setup" <!-- DNT-Start -->ECL<!-- DNT-End --> code in the file before the <!-- DNT-Start -->MACRO<!-- DNT-End --> calls, like this
+    (contained in RunText.<!-- DNT-Start -->ECL<!-- DNT-End -->):</para>
 
-    <programlisting>IMPORT ProgrammersGuide AS PG;
+    <!-- DNT-Start --><programlisting>IMPORT ProgrammersGuide AS PG;
 MyRec := RECORD
   STRING1 value1;
   STRING1 value2;
@@ -134,11 +134,11 @@ D := DATASET([{'A','B'},
 
 PG.DeclareData.MAC_CountFieldValues(D,Value1)
 PG.DeclareData.MAC_CountFieldValues(D,Value2)
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para>So that you get a result like this:</para>
 
-    <programlisting>C:\eclplus&gt;eclplus @test.ecl
+    <!-- DNT-Start --><programlisting>C:\eclplus&gt;eclplus @test.ecl
 Workunit W20070118-145647 submitted
 [Result 1]
 result_1
@@ -157,14 +157,14 @@ D        3
 C        3
 A        1
 B        3
-</programlisting>
+</programlisting><!-- DNT-End -->
 
     <para>How you create this text file is up to you. To fully automate the
     process you may want to write a daemon application that watches a
-    directory (such as your HPCC environment's landing zone) to detect new
-    files dropped in (by whatever means) and generate the appropriate ECL code
+    directory (such as your <!-- DNT-Start -->HPCC<!-- DNT-End --> environment's landing zone) to detect new
+    files dropped in (by whatever means) and generate the appropriate <!-- DNT-Start -->ECL<!-- DNT-End --> code
     file to process that new file in some standard fashion (typically using
-    MACRO calls), then execute it from ECLplus command line as described
+    <!-- DNT-Start -->MACRO<!-- DNT-End --> calls), then execute it from ECLplus command line as described
     above. The realm of possibilities is endless.</para>
   </sect2>
 </sect1>

@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SwapSuperFile">
-  <title>SwapSuperFile</title>
+  <!-- DNT-Start --><title>SwapSuperFile</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.File.SwapSuperFile<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.File.SwapSuperFile<indexterm>
       <primary>STD.File.SwapSuperFile</primary>
     </indexterm><indexterm>
       <primary>File.SwapSuperFile</primary>
     </indexterm><indexterm>
       <primary>SwapSuperFile</primary>
     </indexterm>(</emphasis> <emphasis> superfile1, superfile2 </emphasis>
-  <emphasis role="bold">)</emphasis></para>
+  <emphasis role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,21 +21,21 @@
 
       <tbody>
         <row>
-          <entry><emphasis>superfile1</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>superfile1</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the logical name of the
           superfile.</entry>
         </row>
 
         <row>
-          <entry><emphasis>superfile2</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>superfile2</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the logical name of the
           superfile.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
           <entry>Null.</entry>
         </row>
@@ -43,7 +43,7 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">SwapSuperFile </emphasis>function moves all
+  <para>The <emphasis role="bold"><!-- DNT-Start -->SwapSuperFile<!-- DNT-End --> </emphasis>function moves all
   sub-files from <emphasis>superfile1 </emphasis>to <emphasis>superfile2
   </emphasis>and vice versa.</para>
 
@@ -51,9 +51,9 @@
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">SEQUENTIAL(
+  <!-- DNT-Start --><programlisting format="linespecific">SEQUENTIAL(
  STD.File.StartSuperFileTransaction(),
  STD.File.SwapSuperFile('MySuperFile','YourSuperFile'),
  STD.File.FinishSuperFileTransaction()
-);</programlisting>
+);</programlisting><!-- DNT-End -->
 </sect1>

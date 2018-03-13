@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Audit">
-  <title>Audit</title>
+  <!-- DNT-Start --><title>Audit</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Audit.Audit<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.Audit.Audit<indexterm>
       <primary>STD.Audit.Audit</primary>
     </indexterm><indexterm>
       <primary>Audit.Audit</primary>
     </indexterm><indexterm>
       <primary>Audit</primary>
     </indexterm>(</emphasis> <emphasis> type, message </emphasis> <emphasis
-  role="bold">)</emphasis></para>
+  role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,34 +21,34 @@
 
       <tbody>
         <row>
-          <entry><emphasis>type</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>type</emphasis><!-- DNT-End --></entry>
 
           <entry>A string constant containing the type of audit entry.
-          Currently, only INFO is provided.</entry>
+          Currently, only <!-- DNT-Start -->INFO<!-- DNT-End --> is provided.</entry>
         </row>
 
         <row>
-          <entry><emphasis>message</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>message</emphasis><!-- DNT-End --></entry>
 
           <entry>A string containing the audit entry text.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>Audit returns a BOOLEAN value indicating whether it was
+          <entry><!-- DNT-Start -->Audit<!-- DNT-End --> returns a <!-- DNT-Start -->BOOLEAN<!-- DNT-End --> value indicating whether it was
           successful or not.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">Audit </emphasis>function writes the
+  <para>The <emphasis role="bold"><!-- DNT-Start -->Audit<!-- DNT-End --> </emphasis>function writes the
   <emphasis>message</emphasis> into the Windows event log or Linux system log
-  on the ECL Agent computer. The entries can be retrieved from the logs using
+  on the <!-- DNT-Start -->ECL<!-- DNT-End --> Agent computer. The entries can be retrieved from the logs using
   standard operating system tools.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">STD.Audit.Audit('INFO','Audit Message');</programlisting>
+  <!-- DNT-Start --><programlisting format="linespecific">STD.Audit.Audit('INFO','Audit Message');</programlisting><!-- DNT-End -->
 </sect1>

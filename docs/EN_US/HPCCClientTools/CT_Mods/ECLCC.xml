@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book>
   <bookinfo>
-    <title>The ECL Compiler</title>
+    <!-- DNT-Start --><title>The ECL Compiler</title><!-- DNT-End -->
 
     <mediaobject>
       <imageobject>
@@ -52,20 +52,20 @@
   </bookinfo>
 
   <chapter id="ECL_Compiler">
-    <title>ECL Compiler</title>
+    <!-- DNT-Start --><title>ECL Compiler</title><!-- DNT-End -->
 
-    <para>The ECL Compiler is the compiler component of the High Performance
-    Computing Cluster (HPCC). It is embedded and included when you install the
-    HPCC. The compiler is the component that actually compiles the ECL
+    <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> Compiler is the compiler component of the High Performance
+    Computing Cluster (<!-- DNT-Start -->HPCC<!-- DNT-End -->). It is embedded and included when you install the
+    <!-- DNT-Start -->HPCC<!-- DNT-End -->. The compiler is the component that actually compiles the <!-- DNT-Start -->ECL<!-- DNT-End -->
     code.</para>
 
     <para>The syntax and many of the compiler options implemented are similar
     to the gcc compiler. You can execute either the Linux or Windows version
-    of eclcc, which, when run, load several of our shared objects (SO files,
-    on Linux) or DLLs (on Windows). The ECL Compiler can process hThor, Thor,
-    or Roxie targeted ECL code.</para>
+    of eclcc, which, when run, load several of our shared objects (<!-- DNT-Start -->SO<!-- DNT-End --> files,
+    on Linux) or DLLs (on Windows). The <!-- DNT-Start -->ECL<!-- DNT-End --> Compiler can process hThor, Thor,
+    or Roxie targeted <!-- DNT-Start -->ECL<!-- DNT-End --> code.</para>
 
-    <para><!--*** Now ECLCC is actually embedded in the HPCC - delivered with the RPMs--><informaltable
+    <para><!-- DNT-Start --><!--*** Now ECLCC is actually embedded in the HPCC - delivered with the RPMs--><!-- DNT-End --><informaltable
         colsep="1" frame="all" rowsep="1">
         <?dbfo keep-together="always"?>
 
@@ -79,15 +79,15 @@
               <entry><inlinegraphic
               fileref="../../images/OSSgr3.png" /></entry>
 
-              <entry>To compile and run ECL code locally on your Windows
+              <entry>To compile and run <!-- DNT-Start -->ECL<!-- DNT-End --> code locally on your Windows
               machine, you will need the Microsoft Visual Studio 2008 C++
               compiler (either Express or Professional edition). This is
               available from <ulink
-              url="http://www.microsoft.com/express/Downloads/#2008-Visual-CPP">http://www.microsoft.com/express/Downloads/#2008-Visual-CPP</ulink></entry>
+              url="http://www.microsoft.com/express/Downloads/#2008-Visual-CPP">http://www.microsoft.com/express/Downloads/#2008-Visual-<!-- DNT-Start -->CPP<!-- DNT-End --></ulink></entry>
             </row>
           </tbody>
         </tgroup>
-      </informaltable><!--  ***this whole thing should be comment!
+      </informaltable><!-- DNT-Start --><!--  ***this whole thing should be comment!
       /sect2 id="configuration-manager"/
         <title>Dependencies and packages</title>
 
@@ -114,29 +114,29 @@
               </listitem>
             </itemizedlist>
       //sect2/
-         ***END OF COMMENT***   --></para>
+         ***END OF COMMENT***   --><!-- DNT-End --></para>
 
     <sect1 id="Stand-Alone-ECL-Compiler">
-      <title>Using the ECL Compiler as a Stand Alone option</title>
+      <!-- DNT-Start --><title>Using the ECL Compiler as a Stand Alone option</title><!-- DNT-End -->
 
-      <para>The ECL Compiler is normally used through the ECL IDE or Eclipse
-      using the ECL plugin for Eclipse, however, you can use the ECL Compiler
+      <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> Compiler is normally used through the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End --> or Eclipse
+      using the <!-- DNT-Start -->ECL<!-- DNT-End --> plugin for Eclipse, however, you can use the <!-- DNT-Start -->ECL<!-- DNT-End --> Compiler
       in a stand alone manner, to create stand alone programs, or workunits.
-      The ECL Compiler can read ECL code from standard input, or can read it
+      The <!-- DNT-Start -->ECL<!-- DNT-End --> Compiler can read <!-- DNT-Start -->ECL<!-- DNT-End --> code from standard input, or can read it
       from a specified input file. It compiles the code into an executable
-      program (Such as an 'EXE' file in Windows). The resulting program, when
+      program (Such as an '<!-- DNT-Start -->EXE<!-- DNT-End -->' file in Windows). The resulting program, when
       executed, runs the job, writing any output to standard output.
       Alternatively, you could redirect the output to a file or pipe into
-      another process. With the ECL Compiler, you do not need a supercomputer
-      cluster to develop and run ECL code.</para>
+      another process. With the <!-- DNT-Start -->ECL<!-- DNT-End --> Compiler, you do not need a supercomputer
+      cluster to develop and run <!-- DNT-Start -->ECL<!-- DNT-End --> code.</para>
 
-      <para>Running the ECL Compiler without any options (or specifying --help)
+      <para>Running the <!-- DNT-Start -->ECL<!-- DNT-End --> Compiler without any options (or specifying --help)
       will display the syntax.</para>
 
       <para><programlisting>C:\eclcc&gt;eclcc -help
 </programlisting></para>
 
-      <para>Usage: eclcc &lt;options&gt; ECL_file.ecl</para>
+      <para>Usage: eclcc &lt;options&gt; <!-- DNT-Start -->ECL<!-- DNT-End -->_file.ecl</para>
 
       <para>General options:</para>
 
@@ -150,66 +150,66 @@
 
             <tbody>
               <row>
-                <entry>-I<emphasis> &lt;path&gt;</emphasis></entry>
+                <entry><!-- DNT-Start -->-I<emphasis> &lt;path&gt;</emphasis><!-- DNT-End --></entry>
 
                 <entry>Add path to locations to search for ecl imports</entry>
               </row>
 
               <row>
-                <entry>-L &lt;<emphasis>path&gt;</emphasis></entry>
+                <entry><!-- DNT-Start -->-L &lt;<emphasis>path&gt;</emphasis><!-- DNT-End --></entry>
 
                 <entry>Add path to locations to search for system
                 libraries</entry>
               </row>
 
               <row>
-                <entry>-o<emphasis> &lt;file&gt;</emphasis></entry>
+                <entry><!-- DNT-Start -->-o<emphasis> &lt;file&gt;</emphasis><!-- DNT-End --></entry>
 
                 <entry>Specify name of output file (default a.out if linking
                 to executable, or stdout)</entry>
               </row>
 
               <row>
-                <entry>-manifest</entry>
+                <entry><!-- DNT-Start -->-manifest<!-- DNT-End --></entry>
 
                 <entry>Specify path to manifest file listing resources to
                 add</entry>
               </row>
 
               <row>
-                <entry>-foption[=value]</entry>
+                <entry><!-- DNT-Start -->-foption[=value]<!-- DNT-End --></entry>
 
-                <entry>Set an ecl option. See #OPTION in the <emphasis>ECL
+                <entry>Set an ecl option. See #<!-- DNT-Start -->OPTION<!-- DNT-End --> in the <emphasis><!-- DNT-Start -->ECL<!-- DNT-End -->
                 Language Reference</emphasis> for details.</entry>
               </row>
 
               <row>
-                <entry>-main <emphasis>&lt;ref&gt;</emphasis></entry>
+                <entry><!-- DNT-Start -->-main <emphasis>&lt;ref&gt;</emphasis><!-- DNT-End --></entry>
 
                 <entry>Compile definition &lt;ref&gt; from the source
                 collection</entry>
               </row>
 
               <row>
-                <entry>-syntax</entry>
+                <entry><!-- DNT-Start -->-syntax<!-- DNT-End --></entry>
 
-                <entry>Perform a syntax check of the ECL</entry>
+                <entry>Perform a syntax check of the <!-- DNT-Start -->ECL<!-- DNT-End --></entry>
               </row>
 
               <row>
-                <entry>-platform=hthor</entry>
+                <entry><!-- DNT-Start -->-platform=hthor<!-- DNT-End --></entry>
 
                 <entry>Generate code for hthor cluster</entry>
               </row>
 
               <row>
-                <entry>-platform=roxie</entry>
+                <entry><!-- DNT-Start -->-platform=roxie<!-- DNT-End --></entry>
 
                 <entry>Generate code for roxie cluster (default)</entry>
               </row>
 
               <row>
-                <entry>-platform=thor</entry>
+                <entry><!-- DNT-Start -->-platform=thor<!-- DNT-End --></entry>
 
                 <entry>Generate code for thor cluster</entry>
               </row>
@@ -250,44 +250,44 @@
 
             <tbody>
               <row>
-                <entry>-E</entry>
+                <entry><!-- DNT-Start -->-E<!-- DNT-End --></entry>
 
-                <entry>Output preprocessed ECL in xml archive form</entry>
+                <entry>Output preprocessed <!-- DNT-Start -->ECL<!-- DNT-End --> in xml archive form</entry>
               </row>
 
               <row>
-                <entry>-M</entry>
+                <entry><!-- DNT-Start -->-M<!-- DNT-End --></entry>
 
                 <entry>Output meta information for the ecl files</entry>
               </row>
 
               <row>
-                <entry>-Md</entry>
+                <entry><!-- DNT-Start -->-Md<!-- DNT-End --></entry>
 
                 <entry>Output dependency information</entry>
               </row>
 
               <row>
-                <entry>-Me</entry>
+                <entry><!-- DNT-Start -->-Me<!-- DNT-End --></entry>
 
                 <entry>eclcc should evaluate supplied ecl code rather than
                 generating a workunit</entry>
               </row>
 
               <row>
-                <entry>-q</entry>
+                <entry><!-- DNT-Start -->-q<!-- DNT-End --></entry>
 
-                <entry>Save ECL query text as part of workunit</entry>
+                <entry>Save <!-- DNT-Start -->ECL<!-- DNT-End --> query text as part of workunit</entry>
               </row>
 
               <row>
-                <entry>-qa</entry>
+                <entry><!-- DNT-Start -->-qa<!-- DNT-End --></entry>
 
-                <entry>Save ECL query archive as part of workunit</entry>
+                <entry>Save <!-- DNT-Start -->ECL<!-- DNT-End --> query archive as part of workunit</entry>
               </row>
 
               <row>
-                <entry>-wu</entry>
+                <entry><!-- DNT-Start -->-wu<!-- DNT-End --></entry>
 
                 <entry>Only generate workunit information as xml file</entry>
               </row>
@@ -311,62 +311,62 @@
 
             <tbody>
               <row>
-                <entry>-S</entry>
+                <entry><!-- DNT-Start -->-S<!-- DNT-End --></entry>
 
                 <entry>Generate c++ output, but don't compile</entry>
               </row>
 
               <row>
-                <entry>-c</entry>
+                <entry><!-- DNT-Start -->-c<!-- DNT-End --></entry>
 
                 <entry>Compile only (don't link)</entry>
               </row>
 
               <row>
-                <entry>-g, --debug</entry>
+                <entry><!-- DNT-Start -->-g, --debug<!-- DNT-End --></entry>
 
                 <entry>Enable debug symbols in generated code</entry>
               </row>
 
               <row>
-                <entry>-Wc,xx</entry>
+                <entry><!-- DNT-Start -->-Wc,xx<!-- DNT-End --></entry>
 
                 <entry>Pass option xx to the c++ compiler</entry>
               </row>
 
               <row>
-                <entry>-Wl,xx</entry>
+                <entry><!-- DNT-Start -->-Wl,xx<!-- DNT-End --></entry>
 
                 <entry>Pass option xx to the linker</entry>
               </row>
 
               <row>
-                <entry>-Wa,xx</entry>
+                <entry><!-- DNT-Start -->-Wa,xx<!-- DNT-End --></entry>
 
                 <entry>Pass straight through to c++ compiler</entry>
               </row>
 
               <row>
-                <entry>-Wp,xx</entry>
+                <entry><!-- DNT-Start -->-Wp,xx<!-- DNT-End --></entry>
 
                 <entry>Pass straight through to c++ compiler</entry>
               </row>
 
               <row>
-                <entry>-save-cpps</entry>
+                <entry><!-- DNT-Start -->-save-cpps<!-- DNT-End --></entry>
 
                 <entry>Do not delete generated c++ files (implied if
                 -g)</entry>
               </row>
 
               <row>
-                <entry>-save-temps</entry>
+                <entry><!-- DNT-Start -->-save-temps<!-- DNT-End --></entry>
 
                 <entry>Do not delete intermediate files</entry>
               </row>
 
               <row>
-                <entry>-shared</entry>
+                <entry><!-- DNT-Start -->-shared<!-- DNT-End --></entry>
 
                 <entry>Generate workunit shared object instead of a
                 stand-alone executable</entry>
@@ -389,29 +389,29 @@
 
             <tbody>
               <row>
-                <entry>-dfs=ip</entry>
+                <entry><!-- DNT-Start -->-dfs=ip<!-- DNT-End --></entry>
 
-                <entry>Use specified ip for DFS filename resolution</entry>
+                <entry>Use specified ip for <!-- DNT-Start -->DFS<!-- DNT-End --> filename resolution</entry>
               </row>
 
               <row>
-                <entry>-scope=prefix</entry>
+                <entry><!-- DNT-Start -->-scope=prefix<!-- DNT-End --></entry>
 
-                <entry>Use specified scope prefix in DFS filename
+                <entry>Use specified scope prefix in <!-- DNT-Start -->DFS<!-- DNT-End --> filename
                 resolution</entry>
               </row>
 
               <row>
-                <entry>-user=id</entry>
+                <entry><!-- DNT-Start -->-user=id<!-- DNT-End --></entry>
 
-                <entry>Use specified username in DFS filename
+                <entry>Use specified username in <!-- DNT-Start -->DFS<!-- DNT-End --> filename
                 resolution</entry>
               </row>
 
               <row>
-                <entry>-password=xxx</entry>
+                <entry><!-- DNT-Start -->-password=xxx<!-- DNT-End --></entry>
 
-                <entry>Use specified password in DFS filename resolution
+                <entry>Use specified password in <!-- DNT-Start -->DFS<!-- DNT-End --> filename resolution
                 (blank to prompt)</entry>
               </row>
             </tbody>
@@ -432,51 +432,51 @@
 
             <tbody>
               <row>
-                <entry>-aoption[=value]</entry>
+                <entry><!-- DNT-Start -->-aoption[=value]<!-- DNT-End --></entry>
 
                 <entry>Set an application option</entry>
               </row>
 
               <row>
-                <entry>--allow=str</entry>
+                <entry><!-- DNT-Start -->--allow=str<!-- DNT-End --></entry>
 
                 <entry>Allow use of named feature. (e.g., cpp, pipe,
                 all)<para><emphasis role="bold">cpp</emphasis>: Allow embedded
-                code within ECL (e.g., c++, JAVA, Javascript, Python, R,
+                code within <!-- DNT-Start -->ECL<!-- DNT-End --> (e.g., c++, <!-- DNT-Start -->JAVA<!-- DNT-End -->, Javascript, Python, R,
                 etc.)</para><para><emphasis role="bold">pipe</emphasis>: Allow
-                the PIPE command to send data to an external
+                the <!-- DNT-Start -->PIPE<!-- DNT-End --> command to send data to an external
                 program.</para><para><emphasis role="bold">userECL</emphasis>:
                 Allow code that is not found via the ecl include
                 paths</para><para><emphasis role="bold">datafile</emphasis>:
-                Allow access to datafiles from ECL. </para><para><emphasis
+                Allow access to datafiles from <!-- DNT-Start -->ECL<!-- DNT-End -->. </para><para><emphasis
                 role="bold">extern</emphasis>: Allow access to an external
                 service function</para><para><emphasis
                 role="bold">all</emphasis>: Allow all features</para></entry>
               </row>
 
               <row>
-                <entry>-allowsigned</entry>
+                <entry><!-- DNT-Start -->-allowsigned<!-- DNT-End --></entry>
 
                 <entry>Only allows access to a feature from signed
                 code</entry>
               </row>
 
               <row>
-                <entry>-b</entry>
+                <entry><!-- DNT-Start -->-b<!-- DNT-End --></entry>
 
                 <entry>Batch mode. Each source file is processed in turn.
                 Output name depends on the input filename</entry>
               </row>
 
               <row>
-                <entry>-checkVersion</entry>
+                <entry><!-- DNT-Start -->-checkVersion<!-- DNT-End --></entry>
 
                 <entry>Enable/disable ecl version checking from
                 archives</entry>
               </row>
 
               <row>
-                <entry>-checkDirty</entry>
+                <entry><!-- DNT-Start -->-checkDirty<!-- DNT-End --></entry>
 
                 <entry>Causes eclcc to generate a warning for any attribute
                 that has been modified (according to the output of git
@@ -485,64 +485,64 @@
               </row>
 
               <row>
-                <entry>--component</entry>
+                <entry><!-- DNT-Start -->--component<!-- DNT-End --></entry>
 
                 <entry>Set the name of the component this is executing on
                 behalf of</entry>
               </row>
 
               <row>
-                <entry>-D<emphasis>name</emphasis>=<emphasis>value</emphasis></entry>
+                <entry><!-- DNT-Start -->-D<emphasis>name</emphasis>=<emphasis>value</emphasis><!-- DNT-End --></entry>
 
                 <entry>Override the definition of a global attribute
                 'name'</entry>
               </row>
 
               <row>
-                <entry>--deny=all</entry>
+                <entry><!-- DNT-Start -->--deny=all<!-- DNT-End --></entry>
 
                 <entry>Disallow use of all named features not specifically
                 allowed using --allow</entry>
               </row>
 
               <row>
-                <entry>--deny=str</entry>
+                <entry><!-- DNT-Start -->--deny=str<!-- DNT-End --></entry>
 
                 <entry>Disallow use of named feature<para><emphasis
-                role="bold">cpp</emphasis>: Disallow embedded code within ECL
-                (e.g., c++, JAVA, Javascript, Python, R,
+                role="bold">cpp</emphasis>: Disallow embedded code within <!-- DNT-Start -->ECL<!-- DNT-End -->
+                (e.g., c++, <!-- DNT-Start -->JAVA<!-- DNT-End -->, Javascript, Python, R,
                 etc.)</para><para><emphasis role="bold">pipe</emphasis>:
-                Disallow the PIPE command to send data to an external
+                Disallow the <!-- DNT-Start -->PIPE<!-- DNT-End --> command to send data to an external
                 program.</para></entry>
               </row>
 
               <row>
-                <entry>--fastsyntax</entry>
+                <entry><!-- DNT-Start -->--fastsyntax<!-- DNT-End --></entry>
 
                 <entry>Delay expanding functions when parsing. May speed up
                 processing for some queries</entry>
               </row>
 
               <row>
-                <entry>-help, --help</entry>
+                <entry><!-- DNT-Start -->-help, --help<!-- DNT-End --></entry>
 
                 <entry>Display help message</entry>
               </row>
 
               <row>
-                <entry>--help -v</entry>
+                <entry><!-- DNT-Start -->--help -v<!-- DNT-End --></entry>
 
                 <entry>Display verbose help message</entry>
               </row>
 
               <row>
-                <entry>--internal</entry>
+                <entry><!-- DNT-Start -->--internal<!-- DNT-End --></entry>
 
                 <entry>Run internal tests</entry>
               </row>
 
               <row>
-                <entry>--legacy</entry>
+                <entry><!-- DNT-Start -->--legacy<!-- DNT-End --></entry>
 
                 <entry>Use legacy import semantics (deprecated)</entry>
               </row>
@@ -559,124 +559,124 @@
 
             <tbody>
               <row>
-                <entry>--leakcheck</entry>
+                <entry><!-- DNT-Start -->--leakcheck<!-- DNT-End --></entry>
 
                 <entry>Clean up memory since checking for memory leaks</entry>
               </row>
 
               <row>
-                <entry>--keywords</entry>
+                <entry><!-- DNT-Start -->--keywords<!-- DNT-End --></entry>
 
-                <entry>Outputs the lists of ECL reserved words to stdout (XML
+                <entry>Outputs the lists of <!-- DNT-Start -->ECL<!-- DNT-End --> reserved words to stdout (<!-- DNT-Start -->XML<!-- DNT-End -->
                 format)</entry>
               </row>
 
               <row>
-                <entry>-legacyimport</entry>
+                <entry><!-- DNT-Start -->-legacyimport<!-- DNT-End --></entry>
 
                 <entry>Use legacy import semantics (deprecated)</entry>
               </row>
 
               <row>
-                <entry>-legacywhen</entry>
+                <entry><!-- DNT-Start -->-legacywhen<!-- DNT-End --></entry>
 
                 <entry>Use legacy when/side-effects semantics
                 (deprecated)</entry>
               </row>
 
               <row>
-                <entry>--logfile <emphasis>&lt;file&gt;</emphasis></entry>
+                <entry><!-- DNT-Start -->--logfile <emphasis>&lt;file&gt;</emphasis><!-- DNT-End --></entry>
 
                 <entry>Write log to specified file</entry>
               </row>
 
               <row>
-                <entry>--logdetail=<emphasis>n</emphasis></entry>
+                <entry><!-- DNT-Start -->--logdetail=<emphasis>n</emphasis><!-- DNT-End --></entry>
 
                 <entry>Set the level of detail in the log file</entry>
               </row>
 
               <row>
-                <entry>--maxErrors=&lt;n&gt;</entry>
+                <entry><!-- DNT-Start -->--maxErrors=&lt;n&gt;<!-- DNT-End --></entry>
 
                 <entry>Limit the number of errors, aborting on the nth
                 (default = 5)</entry>
               </row>
 
               <row>
-                <entry>--metacache=x</entry>
+                <entry><!-- DNT-Start -->--metacache=x<!-- DNT-End --></entry>
 
                 <entry>Specify directory to store distributed meta
                 information</entry>
               </row>
 
               <row>
-                <entry>--nologfile</entry>
+                <entry><!-- DNT-Start -->--nologfile<!-- DNT-End --></entry>
 
                 <entry>Do not write any log file</entry>
               </row>
 
               <row>
-                <entry>--nogpg</entry>
+                <entry><!-- DNT-Start -->--nogpg<!-- DNT-End --></entry>
 
                 <entry>Do not run gpg to check signatures on signed
                 code</entry>
               </row>
 
               <row>
-                <entry>--nosourcepath</entry>
+                <entry><!-- DNT-Start -->--nosourcepath<!-- DNT-End --></entry>
 
                 <entry>Compile as if the source came from stdin</entry>
               </row>
 
               <row>
-                <entry>--nostdinc</entry>
+                <entry><!-- DNT-Start -->--nostdinc<!-- DNT-End --></entry>
 
                 <entry>Do not include the current directory in -I</entry>
               </row>
 
               <row>
-                <entry>-pch</entry>
+                <entry><!-- DNT-Start -->-pch<!-- DNT-End --></entry>
 
                 <entry>Generate precompiled header for eclinclude4.hpp</entry>
               </row>
 
               <row>
-                <entry>-P &lt;path&gt;</entry>
+                <entry><!-- DNT-Start -->-P &lt;path&gt;<!-- DNT-End --></entry>
 
                 <entry>Specify the path of the output files (only with -b
                 option)</entry>
               </row>
 
               <row>
-                <entry>-showpaths</entry>
+                <entry><!-- DNT-Start -->-showpaths<!-- DNT-End --></entry>
 
                 <entry>Print information about the search paths eclcc is
                 using</entry>
               </row>
 
               <row>
-                <entry>-specs <emphasis>&lt;file&gt;</emphasis></entry>
+                <entry><!-- DNT-Start -->-specs <emphasis>&lt;file&gt;</emphasis><!-- DNT-End --></entry>
 
                 <entry>Read eclcc configuration from specified file</entry>
               </row>
 
               <row>
-                <entry>-split <emphasis>m:n</emphasis></entry>
+                <entry><!-- DNT-Start -->-split <emphasis>m:n</emphasis><!-- DNT-End --></entry>
 
                 <entry>Process a subset m of n input files (only with -b
                 option)</entry>
               </row>
 
               <row>
-                <entry>-v --verbose</entry>
+                <entry><!-- DNT-Start -->-v --verbose<!-- DNT-End --></entry>
 
                 <entry>Output additional tracing information while
                 compiling</entry>
               </row>
 
               <row>
-                <entry>-wxxxx=level</entry>
+                <entry><!-- DNT-Start -->-wxxxx=level<!-- DNT-End --></entry>
 
                 <entry>Set the severity for a particular warning code or
                 category. <para>Valid options for level are: all | ignore |
@@ -686,13 +686,13 @@
               </row>
 
               <row>
-                <entry>--version</entry>
+                <entry><!-- DNT-Start -->--version<!-- DNT-End --></entry>
 
                 <entry>Output version information</entry>
               </row>
 
               <row>
-                <entry>--timings</entry>
+                <entry><!-- DNT-Start -->--timings<!-- DNT-End --></entry>
 
                 <entry>Output additional timing information</entry>
               </row>
@@ -704,7 +704,7 @@
     </sect1>
 
     <sect1 id="compiled_options">
-      <title>Compiled Options:</title>
+      <!-- DNT-Start --><title>Compiled Options:</title><!-- DNT-End -->
 
       <para>After you have successfully compiled the code, it produces an
       executable file. There are a few additional options that can be used
@@ -722,32 +722,32 @@
 
             <tbody>
               <row>
-                <entry>-wu=&lt;file&gt;</entry>
+                <entry><!-- DNT-Start -->-wu=&lt;file&gt;<!-- DNT-End --></entry>
 
-                <entry>Write XML formatted workunit to given filespec and
+                <entry>Write <!-- DNT-Start -->XML<!-- DNT-End --> formatted workunit to given filespec and
                 exit</entry>
               </row>
 
               <row>
-                <entry>-xml</entry>
+                <entry><!-- DNT-Start -->-xml<!-- DNT-End --></entry>
 
-                <entry>Display output as XML</entry>
+                <entry>Display output as <!-- DNT-Start -->XML<!-- DNT-End --></entry>
               </row>
 
               <row>
-                <entry>-raw</entry>
+                <entry><!-- DNT-Start -->-raw<!-- DNT-End --></entry>
 
                 <entry>Display output as binary</entry>
               </row>
 
               <row>
-                <entry>-limit=x</entry>
+                <entry><!-- DNT-Start -->-limit=x<!-- DNT-End --></entry>
 
                 <entry>Limit number of output rows</entry>
               </row>
 
               <row>
-                <entry>--help</entry>
+                <entry><!-- DNT-Start -->--help<!-- DNT-End --></entry>
 
                 <entry>Display help text</entry>
               </row>
@@ -757,17 +757,17 @@
     </sect1>
 
     <sect1 id="ECLCompiler_Examples">
-      <title>Examples</title>
+      <!-- DNT-Start --><title>Examples</title><!-- DNT-End -->
 
-      <para>The following example demonstrates what you can do once the ECL
+      <para>The following example demonstrates what you can do once the <!-- DNT-Start -->ECL<!-- DNT-End -->
       Compiler is installed and operational.</para>
 
       <sect2 id="ECLCompiler_RunningABasicECLProg_CLI">
-        <title>Running a basic ECL program using the command line
-        compiler</title>
+        <!-- DNT-Start --><title>Running a basic ECL program using the command line
+        compiler</title><!-- DNT-End -->
 
-        <para>Once the ECL Compiler is installed, you can use the ECL Compiler
-        to run an ECL program.</para>
+        <para>Once the <!-- DNT-Start -->ECL<!-- DNT-End --> Compiler is installed, you can use the <!-- DNT-Start -->ECL<!-- DNT-End --> Compiler
+        to run an <!-- DNT-Start -->ECL<!-- DNT-End --> program.</para>
 
         <itemizedlist>
           <listitem>
@@ -788,15 +788,15 @@
           </listitem>
 
           <listitem>
-            <para>Compile your program using the ECL Compiler by issuing the
+            <para>Compile your program using the <!-- DNT-Start -->ECL<!-- DNT-End --> Compiler by issuing the
             following command:</para>
 
             <para><programlisting>eclcc hello.ecl</programlisting><!--*** Need to tell them where to run this  --></para>
 
-            <!--  ***COMMENTED OUT per authors discretion - this code is just messy when talking about multiple platforms! 
+            <!-- DNT-Start --><!--  ***COMMENTED OUT per authors discretion - this code is just messy when talking about multiple platforms! 
               If you prefer, you can pipe the source code directly into the
             compiler as shown in the following example:
-            <para><programlisting>echo \'hello again\'| eclcc -</programlisting></para> -->
+            <para><programlisting>echo \'hello again\'| eclcc -</programlisting></para> --><!-- DNT-End -->
           </listitem>
 
           <listitem>
@@ -822,7 +822,7 @@
       <sect2 id="Compile_with_options">
         <title role="brk">Compile with Options</title>
 
-        <para>Once verified that the ECL Compiler is working correctly, you
+        <para>Once verified that the <!-- DNT-Start -->ECL<!-- DNT-End --> Compiler is working correctly, you
         can try using some of the options. One such variation might be to
         specify the -o option which allows us to input more meaningful output
         filename of Hello.</para>
@@ -833,8 +833,8 @@
 
         <para>on Linux systems:</para>
 
-        <programlisting>   ./Hello
-</programlisting>
+        <!-- DNT-Start --><programlisting>   ./Hello
+</programlisting><!-- DNT-End -->
 
         <para>on Windows systems:</para>
 
@@ -846,12 +846,12 @@
         <para>There are additional options that can be used when running the
         executable. Using our Hello program, as an example, we can execute it
         with an option to generate different output. One such option is the
-        -xml option which generates the output in an XML format.</para>
+        -xml option which generates the output in an <!-- DNT-Start -->XML<!-- DNT-End --> format.</para>
 
         <para>on Linux systems:</para>
 
-        <programlisting>   ./Hello -xml
-</programlisting>
+        <!-- DNT-Start --><programlisting>   ./Hello -xml
+</programlisting><!-- DNT-End -->
 
         <para>on Windows systems:</para>
 
@@ -859,20 +859,20 @@
 
         <para>This would result in the output of the following:</para>
 
-        <programlisting>&lt;Dataset name="Result 1"&gt;&lt;Row&gt;&lt;Result_1&gt;Hello world&lt;/Result_1&gt;&lt;/Row&gt;&lt;/Dataset&gt;</programlisting>
+        <!-- DNT-Start --><programlisting>&lt;Dataset name="Result 1"&gt;&lt;Row&gt;&lt;Result_1&gt;Hello world&lt;/Result_1&gt;&lt;/Row&gt;&lt;/Dataset&gt;</programlisting><!-- DNT-End -->
 
         <para>The following example provides a defined value passed to the
         compiler:</para>
 
-        <programlisting>//file named hello2.ecl
+        <!-- DNT-Start --><programlisting>//file named hello2.ecl
 IMPORT ^ as repo;
-OUTPUT(repo.optionXX);</programlisting>
+OUTPUT(repo.optionXX);</programlisting><!-- DNT-End -->
 
         <para><programlisting>eclcc -Doptionxx='HELLO' hello2.ecl</programlisting></para>
 
         <para>This would result in the output of the following:</para>
 
-        <programlisting>&lt;Dataset name="Result 1"&gt;&lt;Row&gt;&lt;Result_1&gt;HELLO&lt;/Result_1&gt;&lt;/Row&gt;&lt;/Dataset&gt;</programlisting>
+        <!-- DNT-Start --><programlisting>&lt;Dataset name="Result 1"&gt;&lt;Row&gt;&lt;Result_1&gt;HELLO&lt;/Result_1&gt;&lt;/Row&gt;&lt;/Dataset&gt;</programlisting><!-- DNT-End -->
 
         <para></para>
       </sect2>

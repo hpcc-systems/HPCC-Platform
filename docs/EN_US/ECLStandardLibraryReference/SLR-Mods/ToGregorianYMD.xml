@@ -2,16 +2,16 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ToGregorianYMD">
-  <title>ToGregorianYMD</title>
+  <!-- DNT-Start --><title>ToGregorianYMD</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.Date.ToGregorianYMD<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.Date.ToGregorianYMD<indexterm>
       <primary>STD.Date.ToGregorianYMD</primary>
     </indexterm><indexterm>
       <primary>Date.ToGregorianYMD</primary>
     </indexterm><indexterm>
       <primary>ToGregorianYMD</primary>
     </indexterm>(</emphasis> <emphasis>days</emphasis> <emphasis
-  role="bold">)</emphasis></para>
+  role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,29 +21,29 @@
 
       <tbody>
         <row>
-          <entry><emphasis>days</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>days</emphasis><!-- DNT-End --></entry>
 
           <entry>A year value in the Days_t format.</entry>
         </row>
 
         <row>
-          <entry>Return:</entry>
+          <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-          <entry>ToGregorianYMD returns separate values for Year, Month, and
+          <entry><!-- DNT-Start -->ToGregorianYMD<!-- DNT-End --> returns separate values for Year, Month, and
           Day.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">ToGregorianYMD</emphasis> function converts
-  the number days since 31st December 1BC to a date in the Gregorian calendar.
+  <para>The <emphasis role="bold"><!-- DNT-Start -->ToGregorianYMD<!-- DNT-End --></emphasis> function converts
+  the number days since 31st December 1<!-- DNT-Start -->BC<!-- DNT-End --> to a date in the Gregorian calendar.
   It returns It returns a module with three exported values: Year, Month, and
   Day.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">IMPORT STD;
+  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
 INTEGER2  MyYear  := 2012;  
 UNSIGNED1 MyMonth := 1;   
 UNSIGNED1 MyDay   := 1;  
@@ -57,7 +57,7 @@ X := STD.Date.ToGregorianYMD(J);
 Y := X.Year;   //Y contains 2012
 M := X.Month;  //M contains 1
 D := X.Day;    //D contains 1
-</programlisting>
+</programlisting><!-- DNT-End -->
 
   <para></para>
 </sect1>

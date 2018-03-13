@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="WorkunitTimings">
-  <title>WorkunitTimings</title>
+  <!-- DNT-Start --><title>WorkunitTimings</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.System.Workunit.WorkunitTimings    <indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.System.Workunit.WorkunitTimings    <indexterm>
       <primary>STD.System.Workunit.WorkunitTimings</primary>
     </indexterm>
     <indexterm>
@@ -17,7 +17,7 @@
       <primary>WorkunitTimings</primary>
     </indexterm>
 (</emphasis>
-  <emphasis> wuid </emphasis> <emphasis role="bold">)</emphasis></para>
+  <emphasis> wuid </emphasis> <emphasis role="bold">)</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -27,37 +27,37 @@
 
       <tbody>
         <row>
-          <entry><emphasis>wuid</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>wuid</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the WorkUnit
           IDentifier.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry>WorkunitTimings returns a DATASET value.</entry>
+          <entry><!-- DNT-Start -->WorkunitTimings<!-- DNT-End --> returns a <!-- DNT-Start -->DATASET<!-- DNT-End --> value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">WorkunitTimings </emphasis>function returns
-  a DATASET with this format:</para>
+  <para>The <emphasis role="bold"><!-- DNT-Start -->WorkunitTimings<!-- DNT-End --> </emphasis>function returns
+  a <!-- DNT-Start -->DATASET<!-- DNT-End --> with this format:</para>
 
-  <programlisting>EXPORT WsTiming := RECORD
+  <!-- DNT-Start --><programlisting>EXPORT WsTiming := RECORD
   UNSIGNED4 count;
   UNSIGNED4 duration;
   UNSIGNED4 max;
   STRING name{MAXLENGTH(64)};
-END;</programlisting>
+END;</programlisting><!-- DNT-End -->
 
   <para>Each record in the returned dataset specifies a timing for the
   workunit.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitTimings('W20070308-164946'));
+  <!-- DNT-Start --><programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitTimings('W20070308-164946'));
 /* produces results that look like this
 '1','4','4','EclServer: tree transform'
 '1','0','0','EclServer: tree transform: normalize.scope'
@@ -72,5 +72,5 @@ END;</programlisting>
 '1','0','439000','Environment_Initialize'
 '1','33775','3710788928','Process'
 '1','1','1942000','WorkUnit_unlockRemote'
-*/</programlisting>
+*/</programlisting><!-- DNT-End -->
 </sect1>

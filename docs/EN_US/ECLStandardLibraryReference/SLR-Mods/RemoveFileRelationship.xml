@@ -2,9 +2,9 @@
 <!DOCTYPE sect2 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="RemoveFileRelationship">
-  <title>RemoveFileRelationship</title>
+  <!-- DNT-Start --><title>RemoveFileRelationship</title><!-- DNT-End -->
 
-  <para><emphasis role="bold">STD.File.RemoveFileRelationship<indexterm>
+  <!-- DNT-Start --><para><emphasis role="bold">STD.File.RemoveFileRelationship<indexterm>
       <primary>STD.File.RemoveFileRelationship</primary>
     </indexterm><indexterm>
       <primary>File.RemoveFileRelationship</primary>
@@ -17,7 +17,7 @@
   </emphasis> <emphasis role="bold">]</emphasis> <emphasis role="bold">
   [</emphasis> <emphasis>,</emphasis> <emphasis role="bold"> </emphasis>
   <emphasis>relationship </emphasis> <emphasis
-  role="bold">]);</emphasis></para>
+  role="bold">]);</emphasis></para><!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -27,31 +27,31 @@
 
       <tbody>
         <row>
-          <entry><emphasis>primary</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>primary</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the logical filename of
           the primary file.</entry>
         </row>
 
         <row>
-          <entry><emphasis>secondary</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>secondary</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the logical filename of
           the secondary file.</entry>
         </row>
 
         <row>
-          <entry><emphasis>primaryfields</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>primaryfields</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the name of the primary
           key field for the <emphasis>primary</emphasis> file. The value
           "__fileposition__" indicates the <emphasis>secondary</emphasis> is
-          an INDEX that must use FETCH to access non-keyed fields. If omitted,
+          an <!-- DNT-Start -->INDEX<!-- DNT-End --> that must use <!-- DNT-Start -->FETCH<!-- DNT-End --> to access non-keyed fields. If omitted,
           the default is an empty string.</entry>
         </row>
 
         <row>
-          <entry><emphasis>secondaryfields</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>secondaryfields</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing the name of the foreign
           key field relating to the <emphasis>primary</emphasis> file. If
@@ -59,7 +59,7 @@
         </row>
 
         <row>
-          <entry><emphasis>relationship</emphasis></entry>
+          <entry><!-- DNT-Start --><emphasis>relationship</emphasis><!-- DNT-End --></entry>
 
           <entry>A null-terminated string containing either "link" or "view"
           indicating the type of relationship between the
@@ -70,14 +70,14 @@
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">RemoveFileRelationship</emphasis> function
+  <para>The <emphasis role="bold"><!-- DNT-Start -->RemoveFileRelationship<!-- DNT-End --></emphasis> function
   removes a file relationshuip between the <emphasis>primary</emphasis> and
   <emphasis>secondary</emphasis> files.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">STD.File.RemoveFileRelationship('names', 'inquiries');
-</programlisting>
+  <!-- DNT-Start --><programlisting format="linespecific">STD.File.RemoveFileRelationship('names', 'inquiries');
+</programlisting><!-- DNT-End -->
 
   <para>See Also: <link linkend="AddFileRelationship">AddFileRelationship</link></para>
 </sect1>
