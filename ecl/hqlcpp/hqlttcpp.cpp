@@ -13912,7 +13912,123 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
     return true;
 }
 
-//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------
+
+static HqlTransformerInfo semanticErrorCheckerInfo("SemanticErrorChecker");
+class SemanticErrorChecker : public QuickHqlTransformer
+{
+public:
+    SemanticErrorChecker(IErrorReceiver & _errs) :
+        QuickHqlTransformer(semanticErrorCheckerInfo, &_errs), mapper(_errs)
+    {
+    }
+
+    virtual void doAnalyse(IHqlExpression * expr)
+    {
+        switch (expr->getAnnotationKind())
+        {
+        case annotate_meta:
+            {
+                unsigned max = mapper.processMetaAnnotation(expr);
+                QuickHqlTransformer::doAnalyse(expr);
+                mapper.restoreLocalOnWarnings(max);
+                return;
+            }
+        case annotate_symbol:
+            {
+                ErrorSeverityMapper::SymbolScope saved(mapper, expr);
+                locations.append(*expr);
+                QuickHqlTransformer::doAnalyse(expr);
+                locations.pop();
+                return;
+            }
+        case annotate_location:
+            {
+                locations.append(*expr);
+                QuickHqlTransformer::doAnalyse(expr);
+                locations.pop();
+                return;
+            }
+        }
+        switch (expr->getOperator())
+        {
+        case no_join:
+            checkJoin(expr);
+            break;
+        }
+        QuickHqlTransformer::doAnalyse(expr);
+    }
+
+protected:
+    void checkJoin(IHqlExpression * expr);
+    void reportError(int errNo, const char * format, ...) __attribute__((format(printf, 3, 4)));
+
+protected:
+    ErrorSeverityMapper mapper;
+    HqlExprCopyArray locations;
+};
+
+void SemanticErrorChecker::checkJoin(IHqlExpression * join)
+{
+    IHqlExpression * group = join->queryAttribute(groupAtom);
+    if (group)
+    {
+        //Check that each of the fields mentioned in the group are projected into the output.
+        OwnedHqlExpr left = createSelector(no_left, join->queryChild(0), querySelSeq(join));
+        OwnedHqlExpr right = createSelector(no_right, join->queryChild(1), querySelSeq(join));
+        NewProjectMapper2 mapper;
+        mapper.setMapping(join->queryChild(3));
+        IHqlExpression * sortlist = group->queryChild(0);
+        ForEachChild(i, sortlist)
+        {
+            IHqlExpression * cur = sortlist->queryChild(i);
+            if (cur->usesSelector(right))
+            {
+                StringBuffer s;
+                getExprECL(cur, s);
+                reportError(ERR_BAD_JOINGROUP_FIELD, "GROUP expression '%s' cannot include fields from RIGHT", s.str());
+            }
+            else
+            {
+                bool matchedAll = true;
+                OwnedHqlExpr mapped = mapper.collapseFields(cur, left, queryActiveTableSelector(), left, &matchedAll);
+                if (!matchedAll)
+                {
+                    StringBuffer s;
+                    getExprECL(cur, s);
+                    reportError(ERR_BAD_JOINGROUP_FIELD, "GROUP expression '%s' is not included in the JOIN output", s.str());
+                }
+            }
+        }
+    }
+}
+
+
+void SemanticErrorChecker::reportError(int errNo, const char * format, ...)
+{
+    ECLlocation location;
+    ForEachItemInRev(i, locations)
+    {
+        if (location.extractLocationAttr(&locations.item(i)))
+            break;
+    }
+    va_list args;
+    va_start(args, format);
+    reportErrorVa(&mapper, errNo, location, format, args);
+    va_end(args);
+}
+
+
+bool reportSemanticErrors(IHqlExpression * expr, IErrorReceiver & errors)
+{
+    SemanticErrorChecker checker(errors);
+    checker.analyse(expr);
+    return errors.errCount() != 0;
+}
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
 /*
 Different transformers:
 merge: required if a child get removed or merged with a parent of a non-table dataset.

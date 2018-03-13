@@ -1301,6 +1301,8 @@ void optimizeActivities(unsigned wfid, HqlExprArray & exprs, bool optimizeCountC
 IHqlExpression * insertImplicitProjects(HqlCppTranslator & translator, IHqlExpression * expr, bool optimizeSpills);
 void insertImplicitProjects(HqlCppTranslator & translator, HqlExprArray & exprs);
 
+bool reportSemanticErrors(IHqlExpression * expr, IErrorReceiver & errors);
+
 //------------------------------------------------------------------------
 
 #endif
