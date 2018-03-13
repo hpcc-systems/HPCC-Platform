@@ -40,26 +40,26 @@ Result:
 |            query                query help
 |
 |       optional arguments:
-|        -h, --help               show this help message and exit
-|        --config [CONFIG]        config file to use. Default: ecl-test.json.
+|        -h, --help               Show this help message and exit
+|        --config [CONFIG]        Config file to use. Default: ecl-test.json.
 |        --loglevel [{info,debug}]
-|                                 set the log level. Use debug for more detailed logfile.
+|                                 Set the log level. Use debug for more detailed logfile.
 |        --suiteDir [SUITEDIR], -s [SUITEDIR]
-|                                 suiteDir to use. Default value is the current directory and it can handle relative path.
-|        --timeout [TIMEOUT]      timeout for query execution in sec. Use -1 to disable timeout. Default value defined in ecl-test.json config file (see: 9.)
+|                                 SuiteDir to use. Default value is the current directory and it can handle relative path.
+|        --timeout [TIMEOUT]      Timeout for query execution in sec. Use -1 to disable timeout. Default value defined in ecl-test.json config file (see: 9.)
 |        --keyDir [KEYDIR], -k [KEYDIR]
-|                                 key file directory to compare test output. Default value defined in regress.json config file.
-|        --ignoreResult, -i       completely ignore the result.
+|                                 Key file directory to compare test output. Default value defined in regress.json config file.
+|        --ignoreResult, -i       Completely ignore the result.
 |        -X name1=value1[,name2=value2...]
-|                                 sets the stored input value (stored('name')).
+|                                 Sets the stored input value (stored('name')).
 |        -f optionA=valueA[,optionB=valueB...]
-|                                 set an ECL option (equivalent to #option).
-|        --pq threadNumber        parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
-|        --noversion              avoid version expansion of queries. Execute them as a standard test.
+|                                 Set an ECL option (equivalent to #option).
+|        --pq threadNumber        Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
+|        --noversion              Avoid version expansion of queries. Execute them as a standard test.
 |        --runclass class[,class,...], -r class[,class,...]
-|                                 run subclass(es) of the suite. Default value is 'all'
+|                                 Run subclass(es) of the suite. Default value is 'all'
 |        --excludeclass class[,class,...], -e class[,class,...]
-|                                 exclude subclass(es) of the suite. Default value is 'none'
+|                                 Exclude subclass(es) of the suite. Default value is 'none'
 |        --handleEclccWarningFile, -w
 |                                 Create/overwrite/delete ECLCC warning file.
 |        --jobnamesuffix suffix   Specify workunit job name suffix.
@@ -89,17 +89,36 @@ Command:
 Result:
 
 |
-|       usage: ecl-test list [-h] [--config [CONFIG]]
-|                            [--loglevel [{info,debug}]]
-|
-|       positional arguments:
-|        targets                  print target clusters from config (ecl-test.json by default).
+|       usage: ecl-test list [-h] [--config [CONFIG]] [--loglevel [{info,debug}]]
+|                            [--runclass class[,class,...]]
+|                     [--excludeclass class[,class,...]]
+|                     [--jobnamesuffix suffix] [--clusters] [--setup] [--run]
+|                     [--target [target_cluster_list | all]]
+|                     [--createEclRunArg]
 |
 |       optional arguments:
-|        -h, --help               show this help message and exit
-|        --config [CONFIG]        config file to use. Default: ecl-test.json
+|        -h, --help               Show this help message and exit
+|        --config [CONFIG]        Config file to use. Default: ecl-test.json
 |        --loglevel [{info,debug}]
-|                                 set the log level. Use debug for more detailed logfile.
+|                                 Set the log level. Use debug for more detailed
+|                                 logfile.
+|        --runclass class[,class,...], -r class[,class,...]
+|                                 Run subclass(es) of the suite. Default value is 'all'
+|        --excludeclass class[,class,...], -e class[,class,...]
+|                                 Exclude subclass(es) of the suite. Default value is
+|                                 'none'
+|        --jobnamesuffix suffix
+|                                 Specify workunit job name suffix.
+|        --clusters               Print target clusters from config (ecl-test.json by
+|                                 default).
+|        --setup                  Print testcases executed in setup.
+|        --run                    Print test cases executed in run.
+|        --target [target_cluster_list | all], -t [target_cluster_list | all]
+|                                 Provide target cluster(s) to list test cases. If
+|                                 target = 'all' then list test cases on all clusters.
+|                                 If not defined then default value(s) come from config
+|                                 (ecl-test.json by default).
+|        --createEclRunArg        Generate ECL tool command line.
 |
 
 Parameters of Regression Suite setup sub-command:
@@ -127,31 +146,31 @@ Result:
 |                             [--target [target_cluster_list | all]]
 |
 |       optional arguments:
-|        -h, --help               show this help message and exit
-|        --config [CONFIG]        config file to use. Default: ecl-test.json.
+|        -h, --help               Show this help message and exit
+|        --config [CONFIG]        Config file to use. Default: ecl-test.json.
 |        --loglevel [{info,debug}]
-|                                 set the log level. Use debug for more detailed logfile.
+|                                 Set the log level. Use debug for more detailed logfile.
 |        --suiteDir [SUITEDIR], -s [SUITEDIR]
-|                                 suiteDir to use. Default value is the current directory and it can handle relative path.
-|        --timeout [TIMEOUT]      timeout for query execution in sec. Use -1 to disable timeout. Default value defined in ecl-test.json config file (see: 9.)
+|                                 SuiteDir to use. Default value is the current directory and it can handle relative path.
+|        --timeout [TIMEOUT]      Timeout for query execution in sec. Use -1 to disable timeout. Default value defined in ecl-test.json config file (see: 9.)
 |        --keyDir [KEYDIR], -k [KEYDIR]
-|                                 key file directory to compare test output. Default value defined in regress.json config file.
-|        --ignoreResult, -i       completely ignore the result.
+|                                 Key file directory to compare test output. Default value defined in regress.json config file.
+|        --ignoreResult, -i       Completely ignore the result.
 |        -X name1=value1[,name2=value2...]
-|                                 sets the stored input value (stored('name')).
+|                                 Sets the stored input value (stored('name')).
 |        -f optionA=valueA[,optionB=valueB...]
-|                                 set an ECL option (equivalent to #option).
-|        --pq threadNumber        parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
-|        --noversion              avoid version expansion of queries. Execute them as a standard test.
+|                                 Set an ECL option (equivalent to #option).
+|        --pq threadNumber        Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
+|        --noversion              Avoid version expansion of queries. Execute them as a standard test.
 |        --runclass class[,class,...], -r class[,class,...]
-|                                 run subclass(es) of the suite. Default value is 'all'
+|                                 Run subclass(es) of the suite. Default value is 'all'
 |        --excludeclass class[,class,...], -e class[,class,...]
-|                                 exclude subclass(es) of the suite. Default value is 'none'
+|                                 Exclude subclass(es) of the suite. Default value is 'none'
 |        --handleEclccWarningFile, -w
 |                                 Create/overwrite/delete ECLCC warning file.
 |        --jobnamesuffix suffix   Specify workunit job name suffix.
 |        --target [target_cluster_list | all], -t [target_cluster_list | all]
-|                                 run the setup on target cluster(s). If target = 'all' then run setup on all clusters. If undefined the config 'defaultSetupClusters' value will be used.
+|                                 Run the setup on target cluster(s). If target = 'all' then run setup on all clusters. If undefined the config 'defaultSetupClusters' value will be used.
 |
 
 Parameters of Regression Suite run sub-command:
@@ -180,32 +199,32 @@ Result:
 |                           [--publish]
 |
 |       optional arguments:
-|        -h, --help               show this help message and exit
-|        --config [CONFIG]        config file to use. Default: ecl-test.json.
+|        -h, --help               Show this help message and exit
+|        --config [CONFIG]        Config file to use. Default: ecl-test.json.
 |        --loglevel [{info,debug}]
-|                                 set the log level. Use debug for more detailed logfile.
+|                                 Set the log level. Use debug for more detailed logfile.
 |        --suiteDir [SUITEDIR], -s [SUITEDIR]
-|                                 suiteDir to use. Default value is the current directory and it can handle relative path.
-|        --timeout [TIMEOUT]      timeout for query execution in sec. Use -1 to disable timeout. Default value defined in ecl-test.json config file (see: 9.)
+|                                 SuiteDir to use. Default value is the current directory and it can handle relative path.
+|        --timeout [TIMEOUT]      Timeout for query execution in sec. Use -1 to disable timeout. Default value defined in ecl-test.json config file (see: 9.)
 |        --keyDir [KEYDIR], -k [KEYDIR]
-|                                 key file directory to compare test output. Default value defined in regress.json config file.
-|        --ignoreResult, -i       completely ignore the result.
+|                                 Key file directory to compare test output. Default value defined in regress.json config file.
+|        --ignoreResult, -i       Completely ignore the result.
 |        -X name1=value1[,name2=value2...]
-|                                 sets the stored input value (stored('name')).
+|                                 Sets the stored input value (stored('name')).
 |        -f optionA=valueA[,optionB=valueB...]
-|                                 set an ECL option (equivalent to #option).
-|        --pq threadNumber        parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
-|        --noversion              avoid version expansion of queries. Execute them as a standard test.
+|                                 Set an ECL option (equivalent to #option).
+|        --pq threadNumber        Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
+|        --noversion              Avoid version expansion of queries. Execute them as a standard test.
 |        --runclass class[,class,...], -r class[,class,...]
-|                                 run subclass(es) of the suite. Default value is 'all'
+|                                 Run subclass(es) of the suite. Default value is 'all'
 |        --excludeclass class[,class,...], -e class[,class,...]
-|                                 exclude subclass(es) of the suite. Default value is 'none'
+|                                 Exclude subclass(es) of the suite. Default value is 'none'
 |        --handleEclccWarningFile, -w
 |                                 Create/overwrite/delete ECLCC warning file.
 |        --jobnamesuffix suffix   Specify workunit job name suffix.
 |        --target [target_cluster_list | all], -t [target_cluster_list | all]
-|                                 run the setup on target cluster(s). If target = 'all' then run setup on all clusters. If undefined the config 'defaultSetupClusters' value will be used.
-|        --publish, -p            publish compiled query instead of run.
+|                                 Run the setup on target cluster(s). If target = 'all' then run setup on all clusters. If undefined the config 'defaultSetupClusters' value will be used.
+|        --publish, -p            Publish compiled query instead of run.
 |
 
 
@@ -236,35 +255,35 @@ Result:
 |                             ECL_query [ECL_query ...]
 |
 |       positional arguments:
-|        ECL_query                name of one or more ECL file(s). It can contain wildcards. (mandatory).
+|        ECL_query                Name of one or more ECL file(s). It can contain wildcards. (mandatory).
 |
 |       optional arguments:
-|        -h, --help               show this help message and exit
-|        --config [CONFIG]        config file to use. Default: ecl-test.json.
+|        -h, --help               Show this help message and exit
+|        --config [CONFIG]        Config file to use. Default: ecl-test.json.
 |        --loglevel [{info,debug}]
-|                                 set the log level. Use debug for more detailed logfile.
+|                                 Set the log level. Use debug for more detailed logfile.
 |        --suiteDir [SUITEDIR], -s [SUITEDIR]
-|                                 suiteDir to use. Default value is the current directory and it can handle relative path.
-|        --timeout [TIMEOUT]      timeout for query execution in sec. Use -1 to disable timeout. Default value defined in ecl-test.json config file (see: 9.)
+|                                 SuiteDir to use. Default value is the current directory and it can handle relative path.
+|        --timeout [TIMEOUT]      Timeout for query execution in sec. Use -1 to disable timeout. Default value defined in ecl-test.json config file (see: 9.)
 |        --keyDir [KEYDIR], -k [KEYDIR]
-|                                 key file directory to compare test output. Default value defined in regress.json config file.
-|        --ignoreResult, -i       completely ignore the result.
+|                                 Key file directory to compare test output. Default value defined in regress.json config file.
+|        --ignoreResult, -i       Completely ignore the result.
 |        -X name1=value1[,name2=value2...]
-|                                 sets the stored input value (stored('name')).
+|                                 Sets the stored input value (stored('name')).
 |        -f optionA=valueA[,optionB=valueB...]
-|                                 set an ECL option (equivalent to #option).
-|        --pq threadNumber        parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
-|        --noversion              avoid version expansion of queries. Execute them as a standard test.
+|                                 Set an ECL option (equivalent to #option).
+|        --pq threadNumber        Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
+|        --noversion              Avoid version expansion of queries. Execute them as a standard test.
 |        --runclass class[,class,...], -r class[,class,...]
-|                                 run subclass(es) of the suite. Default value is 'all'
+|                                 Run subclass(es) of the suite. Default value is 'all'
 |        --excludeclass class[,class,...], -e class[,class,...]
-|                                 exclude subclass(es) of the suite. Default value is 'none'
+|                                 Exclude subclass(es) of the suite. Default value is 'none'
 |        --handleEclccWarningFile, -w
 |                                 Create/overwrite/delete ECLCC warning file.
 |        --jobnamesuffix suffix   Specify workunit job name suffix.
 |        --target [target_cluster_list | all], -t [target_cluster_list | all]
-|                                 run the setup on target cluster(s). If target = 'all' then run setup on all clusters. If undefined the config 'defaultSetupClusters' value will be used.
-|        --publish, -p            publish compiled query instead of run.
+|                                 Run the setup on target cluster(s). If target = 'all' then run setup on all clusters. If undefined the config 'defaultSetupClusters' value will be used.
+|        --publish, -p            Publish compiled query instead of run.
 |
 
 Steps to run Regression Suite
