@@ -229,6 +229,7 @@ extern HQL_API void gatherGraphReferences(HqlExprCopyArray & graphs, IHqlExpress
  */
 extern HQL_API void getVirtualFields(HqlExprArray & virtuals, IHqlExpression * record);
 extern HQL_API bool containsVirtualFields(IHqlExpression * record);
+extern HQL_API bool containsVirtualField(IHqlExpression * record, IAtom * kind);
 extern HQL_API IHqlExpression * removeVirtualFields(IHqlExpression * record);
 extern HQL_API void unwindTransform(HqlExprCopyArray & exprs, IHqlExpression * transform);
 extern HQL_API bool isConstantTransform(IHqlExpression * transform);

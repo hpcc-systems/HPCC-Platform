@@ -161,6 +161,13 @@ SimplePersonBookRec;
 unsigned8           filepos{virtual(fileposition)};
                 end;
 
+EXPORT HouseIdVirtualRec := record
+HouseIdRec;
+unsigned8           virtfilepos{virtual(fileposition)};
+unsigned8           virtlfilepos{virtual(localfileposition)};
+string              virtfilename{virtual(LOGICALFILENAME)};
+                end;
+
 // Dataset definitions:
 
 EXPORT HousePersonBookName := NamePrefix + 'HousePersonBook';
@@ -192,6 +199,7 @@ EXPORT PersonBookExDs := dataset(PersonBookName, PersonBookRelatedIdExRec, thor)
 EXPORT HouseExDs := dataset(HouseName, HouseIdExRec, thor);
 EXPORT PersonExDs := dataset(PersonName, PersonRelatedIdExRec, thor);
 EXPORT BookExDs := dataset(BookName, BookRelatedIdExRec, thor);
+EXPORT HouseVirtualDs := dataset(HouseName, HouseIdVirtualRec, thor);
 
 EXPORT SimplePersonBookDs := dataset(SimplePersonBookName, SimplePersonBookExRec, thor);
 EXPORT SimplePersonBookIndex := index(SimplePersonBookDs, { surname, forename, aage  }, { SimplePersonBookDs }, SimplePersonBookIndexName);

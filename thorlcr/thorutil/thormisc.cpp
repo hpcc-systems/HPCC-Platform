@@ -1452,7 +1452,7 @@ void getLayoutTranslations(IConstPointerArrayOf<ITranslator> &translators, const
         if (!translatorContainer)
         {
             Owned<IOutputMetaData> publishedFormat = getDaliLayoutInfo(props);
-            translatorContainer.setown(getTranslators(fname, expectedFormat, publishedFormat, projectedFormat, translationMode, expectedFormatCrc, publishedFormatCrc));
+            translatorContainer.setown(getTranslators(fname, expectedFormat, publishedFormat, projectedFormat, translationMode, expectedFormatCrc, false, publishedFormatCrc));
             if (translatorContainer)
                 translatorTable.replace(*new CITranslatorMapping(*translatorContainer.getLink(), publishedFormatCrc));
         }
@@ -1465,5 +1465,5 @@ const ITranslator *getLayoutTranslation(const char *fname, IPartDescriptor &part
     IPropertyTree const &props = partDesc.queryOwner().queryProperties();
     Owned<IOutputMetaData> actualFormat = getDaliLayoutInfo(props);
     unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
-    return getTranslators(fname, expectedFormat, actualFormat, projectedFormat, translationMode, expectedFormatCrc, publishedFormatCrc);
+    return getTranslators(fname, expectedFormat, actualFormat, projectedFormat, translationMode, expectedFormatCrc, false, publishedFormatCrc);
 }

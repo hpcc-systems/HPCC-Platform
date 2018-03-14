@@ -719,7 +719,8 @@ unsigned CThorCsvReadArg::getFlags() { return 0; }
 unsigned __int64 CThorCsvReadArg::getChooseNLimit() { return I64C(0x7fffffffffffffff); }
 unsigned __int64 CThorCsvReadArg::getRowLimit() { return (unsigned __int64) -1; }
 void CThorCsvReadArg::onLimitExceeded() { }
-unsigned CThorCsvReadArg::getFormatCrc() { return 0; }   // no meaning
+unsigned CThorCsvReadArg::getDiskFormatCrc() { return 0; }   // no meaning
+unsigned CThorCsvReadArg::getProjectedFormatCrc() { return 0; }   // no meaning
 void CThorCsvReadArg::setCallback(IThorDiskCallback * _tc) { fpp = _tc; }
 
 //CThorXmlReadArg
@@ -728,7 +729,8 @@ unsigned CThorXmlReadArg::getFlags() { return 0; }
 unsigned __int64 CThorXmlReadArg::getChooseNLimit() { return I64C(0x7fffffffffffffff); }
 unsigned __int64 CThorXmlReadArg::getRowLimit() { return (unsigned __int64) -1; }
 void CThorXmlReadArg::onLimitExceeded() { }
-unsigned CThorXmlReadArg::getFormatCrc() { return 0; }   // no meaning
+unsigned CThorXmlReadArg::getDiskFormatCrc() { return 0; }   // no meaning
+unsigned CThorXmlReadArg::getProjectedFormatCrc() { return 0; }   // no meaning
 void CThorXmlReadArg::setCallback(IThorDiskCallback * _tc) { fpp = _tc; }
 
 //CThorChildGroupAggregateArg

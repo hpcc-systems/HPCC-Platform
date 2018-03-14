@@ -282,11 +282,11 @@ void CDiskReadSlaveActivityBase::kill()
     CSlaveActivity::kill();
 }
 
-IThorRowInterfaces * CDiskReadSlaveActivityBase::queryDiskRowInterfaces()
+IThorRowInterfaces * CDiskReadSlaveActivityBase::queryProjectedDiskRowInterfaces()
 {
-    if (!diskRowIf) 
-        diskRowIf.setown(createRowInterfaces(helper->queryDiskRecordSize()));
-    return diskRowIf;
+    if (!projectedDiskRowIf)
+        projectedDiskRowIf.setown(createRowInterfaces(helper->queryProjectedDiskRecordSize()));
+    return projectedDiskRowIf;
 }
 
 void CDiskReadSlaveActivityBase::serializeStats(MemoryBuffer &mb)

@@ -177,6 +177,7 @@ public:
     }
 };
 
+static UnexpectedVirtualFieldCallback unexpectedVirtualFieldCallback;
 class InMemoryIndexCursor;
 class InMemoryIndexTest;
 
@@ -451,6 +452,7 @@ protected:
     bool grouped = false;
     bool eogPending = false;
     bool anyThisGroup = false;
+    UnexpectedVirtualFieldCallback fieldCallback;
 
     const byte * _nextRow(bool &eogPending)
     {
@@ -468,7 +470,7 @@ protected:
         {
             buf.setLength(0);
             MemoryBufferBuilder aBuilder(buf, 0);
-            translator->translate(aBuilder, row);
+            translator->translate(aBuilder, *this, row);
             return reinterpret_cast<const byte *>(buf.toByteArray());
         }
         else
@@ -521,7 +523,6 @@ public:
     {
         deserializeSource.finishedRow();
     }
-
 };
 
 class InMemoryDirectReader : public CDirectReaderBase
@@ -1159,7 +1160,7 @@ public:
                 {
                     buf.setLength(0);
                     MemoryBufferBuilder aBuilder(buf, 0);
-                    translator->translate(aBuilder, keySearcher->queryRow().queryRow()); // MORE - could pass in partially-resolved RtlRow
+                    translator->translate(aBuilder, unexpectedVirtualFieldCallback, keySearcher->queryRow().queryRow()); // MORE - could pass in partially-resolved RtlRow
                     return (const byte *) buf.toByteArray();
                 }
                 else

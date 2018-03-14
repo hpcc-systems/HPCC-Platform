@@ -340,7 +340,7 @@ bool SegMonitorList::matched(void *keyBuffer, unsigned &lastMatch) const
 
 
 ///
-
+static UnexpectedVirtualFieldCallback unexpectedFieldCallback;
 class jhtree_decl CKeyLevelManager : implements IKeyManager, public CInterface
 {
 protected:
@@ -479,7 +479,7 @@ public:
         {
             buf.setLength(0);
             MemoryBufferBuilder aBuilder(buf, 0);
-            layoutSize = layoutTrans->translate(aBuilder, reinterpret_cast<byte const *>(keyCursor->queryKeyBuffer()));
+            layoutSize = layoutTrans->translate(aBuilder, unexpectedFieldCallback, reinterpret_cast<byte const *>(keyCursor->queryKeyBuffer()));
             return reinterpret_cast<byte const *>(buf.toByteArray());
         }
         else

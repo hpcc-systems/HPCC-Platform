@@ -334,10 +334,10 @@ public:
         files = parts.ordinality();
         if (files)
         {
-            unsigned expectedFormatCrc = fetchBaseHelper->getDiskFormatCrc();
+            unsigned projectedFormatCrc = fetchBaseHelper->getDiskFormatCrc();  // MORE: This is wrong, but doesn't currently matter.
             IOutputMetaData *projectedFormat = fetchBaseHelper->queryProjectedDiskRecordSize();
             RecordTranslationMode translationMode = getTranslationMode(*this);
-            getLayoutTranslations(translators, fetchBaseHelper->getFileName(), parts, translationMode, fetchBaseHelper->queryDiskRecordSize(), projectedFormat, expectedFormatCrc);
+            getLayoutTranslations(translators, fetchBaseHelper->getFileName(), parts, translationMode, fetchBaseHelper->queryDiskRecordSize(), projectedFormat, projectedFormatCrc);
             ForEachItemIn(p, parts)
             {
                 const ITranslator *translator = translators.item(p);
@@ -551,7 +551,8 @@ public:
             prefetcher->readAhead(prefetchBuffer);
             const byte * row = prefetchBuffer.queryRow();
             size32_t sz = prefetchBuffer.queryRowSize();
-            fetchedLen = translator->queryTranslator().translate(fetchedRowBuilder, row);
+            LocalVirtualFieldCallback fieldCallback("<MORE>", fpos, localFpos);
+            fetchedLen = translator->queryTranslator().translate(fetchedRowBuilder, fieldCallback, row);
             prefetchBuffer.finishedRow();
         }
         else

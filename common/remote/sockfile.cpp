@@ -3792,7 +3792,7 @@ static IOutputMetaData *getTypeInfoOutputMetaData(IPropertyTree &actNode, const 
     }
 }
 
-class CRemoteDiskReadActivity : public CSimpleInterfaceOf<IRemoteActivity>
+class CRemoteDiskReadActivity : public CSimpleInterfaceOf<IRemoteActivity>, implements IVirtualFieldCallback
 {
     StringAttr fileName;
     Linked<IHThorDiskReadArg> helper;
@@ -3802,6 +3802,7 @@ class CRemoteDiskReadActivity : public CSimpleInterfaceOf<IRemoteActivity>
     Owned<ISerialStream> inputStream;
     Owned<IFileIO> iFileIO;
     Linked<IOutputMetaData> outMeta;
+    Owned<const IDynamicTransform> translator;
     unsigned __int64 chooseN = 0;
     unsigned __int64 limit = 0;
     unsigned __int64 processed = 0;
@@ -3886,11 +3887,14 @@ public:
         outMeta.set(helper->queryOutputMeta());
         canMatchAny = helper->canMatchAny();
         record = &helper->queryDiskRecordSize()->queryRecordAccessor(true);
+        assertex(!helper->needTransform()); // Code assumes that we do not need to call the transform
+        translator.setown(createRecordTranslator(helper->queryProjectedDiskRecordSize()->queryRecordAccessor(true), *record));
     }
     ~CRemoteDiskReadActivity()
     {
         delete filterRow;
     }
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterfaceOf<IRemoteActivity>)
     void addFilter(const char *filter)
     {
         actualFilter.addFilter(*record, filter);
@@ -3918,7 +3922,9 @@ public:
                 const byte *next = prefetchBuffer.queryRow();
                 size32_t rowSz; // use local var instead of reference param for efficiency
                 if (fieldFilterMatch(next))
-                    rowSz = helper->transform(outBuilder, next);
+                {
+                    rowSz = translator->translate(outBuilder, *this, next);
+                }
                 else
                     rowSz = 0;
                 prefetchBuffer.finishedRow();
@@ -3987,6 +3993,23 @@ public:
     {
         return outputGrouped;
     }
+
+ //interface IVirtualFieldCallback
+    virtual const char * queryLogicalFilename(const void * row)
+    {
+        const char * filename = nullptr;
+        return filename ? filename : "";
+    }
+    virtual unsigned __int64 getFilePosition(const void * row)
+    {
+        unsigned __int64 baseOffset = 0;
+        return prefetchBuffer.tell() + baseOffset;
+    }
+    virtual unsigned __int64 getLocalFilePosition(const void * row)
+    {
+        unsigned part = 0;
+        return makeLocalFposOffset(part, prefetchBuffer.tell());
+    }
 };
 
 IRemoteActivity *createRemoteDiskRead(IPropertyTree &actNode)
@@ -4005,7 +4028,7 @@ IRemoteActivity *createRemoteDiskRead(IPropertyTree &actNode)
     Owned<IOutputMetaData> outMeta = getTypeInfoOutputMetaData(actNode, "output", outputGrouped);
     if (!outMeta)
         outMeta.set(inMeta);
-    Owned<IHThorDiskReadArg> helper = createDiskReadArg(fileName, inMeta.getClear(), outMeta.getClear(), chooseN, skipN, rowLimit);
+    Owned<IHThorDiskReadArg> helper = createDiskReadArg(fileName, LINK(inMeta), LINK(outMeta), LINK(outMeta), chooseN, skipN, rowLimit);
     Owned<CRemoteDiskReadActivity> ret = new CRemoteDiskReadActivity(*helper, compressed, inputGrouped, outputGrouped);
     Owned<IPropertyTreeIterator> filterIter = actNode.getElements("keyfilter");
     ForEach(*filterIter)

@@ -5642,6 +5642,34 @@ bool containsVirtualFields(IHqlExpression * record)
     return false;
 }
 
+extern HQL_API bool containsVirtualField(IHqlExpression * record, IAtom * kind)
+{
+    ForEachChild(i, record)
+    {
+        IHqlExpression * cur = record->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_field:
+        {
+            IHqlExpression * match = cur->queryAttribute(virtualAtom);
+            if (match && match->queryChild(0)->queryName() == kind)
+                return true;
+            //does not walk into nested records
+            break;
+        }
+        case no_ifblock:
+            if (containsVirtualField(cur->queryChild(1), kind))
+                return true;
+            break;
+        case no_record:
+            if (containsVirtualField(cur, kind))
+                return true;
+            break;
+        }
+    }
+    return false;
+}
+
 IHqlExpression * removeVirtualFields(IHqlExpression * record)
 {
     HqlExprArray args;
@@ -9645,13 +9673,13 @@ void getFieldTypeInfo(FieldTypeInfoStruct &out, ITypeInfo *type)
         if (physicalType->getSize() != UNKNOWN_LENGTH)
         {
             //Don't use the generated class for xml generation since it will generate physical rather than logical
-            out.fieldType |= (RFTMalien|RFTMinvalidxml|RFTMnoserialize);
+            out.fieldType |= (RFTMalien|RFTMcannotinterpret|RFTMnoserialize);
             type = physicalType;
             tc = type->getTypeCode();
         }
         else
         {
-            out.fieldType |= (RFTMalien|RFTMinvalidxml|RFTMnoserialize);
+            out.fieldType |= (RFTMalien|RFTMcannotinterpret|RFTMnoserialize);
             out.fieldType |= RFTMunknownsize;
             //can't work out the size of the field - so keep it as unknown for the moment.
             //until the alien field type is supported
@@ -9804,7 +9832,7 @@ void getFieldTypeInfo(FieldTypeInfoStruct &out, ITypeInfo *type)
         break;
     case type_alien:
         out.className = "RtlAlienTypeInfo";
-        out.fieldType |= (RFTMcontainsunknown|RFTMinvalidxml|RFTMnoserialize);
+        out.fieldType |= (RFTMcontainsunknown|RFTMcannotinterpret|RFTMnoserialize);
         break;
     case type_pointer:
     case type_class:
@@ -9934,7 +9962,7 @@ unsigned buildRtlRecordFields(IRtlFieldTypeDeserializer &deserializer, unsigned 
                 extractXmlName(xpathName, &xpathItem, NULL, field, "Row", false);
                 //Following should be in the type processing, and the type should include the information
                 if (field->hasAttribute(sizeAtom) || field->hasAttribute(countAtom))
-                    fieldFlags |= RFTMinvalidxml;
+                    fieldFlags |= RFTMcannotinterpret;
                 break;
             default:
                 extractXmlName(xpathName, NULL, NULL, field, NULL, false);
@@ -9952,8 +9980,24 @@ unsigned buildRtlRecordFields(IRtlFieldTypeDeserializer &deserializer, unsigned 
                 xpath = nullptr;
 
             MemoryBuffer defaultInitializer;
+            const char * initializer = nullptr;
+            IHqlExpression * virtualAttr = queryAttributeChild(field, virtualAtom, 0);
             IHqlExpression *defaultValue = queryAttributeChild(field, defaultAtom, 0);
-            if (defaultValue)
+            if (virtualAttr)
+            {
+                IAtom * virtualKind = virtualAttr->queryName();
+                if (virtualKind == filepositionAtom)
+                    initializer = (const char *)(memsize_t)FVirtualFilePosition;
+                else if (virtualKind == localFilePositionAtom)
+                    initializer = (const char *)(memsize_t)FVirtualLocalFilePosition;
+                else if (virtualKind == sizeofAtom)
+                    initializer = (const char *)(memsize_t)FVirtualRowSize;
+                else if (virtualKind == logicalFilenameAtom)
+                    initializer = (const char *)(memsize_t)FVirtualFilename;
+                else
+                    throwUnexpected();
+            }
+            else if (defaultValue)
             {
                 LinkedHqlExpr targetField = field;
                 if (fieldType->getTypeCode() == type_bitfield)
@@ -9961,8 +10005,9 @@ unsigned buildRtlRecordFields(IRtlFieldTypeDeserializer &deserializer, unsigned 
 
                 if (!createConstantField(defaultInitializer, targetField, defaultValue))
                     UNIMPLEMENTED;  // MORE - fail more gracefully!
+                initializer = (const char *) defaultInitializer.detach();
             }
-            fieldsArray[idx] = deserializer.addFieldInfo(lowerName, xpath, type, fieldFlags, (const char *) defaultInitializer.detach());
+            fieldsArray[idx] = deserializer.addFieldInfo(lowerName, xpath, type, fieldFlags, initializer);
             typeFlags |= fieldFlags & RFTMinherited;
             idx++;
             break;
