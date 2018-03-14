@@ -206,7 +206,9 @@ RSAZCryptor::~RSAZCryptor()
 
     if(bio_err)
     {
+#ifndef OPENSSL_NO_CRYPTO_MDEBUG
         CRYPTO_mem_leaks(bio_err);
+#endif
         BIO_free(bio_err);
     }
 
