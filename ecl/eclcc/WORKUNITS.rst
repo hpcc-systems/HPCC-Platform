@@ -351,6 +351,21 @@ however for some roxie queries (e.g. in a production system) the execution worku
 
 The following walk-through details the main stages executing a query, and the effect each of the query elements has.
 
+Queues
+======
+The system uses several inter-process queues to communicate between the different components in the system.  These queues
+are implemented by dali.  Components can subscribe to one or more queues, and receive notifications when entries are
+avaialable.
+
+Some example queues are:
+
+* <cluster>.eclserver - workunits to be compiled
+* <cluster>.roxie - workunits to execute on roxie
+* <cluster>.thor - graphs to execute on thor
+* <cluster>.eclscheduler - workunits that need to wait for events
+* <cluster>.agent - workunits to be executed on hthor or thor.
+* dfuserver_queue - dfu workunits for sprays/file copies etc.
+
 Workflow
 ========
 When a workunit is ready to be run, the workflow controls the flow of execution.  The workflow engine
