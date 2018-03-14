@@ -247,6 +247,8 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     set( PORTALURL "http://hpccsystems.com/download" )
   endif()
 
+  option(ICU_REQUIRES_CPP11 "Require C++11 for ICU support" OFF)
+
   set(CMAKE_MODULE_PATH "${HPCC_SOURCE_DIR}/cmake_modules/")
 
   if(UNIX AND SIGN_MODULES)
@@ -719,6 +721,9 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         find_package(ICU)
         IF (ICU_FOUND)
           add_definitions (-D_USE_ICU)
+          IF (NOT WIN32)
+            add_definitions (-DUCHAR_TYPE=uint16_t)
+          ENDIF()
           include_directories(${ICU_INCLUDE_DIR})
         ELSE()
           message(FATAL_ERROR "ICU requested but package not found")
