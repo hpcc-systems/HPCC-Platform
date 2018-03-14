@@ -1798,6 +1798,7 @@ public:
     {
         if (compressing())
         {
+#ifdef _USE_ZLIB
             ZlibCompressionType zt = ZlibCompressionType::GZIP;
             if (compression==HttpCompression::DEFLATE)
                 zt  = ZlibCompressionType::DEFLATE;
@@ -1819,6 +1820,9 @@ public:
 
             sock->write(mb.toByteArray(), mb.length());
             sent += mb.length();
+#else
+            throw MakeStringException(-1, "_USE_ZLIB is required for compressed output");
+#endif
         }
         return sent;
     }
