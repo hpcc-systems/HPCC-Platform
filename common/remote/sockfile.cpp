@@ -470,6 +470,38 @@ static const char *getRFSERRText(unsigned err)
     return "RFSERR_Unknown";
 }
 
+unsigned mapDafilesrvixCodes(unsigned err)
+{
+    // old Solaris dali/remote/daliservix.cpp uses
+    // different values for these error codes.
+    switch (err)
+    {
+        case 8200:
+            return RFSERR_InvalidCommand;
+        case 8201:
+            return RFSERR_NullFileIOHandle;
+        case 8202:
+            return RFSERR_InvalidFileIOHandle;
+        case 8203:
+            return RFSERR_TimeoutFileIOHandle;
+        case 8204:
+            return RFSERR_OpenFailed;
+        case 8205:
+            return RFSERR_ReadFailed;
+        case 8206:
+            return RFSERR_WriteFailed;
+        case 8207:
+            return RFSERR_RenameFailed;
+        case 8208:
+            return RFSERR_SetReadOnlyFailed;
+        case 8209:
+            return RFSERR_GetDirFailed;
+        case 8210:
+            return RFSERR_MoveFailed;
+    }
+    return err;
+}
+
 #define ThrottleText(throttleClass) #throttleClass
 const char *ThrottleStrings[] =
 {
@@ -1245,7 +1277,9 @@ protected: friend class CRemoteFileIO;
         unsigned errCode;
         reply.read(errCode);
         if (errCode) {
-
+            // old Solaris daliservix.cpp error code conversion
+            if ( (errCode >= 8200) && (errCode <= 8210) )
+                errCode = mapDafilesrvixCodes(errCode);
             StringBuffer msg;
             if (filename.get())
                 msg.append(filename);
@@ -1269,10 +1303,7 @@ protected: friend class CRemoteFileIO;
                         msg.appendf(" %2x",(int)rest[i]);
                 }
             }
-            //TODO This magic number 8209 defined in Solrais daliservix.cpp as RFSERR_GetDirFailed
-            //should clarify why it is different and use an RFSERR_xxx macro instead
-            else if (errCode == 8209)
-                msg.append("Failed to open directory.");
+            // NB: could append getRFSERRText for all error codes
             else if (errCode == RFSERR_GetDirFailed)
                 msg.append(RFSERR_GetDirFailed_Text);
             else
@@ -1974,9 +2005,7 @@ public:
             }
             catch (IDAFS_Exception * e)
             {
-                // TODO This magic number 8209 defined in Solrais daliservix.cpp as RFSERR_GetDirFailed
-                //should clarify why it is different and use an RFSERR_xxx macro instead
-                if ((e->errorCode() == RFSERR_GetDirFailed) || (e->errorCode() == 8209))
+                if (e->errorCode() == RFSERR_GetDirFailed)
                 {
                     e->Release();
                     return (offset_t)-1;
