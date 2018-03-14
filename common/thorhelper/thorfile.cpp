@@ -52,31 +52,35 @@ public:
     {
         recordSize.set(wuRead->queryOutputMeta());
     }
-    virtual IOutputMetaData * queryOutputMeta()
+    virtual IOutputMetaData * queryOutputMeta() override
     {
         return wuRead->queryOutputMeta();
     }
-    virtual const char * getFileName()
+    virtual const char * getFileName() override
     {
         return filename;
     }
-    virtual IOutputMetaData * queryDiskRecordSize()
+    virtual IOutputMetaData * queryDiskRecordSize() override
     {
         return (IOutputMetaData *)recordSize;
     }
-    virtual IOutputMetaData * queryProjectedDiskRecordSize()
+    virtual IOutputMetaData * queryProjectedDiskRecordSize() override
     {
         return (IOutputMetaData *)recordSize;
     }
-    virtual unsigned getFormatCrc()
+    virtual unsigned getDiskFormatCrc() override
     {
         return 0;
     }
-    virtual unsigned getFlags()
+    virtual unsigned getProjectedFormatCrc() override
+    {
+        return 0;
+    }
+    virtual unsigned getFlags() override
     {
         return TDRnocrccheck;
     }
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * src)
+    virtual size32_t transform(ARowBuilder & rowBuilder, const void * src) override
     {
         unsigned size = recordSize.getRecordSize(src);
         memcpy(rowBuilder.ensureCapacity(size, NULL), src, size);

@@ -60,21 +60,21 @@ protected:
     // return a ITranslator based on published format in part and expected/format
     ITranslator *getTranslators(IPartDescriptor &partDesc)
     {
-        unsigned expectedCrc = helper->getFormatCrc();
+        unsigned expectedFormatCrc = helper->getDiskFormatCrc();
         IOutputMetaData *projectedFormat = helper->queryProjectedDiskRecordSize();
         IPropertyTree const &props = partDesc.queryOwner().queryProperties();
         Owned<IOutputMetaData> publishedFormat = getDaliLayoutInfo(props);
         unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
         RecordTranslationMode translationMode = getTranslationMode(*this);
-        IOutputMetaData *expectedFormat = queryDiskRowInterfaces()->queryRowMetaData();
-        return ::getTranslators("rowstream", expectedFormat, publishedFormat, projectedFormat, translationMode, expectedCrc, publishedFormatCrc);
+        IOutputMetaData *expectedFormat = helper->queryDiskRecordSize();
+        return ::getTranslators("rowstream", expectedFormat, publishedFormat, projectedFormat, translationMode, expectedFormatCrc, false, publishedFormatCrc);
     }
 public:
     CDiskReadSlaveActivityRecord(CGraphElementBase *_container, IHThorArg *_helper=NULL) 
         : CDiskReadSlaveActivityBase(_container, _helper)
     {
         helper = (IHThorDiskReadArg *)queryHelper();
-        IOutputMetaData *diskRowMeta = queryDiskRowInterfaces()->queryRowMetaData()->querySerializedDiskMeta();
+        IOutputMetaData *diskRowMeta = helper->queryDiskRecordSize()->querySerializedDiskMeta();
         isFixedDiskWidth = diskRowMeta->isFixedSize();
         diskRowMinSz = diskRowMeta->getMinRecordSize();
         grouped = false;
@@ -260,7 +260,7 @@ void CDiskRecordPartHandler::open()
     if (compressed)
     {
         rwFlags |= rw_compress;
-        partStream.setown(createRowStream(iFile, activity.queryDiskRowInterfaces(), rwFlags, activity.eexp, translator));
+        partStream.setown(createRowStream(iFile, activity.queryProjectedDiskRowInterfaces(), rwFlags, activity.eexp, translator, this));
         if (!partStream.get())
         {
             if (!blockCompressed)
@@ -270,7 +270,7 @@ void CDiskRecordPartHandler::open()
         }
     }
     else
-        partStream.setown(createRowStream(iFile, activity.queryDiskRowInterfaces(), rwFlags, nullptr, translator));
+        partStream.setown(createRowStream(iFile, activity.queryProjectedDiskRowInterfaces(), rwFlags, nullptr, translator, this));
 
     if (!partStream)
         throw MakeActivityException(&activity, 0, "Failed to open file '%s'", filename.get());
@@ -1088,7 +1088,7 @@ public:
             {
                 if (!isOOMException(e))
                     throw e;
-                throw checkAndCreateOOMContextException(this, e, "aggregating using hash table", localAggTable->elementCount(), queryDiskRowInterfaces()->queryRowMetaData(), NULL);
+                throw checkAndCreateOOMContextException(this, e, "aggregating using hash table", localAggTable->elementCount(), helper->queryDiskRecordSize(), NULL);
             }
         }
         const void *next = aggregateStream->nextRow();

@@ -968,7 +968,8 @@ class ECLRTL_API CThorCsvReadArg: public CThorArgOf<IHThorCsvReadArg>
     virtual unsigned __int64 getChooseNLimit() override;
     virtual unsigned __int64 getRowLimit() override;
     virtual void onLimitExceeded() override;
-    virtual unsigned getFormatCrc() override;   // no meaning
+    virtual unsigned getDiskFormatCrc() override;   // no meaning
+    virtual unsigned getProjectedFormatCrc() override;   // no meaning
     virtual void setCallback(IThorDiskCallback * _tc) override;
 
 public:
@@ -981,7 +982,8 @@ class ECLRTL_API CThorXmlReadArg: public CThorArgOf<IHThorXmlReadArg>
     virtual unsigned __int64 getChooseNLimit() override;
     virtual unsigned __int64 getRowLimit() override;
     virtual void onLimitExceeded() override;
-    virtual unsigned getFormatCrc() override;   // no meaning
+    virtual unsigned getDiskFormatCrc() override;   // no meaning
+    virtual unsigned getProjectedFormatCrc() override;   // no meaning
     virtual void setCallback(IThorDiskCallback * _tc) override;
 
 public:
@@ -1250,7 +1252,8 @@ public:
         filename(_filename), meta(_meta) {}
 
     virtual unsigned getFlags()                             { return TDXtemporary|TDXcompress; }
-    virtual unsigned getFormatCrc()                         { rtlFailUnexpected(); return 0; }
+    virtual unsigned getDiskFormatCrc()                     { rtlFailUnexpected(); return 0; }
+    virtual unsigned getProjectedFormatCrc()                { rtlFailUnexpected(); return 0; }
     virtual IOutputMetaData * queryDiskRecordSize()         { return meta; }
     virtual IOutputMetaData * queryProjectedDiskRecordSize() { return meta; }
     virtual IOutputMetaData * queryOutputMeta()             { return meta; }

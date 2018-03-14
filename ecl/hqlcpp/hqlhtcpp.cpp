@@ -3744,7 +3744,7 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer & instanceName, IHqlExpres
             extractXmlName(xpathName, &xpathItem, NULL, field, "Row", false);
             //Following should be in the type processing, and the type should include the information
             if (field->hasAttribute(sizeAtom) || field->hasAttribute(countAtom))
-                fieldFlags |= RFTMinvalidxml;
+                fieldFlags |= RFTMcannotinterpret;
             break;
         default:
             extractXmlName(xpathName, NULL, NULL, field, NULL, false);
@@ -3785,8 +3785,23 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer & instanceName, IHqlExpres
             xpathCppText.append("NULL");
 
         StringBuffer defaultInitializer;
+        IHqlExpression * virtualAttr = queryAttributeChild(field, virtualAtom, 0);
         IHqlExpression *defaultValue = queryAttributeChild(field, defaultAtom, 0);
-        if (defaultValue)
+        if (virtualAttr)
+        {
+            IAtom * virtualKind = virtualAttr->queryName();
+            if (virtualKind == filepositionAtom)
+                defaultInitializer.append("PVirtualFilePosition");
+            else if (virtualKind == localFilePositionAtom)
+                defaultInitializer.append("PVirtualLocalFilePosition");
+            else if (virtualKind == sizeofAtom)
+                defaultInitializer.append("PVirtualRowSize");
+            else if (virtualKind == logicalFilenameAtom)
+                defaultInitializer.append("PVirtualFilename");
+            else
+                throwUnexpected();
+        }
+        else if (defaultValue)
         {
             LinkedHqlExpr targetField = field;
             if (fieldType->getTypeCode() == type_bitfield)
@@ -4255,7 +4270,7 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
 
             if (record->numChildren() != 0)
             {
-                if (!useTypeForXML || (recordTypeFlags & (RFTMinvalidxml|RFTMhasxmlattr)))
+                if (!useTypeForXML || (recordTypeFlags & (RFTMcannotinterpret|RFTMhasxmlattr)))
                 {
                     OwnedHqlExpr anon = createDataset(no_anon, LINK(instance.queryRecord()));
                     buildXmlSerialize(metactx, anon, "toXML", true);

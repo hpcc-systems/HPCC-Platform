@@ -216,6 +216,25 @@ bool isSimpleSource(IHqlExpression * expr)
     }
 }
 
+static bool isSimpleProjectingDiskRead(IHqlExpression * expr)
+{
+    for (;;)
+    {
+        switch (expr->getOperator())
+        {
+        case no_table:
+            return true;
+        case no_hqlproject:
+        case no_newusertable:
+            //MORE: HPCC-18469 Check if the transform only assigns fields with the same name from source to the target
+            return false;
+        default:
+            return false;
+        }
+        expr = expr->queryChild(0);
+    }
+}
+
 IHqlExpression * getVirtualSelector(IHqlExpression * dataset)
 {
     IHqlExpression * table = queryPhysicalRootTable(dataset);
@@ -341,6 +360,27 @@ IHqlExpression * buildTableWithoutVirtuals(VirtualFieldsInfo & info, IHqlExpress
 {
     IHqlExpression * tableExpr = queryPhysicalRootTable(expr);
     OwnedHqlExpr projected = createTableWithoutVirtuals(info, tableExpr);
+    return replaceExpression(expr, tableExpr, projected);
+}
+
+
+static IHqlExpression * createTableFromSerialized(IHqlExpression * tableExpr)
+{
+    IHqlExpression * record = tableExpr->queryChild(1);
+    OwnedHqlExpr diskRecord = getSerializedForm(record, diskAtom);
+    OwnedHqlExpr diskRecordWithMeta = record->cloneAllAnnotations(diskRecord);
+
+    OwnedHqlExpr newTable = replaceChild(tableExpr->queryBody(), 1, diskRecordWithMeta);
+
+    OwnedHqlExpr transform = createRecordMappingTransform(no_newtransform, record, newTable->queryNormalizedSelector());
+    OwnedHqlExpr projected = createDatasetF(no_newusertable, LINK(newTable), LINK(record), LINK(transform), createAttribute(_internal_Atom), NULL);
+    return tableExpr->cloneAllAnnotations(projected);
+}
+
+static IHqlExpression * buildTableFromSerialized(IHqlExpression * expr)
+{
+    IHqlExpression * tableExpr = queryPhysicalRootTable(expr);
+    OwnedHqlExpr projected = createTableFromSerialized(tableExpr);
     return replaceExpression(expr, tableExpr, projected);
 }
 
@@ -688,6 +728,23 @@ public:
         requiresOrderedMerge = false;
         rootSelfRow = NULL;
         activityKind = TAKnone;
+
+        if (tableExpr)
+        {
+            IHqlExpression * virtualAttr = tableExpr->queryAttribute(virtualAtom);
+            newDiskReadMapping = translator.queryOptions().newDiskReadMapping;
+            if (virtualAttr)
+                newDiskReadMapping = !getBoolAttribute(virtualAttr, legacyAtom);
+            switch (tableExpr->getOperator())
+            {
+            case no_fetch:
+            case no_compound_fetch:
+                newDiskReadMapping = false;
+                break;
+            }
+        }
+        else
+            newDiskReadMapping = false;
     }
     virtual ~SourceBuilder() {}
 
@@ -765,6 +822,8 @@ public:
     HqlExprAttr     failedFilterValue;
     HqlExprAttr     compoundCountVar;
     HqlExprAttr     physicalRecord;
+    LinkedHqlExpr   expectedRecord;
+    LinkedHqlExpr   projectedRecord;
     HqlExprAttr     steppedExpr;
     Linked<BuildCtx> globaliterctx;
     HqlExprCopyArray parentCursors;
@@ -787,6 +846,7 @@ public:
     bool            isUnfilteredCount;
     bool            isVirtualLogicalFilenameUsed;
     bool            requiresOrderedMerge;
+    bool            newDiskReadMapping;
 protected:
     HqlCppTranslator & translator;
 };
@@ -888,11 +948,19 @@ void SourceBuilder::analyse(IHqlExpression * expr)
     {
     case no_table:
     case no_newkeyindex:
-        if (fieldInfo.hasVirtuals())
+        if (fieldInfo.hasVirtuals() && !newDiskReadMapping)
         {
             assertex(fieldInfo.simpleVirtualsAtEnd);
             needToCallTransform = true;
             needDefaultTransform = false;
+        }
+        if (newDiskReadMapping)
+        {
+            if (!tableExpr->hasAttribute(_noVirtual_Atom) && (tableExpr->queryChild(2)->getOperator() != no_pipe))
+            {
+                if (containsVirtualField(tableExpr->queryRecord(), logicalFilenameAtom))
+                    isVirtualLogicalFilenameUsed = true;
+            }
         }
         break;
     case no_null:
@@ -1129,6 +1197,14 @@ void SourceBuilder::buildFilenameMember()
 void SourceBuilder::buildReadMembers(IHqlExpression * expr)
 {
     buildFilenameMember();
+
+    //Sanity check to ensure that the projected row is only in the in memory format if it from a spill file, or no transform needs to be called.
+    if (needToCallTransform || transformCanFilter)
+    {
+        if (!tableExpr->hasAttribute(_spill_Atom) && recordRequiresSerialization(tableExpr->queryRecord(), diskAtom))
+            throwUnexpectedX("Projected dataset should have been serialized");
+    }
+
     //---- virtual bool needTransform() { return <bool>; } ----
     if (needToCallTransform || transformCanFilter)
         translator.doBuildBoolFunction(instance->classctx, "needTransform", true);
@@ -1162,10 +1238,17 @@ void SourceBuilder::buildTransformBody(BuildCtx & transformCtx, IHqlExpression *
         }
         else
         {
-            //NOTE: The source is not link counted - it comes from a prefetched row, and does not include any virtual file position field.
-            OwnedHqlExpr boundSrc = createVariable("left", makeRowReferenceType(physicalRecord));
-            IHqlExpression * accessor = NULL;
-            transformCtx.associateOwn(*new BoundRow(tableExpr->queryNormalizedSelector(), boundSrc, accessor, translator.queryRecordOffsetMap(physicalRecord, (accessor != NULL)), no_none, NULL));
+            if (newDiskReadMapping)
+            {
+                translator.bindTableCursor(transformCtx, tableExpr, "left");
+            }
+            else
+            {
+                //NOTE: The source is not link counted - it comes from a prefetched row, and does not include any virtual file position field.
+                OwnedHqlExpr boundSrc = createVariable("left", makeRowReferenceType(physicalRecord));
+                IHqlExpression * accessor = NULL;
+                transformCtx.associateOwn(*new BoundRow(tableExpr->queryNormalizedSelector(), boundSrc, accessor, translator.queryRecordOffsetMap(physicalRecord, (accessor != NULL)), no_none, NULL));
+            }
         }
         transformCtx.addGroup();
     }
@@ -1263,50 +1346,56 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
     {
     case no_newkeyindex:
     case no_table:
-        if (fieldInfo.hasVirtuals())
+        if (newDiskReadMapping)
         {
-            IHqlExpression * record = expr->queryRecord();
-            assertex(fieldInfo.simpleVirtualsAtEnd);
-            assertex(!recordRequiresSerialization(record, diskAtom));
-            CHqlBoundExpr bound;
-            StringBuffer s;
-            translator.getRecordSize(ctx, expr, bound);
-
-            size32_t virtualSize = 0;
-            ForEachChild(idx, record)
+        }
+        else
+        {
+            if (fieldInfo.hasVirtuals())
             {
-                IHqlExpression * field = record->queryChild(idx);
-                IHqlExpression * virtualAttr = field->queryAttribute(virtualAtom);
-                if (virtualAttr)
+                IHqlExpression * record = expr->queryRecord();
+                assertex(fieldInfo.simpleVirtualsAtEnd);
+                assertex(!recordRequiresSerialization(record, diskAtom));
+                CHqlBoundExpr bound;
+                StringBuffer s;
+                translator.getRecordSize(ctx, expr, bound);
+
+                size32_t virtualSize = 0;
+                ForEachChild(idx, record)
                 {
-                    size32_t fieldSize = field->queryType()->getSize();
-                    assertex(fieldSize != UNKNOWN_LENGTH);
-                    virtualSize += fieldSize;
+                    IHqlExpression * field = record->queryChild(idx);
+                    IHqlExpression * virtualAttr = field->queryAttribute(virtualAtom);
+                    if (virtualAttr)
+                    {
+                        size32_t fieldSize = field->queryType()->getSize();
+                        assertex(fieldSize != UNKNOWN_LENGTH);
+                        virtualSize += fieldSize;
+                    }
                 }
-            }
 
-            if (!isFixedSizeRecord(record))
-            {
-                OwnedHqlExpr ensureSize = adjustValue(bound.expr, virtualSize);
-                s.clear().append("crSelf.ensureCapacity(");
-                translator.generateExprCpp(s, ensureSize).append(", NULL);");
-                ctx.addQuoted(s);
-            }
-
-            s.clear().append("memcpy(crSelf.row(), left, ");
-            translator.generateExprCpp(s, bound.expr).append(");");
-            ctx.addQuoted(s);
-
-            ForEachChild(idx2, record)
-            {
-                IHqlExpression * field = record->queryChild(idx2);
-                IHqlExpression * virtualAttr = field->queryAttribute(virtualAtom);
-                if (virtualAttr)
+                if (!isFixedSizeRecord(record))
                 {
-                    IHqlExpression * self = rootSelfRow->querySelector();
-                    OwnedHqlExpr target = createSelectExpr(LINK(self), LINK(field));
-                    OwnedHqlExpr value = getVirtualReplacement(field, virtualAttr->queryChild(0), expr);
-                    translator.buildAssign(ctx, target, value);
+                    OwnedHqlExpr ensureSize = adjustValue(bound.expr, virtualSize);
+                    s.clear().append("crSelf.ensureCapacity(");
+                    translator.generateExprCpp(s, ensureSize).append(", NULL);");
+                    ctx.addQuoted(s);
+                }
+
+                s.clear().append("memcpy(crSelf.row(), left, ");
+                translator.generateExprCpp(s, bound.expr).append(");");
+                ctx.addQuoted(s);
+
+                ForEachChild(idx2, record)
+                {
+                    IHqlExpression * field = record->queryChild(idx2);
+                    IHqlExpression * virtualAttr = field->queryAttribute(virtualAtom);
+                    if (virtualAttr)
+                    {
+                        IHqlExpression * self = rootSelfRow->querySelector();
+                        OwnedHqlExpr target = createSelectExpr(LINK(self), LINK(field));
+                        OwnedHqlExpr value = getVirtualReplacement(field, virtualAttr->queryChild(0), expr);
+                        translator.buildAssign(ctx, target, value);
+                    }
                 }
             }
         }
@@ -2006,20 +2095,6 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
                 translator.buildMetaMember(instance->classctx, serializedRecord, false, "queryProjectedDiskRecordSize");
                 break;
             }
-            default:
-                if (fieldInfo.hasVirtualsOrDeserialize())
-                {
-                    OwnedHqlExpr diskTable = createDataset(no_anon, LINK(physicalRecord));
-                    translator.buildMetaMember(instance->classctx, diskTable, false, "queryDiskRecordSize");
-                    if (activityKind != TAKpiperead)
-                        translator.buildMetaMember(instance->classctx, diskTable, false, "queryProjectedDiskRecordSize");
-                }
-                else
-                {
-                    translator.buildMetaMember(instance->classctx, tableExpr, isGrouped(tableExpr), "queryDiskRecordSize");
-                    if (activityKind != TAKpiperead)
-                        translator.buildMetaMember(instance->classctx, tableExpr, isGrouped(tableExpr), "queryProjectedDiskRecordSize");
-                }
             }
         }
     }
@@ -2581,6 +2656,26 @@ void SourceBuilder::gatherVirtualFields(bool ignoreVirtuals, bool ensureSerializ
         physicalRecord.setown(fieldInfo.createPhysicalRecord());
     else
         physicalRecord.set(record);
+
+    if (newDiskReadMapping)
+    {
+        projectedRecord.set(tableExpr->queryRecord());
+        expectedRecord.setown(getSerializedForm(physicalRecord, diskAtom));
+        //MORE: HPCC-18469 Reduce projected to the fields that are actually required by the dataset, and will need to remap field references.
+
+        if (fieldInfo.hasVirtuals())
+        {
+            StringBuffer typeName;
+            unsigned recordTypeFlags = translator.buildRtlType(typeName, projectedRecord->queryType());
+            if (recordTypeFlags & RFTMcannotinterpret)
+                throwError(HQLERR_CannotInterpretRecord);
+        }
+    }
+    else
+    {
+        expectedRecord.set(physicalRecord);
+        projectedRecord.set(physicalRecord);
+    }
 }
 
 
@@ -2755,9 +2850,18 @@ void DiskReadBuilderBase::buildMembers(IHqlExpression * expr)
     if (includeFormatCrc)
     {
         //Spill files can still have virtual attributes in their physical records => remove them.
-        OwnedHqlExpr noVirtualRecord = removeVirtualAttributes(physicalRecord);
-        translator.buildFormatCrcFunction(instance->classctx, "getFormatCrc", false, noVirtualRecord, NULL, 0);
+        OwnedHqlExpr noVirtualRecord = removeVirtualAttributes(expectedRecord);
+        translator.buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", false, noVirtualRecord, NULL, 0);
+
+        if (newDiskReadMapping)
+            translator.buildFormatCrcFunction(instance->classctx, "getProjectedFormatCrc", false, projectedRecord, NULL, 0);
+        else
+            translator.buildFormatCrcFunction(instance->classctx, "getProjectedFormatCrc", false, noVirtualRecord, NULL, 0);
     }
+
+    translator.buildMetaMember(instance->classctx, expectedRecord, isGrouped(tableExpr), "queryDiskRecordSize");
+    if (activityKind != TAKpiperead)
+        translator.buildMetaMember(instance->classctx, projectedRecord, isGrouped(tableExpr), "queryProjectedDiskRecordSize");
 
     buildLimits(instance->startctx, expr, instance->activityId); 
     buildKeyedLimitHelper(expr);
@@ -2987,7 +3091,6 @@ void DiskReadBuilder::buildTransform(IHqlExpression * expr)
 
 
 //---------------------------------------------------------------------------
-
 ABoundActivity * HqlCppTranslator::doBuildActivityDiskRead(BuildCtx & ctx, IHqlExpression * expr)
 {
 //  assertex(!isGroupedActivity(expr));
@@ -3002,16 +3105,46 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskRead(BuildCtx & ctx, IHqlE
     info.gatherVirtualFields(tableExpr->hasAttribute(_noVirtual_Atom) || isPiped, needToSerializeRecord(modeOp));
 
     unsigned optFlags = (options.foldOptimized ? HOOfold : 0);
-    if (!info.fieldInfo.simpleVirtualsAtEnd || info.fieldInfo.requiresDeserialize ||
-        (info.recordHasVirtuals() && (modeOp == no_csv || !isSimpleSource(expr))))
+    if (info.newDiskReadMapping && (modeOp != no_csv) && (modeOp != no_xml) && (modeOp != no_pipe))
     {
-        OwnedHqlExpr transformed = buildTableWithoutVirtuals(info.fieldInfo, expr);
-        //Need to wrap a possible no_usertable, otherwise the localisation can go wrong.
-        if (expr->getOperator() == no_table)
-            transformed.setown(createDataset(no_compound_diskread, LINK(transformed)));
-        OwnedHqlExpr optimized = optimizeHqlExpression(queryErrorProcessor(), transformed, optFlags);
-        traceExpression("after disk optimize", optimized);
-        return doBuildActivityDiskRead(ctx, optimized);
+        //The projected disk information (which is passed to the transform) uses the in memory format IFF
+        // - The source is a spill file (to allow efficient in memory mapping)
+        // - The disk read is a trivial slimming transform (so no transform needs calling on the projected disk format.
+        // Otherwise the table is converted to the serialized format.
+
+        //MORE: This shouldn't always need to be serialized - but engines crash at the moment if not
+        const bool forceAllProjectedSerialized = true;
+        if ((!tableExpr->hasAttribute(_spill_Atom) && !isSimpleProjectingDiskRead(expr)) || forceAllProjectedSerialized)
+        {
+            //else if the the table isn't serialized, then map to a serialized table, and then project to the real format
+            if (recordRequiresSerialization(tableExpr->queryRecord(), diskAtom))
+            {
+                OwnedHqlExpr transformed = buildTableFromSerialized(expr);
+                //Need to wrap a possible no_usertable, otherwise the localisation can go wrong.
+                if (expr->getOperator() == no_table)
+                    transformed.setown(createDataset(no_compound_diskread, LINK(transformed)));
+                OwnedHqlExpr optimized = optimizeHqlExpression(queryErrorProcessor(), transformed, optFlags);
+                traceExpression("after disk optimize", optimized);
+                return doBuildActivityDiskRead(ctx, optimized);
+            }
+        }
+
+        //Otherwise the dataset is in the correct format
+
+    }
+    else
+    {
+        if (!info.fieldInfo.simpleVirtualsAtEnd || info.fieldInfo.requiresDeserialize ||
+            (info.recordHasVirtuals() && (modeOp == no_csv || !isSimpleSource(expr))))
+        {
+            OwnedHqlExpr transformed = buildTableWithoutVirtuals(info.fieldInfo, expr);
+            //Need to wrap a possible no_usertable, otherwise the localisation can go wrong.
+            if (expr->getOperator() == no_table)
+                transformed.setown(createDataset(no_compound_diskread, LINK(transformed)));
+            OwnedHqlExpr optimized = optimizeHqlExpression(queryErrorProcessor(), transformed, optFlags);
+            traceExpression("after disk optimize", optimized);
+            return doBuildActivityDiskRead(ctx, optimized);
+        }
     }
 
     OwnedHqlExpr optimized;
@@ -3022,9 +3155,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskRead(BuildCtx & ctx, IHqlE
 
     if (optimized != expr)
         return buildActivity(ctx, optimized, false);
-
-    if (optimized->getOperator() != no_compound_diskread)
-        optimized.setown(createDataset(no_compound_diskread, LINK(optimized)));
 
     if (isPiped)
         return info.buildActivity(ctx, expr, TAKpiperead, "PipeRead", NULL);
@@ -4616,6 +4746,9 @@ void FetchBuilder::buildMembers(IHqlExpression * expr)
         translator.buildMetaInfo(meta);
         instance->classctx.addQuoted(s.clear().append("virtual IOutputMetaData * queryExtractedSize() override { return &").append(meta.queryInstanceObject()).append("; }"));
     }
+
+    translator.buildMetaMember(instance->classctx, expectedRecord, isGrouped(tableExpr), "queryDiskRecordSize");
+    translator.buildMetaMember(instance->classctx, projectedRecord, isGrouped(tableExpr), "queryProjectedDiskRecordSize");
 }
 
 

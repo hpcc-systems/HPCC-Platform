@@ -67,7 +67,7 @@ public:
             }
         }
         if (0 == (TDRnocrccheck & helper->getFlags()))
-            checkFormatCrc(this, file, helper->getFormatCrc(), helper->queryProjectedDiskRecordSize(), helper->queryDiskRecordSize(), false);
+            checkFormatCrc(this, file, helper->getDiskFormatCrc(), helper->getProjectedFormatCrc(), helper->queryProjectedDiskRecordSize(), helper->queryDiskRecordSize(), false);
     }
 };
 

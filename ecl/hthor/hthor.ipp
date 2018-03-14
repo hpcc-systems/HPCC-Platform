@@ -2323,7 +2323,7 @@ public:
     virtual void append(FFoption option, const IFieldFilter * filter) override;
 
 protected:
-    virtual void verifyRecordFormatCrc() { ::verifyFormatCrcSuper(helper.getFormatCrc(), ldFile?ldFile->queryDistributedFile():NULL, false, true); }
+    virtual void verifyRecordFormatCrc() { ::verifyFormatCrcSuper(helper.getDiskFormatCrc(), ldFile?ldFile->queryDistributedFile():NULL, false, true); }
     virtual void open();
     virtual bool openNext();
     virtual void closepart();

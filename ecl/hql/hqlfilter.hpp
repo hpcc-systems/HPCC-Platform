@@ -177,6 +177,7 @@ protected:
     unsigned firstOffsetField;          // first field where the keyed offset is adjusted
     bool onlyHozedCompares;
     bool ignoreUnkeyed;
+    bool excludeVirtuals;
     bool cleanlyKeyedExplicitly;
     bool keyedExplicitly;
     bool allowDynamicFormatChange;

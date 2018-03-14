@@ -468,6 +468,7 @@ FilterExtractor::FilterExtractor(IErrorReceiver & _errorReceiver, IHqlExpression
         numKeyableFields = (unsigned)_numKeyableFields;
 
     onlyHozedCompares = !_isDiskRead;
+    excludeVirtuals = _isDiskRead;
 
     expandKeyableFields();
     cleanlyKeyedExplicitly = false;
@@ -492,8 +493,11 @@ void FilterExtractor::expandKeyableFields()
         IHqlExpression * cur = tableRecord->queryChild(i);
         if (!cur->isAttribute())
         {
-            fields.append(*LINK(cur));
-            cnt++;
+            if (!(excludeVirtuals && cur->hasAttribute(virtualAtom)))
+            {
+                fields.append(*LINK(cur));
+                cnt++;
+            }
         }
     }
     keyableRecord.setown(createRecord(fields));

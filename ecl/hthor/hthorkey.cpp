@@ -2383,7 +2383,8 @@ public:
         if (translator)
         {
             MemoryBufferBuilder aBuilder(buf, 0);
-            translator->translate(aBuilder, rawBuffer);
+            FetchVirtualFieldCallback fieldCallback(fetch->pos);
+            translator->translate(aBuilder, fieldCallback, rawBuffer);
             rawBuffer = reinterpret_cast<const byte *>(buf.toByteArray());
         }
 
@@ -3559,7 +3560,8 @@ public:
         if (translator)
         {
             MemoryBufferBuilder aBuilder(buf, 0);
-            translator->translate(aBuilder, row);
+            FetchVirtualFieldCallback fieldCallback(pos);
+            translator->translate(aBuilder, fieldCallback, row);
             row = reinterpret_cast<const byte *>(buf.toByteArray());
         }
         if(match(fetch->ms, row))
