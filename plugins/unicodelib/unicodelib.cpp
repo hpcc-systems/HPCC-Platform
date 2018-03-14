@@ -26,6 +26,9 @@
 #include "unicode/coll.h"
 #include "unicode/stsearch.h"
 #include "unicode/translit.h"
+#if U_ICU_VERSION_MAJOR_NUM >= 44
+#include "unicode/normalizer2.h"
+#endif
 #include "unicode/rbbi.h"
 #include "../stringlib/wildmatch.tpp"
 

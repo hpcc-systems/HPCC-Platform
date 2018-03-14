@@ -37,9 +37,11 @@ if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieStr
 #ifdef _USE_ICU
 #include "unicode/utf.h"
 #else
-typedef unsigned short UChar;
+#define CHEAP_UCHAR_DEF
+typedef cheap_uchar_t UChar;
 #endif
 #endif
+
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.

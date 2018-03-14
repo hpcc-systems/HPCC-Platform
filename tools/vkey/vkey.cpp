@@ -15,6 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
+#include "platform.h"
 #include "jlib.hpp"
 #include "ctfile.hpp"
 

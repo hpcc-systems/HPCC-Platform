@@ -27,11 +27,7 @@
 #endif
 
 #define CHEAP_UCHAR_DEF
-#ifdef _WIN32
-typedef wchar_t UChar;
-#else //_WIN32
-typedef unsigned short UChar;
-#endif //_WIN32
+typedef cheap_uchar_t UChar;
 
 interface ITypeInfo;
 interface IValue;

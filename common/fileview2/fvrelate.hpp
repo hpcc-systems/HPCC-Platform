@@ -21,11 +21,7 @@
 #include "fileview.hpp"
 
 #define CHEAP_UCHAR_DEF
-#ifdef _WIN32
-typedef wchar_t UChar;
-#else //_WIN32
-typedef unsigned short UChar;
-#endif //_WIN32
+typedef cheap_uchar_t UChar;
 
 typedef void (*stringFieldTransformerFunction)(unsigned & tgtLen, char * & tgt, unsigned srcLen, const char * src);
 typedef void (*utf8FieldTransformerFunction)(unsigned & tgtLen, char * & tgt, unsigned srcLen, const char * src);
