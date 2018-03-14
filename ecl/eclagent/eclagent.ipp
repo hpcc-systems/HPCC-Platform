@@ -740,7 +740,7 @@ public:
     void updateProgress(IAgentContext & agent);
     void updateProgress(IStatisticGatherer &progress);
 
-    void ready() { if (!alreadyUpdated) activity->ready(); }
+    void ready();
     void execute() { if (!alreadyUpdated) activity->execute(); }
     void stop() { if (!alreadyUpdated) activity->stop(); }
 
