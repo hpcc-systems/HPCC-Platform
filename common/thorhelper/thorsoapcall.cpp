@@ -29,9 +29,7 @@
 #include "securesocket.hpp"
 #include "eclrtl.hpp"
 #include "roxiemem.hpp"
-#ifdef _USE_ZLIB
 #include "zcrypt.hpp"
-#endif
 
 using roxiemem::OwnedRoxieString;
 
