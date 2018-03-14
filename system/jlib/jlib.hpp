@@ -193,7 +193,7 @@ public:
     inline void add(TYPE * x, aindex_t pos)     { PointerArray::add(x, pos); }
     inline void append(TYPE * x)                { PointerArray::append(x); }
     inline aindex_t bAdd(TYPE * & newItem, PointerOfCompareFunc f, bool & isNew) { return PointerArray::bAdd(*(void * *)&newItem, (CompareFunc)f, isNew); }
-    inline aindex_t bSearch(const TYPE * & key, CompareFunc f) const    { return PointerArray:: bSearch(*(const void * *)&key, f); }
+    inline aindex_t bSearch(const TYPE * & key, PointerOfCompareFunc f) const    { return PointerArray:: bSearch(*(void * const *)&key, (CompareFunc)f); }
     inline aindex_t find(TYPE * x) const        { return PointerArray::find(x); }
     inline TYPE **getArray(aindex_t pos = 0)    { return (TYPE **)PointerArray::getArray(pos); }
     inline TYPE * item(aindex_t pos) const      { return (TYPE *)PointerArray::item(pos); }
