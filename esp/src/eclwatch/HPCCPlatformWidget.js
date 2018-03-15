@@ -20,6 +20,7 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/dom",
+    "dojo/dom-construct",
     "dojo/dom-class",
     "dojo/dom-form",
     "dojo/dom-style",
@@ -72,7 +73,7 @@ define([
     "hpcc/TableContainer",
     "hpcc/InfoGridWidget"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domClass, domForm, domStyle, domGeo, cookie, on, query, topic, xhr,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domConstruct, domClass, domForm, domStyle, domGeo, cookie, on, query, topic, xhr,
                 registry, Tooltip,
                 UpgradeBar, ColorPicker,
                 CodeMirror,
@@ -161,7 +162,11 @@ define([
         },
 
         refreshUserName: function () {
-            dom.byId(this.id + "UserID").textContent = this.userName ? this.userName : "";
+            if (this.username) {
+                dom.byId(this.id + "UserID").textContent = this.username;
+            } else {
+                domConstruct.place("<span>" + dojo.cookie("ESPUserName") + "</span>", this.id + "UserID", "replace");
+            }
         },
 
         init: function (params) {
