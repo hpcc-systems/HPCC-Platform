@@ -24,14 +24,9 @@ HPCCFile * HPCCFile::createHPCCFile()
     return new HPCCFile();
 }
 
-HPCCFile::HPCCFile()
-{
-    iskeyfile=false;
-    issuperfile=false;
-    keyedCount = -1;
-    nonKeyedCount = -1;
-    hasNestedColumns = false;
-}
+HPCCFile::HPCCFile() : formatEnum(HPCCFileFormatUnknown), iskeyfile(false), issuperfile(false), keyedCount(-1),
+                       nonKeyedCount(-1), hasNestedColumns(false)
+{}
 
 HPCCFile::~HPCCFile()
 {
