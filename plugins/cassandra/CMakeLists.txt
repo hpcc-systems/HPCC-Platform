@@ -69,11 +69,12 @@ if(USE_CASSANDRA)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-format-nonliteral") # Work around cassandra build error
     if (CMAKE_COMPILER_IS_GNUCXX)
         if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0.0)
-          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wimplicit-fallthrough=0 -Wno-maybe-uninitialized") # Work around cassandra build error
+          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wimplicit-fallthrough=0 -Wno-maybe-uninitialized -Wno-deprecated-declarations -Wno-unused-function") # Work around cassandra build error
         endif ()
     endif ()
   endif()
   set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cpp-driver/cmake/modules/")
+  set(CASS_ROOT_DIR "${PROJECT_SOURCE_DIR}/cpp-driver")
   add_subdirectory(cpp-driver ${PROJECT_BINARY_DIR}/cassandra)
   add_dependencies(cassandra libuv)
   set(CMAKE_CXX_FLAGS "${_SAVE_CMAKE_CXX_FLAGS}")
