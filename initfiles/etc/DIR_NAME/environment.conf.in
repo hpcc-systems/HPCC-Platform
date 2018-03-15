@@ -35,7 +35,8 @@ mpTraceLevel=0
 #Specify location of HPCC PKI public/private key files
 # note: if HPCCPassPhrase specified it must be encrypted
 #HPCCPassPhrase=
-#HPCCCertFile=/home/hpcc/.ssh/id_rsa.pub
+#HPCCCertificateFile=/home/hpcc/.ssh/cert.cer
+#HPCCPublicKeyFile=/home/hpcc/.ssh/id_rsa.pub
 #HPCCPrivateKeyFile=/home/hpcc/.ssh/id_rsa
 
 jvmoptions=-XX:-UsePerfData
