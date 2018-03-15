@@ -15,26 +15,27 @@
     limitations under the License.
 ############################################################################## */
 
-import Std.File AS FileServices;
-import $.setup;
-prefix := setup.Files(false, false).FilePrefix;
-
-// This is not an engine test, but a DFU.
-// Doesn't matter much which engine does it, so we restrict to only one
-
-//noRoxie
-//noThorLCR
+//nohthor
 
 //class=spray
 
 //version isTerminated=false
 //version isTerminated=true
 
+import std.system.thorlib;
+import Std.File AS FileServices;
+import $.setup;
 import ^ as root;
 
-isTerminated := #IFDEFINED(root.isTerminated, false);
+jlib:= SERVICE
+    unsigned8 rtlTick() : library='jlib',eclrtl,entrypoint='rtlNano';
+END;
 
+isTerminated := #IFDEFINED(root.isTerminated, false);
 dropzonePath := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
+engine := thorlib.platform();
+prefix := setup.Files(false, false).FilePrefix + engine + '-';
+suffix := '-' + jlib.rtlTick() : stored('startTime');
 
 unsigned VERBOSE := 0;
 
@@ -49,19 +50,19 @@ END;
 header := DATASET([{'Id', 'Field1', 'Field2', 'Field3', 'Field4'}], Layout);
 
 #if (isTerminated)
-    sprayPrepFileName := prefix + 'spray_prep_terminated';
+    sprayPrepFileName := prefix + 'spray_prep_terminated' + suffix;
     // Create a one record CSV logical file with terminator a the end
     setupFile := output(header, , sprayPrepFileName, CSV, OVERWRITE);
 
-    desprayOutFileName := dropzonePath + 'spray_input_terminated';
-    sprayOutFileName := prefix + 'spray_test_terminated';
+    desprayOutFileName := dropzonePath + prefix + 'spray_input_terminated' + suffix;
+    sprayOutFileName := prefix + 'spray_test_terminated' + suffix;
 #else
-    sprayPrepFileName := prefix + 'spray_prep_not_terminated';
+    sprayPrepFileName := prefix + 'spray_prep_not_terminated' + suffix;
     // Create a one record CSV logical file without terminator a the end
     setupFile := output(header, , sprayPrepFileName, CSV(TERMINATOR('')), OVERWRITE);
 
-    desprayOutFileName := dropzonePath + 'spray_input_not_terminated';
-    sprayOutFileName := prefix + 'spray_test_not_terminated';
+    desprayOutFileName := dropzonePath + prefix + 'spray_input_not_terminated' +  suffix;
+    sprayOutFileName := prefix + 'spray_test_not_terminated' + suffix;
 #end
 
 rec := RECORD
@@ -82,7 +83,7 @@ rec despray(rec l) := TRANSFORM
 end;
 
 dst1 := NOFOLD(DATASET([{'', ''}], rec));
-p1 := PROJECT(NOFOLD(dst1), despray(LEFT));
+p1 := NOTHOR(PROJECT(NOFOLD(dst1), despray(LEFT)));
 c1 := CATCH(NOFOLD(p1), ONFAIL(TRANSFORM(rec,
                                  SELF.result := 'Despray Fail',
                                  SELF.msg := FAILMESSAGE
@@ -111,7 +112,7 @@ rec spray(rec l) := TRANSFORM
 end;
 
 dst2 := NOFOLD(DATASET([{'', ''}], rec));
-p2 := PROJECT(NOFOLD(dst2), spray(LEFT));
+p2 := NOTHOR(PROJECT(NOFOLD(dst2), spray(LEFT)));
 c2 := CATCH(NOFOLD(p2), ONFAIL(TRANSFORM(rec,
                                  SELF.result := 'Spray Fail',
                                  SELF.msg := FAILMESSAGE
@@ -140,4 +141,5 @@ SEQUENTIAL(
     FileServices.DeleteExternalFile('.', desprayOutFileName),
     FileServices.DeleteLogicalFile(sprayOutFileName),
     FileServices.DeleteLogicalFile(sprayPrepFileName),
+
 );
