@@ -1561,7 +1561,7 @@ void CEspHttpServer::askUserLogin(EspAuthRequest& authReq, const char* msg)
         addCookie(SESSION_START_URL_COOKIE, sessionStartURL.str(), 0, true); //time out when browser is closed
     }
     if (!isEmptyString(msg))
-        addCookie(SESSION_AUTH_MSG_COOKIE, msg, 0, true); //time out when browser is closed
+        addCookie(SESSION_AUTH_MSG_COOKIE, msg, 0, false); //time out when browser is closed
     m_response->redirect(*m_request, authReq.authBinding->queryLoginURL());
 }
 
