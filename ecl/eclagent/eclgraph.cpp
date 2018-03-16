@@ -725,6 +725,14 @@ void EclGraphElement::updateProgress(IStatisticGatherer &progress)
         activity->updateProgress(progress);
 }
 
+void EclGraphElement::ready()
+{
+    if (!activity)
+        throw makeHThorException(kind, id, subgraph->id, 99, "Attempt to execute an activity that has not been created");
+    if (!alreadyUpdated)
+        activity->ready();
+}
+
 IHThorException * EclGraphElement::makeWrappedException(IException * e)
 {
     throw makeHThorException(kind, id, subgraph->id, e);
