@@ -42,6 +42,15 @@ xmlns:set="http://exslt.org/sets">
         <xsl:param name="agentNode"/>
         <xsl:for-each select="$agentNode/LogGroup">
             <LogGroup name="{current()/@name}">
+                <xsl:if test="string(current()/@MaxTransIDLength) != ''">
+                    <MaxTransIDLength><xsl:value-of select="current()/@MaxTransIDLength"/></MaxTransIDLength>
+                </xsl:if>
+                <xsl:if test="string(current()/@MaxTransIDSequenceNumber) != ''">
+                    <MaxTransIDSequenceNumber><xsl:value-of select="current()/@MaxTransIDSequenceNumber"/></MaxTransIDSequenceNumber>
+                </xsl:if>
+                <xsl:if test="string(current()/@MaxTransSeedTimeoutMinutes) != ''">
+                    <MaxTransSeedTimeoutMinutes><xsl:value-of select="current()/@MaxTransSeedTimeoutMinutes"/></MaxTransSeedTimeoutMinutes>
+                </xsl:if>
                 <xsl:for-each select="current()/Fieldmap">
                     <Fieldmap table="{current()/@table}">
                         <xsl:for-each select="current()/Field">
@@ -159,10 +168,22 @@ xmlns:set="http://exslt.org/sets">
             <xsl:if test="string($agentNode/@MaxServerWaitingSeconds) != ''">
                 <MaxServerWaitingSeconds><xsl:value-of select="$agentNode/@MaxServerWaitingSeconds"/></MaxServerWaitingSeconds>
             </xsl:if>
+            <xsl:if test="string($agentNode/@MaxTransIDLength) != ''">
+                <MaxTransIDLength><xsl:value-of select="$agentNode/@MaxTransIDLength"/></MaxTransIDLength>
+            </xsl:if>
+            <xsl:if test="string($agentNode/@MaxTransIDSequenceNumber) != ''">
+                <MaxTransIDSequenceNumber><xsl:value-of select="$agentNode/@MaxTransIDSequenceNumber"/></MaxTransIDSequenceNumber>
+            </xsl:if>
+            <xsl:if test="string($agentNode/@MaxTransSeedTimeoutMinutes) != ''">
+                <MaxTransSeedTimeoutMinutes><xsl:value-of select="$agentNode/@MaxTransSeedTimeoutMinutes"/></MaxTransSeedTimeoutMinutes>
+            </xsl:if>
             <xsl:call-template name="LogBasic">
                 <xsl:with-param name="agentNode" select="$agentNode"/>
             </xsl:call-template>
             <xsl:call-template name="LogSourceMap">
+                <xsl:with-param name="agentNode" select="$agentNode"/>
+            </xsl:call-template>
+            <xsl:call-template name="LogGroup">
                 <xsl:with-param name="agentNode" select="$agentNode"/>
             </xsl:call-template>
             <Filters>

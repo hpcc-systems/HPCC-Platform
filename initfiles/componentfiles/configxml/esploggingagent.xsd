@@ -100,6 +100,57 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
+      <xs:attribute name="MaxTransIDLength" type="xs:nonNegativeInteger" use="optional">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Maximum length of a transaction ID. The 0 means no limit.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="MaxTransIDSequenceNumber" type="xs:nonNegativeInteger" use="optional">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Maximum sequence number in a transaction ID. The 0 means no limit. </tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="MaxTransSeedTimeoutMinutes" type="xs:nonNegativeInteger" use="optional">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>How many minutes a TransSeed is timed out. The 0 means no limit.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:element name="LogGroup" maxOccurs="unbounded">
+        <xs:annotation>
+          <xs:appinfo>
+            <title>Log Group</title>
+          </xs:appinfo>
+        </xs:annotation>
+        <xs:complexType>
+          <xs:attribute name="MaxTransIDLength" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:appinfo>
+                <colIndex>2</colIndex>
+              </xs:appinfo>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="MaxTransIDSequenceNumber" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:appinfo>
+                <colIndex>3</colIndex>
+              </xs:appinfo>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="MaxTransSeedTimeoutMinutes" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:appinfo>
+                <colIndex>4</colIndex>
+              </xs:appinfo>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
       <xs:element name="LogSourceMap" maxOccurs="unbounded">
         <xs:annotation>
           <xs:appinfo>
