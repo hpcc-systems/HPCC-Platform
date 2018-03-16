@@ -92,6 +92,7 @@ static const char * EclDefinition =
 "  boolean UnicodeLocaleEndsWith(const unicode src, const unicode suff, const string form) :c,pure,entrypoint='ulUnicodeLocaleEndsWith';\n"
 "  string UnicodeVersion():c,pure,entrypoint='ulUnicodeVersion';\n"
 "  unicode UnicodeLocaleRemoveSuffix(const unicode src, const unicode suff, const string form) :c,pure,entrypoint='ulUnicodeLocaleRemoveSuffix';\n"
+"  unicode UnicodeLocaleRepeat(const unicode src, unsigned4 n) : c, pure,entrypoint='ulUnicodeLocaleRepeat'; \n"
 "END;\n";
 
 static const char * compatibleVersions[] = {
@@ -119,6 +120,21 @@ UNICODELIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     pb->flags = PLUGIN_IMPLICIT_MODULE | PLUGIN_MULTIPLE_VERSIONS;
     pb->description = "UnicodeLib unicode string manipulation library";
     return true;
+}
+
+static void unicodeEnsureIsNormalized(unsigned inLen, UChar * in)
+{
+    UErrorCode err = U_ZERO_ERROR;
+    if (!unorm_isNormalized(in, inLen, UNORM_NFC, &err))
+    {
+        UChar * buff = (UChar *)malloc(inLen * 2);
+        unsigned len = unorm_normalize(in, inLen, UNORM_NFC, 0, buff, inLen, &err);
+        if (len > inLen)
+            len = inLen;
+        memcpy(in, buff, len*sizeof(UChar));
+        while (len < inLen) in[len++] = 0x0020;
+        free(buff);
+    }
 }
 
 
@@ -330,7 +346,7 @@ private:
         next_ = new uint32_t[capacity_+1]; // the number of characters is always less or equal to the string length
         unsigned index=0;
         next_[index] = 0;
-        int32_t end = 0;
+        uint32_t end = 0;
         while (end < capacity_)
         {
             end = end+ucpLength(ustring_[end]);
@@ -1748,4 +1764,29 @@ UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleRemoveSuffix(unsigned & tgtLe
     tgtLen = pro.length();
     tgt = (UChar *)CTXMALLOC(parentCtx, tgtLen * 2);
     pro.extract(0, tgtLen, tgt);
+}
+
+UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleRepeat(unsigned & tgtLen, UChar * & tgt, unsigned srcLen, UChar const * src, unsigned n)
+{
+    size32_t resultLen = srcLen * n;
+    //Check for empty string or overflow in the length of the string
+    if (((int)n <= 0) || (srcLen == 0) || (resultLen /n != srcLen))
+    {
+        tgtLen = 0;
+        tgt = nullptr;
+        return;
+    }
+
+    UChar * result = (UChar *)CTXMALLOC(parentCtx, resultLen * sizeof(UChar));
+    assertex(result);
+    for (unsigned i = 0; i < n; ++i)
+    {
+        memcpy(&result[i * srcLen], src, srcLen * sizeof(UChar));
+    }
+
+    //Now need to ensure the string is normalized since characters from the end of one string may combine with start of the next
+    unicodeEnsureIsNormalized(resultLen, result);
+
+    tgtLen = resultLen;
+    tgt = result;
 }
