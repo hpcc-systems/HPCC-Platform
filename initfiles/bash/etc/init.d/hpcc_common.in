@@ -274,7 +274,9 @@ set_componentvars() {
 }
 
 validate_configuration() {
-    if ! validation_error=$(${configgen_path}/configgen -env ${envfile} -validateonly 2>&1); then
+    validation_error=$(${cfggenpre[@]} ${configgen_path}/configgen -env ${envfile} -validateonly 2>&1)
+    rc=$?
+    if [[ $rc -ne 0 ]]; then
         log  "validate_configuration(): validation failure ${envfile}"
         log  "${validation_error}"
         echo -e "\033[31merror\033[0m: configgen xml validation failure"
@@ -284,7 +286,7 @@ validate_configuration() {
 
 get_commondirs() {
     componentFile="${path}/componentfiles/configxml"
-    DIRS=$(${configgen_path}/configgen -env ${envfile} -id ${componentFile} -listcommondirs)
+    DIRS=$(${cfggenpre[@]} ${configgen_path}/configgen -env ${envfile} -id ${componentFile} -listcommondirs)
     rc=$?
     if [[ $rc -ne 0 ]]; then
         log  "get_commondirs(): failure in configgen call"
@@ -300,7 +302,7 @@ configGenCmd() {
     # Creating logfiles for component
     logDir=$log/${compName}
 
-    configcmd="${configgen_path}/configgen -env ${envfile} -od ${runtime} -id ${componentFile} -c ${compName}"
+    configcmd="${cfggenpre[@]} ${configgen_path}/configgen -env ${envfile} -od ${runtime} -id ${componentFile} -c ${compName}"
     log "$configcmd"
     if [ "$(whoami)" != "${user}" ]; then
         su ${user} -c "$configcmd" 2>/dev/null
@@ -571,15 +573,16 @@ startCmd() {
         if [[ ${RCSTART} -eq 0 ]]; then
             log_success_msg
             return 0;
-        fi
-        checkPidExist $PIDPATH
-        local initRunning=$__pidExists
-        if [[ $initRunning -eq 0 ]]; then
-            log "${compName} failed to start cleanly"
-            log "Refer to the log file for the binary ${compName} for more information"
-            log_failure_msg
-            cleanupRuntimeEnvironment
-            return 1;
+        elif [[ ${RCSTART} -ne 4 ]]; then
+            checkPidExist $PIDPATH
+            local initRunning=$__pidExists
+            if [[ $initRunning -eq 0 ]]; then
+                log "${compName} failed to start cleanly"
+                log "Refer to the log file for the binary ${compName} for more information"
+                log_failure_msg
+                cleanupRuntimeEnvironment
+                return 1;
+            fi
         fi
         sleep 1
     done
@@ -739,7 +742,7 @@ setup_component() {
 create_dropzone() {
     OIFS=${IFS}
     unset IFS
-    dropzones=$(${configgen_path}/configgen -env ${envfile} -listdirs)
+    dropzones=$(${cfggenpre[@]} ${configgen_path}/configgen -env ${envfile} -listdirs)
     rc=$?
     if [[ $rc -ne 0 ]]; then
         log  "create_dropzone(): failure in configgen call"

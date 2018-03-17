@@ -26,13 +26,17 @@
 int main(int argc, char* argv[])
 {
     InitModuleObjects();
-    try {
-        if (argc<2) {
+    int exitCode = 1;
+    try
+    {
+        if (argc<2)
+        {
             printf("usage: dalistop <server_ip:port> [/nowait]\n");
             printf("eg:  dalistop .                          -- stop dali server running locally\n");
             printf("     dalistop eq0001016                  -- stop dali server running remotely\n");
         }
-        else {
+        else
+        {
             SocketEndpoint ep;
             ep.set(argv[1],DALI_SERVER_PORT);
             bool nowait = false;
@@ -45,26 +49,44 @@ int main(int argc, char* argv[])
             CMessageBuffer mb;
             int fn=-1;
             mb.append(fn);
-            if (comm->verifyConnection(0,2000)) {
+            if (comm->verifyConnection(0,2000))
+            {
                 comm->send(mb,0,MPTAG_DALI_COVEN_REQUEST,MP_ASYNC_SEND);
                 if (nowait)
+                {
                     Sleep(1000);
+                    exitCode = 0;
+                }
                 else
-                    while (comm->verifyConnection(0,1000)) {
-                        PROGLOG("Waiting for Dali Server to stop....");
-                        Sleep(5000);
+                {
+                    // verifyConnection() has a min conn timeout of 10s
+                    // use recv() instead to check for socket closed ...
+                    try
+                    {
+                        while (!comm->recv(mb,0,MPTAG_DALI_COVEN_REQUEST,nullptr,5000))
+                        {
+                            printf("Waiting for Dali Server to stop....\n");
+                        }
+                        exitCode = 0;
                     }
+                    catch (IMP_Exception *e)
+                    {
+                        if (e->errorCode() == MPERR_link_closed)
+                            exitCode = 0;
+                        e->Release();
+                    }
+                }
             }
             else
-                PROGLOG("Dali not responding");
+                fprintf(stderr, "Dali not responding\n");
             stopMPServer();
         }
     }
-    catch (IException *e) {
+    catch (IException *e)
+    {
         pexception("Exception",e);
         stopMPServer();
     }
     releaseAtoms();
-    return 0;
+    return exitCode;
 }
-
