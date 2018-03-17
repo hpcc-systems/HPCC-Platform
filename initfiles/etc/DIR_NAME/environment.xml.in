@@ -430,6 +430,37 @@
                   required="Read"
                   resource="WsEclAccess"/>
    </EspBinding>
+   <EspBinding defaultForPort="true"
+               defaultServiceVersion=""
+               name="myws_sqlbinding"
+               port="8510"
+               protocol="http"
+               resourcesBasedn="ou=WsSql,ou=EspServices,ou=ecl"
+               service="ws_sql"
+               type=""
+               workunitsBasedn="ou=workunits,ou=ecl"
+               wsdlServiceAddress="">
+    <Authenticate access="Read"
+                  description="Root access to WS SQL service"
+                  path="/"
+                  required="Read"
+                  resource="WsSqlAccess"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to WS SQL service"
+                         path="WsSQLAccess"
+                         resource="WsSqlAccess"
+                         service="ws_sql"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to own workunits"
+                         path="OwnWorkunitsAccess"
+                         resource="OwnWorkunitsAccess"
+                         service="ws_sql"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to others&apos; workunits"
+                         path="OthersWorkunitsAccess"
+                         resource="OthersWorkunitsAccess"
+                         service="ws_sql"/>
+   </EspBinding>
    <EspControlBinding defaultForPort="true"
                defaultServiceVersion=""
                name="espcontrol"
@@ -713,6 +744,36 @@
                   resource="WsEclAccess"/>
    </Properties>
   </EspService>
+  <EspService build="_"
+              buildSet="ws_sql"
+              description="myws_sql"
+              name="ws_sql">
+   <Properties bindingType="ws_sqlSoapBinding"
+               defaultPort="8510"
+               defaultResourcesBasedn="ou=WsSql,ou=EspServices,ou=ecl"
+               defaultSecurePort="18510"
+               plugin="ws_sql"
+               type="ws_sql">
+    <Authenticate access="Read"
+                  description="Root access to WS SQL service"
+                  path="/"
+                  required="Read"
+                  resource="WsSqlAccess"/>
+    <AuthenticateFeature description="Access to WS SQL service"
+                         path="WsSQLAccess"
+                         resource="WsSqlAccess"
+                         service="ws_sql"/>
+    <AuthenticateFeature description="Access to own workunits"
+                         path="OwnWorkunitsAccess"
+                         resource="OwnWorkunitsAccess"
+                         service="ws_sql"/>
+    <AuthenticateFeature description="Access to others&apos; workunits"
+                         path="OthersWorkunitsAccess"
+                         resource="OthersWorkunitsAccess"
+                         service="ws_sql"/>
+   </Properties>
+  </EspService>
+  
   <DafilesrvProcess build="_"
                     buildSet="dafilesrv"
                     description="DaFileSrv process"
