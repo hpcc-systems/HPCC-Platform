@@ -2173,6 +2173,8 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
         return SinkActivity;
     case no_call:
     case no_externalcall:
+        if (callIsActivity(expr) && (getNumChildTables(expr) != 0))
+            return FixedInputActivity;
         if (hasActivityType(expr))
         {
             if (isProjectableCall(expr))

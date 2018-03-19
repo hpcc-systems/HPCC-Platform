@@ -2716,26 +2716,6 @@ struct IHThorStreamedIteratorArg : public IHThorArg
 };
 
 
-
-interface IPropertyTree;
-interface IThorExternalRowProcessor : public IInterface
-{
-    virtual void onCreate(ICodeContext * ctx, IPropertyTree * graph) = 0;
-    virtual void addInput(unsigned idx, ITypedRowStream * input) = 0;
-    virtual IRowStream * createOutput(unsigned idx) = 0;
-    virtual void start() = 0;
-    virtual void execute() = 0;
-    virtual void stop() = 0;
-    virtual void reset() = 0;
-    virtual void onDestroy() = 0;
-};
-
-
-struct IHThorExternalArg : public IHThorArg
-{
-    virtual IThorExternalRowProcessor * createProcessor() = 0;
-};
-
 //------------------------- Dictionary stuff -------------------------
 
 interface IHThorHashLookupInfo
@@ -2772,6 +2752,47 @@ struct IHThorTraceArg : public IHThorArg
     virtual const char *getName() = 0;
 };
 
+//This interface is passed as an implicit parameter to the embed activity factory.  It allows the activity to determine
+//if it is being executed in a child query, is stranded and other useful information.
+interface IThorActivityContext
+{
+public:
+    virtual bool isLocal() const = 0;
+    virtual unsigned numSlaves() const = 0;
+    virtual unsigned numStrands() const = 0;
+    virtual unsigned querySlave() const = 0; // 0 based 0..numSlaves-1
+    virtual unsigned queryStrand() const = 0; // 0 based 0..numStrands-1
+};
+
+//MORE: How does is this extended to support onStart/onCreate
+//MORE: How is this extended to allow multiple outputs
+interface IHThorExternalArg : public IHThorArg
+{
+    virtual IRowStream * createOutput(IThorActivityContext * activityContext) = 0;
+    virtual void execute(IThorActivityContext * activityContext) = 0;
+    virtual void setInput(unsigned whichInput, IRowStream * input) = 0;
+};
+
+/*
+interface IPropertyTree;
+interface IThorExternalRowProcessor : public IInterface
+{
+    virtual void onCreate(ICodeContext * ctx, IPropertyTree * graph) = 0;
+    virtual void addInput(unsigned idx, ITypedRowStream * input) = 0;
+    virtual IRowStream * createOutput(unsigned idx) = 0;
+    virtual void start() = 0;
+    virtual void execute() = 0;
+    virtual void stop() = 0;
+    virtual void reset() = 0;
+    virtual void onDestroy() = 0;
+};
+
+
+struct IHThorExternalArg : public IHThorArg
+{
+    virtual IThorExternalRowProcessor * createProcessor() = 0;
+};
+*/
 
 //------------------------- Other stuff -------------------------
 

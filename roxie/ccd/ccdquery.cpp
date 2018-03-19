@@ -860,6 +860,10 @@ protected:
             return createRoxieServerWhenActionActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
         case TAKdistribution:
             return createRoxieServerDistributionActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
+        case TAKexternalprocess:
+        case TAKexternalsink:
+        case TAKexternalsource:
+            return createRoxieServerExternalActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
 
         // These are not required in Roxie for the time being - code generator should trap them
         case TAKchilddataset:

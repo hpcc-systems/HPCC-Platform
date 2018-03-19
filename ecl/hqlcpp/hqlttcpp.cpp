@@ -987,6 +987,8 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
 
     case no_call:
         {
+            if (functionCallIsActivity(expr))
+                return OptionYes;
             YesNoOption bodyOption = normalizeThor(expr->queryBody()->queryFunctionDefinition());
             //do Something with it
             break;
@@ -997,6 +999,8 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
             IHqlExpression * funcDef = func->queryChild(0);
             if (funcDef->hasAttribute(gctxmethodAtom) || funcDef->hasAttribute(globalContextAtom))
                 return OptionNo;
+            if (externalCallIsActivity(expr))
+                return OptionYes;
 //          if (funcDef->hasAttribute(graphAtom))
 //              return OptionYes;
             if (!resourceConditionalActions && expr->isAction())
@@ -2215,6 +2219,8 @@ IHqlExpression * ThorHqlTransformer::createTransformed(IHqlExpression * expr)
                 if (expr->isDatarow())
                     args.append(*createAttribute(allocatorAtom));
             }
+            inheritAttribute(args, expr, activityAtom);
+
             OwnedHqlExpr body = createWrapper(no_outofline, expr->queryType(), args);
             HqlExprArray newFormals;
             if (expr->hasAttribute(languageAtom))
@@ -13966,6 +13972,10 @@ public:
         case no_choosen:
             checkChoosen(expr);
             break;
+        case no_call:
+            if (callIsActivity(expr))
+                checkEmbedActivity(expr);
+            break;
         }
         QuickHqlTransformer::doAnalyse(expr);
     }
@@ -13974,6 +13984,7 @@ protected:
     void checkBloom(IHqlExpression * expr);
     void checkJoin(IHqlExpression * expr);
     void checkChoosen(IHqlExpression * expr);
+    void checkEmbedActivity(IHqlExpression * expr);
     void reportError(int errNo, const char * format, ...) __attribute__((format(printf, 3, 4)));
     void reportWarning(WarnErrorCategory category, int warnNo, const char * format, ...) __attribute__((format(printf, 4, 5)));
 protected:
@@ -14054,6 +14065,22 @@ void SemanticErrorChecker::checkChoosen(IHqlExpression * expr)
     IHqlExpression * limit = expr->queryChild(1);
     if (limit->queryValue() && limit->queryValue()->getIntValue() == 0)
         reportWarning(CategoryUnusual, WRN_CHOOSEN_ALL,"Use CHOOSEN(dataset, ALL) to remove implicit choosen.  CHOOSEN(dataset, 0) now returns no records.");
+}
+
+void SemanticErrorChecker::checkEmbedActivity(IHqlExpression * call)
+{
+    //Substitute the parameters into the external call/embed definition, so that any attributes that depend on the arguments
+    //are expanded.
+    OwnedHqlExpr expandedCall = expandOutOfLineFunctionCall(call);
+
+    //The setting for the local attribute allows the localness to be configured for the activity
+    IHqlExpression * localAttr = expandedCall->queryAttribute(localAtom);
+    if (localAttr)
+    {
+        IHqlExpression * value = localAttr->queryChild(0);
+        if (value && !value->isConstant())
+            reportError(ECODETEXT(HQLERR_AttributeXMustBeConstant), "LOCAL");
+    }
 }
 
 void SemanticErrorChecker::reportError(int errNo, const char * format, ...)

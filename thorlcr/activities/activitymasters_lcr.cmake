@@ -36,6 +36,7 @@ set (    SRCS
          diskwrite/thdiskwrite.cpp 
          distribution/thdistribution.cpp 
          enth/thenth.cpp 
+         external/thexternal.cpp
          fetch/thfetch.cpp 
          filter/thfilter.cpp 
          firstn/thfirstn.cpp 

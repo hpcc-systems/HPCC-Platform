@@ -112,6 +112,9 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
         return getInlineFlags(ctx, expr->queryChild(0));
     case no_call:
     case no_externalcall:               // no so sure about this - should possibly be assignable only. (also no_call above)
+        if (callIsActivity(expr))
+            return 0;
+        //fallthrough
     case no_getresult:
         if (isStreamed(expr))
             return RETiterate;

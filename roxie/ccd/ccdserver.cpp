@@ -2681,14 +2681,24 @@ public:
         sourceIdxArray[idx] = _sourceIdx;
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override
+    virtual void connectInputStreams(bool consumerOrdered)
     {
         //There could be situations (e.g., NONEMPTY), where you might want to strand the activity.
-        for (unsigned i = 0; i < numInputs; i++)
-            streamArray[i] = connectSingleStream(ctx, inputArray[i], sourceIdxArray[i], junctionArray[i], consumerOrdered);
+        connectSingleInputStreams(consumerOrdered);
+        CRoxieServerActivity::connectInputStreams(consumerOrdered);
+    }
+
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override
+    {
         return CRoxieServerActivity::getOutputStreams(ctx, idx, streams, NULL, consumerOrdered, nullptr); // The input basesclass does not have an input
     }
 
+protected:
+    void connectSingleInputStreams(bool consumerOrdered)
+    {
+        for (unsigned i = 0; i < numInputs; i++)
+            streamArray[i] = connectSingleStream(ctx, inputArray[i], sourceIdxArray[i], junctionArray[i], consumerOrdered);
+    }
 };
 
 //=================================================================================
@@ -13605,6 +13615,135 @@ public:
 IRoxieServerActivityFactory *createRoxieServerNonEmptyActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
     return new CRoxieServerNonEmptyActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
+}
+
+//=================================================================================
+
+class SingleNodeActivityContext : public IThorActivityContext
+{
+public:
+    SingleNodeActivityContext(unsigned _numStrands, unsigned _curStrand) : strands(_numStrands), curStrand(_curStrand) { assertex(curStrand < strands); }
+
+    virtual bool isLocal() const override { return false; }
+    virtual unsigned numSlaves() const override { return 1; }
+    virtual unsigned numStrands() const override { return strands; }
+    virtual unsigned querySlave() const override { return 0; }
+    virtual unsigned queryStrand() const override { return curStrand; }
+protected:
+    unsigned strands;
+    unsigned curStrand;
+};
+
+class CRoxieServerExternalActivity : public CRoxieServerMultiInputActivity
+{
+    Owned<IRowStream> rows;
+    SingleNodeActivityContext activityContext;
+
+public:
+    CRoxieServerExternalActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
+        : CRoxieServerMultiInputActivity(_ctx, _factory, _probeManager, _numInputs), activityContext(1, 0)
+    {
+    }
+
+    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) override
+    {
+        Owned<IStrandJunction> junction = CRoxieServerMultiInputActivity::getOutputStreams(ctx, idx, streams, consumerOptions, consumerOrdered, orderedCallbacks);
+        associateInputsWithHelper();
+        return junction.getClear();
+    }
+
+    virtual void connectInputStreams(bool consumerOrdered)
+    {
+        CRoxieServerMultiInputActivity::connectInputStreams(consumerOrdered);
+        associateInputsWithHelper();
+    }
+
+
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    {
+        CRoxieServerMultiInputActivity::start(parentExtractSize, parentExtract, paused);
+        if (factory->getKind() != TAKexternalsink)
+        {
+            IHThorExternalArg & helper = static_cast<IHThorExternalArg &>(basehelper);
+            rows.setown(helper.createOutput(&activityContext));
+        }
+    }
+
+    virtual void stop()
+    {
+        if (rows)
+        {
+            rows->stop();
+            rows.clear();
+        }
+        CRoxieServerMultiInputBaseActivity::stop();
+    }
+
+    virtual void reset()
+    {
+        rows.clear();
+    }
+
+    virtual const void * nextRow()
+    {
+        ActivityTimer t(totalCycles, timeActivities);
+        assertex(rows);
+        const void * next = rows->nextRow();
+        if (next)
+            processed++;
+        return next;
+    }
+
+    virtual void execute(unsigned parentExtractSize, const byte * parentExtract)
+    {
+        try
+        {
+            start(parentExtractSize, parentExtract, false);
+            assertex(!rows);
+            IHThorExternalArg & helper = static_cast<IHThorExternalArg &>(basehelper);
+            helper.execute(&activityContext);
+            stop();
+        }
+        catch (IException * E)
+        {
+            ctx->notifyAbort(E);
+            abort();
+            throw;
+        }
+    }
+
+protected:
+    void associateInputsWithHelper()
+    {
+        IHThorExternalArg & helper = static_cast<IHThorExternalArg &>(basehelper);
+        for (unsigned i = 0; i < numInputs; i++)
+            helper.setInput(i, streamArray[i]);
+    }
+};
+
+class CRoxieServerExternalActivityFactory : public CRoxieServerMultiInputFactory
+{
+    bool isRoot;
+public:
+    CRoxieServerExternalActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
+        : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), isRoot(_isRoot)
+    {
+    }
+
+    virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
+    {
+        return new CRoxieServerExternalActivity(_ctx, this, _probeManager, numInputs());
+    }
+
+    virtual bool isSink() const
+    {
+        return (kind == TAKexternalsink) && isRoot;
+    }
+};
+
+IRoxieServerActivityFactory *createRoxieServerExternalActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
+{
+    return new CRoxieServerExternalActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _isRoot);
 }
 
 //=================================================================================

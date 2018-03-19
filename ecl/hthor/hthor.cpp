@@ -10178,24 +10178,23 @@ void CHThorStreamedIteratorActivity::stop()
 //=====================================================================================================
 
 CHThorExternalActivity::CHThorExternalActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorExternalArg &_arg, ThorActivityKind _kind, IPropertyTree * _graphNode) 
-: CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), graphNode(_graphNode)
+: CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), graphNode(_graphNode), activityContext(1, 0)
 {
+}
+
+void CHThorExternalActivity::setInput(unsigned index, IHThorInput *_input)
+{
+    CHThorMultiInputActivity::setInput(index, _input);
+    CHThorInputAdaptor * adaptedInput = new CHThorInputAdaptor(_input);
+    inputAdaptors.append(*adaptedInput);
+    helper.setInput(index, adaptedInput);
 }
 
 void CHThorExternalActivity::ready()
 {
     CHThorMultiInputActivity::ready();
-    //must be called after onStart()
-    processor.setown(helper.createProcessor());
-    processor->onCreate(agent.queryCodeContext(), graphNode);
-    ForEachItemIn(idx, inputs)
-    {
-        Owned<CHThorInputAdaptor> adaptedInput = new CHThorInputAdaptor(inputs.item(idx));
-        processor->addInput(idx, adaptedInput);
-    }
-    processor->start();
-    if (outputMeta.getMinRecordSize() > 0)
-        rows.setown(processor->createOutput(0));
+    if (kind != TAKexternalsink)
+        rows.setown(helper.createOutput(&activityContext));
 }
 
 const void *CHThorExternalActivity::nextRow()
@@ -10210,14 +10209,7 @@ const void *CHThorExternalActivity::nextRow()
 void CHThorExternalActivity::execute()
 {
     assertex(!rows);
-    processor->execute();
-}
-
-void CHThorExternalActivity::reset()
-{
-    rows.clear();
-    processor->reset();
-    processor.clear();
+    helper.execute(&activityContext);
 }
 
 void CHThorExternalActivity::stop()
@@ -10227,7 +10219,7 @@ void CHThorExternalActivity::stop()
         rows->stop();
         rows.clear();
     }
-    processor->stop();
+    CHThorMultiInputActivity::stop();
 }
 
 

@@ -269,6 +269,8 @@ CActivityBase *createDictionaryWorkunitWriteSlave(CGraphElementBase *container);
 CActivityBase *createDictionaryResultWriteSlave(CGraphElementBase *container);
 CActivityBase *createTraceSlave(CGraphElementBase *container);
 CActivityBase *createIfActionSlave(CGraphElementBase *container);
+CActivityBase *createExternalSlave(CGraphElementBase *container);
+CActivityBase *createExternalSinkSlave(CGraphElementBase *container);
 
 
 class CGenericSlaveGraphElement : public CSlaveGraphElement
@@ -760,6 +762,11 @@ public:
                 break;
             case TAKstreamediterator:
                 ret = createStreamedIteratorSlave(this);
+                break;
+            case TAKexternalprocess:
+            case TAKexternalsink:
+            case TAKexternalsource:
+                ret = createExternalSlave(this);
                 break;
             default:
                 throw MakeStringException(TE_UnsupportedActivityKind, "Unsupported activity kind: %s", activityKindStr(kind));

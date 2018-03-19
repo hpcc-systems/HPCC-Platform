@@ -2878,24 +2878,41 @@ protected:
     IHThorInput * input;    // not currently a linkable interface
 };
 
+class SingleNodeActivityContext : public IThorActivityContext
+{
+public:
+    SingleNodeActivityContext(unsigned _numStrands, unsigned _curStrand) : strands(_numStrands), curStrand(_curStrand) { assertex(curStrand < strands); }
+
+    virtual bool isLocal() const override { return false; }
+    virtual unsigned numSlaves() const override { return 1; }
+    virtual unsigned numStrands() const override { return strands; }
+    virtual unsigned querySlave() const override { return 0; }
+    virtual unsigned queryStrand() const override { return curStrand; }
+protected:
+    unsigned strands;
+    unsigned curStrand;
+};
+
+
 class CHThorExternalActivity : public CHThorMultiInputActivity
 {
     IHThorExternalArg &helper;
-    Owned<IThorExternalRowProcessor> processor;
     Owned<IRowStream> rows;
     Linked<IPropertyTree> graphNode;
+    SingleNodeActivityContext activityContext;
+    IArrayOf<CHThorInputAdaptor> inputAdaptors;
 public:
     CHThorExternalActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorExternalArg &_arg, ThorActivityKind _kind, IPropertyTree * _graphNode);
 
-    virtual void ready();
-    virtual void stop();
-    virtual void reset();
+    virtual void ready() override;
+    virtual void stop() override;
 
-    virtual void execute();
+    virtual void execute() override;
 
-    virtual const void *nextRow();
+    virtual const void *nextRow() override;
+    virtual void setInput(unsigned index, IHThorInput *_input) override;
 
-    virtual bool isGrouped()                { return outputMeta.isGrouped(); }
+    virtual bool isGrouped() override { return outputMeta.isGrouped(); }
 };
 
 

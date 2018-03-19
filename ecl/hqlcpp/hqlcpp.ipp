@@ -1488,6 +1488,7 @@ public:
     ABoundActivity * doBuildActivityDistribute(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityDistribution(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
     ABoundActivity * doBuildActivitySectionInput(BuildCtx & ctx, IHqlExpression * expr);
+    ABoundActivity * doBuildActivityEmbed(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
     ABoundActivity * doBuildActivityEnth(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityExecuteWhen(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
     ABoundActivity * doBuildActivityForceLocal(BuildCtx & ctx, IHqlExpression * expr);

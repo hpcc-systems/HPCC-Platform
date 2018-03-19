@@ -47,6 +47,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 #include "diskwrite/thdiskwrite.ipp"
 #include "distribution/thdistribution.ipp"
 #include "enth/thenth.ipp"
+#include "external/thexternal.ipp"
 #include "filter/thfilter.ipp"
 #include "firstn/thfirstn.ipp"
 #include "funnel/thfunnel.ipp"
@@ -392,6 +393,11 @@ public:
                 throwUnexpected();
             case TAKwhen_dataset:
                 ret = createWhenActivityMaster(this);
+                break;
+            case TAKexternalprocess:
+            case TAKexternalsink:
+            case TAKexternalsource:
+                ret = createExternalActivityMaster(this);
                 break;
             default:
                 throw MakeActivityException(this, TE_UnsupportedActivityKind, "Unsupported activity kind: %s", activityKindStr(kind));

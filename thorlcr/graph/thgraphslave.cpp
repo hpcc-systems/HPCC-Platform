@@ -274,9 +274,15 @@ void CSlaveActivity::start()
 
 void CSlaveActivity::startAllInputs()
 {
+    ActivityTimer s(totalCycles, timeActivities);
     ForEachItemIn(i, inputs)
     {
-        startInput(i);
+        try { startInput(i); }
+        catch (CATCHALL)
+        {
+            ActPrintLog("External(%" ACTPF "d): Error staring input %d", container.queryId(), i);
+            throw;
+        }
     }
 }
 

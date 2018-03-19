@@ -37,6 +37,7 @@ set (    SRCS
          diskwrite/thdwslave.cpp 
          distribution/thdistributionslave.cpp 
          enth/thenthslave.cpp 
+         external/thexternalslave.cpp
          fetch/thfetchslave.cpp 
          filter/thfilterslave.cpp 
          firstn/thfirstnslave.cpp 
