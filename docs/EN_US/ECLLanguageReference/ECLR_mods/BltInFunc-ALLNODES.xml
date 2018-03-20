@@ -2,7 +2,11 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ALLNODES">
-  <!-- DNT-Start --><title>ALLNODES</title><!-- DNT-End -->
+  <!-- DNT-Start -->
+
+  <title>ALLNODES</title>
+
+  <!-- DNT-End -->
 
   <para><emphasis role="bold"><!-- DNT-Start -->ALLNODES<!-- DNT-End --><indexterm>
       <primary><!-- DNT-Start -->ALLNODES<!-- DNT-End --></primary>
@@ -28,20 +32,29 @@
           <row>
             <entry><!-- DNT-Start -->Return:<!-- DNT-End --></entry>
 
-            <entry><!-- DNT-Start -->ALLNODES<!-- DNT-End --> returns a record set or index.</entry>
+            <entry><!-- DNT-Start -->ALLNODES<!-- DNT-End --> returns a record
+            set or index.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->ALLNODES<!-- DNT-End --> </emphasis>function specifies that
-  the <emphasis>operation</emphasis> is performed on all nodes in parallel.
-  <emphasis role="bold">Available for use only in Roxie.</emphasis></para>
+  <para>The <emphasis role="bold"><!-- DNT-Start -->ALLNODES<!-- DNT-End -->
+  </emphasis>function specifies that the <emphasis>operation</emphasis> is
+  performed on all nodes in parallel. <emphasis role="bold">Available for use
+  only in Roxie.</emphasis></para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting>ds := ALLNODES(JOIN(SomeData,LOCAL(SomeIndex), LEFT.ID = RIGHT.ID));
-</programlisting><!-- DNT-End -->
+  <!-- DNT-Start -->
 
-  <para>See Also: <!-- DNT-Start -->THISNODE<!-- DNT-End -->, <!-- DNT-Start -->LOCAL<!-- DNT-End -->, <!-- DNT-Start -->NOLOCAL<!-- DNT-End --></para>
+  <programlisting>ds := ALLNODES(JOIN(SomeData,LOCAL(SomeIndex), LEFT.ID = RIGHT.ID));
+</programlisting>
+
+  <!-- DNT-End -->
+
+  <para>See Also: <!-- DNT-Start --><link
+  linkend="THISNODE">THISNODE</link><!-- DNT-End -->, <!-- DNT-Start --><link
+  linkend="LOCAL">LOCAL</link><!-- DNT-End -->, <!-- DNT-Start --><link
+  linkend="NOLOCAL">NOLOCAL</link><!-- DNT-End --></para>
 </sect1>
