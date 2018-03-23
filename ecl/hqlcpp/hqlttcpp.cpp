@@ -4293,7 +4293,7 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
             {
                 IHqlExpression * dataset = expr->queryChild(0);
                 CompoundSourceInfo * parentExtra = queryBodyExtra(dataset);
-                if (!parentExtra->isAggregate() && !parentExtra->hasAnyLimit() && parentExtra->isBinary())
+                if (!parentExtra->isAggregate() && !parentExtra->hasAnyLimit() && parentExtra->isBinary() && !isGrouped(dataset))
                 {
                     node_operator newOp = no_none;
                     switch (parentExtra->sourceOp)
@@ -10285,6 +10285,10 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
                 VStringBuffer msg("dataset expression (%s) assigned to field '%s' with type row", getECL(rhs, exprText), str(lhs->queryChild(1)->queryName()));
                 reportError(CategoryError, msg.str());
             }
+
+            //Ensure datasets assigned to child datasets are not grouped (until grouped child datasets are supported).
+            if (isGrouped(newRhs))
+                newRhs.setown(createDataset(no_group, newRhs.getClear()));
             if (rhs == newRhs)
                 return LINK(expr);
             HqlExprArray children;
