@@ -729,4 +729,13 @@ interface IStatisticTarget
     virtual void addStatistic(StatisticScopeType scopeType, const char * scope, StatisticKind kind, char * description, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction) = 0;
 };
 
+class jlib_decl NullStatisticTarget : implements IStatisticTarget
+{
+public:
+    virtual void addStatistic(StatisticScopeType scopeType, const char * scope, StatisticKind kind, char * description, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction)
+    {
+    }
+};
+
+
 #endif

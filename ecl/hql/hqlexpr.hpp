@@ -874,8 +874,8 @@ public:
         StringAttr cacheLocation;
     };
 
-    HqlParseContext(IEclRepository * _eclRepository, ICodegenContextCallback *_codegenCtx, IPropertyTree * _archive)
-    : archive(_archive), eclRepository(_eclRepository), codegenCtx(_codegenCtx)
+    HqlParseContext(IEclRepository * _eclRepository, ICodegenContextCallback *_codegenCtx, IPropertyTree * _archive, IStatisticTarget & _statsTarget)
+    : archive(_archive), eclRepository(_eclRepository), codegenCtx(_codegenCtx), statsTarget(_statsTarget)
     {
         expandCallsWhenBound = true;
         ignoreUnknownImport = false;
@@ -924,6 +924,7 @@ public:
     IErrorArray orphanedWarnings;
     HqlExprArray defaultFunctionCache;
     CIArrayOf<ForwardScopeItem> forwardLinks;
+    IStatisticTarget & statsTarget;
     unsigned maxErrors = DEFAULT_MAX_ERRORS;
     bool unsuppressImmediateSyntaxErrors = false;
     bool expandCallsWhenBound;
@@ -931,6 +932,7 @@ public:
     bool ignoreSignatures;
     bool aborting;
     bool checkDirty = false;
+    bool timeParser = false;
     Linked<ICodegenContextCallback> codegenCtx;
     CIArrayOf<FileParseMeta> metaStack;
     IEclCachedDefinitionCollection * cache = nullptr;
@@ -953,23 +955,31 @@ private:
 class HqlDummyParseContext : public HqlParseContext
 {
 public:
-    HqlDummyParseContext() : HqlParseContext(NULL, NULL, NULL) {}
+    HqlDummyParseContext() : HqlParseContext(NULL, NULL, NULL, nullStats) {}
+
+    NullStatisticTarget nullStats;
 };
 
 
-class HqlLookupContext
+class HQL_API HqlLookupContext
 {
 public:
-    explicit HqlLookupContext(const HqlLookupContext & other) : parseCtx(other.parseCtx)
+    explicit HqlLookupContext(HqlLookupContext & other) : parseCtx(other.parseCtx)
     {
         errs.set(other.errs); 
-        functionCache = other.functionCache; 
+        functionCache = other.functionCache;
+        container = &other;
+        if (parseCtx.timeParser)
+            startCycles = get_cycles_now();
     }
     HqlLookupContext(HqlParseContext & _parseCtx, IErrorReceiver * _errs)
     : parseCtx(_parseCtx), errs(_errs)
     {
         functionCache = &parseCtx.defaultFunctionCache;
+        if (parseCtx.timeParser)
+            startCycles = get_cycles_now();
     }
+    ~HqlLookupContext();
 
     void noteBeginAttribute(IHqlScope * scope, IFileContents * contents, IIdAtom * name);
     void noteBeginModule(IHqlScope * scope, IFileContents * contents);
@@ -992,6 +1002,8 @@ public:
     inline void setAborting() { parseCtx.setAborting(); }
     inline bool checkDirty() const { return parseCtx.checkDirty; }
 
+    void reportTiming(const char * name);
+
 protected:
 
     inline IPropertyTree * queryArchive() const { return parseCtx.archive; }
@@ -1003,6 +1015,9 @@ private:
 public:
     Linked<IErrorReceiver> errs;
     HqlExprArray * functionCache;
+    cycle_t startCycles = 0;
+    cycle_t childCycles = 0;
+    HqlLookupContext * container = nullptr;
 };
 
 class HqlDummyLookupContext : public HqlLookupContext

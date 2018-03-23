@@ -1345,6 +1345,13 @@ extern HQL_API IPropertyTree * queryArchiveEntry(IPropertyTree * archive, const 
 
 //---------------------------------------------------------------------------------------------------------------------
 
+HqlLookupContext::~HqlLookupContext()
+{
+    //If timings were not accumulated for this lookup context, accumulate child timings in the parent
+    if (container)
+        container->childCycles += childCycles;
+}
+
 void HqlLookupContext::noteBeginAttribute(IHqlScope * scope, IFileContents * contents, IIdAtom * name)
 {
     parseCtx.noteBeginAttribute(scope, contents, name);
@@ -1362,6 +1369,27 @@ void HqlLookupContext::noteBeginModule(IHqlScope * scope, IFileContents * conten
     parseCtx.noteBeginModule(scope, contents);
 }
 
+
+void HqlLookupContext::reportTiming(const char * name)
+{
+    if (startCycles)
+    {
+        cycle_t endCycles = get_cycles_now();
+        cycle_t elapsedCycles = endCycles - startCycles;
+        if (container)
+            container->childCycles += elapsedCycles;
+
+        __uint64 totalTime = cycle_to_nanosec(elapsedCycles);
+        __uint64 localTime = cycle_to_nanosec(elapsedCycles - childCycles);
+
+        StringBuffer scope;
+        scope.append("compiler::parse::").append(name);
+        parseCtx.statsTarget.addStatistic(SSTcompilestage, scope, StTimeTotalExecute, nullptr, totalTime, 1, 0, StatsMergeSum);
+        parseCtx.statsTarget.addStatistic(SSTcompilestage, scope, StTimeLocalExecute, nullptr, localTime, 1, 0, StatsMergeSum);
+
+        childCycles = 0;
+    }
+}
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -16912,7 +16940,8 @@ static void gatherAttributeDependencies(HqlLookupContext & ctx, const char * ite
 
 extern HQL_API IPropertyTree * gatherAttributeDependencies(IEclRepository * dataServer, const char * items)
 {
-    HqlParseContext parseCtx(dataServer, NULL, NULL);
+    NullStatisticTarget nullStats;
+    HqlParseContext parseCtx(dataServer, NULL, NULL, nullStats);
     parseCtx.nestedDependTree.setown(createPTree("Dependencies"));
 
     Owned<IErrorReceiver> errorHandler = createNullErrorReceiver();

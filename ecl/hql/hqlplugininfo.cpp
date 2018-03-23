@@ -86,7 +86,8 @@ static void expandPluginPropertyTree(IPropertyTree * target, HqlLookupContext & 
 
 IPropertyTree * createPluginPropertyTree(IEclRepository * plugins, bool includeModuleText)
 {
-    HqlParseContext parseCtx(plugins, NULL, NULL);
+    NullStatisticTarget nullStats;
+    HqlParseContext parseCtx(plugins, NULL, NULL, nullStats);
     HqlLookupContext ctx(parseCtx, NULL);
 
     Owned<IPropertyTree> map = createPTree("Plugins", ipt_caseInsensitive);
@@ -107,7 +108,8 @@ IPropertyTree * getPlugin(IPropertyTree * p, IEclRepository * plugins, const cha
 
     if(load && !plugin->getPropInt("@loaded",0))
     {
-        HqlParseContext parseCtx(plugins, NULL, NULL);
+        NullStatisticTarget nullStats;
+        HqlParseContext parseCtx(plugins, NULL, NULL, nullStats);
         HqlLookupContext GHMOREctx(parseCtx, NULL);
         Owned<IHqlScope> resolved = getResolveDottedScope(modname, LSFpublic, GHMOREctx);
         if (resolved)
