@@ -372,6 +372,14 @@ void WsWuInfo::addTimerToList(SCMStringBuffer& name, const char * scope, IConstW
                 t->setSubGraphId((int)subId);
         }
     }
+    if (version >= 1.72)
+    {
+        StringBuffer tsText;
+        unsigned __int64 ts = stat.getTimestamp();
+        formatStatistic(tsText, ts,  SMeasureTimestampUs);
+        t->setTimestamp(ts);
+        t->setWhen(tsText.str());
+    }
 
     timers.append(*t.getLink());
 }

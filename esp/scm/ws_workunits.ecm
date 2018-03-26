@@ -133,6 +133,8 @@ ESPStruct [nil_remove] ECLTimer
     int count;
     [min_ver("1.20")] string GraphName;
     [min_ver("1.20")] int SubGraphId;
+    [min_ver("1.72")] int64 Timestamp;
+    [min_ver("1.72")] string When;
 };
 
 //  ===========================================================================
