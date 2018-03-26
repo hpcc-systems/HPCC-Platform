@@ -38,6 +38,9 @@ sudo apt-get install libssl-dev
 sudo apt-get install libapr1-dev
 sudo apt-get install libaprutil1-dev
 sudo apt-get install clang
+sudo apt-get install libtool
+sudo apt-get install autotools-dev
+sudo apt-get install automake
 ```
 
 * Check out sources (for example, to directory ~/hpcc)
