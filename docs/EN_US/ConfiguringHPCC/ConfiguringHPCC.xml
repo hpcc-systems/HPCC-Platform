@@ -1736,7 +1736,29 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           </para>
         </sect3>
 
-        <?hard-pagebreak ?>
+        <sect3 role="brk">
+          <!-- DNT-Start --><title>Esp - AuthDomain Tab</title><!-- DNT-End -->
+         
+          <!--   Temporarily removing image 
+		  <para>
+            <graphic fileref="images/CM-img08-4.jpg" vendor="configmgrSS" />
+          </para>  -->
+
+          <para>The <emphasis role="bold">AuthDomain</emphasis> attribute
+          allows you to configure the settings used for session management. </para>
+
+          <!-- DNT-Start --><!--MyESP-HTTPS.t7-XXX-17--><!-- DNT-End -->
+
+         <!-- <para>
+            <xi:include href="../XMLGeneration/xml/esp.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='ESP.t7'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude">
+			 <xi:fallback>
+               <para><emphasis role="bold">ERROR</emphasis><emphasis>ESP.t7 FAILED TO LOAD</emphasis></para>
+			 </xi:fallback> 
+			</xi:include>			
+          </para>  -->
+        </sect3>
 
         <sect3>
           <!-- DNT-Start --><title>Esp - myesp HTTPS Tab</title><!-- DNT-End -->

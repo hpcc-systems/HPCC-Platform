@@ -461,16 +461,6 @@ ecl packagemap activate &lt;target&gt; multipart.pkg
     Client Tools Manual.</para>
 
 
-		   
-		     <xi:include  href="../../common/Version.xml" xpointer="Copyright" 
-		                 xmlns:xi="http://www.w3.org/2001/XInclude">
-		                   <xi:fallback>
-		                       <para>Copyright 201x </para>
-		                 </xi:fallback>
-              
-		     </xi:include>
-		
-		
 
 
     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
