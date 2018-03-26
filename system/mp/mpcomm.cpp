@@ -224,7 +224,9 @@ public:
         case MPERR_connection_failed:           str.appendf("MP connect failed (%s)",endpoint.getUrlStr(tmp).str()); break;
         case MPERR_process_not_in_group:        str.appendf("Current process not in Communicator group"); break;
         case MPERR_protocol_version_mismatch:   str.appendf("Protocol version mismatch (%s)",endpoint.getUrlStr(tmp).str()); break;
-        case MPERR_link_closed:                 str.appendf("MP link closed (%s)",endpoint.getUrlStr(tmp).str()); break;
+        // process crashes (segv, etc.) often cause this exception which is logged and can be misleading
+        // change it from "MP link closed" to something more helpful
+        case MPERR_link_closed:                 str.appendf("Unexpected process termination (ep:%s)",endpoint.getUrlStr(tmp).str()); break;
         }
         return str;
     }
