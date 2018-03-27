@@ -12247,7 +12247,14 @@ public:
         if(clusterHandler)
             clusterHandler->splitPhysicalFilename(dir, base);
         else
-            splitFilename(filename.str(), &dir, &dir, &base, &base);
+        {
+            // Check filename is URL and get localpath, only actually necessary if force remote reads are are on
+            RemoteFilename rfn;
+            rfn.setRemotePath(filename);
+            StringBuffer localPath;
+            rfn.getLocalPath(localPath);
+            splitFilename(localPath, &dir, &dir, &base, &base);
+        }
 
         desc->setDefaultDir(dir.str());
 

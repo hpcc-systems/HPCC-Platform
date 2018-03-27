@@ -41,6 +41,7 @@ extern REMOTE_API void filenameToUrl(StringBuffer & out, const char * filename);
 
 interface IDaFileSrvHook : extends IRemoteFileCreateHook
 {
+    virtual void forceRemote(const char *pattern) = 0; // NB: forces all local files matching pattern to be remote reads
     virtual void addSubnetFilter(const char *subnet, const char *mask, const char *dir, const char *sourceRange, bool trace) = 0;
     virtual void addRangeFilter(const char *range, const char *dir, const char *sourceRange, bool trace) = 0;
     virtual IPropertyTree *addFilters(IPropertyTree *filters, const SocketEndpoint *ipAddress) = 0;
@@ -58,6 +59,9 @@ extern REMOTE_API unsigned short getActiveDaliServixPort(const IpAddress &ip);
 extern REMOTE_API unsigned getDaliServixVersion(const IpAddress &ip,StringBuffer &ver);
 extern REMOTE_API unsigned getDaliServixVersion(const SocketEndpoint &ep,StringBuffer &ver);
 extern REMOTE_API DAFS_OS getDaliServixOs(const SocketEndpoint &ep);
+extern REMOTE_API void enableForceRemoteReads(); // forces file reads to be remote reads if they match environment setting 'forceRemotePattern' pattern.
+extern REMOTE_API bool testForceRemote(const char *path); // return true if forceRemote setup/pattern will make this path a remote read.
+
 
 extern REMOTE_API void setLocalMountRedirect(const IpAddress &ip,const char *dir,const char *mountdir);
 // redirects a daliservix file to a local mount. To remove redirect use NULL for mount dir or NULL for dir

@@ -3432,6 +3432,8 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     if (globals->getPropInt("DAFILESRVCACHE", 1))
         setDaliServixSocketCaching(true);
 
+    enableForceRemoteReads(); // forces file reads to be remote reads if they match environment setting 'forceRemotePattern' pattern.
+
     try
     {
 #ifdef MONITOR_ECLAGENT_STATUS  

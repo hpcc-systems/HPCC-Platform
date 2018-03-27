@@ -25,6 +25,7 @@
 #include "jfile.hpp"
 #include "jlog.hpp"
 #include "jmisc.hpp"
+#include "rmtfile.hpp"
 #include "dalienv.hpp"
 
 #ifdef _MSC_VER
@@ -332,6 +333,14 @@ int initDaemon()
 int main(int argc,char **argv) 
 {
     InitModuleObjects();
+
+    /* The dafilesrv hook is installed via the MODULE_INIT process
+     * but it is not wanted in dafilesrv itself, so remove it now.
+    */
+    IDaFileSrvHook *remoteHook = queryDaFileSrvHook();
+    if (remoteHook)
+        removeIFileCreateHook(remoteHook);
+
     EnableSEHtoExceptionMapping();
 #ifndef __64BIT__
     // Restrict stack sizes on 32-bit systems

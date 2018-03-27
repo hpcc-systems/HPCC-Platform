@@ -743,7 +743,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
             ret->setRemote(true);
         }
         ret->setCache(this);
-        files.setValue(localLocation, (ILazyFileIO *)ret);
+        files.setValue(local->queryFilename(), (ILazyFileIO *)ret);
         return ret.getClear();
     }
 

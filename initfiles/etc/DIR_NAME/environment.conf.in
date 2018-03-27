@@ -58,3 +58,5 @@ additionalPlugins=python2
 # To en-/disable Drop Zone restriction.
 # Default is enabled (true).
 useDropZoneRestriction=true
+# If set, will force matching local file paths to become remote reads, e.g:
+#forceRemotePattern=/var/lib/HPCCSystems/hpcc-data/eclagent/*
