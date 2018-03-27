@@ -3026,6 +3026,7 @@ bool FileSprayer::isSameSizeHeaderFooter()
 
 void FileSprayer::updateTargetProperties()
 {
+    TimeSection timer("FileSprayer::updateTargetProperties() time");
     Owned<IException> error;
     if (distributedTarget)
     {
@@ -3250,17 +3251,13 @@ void FileSprayer::updateTargetProperties()
                 // add original file name from a single distributed source (like Copy)
                 RemoteFilename remoteFile;
                 distributedSource->queryPart(0).getFilename(remoteFile, 0);
-                splitAndStoreFileInfo(newRecord, remoteFile);
+                splitAndCollectFileInfo(newRecord, remoteFile);
             }
             else
             {
-                // add original file names from multiple sources (like Spray)
-                ForEachItemIn(idx, sources)
-                {
-                    FilePartInfo & curSource = sources.item(idx);
-                    RemoteFilename &remoteFile = curSource.filename;
-                    splitAndStoreFileInfo(newRecord, remoteFile, idx, false);
-                }
+                FilePartInfo & firstSource = sources.item((aindex_t)0);
+                RemoteFilename &remoteFile = firstSource.filename;
+                splitAndCollectFileInfo(newRecord, remoteFile, false);
             }
             curHistory->addPropTree("Origin",newRecord.getClear());
         }
@@ -3269,40 +3266,34 @@ void FileSprayer::updateTargetProperties()
         throw error.getClear();
 }
 
-void FileSprayer::splitAndStoreFileInfo(IPropertyTree * newRecord, RemoteFilename &remoteFileName,
-                                        aindex_t idx, bool isDistributedSource)
+
+void FileSprayer::splitAndCollectFileInfo(IPropertyTree * newRecord, RemoteFilename &remoteFileName,
+                                          bool isDistributedSource)
 {
     StringBuffer drive;
     StringBuffer path;
-    StringBuffer fileName;
+    StringBuffer tail;
     StringBuffer ext;
-    remoteFileName.split(&drive, &path, &fileName, &ext);
-    if (idx == 0)
-    {
-        if (drive.isEmpty())
-        {
-            remoteFileName.queryIP().getIpText(drive.clear());
-            newRecord->setProp("@ip", drive.str());
-        }
-        else
-            newRecord->setProp("@drive", drive.str());
+    remoteFileName.split(&drive, &path, &tail, &ext);
 
-        newRecord->setProp("@path", path.str());
+    if (drive.isEmpty())
+    {
+        remoteFileName.queryIP().getIpText(drive.clear());
+        newRecord->setProp("@ip", drive.str());
     }
+    else
+        newRecord->setProp("@drive", drive.str());
+
+    newRecord->setProp("@path", path.str());
+
     // We don't want to store distributed file parts name extension
     if (!isDistributedSource && ext.length())
-        fileName.append(ext);
+        tail.append(ext);
 
-    // In spray multiple source files case keep all original filenames
-    if (newRecord->hasProp("@name"))
-    {
-        StringBuffer currentName;
-        newRecord->getProp("@name", currentName);
-        currentName.append(",").append(fileName);
-        fileName = currentName;
-    }
-
-    newRecord->setProp("@name", fileName.str());
+    if (sources.ordinality()>1)
+        newRecord->setProp("@name", "[MULTI]");
+    else
+        newRecord->setProp("@name", tail.str());
 }
 
 void FileSprayer::setOperation(dfu_operation op)
