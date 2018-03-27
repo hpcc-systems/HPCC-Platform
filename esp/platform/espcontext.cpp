@@ -78,8 +78,10 @@ private:
     unsigned    m_exceptionTime;
     bool        m_hasException;
     int         m_exceptionCode;
+    StringAttr  respMsg;
     StringAttr  authenticationMethod;
     AuthType    domainAuthType;
+    AuthError   authError = EspAuthErrorNone;
 
     ESPSerializationFormat respSerializationFormat;
 
@@ -523,6 +525,17 @@ public:
 
     virtual void setDomainAuthType(AuthType type) { domainAuthType = type; }
     virtual AuthType getDomainAuthType(){ return domainAuthType; }
+    virtual void setAuthError(AuthError error) { authError = error; }
+    virtual AuthError getAuthError(){ return authError; }
+    virtual void setRespMsg(const char* msg)
+    {
+        respMsg.set(msg);
+    }
+
+    virtual const char* getRespMsg()
+    {
+        return respMsg.get();
+    }
 
     virtual ESPSerializationFormat getResponseFormat(){return respSerializationFormat;}
     virtual void setResponseFormat(ESPSerializationFormat fmt){respSerializationFormat = fmt;}

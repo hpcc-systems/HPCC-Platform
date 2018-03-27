@@ -63,6 +63,17 @@ typedef enum AuthType_
     AuthUserNameOnly
 } AuthType;
 
+typedef enum AuthError_
+{
+    EspAuthErrorNone,
+    EspAuthErrorEmptyUserID,
+    EspAuthErrorUserNotFoundInContext,
+    EspAuthErrorNoAuthMechanism,
+    EspAuthErrorEmptySecResource,
+    EspAuthErrorNotAuthenticated,
+    EspAuthErrorNotAuthorized
+} AuthError;
+
 #define ESPCTX_NO_NAMESPACES    0x00000001
 #define ESPCTX_WSDL             0x00000010
 #define ESPCTX_WSDL_EXT         0x00000100
@@ -186,6 +197,10 @@ interface IEspContext : extends IInterface
     virtual void setAuthenticationMethod(const char * method)=0;
     virtual void setDomainAuthType(AuthType type)=0;
     virtual AuthType getDomainAuthType()=0;
+    virtual void setAuthError(AuthError error)=0;
+    virtual AuthError getAuthError()=0;
+    virtual const char * getRespMsg()=0;
+    virtual void setRespMsg(const char * msg)=0;
 };
 
 
