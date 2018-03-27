@@ -36,6 +36,6 @@ t2 := TABLE(ngs, { sm := SUM(GROUP, id) });
 
 SEQUENTIAL(
     OUTPUT(TABLE(t, { cnt, num := COUNT(GROUP); }, cnt));
-    OUTPUT(TABLE(t2, { sm, num := COUNT(GROUP); }, sm ));
+    OUTPUT(SORT(TABLE(t2, { sm, num := COUNT(GROUP); }, sm ), sm));
     OUTPUT('"Done');
 );
