@@ -73,7 +73,7 @@ void CSVSplitter::addTerminator(const char * text)
 
 void CSVSplitter::addEscape(const char * text)
 {
-    matcher.addEntry(text, ESCAPE);
+    matcher.queryAddEntry((size32_t)strlen(text), text, ESCAPE);
 }
 
 void CSVSplitter::reset()
@@ -457,14 +457,14 @@ void CSVOutputStream::writeUtf8(size32_t len, const char * data)
 {
     append(prefix);
     if (oldOutputFormat) {
-        append(quote).append(rtlUtf8Size(len, data), data).append(quote); 
+        append(quote).append(rtlUtf8Size(len, data), data).append(quote);
     }
     else if (len) {
         // is this OTT?
         // not sure if best way but generate an array of utf8 sizes
         MemoryAttr ma;
         size32_t * cl;
-        if (len>256) 
+        if (len>256)
             cl = (size32_t *)ma.allocate(sizeof(size32_t)*len);
         else
             cl = (size32_t *)alloca(sizeof(size32_t)*len);
@@ -521,14 +521,14 @@ void CSVOutputStream::writeUtf8(size32_t len, const char * data)
             s = (const byte *)data;
             for (i=0;i<len;i++) {
                 size32_t l = (size32_t)(e-s);
-                if ((l>=ql)&&(memcmp(quote.get(),s,ql)==0)) 
+                if ((l>=ql)&&(memcmp(quote.get(),s,ql)==0))
                     append(quote);
                 append(cl[i],(const char *)s);
                 s+=cl[i];
             }
             append(quote);
         }
-        else 
+        else
             append((size32_t)(e-(const byte *)data),data);
     }
     prefix = separator;
@@ -536,10 +536,10 @@ void CSVOutputStream::writeUtf8(size32_t len, const char * data)
 
 void CSVOutputStream::writeString(size32_t len, const char * data)
 {
-    
+
     append(prefix);
     if (oldOutputFormat) {
-        append(quote).append(len, data).append(quote); 
+        append(quote).append(len, data).append(quote);
     }
     else if (len) {
         // New format (as per GS)
@@ -548,7 +548,7 @@ void CSVOutputStream::writeString(size32_t len, const char * data)
             len--;
             data++;
         }
-        while (len&&(data[len-1]==' ')) 
+        while (len&&(data[len-1]==' '))
             len--;
         // now see if need quoting by looking for separator, terminator or quote
         size32_t sl = separator.length();
@@ -575,16 +575,16 @@ void CSVOutputStream::writeString(size32_t len, const char * data)
             append(quote);
             const char *s = data;
             for (unsigned l=len;l>0;l--) {
-                if ((l>=ql)&&(memcmp(quote.get(),s,ql)==0)) 
+                if ((l>=ql)&&(memcmp(quote.get(),s,ql)==0))
                     append(quote);
                 append(*(s++));
             }
             append(quote);
         }
-        else 
+        else
             append(len,data);
     }
-    prefix = separator; 
+    prefix = separator;
 
 }
 
@@ -596,5 +596,5 @@ void CSVOutputStream::writeHeaderLn(size32_t len, const char * data)
         if ((tl>len)||(memcmp(data+len-tl,terminator.get(),tl)!=0))
             endLine();
     }
-}   
+}
 
