@@ -1219,6 +1219,7 @@ EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char*
     addCookie(authReq.authBinding->querySessionIDCookieName(), cookieStr.str(), 0, true);
     cookieStr.setf("%u", authReq.authBinding->getClientSessionTimeoutSeconds());
     addCookie(SESSION_TIMEOUT_COOKIE, cookieStr.str(), 0, false);
+    clearCookie(SESSION_AUTH_MSG_COOKIE);
     clearCookie(SESSION_START_URL_COOKIE);
     if (unlock)
     {
