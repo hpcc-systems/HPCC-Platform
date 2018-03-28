@@ -43,7 +43,7 @@
             logoutRequest.onreadystatechange = function()
             { 
               if (logoutRequest.readyState == 4 && logoutRequest.status == 200)
-                parent.location = '/esp/files/eclwatch/templates/Login.html';
+                parent.location = '/esp/files/Login.html';
               else
                 console.log("Logout failed: " + logoutRequest.status);
             }
