@@ -385,6 +385,8 @@ void WUDetails::buildWuScopeFilter(IConstWUScopeFilter & requestScopeFilter, ICo
         wuScopeFilter.addOutputProperties(PTattributes);
     if (propertiesToReturn.getAllHints())
         wuScopeFilter.addOutputProperties(PThints);
+    if (propertiesToReturn.getAllScopes())
+        wuScopeFilter.addOutputProperties(PTscope);
 
     wuScopeFilter.finishedFilter();
 }
