@@ -5166,26 +5166,24 @@ public:
         // seem not as important, but we are still serializing on
         // nfy events and spreading those over threads may help,
         // especially with SSL as avail_read() could block more.
-        for (;;)
+        bool added=false;
+        ForEachItemIn(i,threads)
         {
-            bool added=false;
-            ForEachItemIn(i,threads)
-            {
-                if (added)
-                {
-                    if (threads.item(i).remove(sock))
-                        return;
-                }
-                else
-                    added = threads.item(i).add(sock,mode,nfy);
-            }
             if (added)
-                return;
-            CSocketEpollThread *thread = new CSocketEpollThread(epolltrace, hdlPerThrd);
-            threads.append(*thread);
-            if (started)
-                thread->start();
+            {
+                if (threads.item(i).remove(sock))
+                    return;
+            }
+            else
+                added = threads.item(i).add(sock,mode,nfy);
         }
+        if (added)
+            return;
+        CSocketEpollThread *thread = new CSocketEpollThread(epolltrace, hdlPerThrd);
+        threads.append(*thread);
+        if (started)
+            thread->start();
+        thread->add(sock,mode,nfy);
     }
 
     void remove(ISocket *sock)
