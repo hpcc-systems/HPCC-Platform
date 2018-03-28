@@ -2083,7 +2083,7 @@ ESPStruct WUExtraProperties
 ESPStruct WUPropertiesToReturn
 {
     bool AllStatistics(false);
-    bool AllAttributes(false);
+    bool AllProperties(false);
     bool AllHints(false);
     [optional] uint64 MinVersion;       // Only return properties where the version is later than this version.
     [optional] string Measure;          // E.g. Time, Num, Size

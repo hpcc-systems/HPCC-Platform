@@ -164,8 +164,8 @@ void WUDetailsVisitor::noteHint(const char * kind, const char * value)
 void WUDetailsVisitor::buildAttribListToReturn(IConstWUPropertiesToReturn & propertiesToReturn)
 {
     const bool allStatistics = propertiesToReturn.getAllStatistics();
-    const bool allAttributes = propertiesToReturn.getAllAttributes();
-    if (allStatistics && allAttributes)
+    const bool allProperties = propertiesToReturn.getAllProperties();
+    if (allStatistics && allProperties)
         return;
 
     IArrayOf<IConstWUExtraProperties> & extraProperties = propertiesToReturn.getExtraProperties();
@@ -199,7 +199,7 @@ void WUDetailsVisitor::buildAttribListToReturn(IConstWUPropertiesToReturn & prop
                 const WuAttr wa = queryWuAttribute(props[idx2], WAMax);
                 if (wa==WAMax)
                     throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid property name (%s) in ExtraProperties",props[idx2]);
-                if (!allAttributes)
+                if (!allProperties)
                 {
                     extraAttributes[sst].insert(wa);
                     extraAttributesRequested = true;
@@ -381,7 +381,7 @@ void WUDetails::buildWuScopeFilter(IConstWUScopeFilter & requestScopeFilter, ICo
 
     if (propertiesToReturn.getAllStatistics())
         wuScopeFilter.addOutputProperties(PTstatistics);
-    if (propertiesToReturn.getAllAttributes())
+    if (propertiesToReturn.getAllProperties())
         wuScopeFilter.addOutputProperties(PTattributes);
     if (propertiesToReturn.getAllHints())
         wuScopeFilter.addOutputProperties(PThints);
