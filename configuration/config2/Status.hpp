@@ -35,13 +35,12 @@ struct DECL_EXPORT statusMsg {
         fatal
     };
 
-    statusMsg(enum msgLevel _msgLevel, const std::string &_nodeId, const std::string &_name, const std::string &_referNodeId, const std::string &_msg) :
-        msgLevel(_msgLevel), nodeId(_nodeId), attribute(_name), referNodeId(_referNodeId), msg(_msg) { }
-    msgLevel msgLevel;           // Message level
-    std::string nodeId;          // if not '', the node ID to which this status applies
-    std::string attribute;       // possible name of attribute in nodeId
-    std::string referNodeId;     // refernece node to which this status may also apply
-    std::string msg;             // message for user
+    statusMsg(enum msgLevel _msgLevel, const std::string &_nodeId, const std::string &_name, const std::string &_msg) :
+        msgLevel(_msgLevel), nodeId(_nodeId), attribute(_name), msg(_msg) { }
+    msgLevel msgLevel;                // Message level
+    std::string nodeId;               // if not '', the node ID to which this status applies
+    std::string attribute;            // possible name of attribute in nodeId
+    std::string msg;                  // message for user
 };
 
 class DECL_EXPORT Status
@@ -50,9 +49,9 @@ class DECL_EXPORT Status
 
         Status() : m_highestMsgLevel(statusMsg::info) { }
         ~Status() {}
-        void addMsg(enum statusMsg::msgLevel status, const std::string &msg) { addMsg(status, "", "", "", msg); }
-        void addMsg(enum statusMsg::msgLevel status, const std::string &nodeId, const std::string &name, const std::string &referNodeId, const std::string &msg);
-        void addUniqueMsg(enum statusMsg::msgLevel status, const std::string &nodeId, const std::string &name, const std::string &referNodeId, const std::string &msg);
+        void addMsg(enum statusMsg::msgLevel status, const std::string &msg) { addMsg(status, "", "", msg); }
+        void addMsg(enum statusMsg::msgLevel status, const std::string &nodeId, const std::string &name, const std::string &msg);
+        void addUniqueMsg(enum statusMsg::msgLevel status, const std::string &nodeId, const std::string &name, const std::string &msg);
         enum statusMsg::msgLevel getHighestMsgLevel() const { return m_highestMsgLevel; }
         bool isOk() const { return m_highestMsgLevel <= statusMsg::warning; }
         bool isError() const { return m_highestMsgLevel >= statusMsg::error; }

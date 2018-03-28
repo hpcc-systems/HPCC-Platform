@@ -3,7 +3,7 @@
     xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
     xmlns:hpcc="someuri">
     <xs:include schemaLocation="types.xsd"/>
-    <xs:complexType name="espProcess" hpcc:class="component" hpcc:category="espporocess" hpcc:componentName="esp" hpcc:displayName="ESP Process">
+    <xs:complexType name="espProcess" hpcc:class="component" hpcc:category="ESP Process" hpcc:componentName="esp" hpcc:displayName="ESP Process">
         <xs:sequence>
             <xs:element name="EspProcess" hpcc:docid="ESP.t6" maxOccurs="unbounded">
                 <xs:annotation>

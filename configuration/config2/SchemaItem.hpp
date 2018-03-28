@@ -70,6 +70,8 @@ class DECL_EXPORT SchemaItem : public std::enable_shared_from_this<SchemaItem>
 
         std::string getProperty(const std::string &name, const std::string &dfault = std::string("")) const;
         void setProperty(const std::string &name, const std::string &value) { m_properties[name] = value; }
+        void setHidden(bool hidden) { m_hidden = hidden; }
+        bool isHidden() const { return m_hidden; }
 
 
     protected:
@@ -79,6 +81,7 @@ class DECL_EXPORT SchemaItem : public std::enable_shared_from_this<SchemaItem>
     protected:
 
         std::map<std::string, std::string> m_properties;
+        bool m_hidden;
         unsigned m_minInstances;
         unsigned m_maxInstances;
         std::multimap<std::string, std::shared_ptr<SchemaItem>> m_children;

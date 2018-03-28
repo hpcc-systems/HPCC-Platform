@@ -29,6 +29,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/environment.conf DESTINATION etc/${DIR
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/genenvrules.conf DESTINATION etc/${DIR_NAME}/rpmnew COMPONENT Runtime)
 
 add_subdirectory(configmgr)
+add_subdirectory(config2mgr)
 
 # Developer build
 # target: configure

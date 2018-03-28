@@ -3,7 +3,7 @@
     xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
     xmlns:hpcc="someuri">
     <xs:include schemaLocation="types.xsd"/>
-    <xs:complexType name="dafilesrv" hpcc:class="component" hpcc:category="espporocess" hpcc:displayName="Da File serve Process">
+    <xs:complexType name="dafilesrv" hpcc:class="component" hpcc:category="espporocess" hpcc:componentName="dafilesrv" hpcc:displayName="Da File serve Process">
         <xs:attributeGroup name="executionSettings">
             <xs:attribute name="parallelRequestLimit" type="percent" use="optional" default="20" hpcc:tooltip="Defines the maximum number of concurrent dafilesrv requests allowed. Requests that exceed the limit will be delayed. A value of 0 disables throttling. Overrides global settting."/>
             <xs:attribute name="throttleDelayMs" type="xs:nonNegativeInteger" use="optional" default="5000" hpcc:tooltip="Defines how many milliseconds delayed requests will be delayed by. Overrides global settting."/>

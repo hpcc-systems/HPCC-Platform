@@ -35,7 +35,7 @@ class ParseException : public std::exception
         virtual void setMessage(const char *msg) { m_reason = msg; }
         virtual void setMessage(const std::string &msg) { m_reason = msg; }
 
-        virtual const char *what() const noexcept
+        virtual const char *what() const throw()
         {
             std::string &msg = const_cast<std::string &>(m_reason);
 

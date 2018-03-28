@@ -28,7 +28,8 @@ class EnvironmentValue;
 
 struct DECL_EXPORT AllowedValue
 {
-    AllowedValue(const std::string &value, const std::string &desc="") : m_value(value), m_description(desc) { }
+    AllowedValue(const std::string &value, const std::string &desc="") : m_value(value), m_displayName(value), m_description(desc) { }
+    std::string m_displayName;
     std::string m_value;
     std::string m_description;
 };

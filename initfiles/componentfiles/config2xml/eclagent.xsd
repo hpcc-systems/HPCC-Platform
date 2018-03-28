@@ -3,19 +3,19 @@
     xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
     xmlns:hpcc="someuri">
     <xs:include schemaLocation="types.xsd"/>
-    <xs:attributeGroup name="Options" hpcc:displayName="Options" hpcc:tooltip="Options" hpcc:docid="EA.t2">
-        <xs:attribute name="allowedPipePrograms" type="xs:string" use="optional" default="*" hpcc:tab="Eclagent" hpcc:tooltip="Comma separated list of allowed PIPE programs (* for allow all)"/>
-        <xs:attribute name="daliServers" type="xs:string" use="required" hpcc:autogenforwizard="true" hpcc:tooltip="Specifies the dali server to which this eclagent is attached"/>
-        <xs:attribute name="defaultMemoryLimitMB" type="xs:nonNegativeInteger" use="optional" default="300" hpcc:tooltip="Default memory limit in MB for eclagent"/>
-        <xs:attribute name="heapUseHugePages" type="xs:boolean" default="false" hpcc:tooltip="Use memory from huge pages if they have been configured"/>
-        <xs:attribute name="heapUseTransparentHugePages" type="xs:boolean" default="true" hpcc:tooltip="Use memory from transparent huge pages"/>
-        <xs:attribute name="heapRetainMemory" type="xs:boolean" default="false" hpcc:tooltip="Retain and do not return unused memory to the operating system"/>
-        <xs:attribute name="pluginDirectory" type="absolutePath" use="optional" default="/opt/HPCCSystems/plugins/" hpcc:tooltip="Directory where plugins are located"/>
-        <xs:attribute name="traceLevel" type="xs:nonNegativeInteger" use="optional" default="0" hpcc:tooltip="Trace level"/>
-        <xs:attribute name="thorConnectTimeout" type="xs:nonNegativeInteger" use="optional" default="600" hpcc:tooltip="Default connection timeout when sending query to Thor"/>
-        <xs:attribute name="wuQueueName" type="xs:string" use="optional" default="" hpcc:tab="Eclagent" hpcc:tooltip="eclAgent Workunit Execution Queue Name" hpcc:autogenforwizard="true" hpcc:autogensuffix="_queue"/>
-    </xs:attributeGroup>
-    <xs:complexType name="eclAgent" hpcc:class="component" hpcc:category="agentprocess" hpcc:displayName="ECL Agent Process">
+    <xs:complexType name="eclAgent" hpcc:class="component" hpcc:category="agentprocess" hpcc:componentName="eclagent" hpcc:displayName="ECL Agent Process">
+         <xs:attributeGroup name="Options" hpcc:displayName="Options" hpcc:tooltip="Options" hpcc:docid="EA.t2">
+            <xs:attribute name="allowedPipePrograms" type="xs:string" use="optional" default="*" hpcc:tab="Eclagent" hpcc:tooltip="Comma separated list of allowed PIPE programs (* for allow all)"/>
+            <xs:attribute name="daliServers" type="xs:string" use="required" hpcc:autogenforwizard="true" hpcc:tooltip="Specifies the dali server to which this eclagent is attached"/>
+            <xs:attribute name="defaultMemoryLimitMB" type="xs:nonNegativeInteger" use="optional" default="300" hpcc:tooltip="Default memory limit in MB for eclagent"/>
+            <xs:attribute name="heapUseHugePages" type="xs:boolean" default="false" hpcc:tooltip="Use memory from huge pages if they have been configured"/>
+            <xs:attribute name="heapUseTransparentHugePages" type="xs:boolean" default="true" hpcc:tooltip="Use memory from transparent huge pages"/>
+            <xs:attribute name="heapRetainMemory" type="xs:boolean" default="false" hpcc:tooltip="Retain and do not return unused memory to the operating system"/>
+            <xs:attribute name="pluginDirectory" type="absolutePath" use="optional" default="/opt/HPCCSystems/plugins/" hpcc:tooltip="Directory where plugins are located"/>
+            <xs:attribute name="traceLevel" type="xs:nonNegativeInteger" use="optional" default="0" hpcc:tooltip="Trace level"/>
+            <xs:attribute name="thorConnectTimeout" type="xs:nonNegativeInteger" use="optional" default="600" hpcc:tooltip="Default connection timeout when sending query to Thor"/>
+            <xs:attribute name="wuQueueName" type="xs:string" use="optional" default="" hpcc:tab="Eclagent" hpcc:tooltip="eclAgent Workunit Execution Queue Name" hpcc:autogenforwizard="true" hpcc:autogensuffix="_queue"/>
+        </xs:attributeGroup>
         <xs:sequence>
             <xs:element name="EclAgentProcess" hpcc:docid="EA.t1">
                 <xs:complexType>

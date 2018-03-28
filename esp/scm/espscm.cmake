@@ -40,6 +40,7 @@ set ( ESPSCM_SRCS
       ws_esdlconfig.ecm
       ws_loggingservice.ecm
       ws_espcontrol.ecm
+      ws_config2.ecm
     )
 
 foreach ( loop_var ${ESPSCM_SRCS} )
