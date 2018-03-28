@@ -2085,6 +2085,7 @@ ESPStruct WUPropertiesToReturn
     bool AllStatistics(false);
     bool AllAttributes(false);
     bool AllHints(false);
+    bool AllScopes(false);
     [optional] uint64 MinVersion;       // Only return properties where the version is later than this version.
     [optional] string Measure;          // E.g. Time, Num, Size
     [optional] ESParray<string, Property> Properties; // a list of properties to return
