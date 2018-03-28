@@ -4861,7 +4861,7 @@ public:
         return false;
     }
 
-    bool remove(ISocket *sock)
+    bool remove(ISocket *sock, unsigned numThreads)
     {
         if (terminating)
             return false;
@@ -4879,6 +4879,11 @@ public:
         if (removeSock(sock))
         {
             selectvarschange = true;
+            // stop if no more fds on this thread
+            // and more than one thread is present
+            unsigned n = items.ordinality();
+            if (n == 0 && numThreads > 1)
+                terminating = true;
             triggerselect();
             return true;
         }
@@ -4887,6 +4892,8 @@ public:
 
     bool add(ISocket *sock,unsigned mode,ISocketSelectNotify *nfy)
     {
+        if (terminating)
+            return false;
         if ( !sock || !nfy ||
              !(mode & (SELECTMODE_READ|SELECTMODE_WRITE|SELECTMODE_EXCEPT)) )
         {
@@ -5166,12 +5173,13 @@ public:
         // seem not as important, but we are still serializing on
         // nfy events and spreading those over threads may help,
         // especially with SSL as avail_read() could block more.
+        unsigned nt = threads.ordinality();
         bool added=false;
         ForEachItemIn(i,threads)
         {
             if (added)
             {
-                if (threads.item(i).remove(sock))
+                if (threads.item(i).remove(sock, nt))
                     return;
             }
             else
@@ -5189,9 +5197,10 @@ public:
     void remove(ISocket *sock)
     {
         CriticalBlock block(sect);
+        unsigned nt = threads.ordinality();
         ForEachItemIn(i,threads)
         {
-            if (threads.item(i).remove(sock))
+            if (threads.item(i).remove(sock, nt))
                 break;
         }
     }
