@@ -227,6 +227,10 @@ protected:
         return SecAccess_Full;//grant full access to authenticated users
     }
 
+    bool logoutUser(ISecUser & user) override
+    {
+        return true;
+    }
 private:
 
 	void initAPR()
