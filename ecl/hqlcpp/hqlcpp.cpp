@@ -1807,7 +1807,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.translateDFSlayouts,"translateDFSlayouts", false),
         DebugOption(options.timeTransforms,"timeTransforms", false),
         DebugOption(options.reportDFSinfo,"reportDFSinfo", 0),
-        DebugOption(options.useGlobalCompareClass,"useGlobalCompareClass", false),
+        DebugOption(options.useGlobalCompareClass,"useGlobalCompareClass", true),
         DebugOption(options.createValueSets,"createValueSets", false),
         DebugOption(options.implicitKeyedDiskFilter,"implicitKeyedDiskFilter", false),
     };
