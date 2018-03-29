@@ -1159,6 +1159,7 @@ struct IHThorIndexWriteArg : public IHThorArg
     virtual unsigned getWidth() = 0;                // only guaranteed present if TIWhaswidth defined
     virtual ICompare * queryCompare() = 0;          // only guaranteed present if TIWhaswidth defined
     virtual unsigned getMaxKeySize() = 0;
+    virtual unsigned getBloomKeyLength() = 0;
 };
 
 struct IHThorFirstNArg : public IHThorArg

@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "keybuild.hpp"
+#include "bloom.hpp"
 #include "jmisc.hpp"
 
 struct CRC32HTE
@@ -336,20 +337,28 @@ private:
     CWriteNode *activeNode;
     CBlobWriteNode *activeBlobNode;
     unsigned __int64 duplicateCount;
+    unsigned bloomKeyLength = 0;
+    BloomBuilder bloomBuilder;
+    byte *lastBloomKeyData = nullptr;
     bool enforceOrder = true;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyedSize, unsigned __int64 startSequence, bool _enforceOrder)
-        : CKeyBuilderBase(_out, flags, rawSize, nodeSize, keyedSize, startSequence), enforceOrder(_enforceOrder)
+    CKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyedSize, unsigned __int64 startSequence, unsigned _bloomKeyLength, bool _enforceOrder)
+        : CKeyBuilderBase(_out, flags, rawSize, nodeSize, keyedSize, startSequence), bloomKeyLength(_bloomKeyLength), enforceOrder(_enforceOrder)
     {
         doCrc = true;
         activeNode = NULL;
         activeBlobNode = NULL;
         duplicateCount = 0;
+        if (bloomKeyLength)
+            lastBloomKeyData = (byte *) calloc(bloomKeyLength, 1);
     }
-
+    ~CKeyBuilder()
+    {
+        free(lastBloomKeyData);
+    }
 public:
     void finish(IPropertyTree * metadata, unsigned * fileCrc)
     {
@@ -371,6 +380,11 @@ public:
             StringBuffer metaXML;
             toXML(metadata, metaXML);
             writeMetadata(metaXML.str(), metaXML.length());
+        }
+        if (bloomBuilder.valid())
+        {
+            Owned<const BloomFilter> filter = bloomBuilder.build();
+            writeBloomFilter(*filter, bloomKeyLength);
         }
         CRC32 headerCrc;
         writeFileHeader(false, &headerCrc);
@@ -412,6 +426,17 @@ public:
                 throw MakeStringException(JHTREE_KEY_NOT_SORTED, "Unable to build index - dataset not sorted in key order");
             if (cmp==0)
                 ++duplicateCount;
+        }
+        if (bloomKeyLength)
+        {
+            int cmp = memcmp(keyData, lastBloomKeyData, bloomKeyLength);
+            if (cmp)
+            {
+                memcpy(lastBloomKeyData, keyData, bloomKeyLength);
+                hash64_t hash = rtlHash64Data(bloomKeyLength, keyData, HASH64_INIT);
+                if (!bloomBuilder.add(hash))
+                    bloomKeyLength = 0;
+            }
         }
         if (!activeNode->add(pos, keyData, recsize, sequence))
         {
@@ -486,15 +511,44 @@ protected:
                 prevNode->setRightSib(node->getFpos());
                 writeNode(prevNode);
             }
-            prevNode.setown(node.getLink());
+            prevNode.setown(node.getClear());
+        }
+        writeNode(prevNode);
+    }
+
+    void writeBloomFilter(const BloomFilter &filter, unsigned bloomKeyLength)
+    {
+        assertex(keyHdr->getHdrStruct()->bloomHead == 0);
+        size32_t size = filter.queryTableSize();
+        if (!size)
+            return;
+        keyHdr->getHdrStruct()->bloomHead = nextPos;
+        keyHdr->getHdrStruct()->bloomKeyLength = bloomKeyLength;
+        keyHdr->getHdrStruct()->bloomTableSize = size;
+        keyHdr->getHdrStruct()->bloomTableHashes = filter.queryNumHashes();
+        const byte *data = filter.queryTable();
+        Owned<CBloomFilterWriteNode> prevNode;
+        while (size)
+        {
+            Owned<CBloomFilterWriteNode> node(new CBloomFilterWriteNode(nextPos, keyHdr));
+            nextPos += keyHdr->getNodeSize();
+            size32_t written = node->set(data, size);
+            assertex(written);
+            if(prevNode)
+            {
+                node->setLeftSib(prevNode->getFpos());
+                prevNode->setRightSib(node->getFpos());
+                writeNode(prevNode);
+            }
+            prevNode.setown(node.getClear());
         }
         writeNode(prevNode);
     }
 };
 
-extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence, bool enforceOrder)
+extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence, unsigned bloomKeySize, bool enforceOrder)
 {
-    return new CKeyBuilder(_out, flags, rawSize, nodeSize, keyFieldSize, startSequence, enforceOrder);
+    return new CKeyBuilder(_out, flags, rawSize, nodeSize, keyFieldSize, startSequence, bloomKeySize, enforceOrder);
 }
 
 

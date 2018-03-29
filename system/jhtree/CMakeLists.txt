@@ -30,6 +30,7 @@ set (    SRCS
          ctfile.cpp 
          jhtree.cpp 
          jhutil.cpp 
+         bloom.cpp
          keybuild.cpp 
          keydiff.cpp 
          sourcedoc.xml
@@ -40,6 +41,7 @@ set (    INCLUDES
          hlzw.h
          jhtree.hpp
          jhutil.hpp
+         bloom.hpp
          keybuild.hpp
          keydiff.hpp
     )

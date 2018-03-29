@@ -64,6 +64,7 @@ public:
     virtual bool getIndexMeta(size32_t & lenName, char * & name, size32_t & lenValue, char * & value, unsigned idx) override;
     virtual unsigned getWidth() override;
     virtual ICompare * queryCompare() override;
+    virtual unsigned getBloomKeyLength() override;
 };
 
 class ECLRTL_API CThorFirstNArg : public CThorArgOf<IHThorFirstNArg>

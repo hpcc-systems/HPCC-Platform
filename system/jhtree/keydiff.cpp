@@ -417,7 +417,7 @@ public:
             flags |= HTREE_VARSIZE;
         if(quickCompressed)
             flags |= HTREE_QUICK_COMPRESSED_KEY;
-        keyBuilder.setown(createKeyBuilder(keyStream, flags, rowsize, nodeSize, keyedsize, 0)); // MORE - support for sequence other than 0...
+        keyBuilder.setown(createKeyBuilder(keyStream, flags, rowsize, nodeSize, keyedsize, 0, keyedsize, false)); // MORE - support for sequence other than 0...
     }
 
     ~CKeyWriter()

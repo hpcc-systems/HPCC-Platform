@@ -1106,7 +1106,7 @@ void CHThorIndexWriteActivity::execute()
         if (hasTrailingFileposition(helper.queryDiskRecordSize()->queryTypeInfo()))
             keyMaxSize -= sizeof(offset_t);
 
-        Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, keyMaxSize, nodeSize, helper.getKeyedSize(), 0);
+        Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, keyMaxSize, nodeSize, helper.getKeyedSize(), 0, helper.getBloomKeyLength(), true);
         class BcWrapper : implements IBlobCreator
         {
             IKeyBuilder *builder;
