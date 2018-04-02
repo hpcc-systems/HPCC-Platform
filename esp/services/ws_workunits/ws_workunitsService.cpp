@@ -3014,10 +3014,14 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             }
             else if (strieq(File_ThorSlaveLog,req.getType()))
             {
-                StringBuffer logDir;
+                StringBuffer logDir, groupName;
                 getConfigurationDirectory(directories, "log", "thor", req.getProcess(), logDir);
+                const char* instanceName = req.getClusterGroup();
+                getClusterThorGroupName(groupName, instanceName);
+                if (groupName.isEmpty())
+                    throw MakeStringException(ECLWATCH_INVALID_INPUT, "Failed to get Thor Group Name for %s", instanceName);
 
-                winfo.getWorkunitThorSlaveLog(req.getClusterGroup(), req.getIPAddress(), req.getLogDate(), logDir.str(), req.getSlaveNumber(), mb, nullptr, false);
+                winfo.getWorkunitThorSlaveLog(groupName.str(), req.getIPAddress(), req.getLogDate(), logDir.str(), req.getSlaveNumber(), mb, nullptr, false);
                 openSaveFile(context, opt, req.getSizeLimit(), "ThorSlave.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_EclAgentLog,req.getType()))
