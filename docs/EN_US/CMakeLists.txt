@@ -78,7 +78,7 @@ add_subdirectory(ECLPluginForEclipse)
 add_subdirectory(ECLScheduler)
 add_subdirectory(ECLWatch)
 add_subdirectory(VisualizingECL)
-
+add_subdirectory(WsSQLUG)
 add_subdirectory(PortalHTML)
 
 
