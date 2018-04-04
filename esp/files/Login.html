@@ -36,6 +36,14 @@
                 border: 1px solid #bfbfbf;
             }
 
+            #hidden_msg{
+                display: none;
+                text-align: center;
+                margin-bottom: 20px;
+                width: 300px;
+		color:red;
+            }
+
             .login form {
                 margin: auto;
                 width: 300px;
@@ -87,6 +95,7 @@
                     <form method="POST" action="/esp/login">
                         <input type="text" name="username" placeholder="username" class="loginStr"></input>
                         <input type="password" name="password" placeholder="password" class="loginStr"></input>
+                        <p id="hidden_msg" class="loginStr">Invalid username or password, try again.</p>
                         <button class="loginStr" id="button" type="submit">Login</button>
                     </form>
                 </div>
@@ -100,6 +109,20 @@
                 element.classList.remove("visible");
             } else {
                 alert("ECL Watch requires cookies enabled to continue.");
+            }
+
+	        function deleteCookie(cname, cvalue, exMins) {
+		        var d = new Date();
+		        d.setTime(d.getTime() + (exMins*60*1000));
+		        var expires = "expires="+d.toUTCString();
+		        document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+	        }
+
+            var element = document.getElementById('hidden_msg');
+
+            if (document.cookie.indexOf("ESPAuthenticationMSG") > -1){
+		        element.style.display = "inline-block";
+		        deleteCookie('ESPAuthenticationMSG','',0);
             }
         </script>
     </body>
