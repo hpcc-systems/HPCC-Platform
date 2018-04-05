@@ -292,6 +292,7 @@ enum secManagerType : int
     SMT_Local,
     SMT_LDAP,
     SMT_HTPasswd,
+    SMT_SingleUser,
     SMT_HTPluggable
 };
 interface IEspSecureContext;
