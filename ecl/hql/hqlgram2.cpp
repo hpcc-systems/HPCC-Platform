@@ -2718,6 +2718,16 @@ void HqlGram::addDatasetField(const attribute &errpos, IIdAtom * name, ITypeInfo
 
     if (queryAttributeInList(virtualAtom, attrs))
         reportError(ERR_BAD_FIELD_ATTR, errpos, "Virtual can only be specified on a scalar field");
+
+    IHqlExpression * defaultAttribute = queryAttributeInList(defaultAtom, attrs);
+    if (defaultAttribute)
+    {
+        IHqlExpression * defaultValue = defaultAttribute->queryChild(0);
+        if (isNullList(defaultValue) || (defaultValue->getOperator()==no_temptable && isNullList(defaultValue->queryChild(0))))
+        {
+            attrs = replaceExpression(attrs, defaultAttribute, createAttribute(defaultAtom,createNullExpr(dsType)));
+        }
+    }
     if (!attrs)
         attrs = extractAttrsFromExpr(value);
 

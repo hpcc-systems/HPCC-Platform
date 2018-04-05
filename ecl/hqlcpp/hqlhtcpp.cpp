@@ -3749,7 +3749,12 @@ unsigned HqlCppTranslator::buildRtlField(StringBuffer & instanceName, IHqlExpres
             if (createConstantField(target, targetField, defaultValue))
                 appendStringAsQuotedCPP(defaultInitializer, target.length(), target.toByteArray(), false);
             else
-                throwError1(HQLERR_CouldNotGenerateDefault, str(field->queryName()));
+            {
+                if (targetField->isDataset() && !isNullList(defaultValue))
+                    throwError1(HQLERR_NonNullChildDSDefault, str(field->queryName()));
+                else
+                    throwError1(HQLERR_CouldNotGenerateDefault, str(field->queryName()));
+            }
         }
 
         StringBuffer definition;
