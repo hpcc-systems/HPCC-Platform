@@ -2486,16 +2486,16 @@ StringBuffer & ncnameUnescape(char const * in, StringBuffer & out)
 
 
 
-bool startsWith(const char* src, const char* dst)
+bool startsWith(const char* src, const char* prefix)
 {
-    while (*dst && *dst == *src) { src++; dst++; }
-    return *dst==0;
+    while (*prefix && *prefix == *src) { src++; prefix++; }
+    return *prefix==0;
 }
 
-bool startsWithIgnoreCase(const char* src, const char* dst)
+bool startsWithIgnoreCase(const char* src, const char* prefix)
 {
-    while (*dst && tolower(*dst) == tolower(*src)) { src++; dst++; }
-    return *dst==0;
+    while (*prefix && tolower(*prefix) == tolower(*src)) { src++; prefix++; }
+    return *prefix==0;
 }
 
 bool endsWith(const char* src, const char* dst)

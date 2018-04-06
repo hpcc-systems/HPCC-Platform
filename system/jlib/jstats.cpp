@@ -582,7 +582,7 @@ const char * queryMeasurePrefix(StatisticMeasure measure)
 {
     switch (measure)
     {
-    case SMeasureAll:           return NULL;
+    case SMeasureAll:           return nullptr;
     case SMeasureTimeNs:        return "Time";
     case SMeasureTimestampUs:   return "When";
     case SMeasureCount:         return "Num";
@@ -598,6 +598,7 @@ const char * queryMeasurePrefix(StatisticMeasure measure)
     case SMeasureBool:          return "Is";
     case SMeasureId:            return "Id";
     case SMeasureFilename:      return "";
+    case SMeasureNone:          return nullptr;
     default:
         return "Unknown";
     }

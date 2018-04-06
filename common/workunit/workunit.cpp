@@ -1294,13 +1294,13 @@ public:
         {
             if (whichProperties & PTattributes)
             {
-                playAttribute(visitor, WALabel);
+                playAttribute(visitor, WaLabel);
                 Owned<IPropertyTreeIterator> attrs = cur.getElements("att");
                 ForEach(*attrs)
                 {
                     IPropertyTree & cur = attrs->query();
                     WuAttr attr = queryGraphChildAttToWuAttr(cur.queryProp("@name"));
-                    if (attr != WANone)
+                    if (attr != WaNone)
                         visitor.noteAttribute(attr, cur.queryProp("@value"));
                 }
             }
@@ -1320,12 +1320,12 @@ public:
             {
                 //MORE This will eventually need to walk the attributes and map the names.
                 //Need to be careful if they need to be mapped differently depending on the context.
-                playAttribute(visitor, WALabel);
-                playAttribute(visitor, WAIdSource);
-                playAttribute(visitor, WAIdTarget);
-                playAttribute(visitor, WASourceIndex);
-                playAttribute(visitor, WATargetIndex);
-                playAttribute(visitor, WAIsDependency);
+                playAttribute(visitor, WaLabel);
+                playAttribute(visitor, WaIdSource);
+                playAttribute(visitor, WaIdTarget);
+                playAttribute(visitor, WaSourceIndex);
+                playAttribute(visitor, WaTargetIndex);
+                playAttribute(visitor, WaIsDependency);
             }
             break;
         }
@@ -2412,7 +2412,7 @@ WuScopeFilter & WuScopeFilter::addOutput(const char * prop)
 {
     if (queryStatisticKind(prop, StMax) != StMax)
         addOutputStatistic(prop);
-    else if (queryWuAttribute(prop, WAMax) != WAMax)
+    else if (queryWuAttribute(prop, WaMax) != WaMax)
         addOutputAttribute(prop);
     else
         addOutputHint(prop);
@@ -2451,8 +2451,8 @@ WuScopeFilter & WuScopeFilter::addOutputAttribute(const char * prop)
     if (!prop)
         return *this;
 
-    WuAttr attr = queryWuAttribute(prop, WAMax);
-    if (attr == WAMax)
+    WuAttr attr = queryWuAttribute(prop, WaMax);
+    if (attr == WaMax)
         throw makeStringExceptionV(0, "Unrecognised attribute '%s'", prop);
 
     return addOutputAttribute(attr);
@@ -2460,9 +2460,9 @@ WuScopeFilter & WuScopeFilter::addOutputAttribute(const char * prop)
 
 WuScopeFilter & WuScopeFilter::addOutputAttribute(WuAttr attr)
 {
-    if (attr != WANone)
+    if (attr != WaNone)
     {
-        if (attr != WAAll)
+        if (attr != WaAll)
             desiredAttrs.append(attr);
         else
             desiredAttrs.kill();

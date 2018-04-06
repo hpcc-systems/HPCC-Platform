@@ -1262,7 +1262,7 @@ void HqlCppTranslator::buildKeyedJoinExtra(ActivityInstance & instance, IHqlExpr
 
     //virtual const char * getFileName() = 0;                   // Returns filename of raw file fpos'es refer into
     if (info->isFullJoin())
-        buildFilenameFunction(instance, instance.createctx, "getFileName", info->queryFileFilename(), hasDynamicFilename(info->queryFile()));
+        buildFilenameFunction(instance, instance.createctx, WaFilename, "getFileName", info->queryFileFilename(), hasDynamicFilename(info->queryFile()));
 
     //virtual bool diskAccessRequired() = 0;
     if (info->isFullJoin())
@@ -1299,7 +1299,7 @@ void HqlCppTranslator::buildKeyJoinIndexReadHelper(ActivityInstance & instance, 
     info->buildExtractIndexReadFields(instance.startctx);
 
     //virtual const char * getIndexFileName() = 0;
-    buildFilenameFunction(instance, instance.startctx, "getIndexFileName", info->queryKeyFilename(), hasDynamicFilename(info->queryKey()));
+    buildFilenameFunction(instance, instance.startctx, WaIndexname, "getIndexFileName", info->queryKeyFilename(), hasDynamicFilename(info->queryKey()));
 
     //virtual IOutputMetaData * queryIndexRecordSize() = 0;
     LinkedHqlExpr indexExpr = info->queryOriginalKey();
@@ -1490,9 +1490,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedJoinOrDenormalize(BuildCt
 
     if (targetRoxie())
     {
-        instance->addAttributeBool("_diskAccessRequired", info.isFullJoin());
-        instance->addAttributeBool("_isIndexOpt", info.isKeyOpt());
-        instance->addAttributeBool("_isOpt", info.isFileOpt());
+        instance->addAttributeBool(WaIsDiskAccessRequired, info.isFullJoin());
+        instance->addAttributeBool(WaIsIndexOpt, info.isKeyOpt());
+        instance->addAttributeBool(WaIsFileOpt, info.isFileOpt());
     }
 
     buildInstanceSuffix(instance);
@@ -1556,7 +1556,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedDistribute(BuildCtx & ctx
         doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
 
     //virtual const char * getIndexFileName() = 0;
-    buildFilenameFunction(*instance, instance->startctx, "getIndexFileName", keyFilename, dynamic);
+    buildFilenameFunction(*instance, instance->startctx, WaIndexname, "getIndexFileName", keyFilename, dynamic);
 
     //virtual IOutputMetaData * queryIndexRecordSize() = 0;
     LinkedHqlExpr indexExpr = info.queryRawKey();
@@ -1642,15 +1642,15 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyDiff(BuildCtx & ctx, IHqlEx
         doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
 
     //virtual const char * getOriginalName() = 0;         // may be null
-    buildRefFilenameFunction(*instance, instance->startctx, "getOriginalName", original);
+    buildRefFilenameFunction(*instance, instance->startctx, WaOriginalFilename, "getOriginalName", original);
     noteAllFieldsUsed(original);
 
     //virtual const char * getUpdatedName() = 0;
-    buildRefFilenameFunction(*instance, instance->startctx, "getUpdatedName", updated);
+    buildRefFilenameFunction(*instance, instance->startctx, WaUpdatedFilename, "getUpdatedName", updated);
     noteAllFieldsUsed(updated);
 
     //virtual const char * getOutputName() = 0;
-    buildFilenameFunction(*instance, instance->startctx, "getOutputName", output, hasDynamicFilename(expr));
+    buildFilenameFunction(*instance, instance->startctx, WaOutputFilename, "getOutputName", output, hasDynamicFilename(expr));
 
     //virtual int getSequence() = 0;
     doBuildSequenceFunc(instance->classctx, querySequence(expr), false);
@@ -1689,14 +1689,14 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyPatch(BuildCtx & ctx, IHqlE
         doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
 
     //virtual const char * getOriginalName() = 0;
-    buildRefFilenameFunction(*instance, instance->startctx, "getOriginalName", original);
+    buildRefFilenameFunction(*instance, instance->startctx, WaOriginalFilename, "getOriginalName", original);
     noteAllFieldsUsed(original);
 
     //virtual const char * getPatchName() = 0;
-    buildFilenameFunction(*instance, instance->startctx, "getPatchName", patch, true);
+    buildFilenameFunction(*instance, instance->startctx, WaPatchFilename, "getPatchName", patch, true);
 
     //virtual const char * getOutputName() = 0;
-    buildFilenameFunction(*instance, instance->startctx, "getOutputName", output, hasDynamicFilename(expr));
+    buildFilenameFunction(*instance, instance->startctx, WaOutputFilename, "getOutputName", output, hasDynamicFilename(expr));
 
     //virtual int getSequence() = 0;
     doBuildSequenceFunc(instance->classctx, querySequence(expr), false);

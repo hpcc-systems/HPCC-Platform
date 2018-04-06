@@ -553,18 +553,18 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLibraryInstance(BuildCtx & ctx
 
     if (nameValue)
     {
-        instance->addAttribute("libname", libraryName.str());
+        instance->addAttribute(WaLibraryName, libraryName.str());
         Owned<IWULibrary> wulib = wu()->updateLibraryByName(libraryName.str());
     }
 
 
-    instance->addAttributeInt("_interfaceHash", library->getInterfaceHash());
-    instance->addAttributeBool("embedded", (embeddedAttr != NULL));
-    instance->addAttributeInt("_maxOutputs", library->outputs.ordinality());
+    instance->addAttributeInt(WaInterfaceHash, library->getInterfaceHash());
+    instance->addAttributeBool(WaIsEmbedded, (embeddedAttr != NULL));
+    instance->addAttributeInt(WaNumMaxOutputs, library->outputs.ordinality());
     if (embeddedAttr)
-        instance->addAttribute("graph", embeddedAttr->queryChild(0));
+        instance->addAttribute(WaIdGraph, embeddedAttr->queryChild(0));
     if (!targetHThor())
-        instance->addAttributeInt("_graphid", nextActivityId());            // reserve an id...
+        instance->addAttributeInt(WaIdAmbiguousGraph, nextActivityId());            // reserve an id...
 
     // A debugging option to make it clearer how a library is being called.
     if (options.addLibraryInputsToGraph)
@@ -575,7 +575,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLibraryInstance(BuildCtx & ctx
             IHqlExpression * parameter = libraryInstance->queryParameter(iIn);
             StringBuffer paramName;
             StringBuffer paramEcl;
-            paramName.append("input").append(iIn).append("__").append(parameter->queryName());
+            paramName.append("debuggingInput").append(iIn).append("__").append(parameter->queryName());
             toECL(libraryInstance->queryActual(iIn), paramEcl, false, true);
             instance->addAttribute(paramName, paramEcl);
         }

@@ -1817,9 +1817,9 @@ public:
     void doBuildFunctionReturn(BuildCtx & ctx, ITypeInfo * type, IHqlExpression * value);
     void doBuildUserFunctionReturn(BuildCtx & ctx, ITypeInfo * type, IHqlExpression * value);
 
-    void addFilenameConstructorParameter(ActivityInstance & instance, const char * name, IHqlExpression * expr);
-    void buildFilenameFunction(ActivityInstance & instance, BuildCtx & classctx, const char * name, IHqlExpression * expr, bool isDynamic);
-    void buildRefFilenameFunction(ActivityInstance & instance, BuildCtx & classctx, const char * name, IHqlExpression * dataset);
+    void addFilenameConstructorParameter(ActivityInstance & instance, WuAttr attr, IHqlExpression * expr);
+    void buildFilenameFunction(ActivityInstance & instance, BuildCtx & classctx, WuAttr attr, const char * name, IHqlExpression * expr, bool isDynamic);
+    void buildRefFilenameFunction(ActivityInstance & instance, BuildCtx & classctx, WuAttr attr, const char * name, IHqlExpression * dataset);
     void createAccessFunctions(StringBuffer & helperFunc, BuildCtx & declarectx, unsigned prio, const char * interfaceName, const char * object);
 
     IHqlStmt * beginNestedClass(BuildCtx & classctx, const char * member, const char * bases, const char * memberExtra = NULL, ParentExtract * extract = NULL);
@@ -1840,7 +1840,7 @@ protected:
     void buildIteratorNext(BuildCtx & ctx, IHqlExpression * iter, IHqlExpression * row);
     bool shouldEvaluateSelectAsAlias(BuildCtx & ctx, IHqlExpression * expr);
     IWUResult * createWorkunitResult(int sequence, IHqlExpression * nameExpr);
-    void noteFilename(ActivityInstance & instance, const char * name, IHqlExpression * expr, bool isDynamic);
+    void noteFilename(ActivityInstance & instance, WuAttr attr, IHqlExpression * expr, bool isDynamic);
     bool checkGetResultContext(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void buildGetResultInfo(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr * boundTarget, const CHqlBoundTarget * targetAssign);
     void buildGetResultSetInfo(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr * boundTarget, const CHqlBoundTarget * targetAssign);

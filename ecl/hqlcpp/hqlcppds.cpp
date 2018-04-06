@@ -63,7 +63,7 @@ void addGraphIdAttribute(ActivityInstance * instance, BuildCtx & ctx, IHqlExpres
         graphname.append(graphId->queryChild(0)->querySequenceExtra());
         throwError1(HQLERR_AccessUnavailableGraph, graphname.str());
     }
-    instance->addAttributeInt("_graphId", match->graphId);
+    instance->addAttributeInt(WaIdChildGraph, match->graphId);
 }
 
 //===========================================================================
@@ -5376,7 +5376,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySetGraphDictionaryResult(Build
 
     buildDictionaryHashMember(instance->createctx, dictionary, "queryHashLookupInfo");
 
-    instance->addAttributeBool("_isSpill", isSpill);
+    instance->addAttributeBool(WaIsSpill, isSpill);
     if (targetRoxie())
         addGraphIdAttribute(instance, ctx, graphId);
 
@@ -5445,8 +5445,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySetGraphResult(BuildCtx & ctx,
         addDependency(ctx, instance->queryBoundActivity(), parentActivity, childAtom, relationship);
     }
 
-    instance->addAttributeBool("_isSpill", isSpill);
-    instance->addAttributeBool("_fromChild", expr->hasAttribute(_accessedFromChild_Atom));
+    instance->addAttributeBool(WaIsSpill, isSpill);
+    instance->addAttributeBool(WaIsAccessedFromChild, expr->hasAttribute(_accessedFromChild_Atom));
     if (targetRoxie())
         addGraphIdAttribute(instance, ctx, graphId);
 
@@ -5600,7 +5600,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityForceLocal(BuildCtx & ctx, IHq
     buildActivityFramework(instance);
 
     buildInstancePrefix(instance);
-    instance->addAttributeInt("_subgraph", localId);
+    instance->addAttributeInt(WaIdSubGraph, localId);
 
     ActivityAssociation * match = static_cast<ActivityAssociation *>(ctx.queryAssociation(queryResultExpr(remote), AssocActivity, NULL));
     assertex(match);

@@ -149,8 +149,11 @@ public:
     void getScope(StringBuffer & scope) const; // return the full scope name of this activity
 
     void addAttribute(WuAttr attr, const char * value);
+    void addAttributeBool(WuAttr attr, bool value, bool alwaysAdd=false);
+    void addAttributeInt(WuAttr attr, __int64 value);
+    void addAttribute(WuAttr attr, IHqlExpression * expr);
+
     void addAttribute(const char * name, const char * value);
-    void addAttribute(const char * name, IHqlExpression * expr);
     void addAttributeInt(const char * name, __int64 value);
     void addAttributeBool(const char * name, bool value, bool alwaysAdd=false);
     void addSignedAttribute(IHqlExpression * signedAttr);

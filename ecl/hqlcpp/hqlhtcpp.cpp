@@ -133,7 +133,7 @@ inline bool isInternalSeq(IHqlExpression * seq)
 static void markSubGraphAsRoot(IPropertyTree * tree)
 {
     if (!tree->hasProp("att[@name=\"rootGraph\"]"))
-        addGraphAttributeBool(tree, "rootGraph", true);
+        setAttributeValueBool(*tree, WaIsRootGraph, true, false);
 }
 
 SubGraphInfo * matchActiveGraph(BuildCtx & ctx, IHqlExpression * graphTag)
@@ -1648,7 +1648,7 @@ bool GlobalFileTracker::checkMatch(IHqlExpression * searchFilename)
 void GlobalFileTracker::writeToGraph()
 {
     if (usageCount && graphNode)
-        addGraphAttributeInt(graphNode, "_globalUsageCount", usageCount);
+        setAttributeValueInt(*graphNode, WaNumGlobalUses, usageCount);
 }
 
 //---------------------------------------------------------------------------
@@ -1866,6 +1866,25 @@ void ActivityInstance::addAttribute(WuAttr attr, const char * value)
     setAttributeValue(*graphNode, attr, value);
 }
 
+void ActivityInstance::addAttributeBool(WuAttr attr, bool value, bool alwaysAdd)
+{
+    setAttributeValueBool(*graphNode, attr, value, alwaysAdd);
+}
+
+void ActivityInstance::addAttributeInt(WuAttr attr, __int64 value)
+{
+    setAttributeValueInt(*graphNode, attr, value);
+}
+
+void ActivityInstance::addAttribute(WuAttr attr, IHqlExpression * expr)
+{
+    StringBuffer temp;
+    IValue * value = expr->queryValue();
+    assertex(value);
+    value->getStringValue(temp);
+    setAttributeValue(*graphNode, attr, temp);
+}
+
 void ActivityInstance::addAttribute(const char * name, const char * value)
 {
     addGraphAttribute(graphNode, name, value);
@@ -1881,22 +1900,13 @@ void ActivityInstance::addAttributeBool(const char * name, bool value, bool alwa
     addGraphAttributeBool(graphNode, name, value, alwaysAdd);
 }
 
-void ActivityInstance::addAttribute(const char * name, IHqlExpression * expr)
-{
-    StringBuffer temp;
-    IValue * value = expr->queryValue();
-    assertex(value);
-    value->getStringValue(temp);
-    addGraphAttribute(graphNode, name, temp);
-}
-
 void ActivityInstance::addSignedAttribute(IHqlExpression * signedAttr)
 {
     if (signedAttr)
     {
         StringBuffer buf;
         getStringValue(buf, signedAttr->queryChild(0));
-        addAttribute("signedBy", buf.str());
+        addAttribute(WaSignedBy, buf.str());
     }
 }
 
@@ -1919,7 +1929,7 @@ void ActivityInstance::addLocationAttribute(IHqlExpression * location)
     if (column)
         s.append(",").append(column);
     s.append(")");
-    addAttribute(WADefinition, s.str());
+    addAttribute(WaDefinition, s.str());
 }
 
 
@@ -1942,7 +1952,7 @@ void ActivityInstance::addNameAttribute(IHqlExpression * symbol)
             return;
     }
     names.append(*symbol);
-    addAttribute("name", str(name));
+    addAttribute(WaEclName, str(name));
 }
 
 void ActivityInstance::removeAttribute(const char * name)
@@ -2008,7 +2018,7 @@ void ActivityInstance::processSection(IHqlExpression * section)
     {
         StringBuffer sectionName;
         getStringValue(sectionName, section->queryChild(0));
-        addAttribute("section", sectionName);
+        addAttribute(WaSection, sectionName);
     }
 }
 
@@ -2025,8 +2035,8 @@ void ActivityInstance::changeActivityKind(ThorActivityKind newKind)
     kind = newKind;
     if (graphNode)
     {
+        addAttributeInt(WaKind, kind);
         removeGraphAttribute(graphNode, "_kind");
-        addAttributeInt("_kind", kind);
     }
     if (table)
         table->updateActivityKind(kind);
@@ -2036,7 +2046,7 @@ void ActivityInstance::changeActivityKind(ThorActivityKind newKind)
 void ActivityInstance::setInternalSink(bool value)
 {
     if (value)
-        addAttributeBool("_internal", true);
+        addAttributeBool(WaIsInternal, true);
     else
         removeAttribute("_internal");
 }
@@ -2101,9 +2111,9 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
         cur = body;
     }
 
-    addAttributeInt("_kind", kind);
-    addAttributeBool("grouped", isGrouped);
-    addAttributeBool("local", isLocal);
+    addAttributeInt(WaKind, kind);
+    addAttributeBool(WaIsGrouped, isGrouped);
+    addAttributeBool(WaIsLocal, isLocal);
 
 #ifdef _DEBUG
 //    assertex(dataset->isAction() == isActivitySink(kind));
@@ -2113,21 +2123,21 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
         if (alwaysExecuted)
             markSubGraphAsRoot(parentGraphNode);
         else
-            addAttributeBool("_internal", true);
+            addAttributeBool(WaIsInternal, true);
     }
 
     if (containerActivity)
-        addAttributeInt("_parentActivity", containerActivity->activityId);
+        addAttributeInt(WaIdParentActivity, containerActivity->activityId);
     if (parentExtract && isCoLocal)
-        addAttributeBool("coLocal", true);
+        addAttributeBool(WaIsCoLocal, true);
     if (isNoAccess)
-        addAttributeBool("noAccess", true);
+        addAttributeBool(WaIsNoAccess, true);
     if (activityExpr->hasAttribute(parallelAtom))
-        addAttributeInt("parallel", getIntValue(queryAttributeChild(activityExpr, parallelAtom, 0), -1));
+        addAttributeInt(WaNumParallel, getIntValue(queryAttributeChild(activityExpr, parallelAtom, 0), -1));
     if (hasOrderedAttribute(activityExpr))
-        addAttributeBool("ordered", isOrdered(activityExpr), true);
+        addAttributeBool(WaIsOrdered, isOrdered(activityExpr), true);
     if (activityExpr->hasAttribute(algorithmAtom))
-        addAttribute("algorithm", queryAttributeChild(activityExpr, algorithmAtom, 0));
+        addAttribute(WaAlgorithm, queryAttributeChild(activityExpr, algorithmAtom, 0));
 
     if (!options.obfuscateOutput)
     {
@@ -2138,14 +2148,14 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
         if (options.showEclInGraph)
         {
             if (strcmp(graphEclText.str(), "<>") != 0)
-                addAttribute("ecl", graphEclText.str());
+                addAttribute(WaEclText, graphEclText.str());
         }
 
         if (options.showSeqInGraph)
         {
             IHqlExpression * selSeq = querySelSeq(activityExpr);
             if (selSeq)
-                addAttributeInt("selSeq", selSeq->querySequenceExtra());
+                addAttributeInt("debuggingSelSeq", selSeq->querySequenceExtra());
         }
 
         if (options.showMetaInGraph || generateMetaFromInput)
@@ -2156,28 +2166,28 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
             {
                 IHqlExpression * distribution = queryDistribution(source);
                 if (distribution && distribution->queryName() != localAtom)
-                    addAttribute("metaDistribution", getExprECL(distribution, s.clear(), true).str());
+                    addAttribute(WaMetaDistribution, getExprECL(distribution, s.clear(), true).str());
             }
 
             IHqlExpression * grouping = queryGrouping(source);
             assertex((grouping != nullptr) == ::isGrouped(source));
             if (grouping)
-                addAttribute("metaGrouping", getExprECL(grouping, s.clear(), true).str());
+                addAttribute(WaMetaGrouping, getExprECL(grouping, s.clear(), true).str());
 
             if (translator.targetThor())
             {
                 IHqlExpression * globalSortOrder = queryGlobalSortOrder(source);
                 if (globalSortOrder)
-                    addAttribute("metaGlobalSortOrder", getExprECL(globalSortOrder, s.clear(), true).str());
+                    addAttribute(WaMetaGlobalSortOrder, getExprECL(globalSortOrder, s.clear(), true).str());
             }
 
             IHqlExpression * localSortOrder = queryLocalUngroupedSortOrder(source);
             if (localSortOrder)
-                addAttribute("metaLocalSortOrder", getExprECL(localSortOrder, s.clear(), true).str());
+                addAttribute(WaMetaLocalSortOrder, getExprECL(localSortOrder, s.clear(), true).str());
 
             IHqlExpression * groupSortOrder = queryGroupSortOrder(source);
             if (groupSortOrder)
-                addAttribute("metaGroupSortOrder", getExprECL(groupSortOrder, s.clear(), true).str());
+                addAttribute(WaMetaGroupSortOrder, getExprECL(groupSortOrder, s.clear(), true).str());
         }
 
         if (options.noteRecordSizeInGraph)
@@ -2192,7 +2202,7 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
                     record.setown(getSerializedForm(record, diskAtom));
                 StringBuffer temp;
                 getRecordSizeText(temp, record);
-                addAttribute("recordSize", temp.str());
+                addAttribute(WaRecordSize, temp.str());
             }
         }
 
@@ -2200,7 +2210,7 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
         {
             StringBuffer text;
             getRecordCountText(text, activityExpr);
-            addAttribute("predictedCount", text);
+            addAttribute(WaPredictedCount, text);
         }
     }
 
@@ -2214,6 +2224,8 @@ void ActivityInstance::moveDefinitionToHeader()
         //remove this class from the c++ file and include it in the header file instead
         includedInHeader = true;
         classGroupStmt->setIncluded(false);
+
+        //Following is only to aid debugging a work unit, not accessed via wudetails
         addAttributeBool("helperinheader", true);
 
         BuildCtx headerctx(*translator.code, parentHelpersAtom);
@@ -2340,7 +2352,7 @@ void ActivityInstance::buildPrefix()
 void ActivityInstance::buildSuffix()
 {
     if (numChildQueries)
-        addAttributeInt("childQueries", numChildQueries);
+        addAttributeInt(WaNumChildQueries, numChildQueries);
 
     //Paranoid check to ensure that library classes aren't used when member functions were required
     if (implementationClassName && (initialGroupMarker != classGroup->numChildren()))
@@ -2357,7 +2369,7 @@ void ActivityInstance::buildSuffix()
                 translator.WARNING2(CategoryEfficiency, HQLWRN_ComplexHelperClass, activityId, approxSize);
         }
         if (!options.obfuscateOutput && options.showActivitySizeInGraph)
-            addAttributeInt("approxClassSize", approxSize);
+            addAttributeInt(WaSizeClassApprox, approxSize);
     }
 
     if (options.generateActivityThresholdCycles != 0)
@@ -2380,7 +2392,7 @@ void ActivityInstance::buildSuffix()
 
     unsigned __int64 searchDistance = querySearchDistance() - startDistance;
     if (searchDistance > options.searchDistanceThreshold)
-        addAttributeInt("searchDistance", searchDistance);
+        addAttributeInt("debuggingSearchDistance", searchDistance);
 
 //  if (!isMember)
 //      classGroupStmt->setIncomplete(false);
@@ -3266,32 +3278,24 @@ void HqlCppTranslator::doBuildFunction(BuildCtx & ctx, ITypeInfo * type, const c
     }
 }
 
-void HqlCppTranslator::addFilenameConstructorParameter(ActivityInstance & instance, const char * name, IHqlExpression * expr)
+void HqlCppTranslator::addFilenameConstructorParameter(ActivityInstance & instance, WuAttr attr, IHqlExpression * expr)
 {
     OwnedHqlExpr folded = foldHqlExpression(expr);
     instance.addConstructorParameter(folded);
-    noteFilename(instance, name, folded, false);
+    noteFilename(instance, attr, folded, false);
 }
 
-void HqlCppTranslator::buildFilenameFunction(ActivityInstance & instance, BuildCtx & classctx, const char * name, IHqlExpression * expr, bool isDynamic)
+void HqlCppTranslator::buildFilenameFunction(ActivityInstance & instance, BuildCtx & classctx, WuAttr attr, const char * name, IHqlExpression * expr, bool isDynamic)
 {
     OwnedHqlExpr folded = foldHqlExpression(expr);
     doBuildVarStringFunction(classctx, name, folded);
-    noteFilename(instance, name, folded, isDynamic);
+    noteFilename(instance, attr, folded, isDynamic);
 }
 
-void HqlCppTranslator::noteFilename(ActivityInstance & instance, const char * name, IHqlExpression * expr, bool isDynamic)
+void HqlCppTranslator::noteFilename(ActivityInstance & instance, WuAttr attr, IHqlExpression * expr, bool isDynamic)
 {
     if (options.addFilesnamesToGraph)
     {
-        StringBuffer propName;
-        const char * propNameBase = name;
-        if (memicmp(propNameBase, "get", 3) == 0)
-            propNameBase += 3;
-        else if (memicmp(propNameBase, "query", 3) == 0)
-            propNameBase += 5;
-        propName.append("_").append((char)tolower(*propNameBase)).append(propNameBase+1);
-
         OwnedHqlExpr folded = foldHqlExpression(expr);
         if (folded)
         {
@@ -3308,21 +3312,44 @@ void HqlCppTranslator::noteFilename(ActivityInstance & instance, const char * na
             {
                 StringBuffer propValue;
                 folded->queryValue()->getStringValue(propValue);
-                instance.addAttribute(propName, propValue);
+                instance.addAttribute(attr, propValue);
             }
         }
         if (isDynamic)
         {
-            unsigned len = propName.length();
-            if ((len > 4) && (memicmp(propName.str() + len-4, "name", 4) == 0))
-                propName.setLength(len-4);
-            propName.append("_dynamic");
-            instance.addAttributeBool(propName.str(), true);
+            WuAttr dynamicAttr;
+            switch (attr)
+            {
+            case WaFilename:
+                dynamicAttr = WaIsFilenameDynamic;
+                break;
+            case WaIndexname:
+                dynamicAttr = WaIsIndexnameDynamic;
+                break;
+            case WaPatchFilename:
+                dynamicAttr = WaIsPatchFilenameDynamic;
+                break;
+            case WaDistributeIndexname:
+                dynamicAttr = WaIsDistributeIndexnameDynamic;
+                break;
+            case WaOriginalFilename:
+                dynamicAttr = WaIsOriginalFilenameDynamic;
+                break;
+            case WaOutputFilename:
+                dynamicAttr = WaIsOutputFilenameDynamic;
+                break;
+            case WaUpdatedFilename:
+                dynamicAttr = WaIsUpdatedFilenameDynamic;
+                break;
+            default:
+                throwUnexpected();
+            }
+            instance.addAttributeBool(dynamicAttr, true);
         }
     }
 }
 
-void HqlCppTranslator::buildRefFilenameFunction(ActivityInstance & instance, BuildCtx & classctx, const char * name, IHqlExpression * expr)
+void HqlCppTranslator::buildRefFilenameFunction(ActivityInstance & instance, BuildCtx & classctx, WuAttr attr, const char * name, IHqlExpression * expr)
 {
     IHqlExpression * table = queryPhysicalRootTable(expr);
     assertex(table);
@@ -3341,7 +3368,7 @@ void HqlCppTranslator::buildRefFilenameFunction(ActivityInstance & instance, Bui
         break;
     }
 
-    buildFilenameFunction(instance, classctx, name, filename, hasDynamicFilename(table));
+    buildFilenameFunction(instance, classctx, attr, name, filename, hasDynamicFilename(table));
 }
 
 void HqlCppTranslator::buildConnectInputOutput(BuildCtx & ctx, ActivityInstance * instance, ABoundActivity * table, unsigned outputIndex, unsigned inputIndex, const char * label, bool nWay)
@@ -7296,7 +7323,7 @@ void HqlCppTranslator::addDependency(BuildCtx & ctx, ABoundActivity * sourceActi
     IPropertyTree *edge = createPTree();
     edge->setProp("@id", idText.str());
     if (label)
-        edge->setProp("@label", label);
+        setAttributeValue(*edge, WaLabel, label);
     if (targetRoxie())
     {
         if (outputIndex)
@@ -7307,20 +7334,20 @@ void HqlCppTranslator::addDependency(BuildCtx & ctx, ABoundActivity * sourceActi
 
     if (kind == childAtom)
     {
-        addGraphAttributeBool(edge, "_childGraph", true);
+        setAttributeValueBool(*edge, WaIsChildGraph, true);
     }
     else if (kind == dependencyAtom)
     {
-        addGraphAttributeBool(edge, "_dependsOn", true);
+        setAttributeValueBool(*edge, WaIsDependency, true);
     }
     else if (sourceActivity->queryContainerId() != sinkActivity->queryContainerId())
     {
         //mark as a dependency if the source and target aren't at the same depth
-        addGraphAttributeBool(edge, "_dependsOn", true);
+        setAttributeValueBool(*edge, WaIsDependency, true);
     }
 
     if (whenId)
-        addGraphAttributeInt(edge, "_when", whenId);
+        setAttributeValueInt(*edge, WaWhenIndex, whenId);
 
 
     if (graphTree)
@@ -8728,7 +8755,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLoop(BuildCtx & ctx, IHqlExpre
 
         ChildGraphBuilder builder(*this, childquery);
         unique_id_t loopId = builder.buildLoopBody(func.ctx, (parallel != NULL), getBoolAttribute(expr, fewAtom));
-        instance->addAttributeInt("_loopid", loopId);
+        instance->addAttributeInt(WaIdLoop, loopId);
 
         if (loopAgainResult)
             doBuildUnsignedFunction(instance->startctx, "loopAgainResult", loopAgainResult);
@@ -8781,7 +8808,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityGraphLoop(BuildCtx & ctx, IHql
         //input dataset is fed in using result 1
         //counter (if required) is fed in using result 2[0].counter;
         unique_id_t loopId = buildGraphLoopSubgraph(func.ctx, dataset, selSeq, rowsid, body->queryChild(0), counter, (parallel != NULL), getBoolAttribute(expr, fewAtom));
-        instance->addAttributeInt("_loopid", loopId);
+        instance->addAttributeInt(WaIdLoop, loopId);
     }
 
     buildInstanceSuffix(instance);
@@ -8828,7 +8855,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityRemote(BuildCtx & ctx, IHqlExp
 
         //output dataset is result 0
         unique_id_t remoteId = buildRemoteSubgraph(func.ctx, dataset);
-        instance->addAttributeInt("_graphid", remoteId);
+        instance->addAttributeInt(WaIdAmbiguousGraph, remoteId);
     }
 
     buildInstanceSuffix(instance);
@@ -9261,26 +9288,27 @@ unsigned HqlCppTranslator::doBuildThorChildSubGraph(BuildCtx & ctx, IHqlExpressi
 
     IHqlExpression * numResultsAttr = expr->queryAttribute(numResultsAtom);
     if (numResultsAttr)
-        addGraphAttributeInt(subGraph, "_numResults", getIntValue(numResultsAttr->queryChild(0), 0));
+        setAttributeValueInt(*subGraph, WaNumResults, getIntValue(numResultsAttr->queryChild(0), 0));
     if (expr->hasAttribute(multiInstanceAtom))
-        subGraph->setPropBool("@multiInstance", true);
+        setAttributeValueBool(*subGraph, WaIsMultiInstance, true);
     if (expr->hasAttribute(delayedAtom))
-        subGraph->setPropBool("@delayed", true);
+        setAttributeValueBool(*subGraph, WaIsDelayed, true);
     if (expr->queryAttribute(childAtom))
-        subGraph->setPropBool("@child", true);
+        setAttributeValueBool(*subGraph, WaIsChild, true);
     if (expr->hasAttribute(sequentialAtom))
-        subGraph->setPropBool("@sequential", true);
+        setAttributeValueBool(*subGraph, WaIsSequential, true);
     if (kind == SubGraphLoop)
-        subGraph->setPropBool("@loopBody", true);
+        setAttributeValueBool(*subGraph, WaIsLoopBody, true);
 
     if (insideChildOrLoopGraph(ctx))
     {
+        //Do not use setAttributeValueInt since the child <att> has already been created
         graphAttr->setProp("@name", "_kind");
         graphAttr->setPropInt("@value", TAKsubgraph);
 
         ActivityInstance * curActivityInstance = queryCurrentActivity(ctx);
         if (curActivityInstance)
-            addGraphAttributeInt(node, "_parentActivity", curActivityInstance->activityId);
+            setAttributeValueInt(*node, WaIdParentActivity, curActivityInstance->activityId);
     }
 
     OwnedHqlExpr idExpr = createConstant((__int64)thisId);
@@ -9957,7 +9985,7 @@ void HqlCppTranslator::buildUpdateHelper(BuildCtx & ctx, ActivityInstance & inst
         buildAssignToTemp(func.ctx, totalCrcVar, crcExpr);
 
         if (!updateAttr->hasAttribute(alwaysAtom))
-            instance.addAttributeBool("_updateIfChanged", true);
+            instance.addAttributeBool(WaIsUpdateIfChanged, true);
     }
 }
 
@@ -10354,7 +10382,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
     buildInstancePrefix(instance);
 
     //virtual const char * getFileName() { return "x.d00"; }
-    buildFilenameFunction(*instance, instance->startctx, "getFileName", filename, hasDynamicFilename(expr));
+    buildFilenameFunction(*instance, instance->startctx, WaFilename, "getFileName", filename, hasDynamicFilename(expr));
 
     //virtual unsigned getFlags() = 0;
     IHqlExpression * updateAttr = expr->queryAttribute(updateAtom);
@@ -10394,7 +10422,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
 
     IHqlExpression * indexNameAttr = expr->queryAttribute(indexAtom);
     if (indexNameAttr)
-        buildFilenameFunction(*instance, instance->startctx, "getDistributeIndexName", indexNameAttr->queryChild(0), hasDynamicFilename(expr));
+        buildFilenameFunction(*instance, instance->startctx, WaDistributeIndexname, "getDistributeIndexName", indexNameAttr->queryChild(0), hasDynamicFilename(expr));
 
     buildExpiryHelper(instance->createctx, expr->queryAttribute(expireAtom));
     buildUpdateHelper(instance->createctx, *instance, dataset, updateAttr);
@@ -10690,7 +10718,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
             if (filename && filename->getOperator() != no_pipe)
             {
                 bool isDynamic = expr->hasAttribute(resultAtom) || hasDynamicFilename(expr);
-                buildFilenameFunction(*instance, instance->startctx, "getFileName", filename, isDynamic);
+                buildFilenameFunction(*instance, instance->startctx, WaFilename, "getFileName", filename, isDynamic);
                 if (!filename->isConstant())
                     constFilename = false;
             }
@@ -10789,14 +10817,14 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
     {
         assertex(tempCount.get() && !hasDynamic(expr));
         instance->addConstructorParameter(tempCount);
-        addFilenameConstructorParameter(*instance, "getFileName", filename);
+        addFilenameConstructorParameter(*instance, WaFilename, filename);
     }
 
     instance->addSignedAttribute(expr->queryAttribute(_signed_Atom));
 
-    instance->addAttributeBool("_isSpill", expr->hasAttribute(_spill_Atom));
+    instance->addAttributeBool(WaIsSpill, expr->hasAttribute(_spill_Atom));
     if (targetRoxie())
-        instance->addAttributeBool("_isSpillGlobal", expr->hasAttribute(jobTempAtom));
+        instance->addAttributeBool(WaIsGlobalSpill, expr->hasAttribute(jobTempAtom));
 
     buildInstanceSuffix(instance);
     if (boundDataset)
@@ -15475,7 +15503,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityFilter(BuildCtx & ctx, IHqlExp
                 StringBuffer text;
                 likelihood *= 100;
                 text.setf("%3.2f%%", likelihood);
-                instance->addAttribute("matchLikelihood", text);
+                instance->addAttribute(WaMatchLikelihood, text);
             }
         }
     }
@@ -16345,7 +16373,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityIf(BuildCtx & ctx, IHqlExpress
             buildReturn(getcond.ctx, cseCond);
         }
         if (isGraphIndependent(cseCond, activeGraph) && !instance->hasChildActivity)
-            instance->addAttributeBool("_graphIndependent", true);
+            instance->addAttributeBool(WaIsGraphIndependent, true);
 
         buildConnectInputOutput(ctx, instance, boundTrue, 0, 0, firstLabel);
         if (boundFalse)
@@ -16370,7 +16398,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityIf(BuildCtx & ctx, IHqlExpress
         }
 
         if (isGraphIndependent(cseCond, activeGraph) && !instance->hasChildActivity)
-            instance->addAttributeBool("_graphIndependent", true);
+            instance->addAttributeBool(WaIsGraphIndependent, true);
 
         if (expr->isAction())
         {
@@ -16467,7 +16495,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityChoose(BuildCtx & ctx, IHqlExp
     bool graphIndependent = isGraphIndependent(fullCond, activeGraph);
 
     if (graphIndependent && !instance->hasChildActivity)
-        instance->addAttributeBool("_graphIndependent", true);
+        instance->addAttributeBool(WaIsGraphIndependent, true);
 
     buildConnectInputOutput(ctx, instance, boundDefault, 0, inputs.ordinality(), "default");
 
@@ -16553,7 +16581,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCase(BuildCtx & ctx, IHqlExpre
     bool graphIndependent = isGraphIndependent(fullCond, activeGraph);
 
     if (graphIndependent && !instance->hasChildActivity)
-        instance->addAttributeBool("_graphIndependent", true);
+        instance->addAttributeBool(WaIsGraphIndependent, true);
 
     buildConnectInputOutput(ctx, instance, boundDefault, 0, max-1-first, "default");
 
@@ -18786,9 +18814,9 @@ void HqlCppTranslator::buildConnectOrders(BuildCtx & ctx, ABoundActivity * slave
     if (targetThor())
     {
         IPropertyTree *edge = createPTree();
-        edge->setPropInt64("@target", slaveActivity->queryActivityId());
-        edge->setPropInt64("@source", masterActivity->queryActivityId());
-        addGraphAttributeBool(edge, "cosort", true);
+        setAttributeValueInt(*edge, WaIdTarget, slaveActivity->queryActivityId());
+        setAttributeValueInt(*edge, WaIdSource, masterActivity->queryActivityId());
+        setAttributeValueBool(*edge, WaIsCosort, true);
 
         SubGraphInfo * activeSubgraph = queryActiveSubGraph(ctx);
         assertex(activeSubgraph);
