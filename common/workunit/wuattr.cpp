@@ -21,33 +21,41 @@
 struct WuAttrInfo
 {
 public:
-    WuAttr kind;
-    StatisticMeasure measure;
-    const char * name;
-    const char * graphPath;
-    const char * childPath;
-    const char * dft;
+    WuAttr kind;                // The attribute enumeration
+    StatisticMeasure measure;   // units for the measure
+    const char * name;          // text version of the attribute
+    const char * graphPath;     // The xpath required to extract a result from a graph node.
+    const char * overridePath;  // Alternative xpath to check 1st for some overloaded attributes
+    const char * childPath;     // The name of the <atr> for setting, or matching when iterating
+    const char * dft;           // default value if not present
 };
 
 #define CHILDPATH(x) "att[@name='" x "']/@value"
-#define ATTR(kind, measure, path)           { WA ## kind, measure, #kind, path, nullptr, nullptr }
-#define CHILD(kind, measure, path)    { WA ## kind, measure, #kind, CHILDPATH(path), path, nullptr }
-#define CHILD_D(kind, measure, path, dft)    { WA ## kind, measure, #kind, CHILDPATH(path), path, dft }
+#define CHILDMPATH(x) "att[@name='" x "'][1]/@value"
+#define ATTR(kind, measure, path)           { WA ## kind, measure, #kind, path, nullptr, nullptr, nullptr }
+#define ALTATTR(kind, measure, path, alt)   { WA ## kind, measure, #kind, path, alt, nullptr }
+#define CHILD(kind, measure, path)          { WA ## kind, measure, #kind, CHILDPATH(path), nullptr, path, nullptr }
+#define CHILD_MULTI(kind, measure, path)    { WA ## kind, measure, #kind, CHILDMPATH(path), nullptr, path, nullptr }
+#define CHILD_D(kind, measure, path, dft)   { WA ## kind, measure, #kind, CHILDPATH(path), nullptr, path, dft }
 
 
 const static WuAttrInfo attrInfo[] = {
     { WANone, SMeasureNone, "none", nullptr, nullptr, nullptr },
     { WAAll, SMeasureNone, "all", nullptr, nullptr, nullptr },
     CHILD(Kind, SMeasureEnum, "_kind"),
-    ATTR(Source, SMeasureText, "@source"),
-    ATTR(Target, SMeasureText, "@target"),
+    ALTATTR(IdSource, SMeasureId, "@source", "att[@name='_sourceActivity']/@value"),
+    ALTATTR(IdTarget, SMeasureId, "@target", "att[@name='_targetActivity']/@value"),
     CHILD_D(SourceIndex, SMeasureText, "_sourceIndex", "0"),
     CHILD_D(TargetIndex, SMeasureText, "_targetIndex", "0"),
     ATTR(Label, SMeasureText, "@label"),
     CHILD(IsDependency, SMeasureBool, "_dependsOn"),
     CHILD(IsChildGraph, SMeasureBool, "_childGraph"),
-    CHILD(Definition, SMeasureText, "definition"),
-    CHILD(EclName, SMeasureText, "name"),
+    CHILD_MULTI(Definition, SMeasureText, "definition"),
+    CHILD_MULTI(EclName, SMeasureText, "name"),
+    CHILD(EclText, SMeasureText, "ecl"),
+    CHILD(RecordSize, SMeasureText, "recordSize"),
+    CHILD(PredictedCount, SMeasureText, "predictedCount"),
+    CHILD(Filename, SMeasureText, "_fileName"),
     { WAMax, SMeasureNone, nullptr, nullptr, nullptr, nullptr }
 };
 
@@ -82,16 +90,30 @@ WuAttr queryWuAttribute(const char * kind, WuAttr dft)
     return dft;
 }
 
-extern WORKUNIT_API const char * queryAttributeValue(IPropertyTree & src, WuAttr kind)
+extern WORKUNIT_API const char * queryAttributeValue(IPropertyTree & src, WuAttr kind, StringBuffer & scratchpad)
 {
     if ((kind <= WANone) || (kind >= WAMax))
         return nullptr;
 
     const WuAttrInfo & info = attrInfo[kind-WANone];
     const char * path = info.graphPath;
-    const char * value = src.queryProp(path);
+    const char * altpath = info.overridePath;
+    const char * value = altpath ? src.queryProp(altpath) : nullptr;
+    if (!value)
+        value = src.queryProp(path);
     if (!value && info.dft)
         value = info.dft;
+
+    //The following switch statement allows the value returned to be transformed from the value stored.
+    switch (kind)
+    {
+    case WAIdSource:
+    case WAIdTarget:
+        //A bit of a hack - source and target for edges are activity ids.  Return a computed string.
+        value = scratchpad.clear().append(ActivityScopePrefix).append(value).str();
+        break;
+    }
+
     return value;
 }
 

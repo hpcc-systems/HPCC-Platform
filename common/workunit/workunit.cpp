@@ -852,17 +852,17 @@ protected:
         }
     }
 
-    virtual bool getStat(StatisticKind kind, unsigned __int64 & value) const
+    virtual bool getStat(StatisticKind kind, unsigned __int64 & value) const override
     {
         return collections.tos().getStatistic(kind, value);
     }
 
-    virtual const char * queryAttribute(WuAttr attr) const
+    virtual const char * queryAttribute(WuAttr attr, StringBuffer & scratchpad) const override
     {
         return nullptr;
     }
 
-    virtual const char * queryHint(const char * kind) const
+    virtual const char * queryHint(const char * kind) const override
     {
         return nullptr;
     }
@@ -1122,7 +1122,7 @@ public:
         }
     }
 
-    virtual bool getStat(StatisticKind kind, unsigned __int64 & value) const
+    virtual bool getStat(StatisticKind kind, unsigned __int64 & value) const override
     {
         for (unsigned i=0; i < numStatistics; i++)
         {
@@ -1136,7 +1136,7 @@ public:
         return false;
     }
 
-    virtual const char * queryAttribute(WuAttr attr) const
+    virtual const char * queryAttribute(WuAttr attr, StringBuffer & scratchpad) const override
     {
         return nullptr;
     }
@@ -1321,8 +1321,8 @@ public:
                 //MORE This will eventually need to walk the attributes and map the names.
                 //Need to be careful if they need to be mapped differently depending on the context.
                 playAttribute(visitor, WALabel);
-                playAttribute(visitor, WASource);
-                playAttribute(visitor, WATarget);
+                playAttribute(visitor, WAIdSource);
+                playAttribute(visitor, WAIdTarget);
                 playAttribute(visitor, WASourceIndex);
                 playAttribute(visitor, WATargetIndex);
                 playAttribute(visitor, WAIsDependency);
@@ -1331,20 +1331,20 @@ public:
         }
     }
 
-    virtual bool getStat(StatisticKind kind, unsigned __int64 & value) const
+    virtual bool getStat(StatisticKind kind, unsigned __int64 & value) const override
     {
         return false;
     }
 
-    virtual const char * queryAttribute(WuAttr attr) const
+    virtual const char * queryAttribute(WuAttr attr, StringBuffer & scratchpad) const override
     {
         if (!treeIters.ordinality())
             return nullptr;
         //MORE - check that the attribute is value for the current scope type (to prevent defaults being returned)
-        return queryAttributeValue(treeIters.tos().query(), attr);
+        return queryAttributeValue(treeIters.tos().query(), attr, scratchpad);
     }
 
-    virtual const char * queryHint(const char * kind) const
+    virtual const char * queryHint(const char * kind) const override
     {
         //MORE: Needs to be implemented!
         return nullptr;
@@ -1353,7 +1353,8 @@ public:
 private:
     void playAttribute(IWuScopeVisitor & visitor, WuAttr kind)
     {
-        const char * value = queryAttributeValue(treeIters.tos().query(), kind);
+        StringBuffer scratchpad;
+        const char * value = queryAttributeValue(treeIters.tos().query(), kind, scratchpad);
         if (value)
             visitor.noteAttribute(kind, value);
     }
@@ -1829,13 +1830,13 @@ public:
         return false;
     }
 
-    virtual const char * queryAttribute(WuAttr attr) const override
+    virtual const char * queryAttribute(WuAttr attr, StringBuffer & scratchpad) const override
     {
         ForEachItemIn(i, iters)
         {
             if (iterMatchesCurrentScope(i))
             {
-                const char * value = iters.item(i).queryAttribute(attr);
+                const char * value = iters.item(i).queryAttribute(attr, scratchpad);
                 if (value)
                     return value;
             }

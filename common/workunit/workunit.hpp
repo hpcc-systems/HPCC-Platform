@@ -1131,7 +1131,7 @@ interface IConstWUScopeIterator : extends IScmIterator
 
     //Return true if the stat is present, if found and update the value - queryStat() wrapper is generally easier to use.
     virtual bool getStat(StatisticKind kind, unsigned __int64 & value) const = 0;
-    virtual const char * queryAttribute(WuAttr attr) const = 0; // Multiple values can be processed via the playStatistics() function
+    virtual const char * queryAttribute(WuAttr attr, StringBuffer & scratchpad) const = 0; // Multiple values can be processed via the playStatistics() function
     virtual const char * queryHint(const char * kind) const = 0;
 
     inline unsigned __int64 queryStat(StatisticKind kind, unsigned __int64 defaultValue = 0) const
