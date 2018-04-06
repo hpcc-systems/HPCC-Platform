@@ -22,7 +22,7 @@ define([
     "dijit/registry",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/ESPRequest",
+    "src/ESPRequest",
 
     "dojo/text!../templates/HPCCPlatformOpsWidget.html",
 

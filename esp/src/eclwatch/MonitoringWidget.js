@@ -31,11 +31,11 @@ define([
     "dgrid/extensions/ColumnHider",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/ws_machine",
-    "hpcc/ESPWorkunit",
+    "src/ws_machine",
+    "src/ESPWorkunit",
     "hpcc/DelayLoadWidget",
-    "hpcc/ESPUtil",
-    "hpcc/Utility"
+    "src/ESPUtil",
+    "src/Utility"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, domClass, topic,
                 registry, ToggleButton, ToolbarSeparator,

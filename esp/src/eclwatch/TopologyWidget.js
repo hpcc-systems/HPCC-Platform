@@ -37,14 +37,14 @@ define([
     "hpcc/GridDetailsWidget",
     "hpcc/PreflightDetailsWidget",
     "hpcc/RequestInformationWidget",
-    "hpcc/ESPRequest",
-    "hpcc/ESPTopology",
+    "src/ESPRequest",
+    "src/ESPTopology",
     "hpcc/TopologyDetailsWidget",
     "hpcc/DelayLoadWidget",
-    "hpcc/ESPUtil",
+    "src/ESPUtil",
     "hpcc/FilterDropDownWidget",
-    "hpcc/ws_machine",
-    "hpcc/Utility"
+    "src/ws_machine",
+    "src/Utility"
 
 ], function (declare, i18n, nlsHPCC, on, dom, domConstruct, lang,
                 CheckBox, TextBox, ValidationTextBox, registry, ToggleButton, Select, ToolbarSeparator, ContentPane,

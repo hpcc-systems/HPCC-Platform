@@ -20,7 +20,7 @@ define([
     "dojo/i18n!./nls/hpcc",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/ESPRequest",
+    "src/ESPRequest",
 
     "dojo/text!../templates/HPCCPlatformFilesWidget.html",
 

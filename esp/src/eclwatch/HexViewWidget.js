@@ -26,7 +26,7 @@ define([
     "dijit/registry",
 
     "hpcc/_Widget",
-    "hpcc/ESPWorkunit",
+    "src/ESPWorkunit",
     "hpcc/ECLSourceWidget",
 
     "dojo/text!../templates/HexViewWidget.html",

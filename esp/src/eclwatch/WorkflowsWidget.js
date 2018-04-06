@@ -26,9 +26,9 @@ define([
     "dgrid/extensions/DijitRegistry",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/ESPWorkunit",
+    "src/ESPWorkunit",
     "hpcc/DelayLoadWidget",
-    "hpcc/ESPUtil"
+    "src/ESPUtil"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil,
                 OnDemandGrid, Keyboard, ColumnResizer, DijitRegistry,

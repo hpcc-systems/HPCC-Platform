@@ -25,8 +25,8 @@ define([
     "dgrid/selector",
 
     "hpcc/_Widget",
-    "hpcc/WsDfu",
-    "hpcc/ESPUtil",
+    "src/WsDfu",
+    "src/ESPUtil",
     "hpcc/FilterDropDownWidget",
 
     "dojo/text!../templates/DiskUsageWidget.html",

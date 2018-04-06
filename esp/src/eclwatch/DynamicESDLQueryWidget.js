@@ -29,10 +29,10 @@ define([
     "dgrid/extensions/ColumnHider",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/WsTopology",
-    "hpcc/WsESDLConfig",
+    "src/WsTopology",
+    "src/WsESDLConfig",
     "hpcc/DelayLoadWidget",
-    "hpcc/ESPUtil",
+    "src/ESPUtil",
     "hpcc/DynamicESDLDetailsWidget",
     "hpcc/DynamicESDLDefinitionQueryWidget",
     "hpcc/TargetSelectWidget"

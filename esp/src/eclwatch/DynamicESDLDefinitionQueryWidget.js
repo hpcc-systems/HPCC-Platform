@@ -21,10 +21,10 @@ define([
     "dojo/_base/array",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/WsESDLConfig",
-    "hpcc/ESPUtil",
+    "src/WsESDLConfig",
+    "src/ESPUtil",
     "hpcc/DynamicESDLDefinitionDetailsWidget",
-    "hpcc/Utility"
+    "src/Utility"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil,
                 GridDetailsWidget, WsESDLConfig, ESPUtil, DynamicESDLDefinitionDetailsWidget, Utility) {

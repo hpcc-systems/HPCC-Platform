@@ -27,8 +27,8 @@ define([
 
     "hpcc/GridDetailsWidget",
     "hpcc/DelayLoadWidget",
-    "hpcc/ESPUtil",
-    "hpcc/ESPQuery",
+    "src/ESPUtil",
+    "src/ESPQuery",
     "hpcc/SFDetailsWidget"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, QueryResults,
                 tree, selector,

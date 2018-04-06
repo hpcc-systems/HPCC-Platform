@@ -21,8 +21,8 @@ define([
     "dojo/_base/array",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/ESPQuery",
-    "hpcc/ESPUtil"
+    "src/ESPQuery",
+    "src/ESPUtil"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil,
                 GridDetailsWidget, ESPQuery, ESPUtil) {
     return declare("LibrariesUsedWidget", [GridDetailsWidget], {

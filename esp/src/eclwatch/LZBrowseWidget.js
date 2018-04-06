@@ -38,16 +38,16 @@ define([
     "dgrid/selector",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/FileSpray",
-    "hpcc/ESPUtil",
-    "hpcc/ESPRequest",
-    "hpcc/ESPDFUWorkunit",
+    "src/FileSpray",
+    "src/ESPUtil",
+    "src/ESPRequest",
+    "src/ESPDFUWorkunit",
     "hpcc/DelayLoadWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/TargetComboBoxWidget",
     "hpcc/SelectionGridWidget",
     "hpcc/FilterDropDownWidget",
-    "hpcc/Utility",
+    "src/Utility",
 
     "dojo/text!../templates/LZBrowseWidget.html",
 

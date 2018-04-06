@@ -21,7 +21,7 @@ define([
 
     "hpcc/_TabContainerWidget",
     "hpcc/ECLSourceWidget",
-    "hpcc/WsESDLConfig",
+    "src/WsESDLConfig",
 
     "dojo/text!../templates/DynamicESDLDefinitionDetailsWidget.html",
 

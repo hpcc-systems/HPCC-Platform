@@ -28,7 +28,7 @@ define([
     "hpcc/TargetSelectWidget",
     "hpcc/ResultsWidget",
     "hpcc/InfoGridWidget",
-    "hpcc/ESPWorkunit",
+    "src/ESPWorkunit",
 
     "dojo/text!../templates/DFUSearchWidget.html"
 ], function (declare,

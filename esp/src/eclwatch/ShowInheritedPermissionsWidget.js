@@ -28,8 +28,8 @@ define([
     "dgrid/editor",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/ws_access",
-    "hpcc/ESPUtil",
+    "src/ws_access",
+    "src/ESPUtil",
 
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",

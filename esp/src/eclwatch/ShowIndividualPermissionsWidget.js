@@ -25,8 +25,8 @@ define([
     "dgrid/editor",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/ws_access",
-    "hpcc/ESPUtil"
+    "src/ws_access",
+    "src/ESPUtil"
 
 ], function (declare, lang, i18n, nlsHPCC,
                 registry, CheckBox,

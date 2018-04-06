@@ -22,8 +22,8 @@ define([
 
     "hpcc/DelayLoadWidget",
     "hpcc/GridDetailsWidget",
-    "hpcc/ESPLogicalFile",
-    "hpcc/ESPUtil",
+    "src/ESPLogicalFile",
+    "src/ESPUtil",
     "hpcc/SFDetailsWidget"
 
 ], function (declare, i18n, nlsHPCC,

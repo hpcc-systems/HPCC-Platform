@@ -31,7 +31,7 @@ define([
     "@hpcc-js/other",
     
     "hpcc/_Widget",
-    "hpcc/WsWorkunits",
+    "src/WsWorkunits",
 
     "dojo/text!../templates/WUStatsWidget.html",
 

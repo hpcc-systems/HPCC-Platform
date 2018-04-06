@@ -34,8 +34,8 @@ define([
     "dojox/html/entities",
 
     "hpcc/_Widget",
-    "hpcc/ESPUtil",
-    "hpcc/ESPWorkunit",
+    "src/ESPUtil",
+    "src/ESPWorkunit",
 
     "dojo/text!../templates/InfoGridWidget.html",
 

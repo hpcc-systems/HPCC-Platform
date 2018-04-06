@@ -27,10 +27,10 @@ define([
     "dgrid/selector",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/ESPRequest",
-    "hpcc/ESPWorkunit",
+    "src/ESPRequest",
+    "src/ESPWorkunit",
     "hpcc/DelayLoadWidget",
-    "hpcc/ESPUtil"
+    "src/ESPUtil"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
                 ContentPane, Button,

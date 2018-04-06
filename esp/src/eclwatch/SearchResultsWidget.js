@@ -32,16 +32,16 @@ define([
     "dgrid/selector",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/WsWorkunits",
-    "hpcc/ESPWorkunit",
-    "hpcc/ESPDFUWorkunit",
-    "hpcc/ESPLogicalFile",
-    "hpcc/ESPQuery",
-    "hpcc/FileSpray",
-    "hpcc/WsDfu",
+    "src/WsWorkunits",
+    "src/ESPWorkunit",
+    "src/ESPDFUWorkunit",
+    "src/ESPLogicalFile",
+    "src/ESPQuery",
+    "src/FileSpray",
+    "src/WsDfu",
     "hpcc/DelayLoadWidget",
-    "hpcc/ESPUtil",
-    "hpcc/Utility"
+    "src/ESPUtil",
+    "src/Utility"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, Observable, on, all,
                 Button,

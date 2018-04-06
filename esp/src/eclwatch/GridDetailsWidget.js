@@ -28,7 +28,7 @@ define([
     "dijit/PopupMenuItem",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/Utility",
+    "src/Utility",
 
     "dojo/text!../templates/GridDetailsWidget.html",
 

@@ -43,10 +43,10 @@ define([
     "hpcc/DelayLoadWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/TargetComboBoxWidget",
-    "hpcc/ESPLogicalFile",
-    "hpcc/ESPDFUWorkunit",
+    "src/ESPLogicalFile",
+    "src/ESPDFUWorkunit",
     "hpcc/FileBelongsToWidget",
-    "hpcc/FileSpray",
+    "src/FileSpray",
     "hpcc/FileHistoryWidget",
 
     "dojo/text!../templates/LFDetailsWidget.html",
@@ -409,7 +409,9 @@ define([
                 this.queriesWidget.set("iconClass", "dijitInline dijitIcon dijitTabButtonIcon iconFind");
             } else if (name === "DFUFilePartsOnClusters") {
                 // Currently only checking first cluster may add loop through clusters and add a tab at a later date
-                this.updateInput("DFUFilePartsOnClusters", oldValue, newValue.DFUFilePartsOnCluster[0].Replicate);
+                if (lang.exists("DFUFilePartsOnCluster", newValue) && newValue.DFUFilePartsOnCluster.length) {
+                    this.updateInput("DFUFilePartsOnClusters", oldValue, newValue.DFUFilePartsOnCluster[0].Replicate);
+                }
             } else if (name === "RecordSize" && newValue === "0") {
                 this.updateInput("RecordSize", oldValue, this.i18n.NoPublishedSize);
             }

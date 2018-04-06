@@ -29,8 +29,8 @@ define([
     "dgrid/selector",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/ws_access",
-    "hpcc/ESPUtil",
+    "src/ws_access",
+    "src/ESPUtil",
     "hpcc/TargetSelectWidget"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, all,

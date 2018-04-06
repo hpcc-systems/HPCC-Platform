@@ -36,8 +36,8 @@ define([
     "dijit/ProgressBar",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/FileSpray",
-    "hpcc/ESPDFUWorkunit",
+    "src/FileSpray",
+    "src/ESPDFUWorkunit",
     "hpcc/DelayLoadWidget",
 
     "dojo/text!../templates/DFUWUDetailsWidget.html",

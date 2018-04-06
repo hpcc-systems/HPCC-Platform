@@ -27,8 +27,8 @@ define([
     "dgrid/selector",
 
     "hpcc/_Widget",
-    "hpcc/ESPUtil",
-    "hpcc/ESPWorkunit",
+    "src/ESPUtil",
+    "src/ESPWorkunit",
 
     "dojo/text!../templates/TimingGridWidget.html"
 ],

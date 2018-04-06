@@ -36,10 +36,10 @@ define([
 
     "hpcc/TableContainer",
     "hpcc/_Widget",
-    "hpcc/ESPWorkunit",
-    "hpcc/WsWorkunits",
+    "src/ESPWorkunit",
+    "src/WsWorkunits",
     "hpcc/SelectionGridWidget",
-    "hpcc/Utility",
+    "src/Utility",
     
     "dojo/text!../templates/VizWidget.html",
 
