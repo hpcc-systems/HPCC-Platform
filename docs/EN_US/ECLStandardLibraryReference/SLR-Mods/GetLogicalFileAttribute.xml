@@ -2,16 +2,24 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="GetLogicalFileAttribute">
-  <!-- DNT-Start --><title>GetLogicalFileAttribute</title><!-- DNT-End -->
+  <!-- DNT-Start -->
 
-  <!-- DNT-Start --><para><emphasis role="bold">STD.File.GetLogicalFileAttribute<indexterm>
+  <title>GetLogicalFileAttribute</title>
+
+  <!-- DNT-End -->
+
+  <!-- DNT-Start -->
+
+  <para><emphasis role="bold">STD.File.GetLogicalFileAttribute<indexterm>
       <primary>STD.File.GetLogicalFileAttribute</primary>
     </indexterm><indexterm>
       <primary>File.GetLogicalFileAttribute</primary>
     </indexterm><indexterm>
       <primary>GetLogicalFileAttribute</primary>
     </indexterm>(</emphasis> <emphasis> logicalfilename, attrname </emphasis>
-  <emphasis role="bold">)</emphasis></para><!-- DNT-End -->
+  <emphasis role="bold">)</emphasis></para>
+
+  <!-- DNT-End -->
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -32,31 +40,34 @@
 
           <entry>A null-terminated string containing the name of the file
           attribute to return. Possible values are recordSize, recordCount,
-          size, clusterName, directory, owner, description, <!-- DNT-Start -->ECL<!-- DNT-End -->, partmask,
-          numparts, name, modified, format, job, checkSum, kind, csvSeparate,
-          csvTerminate, headerLength, footerLength, rowTag, workunit,
-          accessed, expireDays, maxRecordSize, csvQuote, blockCompressed,
-          compressedSize, fileCrc, formatCrc, or protected. The value is
-          case-sensitive.</entry>
+          size, clusterName, directory, owner, description, <!-- DNT-Start -->ECL<!-- DNT-End -->,
+          partmask, numparts, name, modified, format, job, checkSum, kind,
+          csvSeparate, csvTerminate, csvEscape, headerLength, footerLength,
+          rowTag, workunit, accessed, expireDays, maxRecordSize, csvQuote,
+          blockCompressed, compressedSize, fileCrc, formatCrc, or protected.
+          The value is case-sensitive.</entry>
         </row>
 
         <row>
           <entry><!-- DNT-Start -->Return:<emphasis> </emphasis><!-- DNT-End --></entry>
 
-          <entry><!-- DNT-Start -->GetLogicalFileAttribute<!-- DNT-End --> returns returns a <!-- DNT-Start -->VARSTRING<!-- DNT-End -->
+          <entry><!-- DNT-Start -->GetLogicalFileAttribute<!-- DNT-End -->
+          returns returns a <!-- DNT-Start -->VARSTRING<!-- DNT-End -->
           (null-terminated) value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold"><!-- DNT-Start -->GetLogicalFileAttribute<!-- DNT-End --> </emphasis>function
-  returns the value of the <emphasis>attrname</emphasis> for the specified
-  <emphasis>logicalfilename</emphasis>.</para>
+  <para>The <emphasis role="bold"><!-- DNT-Start -->GetLogicalFileAttribute<!-- DNT-End -->
+  </emphasis>function returns the value of the <emphasis>attrname</emphasis>
+  for the specified <emphasis>logicalfilename</emphasis>.</para>
 
   <para>Example:</para>
 
-  <!-- DNT-Start --><programlisting format="linespecific">IMPORT STD;
+  <!-- DNT-Start -->
+
+  <programlisting format="linespecific">IMPORT STD;
 file := '~class::bmf::join::halfkeyed';
 
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'recordSize'));
@@ -79,6 +90,7 @@ OUTPUT(STD.File.GetLogicalFileAttribute(file,'checkSum'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'kind'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'csvSeparate'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'csvTerminate'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'csvEscape'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'headerLength'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'footerLength'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'rowtag'));
@@ -91,5 +103,7 @@ OUTPUT(STD.File.GetLogicalFileAttribute(file,'blockCompressed'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'compressedSize'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'fileCrc'));
 OUTPUT(STD.File.GetLogicalFileAttribute(file,'formatCrc'));
-</programlisting><!-- DNT-End -->
+</programlisting>
+
+  <!-- DNT-End -->
 </sect1>
