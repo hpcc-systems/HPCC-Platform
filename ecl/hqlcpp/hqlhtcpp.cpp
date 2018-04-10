@@ -1861,6 +1861,11 @@ bool ActivityInstance::isExternal()
     return !isMember && !instanceIsLocal;
 }
 
+void ActivityInstance::addAttribute(WuAttr attr, const char * value)
+{
+    setAttributeValue(*graphNode, attr, value);
+}
+
 void ActivityInstance::addAttribute(const char * name, const char * value)
 {
     addGraphAttribute(graphNode, name, value);
@@ -1914,7 +1919,7 @@ void ActivityInstance::addLocationAttribute(IHqlExpression * location)
     if (column)
         s.append(",").append(column);
     s.append(")");
-    addAttribute("definition", s.str());
+    addAttribute(WADefinition, s.str());
 }
 
 

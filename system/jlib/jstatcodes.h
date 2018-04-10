@@ -91,6 +91,8 @@ enum StatisticMeasure
     SMeasureEnum,                       // A value from an enumeration
     SMeasureText,                       // A textual value (from a graph attribute rather than a statistic)
     SMeasureBool,                       // A boolean
+    SMeasureId,                         // An Id for an element
+    SMeasureFilename,                   // A filename
     SMeasureMax,
 };
 

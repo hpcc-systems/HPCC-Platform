@@ -66,7 +66,7 @@ void setStatisticsComponentName(StatisticCreatorType processType, const char * p
 //--------------------------------------------------------------------------------------------------------------------
 
 // Textual forms of the different enumerations, first items are for none and all.
-static constexpr const char * const measureNames[] = { "", "all", "ns", "ts", "cnt", "sz", "cpu", "skw", "node", "ppm", "ip", "cy", "en", "txt", "bool", NULL };
+static constexpr const char * const measureNames[] = { "", "all", "ns", "ts", "cnt", "sz", "cpu", "skw", "node", "ppm", "ip", "cy", "en", "txt", "bool", "id", "fname", NULL };
 static constexpr const char * const creatorTypeNames[]= { "", "all", "unknown", "hthor", "roxie", "roxie:s", "thor", "thor:m", "thor:s", "eclcc", "esp", "summary", NULL };
 static constexpr const char * const scopeTypeNames[] = { "", "all", "global", "graph", "subgraph", "activity", "allocator", "section", "compile", "dfu", "edge", "function", "workflow", "child", "unknown", nullptr };
 
@@ -413,6 +413,10 @@ StringBuffer & formatStatistic(StringBuffer & out, unsigned __int64 value, Stati
         return out.append(value);
     case SMeasureBool:
         return out.append(boolToStr(value != 0));
+    case SMeasureText:
+    case SMeasureId:
+    case SMeasureFilename:
+        return out.append(value);
     default:
         return out.append(value).append('?');
     }
@@ -592,6 +596,8 @@ const char * queryMeasurePrefix(StatisticMeasure measure)
     case SMeasureEnum:          return "";
     case SMeasureText:          return "";
     case SMeasureBool:          return "Is";
+    case SMeasureId:            return "Id";
+    case SMeasureFilename:      return "";
     default:
         return "Unknown";
     }
@@ -640,6 +646,8 @@ StatsMergeAction queryMergeMode(StatisticMeasure measure)
     case SMeasureEnum:          return StatsMergeKeepNonZero;
     case SMeasureText:          return StatsMergeKeepNonZero;
     case SMeasureBool:          return StatsMergeKeepNonZero;
+    case SMeasureId:            return StatsMergeKeepNonZero;
+    case SMeasureFilename:      return StatsMergeKeepNonZero;
     default:
 #ifdef _DEBUG
         throwUnexpected();
