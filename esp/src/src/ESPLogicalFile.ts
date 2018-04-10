@@ -1,8 +1,9 @@
 ﻿import * as declare from "dojo/_base/declare";
 import * as arrayUtil from "dojo/_base/array";
 import * as lang from "dojo/_base/lang";
-import * as Observable from "dojo/store/Observable";
+import * as Deferred from "dojo/_base/Deferred";
 import * as QueryResults from "dojo/store/util/QueryResults";
+import * as Observable from "dojo/store/Observable";
 
 import * as WsDfu from "./WsDfu";
 import * as FileSpray from "./FileSpray";
@@ -92,8 +93,11 @@ var TreeStore = declare(null, {
     },
 
     _fetchFiles: function (scope) {
+        var deferredResults = new Deferred();
+        deferredResults.total = new Deferred();
+
         var context = this;
-        var results = WsDfu.DFUFileView({
+        WsDfu.DFUFileView({
             request: {
                 Scope: scope
             }
@@ -152,11 +156,11 @@ var TreeStore = declare(null, {
                 return (boolToNumber(l.__hpcc_isDir < r.__hpcc_isDir) - boolToNumber(l.__hpcc_isDir > r.__hpcc_isDir));
             });
             return retVal;
+        }).then(function (response) {
+            deferredResults.resolve(response);
+            deferredResults.total.resolve(response.length);
         });
-        results.total = results.then(function (response) {
-            return response.length;
-        });
-        return results;
+        return deferredResults;
     },
 
     //  Store API ---
