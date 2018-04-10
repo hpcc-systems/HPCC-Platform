@@ -90,6 +90,7 @@ define([
         baseClass: "DFUQueryWidget",
         i18n: nlsHPCC,
         pathSepCharG: "/",
+        updatedFilter: null,
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -260,7 +261,7 @@ define([
         _onCopyOk: function (event) {
             var copyPreserveCompressionCheckbox = registry.byId(this.id + "CopyPreserveCompression");
             var value = copyPreserveCompressionCheckbox.get("checked") ? 1 : 0;
-            
+
             if (this.copyForm.validate()) {
                 var context = this;
                 arrayUtil.forEach(this.copyGrid.store.data, function (item, idx) {
@@ -377,7 +378,31 @@ define([
                     EndDate: registry.byId(this.id + "ToDate").attr("value").toISOString().replace(/T.*Z/, '') + "T23:59:59Z"
                 });
             }
+           
+            this.updatedFilter = retVal;
+            this.checkIfWarning();
+           
             return retVal;
+        },
+
+        checkIfWarning: function () {
+            var context = this;
+
+            WsDfu.DFUQuery({
+                request: this.updatedFilter
+            }).then(function (response){
+                if (lang.exists("DFUQueryResponse", response)) {
+                    if (response.DFUQueryResponse.Warning) {
+                        context.filter.open();
+                        context.filter.setFilterMessage(context.i18n.FilesWarning);
+                        on(document, "click", function () {
+                            context.filter.close();
+                        });
+                    } else {
+                        context.filter.setFilterMessage("");
+                    }
+                }
+            });
         },
 
         //  Implementation  ---
@@ -422,20 +447,6 @@ define([
             });
             topic.subscribe("hpcc/dfu_wu_completed", function (topic) {
                 context.refreshGrid();
-            });
-
-            WsDfu.DFUQuery({
-                request: {}
-            }).then(function (response) {
-                if (lang.exists("DFUQueryResponse.Warning", response)) {
-                    if (response.DFUQueryResponse.Warning) {
-                        dojo.publish("hpcc/brToaster", {
-                            Severity: "Error",
-                            Source: "WsDfu.DFUQuery",
-                            Exceptions: [{ Source: context.i18n.TooManyFiles, Message: context.i18n.TheReturnedResults + ": " + response.DFUQueryResponse.NumFiles + ", " + context.i18n.RepresentsASubset }]
-                        });
-                    }
-                }
             });
 
             this.createNewSuperRadio.on('change', function (value) {
@@ -552,6 +563,7 @@ define([
                 deselectOnRefresh: true,
                 store: this.listStore,
                 query: this.getFilter(),
+                sort: [{ attribute: "Modified", "descending": true }],
                 columns: {
                     col1: selector({
                         width: 27,
