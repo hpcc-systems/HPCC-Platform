@@ -246,6 +246,7 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
     if(inputs)
         m_inputs.setown(inputs);
 
+
     if(!envpt || !procpt)
         return;
 
@@ -281,10 +282,44 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
         startPerformanceMonitor(m_cfg->getPropInt("@perfReportDelay", 60)*1000);
 #endif
 
-        //get the local computer name:              
+        if (m_inputs->hasProp("SingleUserPass"))
+        {
+            StringBuffer plainesppass;
+            StringBuffer encesppass;
+            m_inputs->getProp("SingleUserPass", plainesppass);
+            encrypt(encesppass, plainesppass.str());
+            StringBuffer xpath;
+            xpath.setf("SecurityManagers/SecurityManager[@type=\"SingleUserSecurityManager\"]/SingleUserSecurityManager/");
+            pt_iter = m_cfg->getElements(xpath.str());
+            if (pt_iter!=NULL)
+            {
+                IPropertyTree *ptree = NULL;
+                pt_iter->first();
+                while(pt_iter->isValid())
+                {
+                    ptree = &pt_iter->query();
+                    if (ptree)
+                    {
+                        ptree->setProp("@SingleUserPass",  encesppass.str());
+
+                        if (m_inputs->hasProp("SingleUserName"))
+                        {
+                            StringBuffer espusername;
+                            m_inputs->getProp("SingleUserName", espusername);
+                            ptree->setProp("@SingleUserName",  espusername.str());
+                        }
+                    }
+                    pt_iter->next();
+                }
+                pt_iter->Release();
+                pt_iter=NULL;
+            }
+        }
+
+        //get the local computer name:
         m_cfg->getProp("@computer", m_computer);
 
-        //get the local computer information:               
+        //get the local computer information:
         StringBuffer xpath;
         xpath.appendf("Hardware/Computer[@name=\"%s\"]", m_computer.str());
 
