@@ -136,7 +136,7 @@ class LinkToParentLogMsgHandler : implements ILogMsgHandler, public CInterface
 {
 public:
     LinkToParentLogMsgHandler(MPLogId _cid, MPLogId _pid, INode * _parentNode, bool _connected) : parentNode(_parentNode), cid(_cid), pid(_pid), receiverThread(new LogMsgFilterReceiverThread(_pid, _parentNode)), connected(_connected) { receiverThread->setHandler(this); }
-    ~LinkToParentLogMsgHandler() { if(connected) disconnect(); receiverThread->stop(); }
+    ~LinkToParentLogMsgHandler();
     IMPLEMENT_IINTERFACE;
     void                      handleMessage(LogMsg const & msg) const;
     bool                      needsPrep() const { return false; }
