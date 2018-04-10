@@ -50,6 +50,7 @@ define([
     var idleWatcher;
     var monitorLockClick;
     var _prevReset = Date.now();
+    var sessionIsActive = cookie("ESPSessionTimeoutSeconds");
 
     function _resetESPTime(evt) {
         if (Date.now() - _prevReset > SESSION_RESET_FREQ) {
@@ -154,9 +155,13 @@ define([
 
                 document.title = widget.getTitle ? widget.getTitle() : params.Widget;
 
-                if (cookie("ESPSessionTimeoutSeconds")) {
+                if (sessionIsActive) {
+                    if (!cookie("ECLWatchUser")) {
+                        dojo.cookie("ECLWatchUser", "true");
+                    }
+                    
                     var LockDialog = new LockDialogWidget({
-                        id: 'LockDialogWidget',
+                        id: webParams.id + '_LockDialogWidget'
                     });
 
                     idleWatcher = new ESPUtil.IdleWatcher(IDLE_TIMEOUT);
@@ -173,6 +178,8 @@ define([
                     });
                     idleWatcher.start();
                     monitorLockClick.unlocked();
+                } else if (dojo.cookie("ECLWatchUser")) {
+                    window.location.replace(dojoConfig.urlInfo.basePath + "/Login.html");
                 }
                 stopLoading();
             }

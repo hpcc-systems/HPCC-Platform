@@ -299,7 +299,8 @@ define([
         checkIfSessionsAreActive: function () {
             if (cookie("ESPSessionTimeoutSeconds")) {
                 this.logoutBtn.set("disabled", false);
-                dom.byId("Lock").textContent = " / " + this.i18n.Lock;
+                dom.byId("UserDivider").textContent = " / ";
+                dom.byId("Lock").textContent = this.i18n.Lock;
             }
         },
 
@@ -473,6 +474,7 @@ define([
                     method: "post"
                 }).then(function(data){
                     if (data){
+                        cookie("ECLWatchUser", "", { expires: -1 });
                         cookie("ESPSessionID" + location.port + " = '' ", "", { expires: -1 });
                         window.location.reload();
                     }
