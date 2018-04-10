@@ -27,13 +27,14 @@ define([
     "dojox/xml/parser",
 
     "hpcc/WsWorkunits",
+    "hpcc/WsTopology",
     "hpcc/WsEcl",
     "hpcc/ESPRequest",
     "hpcc/ESPUtil",
     "hpcc/ESPWorkunit"
 ], function (declare, arrayUtil, lang, i18n, nlsHPCC, Deferred, Observable, Stateful, topic,
         parser,
-        WsWorkunits, WsEcl, ESPRequest, ESPUtil, ESPWorkunit) {
+        WsWorkunits, WsTopology, WsEcl, ESPRequest, ESPUtil, ESPWorkunit) {
 
     var _logicalFiles = {};
 
@@ -94,11 +95,41 @@ define([
             }
 
             lang.mixin(item, {
+                displayName: item.Id,
+                QueryId: item.Id,
+                QuerySet: item.QuerySetId,
+                type: "query",
                 ErrorCount: ErrorCount,
                 Status: StatusMessage,
                 MixedNodeStates: MixedNodeStates
             });
         }
+    });
+
+    var QuerySetDetailStore = declare([ESPRequest.Store], {
+        service: "WsWorkunits",
+        action: "WUQueryDetails",
+        responseQualifier: "WUQueryDetailsResponse.LogicalFiles.Item",
+        idProperty: "__hpcc_id",
+        constructor: function (options) {
+            if (options) {
+                declare.safeMixin(this, options);
+            }
+        },
+        query: function (query, options) {
+            return this.inherited(arguments);
+        },
+
+        preProcessRow: function (item, request, query, options) {
+            var context = this;
+
+            lang.mixin(item, {
+                displayName: item.Name,
+                __hpcc_id: item.Name,
+                type: "file"
+            });
+        }
+
     });
 
     var Query = declare([ESPUtil.Singleton], {  // jshint ignore:line
@@ -199,6 +230,64 @@ define([
         }
     });
 
+    var FilesInUseStore = declare([ESPRequest.Store], {
+        service: "WsTopology",
+        action: "TpTargetClusterQuery",
+        responseQualifier: "TpTargetClusterQueryResponse.TpTargetClusters.TpTargetCluster",
+        idProperty: "__hpcc_id",
+        constructor: function (options) {
+            if (options) {
+                declare.safeMixin(this, options);
+            }
+        },
+        query: function (query, options) {
+            return this.inherited(arguments);
+        },
+
+        preRequest: function (request) {
+            request.Type = "RoxieCluster"
+        },
+
+        preProcessRow: function (row) {
+            lang.mixin(row, {
+                __hpcc_id: row.Name,
+                displayName: row.Name,
+                type: "cluster"
+            });
+        },
+
+        mayHaveChildren: function (item) {
+            switch (item.type) {
+                case "cluster":
+                case "query":
+                    return true;
+            }
+            return false;
+        },
+
+        getChildren: function (parent, options) {
+            if (parent.type === "cluster") {
+                var store = Observable(new Store({
+                    parent: parent
+                }));
+
+                return store.query({
+                    QuerySetName: parent.Name
+                })
+            } else {
+                var store = Observable(new QuerySetDetailStore({
+                    parent: parent
+                }));
+
+                return store.query({
+                    QueryId: parent.Id,
+                    QuerySet: parent.QuerySetId,
+                    IncludeSuperFiles: 1
+                })
+            }
+        }
+    });
+
     return {
         Get: function (QuerySetId, Id, data) {
             var store = new Store();
@@ -224,6 +313,11 @@ define([
         CreateQueryStore: function (options) {
             var store = new Store(options);
             return new Observable(store);
+        },
+
+        CreateFilesInUseStore: function (options) {
+            var filesinusestore = new FilesInUseStore(options);
+            return new Observable(filesinusestore);
         }
     };
 });

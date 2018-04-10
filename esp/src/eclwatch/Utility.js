@@ -414,6 +414,9 @@
             case "FilePartsWidget":
                 require(["hpcc/FilePartsWidget"], doLoad);
                 break;
+            case "FilesInUseWidget":
+                require(["hpcc/FilesInUseWidget"], doLoad);
+                break;
             case "FilterDropDownWidget":
                 require(["hpcc/FilterDropDownWidget"], doLoad);
                 break;

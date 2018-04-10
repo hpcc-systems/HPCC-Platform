@@ -219,6 +219,8 @@ define({root:
     FileParts: "File Parts",
     FilePath: "File Path",
     Files: "Files",
+    FilesInUse: "Files in use",
+    FilesInUseOverview: "Files Overview",
     FilesPending: "Files pending",
     FileScopes: "File Scopes",
     FileScopeDefaultPermissions: "File Scope Default Permissions",
