@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -14,8 +14,18 @@
 #    limitations under the License.
 ################################################################################
 
-ADD_SUBDIRECTORY(ftslave)
-ADD_SUBDIRECTORY(configxml)
-ADD_SUBDIRECTORY(config2xml)
-ADD_SUBDIRECTORY(thor)
-ADD_SUBDIRECTORY(launcher)
+
+FOREACH( iFILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/esp.xsd
+    ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_smc.xsd
+    ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wsecl2.xsd
+    ${CMAKE_CURRENT_SOURCE_DIR}/hardware.xsd
+    ${CMAKE_CURRENT_SOURCE_DIR}/types.xsd
+    ${CMAKE_CURRENT_SOURCE_DIR}/dafilesrv.xsd
+    ${CMAKE_CURRENT_SOURCE_DIR}/dali.xsd
+    ${CMAKE_CURRENT_SOURCE_DIR}/environment.xsd
+    ${CMAKE_CURRENT_SOURCE_DIR}/eclagent.xsd
+    ${CMAKE_CURRENT_SOURCE_DIR}/buildset.xml
+)
+    Install ( FILES ${iFILES} DESTINATION componentfiles/config2xml COMPONENT Runtime)
+ENDFOREACH ( iFILES )

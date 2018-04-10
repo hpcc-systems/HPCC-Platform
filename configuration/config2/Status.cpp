@@ -18,16 +18,16 @@
 #include "Status.hpp"
 
 
-void Status::addMsg(enum statusMsg::msgLevel level, const std::string &nodeId, const std::string &name, const std::string &referNodeId, const std::string &msg)
+void Status::addMsg(enum statusMsg::msgLevel level, const std::string &nodeId, const std::string &name, const std::string &msg)
 {
-    statusMsg statusMsg(level, nodeId, name, referNodeId, msg);
+    statusMsg statusMsg(level, nodeId, name, msg);
     m_messages.insert({level, statusMsg });
     if (level > m_highestMsgLevel)
         m_highestMsgLevel = level;
 }
 
 
-void Status::addUniqueMsg(enum statusMsg::msgLevel level, const std::string &nodeId, const std::string &name, const std::string &referNodeId, const std::string &msg)
+void Status::addUniqueMsg(enum statusMsg::msgLevel level, const std::string &nodeId, const std::string &name, const std::string &msg)
 {
     bool duplicateFound = false;
     auto msgRange = m_messages.equal_range(level);
@@ -37,7 +37,7 @@ void Status::addUniqueMsg(enum statusMsg::msgLevel level, const std::string &nod
     }
 
     if (!duplicateFound)
-        addMsg(level, nodeId, name, referNodeId, msg);
+        addMsg(level, nodeId, name, msg);
 }
 
 std::vector<statusMsg> Status::getMessages() const

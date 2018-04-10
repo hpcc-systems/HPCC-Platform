@@ -42,7 +42,7 @@ bool XMLEnvironmentMgr::doLoadEnvironment(std::istream &in)
         if (rootName == m_pSchema->getProperty("name"))
         {
             m_pRootNode = std::make_shared<EnvironmentNode>(m_pSchema, rootName);
-            m_pRootNode->setId(".");
+            m_pRootNode->setId("0");
             addPath(m_pRootNode);
             parse(rootIt->second, m_pSchema, m_pRootNode);
         }

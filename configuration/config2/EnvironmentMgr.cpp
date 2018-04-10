@@ -32,7 +32,7 @@ EnvironmentMgr *getEnvironmentMgrInstance(const EnvironmentType envType)
 
 
 EnvironmentMgr::EnvironmentMgr() :
-    m_key(0)
+    m_key(1)  // ID 0 is reserved for the root node
 {
     m_pSchema = std::make_shared<SchemaItem>("root");  // make the root
 }
@@ -159,7 +159,7 @@ std::shared_ptr<EnvironmentNode> EnvironmentMgr::addNewEnvironmentNode(const std
     }
     else
     {
-        status.addMsg(statusMsg::error, parentNodeId, "", "", "Unable to find indicated parent node");
+        status.addMsg(statusMsg::error, parentNodeId, "", "Unable to find indicated parent node");
     }
     return pNewNode;
 }
@@ -195,7 +195,7 @@ std::shared_ptr<EnvironmentNode> EnvironmentMgr::addNewEnvironmentNode(const std
 }
 
 
-bool EnvironmentMgr::removeEnvironmentNode(const std::string &nodeId, Status &status)
+bool EnvironmentMgr::removeEnvironmentNode(const std::string &nodeId)
 {
     bool rc = false;
     std::shared_ptr<EnvironmentNode> pNode = getEnvironmentNode(nodeId);
@@ -206,15 +206,8 @@ bool EnvironmentMgr::removeEnvironmentNode(const std::string &nodeId, Status &st
         if (pParentNode->removeChild(pNode))
         {
             m_nodeIds.erase(nodeId);
+            rc = true;
         }
-        else
-        {
-            status.addMsg(statusMsg::error, nodeId, "", "", "Unable to remove the node");
-        }
-    }
-    else
-    {
-        status.addMsg(statusMsg::error, nodeId, "", "", "Unable to find indicated node");
     }
 
     return rc;
@@ -227,11 +220,11 @@ std::string EnvironmentMgr::getUniqueKey()
 }
 
 
-void EnvironmentMgr::validate(Status &status) const
+void EnvironmentMgr::validate(Status &status, bool includeHiddenNodes) const
 {
     if (m_pRootNode)
     {
-        m_pRootNode->validate(status, true);
+        m_pRootNode->validate(status, true, includeHiddenNodes);
     }
     else
     {

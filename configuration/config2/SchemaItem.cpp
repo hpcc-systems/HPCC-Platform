@@ -27,6 +27,7 @@
 
 SchemaItem::SchemaItem(const std::string &name, const std::string &className, const std::shared_ptr<SchemaItem> &pParent) :
     m_pParent(pParent),
+    m_hidden(false),
     m_minInstances(1),
     m_maxInstances(1)
 {
