@@ -593,6 +593,8 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
     ctx->getUserID(userid);
     if(userid.length() == 0)
     {
+        ctx->setAuthError(EspAuthErrorEmptyUserID);
+        ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authentication", "Access Denied: No username provided");
         return false;
     }
 
@@ -603,6 +605,7 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
     if(user == NULL)
     {
         WARNLOG("Can't find user in context");
+        ctx->setAuthError(EspAuthErrorUserNotFoundInContext);
         ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authentication", "Access Denied: No username provided");
         return false;
     }
@@ -610,20 +613,29 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
     if(m_secmgr.get() == NULL)
     {
         WARNLOG("No mechanism established for authentication");
+        ctx->setAuthError(EspAuthErrorNoAuthMechanism);
         return false;
     }
 
     ISecResourceList* rlist = ctx->queryResources();
     if(rlist == NULL)
+    {
+        WARNLOG("No Security Resource");
+        ctx->setAuthError(EspAuthErrorEmptySecResource);
         return false;
+    }
 
     bool authenticated = m_secmgr->authorize(*user, rlist, ctx->querySecureContext());
     if(!authenticated)
     {
+        const char *desc = nullptr;
         if (user->getAuthenticateStatus() == AS_PASSWORD_EXPIRED || user->getAuthenticateStatus() == AS_PASSWORD_VALID_BUT_EXPIRED)
-            ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authentication", "ESP password is expired");
+            desc = "ESP password is expired";
         else
-            ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authentication", "Access Denied: User or password invalid");
+            desc = "Access Denied: User or password invalid";
+        ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authentication", desc);
+        ctx->setAuthError(EspAuthErrorNotAuthenticated);
+        ctx->setRespMsg(desc);
         return false;
     }
     bool authorized = true;
@@ -637,8 +649,11 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
             if(access < required)
             {
                 const char *desc=curres->getDescription();
-                ESPLOG(LogMin, "Access for user '%s' denied to: %s. Access=%d, Required=%d", user->getName(), desc?desc:"<no-desc>", access, required);
+                VStringBuffer msg("Access for user '%s' denied to: %s. Access=%d, Required=%d", user->getName(), desc?desc:"<no-desc>", access, required);
+                ESPLOG(LogMin, "%s", msg.str());
                 ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authorization", "Access Denied: Not Authorized", "Resource: %s [%s]", curres->getName(), (desc) ? desc : "");
+                ctx->setAuthError(EspAuthErrorNotAuthorized);
+                ctx->setRespMsg(msg.str());
                 authorized = false;
                 break;
             }

@@ -94,6 +94,7 @@ protected:
     unsigned readCookie(const char* cookieName);
     const char* readCookie(const char* cookieName, StringBuffer& cookieValue);
     void sendLockResponse(bool lock, bool error, const char* msg);
+    void sendAuthorizationMsg(EspAuthRequest& authReq);
     void createGetSessionTimeoutResponse(StringBuffer& resp, ESPSerializationFormat format, IPropertyTree* sessionTree);
     void resetSessionTimeout(EspAuthRequest& authReq, unsigned sessionID, StringBuffer& resp, ESPSerializationFormat format, IPropertyTree* sessionTree);
     void sendMessage(const char* msg, const char* msgType);

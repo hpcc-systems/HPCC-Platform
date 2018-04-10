@@ -1201,7 +1201,7 @@ EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char*
     authReq.ctx->setUserID(_userName);
     authReq.ctx->setPassword(_password);
     authReq.authBinding->populateRequest(m_request.get());
-    if (!authReq.authBinding->doAuth(authReq.ctx))
+    if (!authReq.authBinding->doAuth(authReq.ctx) && (authReq.ctx->getAuthError() != EspAuthErrorNotAuthorized))
     {
         ESPLOG(LogMin, "Authentication failed for %s@%s", _userName, peer.str());
         return handleAuthFailed(true, authReq, unlock, "User authentication failed.");
@@ -1221,6 +1221,11 @@ EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char*
     addCookie(SESSION_TIMEOUT_COOKIE, cookieStr.str(), 0, false);
     clearCookie(SESSION_AUTH_MSG_COOKIE);
     clearCookie(SESSION_START_URL_COOKIE);
+    if (authReq.ctx->getAuthError() == EspAuthErrorNotAuthorized)
+    {
+        sendAuthorizationMsg(authReq);
+        return authSucceeded;
+    }
     if (unlock)
     {
         sendLockResponse(false, false, "Unlocked");
@@ -1229,6 +1234,33 @@ EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char*
 
     m_response->redirect(*m_request, sessionStartURL);
     return authSucceeded;
+}
+
+void CEspHttpServer::sendAuthorizationMsg(EspAuthRequest& authReq)
+{
+    StringBuffer resp;
+    const char* errMsg = authReq.ctx->getRespMsg();
+    ESPSerializationFormat format = m_request->queryContext()->getResponseFormat();
+    if (format == ESPSerializationJSON)
+    {
+        resp.set("{ ");
+        resp.append(" \"LoginResponse\": { ");
+        if (isEmptyString(errMsg))
+            resp.append("\"Error\": \"Access Denied.\"");
+        else
+            resp.appendf("\"Error\": \"%s\"", errMsg);
+        resp.append(" }");
+        resp.append(" }");
+    }
+    else
+    {
+        resp.set("<LoginResponse><Error>");
+        resp.append("Access Denied.");
+        if (!isEmptyString(errMsg))
+            resp.append(" ").append(errMsg);
+        resp.append("</Error></LoginResponse>");
+    }
+    sendMessage(resp.str(), (format == ESPSerializationJSON) ? "application/json" : "text/xml");
 }
 
 void CEspHttpServer::sendLockResponse(bool lock, bool error, const char* msg)
