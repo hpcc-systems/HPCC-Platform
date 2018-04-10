@@ -1,5 +1,5 @@
 ################################################################################
-#    Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -14,52 +14,47 @@
 #    limitations under the License.
 ################################################################################
 
+# Component: digisign
 
-# Component: unittests
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for unittests
+#    Cmake Input File for digisign
 #####################################################
 
-if (USE_CPPUNIT)
 
-project( unitests )
+project( digisign )
 
-set (    SRCS
-         unittests.cpp
-         remotetests.cpp
-         dalitests.cpp
-         jlibtests.cpp
-         digisigntests.cpp
+set (
+        SRCS
+        digisign.cpp
     )
 
 include_directories (
-         .
-         ./../../system/include
-         ./../../system/jlib
-         ./../../system/mp
-         ./../../system/libbase58
-         ./../../common/remote
-         ./../../dali/base
-         ./../../system/security/shared
-         ./../../common/deftype
-         ./../../system/security/digisign
+        ${HPCC_SOURCE_DIR}/system/include
+        ${HPCC_SOURCE_DIR}/system/jlib
+        ${CMAKE_BINARY_DIR}
+        ${OPENSSL_INCLUDE_DIR}
     )
 
-ADD_DEFINITIONS( -D_CONSOLE )
+ADD_DEFINITIONS ( -DDIGISIGN_EXPORTS -D_USRDLL )
 
-HPCC_ADD_EXECUTABLE ( unittests ${SRCS} )
+HPCC_ADD_LIBRARY( digisign SHARED ${SRCS} )
 
-install ( TARGETS unittests RUNTIME DESTINATION ${EXEC_DIR} )
-target_link_libraries ( unittests
-         jlib
-         remote
-         dalibase
-         deftype
-         libbase58
-         digisign
-         ${CPPUNIT_LIBRARIES}
+install (
+        TARGETS digisign
+        RUNTIME DESTINATION ${EXEC_DIR}
+        LIBRARY DESTINATION ${LIB_DIR}
     )
 
-endif ()
+target_link_libraries (
+        digisign
+        jlib
+    )
+
+if (USE_OPENSSL)
+      target_link_libraries (
+          digisign
+          ${OPENSSL_LIBRARIES}
+    )
+endif()
