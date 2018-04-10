@@ -75,7 +75,7 @@ IPropertyTree * fetchESDLBindingFromStateFile(const char *process, const char *b
         if (esdlState)
         {
             const char * restoredBindingTS = esdlState->queryProp("@StateSaveTimems");
-            fprintf(stdout, "ESDL State restored from local state store: %s created epoch: %s", bindingName, restoredBindingTS);
+            ESPLOG(LogNormal, "ESDL State restored from local state store: %s created epoch: %s", bindingName, restoredBindingTS);
             return esdlState->getPropTree("EsdlBinding/Binding");
         }
         else
@@ -929,6 +929,8 @@ EsdlServiceImpl::~EsdlServiceImpl()
 
 EsdlBindingImpl::EsdlBindingImpl()
 {
+        m_pESDLService = nullptr;
+        m_isAttached = true;
 }
 
 EsdlBindingImpl::EsdlBindingImpl(IPropertyTree* cfg, const char *binding,  const char *process) : CHttpSoapBinding(cfg, binding, process)
@@ -936,6 +938,9 @@ EsdlBindingImpl::EsdlBindingImpl(IPropertyTree* cfg, const char *binding,  const
     m_pCentralStore.setown(createEsdlCentralStore());
     m_bindingName.set(binding);
     m_processName.set(process);
+
+    m_pESDLService = nullptr;
+    m_isAttached = true;
 
     try
     {
@@ -986,13 +991,15 @@ EsdlBindingImpl::EsdlBindingImpl(IPropertyTree* cfg, const char *binding,  const
 
 IPropertyTree* EsdlBindingImpl::fetchESDLBinding(const char *process, const char *bindingName, const char * stateFileName)
 {
-    Owned<IPropertyTree> esdlBinding = m_pCentralStore->fetchBinding(process, bindingName);
-    if (!esdlBinding)
+    if(isAttached())
+    {
+        Owned<IPropertyTree> esdlBinding = m_pCentralStore->fetchBinding(process, bindingName);
+        return esdlBinding.getClear();
+    }
+    else
     {
         return fetchESDLBindingFromStateFile(process, bindingName, stateFileName);
     }
-
-    return esdlBinding.getClear();
 }
 
 /* if the target ESDL binding contains an ESDL service definition matching this espServiceName, load it.
@@ -1082,7 +1089,6 @@ void EsdlBindingImpl::saveDESDLState()
 {
     try
     {
-        //rodrigo is this the best way to fetch the ESDL def for a given service???
         Owned<IEsdlDefObjectIterator> it = m_esdl->getDependencies(m_espServiceName.str(), "", 0, NULL, 0);
 
         StringBuffer serviceESXDL;

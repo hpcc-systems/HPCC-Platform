@@ -2942,56 +2942,69 @@ bool addToQueryString(StringBuffer &queryString, const char *name, const char *v
 
 int WUSchedule::run()
 {
-    try
+    PROGLOG("ECLWorkunit WUSchedule Thread started.");
+    unsigned int waitTimeMillies = 1000*60;
+    while(!stopping)
     {
-        PROGLOG("ECLWorkunit WUSchedule Thread started.");
-        while(!stopping)
+        if (!detached)
         {
-            Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-            Owned<IConstWorkUnitIterator> itr = factory->getScheduledWorkUnits();
-            if (itr)
+            try
             {
-                ForEach(*itr)
+                if (waitTimeMillies == (unsigned)-1)
                 {
-                    try
+                    PROGLOG("ECLWorkunit WUSchedule Thread Re-started.");
+                    waitTimeMillies = 1000*60;
+                }
+
+                Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+                Owned<IConstWorkUnitIterator> itr = factory->getScheduledWorkUnits();
+                if (itr)
+                {
+                    ForEach(*itr)
                     {
-                        IConstWorkUnitInfo & cw = itr->query();
-                        if (factory->isAborting(cw.queryWuid()))
+                        try
                         {
-                            WorkunitUpdate wu(factory->updateWorkUnit(cw.queryWuid()));
-                            wu->setState(WUStateAborted);
-                            continue;
+                            IConstWorkUnitInfo & cw = itr->query();
+                            if (factory->isAborting(cw.queryWuid()))
+                            {
+                                WorkunitUpdate wu(factory->updateWorkUnit(cw.queryWuid()));
+                                wu->setState(WUStateAborted);
+                                continue;
+                            }
+                            WsWuDateTime dt, now;
+                            now.setNow();
+                            cw.getTimeScheduled(dt);
+                            if (now.compare(dt)>=0)
+                                runWorkUnit(cw.queryWuid(), cw.queryClusterName());
                         }
-                        WsWuDateTime dt, now;
-                        now.setNow();
-                        cw.getTimeScheduled(dt);
-                        if (now.compare(dt)>=0)
-                            runWorkUnit(cw.queryWuid(), cw.queryClusterName());
-                    }
-                    catch(IException *e)
-                    {
-                        StringBuffer msg;
-                        ERRLOG("Exception %d:%s in WsWorkunits Schedule::run", e->errorCode(), e->errorMessage(msg).str());
-                        e->Release();
+                        catch(IException *e)
+                        {
+                            StringBuffer msg;
+                            ERRLOG("Exception %d:%s in WsWorkunits Schedule::run while processing WU", e->errorCode(), e->errorMessage(msg).str());
+                            e->Release();
+                        }
                     }
                 }
             }
-            semSchedule.wait(1000*60);
+            catch(IException *e)
+            {
+                StringBuffer msg;
+                ERRLOG("Exception %d:%s in WsWorkunits Schedule::run while fetching scheduled WUs from DALI", e->errorCode(), e->errorMessage(msg).str());
+                e->Release();
+            }
+            catch(...)
+            {
+                ERRLOG("Unknown exception in WsWorkunits Schedule::run while fetching scheduled WUs from DALI");
+            }
         }
-    }
-    catch(IException *e)
-    {
-        StringBuffer msg;
-        ERRLOG("Exception %d:%s in WsWorkunits Schedule::run", e->errorCode(), e->errorMessage(msg).str());
-        e->Release();
-    }
-    catch(...)
-    {
-        ERRLOG("Unknown exception in WsWorkunits Schedule::run");
-    }
+        else
+        {
+            WARNLOG("Detached from DALI, WSWorkuinits schedule interrupted");
+            waitTimeMillies = (unsigned)-1;
+        }
 
-    if (m_container)
-        m_container->exitESP();
+        semSchedule.wait(waitTimeMillies);
+    }
     return 0;
 }
 

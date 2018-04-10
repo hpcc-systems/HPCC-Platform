@@ -331,13 +331,6 @@ void CWsEclBinding::getNavigationData(IEspContext &context, IPropertyTree & data
     ensureNavDynFolder(data, "Targets", "Targets", "root=true", NULL);
 }
 
-IPropertyTree * getQueryRegistries()
-{
-    Owned<IRemoteConnection> conn = querySDS().connect("/QuerySets/", myProcessSession(), RTM_LOCK_READ|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
-    return conn->getRoot();
-}
-
-
 void CWsEclBinding::getRootNavigationFolders(IEspContext &context, IPropertyTree & data)
 {
     DBGLOG("CScrubbedXmlBinding::getNavigationData");

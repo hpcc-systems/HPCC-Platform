@@ -166,6 +166,11 @@ public:
     virtual void handleFinalRequest(IEspContext &context, Owned<IPropertyTree> &tgtcfg, Owned<IPropertyTree> &tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer& req, StringBuffer &out, bool isroxie, bool isproxy);
     void getSoapBody(StringBuffer& out,StringBuffer& soapresp);
     void getSoapError(StringBuffer& out,StringBuffer& soapresp,const char *,const char *);
+
+    virtual bool unsubscribeServiceFromDali() override {return true;}
+    virtual bool subscribeServiceToDali() override {return false;}
+    virtual bool attachServiceToDali() override {return false;}
+    virtual bool detachServiceFromDali() override {return false;}
 };
 
 #define DEFAULT_ESDLBINDING_URN_BASE "urn:hpccsystems:ws"
@@ -173,6 +178,140 @@ public:
 class EsdlBindingImpl : public CHttpSoapBinding, implements IEsdlListener
 {
 private:
+/*
+
+    //==========================================================================================
+    // the following class implements notification handler for subscription to dali for environment
+    // updates by other clients.
+    //==========================================================================================
+    class CESDLBindingSubscription : public CInterface, implements ISDSSubscription
+    {
+    private :
+        CriticalSection daliSubscriptionCritSec;
+        SubscriptionId sub_id;
+        EsdlBindingImpl * thisBinding;
+
+    public:
+        CESDLBindingSubscription(EsdlBindingImpl * binding)
+        {
+            thisBinding = binding;
+            sub_id = 0;
+            subscribe();
+        }
+
+        virtual ~CESDLBindingSubscription()
+        {
+            unsubscribe();
+        }
+
+        void unsubscribe()
+        {
+            CriticalBlock b(daliSubscriptionCritSec);
+            try
+            {
+                if (sub_id)
+                {
+                    querySDS().unsubscribe(sub_id);
+                    sub_id = 0;
+                }
+            }
+            catch (IException *E)
+            {
+                E->Release();
+            }
+            sub_id = 0;
+        }
+
+        void subscribe()
+        {
+            VStringBuffer fullBindingPath("/ESDL/Bindings/Binding[@id=\'%s.%s\']",thisBinding->m_processName.get(),thisBinding->m_bindingName.get());
+            try
+            {
+                CriticalBlock b(daliSubscriptionCritSec);
+                if (!sub_id)
+                    sub_id = querySDS().subscribe(fullBindingPath.str(), *this, true);
+            }
+            catch (IException *E)
+            {
+                ESPLOG(LogMin, "ESDL Binding %s.%s failed to subscribe to DALI (%s)", thisBinding->m_processName.get(),thisBinding->m_bindingName.get(), fullBindingPath.str());
+                E->Release();
+            }
+        }
+
+        bool isSubscribed()
+        {
+            CriticalBlock b(daliSubscriptionCritSec);
+            return sub_id > 0;
+        }
+
+        IMPLEMENT_IINTERFACE;
+        void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen=0, const void *valueData=NULL);
+    };
+
+    class CESDLDefinitionSubscription : public CInterface, implements ISDSSubscription
+    {
+    private :
+        CriticalSection daliSubscriptionCritSec;
+        SubscriptionId sub_id;
+        EsdlBindingImpl * thisBinding;
+
+    public:
+        CESDLDefinitionSubscription(EsdlBindingImpl * binding)
+        {
+            thisBinding = binding;
+            subscribe();
+        }
+
+        virtual ~CESDLDefinitionSubscription()
+        {
+            unsubscribe();
+        }
+
+        void unsubscribe()
+        {
+            CriticalBlock b(daliSubscriptionCritSec);
+            try
+            {
+                if (sub_id)
+                {
+                    ESPLOG(LogNormal,"ESDL Binding %s is UN subscribing from /ESDL/Bindings/Binding dali changes", thisBinding->m_bindingName.get());
+                    querySDS().unsubscribe(sub_id);
+                    sub_id = 0;
+                }
+            }
+            catch (IException *E)
+            {
+                E->Release();
+            }
+            sub_id = 0;
+        }
+
+        void subscribe()
+        {
+            //for some reason subscriptions based on xpaths with attributes don't seem to work correctly
+            //fullBindingPath.set("/ESDL/Bindings/Binding[@EspBinding=\'WsAccurint\'][@EspProcess=\'myesp\']");
+            CriticalBlock b(daliSubscriptionCritSec);
+            try
+            {
+                sub_id = querySDS().subscribe(ESDL_DEF_PATH, *this, true);
+            }
+            catch (IException *E)
+            {
+                E->Release();
+            }
+        }
+
+        bool isSubscribed()
+        {
+            CriticalBlock b(daliSubscriptionCritSec);
+            return sub_id > 0;
+        }
+
+        IMPLEMENT_IINTERFACE;
+        void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen=0, const void *valueData=NULL);
+    };
+
+*/
     Owned<IPropertyTree>                    m_bndCfg;
     Owned<IPropertyTree>                    m_esdlBndCfg;
 
@@ -187,9 +326,10 @@ private:
     Owned<IEsdlSubscription>                m_pSubscription;
     Owned<IEsdlStore>                       m_pCentralStore;
     CriticalSection                         configurationLoadCritSec;
+    CriticalSection                         detachCritSec;
     StringBuffer                            m_esdlStateFilesLocation;
-    MapStringTo<SecAccessFlags>             m_accessmap;
     StringBuffer                            m_staticNamespace;
+    bool                                    m_isAttached;
 
     virtual void clearDESDLState()
     {
@@ -200,12 +340,11 @@ private:
         if (m_pESDLService)
             m_pESDLService->clearDESDLState();
         //prob need to un-initesdlservinfo as well.
-        DBGLOG("Warning binding %s.%s is being un-loaded!", m_processName.get(), m_bindingName.get());
+        ESPLOG(LogNormal, "Warning binding %s.%s is being un-loaded!", m_processName.get(), m_bindingName.get());
     }
 
 public:
     EsdlServiceImpl * m_pESDLService;
-    //CIArrayOf<EsdlServiceImpl> m_esdlServices;
     IMPLEMENT_IINTERFACE;
 
     EsdlBindingImpl();
@@ -270,6 +409,107 @@ public:
     virtual bool isDynamicBinding() const override { return true; }
     virtual unsigned getCacheMethodCount(){return 0;}
     virtual void onNotify(EsdlNotifyData* data);
+
+    virtual bool subscribeBindingToDali() override
+    {
+        ESPLOG(LogNormal, "Binding '%s.%s' is subscribing to Dali for ESDL changes...", m_processName.get(), m_bindingName.get() );
+        if (m_pSubscription)
+        {
+            ESPLOG(LogNormal, "ESDL Binding %s is subscribing to all /ESDL/Bindings/Binding dali changes", this->m_bindingName.get());
+            m_pSubscription->subscribe();
+        }
+
+        //if (m_pDefinitionSubscription)
+        //{
+        //    ESPLOG(LogNormal, "ESDL Binding %s is subscribing to all /ESDL/Bindings/Definition dali changes", this->m_bindingName.get());
+        //    m_pDefinitionSubscription->subscribe();
+        //}
+
+        ESPLOG(LogNormal, "Requesting reload of ESDL %s.%s binding...", m_processName.get(), m_bindingName.get() );
+        reloadBindingFromCentralStore(m_bindingName.get(), m_processName.get());
+
+        setIsAttached(true);
+        return true;
+    }
+
+    virtual bool unsubscribeBindingFromDali() override
+    {
+        if(m_pSubscription)
+            m_pSubscription->unsubscribe();
+        //pSubscription->subscribe/unsubscribe only affects bindings, not definitions
+        // if(m_pDefinitionSubscription)
+        //     m_pDefinitionSubscription->unsubscribe();
+
+         setIsAttached(false);
+         return true;
+    }
+
+    bool detachBindingFromDali() override
+    {
+        unsubscribeBindingFromDali();
+        return false;
+    }
+
+    virtual bool canDetachFromDali() override
+    {
+        return true;
+    }
+
+    virtual bool attach()
+    {
+        if (isAttached())
+        {
+            ESPLOG(LogNormal, "Binding %s.%s is already attached to Dali for ESDL changes...", m_processName.get(), m_bindingName.get() );
+            return true;
+        }
+
+        if (m_pSubscription)
+        {
+            ESPLOG(LogNormal, "Binding %s.%s is subscribing to Dali for ESDL changes...", m_processName.get(), m_bindingName.get() );
+            m_pSubscription->subscribe();
+
+            ESPLOG(LogNormal, "Requesting reload of ESDL %s.%s binding...", m_processName.get(), m_bindingName.get() );
+            reloadBindingFromCentralStore(m_bindingName.get(), m_processName.get());
+            setIsAttached(true);
+
+            /* rodrigo
+
+                    if (m_pDefinitionSubscription)
+                    {
+                        ESPLOG(LogNormal, "ESDL Binding %s is subscribing to all /ESDL/Bindings/Definition dali changes", this->m_bindingName.get());
+                        m_pDefinitionSubscription->subscribe();
+                    }
+            */
+            return true;
+        }
+        else
+            ESPLOG(LogNormal, "Could not subscribe binding '%s.%s' to Dali for ESDL changes...", m_processName.get(), m_bindingName.get() );
+
+        return false;
+    };
+
+    virtual bool detach()
+    {
+        if (m_pSubscription)
+            m_pSubscription->unsubscribe();
+        else
+            ESPLOG(LogNormal, "Could not unsubscribe binding '%s.%s' from Dali for ESDL changes...", m_processName.get(), m_bindingName.get() );
+
+        m_isAttached = false;
+        return true;
+    }
+
+    void setIsAttached(bool isattached)
+    {
+      CriticalBlock b(detachCritSec);
+      m_isAttached = isattached;
+    }
+
+    bool isAttached()
+    {
+        CriticalBlock b(detachCritSec);
+        return m_isAttached;
+    }
 
 private:
     int onGetRoxieBuilder(CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method);

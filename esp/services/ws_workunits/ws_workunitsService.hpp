@@ -91,9 +91,10 @@ public:
             dirty |= UFO_RELOAD_TARGETS_CHANGED_PMID;
         PROGLOG("QueryFilesInUse.notify() called: <%d>", dirty);
     }
-    virtual void subscribe()
+    virtual bool subscribe()
     {
         CriticalBlock b(crit);
+        bool success = true;
         try
         {
             qsChange = querySDS().subscribe("QuerySets", *this, true);
@@ -103,13 +104,16 @@ public:
         }
         catch (IException *E)
         {
+            success = false;
             //TBD failure to subscribe implies dali is down...
             E->Release();
         }
+        return success && qsChange != 0 && pmChange != 0 && psChange != 0;
     }
-    virtual void unsubscribe()
+    virtual bool unsubscribe()
     {
         CriticalBlock b(crit);
+        bool success = true;
         try
         {
             if (qsChange)
@@ -121,12 +125,14 @@ public:
         }
         catch (IException *E)
         {
+            success = false;
             E->Release();
         }
         qsChange = 0;
         pmChange = 0;
         psChange = 0;
         PROGLOG("QueryFilesInUse.unsubscribe() called");
+        return success && qsChange == 0 && pmChange == 0 && psChange == 0;
     }
 
     void abort()
@@ -170,6 +176,7 @@ public:
         filesInUse.abort();
         clusterQueryStatePool.clear();
     };
+
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
     virtual void setContainer(IEspContainer * container)
     {
@@ -275,6 +282,29 @@ public:
     bool onWUListArchiveFiles(IEspContext &context, IEspWUListArchiveFilesRequest &req, IEspWUListArchiveFilesResponse &resp);
     bool onWUGetArchiveFile(IEspContext &context, IEspWUGetArchiveFileRequest &req, IEspWUGetArchiveFileResponse &resp);
     bool onWUEclDefinitionAction(IEspContext &context, IEspWUEclDefinitionActionRequest &req, IEspWUEclDefinitionActionResponse &resp);
+
+    bool unsubscribeServiceFromDali() override
+    {
+        return filesInUse.unsubscribe();
+    }
+
+    bool subscribeServiceToDali() override
+    {
+        return filesInUse.subscribe();
+    }
+
+    bool attachServiceToDali() override
+    {
+        m_sched.setDetachedState(false);
+        return true;
+    }
+
+    bool detachServiceFromDali() override
+    {
+        m_sched.setDetachedState(true);
+        return true;
+    }
+
 private:
     void addProcessLogfile(Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, const char* path);
     void addThorSlaveLogfile(Owned<IConstWorkUnit> &cwu,WsWuInfo& winfo, const char* path);

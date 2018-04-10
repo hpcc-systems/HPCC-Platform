@@ -460,11 +460,14 @@ class WUSchedule : public Thread
     bool stopping;
     Semaphore semSchedule;
     IEspContainer* m_container;
+    bool detached;
 
 public:
     WUSchedule()
     {
         stopping = false;
+        detached = false;
+        m_container = nullptr;
     }
     ~WUSchedule()
     {
@@ -477,6 +480,17 @@ public:
     virtual void setContainer(IEspContainer * container)
     {
         m_container = container;
+        if (m_container)
+            setDetachedState(!m_container->isAttachedToDali());
+    }
+
+    void setDetachedState(bool detached_)
+    {
+        if (detached != detached_)
+        {
+            detached = detached_;
+            semSchedule.signal();
+        }
     }
 };
 

@@ -47,7 +47,7 @@ ESP_FACTORY IEspRpcBinding * esp_binding_factory(const char *name, const char* t
 {
     if (strcmp(type, "ws_espcontrolSoapBinding")==0)
     {
-        CWSESPControlSoapBinding* binding = new CWSESPControlSoapBinding(cfg, name, process);
+        CWSESPControlSoapBinding* binding = new CWSESPControlSoapBindingEx(cfg, name, process);
         return binding;
     }
 

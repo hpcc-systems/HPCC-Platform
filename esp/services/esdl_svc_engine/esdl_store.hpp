@@ -70,6 +70,7 @@ interface IEsdlListener
 interface IEsdlSubscription : public IInterface
 {
     virtual void unsubscribe() = 0;
+    virtual void subscribe() = 0;
 };
 
 esdl_engine_decl IEsdlStore* createEsdlCentralStore();

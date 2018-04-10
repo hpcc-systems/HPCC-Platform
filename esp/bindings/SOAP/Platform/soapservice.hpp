@@ -60,7 +60,12 @@ public:
    {
       return true;
    }
-   
+
+    bool subscribeServiceToDali() { return false; }
+    bool unsubscribeServiceFromDali() { return false; }
+    bool detachServiceFromDali() { return false; }
+    bool attachServiceToDali() { return false; }
+    bool canDetachFromDali() { return false; }
 };
 
 

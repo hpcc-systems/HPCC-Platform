@@ -30,10 +30,13 @@ class Schedule : public Thread
     bool stopping;
     Semaphore semSchedule;
     IEspContainer* m_container;
+    bool detached;
 public:
     Schedule()
     {
         stopping = false;
+        detached = false;
+        m_container = nullptr;
     };
     ~Schedule()
     {
@@ -46,7 +49,19 @@ public:
     virtual void setContainer(IEspContainer * container)
     {
         m_container = container;
+        if (m_container)
+          setDetachedState(!m_container->isAttachedToDali());
     }
+
+    void setDetachedState(bool detached_)
+    {
+        if (detached != detached_)
+        {
+            detached = detached_;
+            semSchedule.signal();
+        }
+    }
+
 };
 
 class CFileSprayEx : public CFileSpray
@@ -73,6 +88,19 @@ public:
         resp.setResult(req.getResult());
         return true;
     }
+
+    bool attachServiceToDali() override
+    {
+        m_sched.setDetachedState(false);
+        return true;
+    }
+
+    bool detachServiceFromDali() override
+    {
+        m_sched.setDetachedState(true);
+        return true;
+    }
+
 
     virtual bool onDFUWUSearch(IEspContext &context, IEspDFUWUSearchRequest & req, IEspDFUWUSearchResponse & resp);
     virtual bool onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &req, IEspGetDFUWorkunitsResponse &resp);
