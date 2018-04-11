@@ -1263,7 +1263,7 @@ IFormatPartitioner * FileSprayer::createPartitioner(aindex_t index, bool calcOut
 
 void FileSprayer::examineCsvStructure()
 {
-    if (srcAttr->hasProp("ECL"))
+    if (srcAttr && srcAttr->hasProp("ECL"))
         // Already has, keep it.
         return;
 
