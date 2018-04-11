@@ -136,10 +136,8 @@ public:
         if (fieldNum == (unsigned) -1)
             throw MakeStringException(0, "Invalid filter string: field '%s' not recognized", fieldName.str());
         unsigned numOffsets = inrec.getNumVarFields() + 1;
-        size_t * variableOffsets = (size_t *)alloca(numOffsets * sizeof(size_t));
-        RtlRow offsetCalculator(inrec, nullptr, numOffsets, variableOffsets);
-        unsigned fieldOffset = offsetCalculator.getOffset(fieldNum);
-        unsigned fieldSize = offsetCalculator.getSize(fieldNum);
+        unsigned fieldOffset = inrec.getFixedOffset(fieldNum);
+        unsigned fieldSize = inrec.getFixedOffset(fieldNum+1) - fieldOffset;
         const RtlTypeInfo *fieldType = inrec.queryType(fieldNum);
         filter = epos+1;
         if (*filter=='~')
@@ -155,8 +153,9 @@ public:
             while (filters.length()<=fieldNum)
             {
                 filters.append(nullptr);
-                filterOffsets.append(offsetCalculator.getOffset(filters.length()));
-                filterSizes.append(offsetCalculator.getSize(filters.length()));
+                unsigned dummyOffset = inrec.getFixedOffset(filters.length());
+                filterOffsets.append(dummyOffset);
+                filterSizes.append(inrec.getFixedOffset(filters.length()+1) - dummyOffset);
             }
             IStringSet *prev = filters.item(fieldNum);
             if (prev)

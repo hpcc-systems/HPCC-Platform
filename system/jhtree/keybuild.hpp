@@ -101,7 +101,7 @@ interface IKeyBuilder : public IInterface
     virtual unsigned __int64 getDuplicateCount() = 0;
 };
 
-extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence, bool enforceOrder=false);
+extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence, unsigned bloomKeyLength, bool enforceOrder);
 
 interface IKeyDesprayer : public IInterface
 {

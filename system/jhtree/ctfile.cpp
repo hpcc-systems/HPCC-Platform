@@ -80,6 +80,10 @@ inline void SwapBigEndian(KeyHdr &hdr)
     _WINREV(hdr.version);
     _WINREV(hdr.blobHead);
     _WINREV(hdr.metadataHead);
+    _WINREV(hdr.bloomHead);
+    _WINREV(hdr.bloomTableSize);
+    _WINREV(hdr.bloomKeyLength);
+    _WINREV(hdr.bloomTableHashes);
 }
 
 inline void SwapBigEndian(NodeHdr &hdr)
@@ -444,6 +448,24 @@ size32_t CMetadataWriteNode::set(const char * &data, size32_t &size)
 
 //=========================================================================================================
 
+CBloomFilterWriteNode::CBloomFilterWriteNode(offset_t _fpos, CKeyHdr *_keyHdr) : CWriteNodeBase(_fpos, _keyHdr)
+{
+    hdr.leafFlag = 4;
+}
+
+size32_t CBloomFilterWriteNode::set(const byte * &data, size32_t &size)
+{
+    assertex(fpos);
+    unsigned short written = ((size > (maxBytes-sizeof(unsigned short))) ? (maxBytes-sizeof(unsigned short)) : size);
+    _WINCPYREV2(keyPtr, &written);
+    memcpy(keyPtr+sizeof(unsigned short), data, written);
+    data += written;
+    size -= written;
+    return written;
+}
+
+//=========================================================================================================
+
 CNodeHeader::CNodeHeader() 
 {
 }
@@ -556,7 +578,7 @@ void CJHTreeNode::unpack(const void *node, bool needCopy)
         keys += sizeof(unsigned __int64);
         _WINREV(firstSequence);
     }
-    if(isMetadata())
+    if(isMetadata() || isBloom())
     {
         unsigned short len = *reinterpret_cast<unsigned short *>(keys);
         _WINREV(len);
@@ -1005,6 +1027,12 @@ void CJHTreeMetadataNode::get(StringBuffer & out)
 {
     out.append(expandedSize, keyBuf);
 }
+
+void CJHTreeBloomTableNode::get(MemoryBuffer & out)
+{
+    out.append(expandedSize, keyBuf);
+}
+
 
 class DECL_EXCEPTION CKeyException : implements IKeyException, public CInterface
 {

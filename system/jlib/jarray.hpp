@@ -27,7 +27,7 @@
 
 typedef size32_t aindex_t;
 
-#define NotFound   (aindex_t)-1
+const aindex_t NotFound = (aindex_t)-1;
 
 /************************************************************************
  *                            Copy Lists                                *

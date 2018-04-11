@@ -96,6 +96,10 @@ struct __declspec(novtable) jhtree_decl KeyHdr
     short unused[2]; /* unused ecx */
     __int64 blobHead; /* fpos of first blob node f0x */
     __int64 metadataHead; /* fpos of first metadata node f8x */
+    __int64 bloomHead; /* fpos of bloom table data, if present 100x */
+    uint32_t bloomTableSize;  /* Size in bytes of bloom table 108x */
+    unsigned short bloomKeyLength; /* Length of bloom keyed fields 11cx */
+    unsigned short bloomTableHashes; /* Number of hashes in bloom table 11ex */
 };
 
 //#pragma pack(1)
@@ -170,6 +174,7 @@ public:
     inline size32_t getNumKeys() const { return hdr.numKeys; }
     inline bool isBlob() const { return hdr.leafFlag == 2; }
     inline bool isMetadata() const { return hdr.leafFlag == 3; }
+    inline bool isBloom() const { return hdr.leafFlag == 4; }
     inline bool isLeaf() const { return hdr.leafFlag != 0; }
 
 public:
@@ -257,6 +262,17 @@ public:
     void get(StringBuffer & out);
 };
 
+class CJHTreeBloomTableNode : public CJHTreeNode
+{
+public:
+    virtual bool getValueAt(unsigned int num, char *key) const {throwUnexpected();}
+    virtual offset_t getFPosAt(unsigned int num) const {throwUnexpected();}
+    virtual size32_t getSizeAt(unsigned int num) const {throwUnexpected();}
+    virtual int compareValueAt(const char *src, unsigned int index) const {throwUnexpected();}
+    virtual void dump() {throwUnexpected();}
+    void get(MemoryBuffer & out);
+};
+
 class jhtree_decl CNodeHeader : public CNodeBase
 {
 public:
@@ -318,6 +334,13 @@ class jhtree_decl CMetadataWriteNode : public CWriteNodeBase
 public:
     CMetadataWriteNode(offset_t _fpos, CKeyHdr *keyHdr);
     size32_t set(const char * &data, size32_t &size);
+};
+
+class jhtree_decl CBloomFilterWriteNode : public CWriteNodeBase
+{
+public:
+    CBloomFilterWriteNode(offset_t _fpos, CKeyHdr *keyHdr);
+    size32_t set(const byte * &data, size32_t &size);
 };
 
 enum KeyExceptionCodes

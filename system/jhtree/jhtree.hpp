@@ -29,6 +29,8 @@
 #include "jlog.hpp"
 #include "errorlist.h"
 
+class BloomFilter;
+
 interface jhtree_decl IDelayedFile : public IInterface
 {
     virtual IMemoryMappedFile *getMappedFile() = 0;
@@ -50,6 +52,8 @@ interface jhtree_decl IKeyCursor : public IInterface
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize) = 0;
     virtual void releaseBlobs() = 0;
     virtual void reset() = 0;
+    virtual bool checkBloomFilter(hash64_t hash) = 0;
+    virtual unsigned getBloomKeyLength() = 0;
 };
 
 interface IKeyIndex;
@@ -79,6 +83,9 @@ interface jhtree_decl IKeyIndex : public IKeyIndexBase
     virtual offset_t queryLatestGetNodeOffset() const = 0;
     virtual offset_t queryMetadataHead() = 0;
     virtual IPropertyTree * getMetadata() = 0;
+    virtual const BloomFilter * queryBloomFilter() = 0;
+    virtual unsigned getBloomKeyLength() = 0;
+
     virtual unsigned getNodeSize() = 0;
     virtual const IFileIO *queryFileIO() const = 0;
     virtual bool hasSpecialFileposition() const = 0;
@@ -182,7 +189,7 @@ public:
     unsigned lastFullSeg() const;
     bool matched(void *keyBuffer, unsigned &lastMatch) const;
     size32_t getSize() const;
-
+    bool isExact(unsigned bytes) const;  // Are first N bytes an exact match ?
     void checkSize(size32_t keyedSize, char const * keyname);
     void recalculateCache();
     void finish(size32_t keyedSize);

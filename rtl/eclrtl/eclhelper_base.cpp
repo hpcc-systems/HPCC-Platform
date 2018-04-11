@@ -41,6 +41,13 @@ bool CThorIndexWriteArg::getIndexMeta(size32_t & lenName, char * & name, size32_
 unsigned CThorIndexWriteArg::getWidth() { return 0; }
 ICompare * CThorIndexWriteArg::queryCompare() { return NULL; }
 
+unsigned CThorIndexWriteArg::getBloomKeyLength()
+{
+    // Default to building bloom on the first field...
+    IOutputMetaData *layout = queryDiskRecordSize();
+    return layout->queryRecordAccessor(true).getFixedOffset(1);
+}
+
 //CThorFirstNArg
 
 __int64 CThorFirstNArg::numToSkip() { return 0; }
