@@ -5259,6 +5259,10 @@ IHqlExpression * EclResourcer::walkPotentialSplitters(CSplitterInfo & connection
     //Are we currently in the process of visiting this node?
     if (info->balancedVisiting)
     {
+        //If this is an unbalanced splitter, then any loops will be found when walking from there
+        if (!info->balanced)
+            return nullptr;
+
 #ifdef TRACE_BALANCED
         printf("//Follow %u->%u has problems....\n", queryResourceInfo(link.queryOther(expr))->balanceId, info->balanceId);
 #endif
@@ -5294,12 +5298,13 @@ IHqlExpression * EclResourcer::walkPotentialSplitterLinks(CSplitterInfo & connec
     info->balancedVisiting = true;
 
     //This may iterate through all links again - but will return quickly if already visited
-    for (unsigned i=0; i < info->balancedLinks.ordinality(); i++)
+    for (unsigned i=0; i < info->balancedLinks.ordinality(); )
     {
         const CSplitterLink & cur = info->balancedLinks.item(i);
         if (&cur != link) // don't walk the link we reached here by
         {
-            if (info->balanced || cur.hasSink(expr))
+            //Only follow links in unbalanced splitters if this is an input, or walking from inputs to outputs
+            if (info->balanced || cur.hasSink(expr) || (link && link->hasSink(expr)))
             {
                 info->curBalanceLink = i;
                 IHqlExpression * problem = walkPotentialSplitters(connections, cur.queryOther(expr), cur);
@@ -5329,9 +5334,12 @@ IHqlExpression * EclResourcer::walkPotentialSplitterLinks(CSplitterInfo & connec
                     printf("//%u marked as unbalanced\n", info->balanceId);
 #endif
                     info->balanced = false;
+                    //walk the link again
+                    continue;
                 }
             }
         }
+        i++;
     }
     info->curBalanceLink = info->balancedLinks.ordinality();
     return NULL;
