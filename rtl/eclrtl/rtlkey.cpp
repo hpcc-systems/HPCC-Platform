@@ -76,6 +76,11 @@ public:
         return hash;
     }
 
+    virtual bool getBloomHash(hash64_t &hash) const override
+    {
+        return false;
+    }
+
     virtual bool setOffset(unsigned _offset) override
     {
         offset = _offset;
@@ -404,6 +409,13 @@ public:
 
     virtual bool isSigned() const override { return false; }
     virtual bool isLittleEndian() const override { return false; }
+    virtual bool getBloomHash(hash64_t &hash) const override
+    {
+        if (!val)
+            return false;
+        hash = rtlHash64Data(size, val, hash);
+        return true;
+    }
 
     virtual KeySegmentMonitorSerializeType serializeType() const override { return KSMST_SINGLEKEYSEGMENTMONITOR; }
 };
@@ -531,6 +543,13 @@ public:
     virtual unsigned queryHashCode() const override
     {
         return hash;
+    }
+
+    virtual bool getBloomHash(hash64_t &hash) const override
+    {
+        // MORE - I don't know what correct answer is but this is safest!
+        // Perhaps it should return hash of base/overridden as appropriate?
+        return false;
     }
 
     virtual bool matchesBuffer(const void *keyval) const override

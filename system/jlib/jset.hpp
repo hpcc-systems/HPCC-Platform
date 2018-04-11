@@ -126,6 +126,19 @@ inline unsigned getMostSignificantBit(unsigned value)
 #endif
 }
 
+#if defined (_WIN32)
+// These are standard in glibc
+inline int ffsll(__uint64 i)
+{
+    return i ? countTrailingUnsetBits(i) + 1 : 0;
+}
+
+inline int ffs(unsigned i)
+{
+    return i ? countTrailingUnsetBits(i) + 1 : 0;
+}
+#endif
+
 interface jlib_decl IBitSet : public IInterface 
 {
     virtual void set(unsigned n,bool val=true)      = 0;

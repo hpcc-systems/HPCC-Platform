@@ -97,9 +97,7 @@ struct __declspec(novtable) jhtree_decl KeyHdr
     __int64 blobHead; /* fpos of first blob node f0x */
     __int64 metadataHead; /* fpos of first metadata node f8x */
     __int64 bloomHead; /* fpos of bloom table data, if present 100x */
-    uint32_t bloomTableSize;  /* Size in bytes of bloom table 108x */
-    unsigned short bloomKeyLength; /* Length of bloom keyed fields 11cx */
-    unsigned short bloomTableHashes; /* Number of hashes in bloom table 11ex */
+    __uint64 partitionFieldMask; /* Bitmap indicating partition keyed fields */
 };
 
 //#pragma pack(1)
@@ -155,6 +153,21 @@ public:
     inline static size32_t getSize() { return sizeof(KeyHdr); }
     inline unsigned getNodeSize() { return hdr.nodeSize; }
     inline bool hasSpecialFileposition() const { return true; }
+    __uint64 getPartitionFieldMask()
+    {
+        if (hdr.partitionFieldMask == (__uint64) -1)
+            return 0;
+        else
+            return hdr.partitionFieldMask;
+    }
+    unsigned numPartitions()
+    {
+        if (hdr.ktype & HTREE_TOPLEVEL_KEY)
+            return (unsigned) hdr.nument-1;
+        else
+            return 0;
+    }
+
 };
 
 class jhtree_decl CNodeBase : public CInterface
@@ -271,6 +284,10 @@ public:
     virtual int compareValueAt(const char *src, unsigned int index) const {throwUnexpected();}
     virtual void dump() {throwUnexpected();}
     void get(MemoryBuffer & out);
+    __int64 get8();
+    unsigned get4();
+private:
+    unsigned read = 0;
 };
 
 class jhtree_decl CNodeHeader : public CNodeBase
@@ -341,6 +358,8 @@ class jhtree_decl CBloomFilterWriteNode : public CWriteNodeBase
 public:
     CBloomFilterWriteNode(offset_t _fpos, CKeyHdr *keyHdr);
     size32_t set(const byte * &data, size32_t &size);
+    void put4(unsigned val);
+    void put8(__int64 val);
 };
 
 enum KeyExceptionCodes

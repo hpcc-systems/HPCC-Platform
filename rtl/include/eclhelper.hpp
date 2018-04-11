@@ -1140,6 +1140,14 @@ enum
     TTFfiltered          = 0x0004,
 };
 
+struct IBloomBuilderInfo
+{
+    virtual bool getBloomEnabled() const = 0;
+    virtual __uint64 getBloomFields() const = 0;
+    virtual unsigned getBloomLimit() const = 0;
+    virtual double getBloomProbability() const = 0;
+};
+
 struct IHThorIndexWriteArg : public IHThorArg
 {
     virtual const char * getFileName() = 0;
@@ -1159,7 +1167,8 @@ struct IHThorIndexWriteArg : public IHThorArg
     virtual unsigned getWidth() = 0;                // only guaranteed present if TIWhaswidth defined
     virtual ICompare * queryCompare() = 0;          // only guaranteed present if TIWhaswidth defined
     virtual unsigned getMaxKeySize() = 0;
-    virtual unsigned getBloomKeyLength() = 0;
+    virtual const IBloomBuilderInfo * const *queryBloomInfo() const = 0;
+    virtual __uint64 getPartitionFieldMask() const = 0;
 };
 
 struct IHThorFirstNArg : public IHThorArg

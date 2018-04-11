@@ -174,10 +174,12 @@ public:
             flags |= HTREE_FULLSORT_KEY;
         if (isVariable)
             flags |= HTREE_VARSIZE;
+        if (isTlk)
+            flags |= HTREE_TOPLEVEL_KEY;
         buildUserMetadata(metadata);                
         buildLayoutMetadata(metadata);
         unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;
-        builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), isTopLevel ? 0 : totalCount, isTlk ? 0 : helper->getBloomKeyLength(), !isTlk));
+        builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), isTopLevel ? 0 : totalCount, helper, !isTlk, isTlk));
     }
 
 

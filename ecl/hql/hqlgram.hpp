@@ -575,6 +575,11 @@ public:
 
     bool extractConstantString(StringBuffer & text, attribute & attr);
 
+    IHqlExpression *processPartitionBloomAttr(IHqlExpression *bloom, IHqlExpression *index, const attribute & errpos);
+    void setIndexScope(IHqlExpression *index);
+    void clearIndexScope();
+    void pushIndexScope();
+
     //Various grammar rule productions.
     void beginAlienType(const attribute & errpos);
     void beginDefineId(IIdAtom * name, ITypeInfo * type);
@@ -921,6 +926,7 @@ protected:
     bool inType;
     Owned<IHqlScope> modScope;
     OwnedHqlExpr dotScope;
+    OwnedHqlExpr indexScope;
     unsigned outerScopeAccessDepth;
     IHqlScope* containerScope;
     IHqlScope* globalScope;

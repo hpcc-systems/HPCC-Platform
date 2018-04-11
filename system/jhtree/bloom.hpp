@@ -19,6 +19,7 @@
 #define _BLOOM_INCL
 
 #include "jhtree.hpp"
+#include "eclhelper.hpp"
 
 /**
  *   A BloomFilter object is used to create or test a Bloom filter - this can be used to quickly determine whether a value has been added to the filter,
@@ -99,17 +100,86 @@ protected:
     byte *table;
 };
 
-class jhtree_decl BloomBuilder
+class jhtree_decl IndexBloomFilter : public BloomFilter
 {
 public:
-    BloomBuilder(unsigned _maxHashes = 1000000);
-    const BloomFilter * build(double probability=0.1) const;
-    bool add(hash64_t hash);
-    inline bool add(size32_t len, const void *val) { return add(rtlHash64Data(len, val, HASH64_INIT)); }
-    bool valid() const;
-protected:
-    ArrayOf<hash64_t> hashes;
-    const unsigned maxHashes;
-    bool isValid;
+    /*
+     * Create a bloom filter with field information.
+     *
+     * @param numHashes  Number of hashes to use for each lookup.
+     * @param tableSize  Size (in bytes) of the table
+     * @param table      Bloom table. Note that the BloomFilter object will take ownership of this memory, so it must be allocated on the heap.
+     * @param fields     Bitmap storing the field indices
+     */
+    IndexBloomFilter(unsigned numHashes, unsigned tableSize, byte *table, __uint64 fields);
+    inline __int64 queryFields() const { return fields; }
+    bool reject(const SegMonitorList &segs) const;
+    static int compare(CInterface *const *a, CInterface *const *b);
+private:
+    const __uint64 fields;
 };
+
+/**
+ *   An IBloomBuilder object is used to store and dedup a set of hash values, then build an optimally-sized bloom table from them
+ */
+
+interface IBloomBuilder : public IInterface
+{
+    /*
+     * Add a hash value to the builder
+     *
+     * @return       True if the value was successfully added
+     */
+    virtual bool add(hash64_t hash) = 0;
+    /*
+     * Add a row to the builder. Row will be hashed using the bloom builder's field information
+     *
+     * @return       True if the value was successfully added
+     */
+    virtual bool valid() const = 0;
+    /*
+     * Retrieve bloom filter
+     *
+     * @return       A newly-created filter
+     */
+    virtual const BloomFilter * build() const = 0;
+    /*
+     * Number of unique hashes added
+     *
+     * @return       Count
+     */
+    virtual unsigned queryCount() const = 0;
+};
+
+/**
+ * Create a BloomBuilder object from (compiler-generated) information
+ */
+
+extern jhtree_decl IBloomBuilder *createBloomBuilder(const IBloomBuilderInfo &_helper);
+
+interface IRowHasher : public IInterface
+{
+    virtual hash64_t hash(const byte *row) const = 0;
+    virtual bool isExact(const SegMonitorList &segs) const = 0;
+    virtual __uint64 queryFields() const = 0;
+};
+
+/**
+ * Create a RowHasher object from (compiler-generated) information
+ * @param recInfo  Record metadata information - needs to have a lifetime longer than the created hasher object
+ * @param fields   Bitmap containing field numbers
+ * return          New row hasher object
+ */
+extern jhtree_decl IRowHasher * createRowHasher(const RtlRecord &recInfo, __uint64 _fields);
+
+/**
+ * Retrieve bloom/partition hash corresponding to a supplied filter condition
+ * @param fields   Bitmap containing field numbers
+ * @param segs     Filter to be checked
+ * @param hash     Initial hash value, updated to reflect supplied fields
+ * return          true if the filter is suitable for bloom filtering/partitioning via returned hash value
+ */
+extern jhtree_decl bool getBloomHash(__int64 fields, const SegMonitorList &segs, hash64_t &hashval);
+
+
 #endif

@@ -211,6 +211,7 @@ public:
     }
 
     size_t getFixedOffset(unsigned field) const;
+    bool isFixedOffset(unsigned field) const;
     size_t getRecordSize(size_t * variableOffsets) const
     {
         return getOffset(variableOffsets, numFields);

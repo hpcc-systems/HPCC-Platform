@@ -1810,6 +1810,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.useGlobalCompareClass,"useGlobalCompareClass", false),
         DebugOption(options.createValueSets,"createValueSets", false),
         DebugOption(options.implicitKeyedDiskFilter,"implicitKeyedDiskFilter", false),
+        DebugOption(options.addDefaultBloom,"addDefaultBloom", true),
     };
 
     //get options values from workunit

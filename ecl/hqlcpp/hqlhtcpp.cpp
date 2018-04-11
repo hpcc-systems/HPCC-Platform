@@ -10409,7 +10409,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
     if (!hasTLK && !singlePart)           flags.append("|TIWlocal");
     if (expr->hasAttribute(expireAtom))   flags.append("|TIWexpires");
     if (expr->hasAttribute(maxLengthAtom))   flags.append("|TIWmaxlength");
-
     if (compressAttr)
     {
         if (compressAttr->hasAttribute(rowAtom))   flags.append("|TIWrowcompress");
@@ -10427,6 +10426,61 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
     buildExpiryHelper(instance->createctx, expr->queryAttribute(expireAtom));
     buildUpdateHelper(instance->createctx, *instance, dataset, updateAttr);
     buildClusterHelper(instance->startctx, expr);
+
+    unsigned blooms = 0;
+    StringBuffer bloomNames;
+    ForEachChild(idx, expr)
+    {
+        IHqlExpression *cur = expr->queryChild(idx);
+        if (cur->isAttribute() && (cur->queryName() == bloomAtom))
+        {
+            VStringBuffer bloom("bloom%d", ++blooms);
+            bloomNames.append(", &").append(bloom);
+            BuildCtx classctx(instance->startctx);
+            IHqlStmt * classStmt = beginNestedClass(classctx, bloom, "CBloomBuilderInfo");
+
+            IHqlExpression * bloomProbabilityAttr = cur->queryAttribute(probabilityAtom);
+            if (bloomProbabilityAttr)
+            {
+                MemberFunction func(*this, classctx, "virtual double getBloomProbability() const override");
+                buildReturn(func.ctx, bloomProbabilityAttr->queryChild(0), doubleType);
+            }
+            IHqlExpression * bloomLimitAttr = cur->queryAttribute(limitAtom);
+            if (bloomLimitAttr)
+            {
+                MemberFunction func(*this, classctx, "virtual unsigned getBloomLimit() const override");
+                buildReturn(func.ctx, bloomLimitAttr->queryChild(0), unsignedType);
+            }
+            IHqlExpression * bloomEnabledAttr = cur->queryAttribute(activeAtom);
+            if (bloomEnabledAttr)
+            {
+                MemberFunction func(*this, classctx, "virtual bool getBloomEnabled() const override");
+                buildReturn(func.ctx, bloomEnabledAttr->queryChild(0));
+            }
+            MemberFunction func(*this, classctx, "virtual __uint64 getBloomFields() const override");
+            buildReturn(func.ctx, cur->queryChild(0));
+
+            endNestedClass(classStmt);
+        }
+    }
+    if (!blooms && options.addDefaultBloom)
+    {
+        bloomNames.append(", &bloomDefault");
+        BuildCtx classctx(instance->startctx);
+        IHqlStmt * classStmt = beginNestedClass(classctx, "bloomDefault", "CBloomBuilderInfo");
+        classctx.addQuoted("virtual __uint64 getBloomFields() const override { return 1; }");
+        endNestedClass(classStmt);
+        blooms++;
+    }
+    instance->classctx.addQuoted(s.clear().appendf("const IBloomBuilderInfo * const bloomInfo [%d] = {", blooms+1).append(bloomNames+1).append(", nullptr };"));
+    instance->classctx.addQuoted(s.clear().append("virtual const IBloomBuilderInfo * const *queryBloomInfo() const override { return bloomInfo; }"));
+
+    IHqlExpression * partitionAttr = expr->queryAttribute(hashAtom);
+    if (partitionAttr)
+    {
+        MemberFunction func(*this, instance->classctx, "virtual __uint64 getPartitionFieldMask() const override");
+        buildReturn(func.ctx, partitionAttr->queryChild(0));
+    }
 
     // virtual unsigned getKeyedSize()
     HqlExprArray fields;

@@ -1098,7 +1098,7 @@ IHqlExpression * HqlGram::processIndexBuild(const attribute &err, attribute & in
     OwnedHqlExpr dataset = indexAttr.getExpr();
     checkBuildIndexFilenameFlags(dataset, flagsAttr);
 
-    LinkedHqlExpr inputDataset = dataset;
+    LinkedHqlExpr projectedDataset = dataset;
     OwnedHqlExpr flags = flagsAttr.getExpr();
     if (recordAttr)
     {
@@ -1122,8 +1122,8 @@ IHqlExpression * HqlGram::processIndexBuild(const attribute &err, attribute & in
         bool hasFileposition = getBoolAttributeInList(flags, filepositionAtom, true);
         record.setown(checkBuildIndexRecord(record.getClear(), *recordAttr));
         record.setown(checkIndexRecord(record, *recordAttr, flags));
-        inputDataset.setown(createDatasetF(no_selectfields, LINK(dataset), LINK(record), NULL));
-        warnIfRecordPacked(inputDataset, *recordAttr);
+        projectedDataset.setown(createDatasetF(no_selectfields, LINK(dataset), LINK(record), NULL));
+        warnIfRecordPacked(projectedDataset, *recordAttr);
     }
     else
     {
@@ -1131,10 +1131,53 @@ IHqlExpression * HqlGram::processIndexBuild(const attribute &err, attribute & in
     }
 
     HqlExprArray args;
-    args.append(*LINK(inputDataset));
+    args.append(*LINK(projectedDataset));
     args.append(*filenameAttr.getExpr());
     if (flags)
-        flags->unwindList(args, no_comma);
+    {
+        HqlExprArray buildOptions;
+        flags->unwindList(buildOptions, no_comma);
+        OwnedHqlExpr distribution, partition;
+        ForEachItemIn(i, buildOptions)
+        {
+            IHqlExpression & cur = buildOptions.item(i);
+            IAtom * name = cur.queryName();
+            if (name == distributedAtom)
+            {
+                if (distribution)
+                    reportError(ERR_CANNOT_REDEFINE, err, "DISTRIBUTED attribute cannot be specified more than once");
+                if (cur.queryChild(0))
+                    distribution.setown(replaceSelector(&cur, queryActiveTableSelector(), projectedDataset));
+                else
+                    distribution.set(&cur);
+            }
+            else if (name == bloomAtom)
+            {
+                OwnedHqlExpr replaced = replaceSelector(&cur, queryActiveTableSelector(), projectedDataset);
+                OwnedHqlExpr bloom = processPartitionBloomAttr(replaced, projectedDataset, err);
+                ForEachItemIn(idx, args)
+                {
+                    IHqlExpression &arg = args.item(idx);
+                    if (arg.isAttribute() && arg.queryName()==bloomAtom && arg.queryChild(0) == bloom->queryChild(0))
+                        reportError(ERR_CANNOT_REDEFINE, err, "Duplicate BLOOM definition");
+                }
+                args.append(*bloom.getClear());
+            }
+            else if (name == hashAtom)
+            {
+                if (partition)
+                    reportError(ERR_CANNOT_REDEFINE, err, "PARTITION attribute cannot be specified more than once");
+                partition.setown(replaceSelector(&cur, queryActiveTableSelector(), projectedDataset));
+            }
+            else
+                args.append(OLINK(cur));
+        }
+
+        if (distribution)
+            args.append(*distribution.getClear());
+        if (partition)
+            args.append(*processPartitionBloomAttr(partition, projectedDataset, err));
+    }
     saveDiskAccessInformation(err, args);
     checkDistributer(flagsAttr.pos, args);
     return createValue(no_buildindex, makeVoidType(), args);
@@ -7000,7 +7043,7 @@ IHqlExpression * HqlGram::createBuildIndexFromIndex(attribute & indexAttr, attri
         transform.setown(createDefaultAssignTransform(record, sourceDataset->queryNormalizedSelector(), indexAttr));
 
     //need to tag record scope in this case so it generates no_activetable as top selector
-    OwnedHqlExpr distribution;
+    OwnedHqlExpr distribution, hash;
     if (!sourceDataset)
     {
         bool allConstant = true;
@@ -7042,7 +7085,40 @@ IHqlExpression * HqlGram::createBuildIndexFromIndex(attribute & indexAttr, attri
         IHqlExpression & cur = buildOptions.item(i);
         IAtom * name = cur.queryName();
         if (name == distributedAtom)
-            distribution.setown(&cur);
+        {
+            if (!index->hasAttribute(distributedAtom))
+            {
+                if (distribution)
+                    reportError(ERR_CANNOT_REDEFINE, errpos, "DISTRIBUTED attribute cannot be specified more than once");
+                if (cur.queryChild(0))
+                    distribution.setown(replaceSelector(&cur, index, select));
+                else
+                    distribution.set(&cur);
+            }
+        }
+        else if (name == bloomAtom)
+        {
+            if (!index->hasAttribute(bloomAtom))
+            {
+                OwnedHqlExpr bloom = processPartitionBloomAttr(&cur, index, errpos);
+                ForEachItemIn(idx, args)
+                {
+                    IHqlExpression &arg = args.item(idx);
+                    if (arg.isAttribute() && arg.queryName()==bloomAtom && arg.queryChild(0) == bloom->queryChild(0))
+                        reportError(ERR_CANNOT_REDEFINE, errpos, "Duplicate BLOOM definition");
+                }
+                args.append(*bloom.getClear());
+            }
+        }
+        else if (name == hashAtom)
+        {
+            if (!index->hasAttribute(hashAtom))
+            {
+                if (hash)
+                    reportError(ERR_CANNOT_REDEFINE, errpos, "PARTITION attribute cannot be specified more than once");
+                hash.set(&cur);
+            }
+        }
         else if (name == persistAtom)
             args.append(*createAttribute(persistAtom, LINK(index)));        // preserve so changes in representation don't affect crc.
         else
@@ -7056,10 +7132,32 @@ IHqlExpression * HqlGram::createBuildIndexFromIndex(attribute & indexAttr, attri
         if (cur->isAttribute())
         {
             IAtom * name = cur->queryName();
-            if ((name == sort_AllAtom) || (name == sort_KeyedAtom) || (name == fixedAtom) || (name == compressedAtom) || (name == dedupAtom))
+            if ((name == sort_AllAtom) || (name == sort_KeyedAtom) || (name == fixedAtom) || (name == compressedAtom) ||
+                (name == dedupAtom) || (name == probabilityAtom) || (name == limitAtom))
                 args.append(*LINK(cur));
+            else if (name == bloomAtom)
+            {
+                OwnedHqlExpr replaced = replaceSelector(cur, queryActiveTableSelector(), index);
+                OwnedHqlExpr bloom = processPartitionBloomAttr(replaced, index, errpos);
+                // Check for duplicates
+                ForEachItemIn(idx, args)
+                {
+                    IHqlExpression &arg = args.item(idx);
+                    if (arg.isAttribute() && arg.queryName()==bloomAtom && arg.queryChild(0) == bloom->queryChild(0))
+                        reportError(ERR_CANNOT_REDEFINE, errpos, "Duplicate BLOOM definition");
+                }
+                args.append(*bloom.getClear());
+            }
+            else if (name == hashAtom)
+            {
+                if (hash)
+                    reportError(ERR_CANNOT_REDEFINE, errpos, "PARTITION attribute cannot be specified more than once");
+                hash.setown(replaceSelector(cur, queryActiveTableSelector(), index));
+            }
             else if (name == distributedAtom)
             {
+                if (distribution)
+                    reportError(ERR_CANNOT_REDEFINE, errpos, "DISTRIBUTED attribute cannot be specified more than once");
                 args.append(*createAttribute(noRootAtom));
                 if (cur->queryChild(0))
                     distribution.setown(replaceSelector(cur, queryActiveTableSelector(), select));
@@ -7080,11 +7178,80 @@ IHqlExpression * HqlGram::createBuildIndexFromIndex(attribute & indexAttr, attri
         args.append(*LINK(fileposition));
     if (distribution)
         args.append(*distribution.getClear());
+    if (hash)
+        args.append(*processPartitionBloomAttr(hash, index, errpos));
 
     saveDiskAccessInformation(indexAttr, args);
     checkDistributer(flagsAttr.pos, args);
     return createValue(no_buildindex, makeVoidType(), args);
 }
+
+IHqlExpression *HqlGram::processPartitionBloomAttr(IHqlExpression *bloom, IHqlExpression *index, const attribute & errpos)
+{
+    __uint64 fields = 0;
+    IHqlExpression *list = bloom->queryChild(0);
+    assertex(list->getOperator()==no_sortlist);
+    unsigned numKeyed = 0;
+    if (index->hasAttribute(_payload_Atom))
+        numKeyed = numKeyedFields(index);  // NOTE - this may miss reporting an error in cases where there is a trailing filepos that someone tries to put into a bloom filter. I don't care.
+    unsigned lastFieldNum = 0;
+    OwnedHqlExpr enable;
+    const char *errName = (bloom->queryName()==bloomAtom) ? "BLOOM" : "PARTITION";
+    ForEachChild(idx, list)
+    {
+        IHqlExpression * cur = list->queryChild(idx);
+        if (cur->getOperator() != no_select || cur->queryChild(0) != index->queryNormalizedSelector())
+        {
+            if (!idx && cur->isBoolean())
+            {
+                enable.setown(createExprAttribute(activeAtom, LINK(cur)));
+                continue;
+            }
+            else
+            {
+                reportError(ERR_KEYEDINDEXINVALID, errpos, "%s parameter is not a field from the index", errName);
+                break;
+            }
+        }
+        unsigned fieldNum = getFieldNumber(cur->queryChild(0), cur);
+        if (numKeyed && fieldNum >= numKeyed)
+            reportError(ERR_KEYEDINDEXINVALID, errpos, "%s parameter must refer to keyed fields only", errName);
+        if (fieldNum < lastFieldNum)
+            reportError(ERR_KEYEDINDEXINVALID, errpos, "%s fields out of order", errName);
+        if (fields & (((__uint64) 1) << fieldNum))
+            reportError(ERR_KEYEDINDEXINVALID, errpos, "%s field repeated", errName);
+        lastFieldNum = fieldNum;
+        fields |= ((__uint64) 1) << fieldNum;
+    }
+    HqlExprArray args;
+    args.append(*createConstant(fields, makeIntType(8, false)));
+    if (bloom->queryChild(1))
+        bloom->queryChild(1)->unwindList(args, no_comma);
+    if (enable)
+        args.append(*enable.getClear());
+    IHqlExpression *ret = bloom->clone(args);
+    return ret;
+}
+
+void HqlGram::setIndexScope(IHqlExpression *index)
+{
+    assertex(!indexScope);
+    indexScope.set(index);  // NOTE - don't worry about nesting, as a BUILD inside a BUILD is highly unlikely
+}
+
+void HqlGram::clearIndexScope()
+{
+    indexScope.clear();
+}
+
+void HqlGram::pushIndexScope()
+{
+    if (indexScope)
+        pushTopScope(indexScope);
+    else
+        pushTopScope(queryTopScope());
+}
+
 
 bool HqlGram::doCheckValidFieldValue(const attribute &errpos, IHqlExpression *value, IHqlExpression * field)
 {
@@ -10824,6 +10991,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case BETWEEN: msg.append("BETWEEN"); break;
     case BIG: msg.append("BIG_ENDIAN"); break;
     case TOK_BITMAP: msg.append("BITMAP"); break;
+    case BLOOM: msg.append("BLOOM"); break;
     case BLOB: msg.append("BLOB"); break;
     case BNOT: msg.append("BNOT"); break;
     case BUILD: msg.append("BUILD"); break;
@@ -11056,6 +11224,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case PRELOAD: msg.append("PRELOAD"); break;
     case PRIORITY: msg.append("PRIORITY"); break;
     case PRIVATE: msg.append("PRIVATE"); break;
+    case PROBABILITY: msg.append("PROBABILITY"); break;
     case PROCESS: msg.append("PROCESS"); break;
     case PROJECT: msg.append("PROJECT"); break;
     case PULL: msg.append("PULL"); break;

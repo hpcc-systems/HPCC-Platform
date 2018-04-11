@@ -411,6 +411,7 @@ bool CHThorIndexReadActivityBase::doPreopenLimitFile(unsigned __int64 & count, u
     {
         if(localSortKey)
         {
+            // MORE - partition support goes here
             Owned<IKeyIndex> tlk = openKeyFile(df->queryPart(num));
             verifyIndex(tlk);
             for(unsigned idx = 0; idx < num; ++idx)
@@ -605,6 +606,7 @@ bool CHThorIndexReadActivityBase::nextMultiPart()
     {
         if (localSortKey)
         {
+            // MORE - partition key support should go here?
             if (nextPartNumber<(df->numParts()-1))
                 return setCurrentPart(nextPartNumber++);
         }

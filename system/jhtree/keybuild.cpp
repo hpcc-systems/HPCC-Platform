@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "keybuild.hpp"
+#include "eclhelper.hpp"
 #include "bloom.hpp"
 #include "jmisc.hpp"
 
@@ -337,27 +338,39 @@ private:
     CWriteNode *activeNode;
     CBlobWriteNode *activeBlobNode;
     unsigned __int64 duplicateCount;
-    unsigned bloomKeyLength = 0;
-    BloomBuilder bloomBuilder;
-    byte *lastBloomKeyData = nullptr;
+    __uint64 partitionFieldMask = 0;
+    IArrayOf<IBloomBuilder> bloomBuilders;
+    IArrayOf<IRowHasher> rowHashers;
     bool enforceOrder = true;
+    bool isTLK = false;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyedSize, unsigned __int64 startSequence, unsigned _bloomKeyLength, bool _enforceOrder)
-        : CKeyBuilderBase(_out, flags, rawSize, nodeSize, keyedSize, startSequence), bloomKeyLength(_bloomKeyLength), enforceOrder(_enforceOrder)
+    CKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyedSize, unsigned __int64 startSequence,  IHThorIndexWriteArg *_helper, bool _enforceOrder, bool _isTLK)
+        : CKeyBuilderBase(_out, flags, rawSize, nodeSize, keyedSize, startSequence),
+          enforceOrder(_enforceOrder),
+          isTLK(_isTLK)
     {
         doCrc = true;
         activeNode = NULL;
         activeBlobNode = NULL;
         duplicateCount = 0;
-        if (bloomKeyLength)
-            lastBloomKeyData = (byte *) calloc(bloomKeyLength, 1);
-    }
-    ~CKeyBuilder()
-    {
-        free(lastBloomKeyData);
+        if (_helper)
+        {
+            partitionFieldMask = _helper->getPartitionFieldMask();
+            auto bloomInfo =_helper->queryBloomInfo();
+            if (bloomInfo)
+            {
+                const RtlRecord &recinfo = _helper->queryDiskRecordSize()->queryRecordAccessor(true);
+                while (*bloomInfo)
+                {
+                    bloomBuilders.append(*createBloomBuilder(*bloomInfo[0]));
+                    rowHashers.append(*createRowHasher(recinfo, bloomInfo[0]->getBloomFields()));
+                    bloomInfo++;
+                }
+            }
+        }
     }
 public:
     void finish(IPropertyTree * metadata, unsigned * fileCrc)
@@ -381,11 +394,16 @@ public:
             toXML(metadata, metaXML);
             writeMetadata(metaXML.str(), metaXML.length());
         }
-        if (bloomBuilder.valid())
+        ForEachItemIn(idx, bloomBuilders)
         {
-            Owned<const BloomFilter> filter = bloomBuilder.build();
-            writeBloomFilter(*filter, bloomKeyLength);
+            IBloomBuilder &bloomBuilder = bloomBuilders.item(idx);
+            if (bloomBuilder.valid())
+            {
+                Owned<const BloomFilter> filter = bloomBuilder.build();
+                writeBloomFilter(*filter, rowHashers.item(idx).queryFields());
+            }
         }
+        keyHdr->getHdrStruct()->partitionFieldMask = partitionFieldMask;
         CRC32 headerCrc;
         writeFileHeader(false, &headerCrc);
 
@@ -414,12 +432,10 @@ public:
     void processKeyData(const char *keyData, offset_t pos, size32_t recsize)
     {
         records++;
-        bool firstRow = false;
         if (NULL == activeNode)
         {
             activeNode = new CWriteNode(nextPos, keyHdr, true);
             nextPos += keyHdr->getNodeSize();
-            firstRow = true;
         }
         else if (enforceOrder) // NB: order is indeterminate when build a TLK for a LOCAL index. duplicateCount is not calculated in this case.
         {
@@ -429,15 +445,17 @@ public:
             if (cmp==0)
                 ++duplicateCount;
         }
-        if (bloomKeyLength)
+        if (!isTLK)
         {
-            int cmp = memcmp(keyData, lastBloomKeyData, bloomKeyLength);
-            if (firstRow || cmp)
+            ForEachItemInRev(idx, bloomBuilders)
             {
-                memcpy(lastBloomKeyData, keyData, bloomKeyLength);
-                hash64_t hash = rtlHash64Data(bloomKeyLength, keyData, HASH64_INIT);
-                if (!bloomBuilder.add(hash))
-                    bloomKeyLength = 0;
+                IBloomBuilder &bloomBuilder = bloomBuilders.item(idx);
+                IRowHasher &hasher = rowHashers.item(idx);
+                if (!bloomBuilder.add(hasher.hash((const byte *) keyData)))
+                {
+                    bloomBuilders.remove(idx);
+                    rowHashers.remove(idx);
+                }
             }
         }
         if (!activeNode->add(pos, keyData, recsize, sequence))
@@ -518,21 +536,23 @@ protected:
         writeNode(prevNode);
     }
 
-    void writeBloomFilter(const BloomFilter &filter, unsigned bloomKeyLength)
+    void writeBloomFilter(const BloomFilter &filter, __uint64 fields)
     {
-        assertex(keyHdr->getHdrStruct()->bloomHead == 0);
         size32_t size = filter.queryTableSize();
         if (!size)
             return;
+        auto prevBloom = keyHdr->getHdrStruct()->bloomHead;
         keyHdr->getHdrStruct()->bloomHead = nextPos;
-        keyHdr->getHdrStruct()->bloomKeyLength = bloomKeyLength;
-        keyHdr->getHdrStruct()->bloomTableSize = size;
-        keyHdr->getHdrStruct()->bloomTableHashes = filter.queryNumHashes();
-        const byte *data = filter.queryTable();
         Owned<CBloomFilterWriteNode> prevNode;
+        Owned<CBloomFilterWriteNode> node(new CBloomFilterWriteNode(nextPos, keyHdr));
+        // Table info is serialized into first page. Note that we assume that it fits (would need to have a crazy-small page size for that to not be true)
+        node->put8(prevBloom);
+        node->put4(filter.queryNumHashes());
+        node->put8(fields);
+        node->put4(size);
+        const byte *data = filter.queryTable();
         while (size)
         {
-            Owned<CBloomFilterWriteNode> node(new CBloomFilterWriteNode(nextPos, keyHdr));
             nextPos += keyHdr->getNodeSize();
             size32_t written = node->set(data, size);
             assertex(written);
@@ -543,14 +563,17 @@ protected:
                 writeNode(prevNode);
             }
             prevNode.setown(node.getClear());
+            if (!size)
+                break;
+            node.setown(new CBloomFilterWriteNode(nextPos, keyHdr));
         }
         writeNode(prevNode);
     }
 };
 
-extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence, unsigned bloomKeySize, bool enforceOrder)
+extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence, IHThorIndexWriteArg *helper, bool enforceOrder, bool isTLK)
 {
-    return new CKeyBuilder(_out, flags, rawSize, nodeSize, keyFieldSize, startSequence, bloomKeySize, enforceOrder);
+    return new CKeyBuilder(_out, flags, rawSize, nodeSize, keyFieldSize, startSequence, helper, enforceOrder, isTLK);
 }
 
 

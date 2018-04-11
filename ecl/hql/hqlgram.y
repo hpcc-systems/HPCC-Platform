@@ -138,6 +138,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   TOK_BITMAP
   BIG
   BLOB
+  BLOOM
   BNOT
   BUILD
   CARDINALITY
@@ -365,6 +366,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   PRELOAD
   PRIORITY
   PRIVATE
+  PROBABILITY
   PROCESS
   PROJECT
   PROXYADDRESS
@@ -2390,24 +2392,24 @@ actionStmt
                         {
                             $$.setExpr(createValue(no_update, makeVoidType(), $3.getExpr(), $5.getExpr(), $7.getExpr()), $1);
                         }
-    | BUILD '(' startTopFilter ',' ',' thorFilenameOrList optBuildFlags ')' endTopFilter
+    | BUILD '(' startTopFilter startDistributeAttrs ',' ',' thorFilenameOrList optBuildFlags ')' endTopFilter
                         {
-                            $$.setExpr(parser->processIndexBuild($1, $3, NULL, NULL, $6, $7), $1);
+                            $$.setExpr(parser->processIndexBuild($1, $3, NULL, NULL, $7, $8), $1);
                             parser->processUpdateAttr($$);
                         }
-    | BUILD '(' startTopFilter ',' recordDef ',' thorFilenameOrList optBuildFlags ')' endTopFilter
+    | BUILD '(' startTopFilter startDistributeAttrs ',' indexRecordDef ',' thorFilenameOrList optBuildFlags ')' endTopFilter endIndexScope
                         {
-                            $$.setExpr(parser->processIndexBuild($1, $3, &$5, NULL, $7, $8), $1);
+                            $$.setExpr(parser->processIndexBuild($1, $3, &$6, NULL, $8, $9), $1);
                             parser->processUpdateAttr($$);
                         }
-    | BUILD '(' startTopFilter ',' recordDef ',' nullRecordDef ',' thorFilenameOrList optBuildFlags ')' endTopFilter
+    | BUILD '(' startTopFilter startDistributeAttrs ',' indexRecordDef ',' nullRecordDef ',' thorFilenameOrList optBuildFlags ')' endTopFilter endIndexScope
                         {
-                            $$.setExpr(parser->processIndexBuild($1, $3, &$5, &$7, $9, $10), $1);
+                            $$.setExpr(parser->processIndexBuild($1, $3, &$6, &$8, $10, $11), $1);
                             parser->processUpdateAttr($$);
                         }
-    | BUILD '(' startTopFilter optBuildFlags ')' endTopFilter
+    | BUILD '(' startTopFilter startDistributeAttrs optBuildFlags ')' endTopFilter
                         {
-                            $$.setExpr(parser->createBuildIndexFromIndex($3, $4, $5), $1);
+                            $$.setExpr(parser->createBuildIndexFromIndex($3, $5, $6), $1);
                             parser->processUpdateAttr($$);
                         }
     | OUTPUT '(' startTopFilter ',' optRecordDef endTopFilter optOutputFlags ')'
@@ -2926,9 +2928,13 @@ assertFlags
                         }
     ;
 
+indexRecordDef
+    : recordDef         {   parser->setIndexScope($1.queryExpr()); $$.setExpr($1.getExpr()); }
+    ;
+   
 optBuildFlags
-    :                   { $$.setNullExpr(); $$.clearPosition(); }
-    | ',' buildFlags    { $$.setExpr($2.getExpr(), $1); }
+    :                     { $$.setNullExpr(); $$.clearPosition(); }
+    |  ','  buildFlags    { $$.setExpr($2.getExpr(), $1); }
     ;
 
 buildFlags
@@ -2996,6 +3002,8 @@ buildFlag
                             $$.setPosition($1);
                         }
     | expireAttr
+    | bloomAttr
+    | hashedIndexAttr
     | NOROOT            {
                             $$.setExpr(createComma(createAttribute(noRootAtom), createLocalAttribute()));
                             $$.setPosition($1);
@@ -3064,6 +3072,64 @@ localAttribute
     | NOLOCAL           {
                             $$.setExpr(createAttribute(noLocalAtom));
                             $$.setPosition($1);
+                        }
+    ;
+
+bloomAttr
+    : BLOOM '(' beginIndexList sortList optBloomFlags ')' endTopFilter
+                        {
+                            HqlExprArray sortItems;
+                            parser->endList(sortItems);
+                            IHqlExpression * bloomList = parser->processSortList($4, no_hash, NULL, sortItems, NULL, NULL);
+                            $$.setExpr(createExprAttribute(bloomAtom, bloomList, $5.getExpr()));
+                            $$.setPosition($1);
+                        }
+    ;
+    
+hashedIndexAttr
+    : PARTITION_ATTR '(' beginIndexList sortList ')' endTopFilter
+                        {
+                            HqlExprArray sortItems;
+                            parser->endList(sortItems);
+                            IHqlExpression * hashList = parser->processSortList($4, no_hash, NULL, sortItems, NULL, NULL);
+                            // MORE - we need to sort the hashList by fieldno, since we are only storing a bitmap...
+                            // Or give an error if they are specified out of order, I suppose.
+                            IHqlExpression *hashFunc = createValue(no_hash64, makeIntType(8, false), LINK(hashList), createAttribute(internalAtom));
+                            OwnedHqlExpr distr = createComma(createAttribute(noRootAtom), createExprAttribute(distributedAtom, hashFunc), createLocalAttribute());
+                            OwnedHqlExpr hash = createExprAttribute(hashAtom, hashList);
+                            $$.setExpr(createComma(distr.getClear(), hash.getClear())); 
+                            $$.setPosition($1);
+                        }
+    ;
+
+beginIndexList
+    : beginList         {
+                            parser->pushIndexScope();
+                            $$.inherit($1);
+                        }     
+    ;    
+
+endIndexScope
+    :                   {   parser->clearIndexScope(); }
+    ;
+    
+optBloomFlags
+    :                   { $$.setNullExpr(); }
+    | ',' bloomFlag optBloomFlags
+                        {
+                            $$.setExpr(createComma($2.getExpr(), $3.getExpr()));
+                            $$.setPosition($3);
+                        }
+    ;
+
+bloomFlag
+    : LIMIT '(' expression ')' { 
+                            parser->normalizeExpression($3, type_int, false);
+                            $$.setExpr(createExprAttribute(limitAtom, $3.getExpr()), $1);
+                        }
+    | PROBABILITY '(' expression ')' { 
+                            parser->normalizeExpression($3, type_real, false);
+                            $$.setExpr(createExprAttribute(probabilityAtom, $3.getExpr()), $1);
                         }
     ;
 
@@ -3267,7 +3333,8 @@ datasetFlag
 
 optIndexFlags
     :                   { $$.setNullExpr(); $$.clearPosition(); }
-    | ',' indexFlags    { $$.setExpr($2.getExpr()); $$.setPosition($1); }
+    | startDistributeAttrs ',' indexFlags    
+                        { $$.setExpr($3.getExpr()); $$.setPosition($2); }
     ;
 
 indexFlags
@@ -3339,6 +3406,8 @@ indexFlag
                             parser->normalizeExpression($3, type_numeric, false);
                             $$.setExpr(createExprAttribute(maxLengthAtom, $3.getExpr()), $1);
                         }
+    | bloomAttr
+    | hashedIndexAttr
     | commonAttribute
     ;
 

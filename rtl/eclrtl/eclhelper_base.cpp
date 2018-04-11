@@ -40,12 +40,25 @@ bool CThorIndexWriteArg::getIndexLayout(size32_t & _retLen, void * & _retData) {
 bool CThorIndexWriteArg::getIndexMeta(size32_t & lenName, char * & name, size32_t & lenValue, char * & value, unsigned idx) { return false; }
 unsigned CThorIndexWriteArg::getWidth() { return 0; }
 ICompare * CThorIndexWriteArg::queryCompare() { return NULL; }
+const IBloomBuilderInfo * const *CThorIndexWriteArg::queryBloomInfo() const { return nullptr; }
+__uint64 CThorIndexWriteArg::getPartitionFieldMask() const { return 0; }
 
-unsigned CThorIndexWriteArg::getBloomKeyLength()
+//CBloomBuilderInfo
+__uint64 CBloomBuilderInfo::getBloomFields() const
 {
-    // Default to building bloom on the first field...
-    IOutputMetaData *layout = queryDiskRecordSize();
-    return layout->queryRecordAccessor(true).getFixedOffset(1);
+    return 0;
+}
+unsigned CBloomBuilderInfo::getBloomLimit() const
+{
+    return 1000000;
+}
+double CBloomBuilderInfo::getBloomProbability() const
+{
+    return 0.01;
+}
+bool CBloomBuilderInfo::getBloomEnabled() const
+{
+    return true;
 }
 
 //CThorFirstNArg

@@ -24,6 +24,7 @@
 #include "ctfile.hpp"
 
 #include "jhtree.hpp"
+#include "bloom.hpp"
 
 typedef OwningStringHTMapping<IKeyIndex> CKeyIndexMapping;
 typedef OwningStringSuperHashTableOf<CKeyIndexMapping> CKeyIndexTable;
@@ -77,7 +78,7 @@ protected:
     StringAttr name;
     CriticalSection blobCacheCrit;
     Owned<CJHTreeBlobNode> cachedBlobNode;
-    Owned<BloomFilter> bloomFilter;
+    CIArrayOf<IndexBloomFilter> bloomFilters;
     offset_t cachedBlobNodePos;
 
     CKeyHdr *keyHdr;
@@ -96,7 +97,7 @@ protected:
     ~CKeyIndex();
     void init(KeyHdr &hdr, bool isTLK, bool allowPreload);
     void cacheNodes(CNodeCache *cache, offset_t nodePos, bool isTLK);
-    void loadBloomFilter();
+    void loadBloomFilters();
     
 public:
     IMPLEMENT_IINTERFACE;
@@ -108,8 +109,10 @@ public:
     virtual size32_t keySize();
     virtual bool hasPayload();
     virtual size32_t keyedSize();
-    virtual bool isTopLevelKey();
-    virtual bool isFullySorted();
+    virtual bool isTopLevelKey() override;
+    virtual bool isFullySorted() override;
+    virtual __uint64 getPartitionFieldMask() override;
+    virtual unsigned numPartitions() override;
     virtual unsigned getFlags() { return (unsigned char)keyHdr->getKeyType(); };
 
     virtual void dumpNode(FILE *out, offset_t pos, unsigned count, bool isRaw);
@@ -124,8 +127,9 @@ public:
     virtual offset_t queryLatestGetNodeOffset() const { return latestGetNodeOffset; }
     virtual offset_t queryMetadataHead();
     virtual IPropertyTree * getMetadata();
-    virtual const BloomFilter * queryBloomFilter();
-    virtual unsigned getBloomKeyLength();
+
+    bool bloomFilterReject(const SegMonitorList &segs) const;
+
     virtual unsigned getNodeSize() { return keyHdr->getNodeSize(); }
     virtual bool hasSpecialFileposition() const;
  
@@ -166,8 +170,6 @@ class jhtree_decl CKeyCursor : public IKeyCursor, public CInterface
 private:
     IContextLogger *ctx;
     CKeyIndex &key;
-    const BloomFilter *bloomFilter = nullptr;
-    unsigned bloomLength = 0;
     Owned<CJHTreeNode> node;
     unsigned int nodeKey;
     ConstPointerArray activeBlobs;
@@ -194,8 +196,7 @@ public:
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize);
     virtual void releaseBlobs();
     virtual void reset();
-    virtual bool checkBloomFilter(hash64_t hash);
-    virtual unsigned getBloomKeyLength();
+    virtual bool bloomFilterReject(const SegMonitorList &segs) const override;  // returns true if record cannot possibly match
 };
 
 

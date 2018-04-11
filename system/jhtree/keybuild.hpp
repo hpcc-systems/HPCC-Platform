@@ -19,6 +19,7 @@
 #define KEYBUILD_HPP
 
 #include "ctfile.hpp"
+#include "eclhelper.hpp"
 
 class CNodeInfo : implements serializable, public CInterface
 {
@@ -101,7 +102,7 @@ interface IKeyBuilder : public IInterface
     virtual unsigned __int64 getDuplicateCount() = 0;
 };
 
-extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence, unsigned bloomKeyLength, bool enforceOrder);
+extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence, IHThorIndexWriteArg *helper, bool enforceOrder, bool isTLK);
 
 interface IKeyDesprayer : public IInterface
 {
