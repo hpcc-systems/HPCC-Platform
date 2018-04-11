@@ -928,7 +928,7 @@ public:
         throwUnexpected();
     }
 
-    virtual void append(FFoption option, IFieldFilter * filter)
+    virtual void append(FFoption option, const IFieldFilter * filter)
     {
         if (filter->isWild())
             filter->Release();

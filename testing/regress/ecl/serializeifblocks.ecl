@@ -146,6 +146,7 @@ TEST(REC) := MACRO
 s.dumpRecordType(_empty_(REC)[1]);
 s.dumpRecordTypeNF(_empty_(REC)[1]);
 s.dumpRecordType(_empty_(REC)[1]) = s.dumpRecordTypeNF(_empty_(REC)[1]);
+s.serializeRecordType(_empty_(REC)[1]) = s.serializeRecordTypeNF(_empty_(REC)[1]);
 ENDMACRO;
 
 TEST(r1);

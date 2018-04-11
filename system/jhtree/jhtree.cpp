@@ -302,7 +302,7 @@ void SegMonitorList::append(IKeySegmentMonitor *segment)
     segMonitors.append(*segment);
 }
 
-void SegMonitorList::append(FFoption option, IFieldFilter * filter)
+void SegMonitorList::append(FFoption option, const IFieldFilter * filter)
 {
     UNIMPLEMENTED;
 }
@@ -603,7 +603,7 @@ public:
     }
 
 
-    virtual void append(FFoption option, IFieldFilter * filter)
+    virtual void append(FFoption option, const IFieldFilter * filter)
     {
         UNIMPLEMENTED;
     }
@@ -2988,7 +2988,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
                                " { \"name\": \"f1\", \"type\": \"ty1\", \"flags\": 4 }, "
                                " { \"name\": \"f2\", \"type\": \"ty2\", \"flags\": 4 } ] "
                                "}";
-            Owned<IOutputMetaData> meta = createTypeInfoOutputMetaData(json, nullptr);
+            Owned<IOutputMetaData> meta = createTypeInfoOutputMetaData(json, false, nullptr);
             Owned <IKeyManager> tlk1 = createKeyMerger(meta->queryRecordAccessor(true), keyset, 7, NULL);
             Owned<IStringSet> sset1 = createStringSet(7);
             sset1->addRange("0000003", "0000003");
@@ -3180,7 +3180,7 @@ protected:
                 " { \"name\": \"f1\", \"type\": \"ty1\", \"flags\": 4 }, "
                 " ] "
                 "}";
-        Owned<IOutputMetaData> meta = createTypeInfoOutputMetaData(json, nullptr);
+        Owned<IOutputMetaData> meta = createTypeInfoOutputMetaData(json, false, nullptr);
         const RtlRecord &recInfo = meta->queryRecordAccessor(true);
         buildTestKeys(variable);
         {

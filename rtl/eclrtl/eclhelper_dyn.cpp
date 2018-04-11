@@ -41,8 +41,8 @@ class CDeserializedOutputMetaData : public COutputMetaData
 {
 public:
     CDeserializedOutputMetaData(MemoryBuffer &binInfo, bool isGrouped, IThorIndexCallback *callback);
-    CDeserializedOutputMetaData(IPropertyTree &jsonInfo, IThorIndexCallback *callback);
-    CDeserializedOutputMetaData(const char *json, IThorIndexCallback *callback);
+    CDeserializedOutputMetaData(IPropertyTree &jsonInfo, bool isGrouped, IThorIndexCallback *callback);
+    CDeserializedOutputMetaData(const char *json, bool isGrouped, IThorIndexCallback *callback);
 
     virtual const RtlTypeInfo * queryTypeInfo() const override { return typeInfo; }
     virtual unsigned getMetaFlags() override { return flags; }
@@ -61,16 +61,20 @@ CDeserializedOutputMetaData::CDeserializedOutputMetaData(MemoryBuffer &binInfo, 
         flags |= MDFgrouped;
 }
 
-CDeserializedOutputMetaData::CDeserializedOutputMetaData(IPropertyTree &jsonInfo, IThorIndexCallback *callback)
+CDeserializedOutputMetaData::CDeserializedOutputMetaData(IPropertyTree &jsonInfo, bool isGrouped, IThorIndexCallback *callback)
 {
     deserializer.setown(createRtlFieldTypeDeserializer(callback));
     typeInfo = deserializer->deserialize(jsonInfo);
+    if (isGrouped)
+        flags |= MDFgrouped;
 }
 
-CDeserializedOutputMetaData::CDeserializedOutputMetaData(const char *json, IThorIndexCallback *callback)
+CDeserializedOutputMetaData::CDeserializedOutputMetaData(const char *json, bool isGrouped, IThorIndexCallback *callback)
 {
     deserializer.setown(createRtlFieldTypeDeserializer(callback));
     typeInfo = deserializer->deserialize(json);
+    if (isGrouped)
+        flags |= MDFgrouped;
 }
 
 extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(MemoryBuffer &binInfo, bool isGrouped, IThorIndexCallback *callback)
@@ -78,14 +82,14 @@ extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(MemoryBuffer &bi
     return new CDeserializedOutputMetaData(binInfo, isGrouped, callback);
 }
 
-extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(IPropertyTree &jsonInfo, IThorIndexCallback *callback)
+extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(IPropertyTree &jsonInfo, bool isGrouped, IThorIndexCallback *callback)
 {
-    return new CDeserializedOutputMetaData(jsonInfo, callback);
+    return new CDeserializedOutputMetaData(jsonInfo, isGrouped, callback);
 }
 
-extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(const char *json, IThorIndexCallback *callback)
+extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(const char *json, bool isGrouped, IThorIndexCallback *callback)
 {
-    return new CDeserializedOutputMetaData(json, callback);
+    return new CDeserializedOutputMetaData(json, isGrouped, callback);
 }
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -99,10 +103,74 @@ static int compareOffsets(const unsigned *a, const unsigned *b)
         return 1;
 }
 
-class FilterSet
+class ECLRTL_API CDynamicDiskReadArg : public CThorDiskReadArg
 {
 public:
-    FilterSet(const RtlRecord &_inrec) : inrec(_inrec)
+    CDynamicDiskReadArg(const char *_fileName, IOutputMetaData *_in, IOutputMetaData *_out, unsigned __int64 _chooseN, unsigned __int64 _skipN, unsigned __int64 _rowLimit)
+        : fileName(_fileName), in(_in), out(_out), chooseN(_chooseN), skipN(_skipN), rowLimit(_rowLimit)
+    {
+        translator.setown(createRecordTranslator(out->queryRecordAccessor(true), in->queryRecordAccessor(true)));
+    }
+    virtual bool needTransform() override
+    {
+        return true;
+    }
+    virtual unsigned getFlags() override
+    {
+        return flags;
+    }
+    virtual void createSegmentMonitors(IIndexReadContext *irc) override
+    {
+        filters.createSegmentMonitors(irc);
+    }
+
+    virtual IOutputMetaData * queryOutputMeta() override
+    {
+        return out;
+    }
+    virtual const char * getFileName() override final
+    {
+        return fileName;
+    }
+    virtual IOutputMetaData * queryDiskRecordSize() override final
+    {
+        return in;
+    }
+    virtual IOutputMetaData * queryProjectedDiskRecordSize() override final
+    {
+        return in;
+    }
+    virtual unsigned getFormatCrc() override
+    {
+        return 0;  // engines should treat 0 as 'ignore'
+    }
+    virtual size32_t transform(ARowBuilder & rowBuilder, const void * src) override
+    {
+        return translator->translate(rowBuilder, (const byte *) src);
+    }
+    virtual unsigned __int64 getChooseNLimit() { return chooseN; }
+    virtual unsigned __int64 getRowLimit() { return rowLimit; }
+    void addFilter(const char *filter)
+    {
+        filters.addFilter(in->queryRecordAccessor(true), filter);
+        flags |= TDRkeyed;
+    }
+private:
+    StringAttr fileName;
+    unsigned flags = 0;
+    Owned<IOutputMetaData> in;
+    Owned<IOutputMetaData> out;
+    Owned<const IDynamicTransform> translator;
+    RowFilter filters;
+    unsigned __int64 chooseN = I64C(0x7fffffffffffffff); // constant(s) should be commoned up somewhere
+    unsigned __int64 skipN = 0;
+    unsigned __int64 rowLimit = (unsigned __int64) -1;
+};
+
+class LegacyFilterSet
+{
+public:
+    LegacyFilterSet(const RtlRecord &_inrec) : inrec(_inrec)
     {
 
     }
@@ -132,7 +200,12 @@ public:
         if (!epos)
             throw MakeStringException(0, "Invalid filter string: expected = or ~ after fieldname");
         StringBuffer fieldName(epos-filter, filter);
-        unsigned fieldNum = inrec.getFieldNum(fieldName);
+
+        unsigned fieldNum;
+        if (isdigit(fieldName[0]))
+            fieldNum = atoi(fieldName);
+        else
+            fieldNum = inrec.getFieldNum(fieldName);
         if (fieldNum == (unsigned) -1)
             throw MakeStringException(0, "Invalid filter string: field '%s' not recognized", fieldName.str());
         unsigned numOffsets = inrec.getNumVarFields() + 1;
@@ -203,70 +276,6 @@ protected:
     const RtlRecord &inrec;
 };
 
-class ECLRTL_API CDynamicDiskReadArg : public CThorDiskReadArg
-{
-public:
-    CDynamicDiskReadArg(const char *_fileName, IOutputMetaData *_in, IOutputMetaData *_out, unsigned __int64 _chooseN, unsigned __int64 _skipN, unsigned __int64 _rowLimit)
-        : fileName(_fileName), in(_in), out(_out), chooseN(_chooseN), skipN(_skipN), rowLimit(_rowLimit), filters(in->queryRecordAccessor(true))
-    {
-        translator.setown(createRecordTranslator(out->queryRecordAccessor(true), in->queryRecordAccessor(true)));
-    }
-    virtual bool needTransform() override
-    {
-        return true;
-    }
-    virtual unsigned getFlags() override
-    {
-        return flags;
-    }
-    virtual void createSegmentMonitors(IIndexReadContext *irc) override
-    {
-        filters.createSegmentMonitors(irc);
-    }
-
-    virtual IOutputMetaData * queryOutputMeta() override
-    {
-        return out;
-    }
-    virtual const char * getFileName() override final
-    {
-        return fileName;
-    }
-    virtual IOutputMetaData * queryDiskRecordSize() override final
-    {
-        return in;
-    }
-    virtual IOutputMetaData * queryProjectedDiskRecordSize() override final
-    {
-        return in;
-    }
-    virtual unsigned getFormatCrc() override
-    {
-        return 0;  // engines should treat 0 as 'ignore'
-    }
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * src) override
-    {
-        return translator->translate(rowBuilder, (const byte *) src);
-    }
-    virtual unsigned __int64 getChooseNLimit() { return chooseN; }
-    virtual unsigned __int64 getRowLimit() { return rowLimit; }
-    void addFilter(const char *filter)
-    {
-        filters.addFilter(filter);
-        flags |= TDRkeyed;
-    }
-private:
-    StringAttr fileName;
-    unsigned flags = 0;
-    Owned<IOutputMetaData> in;
-    Owned<IOutputMetaData> out;
-    Owned<const IDynamicTransform> translator;
-    FilterSet filters;
-    unsigned __int64 chooseN = I64C(0x7fffffffffffffff); // constant(s) should be commoned up somewhere
-    unsigned __int64 skipN = 0;
-    unsigned __int64 rowLimit = (unsigned __int64) -1;
-};
-
 class ECLRTL_API CDynamicIndexReadArg : public CThorIndexReadArg, implements IDynamicIndexReadArg
 {
 public:
@@ -330,7 +339,7 @@ private:
     Owned<IOutputMetaData> in;
     Owned<IOutputMetaData> out;
     Owned<const IDynamicTransform> translator;
-    FilterSet filters;
+    LegacyFilterSet filters;
     unsigned __int64 chooseN = I64C(0x7fffffffffffffff); // constant(s) should be commoned up somewhere
     unsigned __int64 skipN = 0;
     unsigned __int64 rowLimit = (unsigned __int64) -1;

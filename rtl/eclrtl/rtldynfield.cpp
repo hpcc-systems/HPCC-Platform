@@ -242,7 +242,6 @@ private:
         {
             StringBuffer filterText;
             filter->serialize(filterText);
-            addProp("filterField", filter->queryFieldIndex());
             addPropType("filterType", &filter->queryType());
             addProp("filter", filterText);
         }
@@ -440,7 +439,6 @@ private:
         const IFieldFilter * filter = type->queryFilter();
         if (filter)
         {
-            out.appendPacked(filter->queryFieldIndex());
             out.appendPacked(queryTypeIdx(&filter->queryType()));
             filter->serialize(out);
         }
@@ -764,9 +762,14 @@ private:
         }
         if (baseType == type_ifblock)
         {
-            unsigned fieldId = type->getPropInt("filterField");
+            //Filter field needs to be deserialized and the type resolved separately outside the deserialize call
+            //because there isn't a RtlTypeInfo available to resolve the field (since we are currently deserializing it!)
+            const char * filterText = type->queryProp("filter");
+            StringBuffer fieldIdText;
+            readFieldFromFieldFilter(fieldIdText, filterText);
+            unsigned fieldId = atoi(fieldIdText);
             const RtlTypeInfo * fieldType = lookupType(type->queryProp("filterType"), all);
-            info.filter = deserializeFieldFilter(fieldId, *fieldType, type->queryProp("filter"));
+            info.filter = deserializeFieldFilter(fieldId, *fieldType, filterText);
         }
 
         const RtlTypeInfo * result = info.createRtlTypeInfo(callback);
@@ -796,11 +799,11 @@ private:
         unsigned baseType = (info.fieldType & RFTMkind);
         if (baseType == type_ifblock)
         {
-            unsigned fieldId;
-            type.readPacked(fieldId);
             unsigned childIdx;
             type.readPacked(childIdx);
             const RtlTypeInfo * fieldType = lookupType(childIdx);
+            unsigned fieldId;
+            type.readPacked(fieldId);
             info.filter = deserializeFieldFilter(fieldId, *fieldType, type);
         }
 

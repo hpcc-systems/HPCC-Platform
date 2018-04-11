@@ -23,8 +23,8 @@
 #include "eclhelper.hpp"
 
 extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(MemoryBuffer &mb, bool isGroupedPersist, IThorIndexCallback *callback);
-extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(IPropertyTree &jsonTree, IThorIndexCallback *callback);
-extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(const char *json, IThorIndexCallback *callback);
+extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(IPropertyTree &jsonTree, bool isGroupedPersist, IThorIndexCallback *callback);
+extern ECLRTL_API IOutputMetaData *createTypeInfoOutputMetaData(const char *json, bool isGroupedPersist, IThorIndexCallback *callback);
 
 interface IDynamicIndexReadArg
 {

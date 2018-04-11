@@ -720,7 +720,7 @@ void RtlRow::lazyCalcOffsets(unsigned _numFieldsUsed) const
     assert(row);
     if (_numFieldsUsed > numFieldsUsed)
     {
-        info.calcRowOffsets(variableOffsets, row, _numFieldsUsed); // MORE - could be optimized t oonly calc ones not previously calculated
+        info.calcRowOffsets(variableOffsets, row, _numFieldsUsed); // MORE - could be optimized to only calc ones not previously calculated
         numFieldsUsed = _numFieldsUsed;
     }
 }

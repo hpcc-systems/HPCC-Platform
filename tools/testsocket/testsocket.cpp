@@ -358,7 +358,7 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
                 throw MakeStringException(0, "Unknown output format: %s", outputFmtStr);
             unsigned cursorHandle;
             if (responseTree)
-                cursorHandle = responseTree->getPropInt("cursor");
+                cursorHandle = responseTree->getPropInt("handle");
             else
                 mb.read(cursorHandle);
             bool retrySend = false;
@@ -398,7 +398,7 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
                     cursorHandle = NotFound; // fake that it's a handle dafilesrv doesn't know about
 
                 Owned<IPropertyTree> requestTree = createPTree();
-                requestTree->setPropInt("cursor", cursorHandle);
+                requestTree->setPropInt("handle", cursorHandle);
 
                 // Only the handle is needed for continuation, but this tests the behaviour of some clients which may send cursor per request (e.g. to refresh)
                 if (remoteStreamSendCursor)

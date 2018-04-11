@@ -200,7 +200,7 @@ public:
     virtual void append(IKeySegmentMonitor *segment) override;
     virtual unsigned ordinality() const override;
     virtual IKeySegmentMonitor *item(unsigned i) const override;
-    virtual void append(FFoption option, IFieldFilter * filter) override;
+    virtual void append(FFoption option, const IFieldFilter * filter) override;
 };
 
 interface IKeyManager : public IInterface, extends IIndexReadContext
