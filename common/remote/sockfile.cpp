@@ -5359,7 +5359,7 @@ public:
                 CDateTime dt;
                 iFile->getTime(nullptr, &dt, nullptr);
                 dt.serialize(reply);
-                reply.append(iFile->queryFilename());
+                reply.append(mask);
                 b = 0;
                 reply.append(b);
             }
