@@ -3487,7 +3487,7 @@ int main(int argc, char* argv[])
                     }
                     else if (strieq(cmd,"dfsscopes")) {
                         CHECKPARAMS(0,1);
-                        dfsscopes((np>1)?params.item(1):"*",userDesc);
+                        dfsscopes((np>0)?params.item(1):"*",userDesc);
                     }
                     else if (strieq(cmd,"cleanscopes")) {
                         CHECKPARAMS(0,0);
