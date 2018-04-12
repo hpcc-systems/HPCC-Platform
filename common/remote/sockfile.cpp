@@ -5359,7 +5359,7 @@ public:
                 CDateTime dt;
                 iFile->getTime(nullptr, &dt, nullptr);
                 dt.serialize(reply);
-                reply.append(iFile->queryFilename());
+                reply.append(mask);
                 b = 0;
                 reply.append(b);
             }
@@ -6635,6 +6635,27 @@ protected:
         iFile2->remove();
         iFile->move(subDirFilePath);
 
+        // open sub-directory file2 explicitly
+        RemoteFilename rfn;
+        rfn.setRemotePath(subDirPath.str());
+        Owned<IFile> dir = createIFile(rfn);
+        Owned<IDirectoryIterator> diriter = dir->directoryFiles("file2");
+        if (!diriter->first())
+        {
+            CPPUNIT_ASSERT_MESSAGE("Error, file2 diriter->first() is null", 0);
+        }
+
+        Linked<IFile> iFile3 = &diriter->query();
+        diriter.clear();
+        dir.clear();
+
+        OwnedIFileIO iFile3IO = iFile3->openShared(IFOread, IFSHfull);
+        if (!iFile3IO)
+        {
+            CPPUNIT_ASSERT_MESSAGE("Error, file2 openShared() failed", 0);
+        }
+        iFile3IO->close();
+
         // count sub-directory files with a wildcard
         unsigned count=0;
         Owned<IDirectoryIterator> iter = subDirIFile->directoryFiles("*2");
@@ -6659,9 +6680,15 @@ protected:
         CPPUNIT_ASSERT(subDirIFile->getTime(&createTime, &modifiedTime, &accessedTime));
         CPPUNIT_ASSERT(modifiedTime == newModifiedTime);
 
-
         // test set file permissions
-        iFile2->setFilePermissions(0777);
+        try
+        {
+            iFile2->setFilePermissions(0777);
+        }
+        catch (...)
+        {
+            CPPUNIT_ASSERT_MESSAGE("iFile2->setFilePermissions() exception", 0);
+        }
     }
     void testConfiguration()
     {
