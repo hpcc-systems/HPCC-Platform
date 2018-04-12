@@ -140,7 +140,7 @@ define([
                     results = response.ListDESDLEspBindingsResp.ESPServers.ESPServer;
                     serviceInformation = domConstruct.create("p", {innerHTML: context.i18n.PleaseSelectADynamicESDLService});
                 } else {
-                    serviceInformation = domConstruct.create("p", {innerHTML: context.i18n.DynamicNoServicesFound});
+                    serviceInformation = domConstruct.create("p", {innerHTML: context.i18n.ConfigureService});
                 }
 
                 context.detailsWidget.widget._Details.setContent(serviceInformation);
@@ -171,6 +171,10 @@ define([
 
                 context.store.setData(results);
                 context.grid.set("query", {__hpcc_parentName: null });
+
+                if (!results.length) {
+                    context.grid.noDataNode.innerHTML = "<span class='dojoxGridNoData' style=\"padding:10px 0 0 5px;\">" + context.i18n.DynamicNoServicesFound + "</span>";
+                }
             });
         }
     });
