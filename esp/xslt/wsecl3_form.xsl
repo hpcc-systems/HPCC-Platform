@@ -143,6 +143,15 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
     if (!form)  return false;
 
     var actval = document.getElementById('submit_type');
+    var subval = 'submit';
+    var subxslt = 'xslt';
+    var jobType = document.getElementById('job_type');
+    if (jobType && jobType.value=="WORKUNIT")
+    {
+       subval = 'run';
+       subxslt = 'runxslt';
+    }
+
     var actionpath = "/jserror";
     if (actval && actval.value)
     {
@@ -150,18 +159,17 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
             actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes" select="concat('/WsEcl/forms/soap/query/', $queryPath, '/', $methodName)"/><xsl:text disable-output-escaping="yes"><![CDATA[";
         else if (actval.value=="esp_json")
             actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/forms/json/query/', $queryPath, '/', $methodName)"/><xsl:text disable-output-escaping="yes"><![CDATA[";
-        else if (actval.value=="run_xslt")
-            actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/xslt/query/', $queryPath, '/', $methodName)"/><xsl:text disable-output-escaping="yes"><![CDATA[";
         else if (actval.value=="proxy_xml")
             actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/proxy/query/', $queryPath, '/', $methodName, '/xml?view=xml&amp;display')"/><xsl:text disable-output-escaping="yes"><![CDATA[";
         else if (actval.value=="xml")
-            actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/submit/query/', $queryPath, '/', $methodName, '/xml?view=xml&amp;display')"/><xsl:text disable-output-escaping="yes"><![CDATA[";
+            actionpath = "/WsEcl/" + subval + "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/query/', $queryPath, '/', $methodName, '/xml?view=xml&amp;display')"/><xsl:text disable-output-escaping="yes"><![CDATA[";
         else if (actval.value=="json")
-            actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/submit/query/', $queryPath, '/', $methodName, '/json')"/><xsl:text disable-output-escaping="yes"><![CDATA[";
+            actionpath = "/WsEcl/" + subval + "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/query/', $queryPath, '/', $methodName, '/json')"/><xsl:text disable-output-escaping="yes"><![CDATA[";
+        else if (actval.value=="run_xslt")
+            actionpath = "/WsEcl/" + subxslt + "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/query/', $queryPath, '/', $methodName)"/><xsl:text disable-output-escaping="yes"><![CDATA[";
         else
-            actionpath= "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/xslt/query/', $queryPath, '/', $methodName, '?view=')"/><xsl:text disable-output-escaping="yes"><![CDATA["+actval.value;
+            actionpath= "/WsEcl/" + subval + "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/query/', $queryPath, '/', $methodName, '?view=')"/><xsl:text disable-output-escaping="yes"><![CDATA["+actval.value;
     }
-    //alert("actionpath = " + actionpath);
     var dest = document.getElementById('esp_dest');
     if (actionpath=="bookmark")
          doBookmark(form);
@@ -318,6 +326,12 @@ function switchInputForm()
 
                 <tr class='commands'>
                   <td align='left'>
+                  <xsl:if test="$includeRoxieOptions=1">
+                    <select id="job_type">
+                      <option value="QUERY">Call Query</option>
+                      <option value="WORKUNIT">Create Workunit</option>
+                    </select>&nbsp;
+                  </xsl:if>
                     <select id="submit_type" name="submit_type">
                         <xsl:for-each select="/FormInfo/CustomViews/Result">
                             <option><xsl:attribute name="value"><xsl:value-of select="."/></xsl:attribute><xsl:value-of select="."/></option>

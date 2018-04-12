@@ -24,6 +24,8 @@
 
     <xsl:param name="inhouseUser" select="false()"/>
     <xsl:param name="showhttp" select="false()"/>
+    <xsl:param name="showJobType" select="false()"/>
+    <xsl:param name="createWorkunitDestination" select="'empty'"/>
     <!-- ===============================================================================-->
     <xsl:template match="/">
     <html>
@@ -356,12 +358,15 @@ function onSendRequest()
        var doc = parseXmlString(document.getElementById("req_body").value);
        if (!doc) return;
    }
-   
+
     // clear
     document.getElementById("resp_body").value = "";
     document.getElementById("resp_header").value = "";
-    
+
     var url = "]]></xsl:text><xsl:value-of select="$destination"/><xsl:text disable-output-escaping="yes"><![CDATA[";
+    if (document.getElementById("job_type").value == "WORKUNIT")
+        url = "]]></xsl:text><xsl:value-of select="$createWorkunitDestination"/><xsl:text disable-output-escaping="yes"><![CDATA[";
+
     var user = document.getElementById("username").value;
     var passwd = document.getElementById("password").value;
     loadXMLDoc(url,user,passwd);
@@ -809,6 +814,12 @@ var gMethodName = "<xsl:value-of select="$methodName"/>";;
                 </tr>
                     <tr>
                         <td align="center" colspan="2"> 
+                           <xsl:if test="$showJobType">
+                              <select id="job_type">
+                                 <option value="QUERY">Call Query</option>
+                                 <option value="WORKUNIT">Create Workunit</option>
+                              </select>&nbsp;
+                            </xsl:if>
                             <input type="button" id="sendButton" value="Send Request" onclick="onSendRequest()"/>  <input type="checkbox" checked="true" id="check_req"> Check well-formness before send</input>
                         </td>
                     </tr>
