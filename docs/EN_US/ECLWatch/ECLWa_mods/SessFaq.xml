@@ -35,9 +35,9 @@
         <para><emphasis role="strong">Q</emphasis>: How long will an inactive
         session last?</para>
 
-        <para><emphasis role="strong">A</emphasis>: You can configure this
-        using Configuration Manager. The default setting is two hours of
-        inactivity.</para>
+        <para><emphasis role="strong">A</emphasis>: Your administrator can
+        configure this using Configuration Manager. The default setting is two
+        hours of inactivity.</para>
       </listitem>
 
       <listitem>
@@ -175,7 +175,7 @@
       <listitem>
         <para><emphasis role="strong">Q</emphasis>: If I am logged in to the
         same account using multiple tabs in a browser, or multiple instances
-        of the same browser, can I get logged out of one but not the
+        of the same browser, can I get locked out of one but not the
         others?</para>
 
         <para><emphasis role="strong">A</emphasis>: No, activity is tracked by
@@ -199,8 +199,8 @@
         out?</para>
 
         <para><emphasis role="strong">A</emphasis>: Yes. The intent is to lock
-        your session and not completely log you out. Therefore logging back in
-        should return to the same point when your session locked.</para>
+        your session and not completely log you out. Unlocking your session
+        should return you to the same point when your session locked.</para>
       </listitem>
 
       <listitem>
