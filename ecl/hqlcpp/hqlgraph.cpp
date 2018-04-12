@@ -93,15 +93,15 @@ IPropertyTree * addInterGraphEdge(IPropertyTree * graph, unsigned __int64 source
 void setEdgeAttributes(IPropertyTree * edge, unsigned outputIndex, unsigned inputIndex, IAtom * kind, const char * label, bool nWay)
 {
     if (outputIndex != 0)
-        addGraphAttributeInt(edge, "_sourceIndex", outputIndex);
+        setAttributeValueInt(*edge, WaSourceIndex, outputIndex);
     if (inputIndex != 0)
-        addGraphAttributeInt(edge, "_targetIndex", inputIndex);
+        setAttributeValueInt(*edge, WaTargetIndex, inputIndex);
     if (label)
-        edge->setProp("@label", label);
+        setAttributeValue(*edge, WaLabel, label);
     if (kind == dependencyAtom)
-        addGraphAttributeBool(edge, "_dependsOn", true);
+        setAttributeValueBool(*edge, WaIsDependency, true);
     if (nWay)
-        edge->setPropBool("@nWay", true);
+        setAttributeValueBool(*edge, WaIsNWay, true);
 }
 
 

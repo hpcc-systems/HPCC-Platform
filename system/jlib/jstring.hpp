@@ -564,10 +564,10 @@ extern jlib_decl StringBuffer & ncnameEscape(char const * in, StringBuffer & out
 extern jlib_decl StringBuffer & ncnameUnescape(char const * in, StringBuffer & out);
 extern jlib_decl StringBuffer & elideString(StringBuffer & s, unsigned maxLength);
 
-extern jlib_decl bool startsWith(const char* src, const char* dst);
+extern jlib_decl bool startsWith(const char* src, const char* prefix);
 extern jlib_decl bool endsWith(const char* src, const char* dst);
 
-extern jlib_decl bool startsWithIgnoreCase(const char* src, const char* dst);
+extern jlib_decl bool startsWithIgnoreCase(const char* src, const char* prefix);
 extern jlib_decl bool endsWithIgnoreCase(const char* src, const char* dst);
 
 inline bool strieq(const char* s, const char* t) { return stricmp(s,t)==0; }

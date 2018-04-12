@@ -39,7 +39,7 @@ public:
 
 private:
     static const unsigned StatisticFilterMaskSize = StatisticKind::StMax;
-    static const unsigned AttributeFilterMaskSize = WuAttr::WAMax-WANone;
+    static const unsigned AttributeFilterMaskSize = WuAttr::WaMax-WaNone;
 
     bool includeName = false;
     bool includeRawValue = false;
@@ -126,7 +126,7 @@ void WUDetailsVisitor::noteAttribute(WuAttr attr, const char * value)
     {
         // If the Attribute is not in the standard return statistic list,
         // then check if it's in the additional attribute list
-        if ((returnAttributeSpecified && !returnAttributeList->test(attr-WANone)))
+        if ((returnAttributeSpecified && !returnAttributeList->test(attr-WaNone)))
         {
             if (additionalAttribsForCurScope==nullptr ||
                 additionalAttribsForCurScope->find(attr)==additionalAttribsForCurScope->end())
@@ -196,8 +196,8 @@ void WUDetailsVisitor::buildAttribListToReturn(IConstWUPropertiesToReturn & prop
             }
             else
             {
-                const WuAttr wa = queryWuAttribute(props[idx2], WAMax);
-                if (wa==WAMax)
+                const WuAttr wa = queryWuAttribute(props[idx2], WaMax);
+                if (wa==WaMax)
                     throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid property name (%s) in ExtraProperties",props[idx2]);
                 if (!allProperties)
                 {
@@ -232,15 +232,15 @@ void WUDetailsVisitor::buildAttribListToReturn(IConstWUPropertiesToReturn & prop
             }
             else
             {
-              const WuAttr wa = queryWuAttribute(attributeName, WAMax);
-              if (wa!=WAMax)
+              const WuAttr wa = queryWuAttribute(attributeName, WaMax);
+              if (wa!=WaMax)
               {
                   if (!returnAttributeSpecified)
                   {
                       returnAttributeList.set(createBitSet(AttributeFilterMaskSize));
                       returnAttributeSpecified=true;
                   }
-                  returnAttributeList->set(wa-WANone,true);
+                  returnAttributeList->set(wa-WaNone,true);
               }
               else
                   throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Attribute name in AttributeToReturn(%s)", attributeName);

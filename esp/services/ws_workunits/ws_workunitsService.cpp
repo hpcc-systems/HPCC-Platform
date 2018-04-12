@@ -4254,7 +4254,7 @@ bool CWsWorkunitsEx::onWUDetailsMeta(IEspContext &context, IEspWUDetailsMetaRequ
         resp.setStatistics(statistics);
 
         StringArray attributes;
-        for (unsigned i=WuAttr::WAAll+1; i<WuAttr::WAMax; ++i)
+        for (unsigned i=WuAttr::WaAll+1; i<WuAttr::WaMax; ++i)
         {
             const char * s = queryWuAttributeName((WuAttr)i);
             if (s && *s)

@@ -1123,7 +1123,7 @@ void SourceBuilder::rebindFilepositons(BuildCtx & ctx, IHqlExpression * dataset,
 void SourceBuilder::buildFilenameMember()
 {
     //---- virtual const char * getFileName() { return "x.d00"; } ----
-    translator.buildFilenameFunction(*instance, instance->startctx, "getFileName", nameExpr, translator.hasDynamicFilename(tableExpr));
+    translator.buildFilenameFunction(*instance, instance->startctx, WaFilename, "getFileName", nameExpr, translator.hasDynamicFilename(tableExpr));
 }
 
 void SourceBuilder::buildReadMembers(IHqlExpression * expr)
@@ -2036,18 +2036,18 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
             else
                 throwError1(HQLERR_ReadSpillBeforeWrite, spillName.str());
         }
-        translator.addFilenameConstructorParameter(*instance, "getFileName", nameExpr);
+        translator.addFilenameConstructorParameter(*instance, WaFilename, nameExpr);
     }
 
     if (steppedExpr)
         buildSteppedHelpers();
 
     if (translator.targetRoxie())
-        instance->addAttributeBool("_isSpill", isSpill);
+        instance->addAttributeBool(WaIsSpill, isSpill);
     else if (needToCallTransform || transformCanFilter)
-        instance->addAttributeBool("_isTransformSpill", isSpill);
+        instance->addAttributeBool(WaIsTransformSpill, isSpill);
     else
-        instance->addAttributeBool("_isSpill", isSpill);
+        instance->addAttributeBool(WaIsSpill, isSpill);
     if (isFiltered)
     {
         if (isKnownLikelihood(filterLikelihood))
@@ -2055,7 +2055,7 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
             StringBuffer text;
             filterLikelihood *= 100;
             text.setf("%3.2f%%", filterLikelihood);
-            instance->addAttribute("matchLikelihood", text);
+            instance->addAttribute(WaMatchLikelihood, text);
         }
     }
     IHqlExpression * spillReason = tableExpr ? queryAttributeChild(tableExpr, _spillReason_Atom, 0) : NULL;
@@ -2064,7 +2064,7 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
     {
         StringBuffer text;
         getStringValue(text, spillReason);
-        instance->addAttribute("spillReason", text.str());
+        instance->addAttribute(WaSpillReason, text.str());
     }
 
     if (tableExpr)
@@ -2714,16 +2714,16 @@ void DiskReadBuilderBase::buildMembers(IHqlExpression * expr)
         MemberFunction func(translator, instance->startctx, "virtual void createSegmentMonitors(IIndexReadContext *irc) override");
         monitors.buildSegments(func.ctx, "irc", true);
     }
-    instance->addAttributeBool("_isKeyed", monitors.isKeyed());
+    instance->addAttributeBool(WaIsKeyed, monitors.isKeyed());
 
     //---- virtual unsigned getFlags()
-    instance->addAttributeBool("preload", isPreloaded);
+    instance->addAttributeBool(WaIsPreload, isPreloaded);
 
     bool matched = translator.registerGlobalUsage(tableExpr->queryChild(0));
     if (translator.getTargetClusterType() == RoxieCluster)
     {
-        instance->addAttributeBool("_isOpt", tableExpr->hasAttribute(optAtom));
-        instance->addAttributeBool("_isSpillGlobal", tableExpr->hasAttribute(jobTempAtom));
+        instance->addAttributeBool(WaIsFileOpt, tableExpr->hasAttribute(optAtom));
+        instance->addAttributeBool(WaIsGlobalSpill, tableExpr->hasAttribute(jobTempAtom));
         if (tableExpr->hasAttribute(jobTempAtom) && !matched)
             throwUnexpected();
     }
@@ -2749,7 +2749,7 @@ void DiskReadBuilderBase::buildMembers(IHqlExpression * expr)
     //---- preloadSize is passed via the xgmml, not via a member
     if (preloadSize)
     {
-        instance->addAttributeInt("_preloadSize", preloadSize->queryValue()->getIntValue());
+        instance->addAttributeInt(WaSizePreload, preloadSize->queryValue()->getIntValue());
     }
 
     if (includeFormatCrc)
@@ -3672,9 +3672,9 @@ void IndexReadBuilderBase::buildMembers(IHqlExpression * expr)
         }
     }
 
-    instance->addAttributeBool("preload", isPreloaded);
+    instance->addAttributeBool(WaIsPreload, isPreloaded);
     if (translator.getTargetClusterType() == RoxieCluster)
-        instance->addAttributeBool("_isIndexOpt", tableExpr->hasAttribute(optAtom));
+        instance->addAttributeBool(WaIsIndexOpt, tableExpr->hasAttribute(optAtom));
 
     if (monitors.queryGlobalGuard())
         translator.doBuildBoolFunction(instance->startctx, "canMatchAny", monitors.queryGlobalGuard());
@@ -4464,7 +4464,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityXmlRead(BuildCtx & ctx, IHqlEx
         fieldUsage->noteAll();
 
     //---- virtual const char * getFileName() { return "x.d00"; } ----
-    buildFilenameFunction(*instance, instance->startctx, "getFileName", filename, hasDynamicFilename(tableExpr));
+    buildFilenameFunction(*instance, instance->startctx, WaFilename, "getFileName", filename, hasDynamicFilename(tableExpr));
     buildEncryptHelper(instance->startctx, tableExpr->queryAttribute(encryptAtom));
 
     bool usesContents = false;
@@ -4577,7 +4577,7 @@ void FetchBuilder::buildMembers(IHqlExpression * expr)
         translator.doBuildUnsignedFunction(instance->classctx, "getFetchFlags", flags.str()+1);
 
     if (tableExpr->hasAttribute(optAtom) && translator.targetRoxie())
-        instance->addAttributeBool("_isOpt", true);
+        instance->addAttributeBool(WaIsFileOpt, true);
 
     buildLimits(instance->startctx, expr, instance->activityId);
 

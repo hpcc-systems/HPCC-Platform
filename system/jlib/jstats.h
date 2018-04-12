@@ -685,6 +685,7 @@ extern jlib_decl const char * queryTreeTag(StatisticKind kind);
 extern jlib_decl const char * queryCreatorTypeName(StatisticCreatorType sct);
 extern jlib_decl const char * queryScopeTypeName(StatisticScopeType sst);
 extern jlib_decl const char * queryMeasureName(StatisticMeasure measure);
+extern jlib_decl const char * queryMeasurePrefix(StatisticMeasure measure);
 extern jlib_decl StatsMergeAction queryMergeMode(StatisticMeasure measure);
 extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind);
 
