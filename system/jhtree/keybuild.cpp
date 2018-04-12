@@ -414,10 +414,12 @@ public:
     void processKeyData(const char *keyData, offset_t pos, size32_t recsize)
     {
         records++;
+        bool firstRow = false;
         if (NULL == activeNode)
         {
             activeNode = new CWriteNode(nextPos, keyHdr, true);
             nextPos += keyHdr->getNodeSize();
+            firstRow = true;
         }
         else if (enforceOrder) // NB: order is indeterminate when build a TLK for a LOCAL index. duplicateCount is not calculated in this case.
         {
@@ -430,7 +432,7 @@ public:
         if (bloomKeyLength)
         {
             int cmp = memcmp(keyData, lastBloomKeyData, bloomKeyLength);
-            if (cmp)
+            if (firstRow || cmp)
             {
                 memcpy(lastBloomKeyData, keyData, bloomKeyLength);
                 hash64_t hash = rtlHash64Data(bloomKeyLength, keyData, HASH64_INIT);
