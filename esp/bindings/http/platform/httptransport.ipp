@@ -71,6 +71,8 @@ protected:
     StringAttr   m_paramstr;
     int m_supportClientXslt;
     bool         m_isForm;
+    bool         m_persistentEligible;
+    bool         m_persistentEnabled;
 
     int m_paramCount;
     int m_attachCount;
@@ -254,6 +256,10 @@ public:
         return false;
     }
     const char* queryAllParameterString() { return allParameterString.str(); }
+
+    virtual void setPersistentEligible(bool eligible) { m_persistentEligible = eligible; }
+    virtual bool getPersistentEligible() { return m_persistentEligible; }
+    virtual void setPersistentEnabled(bool enabled) { m_persistentEnabled = enabled; }
 };
 
 
@@ -305,7 +311,6 @@ private:
     bool            m_authrequired;
     int             m_MaxRequestEntityLength;
     ESPSerializationFormat respSerializationFormat;
-
     virtual int parseFirstLine(char* oneline);
     virtual StringBuffer& constructHeaderBuffer(StringBuffer& headerbuf, bool inclLen);
     virtual int processHeaders(IMultiException *me);

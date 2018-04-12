@@ -46,6 +46,7 @@ set(SRCS
     ../../platform/espcache.cpp
     ../../platform/sechandler.cpp
     ../../platform/txsummary.cpp
+    ../../platform/persistent.cpp
     mapinfo.cpp
     plugin.cpp
     )

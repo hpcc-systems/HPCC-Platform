@@ -32,6 +32,7 @@
 #include "http/platform/httpsecurecontext.hpp"
 #include "http/platform/httpservice.hpp"
 #include "http/platform/httptransport.hpp"
+#include "http/platform/httpprot.hpp"
 
 #include "htmlpage.hpp"
 #include "dasds.hpp"
@@ -212,6 +213,8 @@ void checkSetCORSAllowOrigin(CHttpRequest *req, CHttpResponse *resp)
 
 int CEspHttpServer::processRequest()
 {
+    m_request->setPersistentEnabled(m_apport->queryProtocol()->persistentEnabled());
+    m_response->setPersistentEnabled(m_apport->queryProtocol()->persistentEnabled());
     try
     {
         if (m_request->receive(NULL)==-1) // MORE - pass in IMultiException if we want to see exceptions (which are not fatal)
@@ -234,6 +237,8 @@ int CEspHttpServer::processRequest()
         DBGLOG("Unknown Exception - reading request [CEspHttpServer::processRequest()]");
         return 0;
     }
+
+    m_response->setPersistentEligible(m_request->getPersistentEligible());
 
     try
     {
@@ -1748,4 +1753,12 @@ const char* CEspHttpServer::readCookie(const char* cookieName, StringBuffer& coo
     if (sessionIDCookie)
         cookieValue.append(sessionIDCookie->getValue());
     return cookieValue.str();
+}
+
+bool CEspHttpServer::persistentEligible()
+{
+    if(m_request.get() != nullptr)
+        return m_request->getPersistentEligible();
+    else
+        return false;
 }

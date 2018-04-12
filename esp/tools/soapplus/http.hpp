@@ -198,7 +198,6 @@ public:
     void addEspRequest(const char* requestId, const char* service, const char* method, StringBuffer& request, HttpStat& httpStat);
 };
 
-
 class SimpleServer
 {
     int m_port;
@@ -212,6 +211,8 @@ class SimpleServer
     IProperties* m_globals;
 
     bool         m_writeToFiles;
+    bool         m_isPersist;
+    Owned<ISocket> m_persistentSocket;
 
 public:
     SimpleServer(IProperties* globals, int port, const char* inputpath = NULL, const char* outputdir = NULL, bool writeToFiles = false, int iterations = -1);

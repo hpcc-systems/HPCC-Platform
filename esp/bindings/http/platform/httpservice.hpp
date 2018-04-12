@@ -134,8 +134,8 @@ public:
     virtual int onUpdatePassword(CHttpRequest* request, CHttpResponse* response);
 #endif
 
-
     virtual const char * getServiceType() {return "HttpServer";};
+    bool persistentEligible();
 };
 
 

@@ -39,6 +39,7 @@ void usage()
     puts("   -t : test schema parser");
     puts("   -diff <left> <right> : compare 2 files or directories. You can ignore certain xpaths, as specified in the config file (with -cfg option). An example of config file is: <whatever><Ignore><XPath>/soap:Body/AAC_AuthorizeRequest/ClientIP</XPath><XPath>/soap:Header/Security/UsernameToken/Username</XPath></Ignore></whatever>");
     puts("   -stress <threads> <seconds> : run stress test, with the specified number of threads, for the specified number of seconds.");
+    puts("   -persist [<number-of-requests>] [<pause-seconds>] : use persistent connection. For client mode you can optionally specify the number of requests to send or receive, and the number of seconds to pause between sending requests.");
     puts("");
     puts("Options: ");
     puts("   -url <[http|https]://[user:passwd@]host:port/path>: the url to send requests to. For esp, the path is normally the service name, not the method name. For examle, it could be WsADL, WsAccurint, WsIdentity etc.");
@@ -629,6 +630,29 @@ int main(int argc, char** argv)
             {
                 printf("For stress test, number-of-threads and test duration should be positive numbers.\n");
                 return 0;
+            }
+        }
+        else if(stricmp(argv[i], "-persist") == 0)
+        {
+            i++;
+            globals->setProp("isPersist", 1);
+            if(argc > i)
+            {
+                const char* numstr = argv[i];
+                if(numstr[0] >= '0' && numstr[0] <= '9')
+                {
+                    i++;
+                    globals->setProp("persistrequests", numstr);
+                    if(argc > i)
+                    {
+                        const char* secstr = argv[i];
+                        if((secstr[0] >= '0' && secstr[0] <= '9') || secstr[0] == '.')
+                        {
+                            i++;
+                            globals->setProp("persistpause", secstr);
+                        }
+                    }
+                }
             }
         }
         else if(stricmp(argv[i], "-delay") == 0)
