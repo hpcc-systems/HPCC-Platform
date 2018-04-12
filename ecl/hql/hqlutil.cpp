@@ -9858,9 +9858,19 @@ static IFieldFilter * createIfBlockFilter(IRtlFieldTypeDeserializer &deserialize
 unsigned buildRtlRecordFields(IRtlFieldTypeDeserializer &deserializer, unsigned &idx, const RtlFieldInfo * * fieldsArray, IHqlExpression *record, IHqlExpression *rowRecord)
 {
     unsigned typeFlags = 0;
+    unsigned numPayload = 0;
+    unsigned firstPayload = 0;
+    IHqlExpression * payloadAttr = record->queryAttribute(_payload_Atom);
+    if (payloadAttr)
+    {
+        numPayload = (unsigned)getIntValue(payloadAttr->queryChild(0));
+        firstPayload = firstPayloadField(record, numPayload);
+    }
     ForEachChild(i, record)
     {
         unsigned fieldFlags = 0;
+        if (numPayload && i >= firstPayload)
+            fieldFlags |= RFTMispayloadfield;
         IHqlExpression * field = record->queryChild(i);
         switch (field->getOperator())
         {
