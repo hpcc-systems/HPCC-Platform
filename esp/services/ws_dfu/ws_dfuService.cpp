@@ -54,6 +54,7 @@
 #include "hqlerror.hpp"
 #include "hqlexpr.hpp"
 #include "eclrtl.hpp"
+#include "package.h"
 
 #define     Action_Delete           "Delete"
 #define     Action_AddtoSuperfile   "Add To Superfile"
@@ -352,15 +353,15 @@ bool CWsDfuEx::onDFUInfo(IEspContext &context, IEspDFUInfoRequest &req, IEspDFUI
         {
             double version = context.getClientVersion();
             if (version < 1.38)
-                doGetFileDetails(context, userdesc.get(), req.getFileName(), req.getCluster(), req.getFileDesc(),
+                doGetFileDetails(context, userdesc.get(), req.getFileName(), req.getCluster(), req.getQuerySet(), req.getQuery(), req.getFileDesc(),
                     req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), resp.updateFileDetail());
             else
-                doGetFileDetails(context, userdesc.get(), req.getName(), req.getCluster(), req.getFileDesc(),
+                doGetFileDetails(context, userdesc.get(), req.getName(), req.getCluster(), req.getQuerySet(), req.getQuery(), req.getFileDesc(),
                     req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), resp.updateFileDetail());
         }
         else
         {
-            doGetFileDetails(context, userdesc.get(), req.getName(), req.getCluster(), NULL,
+            doGetFileDetails(context, userdesc.get(), req.getName(), req.getCluster(), req.getQuerySet(), req.getQuery(), NULL,
                              req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), resp.updateFileDetail());
         }
     }
@@ -1924,12 +1925,19 @@ void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char* clusterR
     }
 }
 
-void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, const char *name, const char *cluster,
-    const char *description, bool includeJsonTypeInfo, bool includeBinTypeInfo, IEspDFUFileDetail& FileDetails)
+void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, const char *name, const char *cluster,
+    const char *querySet, const char *query, const char *description, bool includeJsonTypeInfo, bool includeBinTypeInfo, IEspDFUFileDetail &FileDetails)
 {
     if (!name || !*name)
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "File name required");
     PROGLOG("doGetFileDetails: %s", name);
+
+    double version = context.getClientVersion();
+    if ((version >= 1.38) && !isEmptyString(querySet) && !isEmptyString(query))
+    {
+        if (getQueryFile(name, querySet, query, FileDetails))
+            return;
+    }
 
     Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(name, udesc, false, false, true); // lock super-owners
     if(!df)
@@ -1940,7 +1948,6 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
     if (cluster && *cluster && !FindInStringArray(clusters, cluster))
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s on %s.", name, cluster);
 
-    double version = context.getClientVersion();
     offset_t size=queryDistributedFileSystem().getSize(df), recordSize=df->queryAttributes().getPropInt64("@recordSize",0);
 
     CDateTime dt;
@@ -2332,6 +2339,53 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
     PROGLOG("doGetFileDetails: %s done", name);
 }
 
+bool CWsDfuEx::getQueryFile(const char *logicalName, const char *querySet, const char *queryID, IEspDFUFileDetail &fileDetails)
+{
+    Owned<IConstWUClusterInfo> info = getTargetClusterInfo(querySet);
+    if (!info || (info->getPlatform()!=RoxieCluster))
+        return false;
+
+    SCMStringBuffer process;
+    info->getRoxieProcess(process);
+    if (!process.length())
+        return false;
+
+    Owned<IHpccPackageSet> ps = createPackageSet(process.str());
+    if (!ps)
+        return false;
+
+    const IHpccPackageMap *pm = ps->queryActiveMap(querySet);
+    if (!pm)
+        return false;
+
+    const IHpccPackage *pkg = pm->matchPackage(queryID);
+    if (!pkg)
+        return false;
+
+    const char *pkgid = pkg->locateSuperFile(logicalName);
+    if (!pkgid)
+        return false;
+
+    fileDetails.setName(logicalName);
+    fileDetails.setIsSuperfile(true);
+    fileDetails.setPackageID(pkgid);
+    StringArray subFiles;
+
+    Owned<ISimpleSuperFileEnquiry> ssfe = pkg->resolveSuperFile(logicalName);
+    if (ssfe && ssfe->numSubFiles()>0)
+    {
+        unsigned count = ssfe->numSubFiles();
+        while (count--)
+        {
+            StringBuffer subfile;
+            ssfe->getSubFileName(count, subfile);
+            subFiles.append(subfile.str());
+        }
+        if (!subFiles.empty())
+            fileDetails.setSubfiles(subFiles);
+    }
+    return true;
+}
 
 void CWsDfuEx::getLogicalFileAndDirectory(IEspContext &context, IUserDescriptor* udesc, const char *dirname,
     bool includeSuperOwner, IArrayOf<IEspDFULogicalFile>& logicalFiles, int& numFiles, int& numDirs)
