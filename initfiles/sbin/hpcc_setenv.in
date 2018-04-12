@@ -87,8 +87,14 @@ platform='unknown'
 unamestr=`uname`
 if [[ "$unamestr" == 'Linux' ]]; then
    platform='linux'
+   num_cpus=$(grep -c ^processor /proc/cpuinfo 2>/dev/null)
+   # or perhaps nproc
 elif [[ "$unamestr" == 'Darwin' ]]; then
    platform='mac'
+   num_cpus=$(sysctl -n hw.ncpu 2>/dev/null)
+fi
+if [[ -z "$num_cpus" ]] ; then
+    num_cpus=1
 fi
 HPCC_CONFIG=${HPCC_CONFIG:-${CONFIG_DIR}/${ENV_CONF_FILE}}
 #SECTION=${1:-DEFAULT}
@@ -103,7 +109,7 @@ umask ${OUMASK}
 
 # use less heap when threaded
 # but if set too low it can affect performance significantly
-num_arenas=$(getconf _NPROCESSORS_ONLN 2>/dev/null)
+num_arenas=$num_cpus
 if [ -z "$num_arenas" ] ; then
     num_arenas=8
 elif [ $num_arenas -lt 8 ] ; then
