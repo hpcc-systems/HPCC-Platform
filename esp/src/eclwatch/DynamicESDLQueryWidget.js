@@ -130,7 +130,8 @@ define([
             var context = this;
             WsESDLConfig.ListDESDLEspBindings({
                 request: {
-                    IncludeESDLBindingInfo: true
+                    IncludeESDLBindingInfo: true,
+                    ver_: "1.3"
                 }
             }).then(function (response) {
                 var results = [];

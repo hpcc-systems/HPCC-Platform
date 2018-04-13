@@ -84,7 +84,9 @@ define([
          refreshGrid: function (args) {
             var context = this;
             WsESDLConfig.ListESDLDefinitions({
-                request: {}
+                request: {
+                    ver_: "1.3"
+                }
             }).then(function (response) {
                 var results = [];
                 if (lang.exists("ListESDLDefinitionsResponse.Definitions.Definition", response)) {

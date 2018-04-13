@@ -46,7 +46,8 @@ define([
             }
             WsESDLConfig.GetESDLDefinition({
                 request: {
-                    Id: params.Id
+                    Id: params.Id,
+                    ver_: "1.3"
                 }
             }).then(function (response) {
                 var xml = context.formatXml(response.GetESDLDefinitionResponse.XMLDefinition);

@@ -132,7 +132,8 @@ define([
                     if (confirm(context.i18n.YouAreAboutToDeleteBinding)) {
                         WsESDLConfig.DeleteESDLBinding({
                         request: {
-                            Id:  context.params.__hpcc_parentName + "." + context.params.Name
+                            Id:  context.params.__hpcc_parentName + "." + context.params.Name,
+                            ver_: "1.3"
                         }
                         }).then(function (response) {
                             if (lang.exists("DeleteESDLRegistryEntryResponse.status.Code", response)) {
@@ -163,7 +164,8 @@ define([
                     WsESDLConfig.GetESDLDefinition({
                         request: {
                             Id: context.definitionDropDown.get("value"),
-                            ReportMethodsAvailable: true
+                            ReportMethodsAvailable: true,
+                            ver_: "1.3"
                         }
                     }).then(function (response) {
                         if (response.GetESDLDefinitionResponse.status.Code === 0) {
@@ -174,7 +176,8 @@ define([
                                     EsdlDefinitionID: response.GetESDLDefinitionResponse.Id,
                                     Overwrite: true,
                                     EsdlServiceName: response.GetESDLDefinitionResponse.ESDLServices.Name,
-                                    Config: "<Methods><Method name='" + response.GetESDLDefinitionResponse.Methods.Method[0].Name + "'/></Methods>"
+                                    Config: "<Methods><Method name='" + response.GetESDLDefinitionResponse.Methods.Method[0].Name + "'/></Methods>",
+                                    ver_: "1.3"
                                 }
                             }).then(function (publishresponse) {
                                 if (lang.exists("PublishESDLBindingResponse.status.Code", publishresponse)) {
