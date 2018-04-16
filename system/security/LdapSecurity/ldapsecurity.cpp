@@ -681,7 +681,7 @@ bool CLdapSecManager::authenticate(ISecUser* user)
         else
         {
             user->setAuthenticateStatus(AS_AUTHENTICATED);
-            if(isCaching)
+            if(isCaching && !isUserCached)
                 m_permissionsCache->add(*user);
             return true;
         }
@@ -698,9 +698,7 @@ bool CLdapSecManager::authenticate(ISecUser* user)
     {
         user->setAuthenticateStatus(AS_AUTHENTICATED);
     }
-
-    //call LDAP to authenticate
-    if (AS_AUTHENTICATED != user->getAuthenticateStatus() && m_ldap_client->authenticate(*user))
+    else if (m_ldap_client->authenticate(*user)) //call LDAP to authenticate
         user->setAuthenticateStatus(AS_AUTHENTICATED);
 
     if (AS_AUTHENTICATED == user->getAuthenticateStatus())
