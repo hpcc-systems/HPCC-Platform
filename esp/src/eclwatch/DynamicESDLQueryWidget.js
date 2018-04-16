@@ -169,7 +169,7 @@ define([
                     results.push(newRow);
                 });
 
-                context.store.setData(results);
+                context.store.setData(results, context.i18n.ConfigureService);
                 context.grid.set("query", {__hpcc_parentName: null });
             });
         }
