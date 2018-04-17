@@ -978,6 +978,79 @@ EXPORT Date_t AdjustCalendar(Date_t date,
 
 
 /**
+ * Helper function.  Calculates the 1-based week number of a date, starting from
+ * a reference date.  Week 1 always contains the reference date, and week 2
+ * begins on the following day of the week indicated by the value of
+ * startingDayOfWeek.  This is not an ISO-8601 implementation of computing week
+ * numbers ("week dates").
+ *
+ * @param date              The date for which to compute the week number;
+ *                          must be greater than or equal to referenceDate
+ * @param referenceDate     The date from which the week number counting begins;
+ *                          must be less than or equal to date
+ * @param startingDayOfWeek The index number of the first day of a week, 1-7,
+ *                          where 1 = Sunday
+ * @return                  The 1-based week number of date, relative to
+ *                          referenceDate
+ *
+ * @see YearWeekNumFromDate, MonthWeekNumFromDate
+ */
+
+SHARED WeekNumForDate(Date_t date, Date_t referenceDate, UNSIGNED1 startingDayOfWeek) := FUNCTION
+    referenceDayOfWeek := DayOfWeek(referenceDate);
+    startingDayOfWeekDelta := (startingDayOfWeek - referenceDayOfWeek) % 7;
+    referenceFirstDateOfWeek := AdjustDate(referenceDate, day_delta := startingDayOfWeekDelta);
+    numberOfDays := DaysBetween(referenceFirstDateOfWeek, date) + 1;
+    weekNum0 := (numberOfDays + 6) DIV 7;
+    weekNum := IF(startingDayOfWeek > referenceDayOfWeek, weekNum0 + 1, weekNum0);
+
+    RETURN weekNum;
+END;
+
+/**
+ * Returns the 1-based week number of a date within the date's year.  Week 1
+ * always contains the first day of the year, and week 2 begins on the
+ * following day of the week indicated by the value of startingDayOfWeek.  This
+ * is not an ISO-8601 implementation of computing week numbers ("week dates").
+ *
+ * @param date              The date for which to compute the week number
+ * @param startingDayOfWeek The index number of the first day of a week, 1-7,
+ *                          where 1 = Sunday; OPTIONAL, defaults to 1
+ * @return                  The 1-based week number of date, relative to
+ *                          the beginning of the date's year
+ *
+ * @see MonthWeekNumFromDate
+ */
+
+EXPORT YearWeekNumFromDate(Date_t date, UNSIGNED1 startingDayOfWeek = 1) := FUNCTION
+    yearStart := DateFromParts(Year(date), 1, 1);
+
+    RETURN WeekNumForDate(date, yearStart, startingDayOfWeek);
+END;
+
+/**
+ * Returns the 1-based week number of a date within the date's month.  Week 1
+ * always contains the first day of the month, and week 2 begins on the
+ * following day of the week indicated by the value of startingDayOfWeek.  This
+ * is not an ISO-8601 implementation of computing week numbers ("week dates").
+ *
+ * @param date              The date for which to compute the week number
+ * @param startingDayOfWeek The index number of the first day of a week, 1-7,
+ *                          where 1 = Sunday; OPTIONAL, defaults to 1
+ * @return                  The 1-based week number of date, relative to
+ *                          the beginning of the date's month
+ *
+ * @see YearWeekNumFromDate
+ */
+
+EXPORT MonthWeekNumFromDate(Date_t date, UNSIGNED1 startingDayOfWeek = 1) := FUNCTION
+    monthStart := DateFromParts(Year(date), Month(date), 1);
+
+    RETURN WeekNumForDate(date, monthStart, startingDayOfWeek);
+END;
+
+
+/**
  * Returns a boolean indicating whether daylight savings time is currently
  * in effect locally.
  *

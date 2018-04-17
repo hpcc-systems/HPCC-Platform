@@ -74,6 +74,39 @@ EXPORT TestDate := MODULE
     ASSERT(Date.DaysBetween(20010615,20020614) = 364, CONST);
     ASSERT(Date.DaysBetween(20020615,20010615) = -365, CONST);
 
+    ASSERT(Date.YearWeekNumFromDate(20180101) = 1, CONST);      // Start of week = Sunday
+    ASSERT(Date.YearWeekNumFromDate(20180106) = 1, CONST);      // Start of week = Sunday
+    ASSERT(Date.YearWeekNumFromDate(20180107) = 2, CONST);      // Start of week = Sunday
+    ASSERT(Date.YearWeekNumFromDate(20180107, 2) = 1, CONST);   // Start of week = Monday
+    ASSERT(Date.YearWeekNumFromDate(20180108, 2) = 2, CONST);   // Start of week = Monday
+    ASSERT(Date.YearWeekNumFromDate(20180101, 3) = 1, CONST);   // Start of week = Tuesday
+    ASSERT(Date.YearWeekNumFromDate(20180102, 3) = 2, CONST);   // Start of week = Tuesday
+    ASSERT(Date.YearWeekNumFromDate(20180102, 4) = 1, CONST);   // Start of week = Wednesday
+    ASSERT(Date.YearWeekNumFromDate(20180103, 4) = 2, CONST);   // Start of week = Wednesday
+    ASSERT(Date.YearWeekNumFromDate(20180103, 5) = 1, CONST);   // Start of week = Thursday
+    ASSERT(Date.YearWeekNumFromDate(20180104, 5) = 2, CONST);   // Start of week = Thursday
+    ASSERT(Date.YearWeekNumFromDate(20180104, 6) = 1, CONST);   // Start of week = Friday
+    ASSERT(Date.YearWeekNumFromDate(20180105, 6) = 2, CONST);   // Start of week = Friday
+    ASSERT(Date.YearWeekNumFromDate(20180105, 7) = 1, CONST);   // Start of week = Saturday
+    ASSERT(Date.YearWeekNumFromDate(20180106, 7) = 2, CONST);   // Start of week = Saturday
+
+    ASSERT(Date.MonthWeekNumFromDate(20180101) = 1, CONST);     // Start of week = Sunday
+    ASSERT(Date.MonthWeekNumFromDate(20180106) = 1, CONST);     // Start of week = Sunday
+    ASSERT(Date.MonthWeekNumFromDate(20180107) = 2, CONST);     // Start of week = Sunday
+    ASSERT(Date.MonthWeekNumFromDate(20180201) = 1, CONST);     // Start of week = Sunday
+    ASSERT(Date.MonthWeekNumFromDate(20180304, 2) = 1, CONST);  // Start of week = Monday
+    ASSERT(Date.MonthWeekNumFromDate(20180305, 2) = 2, CONST);  // Start of week = Monday
+    ASSERT(Date.MonthWeekNumFromDate(20180305, 3) = 1, CONST);  // Start of week = Tuesday
+    ASSERT(Date.MonthWeekNumFromDate(20180306, 3) = 2, CONST);  // Start of week = Tuesday
+    ASSERT(Date.MonthWeekNumFromDate(20180306, 4) = 1, CONST);  // Start of week = Wednesday
+    ASSERT(Date.MonthWeekNumFromDate(20180307, 4) = 2, CONST);  // Start of week = Wednesday
+    ASSERT(Date.MonthWeekNumFromDate(20180307, 5) = 1, CONST);  // Start of week = Thursday
+    ASSERT(Date.MonthWeekNumFromDate(20180308, 5) = 2, CONST);  // Start of week = Thursday
+    ASSERT(Date.MonthWeekNumFromDate(20180301, 6) = 1, CONST);  // Start of week = Friday
+    ASSERT(Date.MonthWeekNumFromDate(20180302, 6) = 2, CONST);  // Start of week = Friday
+    ASSERT(Date.MonthWeekNumFromDate(20180302, 7) = 1, CONST);  // Start of week = Saturday
+    ASSERT(Date.MonthWeekNumFromDate(20180303, 7) = 2, CONST);  // Start of week = Saturday
+
     ASSERT(TRUE, CONST)
   ];
 
