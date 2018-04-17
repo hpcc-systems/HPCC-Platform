@@ -25,6 +25,7 @@
 #include "daldap.hpp"
 #include "mpbase.hpp"
 #include "dautils.hpp"
+#include "digisign.hpp"
 
 #ifndef _NO_LDAP
 #include "seclib.hpp"
@@ -49,6 +50,7 @@ class CDaliLdapConnection: implements IDaliLdapConnection, public CInterface
     StringAttr              filesdefaultuser;
     StringAttr              filesdefaultpassword;
     unsigned                ldapflags;
+    IDigitalSignatureManager * pDSM = nullptr;
 
     void createDefaultScopes()
     {
@@ -141,9 +143,30 @@ public:
 
         Owned<ISecUser> user = ldapsecurity->createUser(username);
         user->credentials().setPassword(password);
-        if (!ldapsecurity->authenticateUser(*user, NULL))
+
+        //Check user's digital signature, if present
+        bool authenticated = false;
+        if (!isEmptyString(udesc->querySignature()))
         {
-            ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s fails authentication",key?key:"NULL",obj?obj:"NULL",username.str());
+            if (nullptr == pDSM)
+                pDSM = createDigitalSignatureManagerInstanceFromEnv();
+            if (pDSM && pDSM->isDigiVerifierConfigured())
+            {
+                StringBuffer b64Signature(udesc->querySignature());
+                if (!pDSM->digiVerify(username, b64Signature))//digital signature valid?
+                {
+                    ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s invalid user digital signature",key?key:"NULL",obj?obj:"NULL",username.str());
+                    return SecAccess_None;//deny
+                }
+                else
+                    authenticated = true;
+            }
+            user->credentials().setSignature(udesc->querySignature());
+        }
+
+        if (!authenticated && !ldapsecurity->authenticateUser(*user, NULL))
+        {
+            ERRLOG("LDAP: getPermissions(%s) scope=%s user=%s fails LDAP authentication",key?key:"NULL",obj?obj:"NULL",username.str());
             return SecAccess_None;//deny
         }
 
@@ -205,12 +228,37 @@ public:
         udesc->getUserName(username);
         udesc->getPassword(password);
         Owned<ISecUser> user = ldapsecurity->createUser(username);
-        user->credentials().setPassword(password);
-        if (!ldapsecurity->authenticateUser(*user, &superUser) || !superUser)
+
+        //Check user's digital signature, if present
+        bool authenticated = false;
+        if (!isEmptyString(udesc->querySignature()))
         {
-            *err = -1;
-            return false;
+            if (nullptr == pDSM)
+                pDSM = createDigitalSignatureManagerInstanceFromEnv();
+            if (pDSM && pDSM->isDigiVerifierConfigured())
+            {
+                StringBuffer b64Signature(udesc->querySignature());
+                if (!pDSM->digiVerify(username, b64Signature))//digital signature valid?
+                {
+                    ERRLOG("LDAP: enableScopeScans(%s) : Invalid user digital signature", username.str());
+                    *err = -1;
+                    return false;
+                }
+                else
+                    authenticated = true;
+            }
         }
+
+        if (!authenticated)
+        {
+            user->credentials().setPassword(password);
+            if (!ldapsecurity->authenticateUser(*user, &superUser) || !superUser)
+            {
+                *err = -1;
+                return false;
+            }
+        }
+
         unsigned flags = getLDAPflags();
         if (enable)
         {
