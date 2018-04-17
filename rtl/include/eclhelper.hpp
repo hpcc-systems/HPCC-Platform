@@ -337,7 +337,7 @@ const char xpathCompoundSeparatorChar = (char)1;
 
 enum RtlFieldTypeMask
 {
-    RFTMkind                = 0x000000ff,                   // values are defined in deftype.hpp
+    RFTMkind                = 0x000000ff,                   // values are defined in rtlconst.hpp
     RFTMunsigned            = 0x00000100,                   // numeric types only.
     RFTMebcdic              = 0x00000100,                   // strings only
     RFTMlinkcounted         = 0x00000200,                   // datasets, rows and records only.  But possibly strings etc. later...
