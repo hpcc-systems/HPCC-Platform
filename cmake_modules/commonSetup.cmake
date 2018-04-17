@@ -114,6 +114,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   endif()
   option(LOGGING_SERVICE "Configure use of logging service" ON)
   option(WSSQL_SERVICE "Configure use of ws_sql service" ON)
+  option(USE_DIGISIGN "Use digisign" ON)
 
 
 
