@@ -2,10 +2,18 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book xml:base="../">
-  <!-- DNT-Start --><title>Using ECL Watch</title><!-- DNT-End -->
+  <!-- DNT-Start -->
+
+  <title>Using ECL Watch</title>
+
+  <!-- DNT-End -->
 
   <bookinfo>
-    <!-- DNT-Start --><title>Using ECL Watch</title><!-- DNT-End -->
+    <!-- DNT-Start -->
+
+    <title>Using ECL Watch</title>
+
+    <!-- DNT-End -->
 
     <mediaobject>
       <imageobject>
@@ -29,8 +37,9 @@
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
 
-      <para><!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript> is a registered trademark
-      of LexisNexis Risk Data Management Inc.</para>
+      <para><!-- DNT-Start -->HPCC<!-- DNT-End -->
+      Systems<superscript>®</superscript> is a registered trademark of
+      LexisNexis Risk Data Management Inc.</para>
 
       <para>Other products, logos, and services may be trademarks or
       registered trademarks of their respective companies.</para>
@@ -64,49 +73,98 @@
   </bookinfo>
 
   <chapter id="ECLWatch_Intro">
-    <!-- DNT-Start --><title>Introducing ECL Watch</title><!-- DNT-End -->
+    <!-- DNT-Start -->
 
-    <para><!-- DNT-Start -->ECL<!-- DNT-End --> Watch is a service that runs on the Enterprise <!-- DNT-Start -->Services<!-- DNT-End --> Platform
-    (<!-- DNT-Start -->ESP<!-- DNT-End -->), a middleware component on the <!-- DNT-Start -->HPCC<!-- DNT-End --> Platform.</para>
+    <title>Introducing ECL Watch</title>
 
-    <para><!-- DNT-Start -->ECL<!-- DNT-End --> Watch provides an interface to the <!-- DNT-Start -->HPCC<!-- DNT-End --> system and allows you to
-    view information and interrogate nodes to confirm all expected processes
-    are running. It is a plugin that is useful for Systems Administrators to
-    check processes, examine topology, and view logs. It is useful to <!-- DNT-Start -->ECL<!-- DNT-End -->
+    <!-- DNT-End -->
+
+    <para><!-- DNT-Start -->ECL<!-- DNT-End --> Watch is a service that runs
+    on the Enterprise <!-- DNT-Start -->Services<!-- DNT-End --> Platform
+    (<!-- DNT-Start -->ESP<!-- DNT-End -->), a middleware component on the
+    <!-- DNT-Start -->HPCC<!-- DNT-End --> Platform.</para>
+
+    <para><!-- DNT-Start -->ECL<!-- DNT-End --> Watch provides an interface to
+    the <!-- DNT-Start -->HPCC<!-- DNT-End --> system and allows you to view
+    information and interrogate nodes to confirm all expected processes are
+    running. It is a plugin that is useful for Systems Administrators to check
+    processes, examine topology, and view logs. It is useful to <!-- DNT-Start -->ECL<!-- DNT-End -->
     Programmers to monitor the status of jobs and files, and other pertinent
     information. This provides a simple view into the system and a means to
     perform Workunit and data files maintenance.</para>
 
-    <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> Watch interface is a browser based set of pages where you
-    can access and interface with the <!-- DNT-Start -->HPCC<!-- DNT-End --> System. To Run <emphasis
-    role="bold"><!-- DNT-Start -->ECL<!-- DNT-End --> Watch</emphasis> using you browser, go to the node on your
-    system running <emphasis role="bold"><!-- DNT-Start -->ESP<!-- DNT-End -->/<!-- DNT-Start -->ECL<!-- DNT-End --> Watch</emphasis> on port
-    8010. For example, http://nnn.nnn.nnn.nnn:8010, where nnn.nnn.nnn.nnn is
-    your <!-- DNT-Start -->ESP<!-- DNT-End -->/<!-- DNT-Start -->ECL<!-- DNT-End --> Watch node's <!-- DNT-Start -->IP<!-- DNT-End --> address. This will launch <!-- DNT-Start -->ECL<!-- DNT-End --> Watch.</para>
+    <para>The <!-- DNT-Start -->ECL<!-- DNT-End --> Watch interface is a
+    browser based set of pages where you can access and interface with the
+    <!-- DNT-Start -->HPCC<!-- DNT-End --> System. To Run <emphasis
+    role="bold"><!-- DNT-Start -->ECL<!-- DNT-End --> Watch</emphasis> using
+    you browser, go to the node on your system running <emphasis
+    role="bold"><!-- DNT-Start -->ESP<!-- DNT-End -->/<!-- DNT-Start -->ECL<!-- DNT-End -->
+    Watch</emphasis> on port 8010. For example, http://nnn.nnn.nnn.nnn:8010,
+    where nnn.nnn.nnn.nnn is your <!-- DNT-Start -->ESP<!-- DNT-End -->/<!-- DNT-Start -->ECL<!-- DNT-End -->
+    Watch node's <!-- DNT-Start -->IP<!-- DNT-End --> address. This will
+    launch <!-- DNT-Start -->ECL<!-- DNT-End --> Watch.</para>
 
-    <para><!-- DNT-Start -->ECL<!-- DNT-End --> Watch is organized by categories based on several system
-    functions. These functions or actions are accessible through the links
-    along the top of the main home page. However there are several <!-- DNT-Start -->ECL<!-- DNT-End --> Watch
+    <para><!-- DNT-Start -->ECL<!-- DNT-End --> Watch is organized by
+    categories based on several system functions. These functions or actions
+    are accessible through the links along the top of the main home page.
+    However there are several <!-- DNT-Start -->ECL<!-- DNT-End --> Watch
     items with common functionality universally across pages of <!-- DNT-Start -->ECL<!-- DNT-End -->
     Watch.</para>
 
     <sect1 id="Common_Elements">
-      <!-- DNT-Start --><title>Common Elements</title><!-- DNT-End -->
+      <!-- DNT-Start -->
+
+      <title>Common Elements</title>
+
+      <!-- DNT-End -->
 
       <para>There are common elements that are useful anywhere within <!-- DNT-Start -->ECL<!-- DNT-End -->
       Watch.</para>
 
-      <sect2 id="OpenInNewPage">
-        <!-- DNT-Start --><title>Open in New Page</title><!-- DNT-End -->
+      <sect2>
+        <title>User Login</title>
 
-        <para>The <emphasis role="bold"><!-- DNT-Start -->Open<!-- DNT-End --> in New Page</emphasis> link
-        allows you to open a new window directly to the item which you are
-        viewing. <figure>
+        <para>When you open ECL Watch a log in window displays. <figure>
+            <title>Login</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWAlogin.jpg" vendor="ECLWatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>You login with the credentials supplied by your Systems
+        Administrator. After a configurable period of inactivity your ECL
+        Watch session locks and you need to enter your credentials to unlock
+        and resume your session. The session remains active for as long as
+        there is regular keyboard or mouse interaction.</para>
+
+        <para>Additionally, there is a Logout menu item available you can
+        select to close your session when you complete your work.</para>
+
+        <!--The following \/\/ is temporary and can probably be deleted after Session Management has been fully integrated.-->
+
+        <para>For more information and frequently asked questions about
+        session management, please refer to <link
+        linkend="SessMgmtFAQ">Appendix A</link>.</para>
+      </sect2>
+
+      <sect2 id="OpenInNewPage">
+        <!-- DNT-Start -->
+
+        <title>Open in New Page</title>
+
+        <!-- DNT-End -->
+
+        <para>The <emphasis role="bold"><!-- DNT-Start -->Open<!-- DNT-End -->
+        in New Page</emphasis> link allows you to open a new window directly
+        to the item which you are viewing. <figure>
             <title>Open in New Page</title>
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/ECLWA500.jpg" />
+                <imagedata fileref="images/ECLWA500.jpg" vendor="ECLWatchSS" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -116,12 +174,13 @@
 
         <itemizedlist>
           <listitem>
-            <para><emphasis role="bold"><!-- DNT-Start -->Open<!-- DNT-End --> in New Page</emphasis> is a
-            shareable link. Right-click on <emphasis role="bold"><!-- DNT-Start -->Open<!-- DNT-End --> in New
-            Page</emphasis> and select <emphasis>Copy link address</emphasis>
-            from the context menu. You can now save, share, or send that link
-            and the recipient can open a window directly to the (new)
-            page.</para>
+            <para><emphasis role="bold"><!-- DNT-Start -->Open<!-- DNT-End -->
+            in New Page</emphasis> is a shareable link. Right-click on
+            <emphasis role="bold"><!-- DNT-Start -->Open<!-- DNT-End --> in
+            New Page</emphasis> and select <emphasis>Copy link
+            address</emphasis> from the context menu. You can now save, share,
+            or send that link and the recipient can open a window directly to
+            the (new) page.</para>
           </listitem>
 
           <listitem>
@@ -138,26 +197,32 @@
       </sect2>
 
       <sect2 id="ListWidgets">
-        <!-- DNT-Start --><title>List widgets</title><!-- DNT-End -->
+        <!-- DNT-Start -->
+
+        <title>List widgets</title>
+
+        <!-- DNT-End -->
 
         <para><figure>
             <title>List Widgets</title>
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/ECLWA-Comm.jpg" />
+                <imagedata fileref="images/ECLWA-Comm.jpg" vendor="ECLWatchSS" />
               </imageobject>
             </mediaobject>
           </figure></para>
 
-        <para><!-- DNT-Start -->ECL<!-- DNT-End --> Watch commonly displays items in the forms of a list. Lists
-        of workunits, lists of logical files, lists of Roxie queries, etc. The
-        following elements in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch work on any list widget:</para>
+        <para><!-- DNT-Start -->ECL<!-- DNT-End --> Watch commonly displays
+        items in the forms of a list. Lists of workunits, lists of logical
+        files, lists of Roxie queries, etc. The following elements in <!-- DNT-Start -->ECL<!-- DNT-End -->
+        Watch work on any list widget:</para>
 
         <para><itemizedlist>
             <listitem>
-              <para>Download as <!-- DNT-Start -->CSV<!-- DNT-End --> (Workunits, <!-- DNT-Start -->DFU<!-- DNT-End --> Workunits, Logical files,
-              and Roxie queries)</para>
+              <para>Download as <!-- DNT-Start -->CSV<!-- DNT-End -->
+              (Workunits, <!-- DNT-Start -->DFU<!-- DNT-End --> Workunits,
+              Logical files, and Roxie queries)</para>
             </listitem>
 
             <listitem>
@@ -181,7 +246,11 @@
           </itemizedlist></para>
 
         <sect3>
-          <!-- DNT-Start --><title>List Filters</title><!-- DNT-End -->
+          <!-- DNT-Start -->
+
+          <title>List Filters</title>
+
+          <!-- DNT-End -->
 
           <para>Filter options on a list allow you to use specified criteria
           to set what you display in the list. Press the <emphasis
@@ -189,56 +258,78 @@
           options. When you specify any Filter options, the Filter action
           button changes and then displays <emphasis role="bold">Filter
           Set</emphasis> and the filter indicator image lights up. When you
-          then copy an <emphasis role="bold"><!-- DNT-Start -->Open<!-- DNT-End --> in New Page</emphasis> link
-          with the filter set, the filter condition persists. Filter
-          conditions limit the results displayed until you clear the
-          filter.</para>
+          then copy an <emphasis role="bold"><!-- DNT-Start -->Open<!-- DNT-End -->
+          in New Page</emphasis> link with the filter set, the filter
+          condition persists. Filter conditions limit the results displayed
+          until you clear the filter.</para>
         </sect3>
       </sect2>
 
       <sect2 id="ECLWA_BannerItems">
-        <!-- DNT-Start --><title>Banner Items</title><!-- DNT-End -->
+        <!-- DNT-Start -->
 
-        <para>The banner area of <!-- DNT-Start -->ECL<!-- DNT-End --> Watch appears at the top of all
-        pages.</para>
+        <title>Banner Items</title>
+
+        <!-- DNT-End -->
+
+        <para>The banner area of <!-- DNT-Start -->ECL<!-- DNT-End --> Watch
+        appears at the top of all pages.</para>
 
         <sect3 id="ECLWAtchHomeButton">
-          <!-- DNT-Start --><title>Home Button</title><!-- DNT-End -->
+          <!-- DNT-Start -->
 
-          <para>The <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems home button is also the main <!-- DNT-Start -->Activity<!-- DNT-End --> menu
-          link. More than just a decoration the home <!-- DNT-Start -->ECL<!-- DNT-End --> Watch button actually
-          opens up the <!-- DNT-Start -->Activity<!-- DNT-End --> page, discussed in more detail in the ensuing
-          chapter.</para>
+          <title>Home Button</title>
+
+          <!-- DNT-End -->
+
+          <para>The <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems home button
+          is also the main <!-- DNT-Start -->Activity<!-- DNT-End --> menu
+          link. More than just a decoration the home <!-- DNT-Start -->ECL<!-- DNT-End -->
+          Watch button actually opens up the <!-- DNT-Start -->Activity<!-- DNT-End -->
+          page, discussed in more detail in the ensuing chapter.</para>
 
           <para>The icons to the left of the home button are links to
-          different areas of <!-- DNT-Start -->ECL<!-- DNT-End --> Watch. Each of the link areas are discussed
-          in subsequent chapters.</para>
+          different areas of <!-- DNT-Start -->ECL<!-- DNT-End --> Watch. Each
+          of the link areas are discussed in subsequent chapters.</para>
         </sect3>
 
         <sect3 id="MonitorIndicatorLight">
-          <!-- DNT-Start --><title>Monitor indicator light</title><!-- DNT-End -->
+          <!-- DNT-Start -->
+
+          <title>Monitor indicator light</title>
+
+          <!-- DNT-End -->
 
           <para>The Monitor indicator light is used to provide an at a glance
           snapshot of your overall system health. If you have monitoring and
-          reporting configured (see <emphasis><!-- DNT-Start -->HPCC<!-- DNT-End --> Monitoring and
-          Reporting</emphasis>) then this light will display a color based on
-          the the overall (configurable) system health. The light is black if
-          there is no monitoring or reporting configured for your
-          system.</para>
+          reporting configured (see <emphasis><!-- DNT-Start -->HPCC<!-- DNT-End -->
+          Monitoring and Reporting</emphasis>) then this light will display a
+          color based on the the overall (configurable) system health. The
+          light is black if there is no monitoring or reporting configured for
+          your system.</para>
         </sect3>
 
         <sect3 id="DownloadAsCSV">
-          <!-- DNT-Start --><title>Download as CSV</title><!-- DNT-End -->
+          <!-- DNT-Start -->
 
-          <para>With most lists in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch you have the ability to download
-          selected rows as a <!-- DNT-Start -->CSV<!-- DNT-End --> formatted file. You can then open the <!-- DNT-Start -->CSV<!-- DNT-End -->
+          <title>Download as CSV</title>
+
+          <!-- DNT-End -->
+
+          <para>With most lists in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch
+          you have the ability to download selected rows as a <!-- DNT-Start -->CSV<!-- DNT-End -->
+          formatted file. You can then open the <!-- DNT-Start -->CSV<!-- DNT-End -->
           file in any spreadsheet application which supports <!-- DNT-Start -->CSV<!-- DNT-End -->
           format.</para>
         </sect3>
       </sect2>
 
       <sect2 id="ECLWatch_GlobalSearch">
-        <!-- DNT-Start --><title>Global Search</title><!-- DNT-End -->
+        <!-- DNT-Start -->
+
+        <title>Global Search</title>
+
+        <!-- DNT-End -->
 
         <para>The global search box can be found on the navigation bar at the
         top of the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch page.<figure>
@@ -246,17 +337,20 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/ECLWA008.jpg" />
+                <imagedata fileref="images/ECLWA008.jpg" vendor="ECLWatchSS" />
               </imageobject>
             </mediaobject>
           </figure></para>
 
-        <para>You can search <!-- DNT-Start -->DFU<!-- DNT-End --> Workunits, <!-- DNT-Start -->ECL<!-- DNT-End --> Workunits, Logical <!-- DNT-Start -->Files<!-- DNT-End -->, and
-        <!-- DNT-Start -->Queries<!-- DNT-End --> using the global search box. The global search excludes <!-- DNT-Start -->ECL<!-- DNT-End -->
-        code by default. To search for <!-- DNT-Start -->ECL<!-- DNT-End --> code within workunits, use the
-        <emphasis role="bold">ecl: </emphasis>keyword. For example,
-        ecl:<!-- DNT-Start -->SOAPCALL<!-- DNT-End -->. To limit or filter your search results you can use
-        keywords as displayed in the empty search box.</para>
+        <para>You can search <!-- DNT-Start -->DFU<!-- DNT-End --> Workunits,
+        <!-- DNT-Start -->ECL<!-- DNT-End --> Workunits, Logical <!-- DNT-Start -->Files<!-- DNT-End -->,
+        and <!-- DNT-Start -->Queries<!-- DNT-End --> using the global search
+        box. The global search excludes <!-- DNT-Start -->ECL<!-- DNT-End -->
+        code by default. To search for <!-- DNT-Start -->ECL<!-- DNT-End -->
+        code within workunits, use the <emphasis role="bold">ecl:
+        </emphasis>keyword. For example, ecl:<!-- DNT-Start -->SOAPCALL<!-- DNT-End -->.
+        To limit or filter your search results you can use keywords as
+        displayed in the empty search box.</para>
 
         <para><variablelist>
             <varlistentry>
@@ -282,7 +376,8 @@
 
               <listitem>
                 <para>Preface the search string with <emphasis>ecl:</emphasis>
-                to search <!-- DNT-Start -->ECL<!-- DNT-End --> code in the workunits.</para>
+                to search <!-- DNT-Start -->ECL<!-- DNT-End --> code in the
+                workunits.</para>
               </listitem>
             </varlistentry>
 
@@ -291,7 +386,8 @@
 
               <listitem>
                 <para>Preface the search string with <emphasis>dfu:</emphasis>
-                to search only <!-- DNT-Start -->DFU<!-- DNT-End --> workunits.</para>
+                to search only <!-- DNT-Start -->DFU<!-- DNT-End -->
+                workunits.</para>
               </listitem>
             </varlistentry>
 
@@ -324,11 +420,19 @@
             </mediaobject>
           </figure></para>
 
-        <!-- DNT-Start --><!-- Enter <i>ecl:output</i> into the global search box and it will return all of the workunits that contain "output" in the ECL page of ECL Watch--><!-- DNT-End -->
+        <!-- DNT-Start -->
+
+        <!-- Enter <i>ecl:output</i> into the global search box and it will return all of the workunits that contain "output" in the ECL page of ECL Watch-->
+
+        <!-- DNT-End -->
       </sect2>
 
       <sect2>
-        <!-- DNT-Start --><title>Advanced Menu</title><!-- DNT-End -->
+        <!-- DNT-Start -->
+
+        <title>Advanced Menu</title>
+
+        <!-- DNT-End -->
 
         <para>There is a section at the top right on the navigation bar with
         some useful information and features. This section shows you who you
@@ -342,7 +446,7 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/ECLWA007b.jpg" />
+                <imagedata fileref="images/ECLWA007b.jpg" vendor="ECLWatchSS" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -353,15 +457,20 @@
         list of features.</para>
 
         <sect3 id="ECLWatch_AdvancedMenuAccess">
-          <!-- DNT-Start --><title>Access the Advanced menu</title><!-- DNT-End -->
+          <!-- DNT-Start -->
+
+          <title>Access the Advanced menu</title>
+
+          <!-- DNT-End -->
 
           <para>You access the advanced menu items from the advanced menu link
-          at the top right corner of <!-- DNT-Start -->ECL<!-- DNT-End --> Watch.<!--Removed some content stashed in GitStash : ECLWA-1115.xml others culled stored in git-br H8872-NewestECLfor50 **--></para>
+          at the top right corner of <!-- DNT-Start -->ECL<!-- DNT-End -->
+          Watch.<!--Removed some content stashed in GitStash : ECLWA-1115.xml others culled stored in git-br H8872-NewestECLfor50 **--></para>
 
           <para>The <emphasis role="bold">Set Banner</emphasis> link allows
           you to set a custom banner message at the top of your browser window
-          when you open <!-- DNT-Start -->ECL<!-- DNT-End --> Watch. You can use this feature to send messages
-          to users.</para>
+          when you open <!-- DNT-Start -->ECL<!-- DNT-End --> Watch. You can
+          use this feature to send messages to users.</para>
 
           <para>The <emphasis role="bold">Error/Warning(s)</emphasis> link
           displays a tab showing you Errors, Warnings, and Information
@@ -369,45 +478,54 @@
           bottom of the tab. A copy facility is also provided.</para>
 
           <para>The <emphasis role="bold">Release Notes</emphasis> link opens
-          a new browser tab to the <!-- DNT-Start -->HPCC<!-- DNT-End --> release notes page where you can find
-          more release specific information about the contents of each version
-          of <!-- DNT-Start -->HPCC<!-- DNT-End -->.</para>
+          a new browser tab to the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+          release notes page where you can find more release specific
+          information about the contents of each version of <!-- DNT-Start -->HPCC<!-- DNT-End -->.</para>
 
           <para>The <emphasis role="bold">Documentation</emphasis> link opens
-          a new browser tab to the <!-- DNT-Start -->HPCC<!-- DNT-End --> documentation page, where you can view
-          and download the <!-- DNT-Start -->HPCC<!-- DNT-End --> system documentation.</para>
+          a new browser tab to the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+          documentation page, where you can view and download the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+          system documentation.</para>
 
           <para>The <emphasis role="bold">Downloads</emphasis> link opens a
-          new browser tab to the <!-- DNT-Start -->HPCC<!-- DNT-End --> downloads page, where you can find and
-          download the <!-- DNT-Start -->HPCC<!-- DNT-End --> Platform, Client Tools, and <!-- DNT-Start -->Plugins<!-- DNT-End -->.</para>
+          new browser tab to the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+          downloads page, where you can find and download the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+          Platform, Client Tools, and <!-- DNT-Start -->Plugins<!-- DNT-End -->.</para>
 
-          <para>The <emphasis role="bold">Additional <!-- DNT-Start -->Resources<!-- DNT-End --></emphasis> link
-          opens a submenu that provides links to areas on the <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems web
-          site where you can find additional resources, such as the <emphasis
-          role="bold">Red Book</emphasis>, <emphasis role="bold">User
-          Forums</emphasis>, <emphasis role="bold">Issue Reporting</emphasis>,
-          and the <emphasis role="bold">Transition Guide</emphasis>.</para>
+          <para>The <emphasis role="bold">Additional <!-- DNT-Start -->Resources<!-- DNT-End --></emphasis>
+          link opens a submenu that provides links to areas on the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+          Systems web site where you can find additional resources, such as
+          the <emphasis role="bold">Red Book</emphasis>, <emphasis
+          role="bold">User Forums</emphasis>, <emphasis role="bold">Issue
+          Reporting</emphasis>, and the <emphasis role="bold">Transition
+          Guide</emphasis>.</para>
 
           <para>The <emphasis role="bold">Configuration</emphasis> link opens
-          for viewing the <!-- DNT-Start -->XML<!-- DNT-End --> version of the configuration file in use on your
-          system.</para>
+          for viewing the <!-- DNT-Start -->XML<!-- DNT-End --> version of the
+          configuration file in use on your system.</para>
 
           <para>The <emphasis role="bold">About</emphasis> link opens a dialog
-          to display some information about the version of the <!-- DNT-Start -->HPCC<!-- DNT-End --> platform
-          and graph controls installed on your server.</para>
+          to display some information about the version of the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+          platform and graph controls installed on your server.</para>
         </sect3>
 
         <sect3 id="ECLWatch_AdvancedMenuLoggedInAs" role="nobrk">
-          <!-- DNT-Start --><title>Logged In As</title><!-- DNT-End -->
+          <!-- DNT-Start -->
+
+          <title>Logged In As</title>
+
+          <!-- DNT-End -->
 
           <para>The <emphasis role="bold">Logged In As:</emphasis> link at the
-          top of the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch page displays information about the current
-          user on a cluster configured for authentication. <figure>
+          top of the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch page displays
+          information about the current user on a cluster configured for
+          authentication. <figure>
               <title>Logged In As</title>
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/ECLWMyAccount.jpg" />
+                  <imagedata fileref="images/ECLWMyAccount.jpg"
+                             vendor="ECLWatchSS" />
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -415,7 +533,9 @@
           <para><orderedlist>
               <listitem>
                 <para>Click on the <emphasis role="bold"><emphasis
-                role="bold"><!-- DNT-Start -->LOGGED<!-- DNT-End --> <!-- DNT-Start -->IN<!-- DNT-End --> <!-- DNT-Start -->AS<!-- DNT-End -->:</emphasis></emphasis> link.</para>
+                role="bold"><!-- DNT-Start -->LOGGED<!-- DNT-End --> <!-- DNT-Start -->IN<!-- DNT-End -->
+                <!-- DNT-Start -->AS<!-- DNT-End -->:</emphasis></emphasis>
+                link.</para>
 
                 <para>The User Details window opens. The default window opens
                 on the Summary tab.</para>
@@ -451,14 +571,20 @@
             </orderedlist></para>
 
           <sect4 id="ECLWatch_AdvancedMenuChangePassword" role="nobrk">
-            <!-- DNT-Start --><title>Change Password</title><!-- DNT-End -->
+            <!-- DNT-Start -->
 
-            <para>If authentication is enabled on your <!-- DNT-Start -->HPCC<!-- DNT-End --> system, you can
-            change your password, right from the User Details window.
-            <orderedlist>
+            <title>Change Password</title>
+
+            <!-- DNT-End -->
+
+            <para>If authentication is enabled on your <!-- DNT-Start -->HPCC<!-- DNT-End -->
+            system, you can change your password, right from the User Details
+            window. <orderedlist>
                 <listitem>
                   <para>Click on the <emphasis role="bold"><emphasis
-                  role="bold"><!-- DNT-Start -->LOGGED<!-- DNT-End --> <!-- DNT-Start -->IN<!-- DNT-End --> <!-- DNT-Start -->AS<!-- DNT-End -->:</emphasis></emphasis> link.</para>
+                  role="bold"><!-- DNT-Start -->LOGGED<!-- DNT-End --> <!-- DNT-Start -->IN<!-- DNT-End -->
+                  <!-- DNT-Start -->AS<!-- DNT-End -->:</emphasis></emphasis>
+                  link.</para>
 
                   <para>The User Details window opens. The default window
                   opens on the Summary tab. There are fields on the Summary
@@ -487,7 +613,11 @@
           </sect4>
 
           <sect4 id="ECLWatch_AdvancedMenuPermissionGroups">
-            <!-- DNT-Start --><title>Permission groups</title><!-- DNT-End -->
+            <!-- DNT-Start -->
+
+            <title>Permission groups</title>
+
+            <!-- DNT-End -->
 
             <para>The second tab on the User Details window labelled Member
             Of, displays a list of groups. The groups your account belongs to,
@@ -498,7 +628,11 @@
           </sect4>
 
           <sect4 id="ECLWatch_AdvancedMenuUserPermissions">
-            <!-- DNT-Start --><title>User Permissions tab</title><!-- DNT-End -->
+            <!-- DNT-Start -->
+
+            <title>User Permissions tab</title>
+
+            <!-- DNT-End -->
 
             <para>The third tab on the User Details window labelled <emphasis
             role="bold">User Permissions</emphasis>, displays a list of
@@ -518,14 +652,20 @@
   </chapter>
 
   <chapter id="ECLWatch_Home_Chapter">
-    <!-- DNT-Start --><title>ECL Watch Home Page</title><!-- DNT-End -->
+    <!-- DNT-Start -->
 
-    <para>Click on the <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End --> Watch</emphasis> home page
-    link in the navigation bar at the top of the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch page to find the
-    <emphasis role="bold"><!-- DNT-Start -->Activity<!-- DNT-End --></emphasis>, <emphasis
-    role="bold">Scheduler</emphasis>, and <emphasis role="bold">Search
-    Results</emphasis> links. You can access the respective pages from the
-    links or tabs along the top of the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch home page.</para>
+    <title>ECL Watch Home Page</title>
+
+    <!-- DNT-End -->
+
+    <para>Click on the <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End -->
+    Watch</emphasis> home page link in the navigation bar at the top of the
+    <!-- DNT-Start -->ECL<!-- DNT-End --> Watch page to find the <emphasis
+    role="bold"><!-- DNT-Start -->Activity<!-- DNT-End --></emphasis>,
+    <emphasis role="bold">Scheduler</emphasis>, and <emphasis
+    role="bold">Search Results</emphasis> links. You can access the respective
+    pages from the links or tabs along the top of the <!-- DNT-Start -->ECL<!-- DNT-End -->
+    Watch home page.</para>
 
     <para><figure>
         <title>ECL Watch home page link</title>
@@ -537,8 +677,9 @@
         </mediaobject>
       </figure></para>
 
-    <para>There are several icons used throughout <!-- DNT-Start -->ECL<!-- DNT-End --> Watch. The following
-    table describes most of the icons that you will encounter.</para>
+    <para>There are several icons used throughout <!-- DNT-Start -->ECL<!-- DNT-End -->
+    Watch. The following table describes most of the icons that you will
+    encounter.</para>
 
     <para><informaltable colsep="1" frame="all">
         <tgroup cols="2">
@@ -546,7 +687,8 @@
 
           <tbody>
             <row>
-              <entry><!-- DNT-Start --><emphasis role="bold">Icon</emphasis><!-- DNT-End --></entry>
+              <entry><!-- DNT-Start --><emphasis
+              role="bold">Icon</emphasis><!-- DNT-End --></entry>
 
               <entry><emphasis role="bold">Definition</emphasis></entry>
             </row>
@@ -597,8 +739,8 @@
               <entry><inlinegraphic fileref="images/wu_warn.png"
               vendor="eclwatchSS" /></entry>
 
-              <entry>Workunit Blocked, Scheduled, Wait, Uploading <!-- DNT-Start -->Files<!-- DNT-End -->, Debug
-              Paused, Paused</entry>
+              <entry>Workunit Blocked, Scheduled, Wait, Uploading <!-- DNT-Start -->Files<!-- DNT-End -->,
+              Debug Paused, Paused</entry>
             </row>
 
             <row>
@@ -640,29 +782,47 @@
       </informaltable></para>
 
     <sect1 id="ECLWatch_Activity" role="nobrk">
-      <!-- DNT-Start --><title>Activity</title><!-- DNT-End -->
+      <!-- DNT-Start -->
 
-      <para>The <!-- DNT-Start -->Activity<!-- DNT-End --> tab displays activity on all clusters in the
-      environment. The <!-- DNT-Start -->Activity<!-- DNT-End --> page provides access to Cluster Job Queue
-      administration tasks such as: monitoring progress, setting priority,
-      moving a job up or down in the queue, pausing a job, aborting a job, and
-      pausing or resuming a queue.</para>
+      <title>Activity</title>
 
-      <!-- DNT-Start --><!--***Note specific Activity task details have been REMOVED (to DocShare/WKSPCE/ECLWa400)***--><!-- DNT-End -->
+      <!-- DNT-End -->
 
-      <para>When you access the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch <!-- DNT-Start -->URL<!-- DNT-End -->, the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch Home Page
-      displays the <!-- DNT-Start -->Activity<!-- DNT-End --> tab. To access the <!-- DNT-Start -->Activity<!-- DNT-End --> tab from any other
-      page in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch click on the <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End -->
+      <para>The <!-- DNT-Start -->Activity<!-- DNT-End --> tab displays
+      activity on all clusters in the environment. The <!-- DNT-Start -->Activity<!-- DNT-End -->
+      page provides access to Cluster Job Queue administration tasks such as:
+      monitoring progress, setting priority, moving a job up or down in the
+      queue, pausing a job, aborting a job, and pausing or resuming a
+      queue.</para>
+
+      <!-- DNT-Start -->
+
+      <!--***Note specific Activity task details have been REMOVED (to DocShare/WKSPCE/ECLWa400)***-->
+
+      <!-- DNT-End -->
+
+      <para>When you access the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch
+      <!-- DNT-Start -->URL<!-- DNT-End -->, the <!-- DNT-Start -->ECL<!-- DNT-End -->
+      Watch Home Page displays the <!-- DNT-Start -->Activity<!-- DNT-End -->
+      tab. To access the <!-- DNT-Start -->Activity<!-- DNT-End --> tab from
+      any other page in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch click on
+      the <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End -->
       Watch</emphasis> image at the top of any page, as shown above.</para>
 
       <sect2 id="ECLWatch_ClusterActivity">
-        <!-- DNT-Start --><title>Cluster Activity</title><!-- DNT-End -->
+        <!-- DNT-Start -->
+
+        <title>Cluster Activity</title>
+
+        <!-- DNT-End -->
 
         <para>Information about your systems' clusters, and any activity on
-        those clusters can be accessed from the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch <!-- DNT-Start -->Activity<!-- DNT-End --> tab. Select
-        the <emphasis role="bold"><!-- DNT-Start -->Activity<!-- DNT-End --></emphasis> tab link below the
-        <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End --> Watch</emphasis> image in the navigation
-        sub-menu. This displays the Cluster <!-- DNT-Start -->Activity<!-- DNT-End --> tab.</para>
+        those clusters can be accessed from the <!-- DNT-Start -->ECL<!-- DNT-End -->
+        Watch <!-- DNT-Start -->Activity<!-- DNT-End --> tab. Select the
+        <emphasis role="bold"><!-- DNT-Start -->Activity<!-- DNT-End --></emphasis>
+        tab link below the <emphasis role="bold"><!-- DNT-Start -->ECL<!-- DNT-End -->
+        Watch</emphasis> image in the navigation sub-menu. This displays the
+        Cluster <!-- DNT-Start -->Activity<!-- DNT-End --> tab.</para>
 
         <para><figure>
             <title>Clusters Activity</title>
@@ -682,10 +842,18 @@
       </sect2>
 
       <sect2 role="brk">
-        <!-- DNT-Start --><title>Cluster Action Buttons</title><!-- DNT-End -->
+        <!-- DNT-Start -->
+
+        <title>Cluster Action Buttons</title>
+
+        <!-- DNT-End -->
 
         <figure>
-          <!-- DNT-Start --><title>Cluster Action Buttons</title><!-- DNT-End -->
+          <!-- DNT-Start -->
+
+          <title>Cluster Action Buttons</title>
+
+          <!-- DNT-End -->
 
           <mediaobject>
             <imageobject>
@@ -699,7 +867,11 @@
         following actions on the selected cluster's job queue.</para>
 
         <sect3>
-          <!-- DNT-Start --><title>Pause</title><!-- DNT-End -->
+          <!-- DNT-Start -->
+
+          <title>Pause</title>
+
+          <!-- DNT-End -->
 
           <para>Pauses the cluster's job queue. The currently running job will
           complete, but no other jobs will execute until the queue is
@@ -707,14 +879,22 @@
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>Resume</title><!-- DNT-End -->
+          <!-- DNT-Start -->
+
+          <title>Resume</title>
+
+          <!-- DNT-End -->
 
           <para>Resumes a paused job queue. Any waiting jobs will resume
           execution in order.</para>
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>Clear</title><!-- DNT-End -->
+          <!-- DNT-Start -->
+
+          <title>Clear</title>
+
+          <!-- DNT-End -->
 
           <para>Removes all workunits from the job queue. The removed
           workunits' state is then set to aborted. Any workunits that were
@@ -724,7 +904,11 @@
       </sect2>
 
       <sect2 id="WorkUnitActivityTab">
-        <!-- DNT-Start --><title>Cluster Workunit Activity</title><!-- DNT-End -->
+        <!-- DNT-Start -->
+
+        <title>Cluster Workunit Activity</title>
+
+        <!-- DNT-End -->
 
         <para><figure>
             <title>Workunit Activity Buttons</title>
@@ -738,7 +922,11 @@
       </sect2>
 
       <sect2>
-        <!-- DNT-Start --><title>Workunit Action Buttons</title><!-- DNT-End -->
+        <!-- DNT-Start -->
+
+        <title>Workunit Action Buttons</title>
+
+        <!-- DNT-End -->
 
         <para>Check the box next to a Workunit to select it and enable the
         Workunit Action buttons.</para>
@@ -747,41 +935,65 @@
         perform the following actions on the selected Workunit(s).</para>
 
         <sect3>
-          <!-- DNT-Start --><title>Open</title><!-- DNT-End -->
+          <!-- DNT-Start -->
+
+          <title>Open</title>
+
+          <!-- DNT-End -->
 
           <para>Opens a (workunit) tab for the selected workunit.</para>
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>Pause</title><!-- DNT-End -->
+          <!-- DNT-Start -->
 
-          <para>Press the <emphasis role="bold"><!-- DNT-Start -->Pause<!-- DNT-End --></emphasis> button to
-          complete the current subgraph and then put the job into a paused
-          state.</para>
-        </sect3>
+          <title>Pause</title>
 
-        <sect3>
-          <!-- DNT-Start --><title>Pause Now</title><!-- DNT-End -->
+          <!-- DNT-End -->
 
-          <para>Press the <emphasis role="bold"><!-- DNT-Start -->Pause<!-- DNT-End --> Now</emphasis> button to
-          interrupt the current subgraph (abort it) and put the job into a
+          <para>Press the <emphasis role="bold"><!-- DNT-Start -->Pause<!-- DNT-End --></emphasis>
+          button to complete the current subgraph and then put the job into a
           paused state.</para>
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>Resume</title><!-- DNT-End -->
+          <!-- DNT-Start -->
+
+          <title>Pause Now</title>
+
+          <!-- DNT-End -->
+
+          <para>Press the <emphasis role="bold"><!-- DNT-Start -->Pause<!-- DNT-End -->
+          Now</emphasis> button to interrupt the current subgraph (abort it)
+          and put the job into a paused state.</para>
+        </sect3>
+
+        <sect3>
+          <!-- DNT-Start -->
+
+          <title>Resume</title>
+
+          <!-- DNT-End -->
 
           <para>Resumes processing of any paused job.</para>
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>Abort</title><!-- DNT-End -->
+          <!-- DNT-Start -->
+
+          <title>Abort</title>
+
+          <!-- DNT-End -->
 
           <para>Aborts a running job. An aborted job cannot be resumed.</para>
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>High, Normal, Low</title><!-- DNT-End -->
+          <!-- DNT-Start -->
+
+          <title>High, Normal, Low</title>
+
+          <!-- DNT-End -->
 
           <para><figure>
               <title>Priority</title>
@@ -804,7 +1016,11 @@
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>Top, Bottom, Up, Down</title><!-- DNT-End -->
+          <!-- DNT-Start -->
+
+          <title>Top, Bottom, Up, Down</title>
+
+          <!-- DNT-End -->
 
           <para><figure>
               <title>Queue Position</title>
@@ -831,14 +1047,18 @@
       </sect2>
 
       <sect2 id="cluster_Info" role="brk">
-        <!-- DNT-Start --><title>Cluster Information</title><!-- DNT-End -->
+        <!-- DNT-Start -->
+
+        <title>Cluster Information</title>
+
+        <!-- DNT-End -->
 
         <para>You can access more information about your Thor clusters from
         the main <!-- DNT-Start -->Activity<!-- DNT-End --> tab.</para>
 
         <para>Select the target cluster from the main <emphasis
-        role="bold"><!-- DNT-Start -->Activity<!-- DNT-End --></emphasis> tab, by checking the box next to it.
-        <figure>
+        role="bold"><!-- DNT-Start -->Activity<!-- DNT-End --></emphasis> tab,
+        by checking the box next to it. <figure>
             <title>Open Cluster</title>
 
             <mediaobject>
@@ -848,9 +1068,9 @@
             </mediaobject>
           </figure></para>
 
-        <para>This enables the <emphasis role="bold"><!-- DNT-Start -->Open<!-- DNT-End --></emphasis> action
-        button. Press the <!-- DNT-Start -->Open<!-- DNT-End --> action button to open a new tab for that
-        cluster.</para>
+        <para>This enables the <emphasis role="bold"><!-- DNT-Start -->Open<!-- DNT-End --></emphasis>
+        action button. Press the <!-- DNT-Start -->Open<!-- DNT-End --> action
+        button to open a new tab for that cluster.</para>
 
         <para>The cluster tab displays the groups on that cluster. Check the
         box next to the cluster group, and press the open button. <figure>
@@ -863,9 +1083,9 @@
             </mediaobject>
           </figure></para>
 
-        <para><!-- DNT-Start -->Open<!-- DNT-End --> up the cluster group tab (for example, mythor), and select
-        the group from the Groups tab to see the activity information on that
-        cluster group. <figure>
+        <para><!-- DNT-Start -->Open<!-- DNT-End --> up the cluster group tab
+        (for example, mythor), and select the group from the Groups tab to see
+        the activity information on that cluster group. <figure>
             <title>Cluster Activity tabs</title>
 
             <mediaobject>
@@ -884,7 +1104,11 @@
         examine.</para>
 
         <sect3 id="ClusterUsageTab">
-          <!-- DNT-Start --><title>The Cluster Usage Tab</title><!-- DNT-End -->
+          <!-- DNT-Start -->
+
+          <title>The Cluster Usage Tab</title>
+
+          <!-- DNT-End -->
 
           <para>The <emphasis role="bold">Usage</emphasis> tab provides access
           to a usage graph. The usage tab provides information about the
@@ -935,7 +1159,11 @@
       </sect2>
 
       <sect2 id="ECLWatch_AutoRefresh">
-        <!-- DNT-Start --><title>Auto Refresh</title><!-- DNT-End -->
+        <!-- DNT-Start -->
+
+        <title>Auto Refresh</title>
+
+        <!-- DNT-End -->
 
         <para><figure>
             <title>Auto Refresh</title>
@@ -945,60 +1173,77 @@
                 <imagedata fileref="images/ECLWA011.jpg" />
               </imageobject>
             </mediaobject>
-          </figure>The <emphasis role="bold"><!-- DNT-Start -->Activity<!-- DNT-End --></emphasis> page displays
-        active <!-- DNT-Start -->ECL<!-- DNT-End --> or <!-- DNT-Start -->DFU<!-- DNT-End --> workunits either running or in the queue on your
-        cluster. To refresh the list, press the <emphasis
-        role="bold">Refresh</emphasis> button. Auto Refresh shows the list in
-        real-time, but this feature is disabled by default.</para>
+          </figure>The <emphasis role="bold"><!-- DNT-Start -->Activity<!-- DNT-End --></emphasis>
+        page displays active <!-- DNT-Start -->ECL<!-- DNT-End --> or <!-- DNT-Start -->DFU<!-- DNT-End -->
+        workunits either running or in the queue on your cluster. To refresh
+        the list, press the <emphasis role="bold">Refresh</emphasis> button.
+        Auto Refresh shows the list in real-time, but this feature is disabled
+        by default.</para>
 
         <para>To enable Auto Refresh, toggle the Auto Refresh button.</para>
 
         <para>In an environment with a large number of active users, Auto
-        Refresh could impact performance of your <!-- DNT-Start -->ESP<!-- DNT-End --> server.</para>
+        Refresh could impact performance of your <!-- DNT-Start -->ESP<!-- DNT-End -->
+        server.</para>
       </sect2>
     </sect1>
 
     <sect1 id="ECLWatch_EventScheduler">
-      <!-- DNT-Start --><title>ECL Event Scheduler</title><!-- DNT-End -->
+      <!-- DNT-Start -->
+
+      <title>ECL Event Scheduler</title>
+
+      <!-- DNT-End -->
 
       <para>The Event Scheduler page provides an interface to the <!-- DNT-Start -->ECL<!-- DNT-End -->
-      Scheduler. The <!-- DNT-Start -->ECL<!-- DNT-End --> Scheduler interface allows you to see a list of
-      scheduled workunits. It can also trigger an event. An Event is a
-      case-insensitive string constant naming the event to trap.</para>
+      Scheduler. The <!-- DNT-Start -->ECL<!-- DNT-End --> Scheduler interface
+      allows you to see a list of scheduled workunits. It can also trigger an
+      event. An Event is a case-insensitive string constant naming the event
+      to trap.</para>
 
-      <para><!-- DNT-Start -->ECL<!-- DNT-End --> Scheduling provides a means of automating processes within <!-- DNT-Start -->ECL<!-- DNT-End -->
+      <para><!-- DNT-Start -->ECL<!-- DNT-End --> Scheduling provides a means
+      of automating processes within <!-- DNT-Start -->ECL<!-- DNT-End -->
       code or to chain processes together to work in sequence. For example,
-      you can write <!-- DNT-Start -->ECL<!-- DNT-End --> code that watches a landing zone for the arrival of a
-      file, and when it arrives, sprays it to Thor, processes it, builds an
-      index, and then adds it to a superfile.</para>
+      you can write <!-- DNT-Start -->ECL<!-- DNT-End --> code that watches a
+      landing zone for the arrival of a file, and when it arrives, sprays it
+      to Thor, processes it, builds an index, and then adds it to a
+      superfile.</para>
 
-      <para><!-- DNT-Start -->ECL<!-- DNT-End --> Scheduling is event-based. The <!-- DNT-Start -->ECL<!-- DNT-End --> Scheduler monitors a
-      Schedule list containing registered Workunits and Events and executes
-      any Workunits associated with an Event when that Event is
-      triggered.</para>
+      <para><!-- DNT-Start -->ECL<!-- DNT-End --> Scheduling is event-based.
+      The <!-- DNT-Start -->ECL<!-- DNT-End --> Scheduler monitors a Schedule
+      list containing registered Workunits and Events and executes any
+      Workunits associated with an Event when that Event is triggered.</para>
 
-      <para>Your <!-- DNT-Start -->ECL<!-- DNT-End --> Code can execute when an Event is triggered, or can
-      trigger an Event. If you submit code containing a <emphasis
-      role="bold"><!-- DNT-Start -->WHEN<!-- DNT-End --> </emphasis>clause, the Event and Workunit registers in
-      the Schedule list. When that Event triggers, the Workunit compiles and
-      executes. When the Workunit completes, <!-- DNT-Start -->ECL<!-- DNT-End --> Scheduler removes it from the
-      Schedule list.</para>
+      <para>Your <!-- DNT-Start -->ECL<!-- DNT-End --> Code can execute when
+      an Event is triggered, or can trigger an Event. If you submit code
+      containing a <emphasis role="bold"><!-- DNT-Start -->WHEN<!-- DNT-End -->
+      </emphasis>clause, the Event and Workunit registers in the Schedule
+      list. When that Event triggers, the Workunit compiles and executes. When
+      the Workunit completes, <!-- DNT-Start -->ECL<!-- DNT-End --> Scheduler
+      removes it from the Schedule list.</para>
 
       <para>For example, if you submit a Workunit using <emphasis
-      role="bold"><!-- DNT-Start -->WHEN<!-- DNT-End -->('Event1','MyEvent', <!-- DNT-Start -->COUNT<!-- DNT-End -->(2)) </emphasis>in the
+      role="bold"><!-- DNT-Start -->WHEN<!-- DNT-End -->('Event1','MyEvent',
+      <!-- DNT-Start -->COUNT<!-- DNT-End -->(2)) </emphasis>in the
       appropriate place, it will execute twice (the value of <emphasis
-      role="bold"><!-- DNT-Start -->COUNT<!-- DNT-End --></emphasis>) before the <!-- DNT-Start -->ECL<!-- DNT-End --> Scheduler removes it from
-      the Schedule list and the Workunit is marked as completed.</para>
+      role="bold"><!-- DNT-Start -->COUNT<!-- DNT-End --></emphasis>) before
+      the <!-- DNT-Start -->ECL<!-- DNT-End --> Scheduler removes it from the
+      Schedule list and the Workunit is marked as completed.</para>
 
-      <para>For more details about both <emphasis id="WHEN"
-      role="bold"><!-- DNT-Start -->WHEN<!-- DNT-End --></emphasis> or <emphasis id="NOTIFY"
-      role="bold"><!-- DNT-Start -->NOTIFY<!-- DNT-End --></emphasis> or any <!-- DNT-Start -->ECL<!-- DNT-End --> Language functions or keywords
-      please see the <!-- DNT-Start -->ECL<!-- DNT-End --> Language reference. A copy of which can be found
-      online at <ulink
+      <para>For more details about both <emphasis id="WHEN" role="bold"><!-- DNT-Start -->WHEN<!-- DNT-End --></emphasis>
+      or <emphasis id="NOTIFY" role="bold"><!-- DNT-Start -->NOTIFY<!-- DNT-End --></emphasis>
+      or any <!-- DNT-Start -->ECL<!-- DNT-End --> Language functions or
+      keywords please see the <!-- DNT-Start -->ECL<!-- DNT-End --> Language
+      reference. A copy of which can be found online at <ulink
       url="http://hpccsystems.com/download/docs/learning-ecl">http://hpccsystems.com/download/docs/learning-ecl</ulink>
-      on the <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript> web site.</para>
+      on the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+      Systems<superscript>®</superscript> web site.</para>
 
-      <!-- DNT-Start --><!--***NOTE: Be sure to UPDATE these images when they find a home in ECLWATCH***--><!-- DNT-End -->
+      <!-- DNT-Start -->
+
+      <!--***NOTE: Be sure to UPDATE these images when they find a home in ECLWATCH***-->
+
+      <!-- DNT-End -->
     </sect1>
 
     <xi:include href="ECLScheduler/ECLSched-Mods/ECLSchedComp.xml"
@@ -1007,14 +1252,21 @@
   </chapter>
 
   <chapter id="ECLWatch_ECLWorkunits">
-    <!-- DNT-Start --><title>ECL Workunits</title><!-- DNT-End -->
+    <!-- DNT-Start -->
 
-    <para><!-- DNT-Start -->ECL<!-- DNT-End --> Watch provides information about <!-- DNT-Start -->ECL<!-- DNT-End --> jobs and workunits. Links
-    to pages that contain information about <!-- DNT-Start -->ECL<!-- DNT-End --> workunits appear in the
-    navigation bar along top of the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch page. There you will find links
-    to <!-- DNT-Start -->ECL<!-- DNT-End --> Workunits, simply labelled as Workunits, and you will also find the
-    link to the <!-- DNT-Start -->ECL<!-- DNT-End --> Playground. Not only can you find information about
-    workunits there, but you can perform operations on workunits.</para>
+    <title>ECL Workunits</title>
+
+    <!-- DNT-End -->
+
+    <para><!-- DNT-Start -->ECL<!-- DNT-End --> Watch provides information
+    about <!-- DNT-Start -->ECL<!-- DNT-End --> jobs and workunits. Links to
+    pages that contain information about <!-- DNT-Start -->ECL<!-- DNT-End -->
+    workunits appear in the navigation bar along top of the <!-- DNT-Start -->ECL<!-- DNT-End -->
+    Watch page. There you will find links to <!-- DNT-Start -->ECL<!-- DNT-End -->
+    Workunits, simply labelled as Workunits, and you will also find the link
+    to the <!-- DNT-Start -->ECL<!-- DNT-End --> Playground. Not only can you
+    find information about workunits there, but you can perform operations on
+    workunits.</para>
 
     <xi:include href="ECLWatch/ECLWa_mods/ECLWatchSrc.xml"
                 xpointer="xpointer(//*[@id='ECLWorkunits'])"
@@ -1026,16 +1278,21 @@
   </chapter>
 
   <chapter id="ECLWatch_FilesChapter">
-    <!-- DNT-Start --><title>Files</title><!-- DNT-End -->
+    <!-- DNT-Start -->
 
-    <para>This chapter contains sections dealing with <!-- DNT-Start -->HPCC<!-- DNT-End --> Platform <!-- DNT-Start -->Files<!-- DNT-End -->,
-    found on the <emphasis role="bold"><!-- DNT-Start -->Files<!-- DNT-End --></emphasis> link in <!-- DNT-Start -->ECL<!-- DNT-End -->
-    Watch.</para>
+    <title>Files</title>
 
-    <para>In an <!-- DNT-Start -->HPCC<!-- DNT-End --> platform, data files are partitioned across nodes. The
-    file parts, referenced using Logical Filenames, are stored in the
-    Distributed File Utility. This allows the collection of file parts to be
-    referenced as a single entity.</para>
+    <!-- DNT-End -->
+
+    <para>This chapter contains sections dealing with <!-- DNT-Start -->HPCC<!-- DNT-End -->
+    Platform <!-- DNT-Start -->Files<!-- DNT-End -->, found on the <emphasis
+    role="bold"><!-- DNT-Start -->Files<!-- DNT-End --></emphasis> link in
+    <!-- DNT-Start -->ECL<!-- DNT-End --> Watch.</para>
+
+    <para>In an <!-- DNT-Start -->HPCC<!-- DNT-End --> platform, data files
+    are partitioned across nodes. The file parts, referenced using Logical
+    Filenames, are stored in the Distributed File Utility. This allows the
+    collection of file parts to be referenced as a single entity.</para>
 
     <xi:include href="ECLWatch/ECLWa_mods/ECLWatchSrc.xml"
                 xpointer="xpointer(//*[@id='ECLWatchLogicalFiles'])"
@@ -1050,12 +1307,17 @@
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <sect1 id="spray_and_despray">
-      <!-- DNT-Start --><title>Spray/Despray</title><!-- DNT-End -->
+      <!-- DNT-Start -->
+
+      <title>Spray/Despray</title>
+
+      <!-- DNT-End -->
 
       <para>This section details how to Spray and Despray a data file to your
-      cluster using <!-- DNT-Start -->ECL<!-- DNT-End --> Watch. The spray function is integrated into the
-      Landing Zone page as detailed in the <link linkend="Upload_Files">Upload
-      <!-- DNT-Start -->Files<!-- DNT-End --></link> section .</para>
+      cluster using <!-- DNT-Start -->ECL<!-- DNT-End --> Watch. The spray
+      function is integrated into the Landing Zone page as detailed in the
+      <link linkend="Upload_Files">Upload <!-- DNT-Start -->Files<!-- DNT-End --></link>
+      section .</para>
 
       <para>In order to spray a file to your cluster you must first upload the
       file to your landing zone. The file upload steps are detailed in the
@@ -1076,7 +1338,11 @@
         </figure></para>
 
       <sect2 id="Spray-to-cluster">
-        <!-- DNT-Start --><title>Spray Data to a Cluster</title><!-- DNT-End -->
+        <!-- DNT-Start -->
+
+        <title>Spray Data to a Cluster</title>
+
+        <!-- DNT-End -->
 
         <para>With the <emphasis role="bold">Spray:</emphasis> Action buttons
         enabled, you press the appropriate button for the Spray you wish to
@@ -1126,11 +1392,17 @@
     </sect1>
 
     <sect1 id="ECLWatch_Xref">
-      <!-- DNT-Start --><title>XRef</title><!-- DNT-End -->
+      <!-- DNT-Start -->
 
-      <para>Under the <emphasis role="bold"><!-- DNT-Start -->Files<!-- DNT-End --></emphasis> Icon on the
-      navigation sub-menu there is a link for <!-- DNT-Start -->XRef<!-- DNT-End -->. This link will take you to
-      the <!-- DNT-Start -->XRef<!-- DNT-End --> page. On the <!-- DNT-Start -->XRef<!-- DNT-End --> page you can run the <!-- DNT-Start -->XREF<!-- DNT-End --> utility.</para>
+      <title>XRef</title>
+
+      <!-- DNT-End -->
+
+      <para>Under the <emphasis role="bold"><!-- DNT-Start -->Files<!-- DNT-End --></emphasis>
+      Icon on the navigation sub-menu there is a link for <!-- DNT-Start -->XRef<!-- DNT-End -->.
+      This link will take you to the <!-- DNT-Start -->XRef<!-- DNT-End -->
+      page. On the <!-- DNT-Start -->XRef<!-- DNT-End --> page you can run the
+      <!-- DNT-Start -->XREF<!-- DNT-End --> utility.</para>
 
       <para><figure>
           <title>XRef page</title>
@@ -1143,11 +1415,16 @@
         </figure></para>
 
       <sect2 id="The_XREF_Utility">
-        <!-- DNT-Start --><title>The XRef Utility</title><!-- DNT-End -->
+        <!-- DNT-Start -->
 
-        <para>The <!-- DNT-Start -->XREF<!-- DNT-End --> utility provides the ability to find "orphaned",
-        "lost", and "found" files. These "orphan" are files which are found on
-        the nodes but not registered in the Distributed File System.</para>
+        <title>The XRef Utility</title>
+
+        <!-- DNT-End -->
+
+        <para>The <!-- DNT-Start -->XREF<!-- DNT-End --> utility provides the
+        ability to find "orphaned", "lost", and "found" files. These "orphan"
+        are files which are found on the nodes but not registered in the
+        Distributed File System.</para>
 
         <variablelist>
           <varlistentry>
@@ -1200,9 +1477,9 @@
                 <entry><inlinegraphic fileref="images/tip.jpg" /></entry>
 
                 <entry><para>On a large system, we suggest limiting the number
-                of users who can Generate <!-- DNT-Start -->XREF<!-- DNT-End --> reports by setting
-                DfuXrefAccess access to <!-- DNT-Start -->FULL<!-- DNT-End --> for only those
-                users.</para><para> </para></entry>
+                of users who can Generate <!-- DNT-Start -->XREF<!-- DNT-End -->
+                reports by setting DfuXrefAccess access to <!-- DNT-Start -->FULL<!-- DNT-End -->
+                for only those users.</para><para> </para></entry>
               </row>
             </tbody>
           </tgroup>
@@ -1240,35 +1517,49 @@
 
         <itemizedlist>
           <listitem>
-            <para>Click on one of the tabs (Found <!-- DNT-Start -->Files<!-- DNT-End -->, Orphan <!-- DNT-Start -->Files<!-- DNT-End -->, Lost
-            <!-- DNT-Start -->Files<!-- DNT-End -->, Directories, or Errors/Warnings).</para>
+            <para>Click on one of the tabs (Found <!-- DNT-Start -->Files<!-- DNT-End -->,
+            Orphan <!-- DNT-Start -->Files<!-- DNT-End -->, Lost <!-- DNT-Start -->Files<!-- DNT-End -->,
+            Directories, or Errors/Warnings).</para>
           </listitem>
         </itemizedlist>
 
         <sect3 id="ECLWatchXREFMultiThor">
-          <!-- DNT-Start --><title>XREF with multiple Thor clusters</title><!-- DNT-End -->
+          <!-- DNT-Start -->
 
-          <para><!-- DNT-Start -->XREF<!-- DNT-End --> runs on the primary Thor cluster. For a configuration
-          with more than one Thor cluster on the same physical node group, <!-- DNT-Start -->ECL<!-- DNT-End -->
+          <title>XREF with multiple Thor clusters</title>
+
+          <!-- DNT-End -->
+
+          <para><!-- DNT-Start -->XREF<!-- DNT-End --> runs on the primary
+          Thor cluster. For a configuration with more than one Thor cluster on
+          the same physical node group, <!-- DNT-Start -->ECL<!-- DNT-End -->
           Watch only displays the primary Thor and not any other Thor that
           shares the same node group. This is the Thor cluster whose name
           matches the <emphasis>nodeGroup</emphasis> in the
           configuration.</para>
 
-          <para>To allow <!-- DNT-Start -->XREF<!-- DNT-End --> to run in an environment with multiple Thor
-          clusters, set the nodeGroup to the same value for all Thor
-          clusters.</para>
+          <para>To allow <!-- DNT-Start -->XREF<!-- DNT-End --> to run in an
+          environment with multiple Thor clusters, set the nodeGroup to the
+          same value for all Thor clusters.</para>
         </sect3>
 
         <sect3 id="ECLWatch_WorkingWithXref">
-          <!-- DNT-Start --><title>Working with XREF results:</title><!-- DNT-End -->
+          <!-- DNT-Start -->
 
-          <para>After <!-- DNT-Start -->XRef<!-- DNT-End --> completes you can see a list of available reports.
-          Click on one of the tabs to see the results page of each
-          type.</para>
+          <title>Working with XREF results:</title>
+
+          <!-- DNT-End -->
+
+          <para>After <!-- DNT-Start -->XRef<!-- DNT-End --> completes you can
+          see a list of available reports. Click on one of the tabs to see the
+          results page of each type.</para>
 
           <figure>
-            <!-- DNT-Start --><title>XRef Errors</title><!-- DNT-End -->
+            <!-- DNT-Start -->
+
+            <title>XRef Errors</title>
+
+            <!-- DNT-End -->
 
             <mediaobject>
               <imageobject>
@@ -1277,13 +1568,18 @@
             </mediaobject>
           </figure>
 
-          <para>The Orphan and Lost <!-- DNT-Start -->Files<!-- DNT-End --> pages list any Orphan or Lost files.
-          Orphan and Lost files are difficult to recover, unless you have
-          copies of missing parts needed to reconstruct the file (for example,
-          if a missing part is on a hard drive that was replaced.)</para>
+          <para>The Orphan and Lost <!-- DNT-Start -->Files<!-- DNT-End -->
+          pages list any Orphan or Lost files. Orphan and Lost files are
+          difficult to recover, unless you have copies of missing parts needed
+          to reconstruct the file (for example, if a missing part is on a hard
+          drive that was replaced.)</para>
 
           <figure>
-            <!-- DNT-Start --><title>XRef: Delete Orphan Files</title><!-- DNT-End -->
+            <!-- DNT-Start -->
+
+            <title>XRef: Delete Orphan Files</title>
+
+            <!-- DNT-End -->
 
             <mediaobject>
               <imageobject>
@@ -1314,12 +1610,19 @@
   </chapter>
 
   <chapter id="ECLWatch_Queries">
-    <!-- DNT-Start --><title>Queries</title><!-- DNT-End -->
+    <!-- DNT-Start -->
 
-    <para>The link for the Published <!-- DNT-Start -->Queries<!-- DNT-End --> (icon) header provides more
-    information and details about queries on available targets.</para>
+    <title>Queries</title>
 
-    <!-- DNT-Start --><!-- <para>Include ROXIE (RDDE). List of Clusters.</para>
+    <!-- DNT-End -->
+
+    <para>The link for the Published <!-- DNT-Start -->Queries<!-- DNT-End -->
+    (icon) header provides more information and details about queries on
+    available targets.</para>
+
+    <!-- DNT-Start -->
+
+    <!-- <para>Include ROXIE (RDDE). List of Clusters.</para>
 
     <para>Queries &gt; Browse</para>
 
@@ -1331,13 +1634,20 @@
 
     <para>I. Dynamic</para>
 
-    <para>II. Clusters</para> --><!-- DNT-End -->
+    <para>II. Clusters</para> -->
 
-    <para>Click on the Published <!-- DNT-Start -->Queries<!-- DNT-End --> (icon) hyperlink to display the
-    published queries and package maps on that cluster.</para>
+    <!-- DNT-End -->
+
+    <para>Click on the Published <!-- DNT-Start -->Queries<!-- DNT-End -->
+    (icon) hyperlink to display the published queries and package maps on that
+    cluster.</para>
 
     <figure>
-      <!-- DNT-Start --><title>Query Link</title><!-- DNT-End -->
+      <!-- DNT-Start -->
+
+      <title>Query Link</title>
+
+      <!-- DNT-End -->
 
       <mediaobject>
         <imageobject>
@@ -1352,11 +1662,15 @@
   </chapter>
 
   <chapter id="ECLWatch_OperationsLink">
-    <!-- DNT-Start --><title>Operations</title><!-- DNT-End -->
+    <!-- DNT-Start -->
 
-    <para>The <!-- DNT-Start -->Operations<!-- DNT-End --> link provides access to several components useful for
-    the day-to-day operation of your system, and some system administration
-    access as well. <figure>
+    <title>Operations</title>
+
+    <!-- DNT-End -->
+
+    <para>The <!-- DNT-Start -->Operations<!-- DNT-End --> link provides
+    access to several components useful for the day-to-day operation of your
+    system, and some system administration access as well. <figure>
         <title>Operations Menu</title>
 
         <mediaobject>
@@ -1372,17 +1686,24 @@
     that your system is up and running properly.</para>
 
     <para>There are also some system administration type links such as, Users,
-    Groups, Permissions, and <!-- DNT-Start -->Resources<!-- DNT-End -->. These links allow you to perform some
-    system administration tasks through <!-- DNT-Start -->ECL<!-- DNT-End --> watch.</para>
+    Groups, Permissions, and <!-- DNT-Start -->Resources<!-- DNT-End -->.
+    These links allow you to perform some system administration tasks through
+    <!-- DNT-Start -->ECL<!-- DNT-End --> watch.</para>
 
     <sect1 id="ECLWatch_Operations_Topology">
-      <!-- DNT-Start --><title>Topology</title><!-- DNT-End -->
+      <!-- DNT-Start -->
 
-      <para>The <!-- DNT-Start -->Topology<!-- DNT-End --> page provides a visual tree display with information
-      about your clusters, services, and nodes.</para>
+      <title>Topology</title>
 
-      <para>Click on the <emphasis role="bold"><!-- DNT-Start -->Topology<!-- DNT-End --></emphasis> link from
-      the <!-- DNT-Start -->Operations<!-- DNT-End --> navigation sub-menu to access the topology page.</para>
+      <!-- DNT-End -->
+
+      <para>The <!-- DNT-Start -->Topology<!-- DNT-End --> page provides a
+      visual tree display with information about your clusters, services, and
+      nodes.</para>
+
+      <para>Click on the <emphasis role="bold"><!-- DNT-Start -->Topology<!-- DNT-End --></emphasis>
+      link from the <!-- DNT-Start -->Operations<!-- DNT-End --> navigation
+      sub-menu to access the topology page.</para>
 
       <para><figure>
           <title>Topology Page</title>
@@ -1395,10 +1716,14 @@
         </figure></para>
 
       <sect2 id="TopologyTargets" role="brk">
-        <!-- DNT-Start --><title>Targets</title><!-- DNT-End -->
+        <!-- DNT-Start -->
 
-        <para>The <emphasis role="bold"><!-- DNT-Start -->Targets<!-- DNT-End --></emphasis> Action button
-        displays your clusters by type.</para>
+        <title>Targets</title>
+
+        <!-- DNT-End -->
+
+        <para>The <emphasis role="bold"><!-- DNT-Start -->Targets<!-- DNT-End --></emphasis>
+        Action button displays your clusters by type.</para>
 
         <para>Click on the arrow to the left of the Cluster folder/object to
         expand. The expanded view displays.</para>
@@ -1419,11 +1744,15 @@
       </sect2>
 
       <sect2 id="TopologyServices" role="brk">
-        <!-- DNT-Start --><title>Services</title><!-- DNT-End -->
+        <!-- DNT-Start -->
 
-        <para>Press the <emphasis role="bold"><!-- DNT-Start -->Services<!-- DNT-End --></emphasis> Action
-        button to display information on the various services running on your
-        cluster.</para>
+        <title>Services</title>
+
+        <!-- DNT-End -->
+
+        <para>Press the <emphasis role="bold"><!-- DNT-Start -->Services<!-- DNT-End --></emphasis>
+        Action button to display information on the various services running
+        on your cluster.</para>
 
         <para>Click on the arrow to the left of the service you wish to
         expand. The expanded view displays.</para>
@@ -1445,11 +1774,15 @@
       </sect2>
 
       <sect2 id="ECLWatch_Operations_TopologyMachines" role="brk">
-        <!-- DNT-Start --><title>Machines</title><!-- DNT-End -->
+        <!-- DNT-Start -->
 
-        <para>Press the <emphasis role="bold"><!-- DNT-Start -->Machines<!-- DNT-End --></emphasis> Action
-        button for more information on the various machines or nodes running
-        in your cluster(s).</para>
+        <title>Machines</title>
+
+        <!-- DNT-End -->
+
+        <para>Press the <emphasis role="bold"><!-- DNT-Start -->Machines<!-- DNT-End --></emphasis>
+        Action button for more information on the various machines or nodes
+        running in your cluster(s).</para>
 
         <para><figure>
             <title>Machines View</title>
@@ -1461,18 +1794,24 @@
             </mediaobject>
           </figure></para>
 
-        <para>The <emphasis role="bold"><!-- DNT-Start -->Machines<!-- DNT-End --></emphasis> action button
-        opens a node oriented view of the tree. Expand the nodes to see the
-        services on each node. Select the component to view the Summary,
-        Configuration, or Logs tabs for that selected component.</para>
+        <para>The <emphasis role="bold"><!-- DNT-Start -->Machines<!-- DNT-End --></emphasis>
+        action button opens a node oriented view of the tree. Expand the nodes
+        to see the services on each node. Select the component to view the
+        Summary, Configuration, or Logs tabs for that selected
+        component.</para>
       </sect2>
 
       <sect2 role="brk">
-        <!-- DNT-Start --><title>Roxie File Copy Status</title><!-- DNT-End -->
+        <!-- DNT-Start -->
 
-        <para>In the <!-- DNT-Start -->Topology<!-- DNT-End --> section for Roxie clusters, the <emphasis
-        role="bold">Roxie <!-- DNT-Start -->Files<!-- DNT-End --> Copy Status</emphasis> tab shows the number of
-        files a cluster has left to copy.<figure>
+        <title>Roxie File Copy Status</title>
+
+        <!-- DNT-End -->
+
+        <para>In the <!-- DNT-Start -->Topology<!-- DNT-End --> section for
+        Roxie clusters, the <emphasis role="bold">Roxie <!-- DNT-Start -->Files<!-- DNT-End -->
+        Copy Status</emphasis> tab shows the number of files a cluster has
+        left to copy.<figure>
             <title>File Copy Status</title>
 
             <mediaobject>
@@ -1485,11 +1824,16 @@
     </sect1>
 
     <sect1 id="ECLWatch_Operations_DiskUsage">
-      <!-- DNT-Start --><title>Disk Usage</title><!-- DNT-End -->
+      <!-- DNT-Start -->
 
-      <para>When you click on the <!-- DNT-Start -->Operations<!-- DNT-End --> link, it opens the Disk Usage
-      page by default. The Disk Usage page provides information about the
-      available space on your system, and what is using that space. <figure>
+      <title>Disk Usage</title>
+
+      <!-- DNT-End -->
+
+      <para>When you click on the <!-- DNT-Start -->Operations<!-- DNT-End -->
+      link, it opens the Disk Usage page by default. The Disk Usage page
+      provides information about the available space on your system, and what
+      is using that space. <figure>
           <title>Disk Usage</title>
 
           <mediaobject>
@@ -1504,12 +1848,16 @@
     </sect1>
 
     <sect1 id="ECLWatch_Operations_TargetClusters">
-      <!-- DNT-Start --><title>Operations: Target Clusters</title><!-- DNT-End -->
+      <!-- DNT-Start -->
+
+      <title>Operations: Target Clusters</title>
+
+      <!-- DNT-End -->
 
       <para>The Target Clusters link from the navigation sub-menu bar, on the
-      <!-- DNT-Start -->Operations<!-- DNT-End --> page, opens the link to the Target Clusters page. This page
-      provides machine information on the clusters you have set up on your
-      machine. <figure>
+      <!-- DNT-Start -->Operations<!-- DNT-End --> page, opens the link to the
+      Target Clusters page. This page provides machine information on the
+      clusters you have set up on your machine. <figure>
           <title>Target Clusters</title>
 
           <mediaobject>
@@ -1521,19 +1869,30 @@
     </sect1>
 
     <sect1 id="ECLWatch-DynamicESDL">
-      <!-- DNT-Start --><title>Dynamic ESDL</title><!-- DNT-End -->
+      <!-- DNT-Start -->
 
-      <para>The Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End --> tab in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch displays the available <!-- DNT-Start -->ESP<!-- DNT-End -->
-      <!-- DNT-Start -->Services<!-- DNT-End -->. You can explore the <!-- DNT-Start -->DESDL<!-- DNT-End --> services and <!-- DNT-Start -->ESDL<!-- DNT-End --> bindings, also
-      known as service configurations.</para>
+      <title>Dynamic ESDL</title>
 
-      <para>To access Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End --> through <!-- DNT-Start -->ECL<!-- DNT-End --> Watch, click on the <emphasis
-      role="bold"><!-- DNT-Start -->Operations<!-- DNT-End --></emphasis> link, then click on <emphasis
-      role="bold">Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End --></emphasis> from the navigation sub-menu
-      bar.</para>
+      <!-- DNT-End -->
+
+      <para>The Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End --> tab in <!-- DNT-Start -->ECL<!-- DNT-End -->
+      Watch displays the available <!-- DNT-Start -->ESP<!-- DNT-End --> <!-- DNT-Start -->Services<!-- DNT-End -->.
+      You can explore the <!-- DNT-Start -->DESDL<!-- DNT-End --> services and
+      <!-- DNT-Start -->ESDL<!-- DNT-End --> bindings, also known as service
+      configurations.</para>
+
+      <para>To access Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End --> through
+      <!-- DNT-Start -->ECL<!-- DNT-End --> Watch, click on the <emphasis
+      role="bold"><!-- DNT-Start -->Operations<!-- DNT-End --></emphasis>
+      link, then click on <emphasis role="bold">Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End --></emphasis>
+      from the navigation sub-menu bar.</para>
 
       <figure>
-        <!-- DNT-Start --><title>Dynamic ESDL sub-menu</title><!-- DNT-End -->
+        <!-- DNT-Start -->
+
+        <title>Dynamic ESDL sub-menu</title>
+
+        <!-- DNT-End -->
 
         <mediaobject>
           <imageobject>
@@ -1542,29 +1901,41 @@
         </mediaobject>
       </figure>
 
-      <para>The <emphasis role="bold">Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End --></emphasis> tab contains a
-      list of all <!-- DNT-Start -->DESDL<!-- DNT-End --> based <!-- DNT-Start -->ESP<!-- DNT-End --> <!-- DNT-Start -->Services<!-- DNT-End --> and their <!-- DNT-Start -->ESDL<!-- DNT-End --> Binding information.
-      The <!-- DNT-Start -->DESDL<!-- DNT-End -->-based <!-- DNT-Start -->ESP<!-- DNT-End --> services available are listed in the navigator pane
-      on the left as children of their parent <!-- DNT-Start -->ESP<!-- DNT-End --> process.</para>
+      <para>The <emphasis role="bold">Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End --></emphasis>
+      tab contains a list of all <!-- DNT-Start -->DESDL<!-- DNT-End --> based
+      <!-- DNT-Start -->ESP<!-- DNT-End --> <!-- DNT-Start -->Services<!-- DNT-End -->
+      and their <!-- DNT-Start -->ESDL<!-- DNT-End --> Binding information.
+      The <!-- DNT-Start -->DESDL<!-- DNT-End -->-based <!-- DNT-Start -->ESP<!-- DNT-End -->
+      services available are listed in the navigator pane on the left as
+      children of their parent <!-- DNT-Start -->ESP<!-- DNT-End -->
+      process.</para>
 
       <para>The <emphasis role="bold">Definitions</emphasis> tab, also
       accessible from the <emphasis role="bold">Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End --></emphasis>
-      button's sub-menu, lists all available <!-- DNT-Start -->ESDL<!-- DNT-End --> definitions and provides a
-      view into any of the definitions. These definitions are used to
-      dynamically define interfaces for existing <!-- DNT-Start -->ESP<!-- DNT-End --> web services.</para>
+      button's sub-menu, lists all available <!-- DNT-Start -->ESDL<!-- DNT-End -->
+      definitions and provides a view into any of the definitions. These
+      definitions are used to dynamically define interfaces for existing <!-- DNT-Start -->ESP<!-- DNT-End -->
+      web services.</para>
 
-      <para>For more information about Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End --> refer to the
-      documentation; <emphasis>Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End --></emphasis> available from the <!-- DNT-Start -->HPCC<!-- DNT-End -->
-      Systems portal: <ulink
+      <para>For more information about Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End -->
+      refer to the documentation; <emphasis>Dynamic <!-- DNT-Start -->ESDL<!-- DNT-End --></emphasis>
+      available from the <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems
+      portal: <ulink
       url="https://hpccsystems.com/training/documentation/learning-ecl/">https://hpccsystems.com/training/documentation/learning-ecl/dynamic-esdl</ulink></para>
 
       <sect2 id="USING_Dynamic_ESDL">
-        <!-- DNT-Start --><title>Using Dynamic ESDL</title><!-- DNT-End -->
+        <!-- DNT-Start -->
 
-        <para>In order to use this interface choose an <!-- DNT-Start -->ESP<!-- DNT-End --> service from the
-        service list. Click on the triangle icon next to the <!-- DNT-Start -->ESP<!-- DNT-End --> process to
-        expand and display the <!-- DNT-Start -->DESDL<!-- DNT-End --> services. Select the desired <!-- DNT-Start -->DESDL<!-- DNT-End -->
-        service from the navigator pane.</para>
+        <title>Using Dynamic ESDL</title>
+
+        <!-- DNT-End -->
+
+        <para>In order to use this interface choose an <!-- DNT-Start -->ESP<!-- DNT-End -->
+        service from the service list. Click on the triangle icon next to the
+        <!-- DNT-Start -->ESP<!-- DNT-End --> process to expand and display
+        the <!-- DNT-Start -->DESDL<!-- DNT-End --> services. Select the
+        desired <!-- DNT-Start -->DESDL<!-- DNT-End --> service from the
+        navigator pane.</para>
 
         <para>The selected service's information displays on the <emphasis
         role="bold">Summary</emphasis> tab to the right.</para>
@@ -1580,15 +1951,21 @@
           </figure></para>
 
         <sect3>
-          <!-- DNT-Start --><title>Viewing the binding information</title><!-- DNT-End -->
+          <!-- DNT-Start -->
 
-          <para>If the selected service contains an <!-- DNT-Start -->ESDL<!-- DNT-End --> binding, you can
-          select the binding tab to view the binding definition (the service
-          interface) and the configuration information.</para>
+          <title>Viewing the binding information</title>
+
+          <!-- DNT-End -->
+
+          <para>If the selected service contains an <!-- DNT-Start -->ESDL<!-- DNT-End -->
+          binding, you can select the binding tab to view the binding
+          definition (the service interface) and the configuration
+          information.</para>
 
           <para>Select the <emphasis role="bold">Binding</emphasis> tab then
           press the <emphasis role="bold">Definition</emphasis> button to
-          display the <!-- DNT-Start -->ESDL<!-- DNT-End --> definition in <!-- DNT-Start -->XML<!-- DNT-End --> format.</para>
+          display the <!-- DNT-Start -->ESDL<!-- DNT-End --> definition in
+          <!-- DNT-Start -->XML<!-- DNT-End --> format.</para>
 
           <para><figure>
               <title>Dynamic ESDL Binding Definition</title>
@@ -1602,7 +1979,11 @@
         </sect3>
 
         <sect3 id="Configure_ESDL_Bindings">
-          <!-- DNT-Start --><title>Configuring ESDL Bindings</title><!-- DNT-End -->
+          <!-- DNT-Start -->
+
+          <title>Configuring ESDL Bindings</title>
+
+          <!-- DNT-End -->
 
           <para>You can select a service and if there is a binding for it you
           can review, delete, or modify the configuration of that
@@ -1623,13 +2004,18 @@
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>Add a Binding</title><!-- DNT-End -->
+          <!-- DNT-Start -->
+
+          <title>Add a Binding</title>
+
+          <!-- DNT-End -->
 
           <para>If a configuration does not have a binding, you can add a
           binding. To add a service binding to an
-          <emphasis>unconfigured</emphasis> <!-- DNT-Start -->ESP<!-- DNT-End --> Service. Select the
-          unconfigured <!-- DNT-Start -->ESP<!-- DNT-End --> service, then press the enabled <emphasis
-          role="bold">Add Binding</emphasis> button.</para>
+          <emphasis>unconfigured</emphasis> <!-- DNT-Start -->ESP<!-- DNT-End -->
+          Service. Select the unconfigured <!-- DNT-Start -->ESP<!-- DNT-End -->
+          service, then press the enabled <emphasis role="bold">Add
+          Binding</emphasis> button.</para>
 
           <para><figure>
               <title>Adding a service binding</title>
@@ -1656,10 +2042,15 @@
         </sect3>
 
         <sect3>
-          <!-- DNT-Start --><title>Delete a Binding</title><!-- DNT-End -->
+          <!-- DNT-Start -->
+
+          <title>Delete a Binding</title>
+
+          <!-- DNT-End -->
 
           <para>To delete a service binding for a
-          <emphasis>configured</emphasis> <!-- DNT-Start -->ESP<!-- DNT-End --> Service. Select the <!-- DNT-Start -->ESP<!-- DNT-End --> service
+          <emphasis>configured</emphasis> <!-- DNT-Start -->ESP<!-- DNT-End -->
+          Service. Select the <!-- DNT-Start -->ESP<!-- DNT-End --> service
           that contains the binding to delete.</para>
 
           <para><figure>
@@ -1687,7 +2078,9 @@
                 xpointer="xpointer(//*[@id='Preflight_Data_Refinery'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <!-- DNT-Start --><!--
+    <!-- DNT-Start -->
+
+    <!--
     /*commented whole sect out*/
     <sect1 role="nobrk">
       <title>Users</title>
@@ -1702,14 +2095,24 @@
                   xpointer="xpointer(//*[@id='Sec_Adm_w_ECLWatch'])"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1> 
- --><!-- DNT-End -->
+ -->
+
+    <!-- DNT-End -->
   </chapter>
 
   <chapter id="User_Permissions_Chapter">
-    <!-- DNT-Start --><title>Users Permissions</title><!-- DNT-End -->
+    <!-- DNT-Start -->
+
+    <title>Users Permissions</title>
+
+    <!-- DNT-End -->
 
     <sect1 id="ECLWatch_Operations_UserAdministrations" role="nobrk">
-      <!-- DNT-Start --><title>User Administration</title><!-- DNT-End -->
+      <!-- DNT-Start -->
+
+      <title>User Administration</title>
+
+      <!-- DNT-End -->
 
       <para>There are User Administration features available through <!-- DNT-Start -->ECL<!-- DNT-End -->
       Watch.</para>
@@ -1721,13 +2124,19 @@
   </chapter>
 
   <chapter id="Plug-Ins_for_ECLWatch">
-    <!-- DNT-Start --><title>Plugins</title><!-- DNT-End -->
+    <!-- DNT-Start -->
 
-    <para>You can add functionality to <!-- DNT-Start -->ECL<!-- DNT-End --> Watch by installing plugins. These
-    plugins are designed to integrate into the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch interface. After you
+    <title>Plugins</title>
+
+    <!-- DNT-End -->
+
+    <para>You can add functionality to <!-- DNT-Start -->ECL<!-- DNT-End -->
+    Watch by installing plugins. These plugins are designed to integrate into
+    the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch interface. After you
     install an approved plugin, the plugin icon displays in the navigation bar
-    at the top of the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch page to provide access to the plugin(s). Click
-    on the plugin icon to view the plugins page in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch. <figure>
+    at the top of the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch page to
+    provide access to the plugin(s). Click on the plugin icon to view the
+    plugins page in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch. <figure>
         <title>ECL Watch Plugin icon</title>
 
         <mediaobject>
@@ -1738,16 +2147,24 @@
       </figure></para>
 
     <sect1 id="Ganglia_in_ECLWatch">
-      <!-- DNT-Start --><title>Ganglia in ECL Watch</title><!-- DNT-End -->
+      <!-- DNT-Start -->
 
-      <para>With the <!-- DNT-Start -->HPCC<!-- DNT-End --> Systems<superscript>®</superscript>
-      Ganglia-monitoring plugin installed, you can view the Ganglia statistics
-      and graphs through the <!-- DNT-Start -->ECL<!-- DNT-End --> Watch interface. The default monitoring
-      displays several key statistics, but you can customize and configure the
-      views.</para>
+      <title>Ganglia in ECL Watch</title>
+
+      <!-- DNT-End -->
+
+      <para>With the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+      Systems<superscript>®</superscript> Ganglia-monitoring plugin installed,
+      you can view the Ganglia statistics and graphs through the <!-- DNT-Start -->ECL<!-- DNT-End -->
+      Watch interface. The default monitoring displays several key statistics,
+      but you can customize and configure the views.</para>
 
       <figure>
-        <!-- DNT-Start --><title>Ganglia in ECL Watch</title><!-- DNT-End -->
+        <!-- DNT-Start -->
+
+        <title>Ganglia in ECL Watch</title>
+
+        <!-- DNT-End -->
 
         <mediaobject>
           <imageobject>
@@ -1757,7 +2174,11 @@
       </figure>
 
       <sect2 id="Customize_Monitoring" role="brk">
-        <!-- DNT-Start --><title>Customize Monitoring</title><!-- DNT-End -->
+        <!-- DNT-Start -->
+
+        <title>Customize Monitoring</title>
+
+        <!-- DNT-End -->
 
         <para>The default Ganglia page has a tab for Custom Monitoring where
         you can easily add custom monitoring components. <figure>
@@ -1801,12 +2222,17 @@
       </sect2>
 
       <sect2 id="ECLWatch_Monitoring_InstallingGanglia">
-        <!-- DNT-Start --><title>Installing Ganglia in ECL Watch</title><!-- DNT-End -->
+        <!-- DNT-Start -->
 
-        <para>In order to use Ganglia in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch, you need to have Ganglia
-        installed on your <!-- DNT-Start -->HPCC<!-- DNT-End --> System. For details on installing Ganglia for
-        <!-- DNT-Start -->ECL<!-- DNT-End --> Watch, refer to the <emphasis><!-- DNT-Start -->HPCC<!-- DNT-End --> Monitoring and
-        Reporting</emphasis> manual.</para>
+        <title>Installing Ganglia in ECL Watch</title>
+
+        <!-- DNT-End -->
+
+        <para>In order to use Ganglia in <!-- DNT-Start -->ECL<!-- DNT-End -->
+        Watch, you need to have Ganglia installed on your <!-- DNT-Start -->HPCC<!-- DNT-End -->
+        System. For details on installing Ganglia for <!-- DNT-Start -->ECL<!-- DNT-End -->
+        Watch, refer to the <emphasis><!-- DNT-Start -->HPCC<!-- DNT-End -->
+        Monitoring and Reporting</emphasis> manual.</para>
       </sect2>
     </sect1>
 
@@ -1816,25 +2242,40 @@
   </chapter>
 
   <chapter id="Resources">
-    <!-- DNT-Start --><title>Resources</title><!-- DNT-End -->
+    <!-- DNT-Start -->
 
-    <para>The resources link can be found under the <!-- DNT-Start -->Operations<!-- DNT-End --> Icon link. The
-    resources link in <!-- DNT-Start -->ECL<!-- DNT-End --> Watch provides a link to the <!-- DNT-Start -->HPCC<!-- DNT-End -->
+    <title>Resources</title>
+
+    <!-- DNT-End -->
+
+    <para>The resources link can be found under the <!-- DNT-Start -->Operations<!-- DNT-End -->
+    Icon link. The resources link in <!-- DNT-Start -->ECL<!-- DNT-End -->
+    Watch provides a link to the <!-- DNT-Start -->HPCC<!-- DNT-End -->
     Systems<superscript>®</superscript> web portal. Visit the <!-- DNT-Start -->HPCC<!-- DNT-End -->
     Systems<superscript>®</superscript> Web Portal at <ulink
     url="http://hpccsystems.com/">http://hpccsystems.com/</ulink> for software
     updates, plugins, support, documentation, and more. This is where you can
-    find resources useful for running and maintaining <!-- DNT-Start -->HPCC<!-- DNT-End --> on the web
-    portal.</para>
+    find resources useful for running and maintaining <!-- DNT-Start -->HPCC<!-- DNT-End -->
+    on the web portal.</para>
 
     <para>You can also get to the resources link on the <!-- DNT-Start -->HPCC<!-- DNT-End -->
     Systems<superscript>®</superscript> web portal page, by clicking on the
-    <emphasis role="bold">Additional <!-- DNT-Start -->Resources<!-- DNT-End --></emphasis> link found on the
-    sub-menu of at the top right hand side of navigation bar.</para>
+    <emphasis role="bold">Additional <!-- DNT-Start -->Resources<!-- DNT-End --></emphasis>
+    link found on the sub-menu of at the top right hand side of navigation
+    bar.</para>
 
-    <para><!-- DNT-Start -->ECL<!-- DNT-End --> Watch provides a link to the <!-- DNT-Start -->HPCC<!-- DNT-End --> portal's download page: <ulink
+    <para><!-- DNT-Start -->ECL<!-- DNT-End --> Watch provides a link to the
+    <!-- DNT-Start -->HPCC<!-- DNT-End --> portal's download page: <ulink
     url="http://hpccsystems.com/download">http://hpccsystems.com/download</ulink>.
     This is the page where you can download Installation packages, virtual
     images, source code, documentation, and tutorials.</para>
   </chapter>
+
+  <appendix id="SessMgmtFAQ">
+    <title>HPCC Session Management</title>
+
+    <xi:include href="ECLWatch/ECLWa_mods/SessFaq.xml"
+                xpointer="xpointer(//*[@id='session-management'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+  </appendix>
 </book>
