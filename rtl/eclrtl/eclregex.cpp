@@ -269,7 +269,7 @@ private:
     bool            matched;
     RegexMatcher *  matcher;
     UnicodeString   sample;
-    unsigned        matchedSize;
+    unsigned        matchedSize = 0;
 
 public:
     CUStrRegExprFindInstance(RegexMatcher * _matcher, const UChar * _str, size32_t _from, size32_t _len)

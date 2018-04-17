@@ -759,7 +759,7 @@ void CommonJsonWriter::outputBeginNested(const char *fieldname, bool nestChildre
     fieldname = checkItemNameBeginNested(fieldname);
     if (fieldname && *fieldname)
     {
-        const char * sep = (fieldname) ? strchr(fieldname, '/') : NULL;
+        const char * sep = strchr(fieldname, '/');
         while (sep)
         {
             StringAttr leading(fieldname, sep-fieldname);
@@ -785,7 +785,7 @@ void CommonJsonWriter::outputEndNested(const char *fieldname)
     fieldname = checkItemNameEndNested(fieldname);
     if (fieldname && *fieldname)
     {
-        const char * sep = (fieldname) ? strchr(fieldname, '/') : NULL;
+        const char * sep = strchr(fieldname, '/');
         while (sep)
         {
             out.append('}');
