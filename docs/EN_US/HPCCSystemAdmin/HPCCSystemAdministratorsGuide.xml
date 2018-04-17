@@ -1238,6 +1238,12 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
+
+    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/ssl-esp.xml"
+                xpointer="xpointer(//*[@id='ssl4esp'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+ 				
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/UserSecurityMaint.xml"
                 xpointer="xpointer(//*[@id='User_Security_Maint'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
