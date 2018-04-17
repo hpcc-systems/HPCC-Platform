@@ -1963,25 +1963,37 @@ void bindMemoryToLocalNodes()
 
 extern THORHELPER_API IOutputMetaData *getDaliLayoutInfo(IPropertyTree const &props)
 {
-    bool isGrouped = props.getPropBool("@grouped", false);
-    if (props.hasProp("_rtlType"))
+    try
     {
-        MemoryBuffer layoutBin;
-        props.getPropBin("_rtlType", layoutBin);
-        return createTypeInfoOutputMetaData(layoutBin, isGrouped, nullptr);
-    }
-    else if (props.hasProp("ECL"))
-    {
-        StringBuffer layoutECL;
-        props.getProp("ECL", layoutECL);
-        MultiErrorReceiver errs;
-        Owned<IHqlExpression> expr = parseQuery(layoutECL.str(), &errs);
-        if (errs.errCount() == 0)
+        bool isGrouped = props.getPropBool("@grouped", false);
+        if (props.hasProp("_rtlType"))
         {
             MemoryBuffer layoutBin;
-            if (exportBinaryType(layoutBin, expr))
-                return createTypeInfoOutputMetaData(layoutBin, isGrouped, nullptr);
+            props.getPropBin("_rtlType", layoutBin);
+            return createTypeInfoOutputMetaData(layoutBin, isGrouped, nullptr);
         }
+        else if (props.hasProp("ECL"))
+        {
+            StringBuffer layoutECL;
+            props.getProp("ECL", layoutECL);
+            MultiErrorReceiver errs;
+            Owned<IHqlExpression> expr = parseQuery(layoutECL.str(), &errs);
+            if (errs.errCount() == 0)
+            {
+                MemoryBuffer layoutBin;
+                if (exportBinaryType(layoutBin, expr))
+                    return createTypeInfoOutputMetaData(layoutBin, isGrouped, nullptr);
+            }
+        }
+    }
+    catch (IException *E)
+    {
+        EXCLOG(E, "Cannot deserialize file metadata:");
+        ::Release(E);
+    }
+    catch (...)
+    {
+        DBGLOG("Cannot deserialize file metadata: Unknown error");
     }
     return nullptr;
 }
