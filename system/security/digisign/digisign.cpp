@@ -18,6 +18,7 @@
 #ifdef _USE_OPENSSL
 #include <openssl/pem.h>
 #include <openssl/err.h>
+#include <openssl/evp.h>
 #endif
 #include "jencrypt.hpp"
 #include "digisign.hpp"

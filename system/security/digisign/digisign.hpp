@@ -41,7 +41,7 @@ public:
 extern "C"
 {
     //Uses the HPCCPublicKey/HPCCPrivateKey key files specified in environment.conf
-    DIGISIGN_API IDigitalSignatureManager * staticDigitalSignatureManagerInstance();
+    DIGISIGN_API IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromEnv();
 
     //Create using the given key files
     DIGISIGN_API IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromFiles(const char * _pubKey, const char *_privKey, const char * _passPhrase);

@@ -20,6 +20,7 @@
 #include "ldapsecurity.ipp"
 #include "ldapsecurity.hpp"
 #include "authmap.ipp"
+#include "digisign.hpp"
 
 /**********************************************************
  *     CLdapSecUser                                       *
@@ -33,6 +34,7 @@ CLdapSecUser::CLdapSecUser(const char *name, const char *pw) :
     setSudoersEnabled(false);
     setInSudoers(false);
     setSessionToken(0);
+    setSignature(nullptr);
 }
 
 CLdapSecUser::~CLdapSecUser()
@@ -654,32 +656,66 @@ bool CLdapSecManager::authenticate(ISecUser* user)
         return false;
     }
 
-    if(user->getAuthenticateStatus() == AS_AUTHENTICATED)
-        return true;
+    user->setAuthenticateStatus(AS_UNKNOWN);
 
-    if(m_permissionsCache->isCacheEnabled() && !m_usercache_off && m_permissionsCache->lookup(*user))
+    bool isCaching = m_permissionsCache->isCacheEnabled() && !m_usercache_off;//caching enabled?
+    bool isUserCached = false;
+    Owned<ISecUser> cachedUser = new CLdapSecUser(user->getName(), "");
+    if(isCaching)
     {
-        user->setAuthenticateStatus(AS_AUTHENTICATED);
+        user->copyTo(*(cachedUser.get()));//copy user to cachedUser
+        isUserCached = m_permissionsCache->lookup(*cachedUser);//populate cachedUser with cached values
+    }
+
+    //Verify provided signature if present
+    IDigitalSignatureManager * pDSM = createDigitalSignatureManagerInstanceFromEnv();
+    if (pDSM && pDSM->isDigiVerifierConfigured() && !isEmptyString(user->credentials().getSignature()))
+    {
+        StringBuffer b64Signature(user->credentials().getSignature());
+        if (!pDSM->digiVerify(user->getName(), b64Signature))//digital signature valid?
+        {
+            user->setAuthenticateStatus(AS_INVALID_CREDENTIALS);
+            WARNLOG("Invalid digital signature for user %s", user->getName());
+            return false;
+        }
+        else
+        {
+            user->setAuthenticateStatus(AS_AUTHENTICATED);
+            if(isCaching && !isUserCached)
+                m_permissionsCache->add(*user);
+            return true;
+        }
+    }
+
+    if (isUserCached && cachedUser->getAuthenticateStatus() == AS_AUTHENTICATED)//only authenticated users will be cached
+    {
         return true;
     }
 
-    if ((user->credentials().getSessionToken() != 0) || !isEmptyString(user->credentials().getSignature()))//Already authenticated it token or signature exist
+    //User not in cache. Look for session token, or call LDAP to authenticate
+
+    if (0 != user->credentials().getSessionToken())//check for token existence
     {
         user->setAuthenticateStatus(AS_AUTHENTICATED);
-        if(m_permissionsCache->isCacheEnabled() && !m_usercache_off)
+    }
+    else if (m_ldap_client->authenticate(*user)) //call LDAP to authenticate
+        user->setAuthenticateStatus(AS_AUTHENTICATED);
+
+    if (AS_AUTHENTICATED == user->getAuthenticateStatus())
+    {
+        if (pDSM && pDSM->isDigiSignerConfigured() && isEmptyString(user->credentials().getSignature()))
+        {
+            //Set user digital signature
+            StringBuffer b64Signature;
+            pDSM->digiSign(user->getName(), b64Signature);
+            user->credentials().setSignature(b64Signature);
+        }
+
+        if (isCaching)
             m_permissionsCache->add(*user);
-        return true;
     }
 
-    bool ok = m_ldap_client->authenticate(*user);
-    if(ok)
-    {
-        user->setAuthenticateStatus(AS_AUTHENTICATED);
-        if(m_permissionsCache->isCacheEnabled() && !m_usercache_off)
-            m_permissionsCache->add(*user);
-    }
-
-    return ok;
+    return AS_AUTHENTICATED == user->getAuthenticateStatus();
 }
 
 bool CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISecResourceList * Resources, IEspSecureContext* secureContext)
@@ -1452,8 +1488,6 @@ bool CLdapSecManager::logoutUser(ISecUser & user)
     user.credentials().setSessionToken(0);
     return true;
 }
-
-
 
 //Data View related interfaces
 void CLdapSecManager::createView(const char* viewName, const char * viewDescription)
