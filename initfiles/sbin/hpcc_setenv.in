@@ -86,12 +86,17 @@ function pidwait_fn () {
 platform='unknown'
 unamestr=`uname`
 if [[ "$unamestr" == 'Linux' ]]; then
-   platform='linux'
-   num_cpus=$(grep -c ^processor /proc/cpuinfo 2>/dev/null)
-   # or perhaps nproc
+    platform='linux'
+    which nproc >/dev/null 2>&1
+    rc=$?
+    if [[ $rc -eq 0 ]] ; then
+       num_cpus=$(nproc)
+    else
+       num_cpus=$(grep -c ^processor /proc/cpuinfo 2>/dev/null)
+    fi
 elif [[ "$unamestr" == 'Darwin' ]]; then
-   platform='mac'
-   num_cpus=$(sysctl -n hw.ncpu 2>/dev/null)
+    platform='mac'
+    num_cpus=$(sysctl -n hw.ncpu 2>/dev/null)
 fi
 if [[ -z "$num_cpus" ]] ; then
     num_cpus=1
