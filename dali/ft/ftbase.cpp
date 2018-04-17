@@ -87,6 +87,9 @@ PartitionPoint::PartitionPoint(unsigned _whichInput, unsigned _whichOutput, offs
     inputOffset = _inputOffset;
     inputLength = _inputLength;
     outputLength = _outputLength;
+#ifdef DEBUG
+    display();
+#endif
 }
 
 
@@ -121,9 +124,9 @@ void PartitionPoint::deserialize(MemoryBuffer & in)
 void PartitionPoint::display()
 {
     StringBuffer fulli, fullo;
-    LOG(MCdebugInfoDetail, unknownJob, 
+    LOG(MCdebugInfoDetail, unknownJob,
              "Partition %s{%d}[%" I64F "d size %" I64F "d]->%s{%d}[%" I64F "d size %" I64F "d]",
-             inputName.getPath(fulli).str(), whichInput, inputOffset, inputLength, 
+             inputName.getPath(fulli).str(), whichInput, inputOffset, inputLength,
              outputName.getPath(fullo).str(), whichOutput, outputOffset, outputLength);
 }
 
@@ -443,10 +446,10 @@ void FileFormat::serializeExtra(MemoryBuffer & out, unsigned version) const
     }
 }
 
-void FileFormat::set(const FileFormat & src) 
-{ 
-    type = src.type; 
-    recordSize = src.recordSize; 
+void FileFormat::set(const FileFormat & src)
+{
+    type = src.type;
+    recordSize = src.recordSize;
     maxRecordSize = src.maxRecordSize;
     separate.set(src.separate);
     quote.set(src.quote);
@@ -505,7 +508,7 @@ const char * getHeaderText(FileFormatType type)
     case FFTutf:
     case FFTutf8:
         return "\xEF\xBB\xBF";
-    case FFTutf16: 
+    case FFTutf16:
         return "\xFE\xFF";
     case FFTutf32:
         return "\x00\x00\xFE\xFF";
@@ -540,7 +543,7 @@ void OutputProgress::reset()
 }
 
 MemoryBuffer & OutputProgress::deserializeCore(MemoryBuffer & in)
-{ 
+{
     unsigned _inputCRC, _outputCRC;
     bool hasTime;
     in.read(status).read(whichPartition).read(hasInputCRC).read(_inputCRC).read(inputLength).read(_outputCRC).read(outputLength).read(hasTime);
@@ -576,8 +579,8 @@ void OutputProgress::trace()
     LOG(MCdebugInfoDetail, unknownJob, "Chunk %d status: %s  input length: %" I64F "d[CRC:%x] -> output length:%" I64F "d[CRC:%x]", whichPartition, statusText[status], inputLength, inputCRC, outputLength, outputCRC);
 }
 
-MemoryBuffer & OutputProgress::serializeCore(MemoryBuffer & out)        
-{ 
+MemoryBuffer & OutputProgress::serializeCore(MemoryBuffer & out)
+{
     bool hasTime = !resultTime.isNull();
     unsigned _inputCRC = inputCRC;
     unsigned _outputCRC = outputCRC;

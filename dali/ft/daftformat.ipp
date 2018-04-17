@@ -25,6 +25,19 @@
 #include "rmtpass.hpp"
 #include "jptree.hpp"
 
+
+//#define JSON_DEBUG 1
+
+#ifdef JSON_DEBUG
+    #ifdef DEBUG
+        #define JSON_DBGLOG(...) DBGLOG(__VA_ARGS__)
+    #else
+        #define JSON_DBGLOG(...)
+    #endif
+#else
+    #define JSON_DBGLOG(...)
+#endif
+
 //---------------------------------------------------------------------------
 
 class DALIFT_API CPartitioner : implements IFormatProcessor, public CInterface
@@ -45,7 +58,6 @@ protected:
     virtual void findSplitPoint(offset_t curOffset, PartitionCursor & cursor) = 0;
     virtual bool splitAfterPoint() { return false; }
     virtual void killBuffer() = 0;
-    
 
     void commonCalcPartitions();
 
@@ -125,7 +137,7 @@ protected:
 
 
 //---------------------------------------------------------------------------
-// More complex processors that need to read the source file - e.g. because 
+// More complex processors that need to read the source file - e.g. because
 // output offset being calculated.
 
 
@@ -151,13 +163,13 @@ protected:
     void seekInput(offset_t offset);
     offset_t tellInput();
 
-    inline byte *bufferBase()  
-    { 
-        return (byte *)((bufattr.length()!=bufferSize)?bufattr.allocate(bufferSize):bufattr.bufferBase()); 
+    inline byte *bufferBase()
+    {
+        return (byte *)((bufattr.length()!=bufferSize)?bufattr.allocate(bufferSize):bufattr.bufferBase());
     }
     virtual void killBuffer()  { bufattr.clear(); }
     virtual void clearBufferOverrun() { numOfBufferOverrun = 0; numOfProcessedBytes = 0; }
-protected: 
+protected:
     Owned<IFileIOStream>   inStream;
     MemoryAttr             bufattr;
     size32_t               headerSize;
@@ -252,7 +264,7 @@ protected:
 
 private:
     void storeFieldName(const char * start, unsigned len);
-    
+
 protected:
     enum { NONE=0, SEPARATOR=1, TERMINATOR=2, WHITESPACE=3, QUOTE=4, ESCAPE=5 };
     unsigned        maxElementLength;
@@ -541,24 +553,57 @@ public:
 protected:
     virtual void findSplitPoint(offset_t splitOffset, PartitionCursor & cursor)
     {
+        JSON_DBGLOG("CJsonInputPartitioner::findSplitPoint: splitOffset %lld", splitOffset);
+        JSON_DBGLOG("CJsonInputPartitioner::findSplitPoint: cursor(inputOffset: %lld, nextInputOffset: %lld, outputOffset: %lld, trimLength: %lld",
+                        cursor.inputOffset, cursor.nextInputOffset, cursor.outputOffset, cursor.trimLength);
+        cursor.inputOffset = 0;
         if (!splitOffset) //header + 0 is first offset
             return;
 
-        offset_t prevRowEnd = 0;
-        json->findRowEnd(splitOffset-thisOffset + thisHeaderSize, prevRowEnd); //false return just means we're processing the end
-        if (!json->checkFoundRowStart())
+        if (eof)
             return;
-        if (!json->newRowSet) //get rid of extra delimiter if we haven't closed and reopened in the meantime
+
+        // To prevent the splitOffset points into an already processed file area
+        if (splitOffset < cursor.nextInputOffset)
+            splitOffset = cursor.nextInputOffset;
+
+        offset_t prevRowEnd = 0;
+        JSON_DBGLOG("CJsonInputPartitioner::findSplitPoint: thisOffset: %lld, thisHeaderSize: %u, prevRowEnd: %lld", thisOffset, thisHeaderSize, prevRowEnd);
+        bool foundRowEnd = json->findRowEnd(splitOffset-thisOffset + thisHeaderSize, prevRowEnd);
+        JSON_DBGLOG("CJsonInputPartitioner::findSplitPoint: thisOffset: %lld, thisHeaderSize: %u, prevRowEnd: %lld, foundRowEnd:%s ", thisOffset, thisHeaderSize, prevRowEnd, (foundRowEnd ? "True" : "False"));
+        if (! foundRowEnd) //false return just means we're processing the end
+        {
+            //cursor.inputOffset = prevRowEnd;
+            return;
+        }
+
+        bool checkFoundRowStartRes = json->checkFoundRowStart();
+        JSON_DBGLOG("CJsonInputPartitioner::findSplitPoint: checkFoundRowStartRes:%s)", (checkFoundRowStartRes ? "True" : "False"));
+        if (!checkFoundRowStartRes)
+            return;
+
+        bool isNewRowSet = json->newRowSet;
+        JSON_DBGLOG("CJsonInputPartitioner::findSplitPoint: isNewRowSet:%s", (isNewRowSet ? "True" : "False"));
+        if (!isNewRowSet) //get rid of extra delimiter if we haven't closed and reopened in the meantime
         {
             cursor.trimLength = json->rowStart - prevRowEnd;
             if (cursor.trimLength && json->isRootless()) //compensate for difference in rootless offset
                 cursor.trimLength--;
         }
         cursor.inputOffset = json->getRowOffset() + thisOffset;
+        JSON_DBGLOG("CJsonInputPartitioner::findSplitPoint: eof:%s, cursor.inputOffset:%lld", (eof ? "True" : "False"), cursor.inputOffset);
         if (json->findNextRow())
+        {
+            cursor.inputOffset = json->getRowOffset() + thisOffset;
             cursor.nextInputOffset = json->getRowOffset() + thisOffset;
+        }
         else
+        {
+            cursor.inputOffset  =  prevRowEnd;
             cursor.nextInputOffset = cursor.inputOffset;  //eof
+            eof = true;
+            cursor.trimLength = 0;
+        }
     }
 
 protected:
@@ -567,6 +612,7 @@ protected:
     Owned<JsonSplitter> json;
     static IFileIOCache    *openfilecache;
     static CriticalSection openfilecachesect;
+    bool eof = false;
 };
 
 
@@ -605,7 +651,7 @@ public:
     size32_t getEndOfRecord(const byte * record, unsigned maxToRead);
     offset_t getHeaderLength(BufferedDirectReader & reader);
     offset_t getFooterLength(BufferedDirectReader & reader, offset_t size);
-    
+
     unsigned getMaxElementLength() { return maxElementLength; }
 
 protected:
@@ -710,7 +756,7 @@ public:
 
 protected:
     offset_t                outputOffset;
-    OwnedIFileIOStream      out; 
+    OwnedIFileIOStream      out;
 };
 
 class DALIFT_API CFixedOutputProcessor : public COutputProcessor
