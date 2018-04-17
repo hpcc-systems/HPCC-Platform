@@ -45,7 +45,13 @@ class CTransIDBuilder : public CInterface, implements IInterface
 {
     StringAttr seed;
     bool localSeed;
-    unsigned __int64 seq;
+    unsigned __int64 seq = 0;
+
+    unsigned maxLength = 0;
+    unsigned maxSeq = 0;
+    unsigned seedExpiredSeconds = 0;
+    time_t createTime;
+
     void add(StringAttrMapping* transIDFields, const char* key, StringBuffer& id)
     {
         StringAttr* value = transIDFields->getValue(key);
@@ -62,8 +68,38 @@ class CTransIDBuilder : public CInterface, implements IInterface
 
 public:
     IMPLEMENT_IINTERFACE;
-    CTransIDBuilder(const char* _seed, bool _localSeed) : seed(_seed), localSeed(_localSeed), seq(0) { };
+    CTransIDBuilder(const char* _seed, bool _localSeed, unsigned _maxLength, unsigned _maxSeq, unsigned _seedExpiredSeconds)
+        : seed(_seed), localSeed(_localSeed), maxLength(_maxLength), maxSeq(_maxSeq), seedExpiredSeconds(_seedExpiredSeconds)
+    {
+        CDateTime now;
+        now.setNow();
+        createTime = now.getSimple();
+    };
     virtual ~CTransIDBuilder() {};
+
+    bool checkMaxSequenceNumber() { return (maxSeq == 0) || (seq < maxSeq); };
+    bool checkMaxLength(unsigned length) { return (maxLength == 0) || (length <= maxLength); };
+    bool checkTimeout()
+    {
+        if (seedExpiredSeconds ==0)
+            return true;
+
+        CDateTime now;
+        now.setNow();
+        return now.getSimple() < createTime + seedExpiredSeconds;
+    };
+    bool isLocalSeed() { return localSeed; };
+    void resetTransSeed(const char* newSeed)
+    {
+        if (isEmptyString(newSeed))
+            throw MakeStringException(EspLoggingErrors::GetTransactionSeedFailed, "TransactionSeed cannot be empty.");
+        seed.set(newSeed);
+        seq = 0;
+
+        CDateTime now;
+        now.setNow();
+        createTime = now.getSimple();
+    };
 
     virtual const char* getTransSeed() { return seed.get(); };
     virtual void getTransID(StringAttrMapping* transIDFields, StringBuffer& id)
@@ -124,6 +160,7 @@ class CESPServerLoggingAgent : public CInterface, implements IEspLogAgent
     bool sendHTTPRequest(StringBuffer& req, StringBuffer& resp, StringBuffer& status);
     int getTransactionSeed(const char* source, StringBuffer& transactionSeed, StringBuffer& statusMessage);
     bool getTransactionSeed(StringBuffer& soapreq, int& statusCode, StringBuffer& statusMessage, StringBuffer& seedID);
+    void resetTransSeed(CTransIDBuilder *builder, const char* groupName);
 
     virtual void createLocalTransactionSeed(StringBuffer& transactionSeed);
 

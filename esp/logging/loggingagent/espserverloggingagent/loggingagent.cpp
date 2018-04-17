@@ -28,6 +28,9 @@ static const char* const PropServerUrl = "@url";
 static const char* const PropServerUserID = "@user";
 static const char* const PropServerPassword = "@password";
 static const char* const PropServerWaitingSeconds = "MaxServerWaitingSeconds";
+static const char* const PropMaxTransIDLength = "MaxTransIDLength";
+static const char* const PropMaxTransIDSequenceNumber = "MaxTransIDSequenceNumber";
+static const char* const PropMaxTransSeedTimeoutMinutes = "MaxTransSeedTimeoutMinutes";
 static const char* const MaxTriesGTS = "MaxTriesGTS";
 static const char* const appESPServerLoggingAgent = "ESPServerLoggingAgent";
 
@@ -69,11 +72,25 @@ bool CESPServerLoggingAgent::init(const char * name, const char * type, IPropert
         if (!found || !*found)
         {
             uniqueGroupNames.setValue(groupName.str(), true);
+
+            unsigned maxSeq = 0;
+            unsigned maxLength = 0;
+            unsigned seedExpiredSeconds = 0;
+            VStringBuffer xpath("LogGroup/[@name='%s']", groupName.str());
+            IPropertyTree* logGroup = cfg->queryBranch(xpath.str());
+            if (logGroup)
+            {
+                maxLength = logGroup->getPropInt(PropMaxTransIDLength, 0);
+                maxSeq = logGroup->getPropInt(PropMaxTransIDSequenceNumber, 0),
+                seedExpiredSeconds = 60 * logGroup->getPropInt(PropMaxTransSeedTimeoutMinutes, 0);
+            }
+
             StringBuffer transactionSeed, statusMessage;
             getTransactionSeed(groupName.str(), transactionSeed, statusMessage);
             if (transactionSeed.length() > 0)
             {
-                Owned<CTransIDBuilder> entry = new CTransIDBuilder(transactionSeed.str(), false);
+                Owned<CTransIDBuilder> entry = new CTransIDBuilder(transactionSeed.str(), false,
+                    maxLength, maxSeq, seedExpiredSeconds);
                 transIDMap.setValue(groupName.str(), entry);
                 if (iter->query().getPropBool("@default", false))
                     defaultGroup.set(groupName.str());
@@ -83,7 +100,9 @@ bool CESPServerLoggingAgent::init(const char * name, const char * type, IPropert
         }
     }
     createLocalTransactionSeed(localTransactionSeed);
-    Owned<CTransIDBuilder> localTransactionEntry = new CTransIDBuilder(localTransactionSeed.str(), true);
+    Owned<CTransIDBuilder> localTransactionEntry = new CTransIDBuilder(localTransactionSeed.str(), true,
+        cfg->getPropInt(PropMaxTransIDLength, 0), cfg->getPropInt(PropMaxTransIDSequenceNumber, 0),
+        60 * cfg->getPropInt(PropMaxTransSeedTimeoutMinutes, 0));
     transIDMap.setValue(appESPServerLoggingAgent, localTransactionEntry);
 
     readAllLogFilters(cfg);
@@ -235,6 +254,7 @@ bool CESPServerLoggingAgent::getTransactionSeed(StringBuffer& soapreq, int& stat
     if (!pTree)
         throw MakeStringException(EspLoggingErrors::GetTransactionSeedFailed, "Failed to read response from %s", serverUrl.str());
 
+    //statusCode: 0 = success, -1 = failed after retries
     statusCode = pTree->getPropInt("soap:Body/GetTransactionSeedResponse/StatusCode");
     statusMessage.set(pTree->queryProp("soap:Body/GetTransactionSeedResponse/StatusMessage"));
     seedID.set(pTree->queryProp("soap:Body/GetTransactionSeedResponse/SeedId"));
@@ -244,24 +264,65 @@ bool CESPServerLoggingAgent::getTransactionSeed(StringBuffer& soapreq, int& stat
     return true;
 }
 
+void CESPServerLoggingAgent::resetTransSeed(CTransIDBuilder *builder, const char* groupName)
+{
+    StringBuffer transactionSeed, statusMessage;
+    if (builder->isLocalSeed())
+        createLocalTransactionSeed(transactionSeed);
+    else
+    {
+        int statusCode = getTransactionSeed(groupName, transactionSeed, statusMessage);
+        if (!transactionSeed.length() || (statusCode != 0))
+        {
+            StringBuffer msg = "Failed to get Transaction Seed for ";
+            msg.append(groupName).append(". statusCode: ").append(statusCode);
+            if (!statusMessage.isEmpty())
+                msg.append(", ").append(statusMessage.str());
+            throw MakeStringException(EspLoggingErrors::GetTransactionSeedFailed, "%s", msg.str());
+        }
+    }
+
+    builder->resetTransSeed(transactionSeed.str());
+};
+
 void CESPServerLoggingAgent::getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID)
 {
-    CTransIDBuilder* transIDBuilder = NULL;
-    StringAttr* source = transFields->getValue(sTransactionMethod);
+    const char* groupName = nullptr;
+    CTransIDBuilder* transIDBuilder = nullptr;
+    StringAttr* source = nullptr;
+    if (transFields)
+        source = transFields->getValue(sTransactionMethod);
     if (source)
     {
         CLogSource* logSource = logSources.getValue(source->get());
         if (logSource)
-            transIDBuilder = transIDMap.getValue(logSource->getGroupName());
+        {
+            groupName = logSource->getGroupName();
+            transIDBuilder = transIDMap.getValue(groupName);
+        }
     }
     if (!transIDBuilder && (defaultGroup.length() != 0))
-        transIDBuilder = transIDMap.getValue(defaultGroup.str());
+    {
+        groupName = defaultGroup.str();
+        transIDBuilder = transIDMap.getValue(groupName);
+    }
     if (!transIDBuilder)
+    {
+        groupName = appESPServerLoggingAgent;
         transIDBuilder = transIDMap.getValue(appESPServerLoggingAgent);
+    }
     if (!transIDBuilder) //This should not happen.
         throw MakeStringException(EspLoggingErrors::GetTransactionSeedFailed, "Failed to getTransactionID");
 
+    if (!transIDBuilder->checkMaxSequenceNumber() || !transIDBuilder->checkTimeout())
+        resetTransSeed(transIDBuilder, groupName);
+
     transIDBuilder->getTransID(transFields, transactionID);
+    if (!transIDBuilder->checkMaxLength(transactionID.length()))
+    {
+        resetTransSeed(transIDBuilder, groupName);
+        transIDBuilder->getTransID(transFields, transactionID);
+    }
     return;
 }
 
