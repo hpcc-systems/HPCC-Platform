@@ -8099,12 +8099,8 @@ simpleDataSet
                             if ($5.queryExpr()->getOperator() == no_all)
                                 $5.release().setExpr(createConstant(CHOOSEN_ALL_LIMIT));
                             parser->normalizeExpression($5, type_int, false);
-                            
-                            IHqlExpression * limit = $5.getExpr();
-                            if (limit->queryValue() && limit->queryValue()->getIntValue() == 0)
-                                parser->reportWarning(CategoryUnusual, WRN_CHOOSEN_ALL,$1.pos,"Use CHOOSEN(dataset, ALL) to remove implicit choosen.  CHOOSEN(dataset, 0) now returns no records.");
-                            $$.setExpr(createDataset(no_choosen, $3.getExpr(), createComma(limit, $6.getExpr())), $1);
-                            parser->attachPendingWarnings($$);
+
+                            $$.setExpr(createDataset(no_choosen, $3.getExpr(), createComma($5.getExpr(), $6.getExpr())), $1);
                         }
     | CHOOSESETS '(' startTopFilter ',' setCountList ')' endTopFilter
                         {
