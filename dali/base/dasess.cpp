@@ -33,6 +33,7 @@
 #include "daldap.hpp"
 #include "seclib.hpp"
 #include "dasess.hpp"
+#include "digisign.hpp"
 
 #ifdef _MSC_VER
 #pragma warning (disable : 4355)
@@ -602,7 +603,7 @@ public:
                 unsigned auditflags = 0;
                 if (mb.length()-mb.getPos()>=sizeof(auditflags))
                     mb.read(auditflags);
-                udesc->deserializeExtra(mb);//deserialize sessionToken and user signature if present (hpcc ver 7.0.0 and newer)
+                udesc->deserializeExtra(mb);//deserialize user signature if present
                 int err = 0;
                 SecAccessFlags perms = manager.getPermissionsLDAP(key,obj,udesc,auditflags,&err);
                 mb.clear().append((int)perms);
@@ -911,7 +912,7 @@ public:
 #endif
         udesc->serialize(mb);
         mb.append(auditflags);
-        udesc->serializeExtra(mb);//serialize sessionToken and user signature if Dali version
+        udesc->serializeExtra(mb);//serialize user signature if Dali version >= 3.14
         if (!queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
             return SecAccess_None;
         SecAccessFlags perms = SecAccess_Unavailable;
@@ -2010,13 +2011,13 @@ class CUserDescriptor: implements IUserDescriptor, public CInterface
 {
     StringAttr username;
     StringAttr passwordenc;
-    unsigned sessionToken;//ESP session token
+    unsigned sessionToken = 0;//ESP session token
     StringBuffer signature;//user's digital Signature
+    IDigitalSignatureManager * pDSM = nullptr;
 public:
     IMPLEMENT_IINTERFACE;
     CUserDescriptor()
     {
-        sessionToken = 0;
     }
     StringBuffer &getUserName(StringBuffer &buf)
     {
@@ -2062,7 +2063,16 @@ public:
     void serializeExtra(MemoryBuffer &mb)
     {
         if (queryDaliServerVersion().compare("3.14") >= 0)
-            mb.append(sessionToken).append(signature.length()).append(signature);
+        {
+            if (signature.isEmpty())
+            {
+                if (pDSM == nullptr)
+                    pDSM = createDigitalSignatureManagerInstanceFromEnv();
+                if (pDSM && pDSM->isDigiSignerConfigured())
+                    pDSM->digiSign(username, signature);//Set user's digital signature
+            }
+            mb.append(signature);
+        }
     }
     void deserialize(MemoryBuffer &mb)
     {
@@ -2071,22 +2081,10 @@ public:
     void deserializeExtra(MemoryBuffer &mb)
     {
         signature.clear();
-        sessionToken = 0;
-        if (mb.remaining() > 0)
+        if (queryDaliServerVersion().compare("3.14") >= 0)
         {
-            mb.read((unsigned &)sessionToken);
-
             if (mb.remaining() > 0)
-            {
-                unsigned len = 0;
-                mb.read(len);
-                if (len)
-                {
-                    StringBuffer sig;
-                    mb.read(sig);
-                    signature.append(sig);
-                }
-            }
+                mb.read(signature);
         }
     }
 };
