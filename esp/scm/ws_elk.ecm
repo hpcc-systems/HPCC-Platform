@@ -1,0 +1,27 @@
+ESPRequest GetConfigDetailsRequest
+{
+};
+
+ESPResponse GetConfigDetailsResponse
+{
+    boolean IntegrateKibana;
+    string KibanaAddress;
+    string KibanaPort;
+    string KibanaEntryPointURI;
+    boolean ReportElasticSearchHealth;
+    string ElasticSearchAdresses;
+    string ElasticSearchPort;
+    boolean ReportLogStashHealth;
+    string LogStashAddress;
+    string LogStashPort;
+ };
+
+ESPservice [auth_feature("ESDLConfigAccess:ACCESS"), version("1.0"), default_client_version("1.0"), exceptions_inline("xslt/exceptions.xslt")] ws_elk
+{
+    ESPmethod getConfigDetails(GetConfigDetailsRequest, GetConfigDetailsResponse);
+};
+
+SCMexportdef(ws_elk);
+
+SCMapi(ws_elk) IClientws_elk *createws_elkClient();
+

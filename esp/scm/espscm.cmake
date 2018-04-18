@@ -41,6 +41,7 @@ set ( ESPSCM_SRCS
       ws_loggingservice.ecm
       ws_espcontrol.ecm
       ws_config2.ecm
+      ws_elk.ecm
     )
 
 foreach ( loop_var ${ESPSCM_SRCS} )
