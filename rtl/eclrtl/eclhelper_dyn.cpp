@@ -257,7 +257,7 @@ public:
             unsigned size =  filterSizes.item(idx);
             if (filter)
             {
-                assertex(size = filter->getSize());
+                assertex(size == filter->getSize());
                 irc->append(createKeySegmentMonitor(false, LINK(filter), idx, offset, size));
             }
             else
