@@ -557,8 +557,13 @@ bool RtlRecord::excluded(const RtlFieldInfo *field, const byte *row, byte *condi
 
 size_t RtlRecord::getFixedOffset(unsigned field) const
 {
-    assert(whichVariableOffset[field]==0);
+    assert(isFixedOffset(field));
     return fixedOffsets[field];
+}
+
+bool RtlRecord::isFixedOffset(unsigned field) const
+{
+    return (whichVariableOffset[field]==0);
 }
 
 size32_t RtlRecord::getRecordSize(const void *_row) const

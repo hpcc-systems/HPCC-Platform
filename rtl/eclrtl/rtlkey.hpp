@@ -110,6 +110,7 @@ public:
     virtual KeySegmentMonitorSerializeType serializeType() const = 0;
     virtual IKeySegmentMonitor *clone() const = 0;
     virtual unsigned numFieldsRequired() const = 0;
+    virtual bool getBloomHash(hash64_t &hash) const = 0;
 
     virtual bool setOffset(unsigned _offset) = 0;  // Used by old record layout translator - to be removed at some point
 };

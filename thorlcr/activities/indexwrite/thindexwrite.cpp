@@ -259,7 +259,11 @@ public:
             }
             props.setPropInt("@formatCrc", helper->getFormatCrc());
             if (isLocal)
+            {
                 props.setPropBool("@local", true);
+                if (helper->getPartitionFieldMask())
+                    props.setPropInt64("@partitionFieldMask", helper->getPartitionFieldMask());
+            }
             container.queryTempHandler()->registerFile(fileName, container.queryOwner().queryGraphId(), 0, false, WUFileStandard, &clusters);
             if (!dlfn.isExternal())
                 queryThorFileManager().publish(container.queryJob(), fileName, *fileDesc);

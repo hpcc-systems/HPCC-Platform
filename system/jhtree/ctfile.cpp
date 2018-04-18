@@ -81,9 +81,7 @@ inline void SwapBigEndian(KeyHdr &hdr)
     _WINREV(hdr.blobHead);
     _WINREV(hdr.metadataHead);
     _WINREV(hdr.bloomHead);
-    _WINREV(hdr.bloomTableSize);
-    _WINREV(hdr.bloomKeyLength);
-    _WINREV(hdr.bloomTableHashes);
+    _WINREV(hdr.partitionFieldMask);
 }
 
 inline void SwapBigEndian(NodeHdr &hdr)
@@ -456,12 +454,40 @@ CBloomFilterWriteNode::CBloomFilterWriteNode(offset_t _fpos, CKeyHdr *_keyHdr) :
 size32_t CBloomFilterWriteNode::set(const byte * &data, size32_t &size)
 {
     assertex(fpos);
-    unsigned short written = ((size > (maxBytes-sizeof(unsigned short))) ? (maxBytes-sizeof(unsigned short)) : size);
+    unsigned short written;
+    _WINCPYREV2(&written, keyPtr);
+
+    unsigned short writtenThisTime = ((size > (maxBytes-written-sizeof(unsigned short))) ? (maxBytes-written-sizeof(unsigned short)) : size);
+    memcpy(keyPtr+sizeof(unsigned short)+written, data, writtenThisTime);
+    data += writtenThisTime;
+    size -= writtenThisTime;
+    written += writtenThisTime;
     _WINCPYREV2(keyPtr, &written);
-    memcpy(keyPtr+sizeof(unsigned short), data, written);
-    data += written;
-    size -= written;
-    return written;
+    return writtenThisTime;
+}
+
+void CBloomFilterWriteNode::put4(unsigned val)
+{
+    assert(sizeof(val)==4);
+    unsigned short written;
+    _WINCPYREV2(&written, keyPtr);
+
+    assertex(written + sizeof(val) + sizeof(unsigned short) <= maxBytes);
+    _WINCPYREV4(keyPtr+sizeof(unsigned short)+written, &val);
+    written += sizeof(val);
+    _WINCPYREV2(keyPtr, &written);
+}
+
+void CBloomFilterWriteNode::put8(__int64 val)
+{
+    assert(sizeof(val)==8);
+    unsigned short written;
+    _WINCPYREV2(&written, keyPtr);
+
+    assertex(written + sizeof(val) + sizeof(unsigned short) <= maxBytes);
+    _WINCPYREV8(keyPtr+sizeof(unsigned short)+written, &val);
+    written += sizeof(val);
+    _WINCPYREV2(keyPtr, &written);
 }
 
 //=========================================================================================================
@@ -1030,7 +1056,27 @@ void CJHTreeMetadataNode::get(StringBuffer & out)
 
 void CJHTreeBloomTableNode::get(MemoryBuffer & out)
 {
-    out.append(expandedSize, keyBuf);
+    out.append(expandedSize-read, keyBuf + read);
+}
+
+__int64 CJHTreeBloomTableNode::get8()
+{
+    __int64 ret = 0;
+    assert(sizeof(ret)==8);
+    assertex(expandedSize >= read + sizeof(ret));
+    _WINCPYREV8(&ret, keyBuf + read);
+    read += sizeof(ret);
+    return ret;
+}
+
+unsigned CJHTreeBloomTableNode::get4()
+{
+    unsigned ret = 0;
+    assert(sizeof(ret)==4);
+    assertex(expandedSize >= read + sizeof(ret));
+    _WINCPYREV4(&ret, keyBuf + read);
+    read += sizeof(ret);
+    return ret;
 }
 
 

@@ -20,8 +20,6 @@
 
 // Only the base classes for Activity helpers - CHThorArg and derived classes - should be included in this file.
 
-//Don't #include any files here - because sometimes included inside a namespace, and that generates confusion.
-
 /*
 This file contains base class definitions for the different helper classes.  Any common methods are implemented here.
 
@@ -64,7 +62,16 @@ public:
     virtual bool getIndexMeta(size32_t & lenName, char * & name, size32_t & lenValue, char * & value, unsigned idx) override;
     virtual unsigned getWidth() override;
     virtual ICompare * queryCompare() override;
-    virtual unsigned getBloomKeyLength() override;
+    virtual const IBloomBuilderInfo * const *queryBloomInfo() const override;
+    virtual __uint64 getPartitionFieldMask() const override;
+};
+
+class ECLRTL_API CBloomBuilderInfo : public IBloomBuilderInfo
+{
+    virtual bool getBloomEnabled() const override;
+    virtual __uint64 getBloomFields() const override;
+    virtual unsigned getBloomLimit() const override;
+    virtual double getBloomProbability() const override;
 };
 
 class ECLRTL_API CThorFirstNArg : public CThorArgOf<IHThorFirstNArg>

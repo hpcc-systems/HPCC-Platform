@@ -116,17 +116,21 @@ size32_t SegMonitorList::getSize() const
         return 0;
 }
 
-bool SegMonitorList::isExact(unsigned len) const
+bool SegMonitorList::isExact(unsigned len, unsigned start) const
 {
     ForEachItemIn(idx, segMonitors)
     {
         IKeySegmentMonitor &seg = segMonitors.item(idx);
-        if (seg.getOffset() >= len)
+        unsigned o = seg.getOffset();
+        unsigned s = seg.getSize();
+        if (o+s <= start)
+            continue;
+        if (o >= start+len)
             return true;
         if (!seg.isWellKeyed())
             return false;
     }
-    return false;
+    return true;
 }
 
 void SegMonitorList::checkSize(size32_t keyedSize, char const * keyname)
@@ -327,10 +331,11 @@ protected:
     IContextLogger *ctx;
     SegMonitorList segs;
     IKeyCursor *keyCursor;
+    __uint64 partitionFieldMask = 0;
+    unsigned indexParts = 0;
     char *keyBuffer;
     unsigned keySize;       // size of key record including payload
     unsigned keyedSize;     // size of non-payload part of key
-    unsigned bloomLength = 0;   // size that can be prechecked using bloom filter
     unsigned numsegs;
     bool matched = false;
     bool eof = false;
@@ -540,6 +545,9 @@ public:
             assertex(_key->numParts()==1);
             IKeyIndex *ki = _key->queryPart(0);
             keyCursor = ki->getCursor(ctx);
+            partitionFieldMask = ki->getPartitionFieldMask();
+            indexParts = ki->numPartitions();
+
             keyName.set(ki->queryFileName());
             if (!keyBuffer)
             {
@@ -554,15 +562,24 @@ public:
                     throw e;
                 }
                 keyBuffer = (char *) malloc(keySize);
-                bloomLength = ki->getBloomKeyLength();
             }
             else
             {
                 assertex(keyedSize==ki->keyedSize());
                 assertex(keySize==ki->keySize());
-                assertex(bloomLength==ki->getBloomKeyLength());
             }
         }
+    }
+
+    virtual unsigned getPartition() override
+    {
+        if (partitionFieldMask)
+        {
+            hash64_t hash = HASH64_INIT;
+            if (getBloomHash(partitionFieldMask, segs, hash))
+                return (hash % indexParts) + 1;
+        }
+        return 0;
     }
 
     virtual void setChooseNLimit(unsigned __int64 _rowLimit) override
@@ -583,9 +600,12 @@ public:
             if (!crappyHack)
             {
                 matched = false;
-                eof = false;
-                setLow(0);
-                keyCursor->reset();
+                eof = keyCursor->bloomFilterReject(segs);
+                if (!eof)
+                {
+                    setLow(0);
+                    keyCursor->reset();
+                }
             }
         }
     }
@@ -654,7 +674,6 @@ public:
         unsigned lscans = 0;
         while (!eof)
         {
-            bool canMatch = true;
             if (matched)
             {
                 if (!keyCursor->next(keyBuffer))
@@ -663,33 +682,21 @@ public:
             }
             else
             {
-                if (exact && bloomLength && segs.isExact(bloomLength))
-                {
-                    hash64_t hash = rtlHash64Data(bloomLength, keyBuffer, HASH64_INIT);
-                    if (!keyCursor->checkBloomFilter(hash))
-                        canMatch = false;
-                }
-                if (canMatch)
-                {
-                    if (!keyCursor->gtEqual(keyBuffer, keyBuffer, true))
-                        eof = true;
-                    lseeks++;
-                }
+                if (!keyCursor->gtEqual(keyBuffer, keyBuffer, true))
+                    eof = true;
+                lseeks++;
             }
             if (!eof)
             {
                 unsigned i = 0;
-                if (canMatch)
+                matched = true;
+                if (segs.segMonitors.length())
                 {
-                    matched = true;
-                    if (segs.segMonitors.length())
+                    for (; i <= lastSeg; i++)
                     {
-                        for (; i <= lastSeg; i++)
-                        {
-                            matched = segs.segMonitors.item(i).matchesBuffer(keyBuffer);
-                            if (!matched)
-                                break;
-                        }
+                        matched = segs.segMonitors.item(i).matchesBuffer(keyBuffer);
+                        if (!matched)
+                            break;
                     }
                 }
                 if (matched)
@@ -1341,7 +1348,7 @@ void CKeyIndex::init(KeyHdr &hdr, bool isTLK, bool allowPreload)
         }
     }
     rootNode = nodeCache->getNode(this, iD, rootPos, NULL, isTLK);
-    loadBloomFilter();
+    loadBloomFilters();
 }
 
 CKeyIndex::~CKeyIndex()
@@ -1467,6 +1474,16 @@ bool CKeyIndex::isFullySorted()
     return (keyHdr->getKeyType() & HTREE_FULLSORT_KEY) != 0;
 }
 
+__uint64 CKeyIndex::getPartitionFieldMask()
+{
+    return keyHdr->getPartitionFieldMask();
+}
+unsigned CKeyIndex::numPartitions()
+{
+    return keyHdr->numPartitions();
+}
+
+
 IKeyCursor *CKeyIndex::getCursor(IContextLogger *ctx)
 {
     return new CKeyCursor(*this, ctx);      // MORE - pool them?
@@ -1573,34 +1590,48 @@ offset_t CKeyIndex::queryMetadataHead()
     return ret;
 }
 
-void CKeyIndex::loadBloomFilter()
+void CKeyIndex::loadBloomFilters()
 {
     offset_t bloomAddr = keyHdr->getHdrStruct()->bloomHead;
     if (!bloomAddr || bloomAddr == static_cast<offset_t>(-1))
         return; // indexes created before introduction of bloomfilter would have FFFF... in this space
-    uint32_t bloomTableSize = keyHdr->getHdrStruct()->bloomTableSize;
-    unsigned short bloomTableHashes = keyHdr->getHdrStruct()->bloomTableHashes;
-    MemoryBuffer bloomTable;
-    bloomTable.ensureCapacity(bloomTableSize);
+
     while (bloomAddr)
     {
         Owned<CJHTreeNode> node = loadNode(bloomAddr);
         assertex(node->isBloom());
-        static_cast<CJHTreeBloomTableNode *>(node.get())->get(bloomTable);
-        bloomAddr = node->getRightSib();
+        CJHTreeBloomTableNode &bloomNode = *static_cast<CJHTreeBloomTableNode *>(node.get());
+        bloomAddr = bloomNode.get8();
+        unsigned numHashes = bloomNode.get4();
+        __uint64 fields =  bloomNode.get8();
+        unsigned bloomTableSize = bloomNode.get4();
+        MemoryBuffer bloomTable;
+        bloomTable.ensureCapacity(bloomTableSize);
+        for (;;)
+        {
+            static_cast<CJHTreeBloomTableNode *>(node.get())->get(bloomTable);
+            offset_t next = node->getRightSib();
+            if (!next)
+                break;
+            node.setown(loadNode(next));
+            assertex(node->isBloom());
+        }
+        assertex(bloomTable.length()==bloomTableSize);
+        //DBGLOG("Creating bloomfilter(%d, %d) for fields %" I64F "x",numHashes, bloomTableSize, fields);
+        bloomFilters.append(*new IndexBloomFilter(numHashes, bloomTableSize, (byte *) bloomTable.detach(), fields));
     }
-    assertex(bloomTable.length()==bloomTableSize);
-    bloomFilter.setown(new BloomFilter(bloomTableHashes, bloomTableSize, (byte *) bloomTable.detach()));
+    bloomFilters.sort(IndexBloomFilter::compare);
 }
 
-const BloomFilter * CKeyIndex::queryBloomFilter()
+bool CKeyIndex::bloomFilterReject(const SegMonitorList &segs) const
 {
-    return bloomFilter;
-}
-
-unsigned CKeyIndex::getBloomKeyLength()
-{
-    return keyHdr->getHdrStruct()->bloomKeyLength;
+    ForEachItemIn(idx, bloomFilters)
+    {
+        IndexBloomFilter &filter = bloomFilters.item(idx);
+        if (filter.reject(segs))
+            return true;
+    }
+    return false;
 }
 
 IPropertyTree * CKeyIndex::getMetadata()
@@ -1635,8 +1666,6 @@ CKeyCursor::CKeyCursor(CKeyIndex &_key, IContextLogger *_ctx)
     : key(_key), ctx(_ctx)
 {
     key.Link();
-    bloomFilter = key.queryBloomFilter();
-    bloomLength = key.getBloomKeyLength();
     nodeKey = 0;
 }
 
@@ -1649,16 +1678,6 @@ CKeyCursor::~CKeyCursor()
 void CKeyCursor::reset()
 {
     node.clear();
-}
-
-bool CKeyCursor::checkBloomFilter(hash64_t hash)
-{
-    return bloomFilter != nullptr && bloomFilter->test(hash);
-}
-
-unsigned CKeyCursor::getBloomKeyLength()
-{
-    return bloomLength;
 }
 
 CJHTreeNode *CKeyCursor::locateFirstNode()
@@ -1975,6 +1994,12 @@ void CKeyCursor::releaseBlobs()
     activeBlobs.kill();
 }
 
+bool CKeyCursor::bloomFilterReject(const SegMonitorList &segs) const
+{
+    return key.bloomFilterReject(segs);
+}
+
+
 class CLazyKeyIndex : implements IKeyIndex, public CInterface
 {
     StringAttr keyfile;
@@ -2020,8 +2045,10 @@ public:
     virtual size32_t keySize() { return checkOpen().keySize(); }
     virtual size32_t keyedSize() { return checkOpen().keyedSize(); }
     virtual bool hasPayload() { return checkOpen().hasPayload(); }
-    virtual bool isTopLevelKey() { return checkOpen().isTopLevelKey(); }
-    virtual bool isFullySorted() { return checkOpen().isFullySorted(); }
+    virtual bool isTopLevelKey() override { return checkOpen().isTopLevelKey(); }
+    virtual bool isFullySorted() override { return checkOpen().isFullySorted(); }
+    virtual __uint64 getPartitionFieldMask() { return checkOpen().getPartitionFieldMask(); }
+    virtual unsigned numPartitions() { return checkOpen().numPartitions(); }
     virtual unsigned getFlags() { return checkOpen().getFlags(); }
     virtual void dumpNode(FILE *out, offset_t pos, unsigned count, bool isRaw) { checkOpen().dumpNode(out, pos, count, isRaw); }
     virtual unsigned numParts() { return 1; }
@@ -2034,8 +2061,6 @@ public:
     virtual offset_t queryLatestGetNodeOffset() const { return realKey ? realKey->queryLatestGetNodeOffset() : 0; }
     virtual offset_t queryMetadataHead() { return checkOpen().queryMetadataHead(); }
     virtual IPropertyTree * getMetadata() { return checkOpen().getMetadata(); }
-    virtual const BloomFilter * queryBloomFilter() { return checkOpen().queryBloomFilter(); }
-    virtual unsigned getBloomKeyLength() { return checkOpen().getBloomKeyLength(); }
     virtual unsigned getNodeSize() { return checkOpen().getNodeSize(); }
     virtual const IFileIO *queryFileIO() const override { return iFileIO; } // NB: if not yet opened, will be null
     virtual bool hasSpecialFileposition() const { return realKey ? realKey->hasSpecialFileposition() : false; }
@@ -2456,6 +2481,11 @@ public:
         activekeys = 0;
         resetPending = true;
         sortFromSeg = 0;
+    }
+
+    virtual unsigned getPartition() override
+    {
+        return 0;   // If all keys share partition info (is that required?) then we can do better
     }
 
     virtual bool lookupSkip(const void *seek, size32_t seekOffset, size32_t seeklen)
@@ -3094,7 +3124,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
         Owned<IFileIOStream> out = createIOStream(io);
         unsigned maxRecSize = variable ? 18 : 10;
         unsigned keyedSize = 10;
-        Owned<IKeyBuilder> builder = createKeyBuilder(out, COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY |  (variable ? HTREE_VARSIZE : 0), maxRecSize, NODESIZE, keyedSize, 0, keyedSize, true);
+        Owned<IKeyBuilder> builder = createKeyBuilder(out, COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY |  (variable ? HTREE_VARSIZE : 0), maxRecSize, NODESIZE, keyedSize, 0, nullptr, true, false);
 
         char keybuf[18];
         memset(keybuf, '0', 18);

@@ -13956,6 +13956,10 @@ public:
         }
         switch (expr->getOperator())
         {
+        case no_attr_expr:
+            if (expr->queryName()==bloomAtom)
+                checkBloom(expr);
+            break;
         case no_join:
             checkJoin(expr);
             break;
@@ -13964,6 +13968,7 @@ public:
     }
 
 protected:
+    void checkBloom(IHqlExpression * expr);
     void checkJoin(IHqlExpression * expr);
     void reportError(int errNo, const char * format, ...) __attribute__((format(printf, 3, 4)));
 
@@ -13971,6 +13976,32 @@ protected:
     ErrorSeverityMapper mapper;
     HqlExprCopyArray locations;
 };
+
+void SemanticErrorChecker::checkBloom(IHqlExpression * bloom)
+{
+    // Possible semantic errors caught here:
+    // 1. Args to active, limit, or probability sub-attrs not constant
+    // 2. Arg to probability out of range
+    ForEachChildFrom(i, bloom, 1)
+    {
+        IHqlExpression * cur = bloom->queryChild(i);
+        const IAtom *name = cur->queryName();
+        if (name==activeAtom)
+            name = bloomAtom;
+        else if (name==probabilityAtom)
+        {
+            IValue *cval = cur->queryChild(0)->queryValue();
+            if (cval)
+            {
+                double rval = cval->getRealValue();
+                if (rval <= 0.01 || rval > 0.3)
+                    reportError(ERR_INVALID_PROBABILITY,"Probability argument is not in permitted range 0.01 to 0.3");
+            }
+        }
+        if (!cur->isConstant())
+            reportError(ERR_KEYEDINDEXINVALID, "Parameter to %s must be constant", str(name));
+    }
+}
 
 void SemanticErrorChecker::checkJoin(IHqlExpression * join)
 {

@@ -123,7 +123,7 @@ IF (createMultiPart,
         buildindex(LocalFiles.DG_NormalIndexFileEvens,overwrite,NOROOT,SET('_nodeSize', 512)),
         buildindex(LocalFiles.DG_TransIndexFile,overwrite,NOROOT),
         buildindex(LocalFiles.DG_TransIndexFileEvens,overwrite,NOROOT),
-        buildindex(LocalFiles.DG_NormalVarIndex, overwrite,NOROOT);
+        buildindex(LocalFiles.DG_NormalVarIndex, overwrite,NOROOT,PARTITION(DG_firstname));
         buildindex(LocalFiles.DG_TransVarIndex, overwrite,NOROOT);
    )
 );

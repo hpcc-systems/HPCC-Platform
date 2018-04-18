@@ -225,10 +225,10 @@ public:
             deserializeSet(*filterSet, inrec.getMinRecordSize(), fieldType, filter);
             while (filters.length()<=fieldNum)
             {
-                filters.append(nullptr);
                 unsigned dummyOffset = inrec.getFixedOffset(filters.length());
                 filterOffsets.append(dummyOffset);
                 filterSizes.append(inrec.getFixedOffset(filters.length()+1) - dummyOffset);
+                filters.append(nullptr);
             }
             IStringSet *prev = filters.item(fieldNum);
             if (prev)

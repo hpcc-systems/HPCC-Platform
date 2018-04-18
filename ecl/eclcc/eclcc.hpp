@@ -142,6 +142,7 @@ const char * const helpText[] = {
     "?!  -fsubgraphToRegenerate=n Regenerate the ECL for a particular subgraph",
     "?!  -ftimeParser            Add timings for parsing each ECL attribute",
     "?!  -ftimeTransforms        Add timings for internal transforms to the workunit",
+    "?!  -faddDefaultBloom       Generate Bloom filter for first field of index if none specified",
     "",
 };
 

@@ -12179,7 +12179,7 @@ public:
             buildUserMetadata(metadata);
             buildLayoutMetadata(metadata);
             unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;
-            Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper.getKeyedSize(), 0, helper.getBloomKeyLength(), true);
+            Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper.getKeyedSize(), 0, &helper, true, false);
             class BcWrapper : implements IBlobCreator
             {
                 IKeyBuilder *builder;
@@ -22875,9 +22875,8 @@ public:
                                         }
                                         else
                                         {
-                                            // MORE - we could check whether there are any matching parts if we wanted.
-                                            // If people are in the habit of sending null values that would be worthwhile
-                                            remote.getMem(0, fileNo, 0);
+                                            unsigned slavePart = tlk->getPartition();  // Returns 0 if no partition info, or filter cannot be partitioned
+                                            remote.getMem(slavePart, fileNo, 0);
                                         }
                                     }
                                     else

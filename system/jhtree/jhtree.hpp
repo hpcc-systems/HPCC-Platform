@@ -30,6 +30,7 @@
 #include "errorlist.h"
 
 class BloomFilter;
+class SegMonitorList;
 
 interface jhtree_decl IDelayedFile : public IInterface
 {
@@ -52,8 +53,7 @@ interface jhtree_decl IKeyCursor : public IInterface
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize) = 0;
     virtual void releaseBlobs() = 0;
     virtual void reset() = 0;
-    virtual bool checkBloomFilter(hash64_t hash) = 0;
-    virtual unsigned getBloomKeyLength() = 0;
+    virtual bool bloomFilterReject(const SegMonitorList &segs) const = 0;  // returns true if record cannot possibly match
 };
 
 interface IKeyIndex;
@@ -71,6 +71,8 @@ interface jhtree_decl IKeyIndex : public IKeyIndexBase
     virtual size32_t keySize() = 0;
     virtual bool isFullySorted() = 0;
     virtual bool isTopLevelKey() = 0;
+    virtual __uint64 getPartitionFieldMask() = 0;
+    virtual unsigned numPartitions() = 0;
     virtual unsigned getFlags() = 0;
     virtual void dumpNode(FILE *out, offset_t pos, unsigned rowCount, bool isRaw) = 0;
     virtual unsigned queryScans() = 0;
@@ -83,8 +85,6 @@ interface jhtree_decl IKeyIndex : public IKeyIndexBase
     virtual offset_t queryLatestGetNodeOffset() const = 0;
     virtual offset_t queryMetadataHead() = 0;
     virtual IPropertyTree * getMetadata() = 0;
-    virtual const BloomFilter * queryBloomFilter() = 0;
-    virtual unsigned getBloomKeyLength() = 0;
 
     virtual unsigned getNodeSize() = 0;
     virtual const IFileIO *queryFileIO() const = 0;
@@ -189,7 +189,7 @@ public:
     unsigned lastFullSeg() const;
     bool matched(void *keyBuffer, unsigned &lastMatch) const;
     size32_t getSize() const;
-    bool isExact(unsigned bytes) const;  // Are first N bytes an exact match ?
+    bool isExact(unsigned length, unsigned start) const;  // Are corresponding bytes an exact match ?
     void checkSize(size32_t keyedSize, char const * keyname);
     void recalculateCache();
     void finish(size32_t keyedSize);
@@ -236,6 +236,7 @@ interface IKeyManager : public IInterface, extends IIndexReadContext
     virtual void finishSegmentMonitors() = 0;
 
     virtual bool lookupSkip(const void *seek, size32_t seekGEOffset, size32_t seeklen) = 0;
+    virtual unsigned getPartition() = 0;  // Use PARTITION() to retrieve partno, if possible, or zero to mean read all
 };
 
 inline offset_t extractFpos(IKeyManager * manager)
