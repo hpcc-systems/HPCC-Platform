@@ -37,7 +37,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, dom, domConstruct, domClass,
                 registry, ToggleButton, ToolbarSeparator, Button,
                 GridDetailsWidget, WsDFUXref, DelayLoadWidget, ESPUtil) {
-    return declare("XrefFoundFilesWidget", [GridDetailsWidget], {
+    return declare("XrefErrorsWarningsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
         gridTitle: nlsHPCC.title_ErrorsWarnings,
         idProperty: "Name",
@@ -57,6 +57,8 @@ define([
 
         createGrid: function (domID) {
             this.openButton = registry.byId(this.id + "Open");
+            dojo.destroy(this.id + "Open");
+            dojo.destroy("dijit_ToolbarSeparator_18");
 
             var retVal = new declare([ESPUtil.Grid(true, true)])({
                 store: this.store,
