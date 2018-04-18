@@ -4,6 +4,7 @@ import * as arrayUtil from "dojo/_base/array";
 import * as all from "dojo/promise/all";
 import * as Memory from "dojo/store/Memory";
 import * as Observable from "dojo/store/Observable";
+import * as Deferred from "dojo/_base/Deferred";
 import * as QueryResults from "dojo/store/util/QueryResults";
 import * as SimpleQueryEngine from "dojo/store/util/SimpleQueryEngine";
 import * as topic from "dojo/topic";
@@ -416,7 +417,9 @@ var PermissionsStore = declare([Memory], {
     },
 
     query: function (query, options) {
-        var results = Permissions().then(lang.hitch(this, function (response) {
+        var deferredResults = new Deferred();
+        deferredResults.total = new Deferred();
+        Permissions().then(lang.hitch(this, function (response) {
             var data = [];
             if (lang.exists("BasednsResponse.Basedns.Basedn", response)) {
                 arrayUtil.forEach(response.BasednsResponse.Basedns.Basedn, function (item, idx) {
@@ -433,9 +436,10 @@ var PermissionsStore = declare([Memory], {
             }
             options = options || {};
             this.setData(SimpleQueryEngine({}, { sort: options.sort })(data));
-            return this.data;
+            deferredResults.resolve(this.data);
+            deferredResults.total.resolve(this.data.length);
         }));
-        return QueryResults(results);
+        return QueryResults(deferredResults);
     }
 });
 
