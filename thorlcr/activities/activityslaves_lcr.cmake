@@ -50,6 +50,7 @@ set (    SRCS
          join/thjoinslave.cpp 
          keydiff/thkeydiffslave.cpp 
          keyedjoin/thkeyedjoinslave.cpp 
+         keyedjoin/thkeyedjoinslave-legacy.cpp 
          keypatch/thkeypatchslave.cpp 
          limit/thlimitslave.cpp 
          lookupjoin/thlookupjoinslave.cpp 

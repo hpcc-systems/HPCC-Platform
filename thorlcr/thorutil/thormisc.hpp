@@ -72,10 +72,28 @@
 #define THOROPT_TRACE_LIMIT           "traceLimit"              // Number of rows from TRACE activity                                            (default = 10)
 #define THOROPT_READ_CRC              "crcReadEnabled"          // Enabled CRC validation on disk reads if file CRC are available                (default = true)
 #define THOROPT_WRITE_CRC             "crcWriteEnabled"         // Calculate CRC's for disk outputs and store in file meta data                  (default = true)
-#define THOROPT_READCOMPRESSED_CRC    "crcReadCompressedEnabled"  // Enabled CRC validation on compressed disk reads if file CRC are available   (default = false)
+#define THOROPT_READCOMPRESSED_CRC    "crcReadCompressedEnabled" // Enabled CRC validation on compressed disk reads if file CRC are available   (default = false)
 #define THOROPT_WRITECOMPRESSED_CRC   "crcWriteCompressedEnabled" // Calculate CRC's for compressed disk outputs and store in file meta data     (default = false)
-#define THOROPT_CHILD_GRAPH_INIT_TIMEOUT "childGraphInitTimeout"  // Time to wait for child graphs to respond to initialization                  (default = 5*60 seconds)
+#define THOROPT_CHILD_GRAPH_INIT_TIMEOUT "childGraphInitTimeout" // Time to wait for child graphs to respond to initialization                  (default = 5*60 seconds)
 #define THOROPT_SORT_COMPBLKSZ        "sortCompBlkSz"           // Block size used by compressed spill in a spilling sort                        (default = 0, uses row writer default)
+#define THOROPT_KEYLOOKUP_QUEUED_BATCHSIZE "keyLookupQueuedBatchSize" // Number of rows candidates to gather before performing lookup against part (default = 1000)
+#define THOROPT_KEYLOOKUP_FETCH_QUEUED_BATCHSIZE "fetchLookupQueuedBatchSize" // Number of rows candidates to gather before performing lookup against part (default = 1000)
+#define THOROPT_KEYLOOKUP_MAX_LOOKUP_BATCHSIZE "keyLookupMaxLookupBatchSize"  // Maximum chunk of rows to process per cycle in lookup handler    (default = 1000)
+#define THOROPT_KEYLOOKUP_MAX_THREADS "maxKeyLookupThreads"     // Maximum number of threads performing keyed lookups                            (default = 10)
+#define THOROPT_KEYLOOKUP_MAX_FETCH_THREADS "maxFetchThreads"   // Maximum number of threads performing keyed lookups                            (default = 10)
+#define THOROPT_KEYLOOKUP_MAX_PROCESS_THREADS "keyLookupMaxProcessThreads" // Maximum number of threads performing keyed lookups                 (default = 10)
+#define THOROPT_KEYLOOKUP_MAX_QUEUED  "keyLookupMaxQueued"      // Total maximum number of rows (across all parts/threads) to queue              (default = 10000)
+#define THOROPT_KEYLOOKUP_MAX_DONE    "keyLookupMaxDone"        // Maximum number of done items pending to be ready by next activity             (default = 10000)
+#define THOROPT_REMOTE_KEYED_LOOKUP   "remoteKeyedLookup"       // Send key request to remote node unless part is local                          (default = true)
+#define THOROPT_REMOTE_KEYED_FETCH   "remoteKeyedFetch"         // Send fetch request to remote node unless part is local                        (default = true)
+#define THOROPT_FORCE_REMOTE_KEYED_LOOKUP "forceRemoteKeyedLookup" // force all keyed lookups, even where part local to be sent as if remote     (default = false)
+#define THOROPT_FORCE_REMOTE_KEYED_FETCH "forceRemoteKeyedFetch" // force all keyed fetches, even where part local to be sent as if remote       (default = false)
+#define THOROPT_KEYLOOKUP_MAX_LOCAL_HANDLERS "maxLocalHandlers" // maximum number of handlers dealing with local parts                           (default = 10)
+#define THOROPT_KEYLOOKUP_MAX_REMOTE_HANDLERS "maxRemoteHandlers" // maximum number of handlers per remote slave                                 (default = 2)
+#define THOROPT_KEYLOOKUP_MAX_FETCH_LOCAL_HANDLERS "maxLocalFetchHandlers" // maximum number of fetch handlers dealing with local parts          (default = 10)
+#define THOROPT_KEYLOOKUP_MAX_FETCH_REMOTE_HANDLERS "maxRemoteFetchHandlers" // maximum number of fetch handlers per remote slave                (default = 2)
+#define THOROPT_KEYLOOKUP_COMPRESS_MESSAGES "keyedJoinCompressMsgs" // compress key and fetch request messages                                   (default = true)
+
 
 #define INITIAL_SELFJOIN_MATCH_WARNING_LEVEL 20000  // max of row matches before selfjoin emits warning
 
@@ -442,6 +460,7 @@ extern graph_decl void reportExceptionToWorkunit(IConstWorkUnit &workunit,IExcep
 
 extern graph_decl IPropertyTree *globals;
 extern graph_decl mptag_t masterSlaveMpTag;
+extern graph_decl mptag_t kjServiceMpTag;
 enum SlaveMsgTypes { smt_errorMsg=1, smt_initGraphReq, smt_initActDataReq, smt_dataReq, smt_getPhysicalName, smt_getFileOffset, smt_actMsg, smt_getresult };
 // Logging
 extern graph_decl const LogMsgJobInfo thorJob;

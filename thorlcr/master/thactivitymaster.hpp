@@ -29,11 +29,6 @@ enum masterEvents { ev_unknown, ev_done };
 
 #include "thmfilemanager.hpp"
 
-interface IGetSlaveData : extends IInterface
-{
-    virtual bool getData(unsigned slave, unsigned part, MemoryBuffer &mb) = 0;
-};
-
 struct CSlaveMap : public IArrayOf<IPartDescriptor>, public CInterface
 {
 };
@@ -68,7 +63,7 @@ public:
     }
     void serializeFileOffsetMap(MemoryBuffer &mb);
     void getParts(unsigned i, IArrayOf<IPartDescriptor> &parts);
-    void serializeMap(unsigned map, MemoryBuffer &mb, IGetSlaveData *extra=NULL);
+    void serializeMap(unsigned map, MemoryBuffer &mb, bool countPrefix=true);
     static void serializeNullMap(MemoryBuffer &mb);
     static void serializeNullOffsetMap(MemoryBuffer &mb);
 };

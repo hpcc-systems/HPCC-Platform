@@ -159,6 +159,7 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
 #endif
         }
         msg.read((unsigned &)masterSlaveMpTag);
+        msg.read((unsigned &)kjServiceMpTag);
         msg.clear();
         msg.setReplyTag(MPTAG_THORREGISTRATION);
         if (!queryNodeComm().reply(msg))

@@ -48,6 +48,7 @@ set (    SRCS
          join/thjoin.cpp 
          keydiff/thkeydiff.cpp 
          keyedjoin/thkeyedjoin.cpp 
+         keyedjoin/thkeyedjoin-legacy.cpp 
          keypatch/thkeypatch.cpp 
          limit/thlimit.cpp 
          lookupjoin/thlookupjoin.cpp 

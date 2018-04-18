@@ -22,5 +22,9 @@
 
 
 CActivityBase *createKeyedJoinActivityMaster(CMasterGraphElement *info);
+namespace LegacyKJ
+{
+    CActivityBase *createKeyedJoinActivityMaster(CMasterGraphElement *info);
+}
 
 #endif

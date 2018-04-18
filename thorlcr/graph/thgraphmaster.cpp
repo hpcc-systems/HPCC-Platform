@@ -1337,7 +1337,6 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, ILoaded
     sharedAllocator.setown(::createThorAllocator(globalMemoryMB, 0, 1, memorySpillAtPercentage, *logctx, crcChecking, usePackedAllocator));
     Owned<IMPServer> mpServer = getMPServer();
     addChannel(mpServer);
-    mpJobTag = allocateMPTag();
     slavemptag = allocateMPTag();
     slaveMsgHandler = new CSlaveMessageHandler(*this, slavemptag);
     tmpHandler.setown(createTempHandler(true));
@@ -1348,7 +1347,6 @@ CJobMaster::~CJobMaster()
 {
     if (slaveMsgHandler)
         delete slaveMsgHandler;
-    freeMPTag(mpJobTag);
     freeMPTag(slavemptag);
     tmpHandler.clear();
 }
@@ -1549,7 +1547,6 @@ void CJobMaster::sendQuery()
     CriticalBlock b(sendQueryCrit);
     if (querySent) return;
     CMessageBuffer tmp;
-    tmp.append(mpJobTag);
     tmp.append(slavemptag);
     tmp.append(queryWuid());
     tmp.append(graphName);

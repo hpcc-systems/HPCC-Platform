@@ -263,6 +263,7 @@ public:
         queryRawGroup().serialize(msg);
         globals->serialize(msg);
         msg.append(masterSlaveMpTag);
+        msg.append(kjServiceMpTag);
         if (!queryNodeComm().send(msg, RANK_ALL_OTHER, MPTAG_THORREGISTRATION, MP_ASYNC_SEND))
         {
             PROGLOG("Failed to initialize slaves");
@@ -718,7 +719,8 @@ int main( int argc, char *argv[]  )
         SetTempDir(tempDirStr.str(), tempPrefix.str(), true);
 
         char thorPath[1024];
-        if (!GetCurrentDirectory(1024, thorPath)) {
+        if (!GetCurrentDirectory(1024, thorPath))
+        {
             ERRLOG("ThorMaster::main: Current directory path too big, setting it to null");
             thorPath[0] = 0;
         }
@@ -763,7 +765,8 @@ int main( int argc, char *argv[]  )
     getThorQueueNames(_queueNames, thorName);
     queueName.set(_queueNames.str());
 
-    try {
+    try
+    {
         CSDSServerStatus &serverStatus = openThorServerStatus();
 
         Owned<CRegistryServer> registry = new CRegistryServer();
@@ -780,6 +783,7 @@ int main( int argc, char *argv[]  )
 
         addAbortHandler(ControlHandler);
         masterSlaveMpTag = allocateClusterMPTag();
+        kjServiceMpTag = allocateClusterMPTag();
 
         if (registry->connect())
         {

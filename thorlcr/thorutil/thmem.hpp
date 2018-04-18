@@ -363,9 +363,11 @@ public:
         swap(from);
     }
     void transferRows(rowidx_t & outNumRows, const void * * & outRows);
+    void transferRows(rowidx_t start, rowidx_t num, CThorExpandingRowArray &tgt);
     void transferFrom(CThorExpandingRowArray &src);
     void transferFrom(CThorSpillableRowArray &src);
     void removeRows(rowidx_t start, rowidx_t n);
+    bool appendRows(const void **inRows, rowidx_t num, bool takeOwnership);
     bool appendRows(CThorExpandingRowArray &inRows, bool takeOwnership);
     bool appendRows(CThorSpillableRowArray &inRows, bool takeOwnership);
     void clearUnused();

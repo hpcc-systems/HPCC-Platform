@@ -15,10 +15,21 @@
     limitations under the License.
 ############################################################################## */
 
+
+//class=file
+//class=index
 //version multiPart=false
+//version multiPart=false,forceRemoteKeyedLookup=true,forceRemoteKeyedFetch=true
 
 import ^ as root;
+forceRemoteKeyedLookup := #IFDEFINED(root.forceRemoteKeyedLookup, false);
+forceRemoteKeyedFetch := #IFDEFINED(root.forceRemoteKeyedLookup, false);
 multiPart := #IFDEFINED(root.multiPart, false);
+
+#option('forceRemoteKeyedLookup', forceRemoteKeyedLookup);
+#option('forceRemoteKeyedFetch', forceRemoteKeyedFetch);
+
+
 
 //--- end of version configuration ---
 
