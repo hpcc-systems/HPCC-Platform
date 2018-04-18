@@ -503,7 +503,7 @@ void codepageBlankFill(char const * codepage, char * out, size_t len)
 //---------------------------------------------------------------------------
 // floating point functions
 
-static const double smallPowers[16] = { 
+static const double smallPowers[16] = {
     1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7,
     1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15 };
 
@@ -999,7 +999,7 @@ unsigned rtlStrToUInt4(size32_t l, const char * t)
     while (l--)
     {
         char c = *t++;
-        if ((c >= '0') && (c <= '9')) 
+        if ((c >= '0') && (c <= '9'))
             v = v * 10 + (c-'0');
         else
             break;
@@ -1014,7 +1014,7 @@ unsigned __int64 rtlStrToUInt8(size32_t l, const char * t)
     while (l--)
     {
         char c = *t++;
-        if ((c >= '0') && (c <= '9')) 
+        if ((c >= '0') && (c <= '9'))
             v = v * 10 + (c-'0');
         else
             break;
@@ -1030,9 +1030,9 @@ int rtlStrToInt4(size32_t l, const char * t)
     while (l--)
     {
         char c = *t++;
-        if ((c >= '0') && (c <= '9')) 
+        if ((c >= '0') && (c <= '9'))
             v = v * 10 + (c-'0');
-        else 
+        else
             break;
     }
     return negate ? -v : v;
@@ -1046,9 +1046,9 @@ __int64 rtlStrToInt8(size32_t l, const char * t)
     while (l--)
     {
         char c = *t++;
-        if ((c >= '0') && (c <= '9')) 
+        if ((c >= '0') && (c <= '9'))
             v = v * 10 + (c-'0');
-        else 
+        else
             break;
     }
     return negate ? -v : v;
@@ -1775,7 +1775,7 @@ void rtlConcatUnicodeExtend(size32_t & tlen, UChar * & tgt, size32_t slen, const
 inline void normalizeFrom(unsigned & from, unsigned slen)
 {
     from--;
-    if ((int)from < 0) 
+    if ((int)from < 0)
         from = 0;
     else if (from > slen)
         from = slen;
@@ -1793,7 +1793,7 @@ inline void clipFromTo(unsigned & from, unsigned & to, unsigned slen)
     if (to > slen)
     {
         to = slen;
-        if (from > slen) 
+        if (from > slen)
             from = slen;
     }
 }
@@ -2043,7 +2043,7 @@ inline unsigned rtlLeftTrimVStrStart(const char * src)
     while(src[i] == ' ')
         i++;
     return i;
-}   
+}
 
 inline void rtlTrimUtf8Len(unsigned & trimLen, size32_t & trimSize, size32_t len, const char * t)
 {
@@ -2202,7 +2202,7 @@ void rtlTrimVLeft(unsigned & tlen, char * & tgt, const char * src)
 {
     unsigned start = rtlLeftTrimVStrStart(src);
     unsigned len = strlen(src+start);
-    
+
     tlen = len;
     tgt = rtlDupSubString(src + start, len);
 }
@@ -2247,7 +2247,7 @@ void rtlTrimBoth(unsigned & tlen, char * & tgt, unsigned slen, const char * src)
     unsigned len = rtlTrimStrLen(slen, src);
     unsigned start = len ? rtlLeftTrimStrStart(slen, src) : 0;
     len -= start;
-    
+
     tlen = len;
     tgt = rtlDupSubString(src + start, len);
 }
@@ -2257,7 +2257,7 @@ void rtlTrimUnicodeBoth(unsigned & tlen, UChar * & tgt, unsigned slen, UChar con
     unsigned len = rtlTrimUnicodeStrLen(slen, src);
     unsigned start = len ? rtlLeftTrimUnicodeStrStart(slen, src) : 0;
     len -= start;
-    
+
     tlen = len;
     tgt = rtlDupSubUnicode(src + start, len);
 }
@@ -2290,7 +2290,7 @@ void rtlAssignTrimBothV(size32_t tlen, char * tgt, unsigned slen, const char * s
     unsigned len = rtlTrimStrLen(slen, src);
     unsigned start = len ? rtlLeftTrimStrStart(slen, src) : 0;
     len -= start;
-    
+
     rtlCopySubStringV(tlen, tgt, len, src+start);
 }
 
@@ -2535,9 +2535,9 @@ void rtlTrimUtf8WS(unsigned & tlen, char * & tgt, unsigned slen, const char * sr
 void rtlAssignTrimAllV(unsigned tlen, char * tgt, unsigned slen, const char * src)
 {
     unsigned to = 0;
-    for (unsigned from = 0; (from < slen)&&(to+1 < tlen); from++) 
+    for (unsigned from = 0; (from < slen)&&(to+1 < tlen); from++)
     {
-        if (src[from] != ' ') 
+        if (src[from] != ' ')
             tgt[to++] = src[from];
     }
     tgt[to] = 0;
@@ -2546,9 +2546,9 @@ void rtlAssignTrimAllV(unsigned tlen, char * tgt, unsigned slen, const char * sr
 void rtlAssignTrimVAllV(unsigned tlen, char * tgt, const char * src)
 {
     unsigned to = 0;
-    for (;(*src && (to+1 < tlen));src++) 
+    for (;(*src && (to+1 < tlen));src++)
     {
-        if (*src != ' ') 
+        if (*src != ' ')
             tgt[to++] = *src;
     }
     tgt[to] = 0;
@@ -2983,7 +2983,7 @@ int rtlSearchTableVStringN(unsigned count, const char * * table, const char * se
             right = mid;
         else if (cmp > 0)
             left = mid+1;
-        else 
+        else
             return mid;
     } while (left < right);
     return -1;
@@ -3005,7 +3005,7 @@ int rtlNewSearchDataTable(unsigned count, unsigned elemlen, const char * * table
         else {
             return mid;
         }
-                
+
     } while (left < right);
 
     return -1;
@@ -3027,7 +3027,7 @@ int rtlNewSearchEStringTable(unsigned count, unsigned elemlen, const char * * ta
         else {
             return mid;
         }
-                
+
     } while (left < right);
 
     return -1;
@@ -3049,7 +3049,7 @@ int rtlNewSearchQStringTable(unsigned count, unsigned elemlen, const char * * ta
         else {
             return mid;
         }
-                
+
     } while (left < right);
 
     return -1;
@@ -3071,7 +3071,7 @@ int rtlNewSearchStringTable(unsigned count, unsigned elemlen, const char * * tab
         else {
             return mid;
         }
-                
+
     } while (left < right);
 
     return -1;
@@ -3081,10 +3081,12 @@ int rtlNewSearchStringTable(unsigned count, unsigned elemlen, const char * * tab
 #ifdef _USE_ICU
 int rtlNewSearchUnicodeTable(unsigned count, unsigned elemlen, const UChar * * table, unsigned width, const UChar * search, const char * locale)
 {
+    dbgassertex(search != nullptr || width == 0);
+
     UCollator * coll = queryRTLLocale(locale)->queryCollator();
     int left = 0;
     int right = count;
-    
+
     if (!search) search = &nullUStr;
     size32_t trimWidth = rtlQuickTrimUnicode(width, search);
 
@@ -3745,7 +3747,7 @@ hash64_t rtlHash64Data(size32_t len, const void *buf, hash64_t hval)
 #endif
 
     const unsigned char *be = bp + len;     /* beyond end of buffer */
-    while (bp < be) 
+    while (bp < be)
     {
         APPLY_FNV64(hval, *bp++);
     }
@@ -3759,7 +3761,7 @@ hash64_t rtlHash64VStr(const char *str, hash64_t hval)
     const unsigned char *s = (const unsigned char *)str;
     unsigned char c;
 
-    while ((c = *s++) != 0) 
+    while ((c = *s++) != 0)
     {
         APPLY_FNV64(hval, c);
     }
@@ -3842,7 +3844,7 @@ unsigned rtlHash32Data(size32_t len, const void *buf, unsigned hval)
 #endif
 
     const unsigned char *be = bp + len;     /* beyond end of buffer */
-    while (bp < be) 
+    while (bp < be)
     {
         APPLY_FNV32(hval, *bp++);
     }
@@ -3856,7 +3858,7 @@ unsigned rtlHash32VStr(const char *str, unsigned hval)
     const unsigned char *s = (const unsigned char *)str;
     unsigned char c;
 
-    while ((c = *s++) != 0) 
+    while ((c = *s++) != 0)
     {
         APPLY_FNV32(hval, c);
     }
@@ -3964,7 +3966,7 @@ unsigned rtlHashData( unsigned length, const void *_k, unsigned initval)
    case 10: c+=GETBYTE2(7);
    case 9 : c+=GETBYTE1(7);
       /* the first byte of c is reserved for the length */
-   case 8 : b+=GETBYTE3(4); 
+   case 8 : b+=GETBYTE3(4);
    case 7 : b+=GETBYTE2(4);
    case 6 : b+=GETBYTE1(4);
    case 5 : b+=GETBYTE0(4);
@@ -4116,13 +4118,13 @@ void rtlHashMd5Finish(void * out, size32_t sizestate, void * _state)
 
 unsigned rtlRandom()
 {
-    CriticalBlock block(random_Sect);   
+    CriticalBlock block(random_Sect);
     return random_->next();
 }
 
 void rtlSeedRandom(unsigned value)
 {
-    CriticalBlock block(random_Sect);   
+    CriticalBlock block(random_Sect);
     random_->seed(value);
 }
 
@@ -4131,7 +4133,7 @@ void rtlSeedRandom(unsigned value)
 
 ECLRTL_API unsigned rtlTick()
 {
-    return msTick(); 
+    return msTick();
 }
 
 ECLRTL_API bool rtlGPF()
@@ -4406,148 +4408,148 @@ ECLRTL_API void serializeLPString(unsigned len, const char *field, MemoryBuffer 
 
 ECLRTL_API void serializeVarString(const char *field, MemoryBuffer &out)
 {
-    out.append(field); 
+    out.append(field);
 }
 
 ECLRTL_API void serializeBool(bool field, MemoryBuffer &out)
 {
-    out.append(field); 
+    out.append(field);
 }
 
 ECLRTL_API void serializeFixedData(unsigned len, const void *field, MemoryBuffer &out)
 {
-    out.append(len, field); 
+    out.append(len, field);
 }
 
 ECLRTL_API void serializeLPData(unsigned len, const void *field, MemoryBuffer &out)
 {
     out.append(len);
-    out.append(len, field); 
+    out.append(len, field);
 }
 
 ECLRTL_API void serializeInt1(signed char field, MemoryBuffer &out)
 {
     // MORE - why did overloading pick the int method for this???
-    // out.append(field); 
-    out.appendEndian(sizeof(field), &field); 
+    // out.append(field);
+    out.appendEndian(sizeof(field), &field);
 }
 
 ECLRTL_API void serializeInt2(signed short field, MemoryBuffer &out)
 {
-    out.appendEndian(sizeof(field), &field); 
+    out.appendEndian(sizeof(field), &field);
 }
 
 ECLRTL_API void serializeInt3(signed int field, MemoryBuffer &out)
 {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    out.appendEndian(3, &field); 
+    out.appendEndian(3, &field);
 #else
-    out.appendEndian(3, ((char *) &field) + 1); 
+    out.appendEndian(3, ((char *) &field) + 1);
 #endif
 }
 
 
 ECLRTL_API void serializeInt4(signed int field, MemoryBuffer &out)
 {
-    out.appendEndian(sizeof(field), &field); 
+    out.appendEndian(sizeof(field), &field);
 }
 
 ECLRTL_API void serializeInt5(signed __int64 field, MemoryBuffer &out)
 {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    out.appendEndian(5, &field); 
+    out.appendEndian(5, &field);
 #else
-    out.appendEndian(5, ((char *) &field) + 3); 
+    out.appendEndian(5, ((char *) &field) + 3);
 #endif
 }
 
 ECLRTL_API void serializeInt6(signed __int64 field, MemoryBuffer &out)
 {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    out.appendEndian(6, &field); 
+    out.appendEndian(6, &field);
 #else
-    out.appendEndian(6, ((char *) &field) + 2); 
+    out.appendEndian(6, ((char *) &field) + 2);
 #endif
 }
 
 ECLRTL_API void serializeInt7(signed __int64 field, MemoryBuffer &out)
 {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    out.appendEndian(7, &field); 
+    out.appendEndian(7, &field);
 #else
-    out.appendEndian(7, ((char *) &field) + 1); 
+    out.appendEndian(7, ((char *) &field) + 1);
 #endif
 }
 
 ECLRTL_API void serializeInt8(signed __int64 field, MemoryBuffer &out)
 {
-    out.appendEndian(sizeof(field), &field); 
+    out.appendEndian(sizeof(field), &field);
 }
 
 ECLRTL_API void serializeUInt1(unsigned char field, MemoryBuffer &out)
 {
-    out.appendEndian(sizeof(field), &field); 
+    out.appendEndian(sizeof(field), &field);
 }
 
 ECLRTL_API void serializeUInt2(unsigned short field, MemoryBuffer &out)
 {
-    out.appendEndian(sizeof(field), &field); 
+    out.appendEndian(sizeof(field), &field);
 }
 
 ECLRTL_API void serializeUInt3(unsigned int field, MemoryBuffer &out)
 {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    out.appendEndian(3, &field); 
+    out.appendEndian(3, &field);
 #else
-    out.appendEndian(3, ((char *) &field) + 1); 
+    out.appendEndian(3, ((char *) &field) + 1);
 #endif
 }
 
 ECLRTL_API void serializeUInt4(unsigned int field, MemoryBuffer &out)
 {
-    out.appendEndian(sizeof(field), &field); 
+    out.appendEndian(sizeof(field), &field);
 }
 
 ECLRTL_API void serializeUInt5(unsigned __int64 field, MemoryBuffer &out)
 {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    out.appendEndian(5, &field); 
+    out.appendEndian(5, &field);
 #else
-    out.appendEndian(5, ((char *) &field) + 3); 
+    out.appendEndian(5, ((char *) &field) + 3);
 #endif
 }
 
 ECLRTL_API void serializeUInt6(unsigned __int64 field, MemoryBuffer &out)
 {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    out.appendEndian(6, &field); 
+    out.appendEndian(6, &field);
 #else
-    out.appendEndian(6, ((char *) &field) + 2); 
+    out.appendEndian(6, ((char *) &field) + 2);
 #endif
 }
 
 ECLRTL_API void serializeUInt7(unsigned __int64 field, MemoryBuffer &out)
 {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    out.appendEndian(7, &field); 
+    out.appendEndian(7, &field);
 #else
-    out.appendEndian(7, ((char *) &field) + 1); 
+    out.appendEndian(7, ((char *) &field) + 1);
 #endif
 }
 
 ECLRTL_API void serializeUInt8(unsigned __int64 field, MemoryBuffer &out)
 {
-    out.appendEndian(sizeof(field), &field); 
+    out.appendEndian(sizeof(field), &field);
 }
 
 ECLRTL_API void serializeReal4(float field, MemoryBuffer &out)
 {
-    out.appendEndian(sizeof(field), &field); 
+    out.appendEndian(sizeof(field), &field);
 }
 
 ECLRTL_API void serializeReal8(double field, MemoryBuffer &out)
 {
-    out.append(sizeof(field), &field); 
+    out.append(sizeof(field), &field);
 }
 
 //These maths functions can all have out of range arguments....
@@ -5247,7 +5249,7 @@ ECLRTL_API void rtlCreateRange(size32_t & outlen, char * & out, unsigned fieldLe
     //
     if (compareLen > fieldLen)
     {
-        if ((int)compareLen >= 0) 
+        if ((int)compareLen >= 0)
         {
             //x[1..m] = y, m is larger than fieldLen, so truncate to fieldLen
             compareLen = fieldLen;
@@ -5320,7 +5322,7 @@ ECLRTL_API void rtlCreateUnicodeRange(size32_t & outlen, UChar * & out, unsigned
     //Same as function above!
     if (compareLen > fieldLen)
     {
-        if ((int)compareLen >= 0) 
+        if ((int)compareLen >= 0)
         {
             //x[1..m] = y, m is larger than fieldLen, so truncate to fieldLen
             compareLen = fieldLen;
@@ -5845,8 +5847,8 @@ inline unsigned numExtraBytesFromValue(unsigned __int64 first)
 //indicate continuation, but seems to be quicker (and requires less look ahead).
 
 /*
-byte numExtraBytesFromFirstTable[256] = 
-{ 
+byte numExtraBytesFromFirstTable[256] =
+{
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -5854,7 +5856,7 @@ byte numExtraBytesFromFirstTable[256] =
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 7, 8 
+    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 7, 8
 };
 inline unsigned numExtraBytesFromFirst(byte first)
 {

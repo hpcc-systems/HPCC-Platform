@@ -364,7 +364,7 @@ class CCSVItem : public CInterface, implements IInterface
     StringAttr name, type, value, parentXPath;
     StringArray childNames;
     MapStringTo<bool> childNameMap;
-    bool isNestedItem, simpleNested, currentRowEmpty, outputHeader;
+    bool isNestedItem, simpleNested, currentRowEmpty, outputHeader = false;
 public:
     CCSVItem() : columnID(0), nestedLayer(0), nextRowID(0), rowCount(0), isNestedItem(false),
         simpleNested(false), currentRowEmpty(true) { };
