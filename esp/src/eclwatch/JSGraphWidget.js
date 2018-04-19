@@ -127,7 +127,7 @@ define([
             this.graphData = new ESPGraph.Graph();
             this.graphWidget = new hpccGraph.Graph()
                 .allowDragging(false)
-                .zoomToolbar(true)
+                .showToolbar(false)
             ;
             var context = this;
             this.graphWidget.vertex_click = function (item, event) {
