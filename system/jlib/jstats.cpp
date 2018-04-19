@@ -1438,6 +1438,9 @@ bool StatsScopeId::setScopeText(const char * text, const char * * _next)
             return true;
         }
         break;
+    case '\0':
+        setId(SSTglobal, 0);
+        return true;
     }
     return false;
 }
