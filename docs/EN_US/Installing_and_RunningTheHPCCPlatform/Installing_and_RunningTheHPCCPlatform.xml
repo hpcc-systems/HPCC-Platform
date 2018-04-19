@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<book xml:base="../">
+<book lang="en_US" xml:base="../">
   <!-- DNT-Start -->
 
   <title>Installing &amp; Running the HPCC Platform</title>
@@ -85,7 +85,7 @@
         role="bold">C</emphasis>luster (<!-- DNT-Start -->HPCC<!-- DNT-End -->)
         is a massively parallel processing computing platform that solves Big
         Data problems. See <ulink
-        url="http://hpccsystems.com/Why-HPCC/How-it-works">http://hpccsystems.com/Why-<!-- DNT-Start -->HPCC<!-- DNT-End -->/How-it-works</ulink>
+        url="http://hpccsystems.com/Why-HPCC/How-it-works">http://hpccsystems.com/Why-HPCC/How-it-works</ulink>
         for more details.</para>
       </footnote> Community Edition on a single node to start and then
     optionally, expand it to a larger cluster of nodes.</para>
@@ -155,7 +155,7 @@
 
           <!-- DNT-Start -->
 
-          <programlisting> sudo dpkg -i &amp;&amp; sudo apt-get install -f  &lt;deb filename&gt;</programlisting>
+          <programlisting> sudo dpkg -i &lt;deb filename&gt; &amp;&amp; sudo apt-get install -f </programlisting> 
 
           <!-- DNT-End -->
         </listitem>
@@ -187,13 +187,15 @@
         <listitem>
           <para>Create and run some <!-- DNT-Start -->ECL<!-- DNT-End -->.</para>
 
-          <para>You can do this right from <!-- DNT-Start -->ECL<!-- DNT-End -->
-          Watch, click on the Playground link.</para>
-        </listitem>
-
-        <listitem>
-          <para>Get and install the <!-- DNT-Start -->ECL<!-- DNT-End --> <!-- DNT-Start -->IDE<!-- DNT-End -->
-          and Client tools.</para>
+                   <para>You can do this right from ECL Watch. In ECL Watch, click on
+	            the <emphasis role="bold">ECL</emphasis> icon then click on the
+	            <emphasis role="bold">Playground</emphasis> link.</para>
+	          </listitem>
+	  
+	          <listitem>
+	            <para>Go to <ulink
+	            url="https://hpccsystems.com/download/free-community-edition">https://hpccsystems.com/download</ulink>
+          get and install the ECL IDE and Client tools. </para>
         </listitem>
       </orderedlist>
 
