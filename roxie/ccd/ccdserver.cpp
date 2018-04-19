@@ -25371,7 +25371,7 @@ public:
                                 bool locallySorted = !thisKey->isFullySorted();
                                 while (locallySorted || tlk->lookup(false)) 
                                 {
-                                    unsigned slavePart = locallySorted ? 0 : (unsigned)extractFpos(tlk);
+                                    unsigned slavePart = locallySorted ? tlk->getPartition() : (unsigned)extractFpos(tlk);
                                     if (locallySorted || slavePart)
                                     {
                                         cvp *outputBuffer = (cvp *) remote.getMem(slavePart, fileNo, indexReadSize + sizeof(cvp) + (indexReadInputRecordVariable ? sizeof(unsigned) : 0));
@@ -25383,12 +25383,13 @@ public:
                                         }
                                         jg->notePending();
                                         memcpy(outputBuffer, extracted, indexReadSize);
-                                        if (locallySorted)
+                                        if (!slavePart)
                                         {
                                             for (unsigned i = 1; i < numChannels; i++)
                                                 jg->notePending();
-                                            break;
                                         }
+                                        if (locallySorted)
+                                            break;
                                     }
                                 }
                             }
@@ -26218,7 +26219,7 @@ public:
                                 bool locallySorted = (!thisKey->isFullySorted());
                                 while (locallySorted || tlk->lookup(false))
                                 {
-                                    unsigned slavePart = locallySorted ? 0 : (unsigned)extractFpos(tlk);
+                                    unsigned slavePart = locallySorted ? tlk->getPartition() : (unsigned)extractFpos(tlk);
                                     if (locallySorted || slavePart)
                                     {
                                         cvp *outputBuffer = (cvp *) remote.getMem(slavePart, fileNo, indexReadRecordSize + sizeof(cvp) + (indexReadInputRecordVariable ? sizeof(unsigned) : 0));
@@ -26230,12 +26231,13 @@ public:
                                         }
                                         jg->notePending();
                                         memcpy(outputBuffer, extracted, indexReadRecordSize);
-                                        if (locallySorted)
+                                        if (!slavePart)
                                         {
                                             for (unsigned i = 1; i < numChannels; i++)
                                                 jg->notePending();
-                                            break;
                                         }
+                                        if (locallySorted)
+                                            break;
                                     }
                                 }
                             }
