@@ -93,6 +93,7 @@ define({root:
     Compress: "Compress",
     Compressed: "Compressed",
     Condition: "Condition",
+    ConfigureService: "Configure service",
     Configuration: "Configuration",
     ConfirmPassword: "Confirm Password",
     ConfirmRemoval: "Are you sure you want to do this?",

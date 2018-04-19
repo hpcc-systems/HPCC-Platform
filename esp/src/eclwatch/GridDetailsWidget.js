@@ -114,9 +114,9 @@ define([
             var MyMemory = declare("MyMemory", [Memory], {
                 idProperty: this.idProperty,
                 data: [],
-                setData: function (data) {
+                setData: function (data, noDataMessage) {
                     var retVal = this.inherited(arguments);
-                    context.setGridNoDataMessage(context.i18n.noDataMessage);
+                    context.setGridNoDataMessage(noDataMessage || context.i18n.noDataMessage);
                     return retVal;
                 },
                 query: function (query, options) {
