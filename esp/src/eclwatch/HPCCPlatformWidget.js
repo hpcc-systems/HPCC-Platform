@@ -190,6 +190,7 @@ define([
             }).then(function (response) {
                 if (lang.exists("MyAccountResponse.username", response)) {
                     context.userName = response.MyAccountResponse.username;
+                    dojoConfig.username = response.MyAccountResponse.username;
                     context.checkIfAdmin(context.userName);
                     context.refreshUserName();
                     if (!cookie("PasswordExpiredCheck")) {
@@ -462,10 +463,8 @@ define([
         },
 
         _onLock: function (evt) {
-            var LockDialog = new LockDialogWidget({
-                id: this.id + 'LockDialogWidget'
-            });
-            LockDialog._onLock();
+            var LockDialog = new LockDialogWidget({});
+            LockDialog.show();
         },
 
         _onLogout: function (evt) {

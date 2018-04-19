@@ -45,7 +45,6 @@ define([
             entities, Toaster) {
 
     var IDLE_TIMEOUT = cookie("ESPSessionTimeoutSeconds") * 1000;
-    var COUNTDOWN = 3 * 60;
     var SESSION_RESET_FREQ = 30 * 1000;
     var idleWatcher;
     var monitorLockClick;
@@ -71,10 +70,6 @@ define([
                 window.location.reload();
             }
         });
-    }
-
-    function showLockDialog() {
-        dom.byId("Lock").click();
     }
 
     function startLoading(targetNode) {
@@ -159,10 +154,6 @@ define([
                     if (!cookie("ECLWatchUser")) {
                         dojo.cookie("ECLWatchUser", "true");
                     }
-                    
-                    var LockDialog = new LockDialogWidget({
-                        id: webParams.id + '_LockDialogWidget'
-                    });
 
                     idleWatcher = new ESPUtil.IdleWatcher(IDLE_TIMEOUT);
                     monitorLockClick = new ESPUtil.MonitorLockClick();
@@ -174,7 +165,8 @@ define([
                     });
                     idleWatcher.on("idle", function () {
                         idleWatcher.stop();
-                        LockDialog._onLock();
+                        var LockDialog = new LockDialogWidget({});
+                        LockDialog.show();
                     });
                     idleWatcher.start();
                     monitorLockClick.unlocked();
