@@ -27,6 +27,7 @@
 #include "thorxmlwrite.hpp"
 #include "jlog.hpp"
 #include "jstats.h"
+#include "jset.hpp"
 #include "roxie.hpp"
 #include "roxiedebug.ipp"
 #include "eclrtl.hpp"
@@ -92,6 +93,8 @@ extern unsigned myNodeIndex;
 
 #define SUBCHANNEL_MASK 3
 #define SUBCHANNEL_BITS 2    // allows for up to 7-way redundancy in a 16-bit short retries flag, high bits used for indicators/flags
+#define MAX_SUBCHANNEL  7    // (16-2) / SUBCHANNEL_BITS
+
 //#define TIME_PACKETS
 
 #define ROXIE_FASTLANE      0x8000u         // mask in retries indicating slave reply goes on the fast queue
@@ -166,6 +169,13 @@ public:
     bool retry();
     void setException();
     unsigned thisChannelRetries();
+
+    unsigned getRespondingSubChannel() const // NOTE - 0 based
+    {
+        dbgassertex(retries);
+        unsigned bitpos = countTrailingUnsetBits((unsigned) retries);
+        return bitpos / SUBCHANNEL_BITS;
+    }
 
     inline unsigned getSequenceId() const
     {

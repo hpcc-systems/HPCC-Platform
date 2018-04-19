@@ -4716,7 +4716,7 @@ public:
                         // MORE - ROXIE_ALIVE perhaps should go here too
                         default:
                             if (ctxTraceLevel > 3)
-                                activity.queryLogCtx().CTXLOG("Discarding packet %p - original %p is NULL or has result already", mr.get(), original);
+                                activity.queryLogCtx().CTXLOG("Discarding packet %p %x - original %p is NULL or has result already", mr.get(), header.activityId, original);
                             mr->discard();
                             break;
                     }

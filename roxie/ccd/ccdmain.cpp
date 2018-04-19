@@ -970,17 +970,16 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         {
             numChannels = numNodes;
             unsigned cyclicOffset = topology->getPropInt("@cyclicOffset", 1);
-            for (unsigned i=0; i<numNodes; i++)
+            for (unsigned copy=0; copy<numDataCopies; copy++)
             {
                 // Note this code is a little confusing - easy to get the cyclic offset backwards
                 // cyclic offset means node n+offset has copy 2 for channel n, so node n has copy 2 for channel n-offset
-                int channel = (int)i+1;
-                for (unsigned copy=0; copy<numDataCopies; copy++)
+                for (unsigned i=0; i<numNodes; i++)
                 {
-                    if (channel < 1)
+                    int channel = (int)i+1 - (copy * cyclicOffset);
+                    while (channel < 1)
                         channel = channel + numNodes;
                     addChannel(i, channel, copy);
-                    channel -= cyclicOffset;
                 }
             }
         }
@@ -989,11 +988,11 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             if (!channelsPerNode)
                 throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - channelsPerNode should be > 0");
             numChannels = numNodes * channelsPerNode;
-            for (unsigned i=0; i<numNodes; i++)
+            for (unsigned copy=0; copy<channelsPerNode; copy++)
             {
-                int channel = (int)(i+1);
-                for (unsigned copy=0; copy<channelsPerNode; copy++)
+                for (unsigned i=0; i<numNodes; i++)
                 {
+                    int channel = (int)(i+1);
                     addChannel(i, channel, copy);
                     channel += numNodes;
                 }

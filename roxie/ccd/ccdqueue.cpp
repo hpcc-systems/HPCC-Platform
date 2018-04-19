@@ -34,12 +34,13 @@
 #include <cppunit/extensions/HelperMacros.h>
 #endif
 
-static unsigned channels[MAX_CLUSTER_SIZE];     // list of all channel numbers for this node
-static unsigned channelCount;                   // number of channels this node is doing
-static unsigned subChannels[MAX_CLUSTER_SIZE];  // maps channel numbers to subChannels for this node
-static unsigned numSlaves[MAX_CLUSTER_SIZE];    // number of slaves listening on this channel
-static unsigned replicationLevel[MAX_CLUSTER_SIZE];  // Which copy of the data this channel uses on this slave
-static unsigned liveSubChannels[MAX_CLUSTER_SIZE];   // Which subchannels are believed live for a given channel - technically probably should be atomic, but any races are benign enough that not worth it.
+static unsigned channels[MAX_CLUSTER_SIZE];              // Array [0..channelCount-1] of channels supported by this slave
+static unsigned channelCount;                            // number of channels supported by this slave
+
+//The following are all indexed by the channel number [1..numChannels]
+static unsigned subChannels[MAX_CLUSTER_SIZE];       // The subchannel that this node supports on the specified channel. NOTE - values in this array are 1-based
+static unsigned numSlaves[MAX_CLUSTER_SIZE];         // The total number of slaves in the system that process this channel
+static unsigned replicationLevel[MAX_CLUSTER_SIZE];  // Which copy of the data is held by this node, for a given channel - MORE - is this the same as subChannels[n]-1 ?  I suspect it is.
 
 static std::atomic<bool> suspendedChannels[MAX_CLUSTER_SIZE];
 
@@ -753,51 +754,121 @@ void SlaveContextLogger::flush()
 
 //=================================================================================
 
-bool isSubChannelAlive(unsigned channel, unsigned subChannel)
-{
-    unsigned mask = SUBCHANNEL_MASK << (SUBCHANNEL_BITS * subChannel);
-    return (liveSubChannels[channel] & mask) == mask;
-}
+/*
+ * IBYTI handling
+ *
+ * IBYTI (I beat you to it) messages are sent by the slave that is going to process a particular request,
+ * to tell the other slaves on the same channel not to bother.
+ *
+ * In order to reduce wasted work, for each request a "primary" subchannel is selected (based on a hash of the
+ * packet's RUID) - this channel will process the request immediately, but others will delay a little while
+ * in order to give the expected IBYTI time to arrive.
+ *
+ * The decision on how long to delay is a little complex - too long, and you end up losing the ability for a
+ * backup slave to step in when primary is under load (or dead); too short and you end up duplicating work.
+ * It's also important for the delay to be adaptive so that if a slave goes offline, the other slaves on the
+ * subchannel don't keep waiting for it to take its turn.
+ *
+ * The adaptiveness is handled by noting any time that we delay waiting for an IBYTI that does not arrive - this
+ * may mean that the slave(s) we expected to get there first are offline, and thus next time we don't wait quite
+ * so long for them. Conversely, any time an IBYTI does arrive from another slave on your channel, you know that
+ * it is online and so can reset the delay to its original value.
+ *
+ * A previous version of this code assumed a single missed IBYTI was enough to assume that a slave was dead and drop the
+ * delay for that slave to zero - this turned out to behave pretty poorly when under load, with much duplicated work.
+ * Thus we take care to adjust the delay more gradually, while still ending up with a zero delay if the buddy does not respond
+ * several times in a row.
+ */
 
-unsigned getIbytiDelay(unsigned channel, unsigned primarySubChannel)
+/*
+ * A "subchannel" is a value from 1 to 7 (with current settings) that indicates which "copy" of the data for this channel
+ * is being processed by this slave. A value of 0 would indicate that this slave does not have any data for this channel.
+ * In a typical 100-way roxie with cyclic redundancy, node 1 would be processing channel 1, subchannel 1, and channel 2,
+ * subchannel 2, node 2 would be processing channel 2, subchannel 1 and channel 3, subchannel 2, and so on u to node 100,
+ * which would process channel 100, subchannel 1 and channel 1, subchannel 2. The subChannels array tells me my subchannel
+ * for any given channel.
+ *
+ * To determine which subchannel is the "primary" for a given query packet, a hash value of fields from the packet header
+ * is used, modulo the number of subchannels on this channel. The slave on this subchannel will respond immediately.
+ * Slaves on other channels delay according to the subchannel number - so on a 4-way redundant system, if the primary
+ * subchannel is decided to be 2, the slave on subchannel 3 will delay by 1 ibytiDelay value, the slave on subchannel 4 by
+ * 2 values, and the slave on subchannel 1 by 3 values (this assumes all slaves are responding normally).
+ *
+ * In fact, the calculation is a little more complex, in that the "units" are adjusted per subchannel to take into account
+ * the responsiveness or otherwise of a subchannel. Initially, the delay value for each subchannel is the same, but any time
+ * a slave waits for an IBYTI that does not arrive on time, the delay value for any slave that is "more primary" than me for
+ * this packet is reduced. Any time an IBYTI _does_ arrive on time, the delay is reset to its initial value.
+ */
+
+class ChannelInfo
 {
-    // MORE - adjust delay according to whether it's a retry, whether it was a broadcast etc
-    unsigned mySubChannel = subChannels[channel] - 1;
-    unsigned subChannel = primarySubChannel;
-    unsigned delay = 0;
-    while (subChannel != mySubChannel)
+public:
+    unsigned getIbytiDelay(unsigned primarySubChannel) const  // NOTE - zero-based
     {
-        if (isSubChannelAlive(channel, subChannel))
-            delay++;
-        subChannel++;
-        if (subChannel >= numSlaves[channel])
-            subChannel = 0;
+        unsigned delay = 0;
+        unsigned subChannel = primarySubChannel;
+        while (subChannel != mySubChannel)
+        {
+            delay += currentDelay[subChannel];
+            subChannel++;
+            if (subChannel == numSubChannels)
+                subChannel = 0;
+        }
+        return delay;
     }
-    return delay * initIbytiDelay;
-}
 
-void notePrimarySubChannelsDead(unsigned channel, unsigned primarySubChannel)
-{
-    unsigned mySubChannel = subChannels[channel] - 1;
-    unsigned subChannel = primarySubChannel;
-    while (subChannel != mySubChannel)
+    void noteChannelsSick(unsigned primarySubChannel)
     {
-        liveSubChannels[channel] &= ~(SUBCHANNEL_MASK << (SUBCHANNEL_BITS * subChannel));
-        subChannel++;
-        if (subChannel >= numSlaves[channel])
-            subChannel = 0;
+        unsigned subChannel = primarySubChannel;
+        while (subChannel != mySubChannel)
+        {
+            unsigned newDelay = currentDelay[subChannel] / 2;
+            if (newDelay < minIbytiDelay)
+                newDelay = minIbytiDelay;
+            currentDelay[subChannel] = newDelay;
+            subChannel++;
+            if (subChannel == numSubChannels)
+                subChannel = 0;
+        }
     }
-}
 
+    void noteChannelHealthy(unsigned subChannel)
+    {
+        currentDelay[subChannel] = initIbytiDelay;
+    }
+
+    void init(unsigned _subChannel, unsigned _numSubChannels)
+    {
+        mySubChannel = _subChannel;
+        numSubChannels = _numSubChannels;
+        for (unsigned i = 0; i < numSubChannels; i++)
+            currentDelay[i] = initIbytiDelay;
+    }
+private:
+    unsigned mySubChannel = 0;     // Which subChannel does this node implement for this channel - zero-based
+    unsigned numSubChannels = 0;   // How many subchannels are there for this channel, across all slaves
+    unsigned currentDelay[MAX_SUBCHANNEL] = {0};  // NOTE - technically should be atomic, but in the event of a race we don't really care who wins
+};
+
+static ChannelInfo channelInfo[MAX_CLUSTER_SIZE];
+
+/*
+ * Determine whether to abort on receipt of an IBYTI for a packet which I have already started processing
+ * As I will also have sent out an IBYTI, I should only abort if the sender of the IBYTI has higher priority
+ * for this packet than I do.
+ *
+ * MORE - move this function into ChannelInfo class.
+ */
 bool otherSlaveHasPriority(const RoxiePacketHeader &h)
 {
     unsigned hash = h.priorityHash();
-    unsigned primarySubChannel = (hash % numSlaves[h.channel]) + 1;
-    unsigned mySubChannel = subChannels[h.channel];
+    unsigned primarySubChannel = (hash % numSlaves[h.channel]);
+    unsigned mySubChannel = subChannels[h.channel] - 1;
+    unsigned otherSlaveSubChannel = h.getRespondingSubChannel();
+    // could be coded smarter! Basically mysub - prim < theirsub - prim using modulo arithmetic, I think
     while (primarySubChannel != mySubChannel)
     {
-        unsigned channelMask = SUBCHANNEL_MASK << (SUBCHANNEL_BITS * primarySubChannel);
-        if ((h.retries & ROXIE_RETRIES_MASK) == channelMask)
+        if (primarySubChannel == otherSlaveSubChannel)
             return true;
         primarySubChannel++;
         if (primarySubChannel >= numSlaves[h.channel])
@@ -1302,10 +1373,10 @@ public:
                 if (subChannels[channel] != 1) 
                     primChannel = false;
                 unsigned hdrHashVal = header.priorityHash();
-                unsigned primarySubChannel = (hdrHashVal % numSlaves[channel]) + 1;
-                if (primarySubChannel != subChannels[channel])
+                unsigned primarySubChannel = (hdrHashVal % numSlaves[channel]);
+                if (primarySubChannel != subChannels[channel]-1)
                 {
-                    unsigned delay = getIbytiDelay(channel, primarySubChannel);
+                    unsigned delay = channelInfo[channel].getIbytiDelay(primarySubChannel);
                     if (logctx.queryTraceLevel() > 6)
                     {
                         StringBuffer x;
@@ -1319,7 +1390,7 @@ public:
                     {
                         ibytiSem.wait(delay);
                         if (!abortJob)
-                            notePrimarySubChannelsDead(channel, primarySubChannel);
+                            channelInfo[channel].noteChannelsSick(primarySubChannel);
                         if (logctx.queryTraceLevel() > 8)
                         {
                             StringBuffer x;
@@ -1626,8 +1697,8 @@ public:
             assertex(subChannels[channel] == 0);
             assertex(subChannel != 0);
             subChannels[channel] = subChannel;
-            liveSubChannels[channel] = 0;  // Until proven otherwise
             channels[channelCount++] = channel;
+            channelInfo[channel].init(subChannel-1, numSlaves[channel]);
         }
     }
 
@@ -2120,7 +2191,8 @@ public:
         }
         else
         {
-            if ((header.retries & ROXIE_RETRIES_MASK) == header.getSubChannelMask(header.channel))
+            unsigned subChannel = header.getRespondingSubChannel();
+            if (subChannel == subChannels[header.channel] - 1)
             {
                 if (traceLevel > 10)
                     DBGLOG("doIBYTI packet was from self");
@@ -2128,7 +2200,7 @@ public:
             }
             else
             {
-                liveSubChannels[header.channel] |= header.retries & ROXIE_RETRIES_MASK;
+                channelInfo[header.channel].noteChannelHealthy(subChannel);
                 bool foundInQ = queue.remove(header);
                 if (foundInQ)
                 {
