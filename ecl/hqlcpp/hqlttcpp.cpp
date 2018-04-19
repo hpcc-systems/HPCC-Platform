@@ -13963,6 +13963,9 @@ public:
         case no_join:
             checkJoin(expr);
             break;
+        case no_choosen:
+            checkChoosen(expr);
+            break;
         }
         QuickHqlTransformer::doAnalyse(expr);
     }
@@ -13970,8 +13973,9 @@ public:
 protected:
     void checkBloom(IHqlExpression * expr);
     void checkJoin(IHqlExpression * expr);
+    void checkChoosen(IHqlExpression * expr);
     void reportError(int errNo, const char * format, ...) __attribute__((format(printf, 3, 4)));
-
+    void reportWarning(WarnErrorCategory category, int warnNo, const char * format, ...) __attribute__((format(printf, 4, 5)));
 protected:
     ErrorSeverityMapper mapper;
     HqlExprCopyArray locations;
@@ -14038,6 +14042,12 @@ void SemanticErrorChecker::checkJoin(IHqlExpression * join)
     }
 }
 
+void SemanticErrorChecker::checkChoosen(IHqlExpression * expr)
+{
+    IHqlExpression * limit = expr->queryChild(1);
+    if (limit->queryValue() && limit->queryValue()->getIntValue() == 0)
+        reportWarning(CategoryUnusual, WRN_CHOOSEN_ALL,"Use CHOOSEN(dataset, ALL) to remove implicit choosen.  CHOOSEN(dataset, 0) now returns no records.");
+}
 
 void SemanticErrorChecker::reportError(int errNo, const char * format, ...)
 {
@@ -14051,6 +14061,27 @@ void SemanticErrorChecker::reportError(int errNo, const char * format, ...)
     va_start(args, format);
     reportErrorVa(&mapper, errNo, location, format, args);
     va_end(args);
+}
+
+void SemanticErrorChecker::reportWarning(WarnErrorCategory category, int warnNo, const char * format, ...)
+{
+    ECLlocation location;
+    ForEachItemInRev(i, locations)
+    {
+        if (location.extractLocationAttr(&locations.item(i)))
+            break;
+    }
+    va_list args;
+    va_start(args, format);
+
+    StringBuffer msg;
+    msg.valist_appendf(format, args);
+    va_end(args);
+
+    ErrorSeverity severity = queryDefaultSeverity(category);
+    Owned<IError> err = createError(category, severity, warnNo, msg, str(location.sourcePath), location.lineno, location.column);
+    Owned<IError> mappedError = mapper.mapError(err);
+    mapper.report(mappedError);
 }
 
 
