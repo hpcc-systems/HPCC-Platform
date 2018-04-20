@@ -1194,6 +1194,18 @@ margin-left:-20px;
     visibility:hidden;
 }
 
+.flat .graph_Graph .graphVertex > .subgraph {
+    pointer-events: none;
+}
+
+.flat .graph_Graph .graphVertex > .graph_Vertex * {
+    cursor: pointer;
+}
+
+.flat .graph_Graph .graphEdge > .graph_Edge * {
+    cursor: pointer;
+}
+
 .flat .graph_Graph .graphVertex > .subgraph .title rect {
     fill: #dcf1ff;
     border-bottom-width:0px;
