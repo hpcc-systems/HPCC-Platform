@@ -387,16 +387,6 @@ struct DynamicScopeCtx
     InitTable initTable;
 };
 
-#ifndef USING_MPATROL
-#ifdef _WIN32
-#ifndef _INC_CRTDBG
-#define _CRTDBG_MAP_ALLOC
-#include <crtdbg.h>
-#define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
-#endif
-#endif
-
 typedef CIArrayOf<StringAttrItem> StringAttrArray;
 typedef CIArrayOf<StringBufferItem> StringBufferArray;
 

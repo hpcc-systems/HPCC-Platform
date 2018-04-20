@@ -24854,15 +24854,10 @@ protected:
 
 public:
 
-#undef new
     void *operator new(size_t size, IRowManager *a, unsigned activityId)
     {
         return a->allocate(size, activityId);
     }
-#if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
- #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
-
     void operator delete(void *ptr, IRowManager *a, unsigned activityId)
     {
         ReleaseRoxieRow(ptr);
@@ -25700,7 +25695,6 @@ public:
         return idx ? NULL : &remote;
     }
 
-#undef new
     virtual CJoinGroup *createJoinGroup(const void *row)
     {
         // NOTE - we need to protect access to queue, since it's also modified by consumer thread. Groupstart is only modified by puller thread.
@@ -25714,10 +25708,6 @@ public:
         groups.enqueue(jg);
         return jg;
     }
-
-#if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
- #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
 
     void endGroup()
     {

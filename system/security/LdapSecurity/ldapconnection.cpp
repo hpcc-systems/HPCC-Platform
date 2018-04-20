@@ -30,13 +30,9 @@
 #include "dautils.hpp"
 #include "dasds.hpp"
 
-#undef new
 #include <map>
 #include <string>
 #include <set>
-#if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
- #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
 
 #ifdef _WIN32
 #include <lm.h>

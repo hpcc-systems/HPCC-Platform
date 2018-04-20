@@ -23,7 +23,6 @@
 
 #include "platform.h"
 #include "esdlcomp.h"
-#undef new
 #include <map>
 #include <set>
 #include <string>

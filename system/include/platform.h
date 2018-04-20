@@ -152,16 +152,6 @@ typedef memsize_t rowsize_t;
 #define __attribute__(param) /* do nothing */
 #endif
 
-#ifdef _DEBUG
- #ifndef USING_MPATROL //using mpatrol memory leak tool
-#ifndef _INC_CRTDBG
-#include <crtdbg.h>
-#undef new
-#define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
- #endif
-#endif
-
 #define ThreadId DWORD
 #define MutexId HANDLE
 #define sleep(X) Sleep(X*1000)

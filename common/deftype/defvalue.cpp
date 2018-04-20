@@ -29,11 +29,6 @@
 #include "rtlbcd.hpp"
 #include "eclrtl_imp.hpp"
 
-#if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
- #undef new
- #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
-
 BoolValue *BoolValue::trueconst;
 BoolValue *BoolValue::falseconst;
 static IAtom * asciiAtom;

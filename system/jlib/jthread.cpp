@@ -35,11 +35,6 @@
 #include <sys/resource.h>
 #endif
 
-#if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
- #undef new
- #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
-
 #define LINUX_STACKSIZE_CAP (0x200000)
 
 //#define NO_CATCHALL

@@ -38,7 +38,6 @@
 #include "roxiemem.hpp"
 #include "thorstep.hpp"
 #include "roxiemem.hpp"
-#undef new
 
 #define ROWAGG_PERROWOVERHEAD (sizeof(AggregateRowBuilder))
 

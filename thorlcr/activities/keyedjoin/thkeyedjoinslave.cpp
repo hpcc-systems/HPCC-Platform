@@ -59,7 +59,6 @@
 #include <typeinfo>
 #include <type_traits>
 
-
 static const unsigned defaultKeyLookupQueuedBatchSize = 1000;
 static const unsigned defaultKeyLookupFetchQueuedBatchSize = 1000;
 static const unsigned defaultMaxKeyLookupThreads = 10;
@@ -177,15 +176,10 @@ public:
     {
         freeRows();
     }
-#undef new
     void *operator new(size_t size, roxiemem::IRowManager *rowManager, activity_id activityId)
     {
         return rowManager->allocate(size, activityId); // NB: can't encode AT_JoinGroup here with createCompoundActSeqId, because row manager limits act id to 2^20
     }
-#if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
- #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
-
     void operator delete(void *ptr, roxiemem::IRowManager *rowManager, activity_id activityId)
     {
         ReleaseRoxieRow(ptr);

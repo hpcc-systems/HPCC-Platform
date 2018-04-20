@@ -17,11 +17,6 @@
 
 #include "platform.h"
 
-#if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
- #undef new
- #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
-
 #include "jlib.hpp"
 #include "jstream.hpp"
 #include "jmisc.hpp"
@@ -36,11 +31,6 @@
 #include "rtlbcd.hpp"
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
-
-#if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
- #undef new
- #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
 
 //#define DATA_STRING_COMPATIBLE
 #define HASHFIELD(p) hashcode = hashc((unsigned char *) &p, sizeof(p), hashcode)

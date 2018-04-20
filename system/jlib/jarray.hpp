@@ -91,9 +91,6 @@ protected:
 
 //--------------------------------------------------------------------------------------------------------------------
 
-//Ugly - avoid problems with new being #defined in windows debug mode
-#undef new
-
 template <class MEMBER, class PARAM = MEMBER>
 class SimpleArrayMapper
 {
