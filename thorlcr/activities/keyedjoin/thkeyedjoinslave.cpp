@@ -1062,7 +1062,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                 readErrorCode(msg);
                 MemoryBuffer tmpMB;
                 MemoryBuffer &mb = doUncompress(tmpMB, msg);
-                mb.read(handles[selected]);
+                if (0 == received)
+                    mb.read(handles[selected]);
                 unsigned count;
                 mb.read(count); // amount processed, could be all (i.e. numRows)
                 while (count--)
@@ -1338,6 +1339,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
             // read back results and feed in to appropriate join groups.
             unsigned accepted = 0;
             unsigned rejected = 0;
+
             unsigned received = 0;
             while (true)
             {
@@ -1346,7 +1348,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                 readErrorCode(msg);
                 MemoryBuffer tmpMB;
                 MemoryBuffer &mb = doUncompress(tmpMB, msg);
-                mb.read(handles[selected]);
+                if (0 == received)
+                    mb.read(handles[selected]);
                 unsigned count;
                 mb.read(count); // amount processed, could be all (i.e. numRows)
                 if (count)

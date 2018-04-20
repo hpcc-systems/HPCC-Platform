@@ -741,7 +741,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
                 MemoryBuffer tmpMB;
                 MemoryBuffer &replyMb = activityCtx->useMessageCompression() ? tmpMB : replyMsg;
 
-                replyMb.append(kmc->queryHandle());
+                replyMb.append(kmc->queryHandle()); // NB: not resent if multiple packets, see below
                 DelayedMarker<unsigned> countMarker(replyMb);
                 unsigned rowCount = getRowCount();
                 unsigned rowNum = 0;
@@ -765,6 +765,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
                             break;
                         replyMsg.setLength(startPos);
                         countMarker.restart();
+                        // NB: handle not resent, 1st packet was { errorCode, handle, key-row-count, key-row-data.. }, subsequent packets are { errorCode, key-row-count, key-row-data.. }
                         rowStart = rowNum;
                     }
                     lookupResult.clear();
@@ -885,7 +886,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
                 MemoryBuffer tmpMB;
                 MemoryBuffer &replyMb = activityCtx->useMessageCompression() ? tmpMB : replyMsg;
 
-                replyMb.append(fetchContext->queryHandle());
+                replyMb.append(fetchContext->queryHandle()); // NB: not resent if multiple packets, see below
                 unsigned rowCount = getRowCount();
                 unsigned rowNum = 0;
 
@@ -907,6 +908,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
                         if (last)
                             break;
                         replyMsg.setLength(startPos);
+                        // NB: handle not resent, 1st packet was { errorCode, handle, fetch-row-count, fetch-row-data.. }, subsequent packets are { errorCode, fetch-row-count, fetch-row-data.. }
                         fetchLookupResult.clear();
                     }
                 }
