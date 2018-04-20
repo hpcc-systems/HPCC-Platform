@@ -25,6 +25,7 @@ define([
     "dojo/on",
     "dojo/dom-style",
     "dojo/request/xhr",
+    "dojo/keys",
 
     "dijit/registry",
     "dijit/form/Select",
@@ -44,7 +45,7 @@ define([
 
     "hpcc/TableContainer"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, domClass, on, domStyle, xhr,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, domClass, on, domStyle, xhr, keys,
                 registry, Select, CheckBox,
                 _Widget, Utility, WsAccount,
                 template) {
@@ -101,6 +102,13 @@ define([
 
         _onLock: function (event) {
             var context = this;
+
+            on(this.unlockPassword, "keypress", function (event) {
+                if (event.key === "Enter") {
+                    context._onUnlock();
+                }
+            });
+
             WsAccount.MyAccount({
             }).then(function (response) {
                 var username = response.MyAccountResponse.username;
