@@ -2165,7 +2165,6 @@ public:
     void doIbyti(RoxiePacketHeader &header, RoxieQueue &queue)
     {
         assertex(!localSlave);
-        ibytiPacketsReceived++;
         bool preActivity = false;
 
         if (traceLevel > 10)
@@ -2191,6 +2190,7 @@ public:
         }
         else
         {
+            ibytiPacketsReceived++;
             unsigned subChannel = header.getRespondingSubChannel();
             if (subChannel == subChannels[header.channel] - 1)
             {
