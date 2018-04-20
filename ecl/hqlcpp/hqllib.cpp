@@ -564,7 +564,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLibraryInstance(BuildCtx & ctx
     if (embeddedAttr)
         instance->addAttribute(WaIdGraph, embeddedAttr->queryChild(0));
     if (!targetHThor())
-        instance->addAttributeInt(WaIdAmbiguousGraph, nextActivityId());            // reserve an id...
+        instance->addAttributeInt(WaIdLibraryGraph, nextActivityId());            // reserve an id...
 
     // A debugging option to make it clearer how a library is being called.
     if (options.addLibraryInputsToGraph)
