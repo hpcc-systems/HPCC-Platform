@@ -33,6 +33,7 @@
 #include "unicode/ucol.h"
 #include "unicode/ustring.h"
 #include "unicode/ucnv.h"
+#include "unicode/uclean.h"
 #include "unicode/schriter.h"
 #include "unicode/regex.h"
 #include "unicode/normlzr.h"
@@ -267,6 +268,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 MODULE_EXIT()
 {
     delete localeMap;
+    u_cleanup();
 }
 
 RTLLocale * queryRTLLocale(char const * locale)

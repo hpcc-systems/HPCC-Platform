@@ -1216,6 +1216,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     globalPackageSetManager = NULL;
     stopDelayedReleaser();
     cleanupPlugins();
+    unloadHpccProtocolPlugin();
     closeMulticastSockets();
     releaseSlaveDynamicFileCache();
     releaseRoxieStateCache();
@@ -1223,6 +1224,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     setNodeCaching(false); // ditto
     perfMonHook.clear();
     strdup("Make sure leak checking is working");
+    roxiemem::releaseRoxieHeap();
     UseSysLogForOperatorMessages(false);
     ExitModuleObjects();
     releaseAtoms();

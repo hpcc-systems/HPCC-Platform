@@ -1850,6 +1850,18 @@ IArrayOf<IHpccProtocolListener> socketListeners;
 MapStringToMyClass<SharedObject> protocolDlls;
 MapStringToMyClass<IHpccProtocolPlugin> protocolPlugins;
 
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    return true;
+}
+
+MODULE_EXIT()
+{
+    socketListeners.kill();
+    protocolPlugins.kill();
+    protocolDlls.kill();
+}
+
 IHpccProtocolPlugin *ensureProtocolPlugin(IHpccProtocolPluginContext &protocolCtx, const char *soname)
 {
     IHpccProtocolPlugin *plugin = protocolPlugins.getValue(soname ? soname : "native");
@@ -1858,7 +1870,7 @@ IHpccProtocolPlugin *ensureProtocolPlugin(IHpccProtocolPluginContext &protocolCt
     if (!soname)
     {
         Owned<IHpccProtocolPlugin> protocolPlugin = loadHpccProtocolPlugin(&protocolCtx, ensureLimiterFactory());
-        protocolPlugins.setValue("native", protocolPlugin.getLink());
+        protocolPlugins.setValue("native", protocolPlugin);
         return protocolPlugin.getClear();
     }
     Owned<SharedObject> so = new SharedObject();

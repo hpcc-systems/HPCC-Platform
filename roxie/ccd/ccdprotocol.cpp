@@ -2132,5 +2132,10 @@ extern IHpccProtocolPlugin *loadHpccProtocolPlugin(IHpccProtocolPluginContext *c
     return global.getLink();
 }
 
+extern void unloadHpccProtocolPlugin()
+{
+    queryLimiterFactory.clear();
+    global.clear();
+}
 
 //================================================================================================================================
