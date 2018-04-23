@@ -1354,13 +1354,6 @@ public:
     virtual bool isFull() const = 0;
     virtual void releaseAllRows() = 0;
 
-#ifdef _WIN32
-#ifdef new
-#define __new_was_defined
-#undef new
-#endif
-#endif
-
     void operator delete(void * p)
     {
         subfree_aligned(p, 1);
@@ -6510,10 +6503,6 @@ void DataBufferBottom::_setDestructorFlag(const void *ptr) { throwUnexpected(); 
 
 //================================================================================
 //
-
-#ifdef __new_was_defined
-#define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
 
 extern IRowManager *createRowManager(memsize_t memLimit, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, bool ignoreLeaks, bool outputOOMReports)
 {

@@ -2844,15 +2844,4 @@ protected:
 
 int STARTQUERY_API start_query(int argc, const char *argv[]);
 
-#ifdef _DEBUG
-#ifdef _WIN32
-#ifndef _INC_CRTDBG
-#define _CRTDBG_MAP_ALLOC
-#include <crtdbg.h>
-#undef new
-#define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
-#endif
-#endif
-
 #endif

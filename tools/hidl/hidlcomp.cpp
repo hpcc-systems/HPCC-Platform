@@ -22,7 +22,6 @@
 #include "hidl_utils.hpp"
 #include "hidlcomp.h"
 
-//#undef new
 #include <map>
 #include <set>
 #include <string>

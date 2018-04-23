@@ -17,11 +17,6 @@
 #include "platform.h"
 #include "build-config.h"
 
-#if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
- #undef new
- #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#endif
-
 #include "jlib.hpp"
 #include "jmisc.hpp"
 #include "jfile.hpp"
