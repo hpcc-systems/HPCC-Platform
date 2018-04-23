@@ -831,7 +831,7 @@ protected:
             {
                 LibraryCallFactoryExtra extra;
                 extra.maxOutputs = node.getPropInt("att[@name=\"_maxOutputs\"]/@value", 0);
-                extra.graphid = node.getPropInt("att[@name=\"_graphid\"]/@value", 0);
+                extra.graphid = node.getPropInt("att[@name=\"_libraryGraphId\"]/@value", 0);
                 extra.libraryName.set(node.queryProp("att[@name=\"libname\"]/@value"));
                 extra.interfaceHash = node.getPropInt("att[@name=\"_interfaceHash\"]/@value", 0);
                 extra.embedded = node.getPropBool("att[@name=\"embedded\"]/@value", false) ;
@@ -1840,7 +1840,7 @@ class CSlaveQueryFactory : public CQueryFactory
                     break;
                 case TAKremotegraph:
                     {
-                        unsigned graphId = node.getPropInt("att[@name=\"_graphid\"]/@value", 0);
+                        unsigned graphId = node.getPropInt("att[@name=\"_remoteSubGraph\"]/@value", 0);
                         newAct = createRoxieRemoteActivityFactory(node, subgraphId, *this, helperFactory, graphId);
                         break;
                     }

@@ -8855,7 +8855,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityRemote(BuildCtx & ctx, IHqlExp
 
         //output dataset is result 0
         unique_id_t remoteId = buildRemoteSubgraph(func.ctx, dataset);
-        instance->addAttributeInt(WaIdAmbiguousGraph, remoteId);
+        instance->addAttributeInt(WaIdRemoteSubGraph, remoteId);
     }
 
     buildInstanceSuffix(instance);
