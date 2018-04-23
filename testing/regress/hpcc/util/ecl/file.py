@@ -460,9 +460,11 @@ class ECLFile:
             logging.debug("%3d. EXP: " + expectedKeyPath,  self.taskId )
             logging.debug("%3d. REC: " + self.getResults(),  self.taskId )
             if not os.path.isfile(expectedKeyPath):
+                self.diff += ("%3d. Test: %s\n") % (self.taskId,  self.getBaseEclRealName())
                 self.diff += "KEY FILE NOT FOUND. " + expectedKeyPath
                 raise IOError("KEY FILE NOT FOUND. " + expectedKeyPath)
             if not os.path.isfile(self.getResults()):
+                self.diff += ("%3d. Test: %s\n") % (self.taskId,  self.getBaseEclRealName())
                 self.diff += "RESULT FILE NOT FOUND. " + self.getResults()
                 raise IOError("RESULT FILE NOT FOUND. " + self.getResults())
             expected = open(expectedKeyPath, 'r').readlines()
@@ -500,7 +502,6 @@ class ECLFile:
         #  'multiPart=false,useSequential=true'
         # to this
         #   'multiPart(false)-useSequential(true)'
-        
         self.jobnameVersion += '-' +version.replace('=', '(').replace(',', ')-')+')'
         pass
         
