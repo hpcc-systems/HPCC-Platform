@@ -457,21 +457,21 @@
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="certificateFileName" type="xs:string" use="optional" default="certificate.cer">
+                        <xs:attribute name="certificateFileName" type="xs:string" use="optional" default="@HOME_DIR@/@RUNTIME_USER@/certificate/certificate.pem">
                             <xs:annotation>
                                 <xs:appinfo>
                                     <tooltip>Name of destination file in which the certificate will be written.</tooltip>
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="privateKeyFileName" type="xs:string" use="optional" default="privatekey.cer">
+                        <xs:attribute name="privateKeyFileName" type="xs:string" use="optional" default="@HOME_DIR@/@RUNTIME_USER@/certificate/key.pem">
                             <xs:annotation>
                                 <xs:appinfo>
                                     <tooltip>Name of destination file in which the private key will be written.</tooltip>
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="passphrase" type="xs:string" use="optional">
+                        <xs:attribute name="passphrase" type="xs:string" use="optional" default="hpccsystems-platform">
                             <xs:annotation>
                                 <xs:appinfo>
                                     <viewType>password</viewType>
@@ -500,7 +500,7 @@
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="CA_Certificates_Path" type="xs:string" use="optional" default="ca.pem">
+                        <xs:attribute name="CA_Certificates_Path" type="xs:string" use="optional" default="@HOME_DIR@/@RUNTIME_USER@/certificate">
                             <xs:annotation>
                                 <xs:appinfo>
                                     <tooltip>path to the file that contains CA certificates.</tooltip>
